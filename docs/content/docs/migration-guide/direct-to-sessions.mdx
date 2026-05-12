@@ -241,7 +241,7 @@ session = composio.create(
         "gmail": "ac_your_gmail_config"
     },
     connected_accounts={
-        "gmail": "ca_work_gmail"
+        "gmail": ["ca_work_gmail"]
     }
 )
 ```
@@ -256,7 +256,7 @@ const session = await composio.create("user_123", {
     gmail: "ac_your_gmail_config",
   },
   connectedAccounts: {
-    gmail: "ca_work_gmail",
+    gmail: ["ca_work_gmail"],
   },
 });
 ```

@@ -73,12 +73,36 @@ export function createConnectionRequest(
   async function waitForConnection(
     timeout: number = 60000
   ): Promise<ConnectedAccountRetrieveResponse> {
+    const terminalErrorStates: ConnectedAccountStatus[] = [
+      ConnectedAccountStatuses.FAILED,
+      ConnectedAccountStatuses.EXPIRED,
+      ConnectedAccountStatuses.REVOKED,
+    ];
+    const failIfTerminal = (response: {
+      status: ConnectedAccountStatus;
+      status_reason?: string | null;
+    }) => {
+      if (terminalErrorStates.includes(response.status)) {
+        throw new ConnectionRequestFailedError(
+          `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
+          {
+            meta: {
+              connectedAccountId: state.id,
+              status: response.status,
+              statusReason: response.status_reason,
+            },
+          }
+        );
+      }
+    };
+
     try {
       const response = await client.connectedAccounts.retrieve(state.id);
       if (response.status === ConnectedAccountStatuses.ACTIVE) {
         state.status = ConnectedAccountStatuses.ACTIVE;
         return transformConnectedAccountResponse(response);
       }
+      failIfTerminal(response);
     } catch (error) {
       if (error instanceof ComposioClient.NotFoundError) {
         throw new ComposioConnectedAccountNotFoundError(
@@ -94,11 +118,6 @@ export function createConnectionRequest(
       }
     }
 
-    const terminalErrorStates: ConnectedAccountStatus[] = [
-      ConnectedAccountStatuses.FAILED,
-      ConnectedAccountStatuses.EXPIRED,
-    ];
-
     const start = Date.now();
     const pollInterval = 1000;
 
@@ -111,18 +130,7 @@ export function createConnectionRequest(
           return transformConnectedAccountResponse(response);
         }
 
-        if (terminalErrorStates.includes(response.status)) {
-          throw new ConnectionRequestFailedError(
-            `Connection request failed with status: ${response.status}${response.status_reason ? `, reason: ${response.status_reason}` : ''}`,
-            {
-              meta: {
-                connectedAccountId: state.id,
-                status: response.status,
-                statusReason: response.status_reason,
-              },
-            }
-          );
-        }
+        failIfTerminal(response);
 
         await new Promise(resolve => setTimeout(resolve, pollInterval));
       } catch (error) {

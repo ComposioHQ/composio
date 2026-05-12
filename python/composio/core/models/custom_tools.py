@@ -1,4 +1,30 @@
-"""Custom Tools module"""
+"""Custom Tools module.
+
+Security model — SEC-365 / CWE-639 (cross-tenant credential access)
+-------------------------------------------------------------------
+
+Custom tools execute against the caller's OAuth credentials, looked up by
+``user_id``. The LLM supplies the *request* arguments for a tool call; the
+SDK supplies the ``user_id``. These two inputs MUST stay structurally
+separate — if they ever collapse into one ``**kwargs`` dict, an LLM (or a
+prompt-injection input) can set ``user_id`` and have us load another
+tenant's tokens.
+
+The trust boundary is ``CustomTools.execute(slug, request, user_id)``:
+
+  * ``request`` is treated as untrusted and is filtered through an
+    *allowlist* of fields declared on the tool's Pydantic ``request_model``,
+    so today's ``user_id`` smuggling — and any future identity-bearing key
+    that might be added to the auth path (``tenant_id``, ``org_id``, …) —
+    is dropped before it can reach credential lookup.
+  * ``user_id`` is forwarded to ``CustomTool.invoke_trusted(user_id, request_kwargs)``
+    as a structurally separate parameter.
+
+``CustomTool.__call__`` (the public ``tool(**kwargs)`` shorthand) raises
+``TypeError`` if ``user_id`` appears in ``kwargs`` — refusing the smuggled
+key loudly rather than silently using a fallback that could collide with a
+real tenant.
+"""
 
 import functools
 import inspect
@@ -131,9 +157,33 @@ class CustomTool:
         return account.state.val.model_dump()
 
     def __call__(self, **kwargs: t.Any) -> t.Any:
-        """Call the custom tool."""
-        user_id = kwargs.pop("user_id", None) or "default"
-        request = self.request_model.model_validate(kwargs)
+        """Call the custom tool with the default ``user_id``.
+
+        Refuses ``user_id`` in ``kwargs`` with ``TypeError`` rather than
+        silently dropping it — see the module docstring for why. Use
+        ``CustomTools.execute(slug, request, user_id=...)`` (the trusted
+        entry point) when you need a non-default ``user_id``.
+        """
+        if "user_id" in kwargs:
+            raise TypeError(
+                "CustomTool.__call__ does not accept user_id; "
+                "use CustomTools.execute(slug, request, user_id=...) instead."
+            )
+        return self.invoke_trusted(user_id="default", request_kwargs=kwargs)
+
+    def invoke_trusted(
+        self,
+        user_id: str,
+        request_kwargs: t.Dict[str, t.Any],
+    ) -> t.Any:
+        """Trusted entry point used by ``CustomTools.execute``.
+
+        ``user_id`` is taken as a structurally separate parameter, so an
+        LLM-controlled ``user_id`` key sitting inside ``request_kwargs``
+        cannot override it (the request model's default ``extra='ignore'``
+        means any such key is also dropped during validation).
+        """
+        request = self.request_model.model_validate(request_kwargs)
         if self.toolkit is None:
             return t.cast(CustomToolProtocol, self.f)(request=request)
 
@@ -142,6 +192,16 @@ class CustomTool:
             execute_request=t.cast(ExecuteRequestFn, self.client.tools.proxy),
             auth_credentials=self.__get_auth_credentials(user_id),
         )
+
+
+def _allowed_request_field_names(request_model: t.Type[BaseModel]) -> t.Set[str]:
+    """Names accepted by ``request_model`` (canonical name + alias)."""
+    allowed: t.Set[str] = set()
+    for field_name, field_info in request_model.model_fields.items():
+        allowed.add(field_name)
+        if field_info.alias is not None:
+            allowed.add(field_info.alias)
+    return allowed
 
 
 class CustomTools:
@@ -202,9 +262,23 @@ class CustomTools:
         slug: str,
         request: t.Dict,
         user_id: t.Optional[str] = None,
-    ) -> t.Dict:
-        """Execute a custom tool."""
+    ) -> t.Any:
+        """Execute a custom tool — the trust boundary for LLM-supplied args.
+
+        ``request`` is filtered through an allowlist of fields declared on
+        the tool's Pydantic ``request_model`` (canonical names + aliases).
+        Anything else — including the historical ``user_id`` smuggling
+        vector and any future identity-bearing keys — is dropped before
+        the call reaches credential lookup. ``user_id`` is forwarded as a
+        structurally separate parameter; see the module docstring for the
+        full security model.
+        """
         custom_tool = self.get(slug)
         if custom_tool is None:
             raise NotFoundError(f"Custom tool with slug {slug} not found")
-        return custom_tool(**request, user_id=user_id)
+        allowed = _allowed_request_field_names(custom_tool.request_model)
+        sanitized_request = {k: v for k, v in request.items() if k in allowed}
+        return custom_tool.invoke_trusted(
+            user_id=user_id or "default",
+            request_kwargs=sanitized_request,
+        )

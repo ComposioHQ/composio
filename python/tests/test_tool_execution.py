@@ -1,9 +1,11 @@
 """Test tool execution with toolkit versions and argument serialization."""
 
+import typing as t
 from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import BaseModel, RootModel
+from composio_client import omit
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
@@ -46,6 +48,35 @@ class TestToolExecution:
             is_deprecated=False,
             no_auth=False,
             tags=[],
+        )
+
+    def test_get_raw_tool_router_meta_tools_fetches_all_pages(self):
+        """Test that ToolRouter session tools are fetched across all pages."""
+        mock_client = Mock()
+        mock_provider = Mock()
+        tools = Tools(client=mock_client, provider=mock_provider)
+
+        first_tool = self.create_mock_tool("FIRST_TOOL", "github")
+        second_tool = self.create_mock_tool("SECOND_TOOL", "slack")
+        first_response = Mock(items=[first_tool], next_cursor="next_page")
+        second_response = Mock(items=[second_tool], next_cursor=None)
+        mock_client.tool_router.session.tools.side_effect = [
+            first_response,
+            second_response,
+        ]
+
+        result = tools.get_raw_tool_router_meta_tools("session_123")
+
+        assert [tool.slug for tool in result] == ["FIRST_TOOL", "SECOND_TOOL"]
+        mock_client.tool_router.session.tools.assert_any_call(
+            session_id="session_123",
+            cursor=omit,
+            limit=500,
+        )
+        mock_client.tool_router.session.tools.assert_any_call(
+            session_id="session_123",
+            limit=500,
+            cursor="next_page",
         )
 
     def test_tool_execution_uses_toolkit_version(self):
@@ -844,6 +875,197 @@ class TestToolExecution:
             # Verify execution succeeded and response was modified
             assert result["successful"] is True
             assert result["data"]["modified"] is True
+
+    def test_merge_before_file_upload_scopes_by_tool(self):
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        scoped = before_file_upload(tools=["OTHER_TOOL"])(lambda p, t, k: p + "_X")
+        fn = merge_before_file_upload([scoped], tool="MY", toolkit="gh")
+        assert fn is not None
+        assert (
+            fn({"path": "/a", "source": "path", "tool": "MY", "toolkit": "gh"}) == "/a"
+        )
+
+        all_tools = before_file_upload(lambda p, t, k: p + "_Y")
+        fn2 = merge_before_file_upload([all_tools], tool="MY", toolkit="gh")
+        assert fn2 is not None
+        assert (
+            fn2({"path": "/a", "source": "path", "tool": "MY", "toolkit": "gh"})
+            == "/a_Y"
+        )
+
+    def test_merge_before_file_upload_chains_modifiers(self):
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        m1 = before_file_upload(lambda p, t, k: f"{p}|1")
+        m2 = before_file_upload(lambda p, t, k: f"{p}|2")
+        fn = merge_before_file_upload([m1, m2], tool="T", toolkit="k")
+        assert fn is not None
+        assert (
+            fn({"path": "p", "source": "path", "tool": "T", "toolkit": "k"}) == "p|1|2"
+        )
+
+    def test_before_file_upload_context_form_receives_source(self):
+        """New-form hooks (single ``context`` arg) see ``source`` in the context."""
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        seen: t.Dict[str, t.Any] = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return ctx["path"] + "!"
+
+        m = before_file_upload(hook)
+        fn = merge_before_file_upload([m], tool="T", toolkit="k")
+        assert fn is not None
+
+        out = fn({"path": "/x", "source": "path", "tool": "T", "toolkit": "k"})
+        assert out == "/x!"
+        assert seen == {"path": "/x", "source": "path", "tool": "T", "toolkit": "k"}
+
+        seen.clear()
+        out = fn(
+            {
+                "path": "https://example.com/a.pdf",
+                "source": "url",
+                "tool": "T",
+                "toolkit": "k",
+            }
+        )
+        assert out == "https://example.com/a.pdf!"
+        assert seen["source"] == "url"
+
+    def test_before_file_upload_legacy_3arg_form_still_works(self):
+        """Hooks declared as ``(path, tool, toolkit)`` keep working unchanged."""
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        def legacy(path, tool, toolkit):
+            return f"{path}@{tool}/{toolkit}"
+
+        m = before_file_upload(legacy)
+        fn = merge_before_file_upload([m], tool="T", toolkit="k")
+        assert fn is not None
+        # Driver always passes context form; adapter unwraps to positional args.
+        assert (
+            fn({"path": "/x", "source": "path", "tool": "T", "toolkit": "k"})
+            == "/x@T/k"
+        )
+
+    def test_before_file_upload_chain_preserves_source(self):
+        """``source`` stays stable as the ``path`` is rewritten down the chain."""
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        seen_sources: t.List[str] = []
+
+        def h1(ctx):
+            seen_sources.append(ctx["source"])
+            return ctx["path"] + "|1"
+
+        def h2(ctx):
+            seen_sources.append(ctx["source"])
+            return ctx["path"] + "|2"
+
+        fn = merge_before_file_upload(
+            [before_file_upload(h1), before_file_upload(h2)], tool="T", toolkit="k"
+        )
+        assert fn is not None
+        out = fn({"path": "p", "source": "url", "tool": "T", "toolkit": "k"})
+        assert out == "p|1|2"
+        assert seen_sources == ["url", "url"]
+
+    def test_before_file_upload_abort_propagates_as_false(self):
+        from composio.core.models._modifiers import (
+            before_file_upload,
+            merge_before_file_upload,
+        )
+
+        def abort(ctx):
+            return False
+
+        fn = merge_before_file_upload(
+            [before_file_upload(abort)], tool="T", toolkit="k"
+        )
+        assert fn is not None
+        assert (
+            fn({"path": "/x", "source": "path", "tool": "T", "toolkit": "k"}) is False
+        )
+
+    def test_execute_includes_before_file_upload_modifier_in_compose(
+        self,
+    ):
+        """``before_file_upload`` in ``modifiers`` is composed into substitute_file_uploads."""
+        from composio.core.models._modifiers import before_file_upload
+
+        mock_client = Mock()
+        mock_provider = Mock()
+        mock_provider.name = "test_provider"
+
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            toolkit_versions={"github": "20251201_01"},
+            dangerously_allow_auto_upload_download_files=True,
+        )
+
+        github_tool = self.create_mock_tool("GITHUB_GET_REPOS", "github")
+
+        with patch.object(
+            tools, "get_raw_composio_tool_by_slug", return_value=github_tool
+        ):
+            mock_client.tools.retrieve.return_value = github_tool
+
+            mock_execute_response = Mock()
+            mock_execute_response.model_dump.return_value = {
+                "data": {"result": "success"},
+                "error": None,
+                "successful": True,
+            }
+            mock_client.tools.execute.return_value = mock_execute_response
+
+            cap: t.Dict = {}
+
+            def capture_sub(**kwargs):
+                cap["bfu"] = kwargs.get("before_file_upload")
+                return kwargs["request"]
+
+            with patch.object(
+                tools._file_helper, "substitute_file_uploads", side_effect=capture_sub
+            ):
+                mod = before_file_upload(lambda p, t, k: f"{p}>")
+                tools.execute(
+                    slug="GITHUB_GET_REPOS",
+                    arguments={"owner": "a", "repo": "b"},
+                    modifiers=[mod],
+                )
+
+            bfu = cap.get("bfu")
+            assert bfu is not None
+            assert (
+                bfu(
+                    {
+                        "path": "/p",
+                        "source": "path",
+                        "tool": "GITHUB_GET_REPOS",
+                        "toolkit": "github",
+                    }
+                )
+                == "/p>"
+            )
 
     def test_execute_with_environment_variable_toolkit_version(self):
         """Test that execute uses environment variable for toolkit version."""

@@ -136,16 +136,26 @@ Versions follow the format `YYYYMMDD_NN`:
 - `NN`: Sequential release number
 
 ```python
-# Production — pin to a specific version
+# Pin to a specific version
 toolkit_versions = {"github": "20251027_00"}
 
-# Development — always use the newest tools
+# Always use the newest tools
 toolkit_versions = {"github": "latest"}
 ```
 
-<Callout type="warn">
-Never use `latest` in production. It can introduce breaking changes. Pin to a specific version instead.
+## Choosing between `latest` and a pinned version
+
+The right choice depends on how your application consumes tool outputs:
+
+- **Use `latest`** when tool outputs are consumed by an LLM or AI agent. Agents interpret responses dynamically and adapt to changes in output structure. Using `latest` ensures your agent always has access to the newest tools and improvements without manual intervention.
+
+- **Pin a specific version** when tool outputs are consumed programmatically — for example, if your code destructures specific fields from a response, maps outputs to a database schema, or feeds results into a typed pipeline. Schema changes in a new version could silently break these integrations.
+
+<Callout type="info">
+As a rule of thumb: if an LLM reads the output, use `latest`. If your code parses the output, pin the version.
 </Callout>
+
+Most agentic applications — including all [session-based](/docs/configuring-sessions) workflows — use `latest` by default and benefit from always having the most up-to-date tools. If you're building structured data pipelines or integrations with fixed response parsing, pin to a tested version and upgrade on your own schedule.
 
 ## Version resolution order
 

@@ -1,5 +1,72 @@
 # @composio/cli
 
+## 0.2.29
+
+### Patch Changes
+
+- Updated dependencies [84a3a07]
+- Updated dependencies [c358ffa]
+  - @composio/core@0.9.1
+  - @composio/cli-local-tools@0.0.3
+
+## 0.2.28
+
+### Patch Changes
+
+- 79ac220: Scaffold the CLI local-tools foundation package, wire it into Tool Router search/execute sessions, and expose `composio local-tools list|doctor|configure|meta` for discovery, readiness checks, setup hints, and local metadata state. Concrete app integrations are added in follow-up stack PRs.
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [c9b6525]
+- Updated dependencies [cc673b6]
+- Updated dependencies [79ac220]
+- Updated dependencies [9f14971]
+- Updated dependencies [81f8027]
+- Updated dependencies [711a703]
+- Updated dependencies [bccd32b]
+- Updated dependencies [bccd32b]
+- Updated dependencies [07c9bab]
+- Updated dependencies [3ece424]
+  - @composio/cli-local-tools@0.0.2
+  - @composio/core@0.9.0
+
+## 0.2.27
+
+### Patch Changes
+
+- Updated dependencies [6b986cd]
+- Updated dependencies [1c3276b]
+  - @composio/core@0.8.1
+
+## 0.2.26
+
+### Patch Changes
+
+- Updated dependencies [ebc9778]
+- Updated dependencies
+  - @composio/core@0.8.0
+
+## 0.2.25
+
+### Patch Changes
+
+- Updated dependencies [27ed0c9]
+  - @composio/core@0.6.11
+
+## 0.2.24
+
+Manual version bump to realign with the GitHub release tag. The 0.2.23 release workflow misclassified the version-bump merge as a beta due to a shallow-checkout bug in `.github/workflows/build-cli-binaries.yml`, so binaries built from that commit landed on `@composio/cli@0.2.24-beta.209` and, after `promote-stable`, on the GitHub tag `@composio/cli@0.2.24`. npm was left at 0.2.23. This release bumps npm to 0.2.24 so the published package and the GitHub release match. Fix for the underlying workflow bug: #3212.
+
+## 0.2.23
+
+### Patch Changes
+
+- 4df06d2: feat: add `simple`, `default`, and `verbose` help verbosity modes to root and subcommand help (`--help simple|verbose`); compact simple mode and richer verbose mode with additional commands (#3205)
+  feat: add `composio connections list` command that groups connected accounts by toolkit and displays aliases (#3206)
+  feat: migrate API key storage from plaintext `~/.composio/user_data.json` to OS keyring (macOS Keychain / Linux Secret Service); env var > keyring > legacy plaintext precedence with one-shot migration and `dangerouslySaveApiKeyInUserConfig` opt-out for headless environments (#3202)
+  feat: turn `composio dev` into a real developer-mode toggle backed by CLI user config; gate the `init`, `tools execute`, `triggers listen`, `logs`, `toolkits`, `auth-configs`, `connected-accounts`, `triggers`, and `projects` subcommand tree behind the toggle, and remove deprecated destructive `delete`/`info` commands now covered by the dev-mode gate (#3181)
+  feat: enable `multi_account` experimental feature by default for stable CLI builds and centralize default experimental-feature behavior so runtime config and skill reference schema stay in sync (#3163)
+
 ## 0.2.22
 
 ### Patch Changes

@@ -14,6 +14,7 @@ import {
 } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
+import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'src/models/toolkits';
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
@@ -26,6 +27,7 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
+import * as constants from 'src/constants';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -1306,12 +1308,28 @@ export const findDeveloperProjectByName = (params: {
 const normalizeApiKey = (rawApiKey?: string): string | undefined =>
   typeof rawApiKey === 'string' && rawApiKey.trim().length > 0 ? rawApiKey : undefined;
 
+const detectCliRuntime = (): string => {
+  if (typeof Bun !== 'undefined') {
+    return 'BUN';
+  }
+
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    return 'NODEJS';
+  }
+
+  return 'UNKNOWN';
+};
+
 const buildDefaultHeaders = (params: {
   userApiKey?: string;
   orgId?: string;
   projectId?: string;
 }): Record<string, string> | undefined => {
   const defaultHeaders = {
+    'x-framework': 'cli',
+    'x-source': 'CLI',
+    'x-runtime': detectCliRuntime(),
+    'x-sdk-version': constants.APP_VERSION,
     ...(params.userApiKey
       ? ({ 'x-user-api-key': params.userApiKey } satisfies Record<string, string>)
       : {}),
@@ -1758,9 +1776,9 @@ function buildConnectedAccountsNamespace(
             client.connectedAccounts.list({
               toolkit_slugs: params.toolkit_slugs,
               user_ids: params.user_ids,
-              statuses: params.statuses as
-                | Array<'INITIALIZING' | 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'INACTIVE'>
-                | undefined,
+              // Bypass the stale Stainless union (still missing 'REVOKED')
+              // until @composio/client is regenerated.
+              statuses: params.statuses as ConnectedAccountListParams['statuses'],
               limit: params.limit,
             }),
           ConnectedAccountListResponse

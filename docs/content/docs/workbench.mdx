@@ -55,6 +55,14 @@ The workbench corrects common mistakes in the code your agent generates. For exa
 
 The sandbox runs as a persistent Jupyter notebook. Variables, imports, files, and in-memory state from one call are available in the next.
 
+### Compute tier
+
+Sandboxes default to `standard` (1 vCPU / 1 GB RAM). For heavier workloads — large dataframes, ML preprocessing, big bulk operations — pick a larger tier when creating the session via `workbench.sandboxSize` (TypeScript) / `workbench.sandbox_size` (Python). Available tiers: `standard`, `medium` (2 vCPU / 2 GB), `large` (4 vCPU / 4 GB), `xlarge` (8 vCPU / 8 GB). Requires `@composio/core` ≥ `0.8.1` or `composio` ≥ `0.12.1`. See [Configuring Sessions → Sandbox compute tier](/docs/configuring-sessions#sandbox-compute-tier) for examples.
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime).
+</Callout>
+
 ## Common patterns
 
 ### Bulk operations across apps

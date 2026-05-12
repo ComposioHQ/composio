@@ -1,6 +1,156 @@
 import { z } from 'zod/v3';
-import { JsonSchemaToZodError } from '../errors';
+import { JsonSchemaRefResolutionError, JsonSchemaToZodError } from '../errors';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
+import logger from './logger';
+import { isPlainObject } from './modifiers/FileToolModifier.utils.neutral';
+
+const MAX_REF_CHAIN_DEPTH = 100;
+const MAX_NODE_DEPTH = 512;
+const CYCLE_BREAK_SENTINEL = { type: 'object', additionalProperties: true } as const;
+const POLLUTING_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const REF_RESOLUTION_FIXES = [
+  'Ensure the $ref pointer matches a path in $defs or definitions',
+  'External $ref pointers (http://, https://, file://, …) are not resolved by the SDK',
+];
+
+const decodePointerSegment = (segment: string): string =>
+  segment.replace(/~1/g, '/').replace(/~0/g, '~');
+
+const failResolution = (pointer: string, segment: string): never => {
+  throw new JsonSchemaRefResolutionError(`Cannot resolve $ref ${pointer}`, {
+    meta: { ref: pointer, failedAt: segment },
+    possibleFixes: REF_RESOLUTION_FIXES,
+  });
+};
+
+const stepInto = (cursor: unknown, segment: string, pointer: string): unknown => {
+  if (cursor === null || typeof cursor !== 'object') failResolution(pointer, segment);
+  if (Array.isArray(cursor)) {
+    const i = Number(segment);
+    if (!Number.isInteger(i) || i < 0 || i >= cursor.length) failResolution(pointer, segment);
+    return cursor[i];
+  }
+  const obj = cursor as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(obj, segment)) failResolution(pointer, segment);
+  return obj[segment];
+};
+
+const resolvePointer = (root: Record<string, unknown>, pointer: string): unknown => {
+  if (pointer === '#' || pointer === '') return root;
+  if (!pointer.startsWith('#/')) {
+    throw new JsonSchemaRefResolutionError(`Unsupported $ref pointer: ${pointer}`, {
+      meta: { ref: pointer },
+      possibleFixes: REF_RESOLUTION_FIXES,
+    });
+  }
+  return pointer
+    .slice(2)
+    .split('/')
+    .map(decodePointerSegment)
+    .reduce<unknown>((cursor, seg) => stepInto(cursor, seg, pointer), root);
+};
+
+/**
+ * Inlines internal JSON Schema `$ref` pointers (`#/$defs/...` and legacy
+ * `#/definitions/...`) so the returned schema can be safely handed to
+ * consumers that don't tolerate unresolved references (e.g. AJV in
+ * `@mastra/schema-compat`). External (`http://`, `https://`, …) refs are
+ * left untouched. Cycles are broken with `{ type: 'object',
+ * additionalProperties: true }`. The input is never mutated.
+ *
+ * @throws {JsonSchemaRefResolutionError} on malformed pointers, missing
+ * targets, or chains past the depth cap.
+ */
+export function dereferenceJsonSchema<T = unknown>(schema: T): T {
+  if (!isPlainObject(schema)) return schema;
+
+  const root = schema as Record<string, unknown>;
+  const visiting = new WeakSet<object>();
+
+  // POLLUTING_KEYS filter prevents an attacker-shaped $defs entry from altering
+  // the cloned node's prototype.
+  const cloneChildren = (
+    obj: Record<string, unknown>,
+    visitedRefs: ReadonlySet<string>,
+    chainDepth: number,
+    nodeDepth: number
+  ): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.entries(obj)
+        .filter(([k]) => !POLLUTING_KEYS.has(k))
+        .map(([k, v]) => [k, walk(v, visitedRefs, chainDepth, nodeDepth + 1)])
+    );
+
+  // `function` (not `const`) so `cloneChildren` above can call it via hoisting.
+  function walk(
+    node: unknown,
+    visitedRefs: ReadonlySet<string>,
+    chainDepth: number,
+    nodeDepth: number
+  ): unknown {
+    if (nodeDepth >= MAX_NODE_DEPTH) {
+      throw new JsonSchemaRefResolutionError(
+        `JSON Schema node depth exceeded cap (${MAX_NODE_DEPTH})`,
+        { possibleFixes: REF_RESOLUTION_FIXES }
+      );
+    }
+    if (Array.isArray(node)) {
+      if (visiting.has(node)) return { ...CYCLE_BREAK_SENTINEL };
+      visiting.add(node);
+      try {
+        return node.map(item => walk(item, visitedRefs, chainDepth, nodeDepth + 1));
+      } finally {
+        visiting.delete(node);
+      }
+    }
+    if (!isPlainObject(node)) return node;
+    if (visiting.has(node)) return { ...CYCLE_BREAK_SENTINEL };
+    visiting.add(node);
+    try {
+      const ref = typeof node.$ref === 'string' ? node.$ref : null;
+      // External refs and non-$ref nodes both pass through the same clone path.
+      if (ref === null || !ref.startsWith('#')) {
+        if (ref !== null) {
+          // Audit signal for security-sensitive deployments: a downstream
+          // resolver may fetch this and trigger SSRF or local-file disclosure.
+          logger.warn(`Leaving external $ref untouched: ${ref}`);
+        }
+        return cloneChildren(node, visitedRefs, chainDepth, nodeDepth);
+      }
+
+      if (chainDepth >= MAX_REF_CHAIN_DEPTH) {
+        throw new JsonSchemaRefResolutionError(
+          `JSON Schema $ref chain exceeded depth cap (${MAX_REF_CHAIN_DEPTH}): ${ref}`,
+          { meta: { ref }, possibleFixes: REF_RESOLUTION_FIXES }
+        );
+      }
+      if (visitedRefs.has(ref)) return { ...CYCLE_BREAK_SENTINEL };
+
+      const target = resolvePointer(root, ref);
+      const nextRefs = new Set(visitedRefs).add(ref);
+      const resolved = walk(target, nextRefs, chainDepth + 1, nodeDepth + 1);
+
+      // Shallow-merge sibling keywords (Draft 2020-12 semantics: siblings win
+      // on collision). Draft 7 ignores siblings entirely, but the Composio
+      // tool surface admits both drafts so we honor siblings for safety.
+      const siblings: Record<string, unknown> = { ...node };
+      delete siblings.$ref;
+      if (Object.keys(siblings).length === 0 || !isPlainObject(resolved)) {
+        return resolved;
+      }
+      return { ...resolved, ...cloneChildren(siblings, visitedRefs, chainDepth, nodeDepth) };
+    } finally {
+      visiting.delete(node);
+    }
+  }
+
+  const out = walk(root, new Set(), 0, 0);
+  if (isPlainObject(out)) {
+    delete out.$defs;
+    delete out.definitions;
+  }
+  return out as T;
+}
 
 /**
  * Removes all non-required properties from the schema

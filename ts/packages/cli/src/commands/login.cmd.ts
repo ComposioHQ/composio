@@ -14,7 +14,14 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
+import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
+import {
+  ensureAgentSignupAllowed,
+  getOrSignupReadyAgent,
+  loginWithAgentIdentity,
+  safeAgentSummary,
+} from 'src/services/agents';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
@@ -52,6 +59,11 @@ const yesOpt = Options.boolean('yes').pipe(
 const noSkillInstall = Options.boolean('no-skill-install').pipe(
   Options.withDefault(false),
   Options.withDescription('Skip installing the composio-cli skill for Claude Code')
+);
+
+const agentOpt = Options.boolean('agent').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Sign up or log in using a Composio agent identity')
 );
 
 const formatLoginSuccessMessage = (params: { email?: string; orgName?: string }): string => {
@@ -523,6 +535,7 @@ export const browserLogin = (params: {
  * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
  * with --no-wait, checks once and fails if not linked.
  * Use --user-api-key to log in directly without a browser flow, and --org to override the default org.
+ * Use --agent to sign up or log in using a Composio agent identity.
  * Use -y to skip org picker and use session default org.
  *
  * @example
@@ -534,6 +547,7 @@ export const browserLogin = (params: {
  * composio login --key <key> --no-wait
  * composio login --user-api-key <uak>
  * composio login --user-api-key <uak> --org <org>
+ * composio login --agent
  * composio login -y
  * ```
  */
@@ -547,8 +561,9 @@ export const loginCmd = Command.make(
     org: orgOpt,
     yes: yesOpt,
     noSkillInstall,
+    agent: agentOpt,
   },
-  ({ noBrowser, noWait, key, userApiKey, org, yes, noSkillInstall }) =>
+  ({ noBrowser, noWait, key, userApiKey, org, yes, noSkillInstall, agent }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
@@ -557,6 +572,12 @@ export const loginCmd = Command.make(
 
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
         return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
+      }
+
+      if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
+        return yield* Effect.fail(
+          new Error('`--agent` cannot be combined with browser, session, or direct-login flags.')
+        );
       }
 
       if (Option.isSome(org) && Option.isNone(userApiKey)) {
@@ -568,6 +589,24 @@ export const loginCmd = Command.make(
           new Error(
             '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
           )
+        );
+      }
+
+      if (agent) {
+        return yield* handleAgentAuthError(
+          Effect.gen(function* () {
+            yield* ensureAgentSignupAllowed;
+            const identity = yield* getOrSignupReadyAgent();
+            yield* loginWithAgentIdentity(identity);
+            const summary = safeAgentSummary(identity);
+            yield* ui.log.success(
+              `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
+            );
+            yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
+            if (!noSkillInstall) {
+              yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
+            }
+          })
         );
       }
 

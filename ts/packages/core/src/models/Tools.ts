@@ -15,6 +15,7 @@ import {
   ToolkitVersionParam,
   SchemaModifierOptions,
   ToolRetrievalOptions,
+  ToolExecuteMetaParams,
   ToolExecuteMetaParamsSchema,
 } from '../types/tool.types';
 import {
@@ -33,7 +34,6 @@ import { CustomTools } from './CustomTools';
 import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
 import {
   afterExecuteModifier,
-  beforeExecuteModifier,
   ExecuteToolModifiers,
   SessionExecuteMetaModifiers,
   ProviderOptions,
@@ -54,9 +54,17 @@ import { telemetry } from '../telemetry/Telemetry';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import { ToolExecuteMetaParams } from '../types/tool.types';
-import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
+import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
+import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+
+const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
+
+type ToolRouterSessionExecuteOptions = {
+  experimental?: SessionExecuteParams.Experimental;
+};
+
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -71,6 +79,18 @@ export class Tools<
   private provider: TProvider;
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
+  private fileUploadPathOptions: {
+    sensitiveFileUploadProtection?: boolean;
+    fileUploadPathDenySegments?: string[];
+    fileUploadAllowlist?: string[];
+    fileDownloadDir?: string;
+  };
+  /**
+   * Tracks tool slugs we've already warned about to avoid spamming the log when
+   * the same file-input tool is executed repeatedly while auto-upload is off.
+   * Scoped per-instance so a fresh `Composio` starts with a clean slate.
+   */
+  private readonly warnedAutoUploadDisabledForTool = new Set<string>();
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -83,9 +103,18 @@ export class Tools<
     this.client = client;
     this.customTools = new CustomTools(client);
     this.provider = config.provider;
-    this.autoUploadDownloadFiles =
-      config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles;
+    this.autoUploadDownloadFiles = config?.dangerouslyAllowAutoUploadDownloadFiles === true;
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
+    this.fileUploadPathOptions = {
+      sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: config?.fileUploadPathDenySegments,
+      // The allowlist is only enforced during automatic upload (see
+      // FileToolModifier). Manual `composio.files.upload()` calls don't see it.
+      fileUploadAllowlist: this.autoUploadDownloadFiles
+        ? resolveEffectiveUploadAllowlist(config?.fileUploadDirs)
+        : undefined,
+      fileDownloadDir: config?.fileDownloadDir,
+    };
     // Bind the execute method to ensure correct 'this' context
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
@@ -143,21 +172,29 @@ export class Tools<
   }
 
   /**
-   * Applies the default schema modifiers to the tools
+   * Applies the default schema modifiers to the tools.
+   *
+   * The `file_uploadable` transform (collapsing the backend's internal
+   * `{ name, mimetype, s3key }` staging shape to `{ type: 'string',
+   * format: 'path' }`) is **gated on `dangerouslyAllowAutoUploadDownloadFiles`**
+   * — the collapsed shape is a promise that the SDK will stage local paths
+   * on your behalf at execute time, and that's only true when the flag is on.
+   *
+   * When the flag is off, the raw schema is returned unchanged; callers are
+   * expected to stage files themselves via `composio.files.upload()` and pass
+   * the resulting descriptor into `tools.execute`. If an LLM ends up calling
+   * a file-uploadable tool in this mode, the execute path emits a one-shot
+   * warning per tool slug (see `applyBeforeExecuteModifiers`).
+   *
    * @param tools - The tools to apply the default schema modifiers to
    * @returns The tools with the default schema modifiers applied
    */
   private async applyDefaultSchemaModifiers(tools: Tool[]): Promise<Tool[]> {
-    if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
-      return await Promise.all(
-        tools.map(tool =>
-          fileToolModifier.modifyToolSchema(tool.slug, tool.toolkit?.slug ?? 'unknown', tool)
-        )
-      );
-    } else {
+    if (!this.autoUploadDownloadFiles) {
       return tools;
     }
+    const fileToolModifier = new FileToolModifier(this.client, this.fileUploadPathOptions);
+    return await Promise.all(tools.map(tool => fileToolModifier.modifyToolSchema(tool)));
   }
 
   /**
@@ -179,22 +216,45 @@ export class Tools<
       toolkitSlug: string;
       params: ToolExecuteParams;
     },
-    modifier?: beforeExecuteModifier
+    modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteParams> {
     let modifiedParams = params;
     // if auto upload download files is enabled, upload the files to the Composio API
     if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
+      const fileToolModifier = new FileToolModifier(this.client, {
+        ...this.fileUploadPathOptions,
+        beforeFileUpload: modifiers?.beforeFileUpload,
+      });
       modifiedParams = await fileToolModifier.fileUploadModifier(tool, {
         toolSlug,
         toolkitSlug,
         params: modifiedParams,
       });
+    } else if (
+      schemaHasFileUploadable(tool.inputParameters) &&
+      !this.warnedAutoUploadDisabledForTool.has(toolSlug)
+    ) {
+      // With auto-upload off, the raw `{ name, mimetype, s3key }` shape is
+      // what the LLM / caller sees on `tool.inputParameters`. LLMs can't
+      // produce a valid `s3key` and will hallucinate one, which then fails
+      // at the staging-lookup step on the backend. Nudge the caller toward
+      // manual staging or opting into auto-upload.
+      this.warnedAutoUploadDisabledForTool.add(toolSlug);
+      logger.warn(
+        `Tool "${toolSlug}" (toolkit "${toolkitSlug}") has a file-uploadable input, but ` +
+          `\`dangerouslyAllowAutoUploadDownloadFiles\` is disabled. The SDK will forward ` +
+          `the file argument as-is; if it isn't already a staged ` +
+          `{ name, mimetype, s3key } descriptor, the backend will reject the call. Either:\n` +
+          `  1) Stage the file yourself: \`const f = await composio.files.upload({ file, toolSlug, toolkitSlug }); ` +
+          `await composio.tools.execute('${toolSlug}', { userId, arguments: { <fileField>: f } })\`, or\n` +
+          `  2) Enable auto-upload with a scoped allowlist: ` +
+          `\`new Composio({ dangerouslyAllowAutoUploadDownloadFiles: true, fileUploadDirs: ['/safe/dir'] })\`.`
+      );
     }
     // apply the before execute modifiers
-    if (modifier) {
-      if (typeof modifier === 'function') {
-        modifiedParams = await modifier({
+    if (modifiers?.beforeExecute) {
+      if (typeof modifiers.beforeExecute === 'function') {
+        modifiedParams = await modifiers.beforeExecute({
           toolSlug,
           toolkitSlug,
           params: modifiedParams,
@@ -230,7 +290,7 @@ export class Tools<
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
     if (this.autoUploadDownloadFiles) {
-      const fileToolModifier = new FileToolModifier(this.client);
+      const fileToolModifier = new FileToolModifier(this.client, this.fileUploadPathOptions);
       modifiedResult = await fileToolModifier.fileDownloadModifier(tool, {
         toolSlug,
         toolkitSlug,
@@ -414,27 +474,38 @@ export class Tools<
   }
 
   /**
-   * Fetches the meta tools for a tool router session.
-   * This method fetches the meta tools from the Composio API and transforms them to the expected format.
-   * It provides access to the underlying meta tool data without provider-specific wrapping.
+   * Fetches tools exposed by a tool router session.
+   * This includes helper/meta tools plus any tools preloaded into the session.
+   * It provides access to the underlying tool data without provider-specific wrapping.
    *
-   * @param sessionId {string} The session id to get the meta tools for
+   * @param sessionId {string} The session id to get tools for
    * @param options {SchemaModifierOptions} Optional configuration for tool retrieval
    * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
-   * @returns {Promise<ToolList>} The list of meta tools
+   * @returns {Promise<ToolList>} The list of session tools
    *
    * @example
    * ```typescript
-   * const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123');
-   * console.log(metaTools);
+   * const sessionTools = await composio.tools.getRawToolRouterSessionTools('session_123');
+   * console.log(sessionTools);
    * ```
    */
-  async getRawToolRouterMetaTools(
+  async getRawToolRouterSessionTools(
     sessionId: string,
     options?: SchemaModifierOptions
   ): Promise<ToolList> {
-    const tools = await this.client.toolRouter.session.tools(sessionId);
-    let modifiedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const tools: ToolList = [];
+    let cursor: string | null | undefined;
+
+    do {
+      const response = await this.client.toolRouter.session.tools(sessionId, {
+        limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
+        ...(cursor ? { cursor } : {}),
+      });
+      tools.push(...response.items.map(tool => this.transformToolCases(tool)));
+      cursor = response.next_cursor;
+    } while (cursor);
+
+    let modifiedTools = tools;
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
       const modifier = options.modifySchema;
@@ -706,7 +777,7 @@ export class Tools<
     tools: Tool[],
     modifiers?: SessionExecuteMetaModifiers
   ): Tool[] {
-    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, tools, modifiers);
     return this.provider.wrapTools(tools, executeToolFn) as Tool[];
   }
 
@@ -747,19 +818,22 @@ export class Tools<
    */
   private createExecuteToolFnForToolRouter(
     sessionId: string,
+    tools: Tool[],
     modifiers?: SessionExecuteMetaModifiers
   ): ExecuteToolFn {
+    const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
     const executeToolFn = async (
       toolSlug: string,
       input: Record<string, unknown>
     ): Promise<ToolExecuteResponse> => {
-      return await this.executeMetaTool(
+      return await this.executeSessionTool(
         toolSlug,
         {
           sessionId,
           arguments: input,
         },
-        modifiers
+        modifiers,
+        toolBySlug.get(toolSlug.toUpperCase())
       );
     };
     return executeToolFn;
@@ -921,7 +995,7 @@ export class Tools<
         toolkitSlug,
         params: executeParams.data,
       },
-      modifiers?.beforeExecute
+      modifiers
     );
 
     // Execute the tool (custom or composio)
@@ -944,44 +1018,54 @@ export class Tools<
   }
 
   /**
-   * Executes a composio meta tool based on tool router session
+   * Executes a tool based on a tool router session.
    *
    * @param {string} toolSlug - The slug of the tool to execute
    * @param {ToolExecuteMetaParams} body - The execution parameters
    * @param {string} body.sessionId - The session id to execute the tool for
    * @param {Record<string, unknown>} body.arguments - The input to pass to the tool
    * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @param {Tool} tool - Optional tool schema used to resolve toolkit metadata for modifiers
    * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
    */
-  async executeMetaTool(
+  async executeSessionTool(
     toolSlug: string,
     body: ToolExecuteMetaParams,
-    modifiers?: SessionExecuteMetaModifiers
+    modifiers?: SessionExecuteMetaModifiers,
+    tool?: Tool,
+    options?: ToolRouterSessionExecuteOptions
   ): Promise<ToolExecuteResponse> {
-    const executeMetaParams = ToolExecuteMetaParamsSchema.safeParse(body);
-    if (!executeMetaParams.success) {
-      throw new ValidationError('Invalid tool execute meta parameters', {
-        cause: executeMetaParams.error,
+    const executeParams = ToolExecuteMetaParamsSchema.safeParse(body);
+    if (!executeParams.success) {
+      throw new ValidationError('Invalid tool execute session parameters', {
+        cause: executeParams.error,
       });
     }
 
     // Apply beforeExecute modifier if provided
     let modifiedParams = body.arguments ?? {};
+    const toolkitSlug = tool?.toolkit?.slug ?? 'composio';
     if (modifiers?.beforeExecute) {
       modifiedParams = await modifiers.beforeExecute({
         toolSlug,
-        toolkitSlug: 'composio',
+        toolkitSlug,
         sessionId: body.sessionId,
         params: modifiedParams,
       });
     }
 
-    // Execute the meta tool
-    const response = await this.client.toolRouter.session.executeMeta(body.sessionId, {
-      // assert this because backend might keep adding more tool slugs
-      slug: toolSlug as SessionExecuteMetaParams['slug'],
+    const executePayload: SessionExecuteParams = {
+      tool_slug: toolSlug,
       arguments: modifiedParams,
-    });
+      // Provider-wrapped session tools are agentic calls, so they opt into
+      // direct tool offload when the backend session workbench allows it.
+      enable_auto_workbench_offload: true,
+    };
+    if (options?.experimental) {
+      executePayload.experimental = options.experimental;
+    }
+
+    const response = await this.client.toolRouter.session.execute(body.sessionId, executePayload);
 
     // Prepare the result
     let result: ToolExecuteResponse = {
@@ -995,7 +1079,7 @@ export class Tools<
     if (modifiers?.afterExecute) {
       result = await modifiers.afterExecute({
         toolSlug,
-        toolkitSlug: 'composio',
+        toolkitSlug,
         sessionId: body.sessionId,
         result,
       });

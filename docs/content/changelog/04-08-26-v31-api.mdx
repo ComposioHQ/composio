@@ -1,0 +1,53 @@
+---
+title: "Introducing API v3.1 - Latest Tool Versions by Default"
+description: "API v3.1 endpoints now default to the latest toolkit version for tool-related endpoints instead of the legacy pinned version."
+date: "2026-04-08"
+---
+
+We're rolling out API v3.1 endpoints that change how tool versions are resolved. The key difference: **tool-related endpoints now default to the latest toolkit version** instead of the legacy pinned version (`00000000_00`).
+
+### What Changed
+
+In API v3 (`/api/v3/tools/*`), tool-related endpoints default the version parameter to `00000000_00` (the initial pinned version). This means callers must explicitly pass `version: "latest"` (or `toolkit_versions: "latest"` for `GET /tools`) to get the most recent tool definitions.
+
+In API v3.1 (`/api/v3.1/tools/*`), the default is flipped: **tool-related endpoints default to the latest toolkit version**. If you're already passing `version: "latest"` in your requests, switching to v3.1 changes nothing for you. If you were relying on the `00000000_00` default, you'll now get the latest version unless you explicitly pin.
+
+**Affected tool endpoints (those with a version parameter):**
+
+| Endpoint | Version Parameter | v3 Default | v3.1 Default |
+|----------|------------------|------------|--------------|
+| `GET /tools` | `toolkit_versions` (query) | `00000000_00` | `latest` |
+| `GET /tools/{tool_slug}` | `version` (query) | `00000000_00` | `latest` |
+| `POST /tools/execute/{tool_slug}` | `version` (body) | `00000000_00` | `latest` |
+| `POST /tools/execute/{tool_slug}/input` | `version` (body) | `00000000_00` | `latest` |
+| `POST /tools/scopes/required` | `version` (body) | `00000000_00` | `latest` |
+
+### Triggers Are Unchanged
+
+Trigger endpoints already default the `version` parameter to `latest` in both v3 and v3.1, so there is **no behavior change** for triggers. If you're using triggers, switching to v3.1 requires no changes.
+
+### All Other Endpoints Are Unchanged
+
+Every non-tool endpoint (`/auth_configs`, `/connected_accounts`, `/triggers`, `/toolkits`, etc.) behaves identically between v3 and v3.1. They are served at both `/api/v3/` and `/api/v3.1/` paths with the same request and response contracts.
+
+### Migration Guide
+
+**If you're using the Composio SDK:** No action needed. The SDK will adopt v3.1 endpoints in an upcoming release.
+
+**If you're calling the API directly:**
+
+1. Replace `/api/v3/` with `/api/v3.1/` in your tool endpoint URLs
+2. If you depend on a specific pinned version, pass it explicitly — `version=00000000_00` for most endpoints, or `toolkit_versions=00000000_00` for `GET /tools` (see table above)
+3. If you were already passing `version: "latest"` (or `toolkit_versions: "latest"`), you can drop the parameter entirely on v3.1
+
+**Before (v3):**
+```bash
+curl "https://backend.composio.dev/api/v3/tools/GMAIL_SEND_EMAIL?version=latest" \
+  -H "x-api-key: YOUR_KEY"
+```
+
+**After (v3.1):**
+```bash
+curl "https://backend.composio.dev/api/v3.1/tools/GMAIL_SEND_EMAIL" \
+  -H "x-api-key: YOUR_KEY"
+```

@@ -1,5 +1,58 @@
 # @composio/google
 
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [84a3a07]
+- Updated dependencies [c358ffa]
+  - @composio/core@0.9.1
+
+## 0.9.0
+
+### Minor Changes
+
+- Bumped to align with `@composio/core@0.9.0` for the Tool Router release train. No public-API change in this provider package.
+
+### Patch Changes
+
+- Updated dependencies [c9b6525]
+- Updated dependencies [cc673b6]
+- Updated dependencies [9f14971]
+- Updated dependencies [81f8027]
+- Updated dependencies [711a703]
+- Updated dependencies [bccd32b]
+- Updated dependencies [bccd32b]
+- Updated dependencies [07c9bab]
+- Updated dependencies [3ece424]
+  - @composio/core@0.9.0
+
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [6b986cd]
+- Updated dependencies [1c3276b]
+  - @composio/core@0.8.1
+
+## 0.8.0
+
+### Minor Changes
+
+- Bumped to align with `@composio/core@0.8.0` for the file-upload allowlist release train. No public-API change in this package.
+
+### Patch Changes
+
+- Updated dependencies [ebc9778]
+  - @composio/core@0.8.0
+
+## 0.6.11
+
+### Patch Changes
+
+- Updated dependencies [27ed0c9]
+  - @composio/core@0.6.11
+
 ## 0.6.10
 
 ### Patch Changes

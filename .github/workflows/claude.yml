@@ -35,7 +35,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_bots: "devin-ai-integration[bot]"
+          allowed_bots: "devin-ai-integration[bot],decimal-pr-bot[bot],github-actions[bot],dependabot[bot],zen-agent"
 
           # Optional: Custom settings and environment variables for Claude
           # settings: |

@@ -19,8 +19,9 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
+import type { CustomTool, CustomToolkit } from './types/customTool.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
-
+import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
   TProvider extends BaseComposioProvider<unknown, unknown, unknown> = OpenAIProvider,
 > = {
@@ -41,11 +42,51 @@ export type ComposioConfig<
    */
   allowTracking?: boolean;
   /**
-   * Whether to automatically upload and download files during tool execution.
-   * @example true, false
+   * Opt in to automatic file upload and download during tool execution (reads local paths
+   * and fetches URLs marked as file-uploadable in tool schemas). Disabled by default.
+   * @default false
+   */
+  dangerouslyAllowAutoUploadDownloadFiles?: boolean;
+  /**
+   * When true, local file paths for auto-upload and `files.upload` are checked against
+   * a built-in denylist of sensitive path segments (e.g. `.ssh`, `.aws`) and
+   * credential-like file names (e.g. `.env`, default SSH private key names). URLs and
+   * {@link File} objects are not path-checked.
    * @default true
    */
-  autoUploadDownloadFiles?: boolean;
+  sensitiveFileUploadProtection?: boolean;
+  /**
+   * Extra path components (a single directory or file name) to treat as sensitive when
+   * they appear anywhere in the resolved path. Merged with the built-in list.
+   */
+  fileUploadPathDenySegments?: string[];
+  /**
+   * Allowlist of directories from which the SDK is allowed to read local files
+   * during **automatic** file upload (when
+   * `dangerouslyAllowAutoUploadDownloadFiles: true`). Manual
+   * `composio.files.upload()` calls are NOT subject to this allowlist.
+   *
+   * - `undefined` (default) → `[<home>/.composio/temp]`.
+   * - `false` → reject every local path during auto-upload. URLs
+   *   (`http(s)://...`) and `File`/`Blob` objects continue to work.
+   * - `string[]` (non-empty) → use as the allowlist. A file is accepted iff
+   *   its symlink-resolved absolute path is inside one of these directories
+   *   on a path-component boundary (so `/tmp/foo` allows `/tmp/foo/bar` but
+   *   NOT `/tmp/foo-bar`).
+   * - `[]` → behaves like `false` (kept as an alias; prefer `false` for
+   *   readability).
+   * - Providing any value **replaces** the default. Include `~/.composio/temp`
+   *   in your list if you want the default staging dir to keep working.
+   * - On Windows, entries are compared case-insensitively.
+   */
+  fileUploadDirs?: string[] | false;
+  /**
+   * Directory where files downloaded during tool execution (and
+   * `composio.files.download()`) are written. Defaults to
+   * `<home>/.composio/files`. Path is expanded at SDK-init time; relative
+   * paths resolve against `process.cwd()`.
+   */
+  fileDownloadDir?: string;
   /**
    * The tool provider to use for this Composio instance.
    * @example new OpenAIProvider()
@@ -162,6 +203,8 @@ export class Composio<
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
   /**
    * Creates a new tool router session for a user.
+   * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+   * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterConfig} The config for the tool router session
@@ -194,7 +237,10 @@ export class Composio<
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  use: (id: string) => Promise<Session<unknown, unknown, TProvider>>;
+  use: (
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
+  ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -251,8 +297,13 @@ export class Composio<
       apiKey: apiKeyParsed,
       toolkitVersions: getToolkitVersionsFromEnv(config?.toolkitVersions),
       allowTracking: config?.allowTracking ?? CONFIG_DEFAULTS.allowTracking,
-      autoUploadDownloadFiles:
-        config?.autoUploadDownloadFiles ?? CONFIG_DEFAULTS.autoUploadDownloadFiles,
+      dangerouslyAllowAutoUploadDownloadFiles:
+        config?.dangerouslyAllowAutoUploadDownloadFiles ??
+        CONFIG_DEFAULTS.dangerouslyAllowAutoUploadDownloadFiles,
+      sensitiveFileUploadProtection: config?.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: config?.fileUploadPathDenySegments,
+      fileUploadDirs: expandHomeAndResolveMany(config?.fileUploadDirs),
+      fileDownloadDir: expandHomeAndResolve(config?.fileDownloadDir),
       provider: config?.provider ?? this.provider,
     };
 
@@ -274,7 +325,11 @@ export class Composio<
     this.toolkits = new Toolkits(this.client);
     this.triggers = new Triggers(this.client, this.config);
     this.authConfigs = new AuthConfigs(this.client);
-    this.files = new Files(this.client);
+    this.files = new Files(this.client, {
+      sensitiveFileUploadProtection: this.config.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: this.config.fileUploadPathDenySegments,
+      fileDownloadDir: this.config.fileDownloadDir,
+    });
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);
 
@@ -325,11 +380,20 @@ export class Composio<
   }
 
   /**
-   * Get the configuration SDK is initialized with
-   * @returns {ComposioConfig<TProvider>} The configuration SDK is initialized with
+   * Get the configuration SDK is initialized with.
+   *
+   * Returns a frozen shallow clone — the SDK has already snapshotted
+   * configuration values such as `dangerouslyAllowAutoUploadDownloadFiles`,
+   * `fileUploadDirs`, and `fileDownloadDir` into its internal models, so
+   * mutating the live config object would silently no-op. Freezing makes
+   * that contract visible at the call site instead of letting the mutation
+   * appear successful.
+   *
+   * @returns {Readonly<ComposioConfig<TProvider>>} The frozen configuration
+   *   the SDK is initialized with.
    */
-  getConfig(): ComposioConfig<TProvider> {
-    return this.config;
+  getConfig(): Readonly<ComposioConfig<TProvider>> {
+    return Object.freeze({ ...this.config });
   }
 
   /**

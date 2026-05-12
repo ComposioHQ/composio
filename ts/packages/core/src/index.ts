@@ -4,7 +4,11 @@ export { OpenAIProvider } from './provider/OpenAIProvider';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
-export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
+export {
+  dereferenceJsonSchema,
+  jsonSchemaToZodSchema,
+  removeNonRequiredProperties,
+} from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';

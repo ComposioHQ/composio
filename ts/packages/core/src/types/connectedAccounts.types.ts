@@ -12,6 +12,7 @@ export const ConnectedAccountStatuses = {
   FAILED: 'FAILED',
   EXPIRED: 'EXPIRED',
   INACTIVE: 'INACTIVE',
+  REVOKED: 'REVOKED',
 } as const;
 export const ConnectedAccountStatusSchema = z.enum([
   ConnectedAccountStatuses.INITIALIZING,
@@ -20,10 +21,89 @@ export const ConnectedAccountStatusSchema = z.enum([
   ConnectedAccountStatuses.FAILED,
   ConnectedAccountStatuses.EXPIRED,
   ConnectedAccountStatuses.INACTIVE,
+  ConnectedAccountStatuses.REVOKED,
 ]);
 export type ConnectedAccountStatus =
   (typeof ConnectedAccountStatuses)[keyof typeof ConnectedAccountStatuses];
 export type ConnectedAccountStatusEnum = z.infer<typeof ConnectedAccountStatusSchema>;
+
+/**
+ * Sharing model for a connected account.
+ *
+ * - `PRIVATE` (default): only the owning `userId` can use the connection.
+ * - `SHARED`: can be used by other `userId`s, but only when the connection
+ *   is explicitly pinned in a tool-router session's config and only when
+ *   the requesting `userId` passes the connection's ACL (see
+ *   `allowAllUsers` / `allowedUserIds` / `notAllowedUserIds`).
+ */
+export const ConnectedAccountTypes = {
+  PRIVATE: 'PRIVATE',
+  SHARED: 'SHARED',
+} as const;
+export const ConnectedAccountTypeSchema = z.enum([
+  ConnectedAccountTypes.PRIVATE,
+  ConnectedAccountTypes.SHARED,
+]);
+export type ConnectedAccountType =
+  (typeof ConnectedAccountTypes)[keyof typeof ConnectedAccountTypes];
+
+/**
+ * Per-user access control for a SHARED connected account. Ignored for
+ * PRIVATE.
+ *
+ * Pass `aclConfigForShared` on create / PATCH to grant access; omit it
+ * to leave the ACL unchanged (on PATCH) or to keep the default
+ * deny-by-default state (on create). On responses, the field is
+ * `undefined` when the caller isn't authorised to see the ACL —
+ * distinguish that from an empty/default state explicitly.
+ *
+ * Resolution rule (deny wins):
+ *   1. requesting `userId` in `notAllowedUserIds` → DENY
+ *   2. `allowAllUsers === true`                   → ALLOW
+ *   3. requesting `userId` in `allowedUserIds`    → ALLOW
+ *   4. otherwise                                  → DENY  (deny-by-default)
+ *
+ * Default state (block omitted or `{}`) means only the connection's
+ * creator can use it. The creator must grant access explicitly.
+ *
+ * Limits: each list accepts up to 1000 entries; each `userId` is
+ * 1..256 characters.
+ */
+const ACL_LIST_MAX_LENGTH = 1000;
+const ACL_USER_ID_MAX_LENGTH = 256;
+const aclUserIdString = z.string().min(1).max(ACL_USER_ID_MAX_LENGTH);
+
+export const ConnectedAccountAclConfigSchema = z.object({
+  allowAllUsers: z
+    .boolean()
+    .optional()
+    .describe('When true, any `userId` may use this SHARED connection (subject to the deny list). Default false.'),
+  allowedUserIds: z
+    .array(aclUserIdString)
+    .max(ACL_LIST_MAX_LENGTH)
+    .optional()
+    .describe('Explicit list of `userId` strings allowed to use this SHARED connection. Default [].'),
+  notAllowedUserIds: z
+    .array(aclUserIdString)
+    .max(ACL_LIST_MAX_LENGTH)
+    .optional()
+    .describe('Explicit list of `userId` strings denied access. Wins over allow on conflict. Default [].'),
+});
+export type ConnectedAccountAclConfig = z.infer<typeof ConnectedAccountAclConfigSchema>;
+
+/**
+ * Resolved ACL as it appears on responses. All three fields are populated
+ * when the field is visible; the field itself is `undefined` for callers
+ * not authorised to see it.
+ */
+export const ConnectedAccountAclConfigResponseSchema = z.object({
+  allowAllUsers: z.boolean(),
+  allowedUserIds: z.array(z.string()),
+  notAllowedUserIds: z.array(z.string()),
+});
+export type ConnectedAccountAclConfigResponse = z.infer<
+  typeof ConnectedAccountAclConfigResponseSchema
+>;
 
 export const CreateConnectedAccountParamsSchema = z.object({
   authConfig: z.object({
@@ -106,6 +186,8 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   isDisabled: boolean;
   createdAt: string;
   updatedAt: string;
+  accountType?: ConnectedAccountType;
+  aclConfigForShared?: ConnectedAccountAclConfigResponse;
 }> = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
@@ -129,6 +211,13 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   isDisabled: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  accountType: ConnectedAccountTypeSchema.optional(),
+  // `aclConfigForShared` is only present on the response when the caller
+  // is authorised to see the ACL — otherwise the block is absent and the
+  // field is `undefined`. Callers can distinguish "I can't see the ACL"
+  // from "ACL is the default deny-by-default state" by checking for the
+  // presence of the field.
+  aclConfigForShared: ConnectedAccountAclConfigResponseSchema.optional(),
 });
 
 export type ConnectedAccountRetrieveResponse = z.infer<
@@ -195,6 +284,33 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
    * Human-readable alias for the connected account. Must be unique per userId and toolkit within the project.
    */
   alias: z.string().optional(),
+  /**
+   * Whether to allow multiple connected accounts for the same user and auth config.
+   * When `false` (default), `link()` throws `ComposioMultipleConnectedAccountsError`
+   * if the user already has an `ACTIVE` connection on this auth config — matching
+   * the guard on `initiate()`. Pair with `alias` and a session-level
+   * `multiAccount` config to disambiguate at execution time.
+   */
+  allowMultiple: z.boolean().optional(),
+  /**
+   * Sharing model for the new connection. `PRIVATE` (default) is usable only
+   * by the owning `userId`. `SHARED` can be used by other `userId`s — but
+   * only when the connection is explicitly pinned in a tool-router session's
+   * config and only when the requesting `userId` passes the connection's
+   * ACL.
+   */
+  accountType: ConnectedAccountTypeSchema.optional(),
+  /**
+   * Per-user ACL for SHARED connections. Only valid when
+   * `accountType === 'SHARED'`; raises `ComposioAclOnlyForSharedError`
+   * on a PRIVATE connection.
+   *
+   * Omit the block (or pass `{}`) to keep the deny-by-default state: only the
+   * creator can use the connection. Grant access by setting
+   * `allowAllUsers: true` or listing user IDs in `allowedUserIds`.
+   * `notAllowedUserIds` always wins over allow.
+   */
+  aclConfigForShared: ConnectedAccountAclConfigSchema.optional(),
 });
 export type CreateConnectedAccountLinkOptions = z.infer<
   typeof CreateConnectedAccountLinkOptionsSchema
@@ -214,25 +330,36 @@ export const ConnectedAccountRefreshOptionsSchema = z.object({
 export type ConnectedAccountRefreshOptions = z.infer<typeof ConnectedAccountRefreshOptionsSchema>;
 
 // Use the Stainless-generated type as the source of truth for update params.
-export type { ConnectedAccountPatchParams as UpdateConnectedAccountParams } from '@composio/client/resources/connected-accounts';
+export type { ConnectedAccountUpdateStatusParams as UpdateConnectedAccountParams } from '@composio/client/resources/connected-accounts';
 
 export const UpdateConnectedAccountParamsSchema = z.object({
-  alias: z.string().optional(),
-  connection: z
-    .object({
-      state: z.object({
-        authScheme: z.enum([
-          'BEARER_TOKEN',
-          'API_KEY',
-          'BASIC',
-          'BASIC_WITH_JWT',
-          'GOOGLE_SERVICE_ACCOUNT',
-          'SERVICE_ACCOUNT',
-        ]),
-        val: z.record(z.unknown()),
-      }),
-    })
-    .optional(),
+  enabled: z.boolean(),
 });
 
-// UpdateConnectedAccountResponse is now ConnectedAccountPatchResponse from @composio/client
+/**
+ * Params for `composio.connectedAccounts.updateAcl()`. Mirrors the inner
+ * shape of the wire's `acl_config_for_shared` block — the SDK adds the
+ * outer nesting at the boundary, so callers pass the three fields flat.
+ *
+ * PATCH-style semantics — omit a field to leave it unchanged; pass an
+ * empty array to clear an allow/deny list. Raises
+ * `ComposioAclOnlyForSharedError` on a PRIVATE connection.
+ *
+ * Each field is optional, but at least one must be provided — passing an
+ * empty object is rejected as a no-op.
+ */
+// NOTE: `UpdateConnectedAccountAclParamsSchema` is a ZodEffects (because of
+// the `.refine` below) — it does not expose `.shape`. If you need to reuse
+// individual ACL fields elsewhere, pull them from
+// `ConnectedAccountAclConfigSchema.shape` (the unrefined base) instead.
+export const UpdateConnectedAccountAclParamsSchema = ConnectedAccountAclConfigSchema.refine(
+  acl =>
+    acl.allowAllUsers !== undefined ||
+    acl.allowedUserIds !== undefined ||
+    acl.notAllowedUserIds !== undefined,
+  {
+    message:
+      'At least one of allowAllUsers, allowedUserIds, or notAllowedUserIds must be provided',
+  }
+);
+export type UpdateConnectedAccountAclParams = z.infer<typeof UpdateConnectedAccountAclParamsSchema>;

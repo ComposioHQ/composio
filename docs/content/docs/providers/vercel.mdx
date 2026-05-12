@@ -56,3 +56,33 @@ console.log(text);
 ```
 </Step>
 </Steps>
+
+## Multi-turn chat
+
+For multi-turn apps, create the session once and reuse it across requests with `composio.use()`:
+
+```typescript
+// @noErrors
+import { anthropic } from "@ai-sdk/anthropic";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import { generateText, stepCountIs } from "ai";
+
+const composio = new Composio({ provider: new VercelProvider() });
+
+// First request — create and store the session ID
+const session = await composio.create("user_123");
+const sessionId = session.sessionId;
+// store sessionId in your database or chat state
+
+// Subsequent requests — reuse the session
+const session = await composio.use(sessionId);
+const tools = await session.tools();
+
+const { text } = await generateText({
+  model: anthropic("claude-opus-4-6"),
+  tools,
+  prompt: "What emails did I get today?",
+  stopWhen: stepCountIs(10),
+});
+```

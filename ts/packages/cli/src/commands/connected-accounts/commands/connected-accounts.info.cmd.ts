@@ -4,7 +4,6 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
-import { redact } from 'src/ui/redact';
 import { formatConnectedAccountInfo } from '../format';
 
 const id = Args.text({ name: 'id' }).pipe(
@@ -59,13 +58,6 @@ export const connectedAccountsCmd$Info = Command.make('info', { id }, ({ id }) =
     const item = itemOpt.value;
 
     yield* ui.note(formatConnectedAccountInfo(item), `Connected Account: ${item.toolkit.slug}`);
-
-    const redactedId = redact({ value: item.id, prefix: 'con_' });
-
-    // Next step hint
-    yield* ui.log.step(
-      `To delete this connected account:\n> composio dev connected-accounts delete "${redactedId}"`
-    );
 
     yield* ui.output(JSON.stringify(item, null, 2));
   })

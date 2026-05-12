@@ -246,11 +246,21 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
 </Callout>
 
+<Callout type="info">
+**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
+</Callout>
+
 ### Proxy Execute
 
 You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.
 
-The `endpoint` can be a relative path or absolute URL. Composio uses the `connected_account_id` to determine the toolkit and resolve relative paths against the appropriate base URL.
+Proxy execute requires auth context. Pass `connected_account_id` / `connectedAccountId`, or provide `custom_connection_data` if you're supplying auth manually.
+
+The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
+
+<Callout type="warn">
+Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
+</Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -302,15 +312,20 @@ Need an API that isn't supported by any Composio toolkit, or want to extend an e
 
 ## Automatic File Handling
 
-Composio handles file operations automatically. Pass file paths to tools that need them, and get local file paths back from tools that return files.
+Automatic file handling is **off by default**. Enable it with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Once enabled, pass file paths to tools that accept files and get local paths back from tools that return files.
 
 ### File Upload
 
-Pass local file paths, URLs, or File objects to tools that accept files:
+Pass local file paths, URLs, or File objects to tools that accept files. The SDK uploads the file to Composio's storage and converts it to the format the tool expects — you don't need to construct the file metadata object (`s3key`, `name`, `mimetype`) yourself.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+)
+
 # Upload a local file to Google Drive
 result = composio.tools.execute(
     slug="GOOGLEDRIVE_UPLOAD_FILE",
@@ -323,9 +338,13 @@ print(result)  # Print Google Drive file details
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 import path from 'path';
-const composio = new Composio({ apiKey: 'your_api_key' });
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+});
 // ---cut---
 // Upload a local file to Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
@@ -340,6 +359,41 @@ console.log(result.data);  // Contains Google Drive file details
   </Tab>
 </Tabs>
 
+This also works with public URLs. For example, to send a Gmail email with an attachment from a URL:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+result = composio.tools.execute(
+    slug="GMAIL_SEND_EMAIL",
+    user_id="user-1235***",
+    arguments={
+        "recipient_email": "recipient@example.com",
+        "subject": "Report attached",
+        "body": "Please find the report attached.",
+        "attachment": "https://example.com/report.pdf",
+    },
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
+  userId: 'user-1235***',
+  arguments: {
+    recipient_email: 'recipient@example.com',
+    subject: 'Report attached',
+    body: 'Please find the report attached.',
+    attachment: 'https://example.com/report.pdf',
+  },
+});
+```
+  </Tab>
+</Tabs>
+
 ### File Download
 
 When tools return files, Composio downloads them to the local directory and provides the file path in the response:
@@ -349,7 +403,8 @@ When tools return files, Composio downloads them to the local directory and prov
 ```python
 composio = Composio(
     api_key="your_composio_key",
-    file_download_dir="./downloads"  # Optional: Specify download directory
+    dangerously_allow_auto_upload_download_files=True,
+    file_download_dir="./downloads",  # Optional: Specify download directory
 )
 
 result = composio.tools.execute(
@@ -364,8 +419,12 @@ print(result)
   </Tab>
   <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+});
 // ---cut---
 // Download a file from Google Drive
 const result = await composio.tools.execute('GOOGLEDRIVE_DOWNLOAD_FILE', {
@@ -381,9 +440,134 @@ console.log(result);
   </Tab>
 </Tabs>
 
-### Disabling Auto File Handling
+## Security for local file paths
 
-You can disable automatic file handling when initializing the TypeScript SDK. When disabled, handle file uploads and downloads manually using `files.upload` and `files.download`:
+Automatic upload reads local paths (or uses them in `files.upload`) and sends file content to Composio storage. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), the SDK checks resolved paths against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through this check.
+
+<Callout type="warn">
+Disabling protection or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer keeping protection on, adding [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and using a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing or strict allowlists. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
+</Callout>
+
+**Constructor options (defaults protect sensitive locations):**
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+  <Tab value="TypeScript">
+```typescript
+// @errors: 2353
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY!,
+  // default true — block paths under built-in segments (e.g. .ssh, .aws) and risky basenames
+  sensitiveFileUploadProtection: true,
+  // optional: extra path *components* anywhere in the resolved path, merged with the built-in list
+  fileUploadPathDenySegments: ['internal-only-secrets'],
+});
+```
+  </Tab>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    sensitive_file_upload_protection=True,
+    file_upload_path_deny_segments=("internal-only-secrets",),
+)
+```
+  </Tab>
+</Tabs>
+
+**Per-execution upload hook** (run after the path is chosen but before read/upload; return a new path, `false` to abort, or throw). TypeScript passes `beforeFileUpload` on the **third** argument to `tools.execute`. In Python, add **`@before_file_upload`** functions to the `modifiers` list for `get` / `execute` (see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python)).
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio, type beforeFileUploadModifier } from '@composio/core';
+import path from 'node:path';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ctx.source is 'path' | 'url' | 'file' — useful if you only want to audit
+// local paths and let URLs / File objects pass through unchanged.
+const beforeFileUpload: beforeFileUploadModifier = async ctx => {
+  if (ctx.source !== 'path') return ctx.path;
+  // ...audit ctx.path...
+  return ctx.path;
+};
+// ---cut---
+await composio.tools.execute(
+  'GOOGLEDRIVE_UPLOAD_FILE',
+  {
+    userId: 'user-4235***',
+    arguments: { file_to_upload: path.join(__dirname, 'document.pdf') },
+    dangerouslySkipVersionCheck: true,
+  },
+  { beforeFileUpload }
+);
+```
+  </Tab>
+  <Tab value="Python">
+```python
+import os
+from composio import Composio, before_file_upload
+
+# New form: take a single ``context`` arg; ``context["source"]`` is "path"
+# or "url". The legacy ``(path, tool, toolkit)`` 3-arg form is still accepted.
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(ctx) -> str | bool:
+    if ctx["source"] != "path":
+        return ctx["path"]
+    # ...audit ctx["path"]...
+    return ctx["path"]
+
+composio = Composio()
+
+composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    user_id="user-1235***",
+    modifiers=[audit_path],
+)
+```
+  </Tab>
+</Tabs>
+
+**Errors:** `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked; `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` (or equivalent abort).
+
+### Automatic file handling (off by default)
+
+Both SDKs ship with automatic file handling **off**. Opt in with `dangerouslyAllowAutoUploadDownloadFiles: true` (TypeScript) or `dangerously_allow_auto_upload_download_files=True` (Python). Even with the flag enabled, **local paths must resolve inside an allowlisted directory** — see the matrix in the [legacy auto-upload removal changelog](/docs/changelog/2026/04/24) for the full `fileUploadDirs` / `file_upload_dirs` semantics.
+
+When auto-handling is off, handle the staging yourself.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+The Python SDK does not expose a top-level manual-staging API. Either:
+
+1. Enable auto-handling and configure `file_upload_dirs` to cover the directories your code reads from:
+
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your_composio_key",
+    dangerously_allow_auto_upload_download_files=True,
+    file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
+)
+```
+
+2. Or keep auto-handling off and pass an already-staged `{ "name", "mimetype", "s3key" }` dict directly into `tools.execute`. Pre-stage your files via your own pipeline (or an upstream tool) and inject the descriptor:
+
+```python
+result = composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    user_id="user-1",
+    arguments={"file_to_upload": prestaged_descriptor},
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+With `dangerouslyAllowAutoUploadDownloadFiles: false` (the default), call `composio.files.upload(...)` to stage paths/URLs explicitly. That call bypasses `fileUploadDirs` by design — the caller controls the path:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -391,16 +575,24 @@ import path from 'path';
 // ---cut---
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  autoUploadDownloadFiles: false
+  // Default: dangerouslyAllowAutoUploadDownloadFiles is false; set true only to opt in
 });
 
-// Now you need to handle files manually using composio.files API
+// Stage manually using composio.files API
 const fileData = await composio.files.upload({
   file: path.join(__dirname, 'document.pdf'),
   toolSlug: 'GOOGLEDRIVE_UPLOAD_FILE',
   toolkitSlug: 'googledrive'
 });
+
+// Then pass the { name, mimetype, s3key } descriptor into tools.execute
+await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
+  userId: 'user-1',
+  arguments: { file_to_upload: fileData },
+});
 ```
+  </Tab>
+</Tabs>
 
 ## What to read next
 

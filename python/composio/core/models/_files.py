@@ -18,14 +18,22 @@ from composio.client.types import Tool
 from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
+    FileUploadAbortedError,
     ResponseTooLargeError,
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
+from composio.utils.sensitive_file_upload_paths import (
+    assert_safe_local_file_upload_path,
+)
+from composio.utils.upload_dir_allowlist import (
+    assert_path_inside_upload_dirs,
+)
 from composio.utils.logging import WithLogger
 
 if t.TYPE_CHECKING:
     from .tools import ToolExecutionResponse
+    from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _FILE_UPLOAD = "/api/v3/files/upload/request"
@@ -82,9 +90,12 @@ except OSError as e:
     ) from e
 
 
-LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "outputs"
+LOCAL_OUTPUT_FILE_DIRECTORY = LOCAL_CACHE_DIRECTORY / "files"
 """
-Local output file directory name for composio tools
+Default local directory into which files downloaded during tool execution are
+written. Previously ``<cache>/outputs``; now ``<cache>/files`` for parity with
+the TypeScript SDK. Override by passing ``file_download_dir=...`` to Composio,
+or by setting ``outdir`` on ``FileHelper`` directly.
 """
 
 
@@ -102,7 +113,11 @@ def get_md5(file: Path) -> str:
     Returns:
         Hexadecimal MD5 hash string
     """
-    obj = hashlib.md5()
+    # `usedforsecurity=False` lets this run on FIPS-mode systems, where
+    # `hashlib.md5()` without the flag raises `ValueError: [digital envelope
+    # routines] unsupported`. We're hashing for integrity / deduplication,
+    # not security — the API just needs the digest for upload verification.
+    obj = hashlib.md5(usedforsecurity=False)
     with file.open("rb") as fp:
         while True:
             line = fp.read(_DEFAULT_CHUNK_SIZE)
@@ -341,7 +356,7 @@ def _upload_bytes_to_s3(
     toolkit: str,
 ) -> str:
     """Upload bytes content to S3 and return the S3 key."""
-    md5_hash = hashlib.md5(content).hexdigest()
+    md5_hash = hashlib.md5(content, usedforsecurity=False).hexdigest()
 
     s3meta = client.post(
         path=_FILE_UPLOAD,
@@ -416,6 +431,11 @@ class FileUploadable(BaseModel):
         file: t.Union[str, Path],
         tool: str,
         toolkit: str,
+        *,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_allowlist: t.Optional[t.Sequence[Path]] = None,
+        before_file_upload: t.Optional["BeforeFileUploadContextCallable"] = None,
     ) -> te.Self:
         """Create a FileUploadable from a local file path or public URL.
 
@@ -427,14 +447,66 @@ class FileUploadable(BaseModel):
         :param file: Local file path or public URL
         :param tool: The tool slug
         :param toolkit: The toolkit slug
+        :param sensitive_file_upload_protection: When True, block paths on the built-in denylist.
+        :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in list.
+        :param file_upload_allowlist: When provided (not None), local paths must
+            resolve inside one of these directories on a component boundary.
+            Pass ``None`` to skip the check (e.g. manual upload APIs). URLs are
+            never checked against the allowlist. An empty sequence means
+            "no paths are allowed" (fail-closed).
+        :param before_file_upload: Optional context-form hook produced by
+            :func:`composio.core.models._modifiers.merge_before_file_upload`.
+            Receives ``{"path", "source", "tool", "toolkit"}`` where ``source``
+            is ``"url"`` for ``http(s)://...`` inputs and ``"path"`` for local
+            filesystem paths. Return a new string to substitute, or ``False``
+            to abort.
         :return: FileUploadable instance with S3 key
         """
-        # Check if it's a URL
-        if isinstance(file, str) and _is_url(file):
-            return cls.from_url(client=client, url=file, tool=tool, toolkit=toolkit)
+        file_str = str(file) if isinstance(file, Path) else file
+        path_in = file_str
+        source: t.Literal["url", "path"] = (
+            "url" if isinstance(file_str, str) and _is_url(file_str) else "path"
+        )
+
+        if before_file_upload is not None:
+            out = before_file_upload(
+                {
+                    "path": path_in,
+                    "source": source,
+                    "tool": tool,
+                    "toolkit": toolkit,
+                }
+            )
+            if out is False:
+                raise FileUploadAbortedError(
+                    "File upload was aborted because before_file_upload returned False."
+                )
+            if isinstance(out, str):
+                path_in = out
+
+        # Re-decide routing on the post-hook value: a URL-source hook may return
+        # a local path (and vice versa). Re-checking with `_is_url` keeps the
+        # URL fetch path and the local-file path properly separated, so a hook
+        # cannot, for example, smuggle `/etc/passwd` past the URL branch's
+        # missing allowlist/denylist by rewriting the URL into a path.
+        if isinstance(path_in, str) and _is_url(path_in):
+            return cls.from_url(client=client, url=path_in, tool=tool, toolkit=toolkit)
+
+        # Allowlist check runs BEFORE the denylist / existence checks when enabled,
+        # so the "configure file_upload_dirs" hint fires first for the common case
+        # (user has auto-upload on but hasn't configured dirs). Caller passes
+        # ``None`` to bypass the allowlist (manual upload APIs).
+        if file_upload_allowlist is not None:
+            assert_path_inside_upload_dirs(path_in, file_upload_allowlist)
+
+        assert_safe_local_file_upload_path(
+            path_in,
+            enabled=sensitive_file_upload_protection,
+            additional_deny_segments=file_upload_path_deny_segments,
+        )
 
         # Handle as local file path
-        file = Path(file)
+        file = Path(path_in)
         if not file.exists():
             raise SDKFileNotFoundError(
                 f"File not found: {file}. Please provide a valid file path."
@@ -475,7 +547,18 @@ class FileDownloadable(BaseModel):
     s3url: str = Field(..., description="URL of the file.")
 
     def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
-        outfile = outdir / self.name
+        # SEC-316: `self.name` comes from the (potentially compromised or
+        # MITM'd) Composio API response. Strip directory components with
+        # `Path(...).name` so traversal sequences like `../../../foo` collapse
+        # to `foo`, then verify the resolved output stays under `outdir` so a
+        # name like `output_evil/foo` (sibling-prefix attack) is also rejected.
+        safe_name = Path(self.name).name
+        outfile = outdir / safe_name
+        if not outfile.resolve().is_relative_to(outdir.resolve()):
+            raise ErrorDownloadingFile(
+                f"Path traversal detected: filename '{self.name}' resolves "
+                "outside the intended output directory."
+            )
         outdir.mkdir(exist_ok=True, parents=True)
         response = requests.get(url=self.s3url, stream=True)
         if response.status_code != 200:
@@ -487,11 +570,39 @@ class FileDownloadable(BaseModel):
         return outfile
 
 
+# Internal alias — ``FileHelper`` receives the already-adapted context-form
+# callable produced by :func:`merge_before_file_upload`.
+from composio.core.models._modifiers import (  # noqa: E402
+    BeforeFileUploadContextCallable as BeforeFileUpload,
+)
+
+
 class FileHelper(WithLogger):
-    def __init__(self, client: HttpClient, outdir: t.Optional[str] = None):
+    def __init__(
+        self,
+        client: HttpClient,
+        outdir: t.Optional[str] = None,
+        *,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_allowlist: t.Optional[t.Sequence[Path]] = None,
+    ) -> None:
+        """
+        :param outdir: Where files downloaded during tool execution are written.
+            Defaults to ``~/.composio/files``.
+        :param file_upload_allowlist: Directories from which local files may be
+            auto-uploaded. ``None`` disables the allowlist check (used when
+            auto-upload is off, or for manual upload APIs). An empty list means
+            "no paths allowed" (fail-closed).
+        """
         super().__init__()
         self._client = client
-        self._outdir = Path(outdir or LOCAL_OUTPUT_FILE_DIRECTORY)
+        self._outdir = Path(outdir) if outdir else LOCAL_OUTPUT_FILE_DIRECTORY
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
+        self._file_upload_allowlist: t.Optional[t.Sequence[Path]] = (
+            list(file_upload_allowlist) if file_upload_allowlist is not None else None
+        )
 
     def _has_file_property(
         self, schema: t.Dict, property_name: str = "file_uploadable"
@@ -620,7 +731,7 @@ class FileHelper(WithLogger):
         - Required notes ("This parameter is required.")
 
         This is separate from file processing and should always run
-        regardless of the auto_upload_download_files setting.
+        regardless of `dangerously_allow_auto_upload_download_files`.
         """
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
@@ -642,7 +753,8 @@ class FileHelper(WithLogger):
         """Process file_uploadable fields in schema.
 
         This method converts file_uploadable fields to path format.
-        Should only be called when auto_upload_download_files is True.
+        Should only be called when the caller opted in via
+        `dangerously_allow_auto_upload_download_files=True`.
         Recursively handles anyOf, oneOf, allOf, nested properties, and array items.
         """
         if "properties" not in schema:
@@ -691,6 +803,8 @@ class FileHelper(WithLogger):
         tool: Tool,
         schema: t.Dict,
         request: t.Dict,
+        *,
+        before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
         if "properties" not in schema:
             return request
@@ -714,6 +828,10 @@ class FileHelper(WithLogger):
                     file=request[_param],
                     tool=tool.slug,
                     toolkit=tool.toolkit.slug,
+                    sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                    file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                    file_upload_allowlist=self._file_upload_allowlist,
+                    before_file_upload=before_file_upload,
                 ).model_dump()
                 continue
 
@@ -731,6 +849,10 @@ class FileHelper(WithLogger):
                         file=request[_param],
                         tool=tool.slug,
                         toolkit=tool.toolkit.slug,
+                        sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                        file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                        file_upload_allowlist=self._file_upload_allowlist,
+                        before_file_upload=before_file_upload,
                     ).model_dump()
                     continue
 
@@ -743,6 +865,7 @@ class FileHelper(WithLogger):
                         schema=uploadable_variant,
                         request=request[_param],
                         tool=tool,
+                        before_file_upload=before_file_upload,
                     )
                     continue
 
@@ -755,6 +878,7 @@ class FileHelper(WithLogger):
                     schema=param_schema,
                     request=request[_param],
                     tool=tool,
+                    before_file_upload=before_file_upload,
                 )
                 continue
 
@@ -777,6 +901,10 @@ class FileHelper(WithLogger):
                                             file=item,
                                             tool=tool.slug,
                                             toolkit=tool.toolkit.slug,
+                                            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+                                            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+                                            file_upload_allowlist=self._file_upload_allowlist,
+                                            before_file_upload=before_file_upload,
                                         ).model_dump()
                                     )
                             elif isinstance(item, dict):
@@ -785,6 +913,7 @@ class FileHelper(WithLogger):
                                         schema=items_schema,
                                         request=item,
                                         tool=tool,
+                                        before_file_upload=before_file_upload,
                                     )
                                 )
                             else:
@@ -795,11 +924,18 @@ class FileHelper(WithLogger):
 
         return request
 
-    def substitute_file_uploads(self, tool: Tool, request: t.Dict) -> t.Dict:
+    def substitute_file_uploads(
+        self,
+        tool: Tool,
+        request: t.Dict,
+        *,
+        before_file_upload: t.Optional[BeforeFileUpload] = None,
+    ) -> t.Dict:
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
             request=request,
+            before_file_upload=before_file_upload,
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:

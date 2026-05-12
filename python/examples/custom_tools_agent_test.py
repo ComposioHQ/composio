@@ -20,7 +20,10 @@ from pydantic import BaseModel, Field
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
-composio = Composio(provider=OpenAIAgentsProvider())
+composio = Composio(
+    base_url=os.environ.get("COMPOSIO_BASE_URL"),
+    provider=OpenAIAgentsProvider(),
+)
 
 # ── 1. Standalone tool — slug/name/description inferred from function ──
 

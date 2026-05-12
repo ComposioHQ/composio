@@ -10,8 +10,17 @@ from __future__ import annotations
 
 import typing as t
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 
-from composio_client import omit
+from composio_client import BadRequestError, Omit, omit
+from composio_client._types import SequenceNotStr
+from composio_client.types.tool_router import session_link_params, session_patch_params
+from composio.client.types import Tool
+from composio_client.types.tool_list_response import (
+    ItemDeprecated,
+    ItemDeprecatedToolkit,
+    ItemToolkit,
+)
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -22,8 +31,10 @@ from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
 
+from composio import exceptions
 from composio.client import HttpClient
 from composio.core.models.connected_accounts import ConnectionRequest
+from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
@@ -31,8 +42,13 @@ from composio.core.models.custom_tool_execution import (
 from composio.core.models.custom_tool_types import (
     CustomToolsMap,
     CustomToolsMapEntry,
+    InlineCustomToolsWirePayload,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+)
+from composio.core.models.inline_custom_tools_payload import (
+    inline_custom_tools_execute_experimental,
+    inline_custom_tools_search_experimental,
 )
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
@@ -47,7 +63,17 @@ if t.TYPE_CHECKING:
     )
 
 COMPOSIO_MULTI_EXECUTE_TOOL = "COMPOSIO_MULTI_EXECUTE_TOOL"
+DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX = (
+    "[Direct tool - call directly, no search needed beforehand.]"
+)
 MAX_PARALLEL_WORKERS = 5
+
+
+@dataclass
+class ToolRouterSessionPreloadConfig:
+    """Preloaded tools configured for a tool router session."""
+
+    tools: t.Union[t.List[str], t.Literal["all"]]
 
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
@@ -76,21 +102,33 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         client: HttpClient,
         provider: t.Optional[BaseProvider[t.Any, t.Any]],
-        auto_upload_download_files: bool,
+        dangerously_allow_auto_upload_download_files: bool,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
         session_id: str,
         mcp: t.Any,
         experimental: "ToolRouterSessionExperimental",
         custom_tools_map: t.Optional[CustomToolsMap] = None,
         user_id: t.Optional[str] = None,
+        preload: t.Optional[ToolRouterSessionPreloadConfig] = None,
+        preloaded_custom_tool_slugs: t.Optional[t.List[str]] = None,
+        inline_custom_tools_payload: t.Optional[InlineCustomToolsWirePayload] = None,
     ) -> None:
         self._client = client
         self._provider = provider
-        self._auto_upload_download_files = auto_upload_download_files
+        self._auto_upload_download_files = dangerously_allow_auto_upload_download_files
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
+        self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
         self.mcp = mcp
         self.experimental = experimental
+        self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         self._custom_tools_map = custom_tools_map
         self._user_id = user_id
+        self._preloaded_custom_tool_slugs = preloaded_custom_tool_slugs or []
+        self._inline_custom_tools_payload = inline_custom_tools_payload
 
         # Create singleton session context if custom tools are bound
         self._session_context: t.Optional[SessionContextImpl] = None
@@ -100,6 +138,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 user_id=user_id,
                 session_id=session_id,
                 custom_tools_map=custom_tools_map,
+                inline_custom_tools_payload=inline_custom_tools_payload,
             )
 
     def _has_custom_tools(self) -> bool:
@@ -107,6 +146,18 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         if self._custom_tools_map is None:
             return False
         return len(self._custom_tools_map.by_final_slug) > 0
+
+    def _tool_router_backend_execute(
+        self,
+        tools_model: t.Any,
+        modifiers: t.Optional["Modifiers"] = None,
+    ) -> t.Callable[..., t.Any]:
+        """Backend execute wrapper with this session's file-upload settings."""
+        return tools_model._wrap_execute_tool_for_tool_router(
+            session_id=self.session_id,
+            modifiers=modifiers,
+            inline_custom_tools_payload=self._inline_custom_tools_payload,
+        )
 
     def tools(self, modifiers: t.Optional["Modifiers"] = None) -> TToolCollection:
         """
@@ -131,13 +182,17 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tools_model = ToolsModel(
             client=self._client,
             provider=self._provider,
-            auto_upload_download_files=self._auto_upload_download_files,
+            dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
+            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+            file_upload_dirs=self._file_upload_dirs,
         )
 
         router_tools = tools_model.get_raw_tool_router_meta_tools(
             session_id=self.session_id,
             modifiers=modifiers,
         )
+        router_tools = self._add_preloaded_custom_tools(router_tools, modifiers)
 
         for tool in router_tools:
             tool.input_parameters = (
@@ -159,9 +214,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         if self._has_custom_tools():
             execute_fn = self._create_routing_execute_fn(tools_model, modifiers)
         else:
-            execute_fn = tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-                modifiers=modifiers,
+            execute_fn = self._tool_router_backend_execute(
+                tools_model, modifiers=modifiers
             )
 
         return t.cast(
@@ -171,6 +225,95 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 execute_tool=execute_fn,
             ),
         )
+
+    def _add_preloaded_custom_tools(
+        self,
+        tools: t.List[Tool],
+        modifiers: t.Optional["Modifiers"],
+    ) -> t.List[Tool]:
+        custom_tools = self._get_preloaded_custom_tool_schemas(modifiers)
+        if not custom_tools:
+            return tools
+
+        existing_slugs = {tool.slug.upper() for tool in tools}
+        appended_tools = [
+            tool for tool in custom_tools if tool.slug.upper() not in existing_slugs
+        ]
+        if not appended_tools:
+            return tools
+
+        return [*tools, *appended_tools]
+
+    def _get_preloaded_custom_tool_schemas(
+        self,
+        modifiers: t.Optional["Modifiers"],
+    ) -> t.List[Tool]:
+        if not self._custom_tools_map or not self._preloaded_custom_tool_slugs:
+            return []
+
+        tools: t.List[Tool] = []
+        for slug in self._preloaded_custom_tool_slugs:
+            entry = find_custom_tool_map_entry_by_final_slug(
+                self._custom_tools_map,
+                slug,
+            )
+            if entry is None:
+                continue
+
+            tool = self._custom_tool_entry_to_tool(entry)
+            if modifiers is not None:
+                tool = t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
+                )
+            tools.append(tool)
+
+        return tools
+
+    def _custom_tool_entry_to_tool(self, entry: CustomToolsMapEntry) -> Tool:
+        toolkit_slug = entry.toolkit or "custom"
+        toolkit_name = (
+            self._custom_toolkit_name(toolkit_slug) or entry.toolkit or "Custom"
+        )
+
+        return Tool(
+            available_versions=[],
+            deprecated=ItemDeprecated(
+                available_versions=[],
+                displayName=entry.handle.name,
+                is_deprecated=False,
+                toolkit=ItemDeprecatedToolkit(logo=""),
+                version="latest",
+            ),
+            description=(
+                f"{DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX}\n{entry.handle.description}"
+            ),
+            input_parameters=entry.handle.input_schema,
+            is_deprecated=False,
+            name=entry.handle.name,
+            no_auth=entry.handle.extends_toolkit is None,
+            output_parameters=entry.handle.output_schema or {},
+            scopes=[],
+            slug=entry.final_slug,
+            tags=[],
+            toolkit=ItemToolkit(logo="", name=toolkit_name, slug=toolkit_slug),
+            version="latest",
+        )
+
+    def _custom_toolkit_name(self, toolkit_slug: str) -> t.Optional[str]:
+        if self._custom_tools_map is None:
+            return None
+
+        for toolkit in self._custom_tools_map.toolkits or []:
+            if toolkit.slug.lower() == toolkit_slug.lower():
+                return toolkit.name
+        return None
 
     def _create_routing_execute_fn(
         self,
@@ -182,9 +325,8 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Applies before_execute/after_execute modifiers around the overall
         COMPOSIO_MULTI_EXECUTE_TOOL call, consistent with the standard path.
         """
-        backend_execute = tools_model._wrap_execute_tool_for_tool_router(
-            session_id=self.session_id,
-            modifiers=modifiers,
+        backend_execute = self._tool_router_backend_execute(
+            tools_model, modifiers=modifiers
         )
 
         def routing_execute(slug: str, arguments: t.Dict) -> t.Dict:
@@ -220,6 +362,16 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                     )
 
                 return result
+            entry = find_custom_tool(self._custom_tools_map, slug)
+            if entry:
+                return t.cast(
+                    t.Dict[str, t.Any],
+                    execute_custom_tool(
+                        entry,
+                        arguments,
+                        t.cast(SessionContextImpl, self._session_context),
+                    ),
+                )
             # Non-multi-execute meta tools always go to backend
             return backend_execute(slug, arguments)
 
@@ -251,9 +403,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tool_items = input_args.get("tools")
         if not isinstance(tool_items, list) or len(tool_items) == 0:
             # Fallback: send to backend as-is (no modifiers — caller handles them)
-            return tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+            return self._tool_router_backend_execute(tools_model)(
+                COMPOSIO_MULTI_EXECUTE_TOOL,
+                input_args,
+            )
 
         parsed = [self._parse_tool_item(item) for item in tool_items]
 
@@ -269,9 +422,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         # All remote — just forward entire payload (no modifiers — caller handles them)
         if not local_items:
-            return tools_model._wrap_execute_tool_for_tool_router(
-                session_id=self.session_id,
-            )(COMPOSIO_MULTI_EXECUTE_TOOL, input_args)
+            return self._tool_router_backend_execute(tools_model)(
+                COMPOSIO_MULTI_EXECUTE_TOOL,
+                input_args,
+            )
 
         ctx = self._session_context
         assert ctx is not None
@@ -298,9 +452,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             if remote_indices:
                 remote_tool_items = [tool_items[i] for i in remote_indices]
                 remote_input = {**input_args, "tools": remote_tool_items}
-                execute_fn = tools_model._wrap_execute_tool_for_tool_router(
-                    session_id=self.session_id,
-                )
+                execute_fn = self._tool_router_backend_execute(tools_model)
                 remote_future = pool.submit(
                     execute_fn,
                     COMPOSIO_MULTI_EXECUTE_TOOL,
@@ -387,6 +539,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
+        account_type: t.Optional[t.Literal["PRIVATE", "SHARED"]] = None,
+        acl_config_for_shared: t.Optional[
+            session_link_params.ACLConfigForShared
+        ] = None,
     ) -> ConnectionRequest:
         """
         Authorize a toolkit for the user and get a connection request.
@@ -395,13 +551,33 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         :param alias: Human-readable alias for the connection. Must be unique
             per userId and toolkit within the project.
+        :param account_type: Sharing model for the new connection. ``PRIVATE``
+            (default) is usable only by the owning ``user_id``. ``SHARED`` can
+            be used by other ``user_id``s when the connection is pinned in a
+            tool-router session and the requesting user passes its ACL.
+        :param acl_config_for_shared: Per-user ACL for SHARED connections.
+            Only valid when ``account_type == 'SHARED'``; raises
+            ``ComposioAclOnlyForSharedError`` on a PRIVATE connection.
         """
-        response = self._client.tool_router.session.link(
-            session_id=self.session_id,
-            toolkit=toolkit,
-            callback_url=callback_url if callback_url else omit,
-            alias=alias if alias is not None else omit,
-        )
+        try:
+            response = self._client.tool_router.session.link(
+                session_id=self.session_id,
+                toolkit=toolkit,
+                callback_url=callback_url if callback_url else omit,
+                alias=alias if alias is not None else omit,
+                account_type=account_type if account_type is not None else omit,
+                acl_config_for_shared=(
+                    acl_config_for_shared if acl_config_for_shared is not None else omit
+                ),
+            )
+        except BadRequestError as error:
+            # The server rejects ACL on PRIVATE connections — surface that
+            # as a typed error mirroring ``composio.connected_accounts.link()``.
+            message = str(error)
+            if "acl_config_for_shared is only valid on SHARED" in message:
+                raise exceptions.ComposioAclOnlyForSharedError(message) from error
+            raise
+
         return ConnectionRequest(
             id=response.connected_account_id,
             redirect_url=response.redirect_url,
@@ -508,6 +684,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             session_id=self.session_id,
             queries=[{"use_case": query}],
             model=model if model else omit,
+            experimental=inline_custom_tools_search_experimental(
+                self._inline_custom_tools_payload
+            ),
         )
 
     def execute(
@@ -515,6 +694,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         tool_slug: str,
         *,
         arguments: t.Optional[t.Dict[str, t.Any]] = None,
+        account: t.Optional[str] = None,
     ) -> SessionExecuteResponse:
         """
         Execute a tool within the session.
@@ -522,6 +702,10 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         For custom tools, accepts the original slug (e.g. "GREP") or the
         full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
         remote tools are sent to the Composio backend.
+
+        :param account: Account ID or alias for direct app tool execution in
+            multi-account sessions. Helper/meta tools either ignore this
+            top-level field or define their own account-selection fields.
 
         Both paths return a ``SessionExecuteResponse`` with ``data``,
         ``error``, and ``log_id`` attributes.
@@ -540,11 +724,14 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 log_id="",
             )
 
-        # Remote execution
         return self._client.tool_router.session.execute(
             session_id=self.session_id,
             tool_slug=tool_slug,
             arguments=arguments if arguments is not None else omit,
+            account=account if account is not None else omit,
+            experimental=inline_custom_tools_execute_experimental(
+                self._inline_custom_tools_payload
+            ),
         )
 
     def custom_tools(
@@ -638,3 +825,49 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             body=body,
             parameters=parameters,
         )
+
+    def update(
+        self,
+        *,
+        toolkits: t.Union[session_patch_params.Toolkits, "Omit"] = omit,
+        tools: t.Union[t.Dict[str, session_patch_params.Tools], "Omit"] = omit,
+        tags: t.Union[session_patch_params.Tags, "Omit"] = omit,
+        auth_configs: t.Union[t.Dict[str, str], "Omit"] = omit,
+        connected_accounts: t.Union[
+            t.Optional[t.Dict[str, SequenceNotStr[str]]], "Omit"
+        ] = omit,
+        manage_connections: t.Union[
+            t.Optional[session_patch_params.ManageConnections], "Omit"
+        ] = omit,
+        workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
+        multi_account: t.Union[
+            t.Optional[session_patch_params.MultiAccount], "Omit"
+        ] = omit,
+        preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
+    ) -> None:
+        """Partially update the session configuration.
+
+        Only the fields provided will be changed; omitted fields are preserved.
+        Mutates this session's ``preload`` in-place.
+
+        Pass ``None`` for ``manage_connections``, ``workbench``, or
+        ``multi_account`` to clear the stored value.
+
+        All parameters use the same types as the Stainless-generated
+        ``client.tool_router.session.patch()`` method.
+        """
+        from composio.core.models.tool_router import _session_preload_config
+
+        response = self._client.tool_router.session.patch(
+            session_id=self.session_id,
+            toolkits=toolkits,
+            tools=tools,
+            tags=tags,
+            auth_configs=auth_configs,
+            connected_accounts=connected_accounts,
+            manage_connections=manage_connections,
+            workbench=workbench,
+            multi_account=multi_account,
+            preload=preload,
+        )
+        self.preload = _session_preload_config(response.config.preload)

@@ -32,7 +32,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     const resolvedOrgId = Option.getOrUndefined(orgId) ?? Option.getOrUndefined(ctx.data.orgId);
     if (!resolvedOrgId) {
       yield* ui.log.warn('No default org is configured.');
-      yield* ui.outro('Hint: run `composio dev orgs switch` first, or pass `--org-id`.');
+      yield* ui.outro('Hint: run `composio orgs switch` first, or pass `--org-id`.');
       return;
     }
 
@@ -66,7 +66,7 @@ export const projectsCmd$List = Command.make('list', { orgId, limit }, ({ orgId,
     yield* ui.outro(
       [
         'Hint: run `composio dev init` in a directory to bind it to a developer project.',
-        'Run `composio dev orgs switch` to change your default org.',
+        'Run `composio orgs switch` to change your default org.',
       ].join('\n')
     );
 

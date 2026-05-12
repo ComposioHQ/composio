@@ -7,19 +7,26 @@ import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { signupCmd } from './signup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
+import { localToolsCmd } from './local-tools/local-tools.cmd';
 import { generateCmd } from './generate/generate.cmd';
-import { devCmd } from './dev.cmd';
+import { buildDevCommand } from './dev.cmd';
 import {
   runParallelToolsExecuteFromArgv,
   showToolsExecuteInputHelp,
 } from './tools/commands/tools.execute.cmd';
-import { printRootHelp, matchSubcommandHelp, printSubcommandHelp } from './root-help';
+import {
+  printRootHelp,
+  matchSubcommandHelp,
+  parseHelpLevel,
+  printSubcommandHelp,
+} from './root-help';
 import { rootToolsCmd$Search } from './tools/commands/tools.search.cmd';
 import { rootToolsCmd$Execute } from './tools/commands/tools.execute.cmd';
 import { rootToolsCmd } from './tools/tools.cmd';
@@ -27,6 +34,8 @@ import { rootTriggersCmd } from './triggers/root-triggers.cmd';
 import { rootConnectedAccountsCmd$Link } from './connected-accounts/commands/connected-accounts.link.cmd';
 import { orgsCmd } from './orgs/orgs.cmd';
 import { configCmd } from './config/config.cmd';
+import { rootConnectionsCmd } from './connections/connections.cmd';
+import { agentCmd } from './agent/agent.cmd';
 import { renderCommandHintGraph } from 'src/services/command-hints';
 import { resetRuntimeDebugFlags, setRuntimeDebugFlags } from 'src/services/runtime-debug-flags';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -53,25 +62,28 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(upgradeCmd),
   tagged(whoamiCmd),
   tagged(loginCmd),
+  tagged(signupCmd),
+  tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
   tagged(logoutCmd),
   tagged(runCmd),
   tagged(proxyCmd),
   tagged(artifactsCmd),
   tagged(installCmd),
-  tagged(devCmd),
+  experimental(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS, localToolsCmd),
   tagged(rootToolsCmd),
   tagged(rootTriggersCmd),
   tagged(rootToolsCmd$Search),
   tagged(rootConnectedAccountsCmd$Link),
   tagged(rootToolsCmd$Execute),
+  tagged(rootConnectionsCmd),
   tagged(generateCmd),
   tagged(orgsCmd),
   tagged(configCmd),
 ];
 
 export const buildRootCommand = (visibility: CommandVisibility) => {
-  const subcommands = visibleValues(ROOT_COMMANDS, visibility);
+  const subcommands = [...visibleValues(ROOT_COMMANDS, visibility), buildDevCommand(visibility)];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return $defaultCmd.pipe(Command.withSubcommands(subcommands as any));
 };
@@ -165,7 +177,7 @@ const findNestedSubcommandMismatch = (
   return undefined;
 };
 
-const ROOT_INSTALL_SKILL_FLAGS = ['--instal-skill', '--install-skill'] as const;
+const ROOT_INSTALL_SKILL_FLAGS = ['--install-skill', '--instal-skill'] as const;
 const SKILL_INSTALL_TARGETS = [
   'claude',
   'codex',
@@ -204,7 +216,7 @@ export const parseRootInstallSkillRequest = (
         return {
           _tag: 'error',
           message:
-            'Missing target for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+            'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
         };
       }
 
@@ -213,7 +225,8 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+            message:
+              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
           };
         }
         return { _tag: 'parsed', target };
@@ -224,7 +237,8 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: 'Invalid target for --instal-skill. Expected one of: claude, codex, openclaw.',
+            message:
+              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
           };
         }
         return { _tag: 'parsed', skillName, target };
@@ -233,7 +247,7 @@ export const parseRootInstallSkillRequest = (
       return {
         _tag: 'error',
         message:
-          'Too many arguments for --instal-skill. Usage: composio --instal-skill [skill-name] <claude|codex|openclaw>',
+          'Too many arguments for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
       };
     }
 
@@ -412,7 +426,13 @@ const normalizeHiddenDebugFlags = (argv: ReadonlyArray<string>): ReadonlyArray<s
 
 const isRootHelp = (argv: ReadonlyArray<string>): boolean => {
   const args = argv.slice(2);
-  return args.length === 0 || (args.length === 1 && (args[0] === '--help' || args[0] === '-h'));
+  return (
+    args.length === 0 ||
+    (args.length >= 1 &&
+      args.length <= 2 &&
+      (args[0] === '--help' || args[0] === '-h') &&
+      (args.length === 1 || parseHelpLevel(args[1]) !== undefined))
+  );
 };
 
 const isGenerateGraph = (argv: ReadonlyArray<string>): boolean => {
@@ -430,9 +450,50 @@ const isDebugWhoIsMyMaster = (argv: ReadonlyArray<string>): boolean => {
   return args.length === 2 && args[0] === 'debug' && args[1] === 'who-is-my-master';
 };
 
+const normalizeDangerouslyAllowFlag = (argv: ReadonlyArray<string>) => {
+  const normalized: string[] = [...argv.slice(0, 2)];
+  let dangerouslyAllow = false;
+
+  for (const arg of argv.slice(2)) {
+    if (arg === '--dangerously-allow') {
+      dangerouslyAllow = true;
+      continue;
+    }
+    normalized.push(arg);
+  }
+
+  return {
+    argv: normalized,
+    dangerouslyAllow,
+  };
+};
+
+const isHelpRequest = (args: ReadonlyArray<string>) =>
+  args.includes('--help') || args.includes('-h');
+
+const isDevModeOnlyInvocation = (args: ReadonlyArray<string>) => {
+  if (args[0] !== 'dev') return false;
+  if (isHelpRequest(args)) return true;
+  if (args.length === 1) return true;
+  if (args.length === 2 && (args[1] === '--mode' || args[1].startsWith('--mode='))) return true;
+  if (args.length === 3 && args[1] === '--mode') return true;
+  return false;
+};
+
+const isDangerousDevCommand = (args: ReadonlyArray<string>): boolean => {
+  if (args[0] !== 'dev' || isHelpRequest(args)) return false;
+
+  if (args[1] === 'triggers') {
+    return args[2] === 'disable';
+  }
+
+  return false;
+};
+
 export const runWithConfig = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
   const visibility: CommandVisibility = {
+    isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
     isExperimentalFeatureEnabled: feature => cliUserConfig.isExperimentalFeatureEnabled(feature),
   };
   const version = yield* getVersion;
@@ -444,9 +505,12 @@ export const runWithConfig = Effect.gen(function* () {
   });
 
   return (argv: ReadonlyArray<string>) => {
+    const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
+      normalizeDangerouslyAllowFlag(argv);
     const normalizedArgv = normalizeHiddenDebugFlags(
-      normalizeListenStreamFlag(normalizeVersionShortFlag(argv))
+      normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
     );
+    const args = normalizedArgv.slice(2);
     const installSkillRequest = parseRootInstallSkillRequest(normalizedArgv);
     if (installSkillRequest) {
       if (installSkillRequest._tag === 'error') {
@@ -458,11 +522,12 @@ export const runWithConfig = Effect.gen(function* () {
       });
     }
     if (isRootHelp(normalizedArgv)) {
-      return printRootHelp(visibility);
+      return printRootHelp(visibility, parseHelpLevel(normalizedArgv[3]) ?? 'default');
     }
     const subHelp = matchSubcommandHelp(normalizedArgv, visibility);
     if (subHelp) {
-      return printSubcommandHelp(subHelp, visibility);
+      const helpLevel = parseHelpLevel(normalizedArgv[normalizedArgv.length - 1]) ?? 'default';
+      return printSubcommandHelp(subHelp, visibility, helpLevel);
     }
     const nestedMismatch = findNestedSubcommandMismatch(normalizedArgv, rootCommand);
     if (nestedMismatch) {
@@ -523,6 +588,31 @@ export const runWithConfig = Effect.gen(function* () {
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {
       return showToolsExecuteInputHelp(executeHelpSlug);
+    }
+    if (!visibility.isDevModeEnabled && args[0] === 'dev' && !isDevModeOnlyInvocation(args)) {
+      return Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.log.error('Developer mode is off.');
+        yield* ui.log.step('Run `composio dev --mode on` in an interactive terminal to enable it.');
+      });
+    }
+    if (isDangerousDevCommand(args)) {
+      return Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        if (!cliUserConfig.areDeveloperDangerousCommandsEnabled()) {
+          yield* ui.log.error('This developer command is disabled by config.');
+          yield* ui.log.step(
+            'Set `developer.destructive_actions` to `true` in `~/.composio/config.json` to allow dangerous developer commands.'
+          );
+          return;
+        }
+        if (!dangerouslyAllow) {
+          yield* ui.log.error('This developer command requires explicit acknowledgement.');
+          yield* ui.log.step('Re-run the command with `--dangerously-allow`.');
+          return;
+        }
+        return yield* run(normalizedArgv);
+      });
     }
     return run(normalizedArgv);
   };

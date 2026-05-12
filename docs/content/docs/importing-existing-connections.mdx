@@ -52,6 +52,7 @@ print(f"Connected: {connection.id}")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your-api-key' });
@@ -102,6 +103,7 @@ print(f"Connected: {connection.id}")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your-api-key' });
@@ -147,6 +149,7 @@ print(f"Connected: {connection.id}")
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, AuthScheme } from '@composio/core';
 
 const composio = new Composio({ apiKey: 'your-api-key' });
@@ -190,6 +193,7 @@ composio.connected_accounts.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 // ---cut---
@@ -205,7 +209,7 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 </Tab>
 <Tab value="curl">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/connected_accounts/ca_xxx \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"connection":{"state":{"authScheme":"BEARER_TOKEN","val":{"token":"new-access-token"}}}}'
@@ -230,6 +234,7 @@ composio.connected_accounts.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 // ---cut---
@@ -245,7 +250,7 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 </Tab>
 <Tab value="curl">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/connected_accounts/ca_xxx \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"connection":{"state":{"authScheme":"API_KEY","val":{"generic_api_key":"new-api-key"}}}}'
@@ -270,6 +275,7 @@ composio.connected_accounts.update(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 // ---cut---
@@ -285,7 +291,7 @@ await composio.connectedAccounts.update('ca_your_connection_id', {
 </Tab>
 <Tab value="curl">
 ```bash
-curl -X PATCH https://backend.composio.dev/api/v3/connected_accounts/ca_xxx \
+curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_xxx \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"connection":{"state":{"authScheme":"BASIC","val":{"username":"user@example.com","password":"new-password"}}}}'
@@ -311,6 +317,7 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 // ---cut---

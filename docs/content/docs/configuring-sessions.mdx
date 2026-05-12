@@ -24,7 +24,7 @@ const session = await composio.create("user_123");
 
 By default, a session has access to **all toolkits** in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
-For TypeScript sessions, you can also attach local experimental custom tools and custom toolkits that run in-process with Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
+You can also attach local experimental custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
 ## Enabling toolkits
 
@@ -89,6 +89,247 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+## Preloading tools
+
+By default, sessions expose [meta tools](/reference/meta-tools) that let the agent
+discover app tools at runtime. Use `preload.tools` when you already know the
+small set of tools that should be returned directly from `session.tools()` and
+the session MCP tool list.
+
+Preloading is useful for frequently used tools because the agent can call them
+without going through search each time. Keep the preloaded set small, generally
+fewer than 20 tools, to avoid context bloat.
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
+(Python). Older SDKs do not support `preload.tools`,
+`sessionPreset` / `session_preset`, or custom-tool `preload`.
+</Callout>
+
+<Callout type="info">
+`preload.tools` is not supported when `multiAccount.enable` is true. See
+[Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    preload={
+        "tools": [
+            "GMAIL_FETCH_EMAILS",
+            "GMAIL_CREATE_EMAIL_DRAFT",
+        ],
+    },
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+# COMPOSIO_SEARCH_TOOLS
+# ... other default meta tools
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  preload: {
+    tools: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+// COMPOSIO_SEARCH_TOOLS
+// ... other default meta tools
+```
+</Tab>
+</Tabs>
+
+For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. See
+[Preloading custom tools](/docs/toolkits/custom-tools-and-toolkits#preloading-custom-tools).
+
+Use the `preload.tools = "all"` shortcut (`preload={"tools": "all"}` in Python,
+`preload: { tools: "all" }` in TypeScript) to preload every tool allowed by the
+session filters. The `all` shorthand works for both Composio tools and SDK
+custom tools.
+
+## Direct tools preset
+
+The direct tools preset preloads every tool allowed by session filters into the
+session's tool list and disables session meta tools by default. This can be
+useful for specialized agents with a narrow tool set that do not need dynamic
+tool discovery, in-chat auth, or workbench helpers.
+
+This is not the default mode for broad agents. The default session behavior keeps
+meta tools available so the agent can search for relevant tools and avoid
+context bloat.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": [
+                "GMAIL_FETCH_EMAILS",
+                "GMAIL_CREATE_EMAIL_DRAFT",
+            ],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  tools: {
+    gmail: {
+      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+</Tabs>
+
+**Enable selected meta tools**
+
+When using the direct tools preset, you can selectively re-enable supported meta
+tool groups that your agent still needs. For example, this session loads Gmail
+reply-drafting tools upfront while keeping connection management and workbench
+support available:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": [
+                "GMAIL_FETCH_EMAILS",
+                "GMAIL_CREATE_EMAIL_DRAFT",
+            ],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    manage_connections={
+        "enable": True,
+    },
+    workbench={
+        "enable": True,
+    },
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+# COMPOSIO_MANAGE_CONNECTIONS
+# COMPOSIO_REMOTE_WORKBENCH
+# COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: ["gmail"],
+  tools: {
+    gmail: {
+      enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+  manageConnections: {
+    enable: true,
+  },
+  workbench: {
+    enable: true,
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+// COMPOSIO_MANAGE_CONNECTIONS
+// COMPOSIO_REMOTE_WORKBENCH
+// COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+</Tabs>
+
 ## Custom auth configs
 
 Use your own OAuth credentials instead of Composio's defaults:
@@ -132,8 +373,8 @@ If a user has multiple connected accounts for the same toolkit, you can specify 
 session = composio.create(
     user_id="user_123",
     connected_accounts={
-        "gmail": "ca_work_gmail",
-        "github": "ca_personal_github"
+        "gmail": ["ca_work_gmail"],
+        "github": ["ca_personal_github"],
     }
 )
 ```
@@ -145,13 +386,17 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
   connectedAccounts: {
-    gmail: "ca_work_gmail",
-    github: "ca_personal_github",
+    gmail: ["ca_work_gmail"],
+    github: ["ca_personal_github"],
   },
 });
 ```
 </Tab>
 </Tabs>
+
+<Callout type="info">
+Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/managing-multiple-connected-accounts) is disabled.
+</Callout>
 
 ### Precedence
 
@@ -198,6 +443,56 @@ When disabled:
 - `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session
 - Workbench-related system prompt lines are stripped
 - Direct workbench calls are rejected with a 400 error
+
+## Sandbox compute tier
+
+The workbench runs in a per-session sandbox. You can pick a compute tier to match the workload — heavier code execution or larger in-memory data benefits from a bigger sandbox. The tier is passed via `workbench.sandbox_size` (snake_case on the wire; `sandboxSize` in the TypeScript SDK).
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python). Older SDKs reject `sandboxSize` (TypeScript) or silently drop `sandbox_size` (Python). See the [release notes](/docs/changelog/2026/04/28).
+</Callout>
+
+
+| Tier       | vCPU | RAM   |
+| ---------- | ---- | ----- |
+| `standard` | 1    | 1 GB  |
+| `medium`   | 2    | 2 GB  |
+| `large`    | 4    | 4 GB  |
+| `xlarge`   | 8    | 8 GB  |
+
+Defaults to `standard` when omitted.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    workbench={
+        "sandbox_size": "large",
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  workbench: {
+    enable: true,
+    sandboxSize: "large",
+  },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload — but expect future pricing to track actual usage.
+</Callout>
+
+Changing `sandbox_size` on an existing session recreates the sandbox on next access. The sandbox's in-memory filesystem state is lost, but the persistent `/mnt/files/` mount survives the restart.
 
 ## Session methods
 

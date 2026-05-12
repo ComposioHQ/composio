@@ -1,6 +1,7 @@
 import { Data, Effect, Config, Option } from 'effect';
 import { HttpClient, FileSystem } from '@effect/platform';
 import * as path from 'node:path';
+import { cp as copyPath, rm as removePath } from 'node:fs/promises';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -28,6 +29,7 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
+const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -492,6 +494,28 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                 )
               )
             );
+        }
+
+        const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+        const localToolsAssetExists = yield* fs
+          .exists(localToolsAssetSource)
+          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        if (localToolsAssetExists) {
+          const localToolsAssetTarget = path.join(
+            targetDirectory,
+            LOCAL_TOOLS_BINARY_ASSET_DIRNAME
+          );
+          yield* Effect.tryPromise({
+            try: async () => {
+              await removePath(localToolsAssetTarget, { recursive: true, force: true });
+              await copyPath(localToolsAssetSource, localToolsAssetTarget, { recursive: true });
+            },
+            catch: error =>
+              new UpgradeBinaryError({
+                cause: error as Error,
+                message: 'Failed to replace local-tool binary assets',
+              }),
+          });
         }
 
         if (options.releaseTag) {

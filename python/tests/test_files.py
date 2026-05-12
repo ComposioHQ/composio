@@ -10,6 +10,7 @@ import pytest
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models._files import (
+    FileDownloadable,
     FileHelper,
     FileUploadable,
     _is_url,
@@ -1322,6 +1323,123 @@ class TestFileUploadableFromUrl:
 
         assert "Fetch failed" in str(exc_info.value)
 
+    def test_before_file_upload_hook_receives_source_url(self):
+        """from_path emits ``source="url"`` to the hook for http(s) inputs.
+
+        We abort from the hook to avoid the downstream network path; the
+        pre-abort capture is what we're asserting on.
+        """
+        from composio.exceptions import FileUploadAbortedError
+
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file="https://example.com/photo.png",
+                tool="SEND_EMAIL",
+                toolkit="gmail",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": "https://example.com/photo.png",
+            "source": "url",
+            "tool": "SEND_EMAIL",
+            "toolkit": "gmail",
+        }
+
+    def test_before_file_upload_hook_receives_source_path(self, tmp_path):
+        """from_path emits ``source="path"`` to the hook for local inputs."""
+        from composio.exceptions import FileUploadAbortedError
+
+        f = tmp_path / "doc.txt"
+        f.write_text("hello")
+        mock_client = MagicMock()
+        seen = {}
+
+        def hook(ctx):
+            seen.update(ctx)
+            return False
+
+        with pytest.raises(FileUploadAbortedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(f),
+                tool="MY_TOOL",
+                toolkit="my_toolkit",
+                before_file_upload=hook,
+            )
+
+        assert seen == {
+            "path": str(f),
+            "source": "path",
+            "tool": "MY_TOOL",
+            "toolkit": "my_toolkit",
+        }
+
+    def test_url_hook_returning_local_path_routes_through_path_branch(self, tmp_path):
+        """A hook that rewrites a URL into a local path must NOT be fed to
+        ``from_url``. It has to route back into the local-file branch so the
+        allowlist / denylist / existence checks all run."""
+        from composio.exceptions import SDKFileNotFoundError
+
+        # A path that's syntactically a path but does not exist — if routing
+        # is correct, we'll get SDKFileNotFoundError from the local branch.
+        # If the bug is still there, we'd hit `from_url` and the URL fetch
+        # would explode (or worse, succeed) instead.
+        rewritten = str(tmp_path / "does-not-exist.txt")
+
+        def hook(ctx):
+            assert ctx["source"] == "url"
+            return rewritten
+
+        mock_client = MagicMock()
+
+        with pytest.raises(SDKFileNotFoundError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file="https://example.com/photo.png",
+                tool="T",
+                toolkit="tk",
+                before_file_upload=hook,
+            )
+
+    @patch("composio.core.models._files._fetch_file_from_url")
+    @patch("composio.core.models._files._upload_bytes_to_s3")
+    def test_path_hook_returning_url_routes_through_url_branch(
+        self, mock_upload, mock_fetch, tmp_path
+    ):
+        """Inverse of the above: a hook on a local path that returns a URL
+        must route through ``from_url``, not stat the URL string as a file."""
+        f = tmp_path / "local.txt"
+        f.write_text("hi")
+
+        mock_fetch.return_value = ("photo.png", b"x", "image/png")
+        mock_upload.return_value = "s3-key"
+
+        def hook(ctx):
+            assert ctx["source"] == "path"
+            return "https://example.com/photo.png"
+
+        mock_client = MagicMock()
+        result = FileUploadable.from_path(
+            client=mock_client,
+            file=str(f),
+            tool="T",
+            toolkit="tk",
+            before_file_upload=hook,
+        )
+
+        # If routing worked, the URL fetch path was taken.
+        mock_fetch.assert_called_once_with("https://example.com/photo.png")
+        assert result.s3key == "s3-key"
+
 
 class TestFileHelperWithUrls:
     """Test cases for FileHelper handling URLs in file uploads."""
@@ -1875,3 +1993,133 @@ class TestUrlSanitization:
         url = "https://example.com/file.jpg"
         sanitized = _sanitize_url_for_logging(url)
         assert "[REDACTED]" not in sanitized
+
+
+class TestFileDownloadablePathTraversal:
+    """SEC-316: server-controlled `name` must not escape the output dir."""
+
+    def _mock_response(self, content: bytes = b"data") -> MagicMock:
+        response = MagicMock()
+        response.status_code = 200
+        response.iter_content = lambda chunk_size: [content]
+        return response
+
+    def test_relative_traversal_is_neutralized(self, tmp_path):
+        outdir = tmp_path / "safe"
+        # outdir does not need to exist yet — download() creates it.
+        f = FileDownloadable(
+            name="../../../PWNED.sh",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"#!/bin/sh\n"),
+        ):
+            written = f.download(outdir)
+
+        # Traversal sequence collapsed to basename and stayed inside outdir.
+        assert written == outdir / "PWNED.sh"
+        assert written.resolve().is_relative_to(outdir.resolve())
+        assert not (tmp_path / "PWNED.sh").exists()
+        assert written.read_bytes() == b"#!/bin/sh\n"
+
+    def test_absolute_path_is_neutralized(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="/etc/passwd",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"x"),
+        ):
+            written = f.download(outdir)
+
+        # `Path('/etc/passwd').name == 'passwd'` — absolute path is stripped.
+        assert written == outdir / "passwd"
+        assert written.resolve().is_relative_to(outdir.resolve())
+
+    def test_dotdot_only_name_is_rejected(self, tmp_path):
+        """`Path('..').name == '..'`. Basename strip alone wouldn't catch it,
+        but the second-line `is_relative_to()` check does."""
+        from composio.exceptions import ErrorDownloadingFile
+
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="..",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(),
+        ):
+            with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
+                f.download(outdir)
+        # No file was written under the parent.
+        assert not (tmp_path / "x").exists()
+
+    def test_safe_filename_passes_through(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"%PDF-1.4"),
+        ):
+            written = f.download(outdir)
+
+        assert written == outdir / "report.pdf"
+        assert written.read_bytes() == b"%PDF-1.4"
+
+    def test_basename_collapse_through_subdir_is_rejected(self, tmp_path):
+        """`Path('foo/..').name == '..'` — the basename strip of a name that
+        traverses *through* a subdir collapses to `..`, then the
+        `is_relative_to()` check rejects it. Explicit coverage of the
+        residual-`..` path through basename normalization (the plain `..`
+        test covers the no-subdir case)."""
+        from composio.exceptions import ErrorDownloadingFile
+
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="foo/..",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(),
+        ):
+            with pytest.raises(ErrorDownloadingFile, match="Path traversal detected"):
+                f.download(outdir)
+        # SEC-316 P3.1: check runs before mkdir, so outdir is not created
+        # as a side effect of a rejected payload.
+        assert not outdir.exists()
+
+    def test_empty_name_safe_fails_at_write_time(self, tmp_path):
+        """`Path('').name == ''` — `outdir / ''` resolves to `outdir` itself,
+        which passes the containment check (a path is relative to itself).
+        The write then fails with `IsADirectoryError` because the target is
+        the directory. Documents the safe-fail behavior so a future change
+        to the check cannot silently weaken it without breaking this test."""
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="",
+            mimetype="application/octet-stream",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"x"),
+        ):
+            with pytest.raises(IsADirectoryError):
+                f.download(outdir)
+        # outdir got created (mkdir runs after the check, which passed),
+        # but no file was written inside it.
+        assert outdir.is_dir()
+        assert list(outdir.iterdir()) == []

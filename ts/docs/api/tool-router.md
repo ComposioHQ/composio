@@ -514,7 +514,7 @@ console.log('Connected:', connectedAccount);
 Query the connection state of toolkits in the session.
 
 ```typescript
-const { items, nextCursor, totalPages } = await session.toolkits();
+const { items, cursor, totalPages } = await session.toolkits();
 
 for (const toolkit of items) {
   console.log(`${toolkit.name} (${toolkit.slug})`);
@@ -527,7 +527,7 @@ for (const toolkit of items) {
 
 // Pagination support
 const moreToolkits = await session.toolkits({
-  nextCursor: nextCursor,
+  cursor,
   limit: 10,
 });
 
@@ -540,7 +540,7 @@ const filteredToolkits = await session.toolkits({
 const paginatedFilteredToolkits = await session.toolkits({
   toolkits: ['gmail', 'github'],
   limit: 5,
-  nextCursor: 'cursor_abc',
+  cursor: 'cursor_abc',
 });
 ```
 
@@ -854,7 +854,7 @@ The response includes:
       }
     }
   ],
-  nextCursor: 'cursor_abc',
+  cursor: 'cursor_abc',
   totalPages: 1
 }
 ```
@@ -984,7 +984,7 @@ interface ToolRouterSession {
   authorize: (toolkit: string, options?: { callbackUrl?: string }) => Promise<ConnectionRequest>;
   toolkits: (options?: {
     toolkits?: string[]; // Filter by specific toolkit slugs
-    nextCursor?: string; // Pagination cursor
+    cursor?: string; // Pagination cursor
     limit?: number; // Number of items per page
   }) => Promise<ToolkitConnectionsDetails>;
   files: ToolRouterSessionFilesMount; // List, upload, download, delete files. See tool-router-files.md

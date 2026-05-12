@@ -1,0 +1,81 @@
+---
+title: "Link Auth Migration for Composio-Managed OAuth Connections"
+description: "POST /api/v3/connected_accounts will stop creating Composio-managed OAuth1/OAuth2/DCR_OAUTH connections. Callers must migrate to POST /api/v3/connected_accounts/link. Rollout begins Friday, May 8, 2026 for new organizations."
+date: "2026-04-24"
+---
+
+`POST /api/v3/connected_accounts` is being retired for **Composio-managed OAuth connections**. New organizations begin migrating on **Friday, May 8, 2026**, and all remaining organizations follow on **Friday, July 3, 2026**. Once migrated, affected requests receive `400 BadRequest` with a message pointing at the replacement endpoint.
+
+This does **not** affect custom auth configs (your own OAuth app) or non-OAuth schemes (API key, bearer token, basic auth, etc.) — those continue to work on `POST /api/v3/connected_accounts` unchanged. Only the specific combination of **Composio-managed auth config + redirectable OAuth scheme** (OAuth1, OAuth2, DCR_OAUTH) is moving.
+
+<Callout type="warn">
+**Breaking Change (phased rollout)**
+
+If your integration calls `POST /api/v3/connected_accounts` for a Composio-managed OAuth1, OAuth2, or DCR_OAUTH auth config, it will start returning `400 BadRequest` on the dates below. Migrate to `POST /api/v3/connected_accounts/link` before your organization's cutover.
+
+- **Friday, May 8, 2026 (00:00 UTC)** — organizations created on or after this timestamp are blocked.
+- **Friday, July 3, 2026 (00:00 UTC)** — all remaining organizations are blocked.
+</Callout>
+
+### What's Changing
+
+| Request | Before | After (once rollout reaches your org) |
+|---------|--------|-------------------------------------|
+| `POST /api/v3/connected_accounts`, Composio-managed + OAuth1 / OAuth2 / DCR_OAUTH | Creates a connected account (redirect URL returned) | **`400 BadRequest`** — use `/link` instead |
+| `POST /api/v3/connected_accounts`, custom auth config | Creates a connected account | Unchanged |
+| `POST /api/v3/connected_accounts`, API key / bearer / other non-OAuth | Creates a connected account | Unchanged |
+| `POST /api/v3/connected_accounts/link` | Creates a link session | Unchanged — the recommended path going forward |
+
+### Why
+
+When a connection is initiated through a default (Composio-managed) auth config, a Composio-owned OAuth application is acting on behalf of your integration. We want the end user to explicitly understand and acknowledge, at the moment of connection, that they are granting a third-party application access to their account on the external service. That acknowledgement is enforced by the `/link` flow, which routes the user through a consent screen before the connection is created. The legacy `POST /api/v3/connected_accounts` path allowed that step to be bypassed when credentials were passed in directly, which this change closes.
+
+Custom auth configs are unaffected because they are backed by your own OAuth application — the consent screen is served by your app, so you already own that experience. This change is scoped specifically to default auth configs on redirectable schemes, where the third-party relationship is with Composio rather than with the developer.
+
+### Migration
+
+**Before** — legacy create (will be rejected for Composio-managed OAuth):
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/connected_accounts \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <YOUR_API_KEY>" \
+  -d '{
+    "auth_config": { "id": "ac_your_composio_managed_oauth_config" },
+    "connection": { "user_id": "your_end_user_id" }
+  }'
+```
+
+**After** — link session (recommended, works for all schemes including non-OAuth and custom):
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3/connected_accounts/link \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: <YOUR_API_KEY>" \
+  -d '{
+    "auth_config_id": "ac_your_composio_managed_oauth_config",
+    "user_id": "your_end_user_id"
+  }'
+```
+
+The response contains a `redirect_url` (valid for 10 minutes) that the end user opens to authorize the integration, plus a `connected_account_id` you can use to poll for status or associate with your own records.
+
+### Error Response (after rollout)
+
+Requests that hit the retired combination receive:
+
+```json
+{
+  "error": {
+    "code": "BadRequest",
+    "message": "Creating connections on this endpoint for Composio-managed OAuth auth configs is no longer supported. Use POST /api/v3/connected_accounts/link instead.",
+    "suggestedFix": "Call POST /api/v3/connected_accounts/link with the same auth_config_id and user_id to get a redirect URL for the end user."
+  }
+}
+```
+
+### What to Do
+
+- **If you use Composio-managed OAuth auth configs** (OAuth1, OAuth2, or DCR_OAUTH) via `POST /api/v3/connected_accounts`: switch to `POST /api/v3/connected_accounts/link` before your org's cutover — **Friday, May 8, 2026** for organizations created on or after that date, **Friday, July 3, 2026** for all others.
+- **If you already use `/link`**: no action required.
+- **If you use custom OAuth apps (your own `client_id` / `client_secret`) or non-OAuth auth (API key, bearer, etc.)**: no action required — the legacy endpoint continues to serve those cases.

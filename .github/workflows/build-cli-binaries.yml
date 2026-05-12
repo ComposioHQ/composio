@@ -198,18 +198,26 @@ jobs:
     name: Build ${{ matrix.artifact }}
     needs: prepare
     if: needs.prepare.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
           - target: bun-linux-x64
             artifact: composio-linux-x64
+            runner: ubuntu-latest
+            local_tools_target: ''
           - target: bun-linux-arm64
             artifact: composio-linux-aarch64
+            runner: ubuntu-latest
+            local_tools_target: ''
           - target: bun-darwin-x64
             artifact: composio-darwin-x64
+            runner: macos-15-intel
+            local_tools_target: darwin-x64
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
+            runner: macos-15
+            local_tools_target: darwin-arm64
 
     steps:
       - name: Checkout
@@ -223,8 +231,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Swift 6.2 for local-tool sidecars
+        if: matrix.local_tools_target != ''
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+
+      - name: Verify Swift toolchain
+        if: matrix.local_tools_target != ''
+        run: swift --version
+
       - name: Build packages
         run: pnpm build:packages
+
+      - name: Build local-tool sidecar binaries
+        if: matrix.local_tools_target != ''
+        run: pnpm --filter @composio/cli-local-tools build:local-tool-binaries -- --target ${{ matrix.local_tools_target }}
+
+      - name: Verify local-tool sidecars
+        if: matrix.local_tools_target != ''
+        run: |
+          test -x ts/packages/cli-local-tools/local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli
+          test -x ts/packages/cli-local-tools/local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo
 
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
@@ -247,7 +275,20 @@ jobs:
 
       - name: Create archive
         working-directory: ts/packages/cli
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: pnpm build:binary:package
+
+      - name: Verify release metadata in archive
+        working-directory: ts/packages/cli
+        run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx '${{ needs.prepare.outputs.release_tag }}'
+
+      - name: Verify local-tool sidecars in archive
+        if: matrix.local_tools_target != ''
+        working-directory: ts/packages/cli
+        run: |
+          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli"
+          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

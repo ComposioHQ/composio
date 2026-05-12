@@ -36,6 +36,7 @@ GITHUB_BASE = "https://github.com/composiohq/composio/blob/next/python"
 DECORATORS_TO_DOCUMENT = [
     ("before_execute", "composio.core.models._modifiers"),
     ("after_execute", "composio.core.models._modifiers"),
+    ("before_file_upload", "composio.core.models._modifiers"),
     ("schema_modifier", "composio.core.models._modifiers"),
 ]
 

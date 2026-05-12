@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { withHttpServer } from 'test/__utils__/http-server';
 import {
   createUpdateChecker,
-  parseLatestVersionFromRefs,
+  parseLatestVersionFromReleases,
   type UpdateCheckConfig,
   type UpdateCheckState,
 } from 'src/services/update-check';
@@ -27,7 +27,8 @@ function makeConfig(overrides?: Partial<UpdateCheckConfig>): UpdateCheckConfig {
     stateFile: join(tempDir, '.composio', 'update-check.json'),
     currentVersion: '0.2.0',
     checkIntervalMs: 24 * 60 * 60 * 1000,
-    refsUrl: 'http://unused.test',
+    releasesUrl: 'http://unused.test',
+    binaryAssetName: 'composio-darwin-aarch64.zip',
     accessToken: undefined,
     fetchFn: () => Promise.reject(new Error('fetch not configured')),
     ...overrides,
@@ -40,63 +41,90 @@ function writeState(config: UpdateCheckConfig, state: UpdateCheckState): void {
   writeFileSync(config.stateFile, JSON.stringify(state));
 }
 
-/** Create a GitHub matching-refs response body. */
-function makeRefsPayload(versions: string[]) {
+/** Create a GitHub releases response body. */
+function makeReleasesPayload(versions: string[], assetName = 'composio-darwin-aarch64.zip') {
   return versions.map(v => ({
-    ref: `refs/tags/@composio/cli@${v}`,
-    node_id: 'unused',
-    url: 'unused',
-    object: { sha: 'abc', type: 'tag', url: 'unused' },
+    tag_name: `@composio/cli@${v}`,
+    prerelease: v.includes('-'),
+    draft: false,
+    assets: [{ name: assetName, browser_download_url: 'unused' }],
   }));
 }
 
-// ── parseLatestVersionFromRefs (pure) ───────────────────────────────────
+// ── parseLatestVersionFromReleases (pure) ───────────────────────────────
 
-describe('parseLatestVersionFromRefs', () => {
+describe('parseLatestVersionFromReleases', () => {
+  const binaryAssetName = 'composio-darwin-aarch64.zip';
+
   it('returns undefined for non-array input', () => {
-    expect(parseLatestVersionFromRefs(null)).toBeUndefined();
-    expect(parseLatestVersionFromRefs('string')).toBeUndefined();
-    expect(parseLatestVersionFromRefs(42)).toBeUndefined();
+    expect(parseLatestVersionFromReleases(null, binaryAssetName)).toBeUndefined();
+    expect(parseLatestVersionFromReleases('string', binaryAssetName)).toBeUndefined();
+    expect(parseLatestVersionFromReleases(42, binaryAssetName)).toBeUndefined();
   });
 
-  it('returns undefined when no refs match the CLI pattern', () => {
-    const refs = [
-      { ref: 'refs/tags/@composio/core@1.0.0' },
-      { ref: 'refs/tags/v1.0.0' },
-      { ref: 'refs/heads/main' },
+  it('returns undefined when no releases match the CLI pattern', () => {
+    const releases = [
+      { tag_name: '@composio/core@1.0.0', assets: [{ name: binaryAssetName }] },
+      { tag_name: 'v1.0.0', assets: [{ name: binaryAssetName }] },
+      { tag_name: '@composio/cli@0.2.0-beta.1', assets: [{ name: binaryAssetName }] },
     ];
-    expect(parseLatestVersionFromRefs(refs)).toBeUndefined();
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBeUndefined();
   });
 
   it('returns the single matching version', () => {
-    const refs = makeRefsPayload(['0.2.1']);
-    expect(parseLatestVersionFromRefs(refs)).toBe('0.2.1');
+    const releases = makeReleasesPayload(['0.2.1']);
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.2.1');
   });
 
-  it('returns the highest semver, not the last element', () => {
-    // GitHub returns refs sorted lexicographically — 0.10.0 < 0.9.0 lexically
-    // but 0.10.0 > 0.9.0 in semver.
-    const refs = makeRefsPayload(['0.1.0', '0.10.0', '0.9.0', '0.2.0']);
-    expect(parseLatestVersionFromRefs(refs)).toBe('0.10.0');
+  it('returns the highest semver, not the first element', () => {
+    const releases = makeReleasesPayload(['0.1.0', '0.10.0', '0.9.0', '0.2.0']);
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.10.0');
   });
 
-  it('excludes prerelease tags', () => {
-    const refs = [
-      { ref: 'refs/tags/@composio/cli@0.2.0' },
-      { ref: 'refs/tags/@composio/cli@0.3.0-beta.1' },
+  it('excludes prerelease and draft releases', () => {
+    const releases = [
+      ...makeReleasesPayload(['0.2.0']),
+      {
+        tag_name: '@composio/cli@0.3.0',
+        prerelease: true,
+        draft: false,
+        assets: [{ name: binaryAssetName }],
+      },
+      {
+        tag_name: '@composio/cli@0.4.0',
+        prerelease: false,
+        draft: true,
+        assets: [{ name: binaryAssetName }],
+      },
     ];
-    expect(parseLatestVersionFromRefs(refs)).toBe('0.2.0');
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.2.0');
   });
 
-  it('skips malformed ref objects', () => {
-    const refs = [
+  it('requires the platform binary asset', () => {
+    const releases = [
+      ...makeReleasesPayload(['0.4.0'], 'composio-linux-x64.zip'),
+      ...makeReleasesPayload(['0.3.0']),
+    ];
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.3.0');
+  });
+
+  it('returns undefined when no binary asset name is known', () => {
+    expect(
+      parseLatestVersionFromReleases(makeReleasesPayload(['0.2.1']), undefined)
+    ).toBeUndefined();
+  });
+
+  it('skips malformed release objects', () => {
+    const releases = [
       null,
       42,
-      { noRef: true },
-      { ref: 123 },
-      { ref: 'refs/tags/@composio/cli@0.5.0' },
+      { noTagName: true },
+      { tag_name: 123 },
+      { tag_name: '@composio/cli@0.5.0' },
+      { tag_name: '@composio/cli@0.6.0', assets: [{ noName: true }] },
+      { tag_name: '@composio/cli@0.7.0', assets: [{ name: binaryAssetName }] },
     ];
-    expect(parseLatestVersionFromRefs(refs)).toBe('0.5.0');
+    expect(parseLatestVersionFromReleases(releases, binaryAssetName)).toBe('0.7.0');
   });
 });
 
@@ -201,7 +229,7 @@ describe('checkForUpdate', () => {
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(makeRefsPayload(['0.3.0'])),
+        json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
       }) as unknown as typeof fetch,
     });
     writeState(config, { lastChecked: stale, latestVersion: '0.2.0' });
@@ -218,7 +246,7 @@ describe('checkForUpdate', () => {
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(makeRefsPayload(['0.4.0', '0.3.0'])),
+        json: () => Promise.resolve(makeReleasesPayload(['0.4.0', '0.3.0'])),
       }) as unknown as typeof fetch,
     });
     const { checkForUpdate } = createUpdateChecker(config);
@@ -234,7 +262,7 @@ describe('checkForUpdate', () => {
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(makeRefsPayload(['0.5.0'])),
+        json: () => Promise.resolve(makeReleasesPayload(['0.5.0'])),
       }) as unknown as typeof fetch,
     });
     mkdirSync(dirname(config.stateFile), { recursive: true });
@@ -247,11 +275,14 @@ describe('checkForUpdate', () => {
     expect(state.latestVersion).toBe('0.5.0');
   });
 
-  it('still writes lastChecked when no CLI tags are found', async () => {
+  it('still writes lastChecked when no CLI releases with the required binary are found', async () => {
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve([{ ref: 'refs/tags/@composio/core@1.0.0' }]),
+        json: () =>
+          Promise.resolve([
+            { tag_name: '@composio/core@1.0.0', assets: [{ name: 'composio-darwin-aarch64.zip' }] },
+          ]),
       }) as unknown as typeof fetch,
     });
     const { checkForUpdate } = createUpdateChecker(config);
@@ -261,15 +292,18 @@ describe('checkForUpdate', () => {
     expect(existsSync(config.stateFile)).toBe(true);
     const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
     expect(state.lastChecked).toBeDefined();
-    // Falls back to currentVersion since no previous state and no tags found
+    // Falls back to currentVersion since no previous state and no matching releases found
     expect(state.latestVersion).toBe(config.currentVersion);
   });
 
-  it('preserves previous latestVersion when no CLI tags are found', async () => {
+  it('preserves previous latestVersion when no CLI releases with the required binary are found', async () => {
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve([{ ref: 'refs/tags/@composio/core@1.0.0' }]),
+        json: () =>
+          Promise.resolve([
+            { tag_name: '@composio/core@1.0.0', assets: [{ name: 'composio-darwin-aarch64.zip' }] },
+          ]),
       }) as unknown as typeof fetch,
     });
     const stale = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
@@ -318,7 +352,7 @@ describe('checkForUpdate', () => {
   it('sends Authorization header when accessToken is set', async () => {
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve(makeRefsPayload(['0.2.1'])),
+      json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
     });
     const config = makeConfig({
       accessToken: 'ghp_secret123',
@@ -336,7 +370,7 @@ describe('checkForUpdate', () => {
   it('does not send Authorization header when accessToken is undefined', async () => {
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve(makeRefsPayload(['0.2.1'])),
+      json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
     });
     const config = makeConfig({
       accessToken: undefined,
@@ -358,10 +392,10 @@ describe('checkForUpdate with real HTTP', () => {
     await withHttpServer(
       (_req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(makeRefsPayload(['0.1.26', '0.2.0', '0.2.1'])));
+        res.end(JSON.stringify(makeReleasesPayload(['0.1.26', '0.2.0', '0.2.1'])));
       },
       async baseUrl => {
-        const config = makeConfig({ refsUrl: baseUrl, fetchFn: fetch });
+        const config = makeConfig({ releasesUrl: baseUrl, fetchFn: fetch });
         const { checkForUpdate } = createUpdateChecker(config);
 
         await checkForUpdate();
@@ -379,11 +413,11 @@ describe('checkForUpdate with real HTTP', () => {
       (req, res) => {
         receivedAuth = req.headers.authorization;
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(makeRefsPayload(['0.2.1'])));
+        res.end(JSON.stringify(makeReleasesPayload(['0.2.1'])));
       },
       async baseUrl => {
         const config = makeConfig({
-          refsUrl: baseUrl,
+          releasesUrl: baseUrl,
           accessToken: 'ghp_test_token',
           fetchFn: fetch,
         });

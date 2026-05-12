@@ -89,7 +89,7 @@ session = composio.create(
     user_id="user_123",
     toolkits=["github", "gmail"],
     auth_configs={"github": "ac_my_config"},
-    connected_accounts={"gmail": "ca_work"},
+    connected_accounts={"gmail": ["ca_work"]},
 )
 ```
 </Tab>
@@ -101,7 +101,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123", {
   toolkits: ["github", "gmail"],
   authConfigs: { github: "ac_my_config" },
-  connectedAccounts: { gmail: "ca_work" },
+  connectedAccounts: { gmail: ["ca_work"] },
 });
 ```
 </Tab>

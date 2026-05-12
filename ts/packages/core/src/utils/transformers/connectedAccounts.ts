@@ -70,6 +70,19 @@ export function transformConnectedAccountResponse(
       createdAt: response.created_at,
       updatedAt: response.updated_at,
       testRequestEndpoint: response.test_request_endpoint,
+      accountType: responseWithLabels.account_type,
+      // `acl_config_for_shared` is conditionally visible — the field is
+      // absent when the caller isn't authorised to see it. Forward
+      // `undefined` rather than synthesising defaults so callers can
+      // distinguish "I can't see the ACL" from "ACL is the default
+      // deny-by-default state".
+      aclConfigForShared: responseWithLabels.acl_config_for_shared
+        ? {
+            allowAllUsers: responseWithLabels.acl_config_for_shared.allow_all_users,
+            allowedUserIds: responseWithLabels.acl_config_for_shared.allowed_user_ids,
+            notAllowedUserIds: responseWithLabels.acl_config_for_shared.not_allowed_user_ids,
+          }
+        : undefined,
     }));
 }
 

@@ -32,12 +32,16 @@ import {
   type CustomToolExecuteFn,
   type CustomToolsMap,
   type CustomToolsMapEntry,
-  type CustomToolDefinition,
-  type CustomToolkitDefinition,
+  type CustomToolWireDefinition,
+  type CustomToolkitWireDefinition,
   type InputParamsSchema,
 } from '../types/customTool.types';
-import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
+import type {
+  SessionCreateResponse,
+  SessionRetrieveResponse,
+} from '@composio/client/resources/tool-router/session/session.mjs';
 import { ValidationError } from '../errors';
+import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 
 /** Prefix applied by the backend to local tool slugs for disambiguation. */
 export const LOCAL_TOOL_PREFIX = 'LOCAL_';
@@ -184,6 +188,7 @@ export function createCustomTool<T extends z.ZodType>(
     name: validated.name,
     description: validated.description,
     extendsToolkit: validated.extendsToolkit,
+    preload: validated.preload,
     inputSchema,
     outputSchema,
     inputParams,
@@ -250,6 +255,7 @@ export function createCustomToolkit(
     slug: slugResult.data,
     name: validated.name,
     description: validated.description,
+    preload: validated.preload,
     tools: options.tools,
   };
 }
@@ -264,6 +270,47 @@ function buildFinalSlug(toolSlug: string, toolkitSlug?: string): string {
     ? `${LOCAL_TOOL_PREFIX}${toolkitSlug.toUpperCase()}_${upper}`
     : `${LOCAL_TOOL_PREFIX}${upper}`;
 }
+
+const qualifiedOriginalSlugKey = (toolkit: string | undefined, originalSlug: string): string =>
+  `${toolkit?.toUpperCase() ?? ''}::${originalSlug.toUpperCase()}`;
+
+const canShareOriginalSlug = (existing: CustomToolsMapEntry, next: CustomToolsMapEntry): boolean =>
+  !!existing.toolkit &&
+  !!next.toolkit &&
+  existing.toolkit.toLowerCase() !== next.toolkit.toLowerCase();
+
+const addOriginalSlugAlias = (params: {
+  byOriginalSlug: Map<string, CustomToolsMapEntry>;
+  ambiguousOriginalSlugs: Set<string>;
+  originalSlug: string;
+  entry: CustomToolsMapEntry;
+}) => {
+  const originalSlugKey = params.originalSlug.toUpperCase();
+  if (params.ambiguousOriginalSlugs.has(originalSlugKey)) {
+    return;
+  }
+
+  const existing = params.byOriginalSlug.get(originalSlugKey);
+  if (!existing) {
+    params.byOriginalSlug.set(originalSlugKey, params.entry);
+    return;
+  }
+
+  if (existing.finalSlug.toUpperCase() === params.entry.finalSlug.toUpperCase()) {
+    return;
+  }
+
+  if (canShareOriginalSlug(existing, params.entry)) {
+    params.byOriginalSlug.delete(originalSlugKey);
+    params.ambiguousOriginalSlugs.add(originalSlugKey);
+    return;
+  }
+
+  throw new ValidationError(
+    `Custom tool slug collision: original slug "${params.originalSlug}" maps to multiple final slugs. ` +
+      `"${existing.finalSlug}" and "${params.entry.finalSlug}" both resolve from "${originalSlugKey}".`
+  );
+};
 
 /**
  * Build a CustomToolsMap from custom tools and toolkits.
@@ -281,9 +328,13 @@ export function buildCustomToolsMap(
 ): CustomToolsMap {
   const byFinalSlug = new Map<string, CustomToolsMapEntry>();
   const byOriginalSlug = new Map<string, CustomToolsMapEntry>();
+  const byToolkitAndOriginalSlug = new Map<string, CustomToolsMapEntry>();
+  const ambiguousOriginalSlugs = new Set<string>();
 
   const addEntry = (handle: CustomTool, finalSlug: string, toolkit?: string) => {
     const originalSlug = handle.slug.toUpperCase();
+    // Custom tool slugs are matched case-insensitively across local and response maps.
+    const finalSlugKey = finalSlug.toUpperCase();
 
     // Length validated early in createCustomTool/createCustomToolkit, but check as safety net
     if (finalSlug.length > MAX_SLUG_LENGTH) {
@@ -294,23 +345,23 @@ export function buildCustomToolsMap(
     }
 
     // Check cross-group collisions on final slug
-    if (byFinalSlug.has(finalSlug)) {
+    if (byFinalSlug.has(finalSlugKey)) {
       throw new ValidationError(
         `Custom tool slug collision: "${finalSlug}" is already registered.`
       );
     }
 
-    // Check cross-group collisions on original slug
-    if (byOriginalSlug.has(originalSlug)) {
+    const qualifiedKey = qualifiedOriginalSlugKey(toolkit, originalSlug);
+    if (byToolkitAndOriginalSlug.has(qualifiedKey)) {
       throw new ValidationError(
-        `Custom tool slug collision: original slug "${handle.slug}" maps to multiple final slugs. ` +
-          `"${byOriginalSlug.get(originalSlug)!.finalSlug}" and "${finalSlug}" both resolve from "${originalSlug}".`
+        `Custom tool slug collision: original slug "${handle.slug}" is already registered for toolkit "${toolkit ?? 'custom'}".`
       );
     }
 
     const entry: CustomToolsMapEntry = { handle, finalSlug, toolkit };
-    byFinalSlug.set(finalSlug, entry);
-    byOriginalSlug.set(originalSlug, entry);
+    byFinalSlug.set(finalSlugKey, entry);
+    byToolkitAndOriginalSlug.set(qualifiedKey, entry);
+    addOriginalSlugAlias({ byOriginalSlug, ambiguousOriginalSlugs, originalSlug, entry });
   };
 
   // Process standalone tools
@@ -327,7 +378,14 @@ export function buildCustomToolsMap(
     }
   }
 
-  return { byFinalSlug, byOriginalSlug, toolkits };
+  return {
+    byFinalSlug,
+    byOriginalSlug,
+    byToolkitAndOriginalSlug,
+    ...(ambiguousOriginalSlugs.size ? { ambiguousOriginalSlugs } : {}),
+    toolkits,
+    tools: tools.length ? tools : undefined,
+  };
 }
 
 /**
@@ -339,7 +397,39 @@ export function buildCustomToolsMap(
  * @param tools - The custom tools to serialize
  * @returns Array of CustomToolDefinition for the API payload
  */
-export function serializeCustomTools(tools: CustomTool[]): CustomToolDefinition[] {
+type CustomToolSerializationOptions = {
+  defaultPreload?: boolean;
+};
+
+function shouldSerializePreload(
+  preload: boolean | undefined,
+  inheritedPreload: boolean | undefined,
+  defaultPreload: boolean
+): boolean | undefined {
+  const inheritedOrDefault = inheritedPreload ?? defaultPreload;
+  if (preload !== undefined) {
+    return preload || inheritedOrDefault ? preload : undefined;
+  }
+  if (inheritedPreload !== undefined) {
+    return inheritedPreload || defaultPreload ? inheritedPreload : undefined;
+  }
+  return defaultPreload ? true : undefined;
+}
+
+function preloadWireProperty(
+  preload: boolean | undefined,
+  inheritedPreload: boolean | undefined,
+  defaultPreload: boolean
+): { preload?: boolean } {
+  const serializedPreload = shouldSerializePreload(preload, inheritedPreload, defaultPreload);
+  return serializedPreload === undefined ? {} : { preload: serializedPreload };
+}
+
+export function serializeCustomTools(
+  tools: CustomTool[],
+  options: CustomToolSerializationOptions = {}
+): CustomToolWireDefinition[] {
+  const defaultPreload = options.defaultPreload ?? false;
   return tools.map(handle => ({
     slug: handle.slug,
     name: handle.name,
@@ -347,6 +437,7 @@ export function serializeCustomTools(tools: CustomTool[]): CustomToolDefinition[
     input_schema: handle.inputSchema,
     ...(handle.outputSchema ? { output_schema: handle.outputSchema } : {}),
     ...(handle.extendsToolkit ? { extends_toolkit: handle.extendsToolkit } : {}),
+    ...preloadWireProperty(handle.preload, undefined, defaultPreload),
   }));
 }
 
@@ -357,17 +448,23 @@ export function serializeCustomTools(tools: CustomTool[]): CustomToolDefinition[
  * @param toolkits - The custom toolkits to serialize
  * @returns Array of CustomToolkitDefinition for the API payload
  */
-export function serializeCustomToolkits(toolkits: CustomToolkit[]): CustomToolkitDefinition[] {
+export function serializeCustomToolkits(
+  toolkits: CustomToolkit[],
+  options: CustomToolSerializationOptions = {}
+): CustomToolkitWireDefinition[] {
+  const defaultPreload = options.defaultPreload ?? false;
   return toolkits.map(tk => ({
     slug: tk.slug,
     name: tk.name,
     description: tk.description,
+    ...preloadWireProperty(tk.preload, undefined, defaultPreload),
     tools: tk.tools.map(t => ({
       slug: t.slug,
       name: t.name,
       description: t.description,
       input_schema: t.inputSchema,
       ...(t.outputSchema ? { output_schema: t.outputSchema } : {}),
+      ...preloadWireProperty(t.preload, tk.preload, defaultPreload),
     })),
   }));
 }
@@ -385,38 +482,71 @@ export function serializeCustomToolkits(toolkits: CustomToolkit[]): CustomToolki
 export function buildCustomToolsMapFromResponse(
   tools: CustomTool[],
   toolkits: CustomToolkit[] | undefined,
-  experimental: SessionCreateResponse['experimental'] | undefined
+  experimental:
+    | SessionCreateResponse['experimental']
+    | SessionRetrieveResponse['experimental']
+    | undefined
 ): CustomToolsMap {
   const byFinalSlug = new Map<string, CustomToolsMapEntry>();
   const byOriginalSlug = new Map<string, CustomToolsMapEntry>();
+  const byToolkitAndOriginalSlug = new Map<string, CustomToolsMapEntry>();
+  const ambiguousOriginalSlugs = new Set<string>();
 
-  // Build a lookup from original slug → custom tool handle (for matching response items)
-  const handlesByOriginalSlug = new Map<string, { handle: CustomTool; toolkit?: string }>();
+  type HandleMatch = { handle: CustomTool; toolkit?: string };
+  const handlesByQualifiedOriginalSlug = new Map<string, HandleMatch>();
+  const handlesByOriginalSlug = new Map<string, HandleMatch[]>();
+
+  const registerHandle = (handle: CustomTool, toolkit?: string) => {
+    const originalSlug = handle.slug.toUpperCase();
+    const match = { handle, toolkit };
+    handlesByQualifiedOriginalSlug.set(qualifiedOriginalSlugKey(toolkit, originalSlug), match);
+    const existing = handlesByOriginalSlug.get(originalSlug) ?? [];
+    existing.push(match);
+    handlesByOriginalSlug.set(originalSlug, existing);
+  };
+
   for (const handle of tools) {
-    handlesByOriginalSlug.set(handle.slug.toUpperCase(), {
-      handle,
-      toolkit: handle.extendsToolkit,
-    });
+    registerHandle(handle, handle.extendsToolkit);
   }
   if (toolkits) {
     for (const tk of toolkits) {
       for (const handle of tk.tools) {
-        handlesByOriginalSlug.set(handle.slug.toUpperCase(), { handle, toolkit: tk.slug });
+        registerHandle(handle, tk.slug);
       }
     }
   }
 
-  const addEntry = (finalSlug: string, originalSlug: string, toolkit?: string) => {
-    const match = handlesByOriginalSlug.get(originalSlug.toUpperCase());
+  const findHandle = (originalSlug: string, toolkit?: string): HandleMatch | undefined => {
+    const originalSlugKey = originalSlug.toUpperCase();
+    const qualifiedMatch = handlesByQualifiedOriginalSlug.get(
+      qualifiedOriginalSlugKey(toolkit, originalSlugKey)
+    );
+    if (qualifiedMatch) return qualifiedMatch;
+
+    const bareMatches = handlesByOriginalSlug.get(originalSlugKey) ?? [];
+    return bareMatches.length === 1 ? bareMatches[0] : undefined;
+  };
+
+  const addEntry = (finalSlug: string, originalSlug: string, toolkit?: string | null) => {
+    const resolvedToolkit = toolkit ?? undefined;
+    const match = findHandle(originalSlug, resolvedToolkit);
     if (!match) return; // Response tool not found in our handles (shouldn't happen)
+
+    const finalSlugKey = finalSlug.toUpperCase();
+    if (byFinalSlug.has(finalSlugKey)) {
+      throw new ValidationError(
+        `Custom tool slug collision: "${finalSlug}" is already registered.`
+      );
+    }
 
     const entry: CustomToolsMapEntry = {
       handle: match.handle,
       finalSlug,
-      toolkit: toolkit ?? match.toolkit,
+      toolkit: resolvedToolkit ?? match.toolkit,
     };
-    byFinalSlug.set(finalSlug, entry);
-    byOriginalSlug.set(originalSlug.toUpperCase(), entry);
+    byFinalSlug.set(finalSlugKey, entry);
+    byToolkitAndOriginalSlug.set(qualifiedOriginalSlugKey(entry.toolkit, originalSlug), entry);
+    addOriginalSlugAlias({ byOriginalSlug, ambiguousOriginalSlugs, originalSlug, entry });
   };
 
   // Map standalone custom tools from response
@@ -435,5 +565,112 @@ export function buildCustomToolsMapFromResponse(
     }
   }
 
-  return { byFinalSlug, byOriginalSlug, toolkits };
+  return {
+    byFinalSlug,
+    byOriginalSlug,
+    byToolkitAndOriginalSlug,
+    ...(ambiguousOriginalSlugs.size ? { ambiguousOriginalSlugs } : {}),
+    toolkits,
+    tools: tools.length ? tools : undefined,
+  };
+}
+
+/**
+ * Find a custom tool entry by final slug only.
+ *
+ * @internal
+ */
+export function findCustomToolMapEntryByFinalSlug(
+  customToolsMap: CustomToolsMap | undefined,
+  slug: string
+): CustomToolsMapEntry | undefined {
+  return customToolsMap?.byFinalSlug.get(slug.toUpperCase());
+}
+
+/**
+ * Find a custom toolkit tool entry by toolkit slug and original tool slug.
+ *
+ * @internal
+ */
+export function findCustomToolMapEntryByToolkitAndOriginalSlug(
+  customToolsMap: CustomToolsMap | undefined,
+  toolkit: string | undefined,
+  slug: string
+): CustomToolsMapEntry | undefined {
+  return customToolsMap?.byToolkitAndOriginalSlug?.get(qualifiedOriginalSlugKey(toolkit, slug));
+}
+
+/**
+ * Reject legacy attempts to preload custom tools through top-level preload.tools.
+ *
+ * Custom tool direct exposure is controlled by CustomTool.preload /
+ * CustomToolkit.preload so it follows the current SDK-provided custom
+ * definitions instead of stale session config.
+ *
+ * @internal
+ */
+export function assertNoCustomToolSlugsInPreload(
+  preloadTools: readonly string[] | typeof PRELOAD_TOOLS_ALL | undefined,
+  customToolsMap: CustomToolsMap | undefined
+): void {
+  if (!preloadTools || preloadTools === PRELOAD_TOOLS_ALL) {
+    return;
+  }
+
+  const customPreloadSlugs = preloadTools.filter(slug => {
+    const normalized = slug.toUpperCase();
+    return (
+      // Top-level preload.tools is only for Composio-managed tool slugs.
+      // Custom tools use `preload: true` on their SDK definitions instead.
+      normalized.startsWith(LOCAL_TOOL_PREFIX) ||
+      customToolsMap?.byOriginalSlug.has(normalized) ||
+      customToolsMap?.ambiguousOriginalSlugs?.has(normalized) ||
+      customToolsMap?.byFinalSlug.has(normalized)
+    );
+  });
+
+  if (customPreloadSlugs.length) {
+    throw new ValidationError(
+      `Custom tool slugs are not supported in preload.tools: ${customPreloadSlugs.join(
+        ', '
+      )}. Set preload: true on the SDK custom tool or custom toolkit definition instead.`
+    );
+  }
+}
+
+/**
+ * Resolve custom tools that the SDK should expose directly from session.tools().
+ *
+ * @internal
+ */
+export function getPreloadedCustomToolSlugs(
+  customToolsMap: CustomToolsMap | undefined,
+  defaultPreload = false
+): string[] {
+  if (!customToolsMap) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const customToolSlugs: string[] = [];
+
+  for (const entry of customToolsMap.byFinalSlug.values()) {
+    const toolkit = customToolsMap.toolkits?.find(
+      tk => entry.toolkit && tk.slug.toLowerCase() === entry.toolkit.toLowerCase()
+    );
+    const shouldPreload = entry.handle.preload ?? toolkit?.preload ?? defaultPreload;
+    if (!shouldPreload) {
+      continue;
+    }
+
+    const finalSlugKey = entry.finalSlug.toUpperCase();
+    if (seen.has(finalSlugKey)) {
+      continue;
+    }
+
+    seen.add(finalSlugKey);
+    customToolSlugs.push(entry.finalSlug);
+  }
+
+  return customToolSlugs;
 }

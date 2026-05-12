@@ -25,8 +25,8 @@ catalogs:
       specifier: ^4.20250917.0
       version: 4.20260218.0
     '@composio/client':
-      specifier: 0.1.0-alpha.66
-      version: 0.1.0-alpha.66
+      specifier: 0.1.0-alpha.71
+      version: 0.1.0-alpha.71
     '@effect/cli':
       specifier: ^0.73.2
       version: 0.73.2
@@ -115,6 +115,9 @@ importers:
       '@composio/anthropic':
         specifier: workspace:*
         version: link:ts/packages/providers/anthropic
+      '@composio/cli-local-tools':
+        specifier: workspace:*
+        version: link:ts/packages/cli-local-tools
       '@composio/core':
         specifier: workspace:*
         version: link:ts/packages/core
@@ -449,6 +452,16 @@ importers:
         version: link:../../../_utils
 
   ts/e2e-tests/runtimes/node/tool-router-files:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
+  ts/e2e-tests/runtimes/node/tool-router-pagination:
     dependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1058,9 +1071,15 @@ importers:
       '@clack/prompts':
         specifier: 'catalog:'
         version: 1.0.1
+      '@composio/cli-keyring':
+        specifier: workspace:*
+        version: link:../cli-keyring
+      '@composio/cli-local-tools':
+        specifier: workspace:*
+        version: link:../cli-local-tools
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.66
+        version: 0.1.0-alpha.71
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1171,11 +1190,66 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
 
+  ts/packages/cli-keyring:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.1
+        version: 24.10.13
+      bun-types:
+        specifier: ^1.3.11
+        version: 1.3.11
+      effect:
+        specifier: 'catalog:'
+        version: 3.19.18
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
+
+  ts/packages/cli-local-tools:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../core
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.26.0
+        version: 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
+      decompress:
+        specifier: ^4.2.1
+        version: 4.2.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
+    devDependencies:
+      '@types/decompress':
+        specifier: ^4.2.7
+        version: 4.2.7
+      '@types/node':
+        specifier: ^24.0.1
+        version: 24.10.13
+      chrome-devtools-mcp:
+        specifier: 0.24.0
+        version: 0.24.0
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.4(@arethetypeswrong/core@0.18.2)(@typescript/native-preview@7.0.0-dev.20260403.1)(publint@0.3.17)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.10.13)(@vitest/ui@3.2.4)(tsx@4.21.0)(yaml@2.8.2)
+
   ts/packages/core:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.66
+        version: 0.1.0-alpha.71
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1363,8 +1437,8 @@ importers:
   ts/packages/providers/mastra:
     dependencies:
       '@mastra/schema-compat':
-        specifier: ^1.0.0
-        version: 1.1.0(zod@4.3.6)
+        specifier: ^1.2.9
+        version: 1.2.9(zod@4.3.6)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1838,8 +1912,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@0.1.0-alpha.66':
-    resolution: {integrity: sha512-SDHcTWzz2dgdYAew/gQsRpjHpEzHKm6sW7KM4wCoJWNJuuMuey9Ahje91ZucNjfaqpI8CFW+pXY4nWkZf5LD7Q==}
+  '@composio/client@0.1.0-alpha.71':
+    resolution: {integrity: sha512-6h1IPMbXIx5PjaU0T+a1MNnKHL/pPP7+X2nNQaler5XoENANWGm4mYePjR+7Cgtw1j6X2QkCmRLuX5q9c0INvQ==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -2970,6 +3044,12 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
+  '@mastra/schema-compat@1.2.9':
+    resolution: {integrity: sha512-1/RgazXqi1Wdyx8aR81CVS+sRyzlTGUL1YhhHkSULoEY8aXs58bvWkH/6iixlYsY0xGvn+0OPLCeSRkBCtDx4Q==}
+    engines: {node: '>=22.13.0'}
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+
   '@modelcontextprotocol/sdk@1.26.0':
     resolution: {integrity: sha512-Y5RmPncpiDtTXDbLKswIJzTqu2hyBKxTNsgKqKclDbhIgg1wgtf1fRuvxgTnRfcnxtvvgbIEcqUOzZrJ6iSReg==}
     engines: {node: '>=18'}
@@ -4085,6 +4165,9 @@ packages:
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
 
+  bun-types@1.3.11:
+    resolution: {integrity: sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg==}
+
   bun-types@1.3.9:
     resolution: {integrity: sha512-+UBWWOakIP4Tswh0Bt0QD0alpTY8cb5hvgiYeWCMet9YukHbzuruIEeXC2D7nMJPB12kbh8C7XJykSexEqGKJg==}
 
@@ -4145,6 +4228,11 @@ packages:
   check-error@2.1.3:
     resolution: {integrity: sha512-PAJdDJusoxnwm1VwW07VWwUN1sl7smmC3OKggvndJFadxxDRyFJBX/ggnu/KE4kQAB7a3Dp8f/YXC1FlUprWmA==}
     engines: {node: '>= 16'}
+
+  chrome-devtools-mcp@0.24.0:
+    resolution: {integrity: sha512-eN7YZH05pTYCjgPj/rT0vqYjhOwGrqZX3wK7I8suljRMZ30L8YPlr/MqyYSDOf7fe3s9G0E7SqSNX2xXov6ZPw==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=23}
+    hasBin: true
 
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
@@ -7198,7 +7286,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@0.1.0-alpha.66': {}
+  '@composio/client@0.1.0-alpha.71': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -8199,7 +8287,7 @@ snapshots:
       zod: 3.25.76
       zod-from-json-schema: 0.5.2
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.1(zod@3.25.76)
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
 
   '@mastra/schema-compat@1.1.0(zod@4.3.6)':
     dependencies:
@@ -8207,7 +8295,15 @@ snapshots:
       zod: 4.3.6
       zod-from-json-schema: 0.5.2
       zod-from-json-schema-v3: zod-from-json-schema@0.0.5
-      zod-to-json-schema: 3.25.1(zod@4.3.6)
+      zod-to-json-schema: 3.25.2(zod@4.3.6)
+
+  '@mastra/schema-compat@1.2.9(zod@4.3.6)':
+    dependencies:
+      json-schema-to-zod: 2.7.0
+      zod: 4.3.6
+      zod-from-json-schema: 0.5.2
+      zod-from-json-schema-v3: zod-from-json-schema@0.0.5
+      zod-to-json-schema: 3.25.2(zod@4.3.6)
 
   '@modelcontextprotocol/sdk@1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)':
     dependencies:
@@ -9274,9 +9370,13 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
+  bun-types@1.3.11:
+    dependencies:
+      '@types/node': 24.10.13
+
   bun-types@1.3.9:
     dependencies:
-      '@types/node': 22.19.11
+      '@types/node': 24.10.13
 
   bundle-name@4.1.0:
     dependencies:
@@ -9329,6 +9429,8 @@ snapshots:
   chardet@2.1.1: {}
 
   check-error@2.1.3: {}
+
+  chrome-devtools-mcp@0.24.0: {}
 
   ci-info@3.9.0: {}
 

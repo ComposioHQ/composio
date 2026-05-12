@@ -77,6 +77,8 @@ Detailed documentation for Claude is organized in `.claude/`:
    - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
    - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
 
+10. **Internal links use relative paths, never absolute** - Write `/docs/<section>/<page>`, `/reference/api-reference/<resource>/<operationId>`, `/reference/sdk-reference/<lang>/<page>`, `/docs/changelog/YYYY/MM/DD`, `/assets/images/<file>`. Never `https://docs.composio.dev/...`. The link checker (rule 9) only validates relative links; absolute URLs silently bypass it and rot over time. API-reference operation IDs are **camelCase** (`getConnectedAccountsByNanoid`, `postAuthConfigs`) — do not guess them; copy the exact `href` from `<ApiEndpointsTable>` in `content/reference/api-reference/<resource>/index.mdx`. Previous changelog entries use zero-padded month/day (`/docs/changelog/2026/04/21`, not `2026/4/21`).
+
 ## Glossary
 
 `content/docs/glossary.mdx` defines key Composio terms (auth config, session, toolkit, etc.) using `<Glossary>` and `<GlossaryTerm name="...">` components (`components/glossary.tsx`). The component renders a filterable two-column table. The markdown converter in `lib/source.ts` converts `<GlossaryTerm>` tags to `### Term` headings for LLM-friendly output. When adding new Composio concepts, add a `<GlossaryTerm>` entry and update the `keywords` frontmatter array.

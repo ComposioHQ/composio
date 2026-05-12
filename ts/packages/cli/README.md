@@ -22,7 +22,7 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 ### Optional Flags
 
 - `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warning, error, fatal, none
-- `--instal-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--install-skill` is accepted as an alias.
+- `--install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--instal-skill` is still accepted as a backward-compatible alias.
 
 ## 🧭 Commands
 
@@ -38,13 +38,15 @@ composio [--log-level all|trace|debug|info|warning|error|fatal|none]
 - `composio proxy <url> --toolkit <toolkit> [-X method] [-H header]... [-d data]`: Call a toolkit API directly through Composio using a connected account.
 - `composio tools list|info`: Inspect available tools and their cached schemas.
 - `composio triggers list <toolkit>|info`: Inspect toolkit-scoped trigger types and their schemas.
+- `composio connections list [--toolkit <toolkit>]`: Print toolkit connection statuses as JSON.
+- `composio connections remove <account>`: Interactively remove a toolkit connection after confirmation.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
 - `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
 - `composio generate py [-o, --output-dir <directory>] [--toolkits <toolkit>]`: Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
 - `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
 - `composio upgrade [--beta]`: Self-update the Composio CLI from the stable channel, or from the beta channel with `--beta`.
-- `composio --instal-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for Claude, Codex, or OpenClaw.
+- `composio --install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for Claude, Codex, or OpenClaw.
 
 ## Configuration
 

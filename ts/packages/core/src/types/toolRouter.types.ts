@@ -3,15 +3,38 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
+import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
 import type {
   CustomTool,
   CustomToolkit,
+  InlineCustomToolsWirePayload,
   RegisteredCustomTool,
   RegisteredCustomToolkit,
 } from './customTool.types';
+import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
+
+export const SessionPreset = {
+  DIRECT_TOOLS: 'direct_tools',
+} as const;
+export type SessionPreset = (typeof SessionPreset)[keyof typeof SessionPreset];
 
 export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
+
+/**
+ * Sandbox compute tier for the tool router workbench.
+ *
+ * | Tier     | vCPU | RAM   |
+ * | -------- | ---- | ----- |
+ * | standard | 1    | 1 GB  |
+ * | medium   | 2    | 2 GB  |
+ * | large    | 4    | 4 GB  |
+ * | xlarge   | 8    | 8 GB  |
+ *
+ * Defaults to `standard` server-side when omitted.
+ */
+export const SandboxSizeSchema = z.enum(['standard', 'medium', 'large', 'xlarge']);
+export type SandboxSize = z.infer<typeof SandboxSizeSchema>;
 
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
@@ -153,8 +176,15 @@ export const ToolRouterConfigToolsSchema = z
   });
 export type ToolRouterConfigTools = z.infer<typeof ToolRouterConfigToolsSchema>;
 
-export const ToolRouterCreateSessionConfigSchema = z
+const ToolRouterCreateSessionConfigBaseSchema = z
   .object({
+    sessionPreset: z
+      .literal(SessionPreset.DIRECT_TOOLS)
+      .optional()
+      .describe(
+        'Shortcut to expose every tool allowed by the session filters directly in session.tools() and the MCP tool list. This disables meta tools by default (search, multi-execute, manage-connections, and workbench). Use when all tools are known upfront and helper/meta tools are not needed. Without this preset, ToolRouter uses its default configuration with meta tools enabled.'
+      ),
+
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional()
@@ -178,9 +208,9 @@ export const ToolRouterCreateSessionConfigSchema = z
       )
       .default({}),
     connectedAccounts: z
-      .record(z.string(), z.string())
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
       .describe(
-        'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is the connected account id.'
+        'The connected accounts to use in the tool router session. The key is the toolkit slug, the value is a connected account id or an array of ids. Only one account per toolkit is allowed when multi-account mode is disabled.'
       )
       .default({}),
     manageConnections: z
@@ -208,6 +238,9 @@ export const ToolRouterCreateSessionConfigSchema = z
           .describe(
             'The auto offload threshold in characters for the tool execution to be moved into workbench'
           ),
+        sandboxSize: SandboxSizeSchema.optional().describe(
+          'Sandbox compute tier for the workbench. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session\'s workbench sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists.'
+        ),
       })
       .optional()
       .describe('The workbench config for the tool router session'),
@@ -235,6 +268,19 @@ export const ToolRouterCreateSessionConfigSchema = z
       })
       .optional()
       .describe('Multi-account configuration for this session'),
+
+    preload: z
+      .object({
+        tools: z
+          .union([z.array(z.string()), z.literal(PRELOAD_TOOLS_ALL)])
+          .optional()
+          .describe(
+            'Tool slugs to preload into session.tools() and the MCP tool list, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.'
+          ),
+      })
+      .strict()
+      .optional()
+      .describe('Preload configuration for tools that should be exposed without search.'),
 
     experimental: z
       .object({
@@ -267,14 +313,37 @@ export const ToolRouterCreateSessionConfigSchema = z
   })
   .partial()
   .describe('The config for the tool router session');
+
+const applyDirectToolsPresetDefaults = (value: unknown): unknown => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const config = value as Record<string, unknown>;
+  if (config.sessionPreset !== SessionPreset.DIRECT_TOOLS) {
+    return value;
+  }
+
+  return {
+    ...config,
+    manageConnections: config.manageConnections === undefined ? false : config.manageConnections,
+    workbench: config.workbench === undefined ? { enable: false } : config.workbench,
+    preload: config.preload === undefined ? { tools: PRELOAD_TOOLS_ALL } : config.preload,
+  };
+};
+
+export const ToolRouterCreateSessionConfigSchema = z
+  .preprocess(applyDirectToolsPresetDefaults, ToolRouterCreateSessionConfigBaseSchema)
+  .describe('The config for the tool router session');
 /**
  * The config for the tool router session.
  *
+ * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and workbench by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
  * @param {Record<string, string>} authConfigs - The auth configs to use in the tool router session
- * @param {Record<string, string>} connectedAccounts - The connected accounts to use in the tool router session
+ * @param {Record<string, string | string[]>} connectedAccounts - The connected accounts to use in the tool router session. A single string is coerced to a single-element array before being sent to the backend.
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
@@ -282,10 +351,13 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true. When false, no code execution tools are available.
  * @param {boolean} [workbench.enableProxyExecution] - Whether to enable proxy execution
  * @param {number} [workbench.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to workbench
+ * @param {SandboxSize} [workbench.sandboxSize] - Sandbox compute tier: 'standard' (1 vCPU/1 GB, default), 'medium' (2 vCPU/2 GB), 'large' (4 vCPU/4 GB), or 'xlarge' (8 vCPU/8 GB)
  * @param {object} [multiAccount] - Multi-account configuration for this session
  * @param {boolean} [multiAccount.enable] - When true, enables multi-account mode. Falls back to org/project-level config when not set.
  * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
  * @param {boolean} [multiAccount.requireExplicitSelection] - When true, require explicit account selection when multiple accounts are connected
+ * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
+ * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  */
 export type ToolRouterCreateSessionConfig = z.infer<typeof ToolRouterCreateSessionConfigSchema>;
 
@@ -323,7 +395,7 @@ export const ToolkitConnectionStateSchema = z
 
 export const ToolkitConnectionsDetailsSchema = z.object({
   items: z.array(ToolkitConnectionStateSchema),
-  nextCursor: z.string().optional(),
+  cursor: z.string().optional(),
   totalPages: z.number(),
 });
 export type ToolkitConnectionsDetails = z.infer<typeof ToolkitConnectionsDetailsSchema>;
@@ -350,7 +422,7 @@ export type ToolRouterAuthorizeFn = (
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
   toolkits: z.array(z.string()).optional(),
-  nextCursor: z.string().optional(),
+  cursor: z.string().optional(),
   limit: z.number().optional(),
   isConnected: z.boolean().optional(),
   search: z.string().optional(),
@@ -487,8 +559,31 @@ export type ToolRouterSessionSearchFn = (params: {
 
 export type ToolRouterSessionExecuteFn = (
   toolSlug: string,
-  arguments_?: Record<string, unknown>
+  arguments_?: Record<string, unknown>,
+  options?: ToolRouterSessionExecuteOptions
 ) => Promise<ToolRouterSessionExecuteResponse>;
+
+export interface ToolRouterSessionExecuteOptions {
+  /**
+   * Account identifier for direct app tool execution in multi-account sessions.
+   * Meta/helper tools either ignore this top-level field or define
+   * their own account-selection fields, for example
+   * COMPOSIO_MULTI_EXECUTE_TOOL.tools[].account.
+   */
+  account?: string;
+}
+
+export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
+
+export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
+
+export interface ToolRouterSessionMetadata {
+  preload?: ToolRouterSessionPreloadConfig;
+  configVersion?: number;
+  warnings?: ToolRouterSessionWarning[];
+  preloadedCustomToolSlugs?: string[];
+  inlineCustomToolsPayload?: InlineCustomToolsWirePayload;
+}
 
 export const SessionProxyExecuteParamsSchema = z.object({
   /** The toolkit whose connected account to use for auth (e.g. 'gmail', 'github') */
@@ -516,6 +611,64 @@ export type ToolRouterSessionProxyExecuteFn = (
   params: SessionProxyExecuteParams
 ) => Promise<ToolRouterSessionProxyExecuteResponse>;
 
+export const ToolRouterUpdateSessionConfigSchema = z
+  .object({
+    toolkits: z
+      .union([
+        ToolRouterToolkitsParamSchema,
+        ToolRouterToolkitsDisabledConfigSchema,
+        ToolRouterToolkitsEnabledConfigSchema,
+      ])
+      .optional(),
+    tools: z
+      .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
+      .optional(),
+    tags: ToolRouterConfigTagsSchema.optional(),
+    authConfigs: z.record(z.string(), z.string()).optional(),
+    connectedAccounts: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .transform((rec) => {
+        const out: Record<string, string[]> = {};
+        for (const [k, v] of Object.entries(rec)) {
+          out[k] = typeof v === 'string' ? [v] : v;
+        }
+        return out;
+      })
+      .optional(),
+    manageConnections: z
+      .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
+      .nullable()
+      .optional(),
+    workbench: z
+      .object({
+        enable: z.boolean().optional(),
+        enableProxyExecution: z.boolean().optional(),
+        autoOffloadThreshold: z.number().optional(),
+        sandboxSize: SandboxSizeSchema.optional(),
+      })
+      .nullable()
+      .optional(),
+    multiAccount: z
+      .object({
+        enable: z.boolean().optional(),
+        maxAccountsPerToolkit: z.number().int().min(2).max(10).optional(),
+        requireExplicitSelection: z.boolean().optional(),
+      })
+      .nullable()
+      .optional(),
+    preload: z
+      .object({
+        tools: z.union([z.array(z.string()), z.literal('all')]).optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .partial();
+
+export type ToolRouterUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
+
+export type ToolRouterSessionUpdateFn = (config: ToolRouterUpdateSessionConfig) => Promise<void>;
+
 /** Session type returned by ToolRouter.create() and ToolRouter.use() */
 export interface Session<
   TToolCollection,
@@ -524,6 +677,12 @@ export interface Session<
 > {
   sessionId: string;
   mcp: ToolRouterMCPServerConfig;
+  /** Stored preload configuration for this session. */
+  preload: ToolRouterSessionPreloadConfig;
+  /** Server-side config version when returned by the API. */
+  configVersion?: number;
+  /** Non-blocking session creation warnings returned by the API. */
+  warnings: ToolRouterSessionWarning[];
   tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
   authorize: ToolRouterAuthorizeFn;
   toolkits: ToolRouterToolkitsFn;
@@ -531,6 +690,8 @@ export interface Session<
   search: ToolRouterSessionSearchFn;
   /** Execute a tool within the session */
   execute: ToolRouterSessionExecuteFn;
+  /** Update the session configuration. Mutates this session in-place. */
+  update: ToolRouterSessionUpdateFn;
   /** Proxy an API call through Composio's auth layer using the session's connected account */
   proxyExecute: ToolRouterSessionProxyExecuteFn;
   /** List custom tools registered in this session, with their final slugs and schemas */

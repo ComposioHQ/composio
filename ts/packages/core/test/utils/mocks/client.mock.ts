@@ -18,7 +18,8 @@ export const mockClient = {
   },
   toolRouter: {
     session: {
-      executeMeta: vi.fn(),
+      execute: vi.fn(),
+      tools: vi.fn(),
     },
   },
 };

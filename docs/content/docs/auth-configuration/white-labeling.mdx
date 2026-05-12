@@ -56,7 +56,7 @@ Only white-label toolkits where users see a consent screen (Google, GitHub, Slac
 Register a new OAuth app with the toolkit. Set the callback URL to:
 
 ```
-https://backend.composio.dev/api/v3/toolkits/auth/callback
+https://backend.composio.dev/api/v3.1/toolkits/auth/callback
 ```
 
 You'll get a **Client ID** and **Client Secret**.
@@ -214,7 +214,7 @@ app = FastAPI()
 
 @app.get("/api/composio-redirect")
 def composio_redirect(request: Request):
-    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
+    composio_url = "https://backend.composio.dev/api/v3.1/toolkits/auth/callback"
     return RedirectResponse(url=f"{composio_url}?{request.url.query}")
 ```
 </Tab>
@@ -224,7 +224,7 @@ def composio_redirect(request: Request):
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
+  const composioUrl = "https://backend.composio.dev/api/v3.1/toolkits/auth/callback";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(302, `${composioUrl}?${params.toString()}`);
 }

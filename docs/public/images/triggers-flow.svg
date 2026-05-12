@@ -133,7 +133,7 @@
 </g>
 <text x="79" y="236" text-anchor="start" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">Gmail</text>
 
-<!-- Accent nodes (Webhook Receiver, Poller, Webhook Endpoint) -->
+<!-- Accent nodes (Webhook Receiver, Poller, Webhook Subscription) -->
 <rect x="330" y="128" width="150" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
 <rect x="365" y="218" width="80" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
 <rect x="655" y="173" width="150" height="36" rx="6" fill="var(--accent-surface)" stroke="var(--accent-border)" stroke-width="0.75" filter="url(#sh-sm)" />
@@ -141,5 +141,5 @@
 <!-- ── Composio + App node labels ── -->
 <text x="405" y="146" text-anchor="middle" dy="0.35em" font-size="12.5" font-weight="600" fill="var(--text)">Webhook Receiver</text>
 <text x="405" y="236" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--text)">Poller</text>
-<text x="730" y="191" text-anchor="middle" dy="0.35em" font-size="12.5" font-weight="600" fill="var(--text)">Webhook Endpoint</text>
+<text x="730" y="191" text-anchor="middle" dy="0.35em" font-size="12.5" font-weight="600" fill="var(--text)">Webhook Subscription</text>
 </svg>

@@ -54,7 +54,7 @@ A **session** scopes tools and credentials to a specific user. Create `app/api/c
 
 <include meta='title="app/api/chat/route.ts"'>../../examples/chat-app/route.ts</include>
 
-That's the entire backend. `composio.create("user_123")` creates a session that lets the agent search for tools, authenticate users, and execute actions. This ID scopes all connections and credentials to this user. In production, use the user ID from your auth system.
+That's the entire backend. On the first request, `composio.create("user_123")` creates a session that lets the agent search for tools, authenticate users, and execute actions. Subsequent requests reuse the same session via `composio.use(sessionId)` so tool access and connected accounts carry over. In production, store the session ID per user in your database and use the user ID from your auth system.
 
 ## Build the chat UI
 

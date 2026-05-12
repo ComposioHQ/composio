@@ -59,9 +59,32 @@ command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
 command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
 command -v git   >/dev/null || error 'git is required to install Composio CLI'
 
-if [[ $# -gt 1 ]]; then
-    error 'Too many arguments. Usage: install.sh [version-tag]  (e.g. "@composio/cli@0.1.32")'
-fi
+install_agent=false
+version_arg=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --agent)
+        install_agent=true
+        shift
+        ;;
+    -h|--help)
+        echo 'Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+        echo '  --agent    After installing, sign up/log in as a Composio agent.'
+        exit 0
+        ;;
+    --*)
+        error "Unknown option: $1"
+        ;;
+    *)
+        if [[ -n "$version_arg" ]]; then
+            error 'Too many arguments. Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+        fi
+        version_arg=$1
+        shift
+        ;;
+    esac
+done
 
 # --- Platform detection ---
 
@@ -92,12 +115,13 @@ fi
 
 # --- Version resolution ---
 
-if [[ $# = 0 ]]; then
+if [[ -z "$version_arg" ]]; then
     info "Finding latest CLI release..."
 
     version=$(git ls-remote --tags "$github_repo" "@composio/cli@*" \
         | awk '{print $2}' \
         | sed 's#^refs/tags/##; s#\^{}$##' \
+        | grep -E '^@composio/cli@[0-9]+\.[0-9]+\.[0-9]+$' \
         | sort -V \
         | tail -1)
 
@@ -107,7 +131,7 @@ if [[ $# = 0 ]]; then
 
     info "Found latest version: $version"
 else
-    version=$1
+    version=$version_arg
 fi
 
 # --- Download into temp directory ---
@@ -311,6 +335,14 @@ else
 fi
 rm -f "$install_err"
 
+if [[ $install_agent = true ]]; then
+    echo
+    info "Setting up Composio agent login..."
+    if ! "$exe" login --agent --no-skill-install; then
+        error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
+    fi
+fi
+
 echo
 info "To get started, run:"
 echo
@@ -320,4 +352,8 @@ if [[ ${refresh_command:-} ]]; then
 fi
 
 info_bold "  composio --help"
-info_bold "  composio login"
+if [[ $install_agent = true ]]; then
+    info_bold "  composio agent whoami"
+else
+    info_bold "  composio login"
+fi

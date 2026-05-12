@@ -3,8 +3,8 @@ import type { Composio } from '@composio/client';
 import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
+  type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
-import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -48,7 +48,7 @@ const parseTimestamp = (value?: string | null): number => {
 
 const normalizeConnectedAccountStatus = (
   status?: string | null
-): ConnectedAccountItem['status'] => {
+): SelectableConnectedAccount['status'] => {
   switch (status) {
     case 'INITIALIZING':
     case 'INITIATED':
@@ -56,9 +56,11 @@ const normalizeConnectedAccountStatus = (
     case 'FAILED':
     case 'EXPIRED':
     case 'INACTIVE':
+    case 'REVOKED':
       return status;
     default:
-      return 'INACTIVE';
+      // Sentinel — `'INACTIVE'` would falsely tag the account as user-disabled.
+      return 'UNKNOWN';
   }
 };
 
@@ -92,33 +94,40 @@ export const resolveToolRouterSessionConnections = (
   ).pipe(
     Effect.map(response => {
       const items = (response.items ?? []) as ReadonlyArray<RawConnectedAccount>;
-      const normalizedItems: ConnectedAccountItem[] = items.map(
-        item =>
-          ({
-            id: item.id,
-            alias: item.alias ?? null,
-            word_id: item.word_id ?? null,
-            status: normalizeConnectedAccountStatus(item.status),
-            status_reason: null,
-            is_disabled: item.is_disabled ?? false,
-            user_id: item.user_id ?? '',
-            toolkit: {
-              slug: item.toolkit?.slug ?? '',
-            },
-            auth_config: {
-              id: item.auth_config?.id ?? '',
-              auth_scheme: '',
-              is_composio_managed: item.auth_config?.is_composio_managed ?? true,
-              is_disabled: false,
-            },
-            created_at: item.created_at ?? '',
-            updated_at: item.updated_at ?? '',
-            test_request_endpoint: '',
-          }) satisfies ConnectedAccountItem
-      );
+      const unknownStatuses = new Set<string>();
+      const normalizedItems: SelectableConnectedAccount[] = items.map(item => {
+        const normalizedStatus = normalizeConnectedAccountStatus(item.status);
+        if (normalizedStatus === 'UNKNOWN' && item.status) {
+          unknownStatuses.add(item.status);
+        }
+        return {
+          id: item.id,
+          alias: item.alias ?? null,
+          word_id: item.word_id ?? null,
+          status: normalizedStatus,
+          status_reason: null,
+          is_disabled: item.is_disabled ?? false,
+          user_id: item.user_id ?? '',
+          toolkit: {
+            slug: item.toolkit?.slug ?? '',
+          },
+          auth_config: {
+            id: item.auth_config?.id ?? '',
+            auth_scheme: '',
+            is_composio_managed: item.auth_config?.is_composio_managed ?? true,
+            is_disabled: false,
+          },
+          created_at: item.created_at ?? '',
+          updated_at: item.updated_at ?? '',
+          test_request_endpoint: '',
+        } satisfies SelectableConnectedAccount;
+      });
+
       const connectedToolkits = new Set<string>();
       const explicitAccountsByToolkit = new Map<string, RawConnectedAccount>();
 
+      // Second pass over raw items — needs `auth_config` / `is_disabled`
+      // dropped by the normalized projection.
       for (const item of items) {
         const toolkit = item.toolkit?.slug?.toLowerCase().trim();
         if (!toolkit || item.is_disabled) continue;
@@ -146,18 +155,31 @@ export const resolveToolRouterSessionConnections = (
       }
 
       return {
-        connectedToolkits: [...connectedToolkits],
-        authConfigs: Object.keys(authConfigs).length > 0 ? authConfigs : undefined,
-        connectedAccounts: (() => {
-          const selected = resolveDefaultConnectedAccountsByToolkit(normalizedItems);
-          return Object.keys(selected).length > 0 ? selected : undefined;
-        })(),
-        availableConnectedAccounts: (() => {
-          const grouped = groupCachedConnectedAccountsByToolkit(normalizedItems);
-          return Object.keys(grouped).length > 0 ? grouped : undefined;
-        })(),
-      } satisfies ToolRouterSessionConnectionContext;
+        unknownStatuses,
+        context: {
+          connectedToolkits: [...connectedToolkits],
+          authConfigs: Object.keys(authConfigs).length > 0 ? authConfigs : undefined,
+          connectedAccounts: (() => {
+            const selected = resolveDefaultConnectedAccountsByToolkit(normalizedItems);
+            return Object.keys(selected).length > 0 ? selected : undefined;
+          })(),
+          availableConnectedAccounts: (() => {
+            const grouped = groupCachedConnectedAccountsByToolkit(normalizedItems);
+            return Object.keys(grouped).length > 0 ? grouped : undefined;
+          })(),
+        } satisfies ToolRouterSessionConnectionContext,
+      };
     }),
+    Effect.tap(({ unknownStatuses }) =>
+      unknownStatuses.size > 0
+        ? Effect.logDebug(
+            `[ToolRouterSession] received unrecognized connected_account.status ` +
+              `value(s): ${[...unknownStatuses].join(', ')}. Treating as 'UNKNOWN' ` +
+              `(not selectable). Run "composio upgrade" to pick up the latest schema.`
+          )
+        : Effect.void
+    ),
+    Effect.map(({ context }) => context),
     Effect.catchAll(() =>
       Effect.succeed({
         connectedToolkits: [],

@@ -109,6 +109,7 @@ export interface TestLiveInput {
     items?: ConnectedAccountItem[];
     linkResponse?: LinkCreateResponse;
     onPatch?: (params: { path: string; body: Record<string, unknown> | undefined }) => void;
+    onDelete?: (nanoid: string) => void;
   };
 
   /**
@@ -123,6 +124,12 @@ export interface TestLiveInput {
    */
   realtimeData?: {
     events?: ReadonlyArray<Record<string, unknown>>;
+  };
+
+  cliUserConfig?: {
+    developerModeEnabled?: boolean;
+    developerDangerousCommandsEnabled?: boolean;
+    experimentalFeatures?: Record<string, boolean>;
   };
 
   /**
@@ -802,23 +809,46 @@ export const TestLayer = (input?: TestLiveInput) =>
       Layer.merge(BunFileSystem.layer, NodeOsTest)
     );
 
+    let rawCliUserConfig = CliUserConfig.make({
+      developer: {
+        enabled: input?.cliUserConfig?.developerModeEnabled ?? true,
+        destructiveActions: input?.cliUserConfig?.developerDangerousCommandsEnabled ?? false,
+      },
+      experimentalFeatures: input?.cliUserConfig?.experimentalFeatures ?? {},
+      artifactDirectory: Option.none(),
+      experimentalSubagent: Option.none(),
+      security: 'auto',
+    });
+
     const ComposioCliUserConfigTest = Layer.succeed(
       ComposioCliUserConfig,
       ComposioCliUserConfig.of({
-        data: {
-          channel: 'beta',
-          experimentalFeatures: {},
-          artifactDirectory: undefined,
-          experimentalSubagentTarget: 'auto',
+        get data() {
+          return {
+            channel: 'beta' as const,
+            developerModeEnabled: rawCliUserConfig.developer.enabled,
+            developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
+            experimentalFeatures: rawCliUserConfig.experimentalFeatures,
+            artifactDirectory: undefined,
+            experimentalSubagentTarget: 'auto' as const,
+            security: 'auto' as const,
+          };
         },
-        raw: CliUserConfig.make({
-          experimentalFeatures: {},
-          artifactDirectory: Option.none(),
-          experimentalSubagent: Option.none(),
-        }),
+        get raw() {
+          return rawCliUserConfig;
+        },
         channel: 'beta',
-        isExperimentalFeatureEnabled: () => true,
-        update: () => Effect.void,
+        isDevModeEnabled: () => rawCliUserConfig.developer.enabled,
+        areDeveloperDangerousCommandsEnabled: () => rawCliUserConfig.developer.destructiveActions,
+        isExperimentalFeatureEnabled: feature =>
+          rawCliUserConfig.experimentalFeatures[feature] ?? true,
+        update: next =>
+          Effect.sync(() => {
+            rawCliUserConfig = CliUserConfig.make({
+              ...rawCliUserConfig,
+              ...next,
+            });
+          }),
       })
     );
 
@@ -1029,6 +1059,14 @@ export const TestLayer = (input?: TestLiveInput) =>
           }
           return found;
         },
+        delete: async (nanoid: string) => {
+          const found = connectedAccountsData.items.find(item => item.id === nanoid);
+          if (!found) {
+            throw new Error(`Connected account "${nanoid}" not found`);
+          }
+          connectedAccountsData.onDelete?.(nanoid);
+          return {};
+        },
       },
       triggerInstances: {
         upsert: async (
@@ -1122,6 +1160,7 @@ export const TestLayer = (input?: TestLiveInput) =>
               connected_account_id: 'con_test_link',
               link_token: 'lt_test_token',
               redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+              account_type: 'PRIVATE' as const,
             })),
           proxyExecute:
             toolRouterOverrides?.proxyExecute ??

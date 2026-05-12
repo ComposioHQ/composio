@@ -148,3 +148,42 @@ for (const block of response.content) {
 </Tabs>
 </Step>
 </Steps>
+
+## Multi-turn chat
+
+For multi-turn apps, create the session once and reuse it across requests with `composio.use()`:
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# First request — create and store the session ID
+session = composio.create(user_id="user_123")
+session_id = session.session_id
+# store session_id in your database or chat state
+
+# Subsequent requests — reuse the session
+session = composio.use(session_id)
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// First request — create and store the session ID
+const session = await composio.create("user_123");
+const sessionId = session.sessionId;
+// store sessionId in your database or chat state
+
+// Subsequent requests — reuse the session
+const session = await composio.use(sessionId);
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>

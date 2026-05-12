@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createConnectionRequest } from '../../src/models/ConnectionRequest';
 import { ConnectionRequest } from '../../src/types/connectionRequest.types';
 import ComposioClient, { ComposioError } from '@composio/client';
-import { ConnectionRequestTimeoutError } from '../../src/errors';
+import { ConnectionRequestFailedError, ConnectionRequestTimeoutError } from '../../src/errors';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
 
@@ -222,6 +222,26 @@ describe('ConnectionRequest', () => {
 
       // Now check for the rejection
       await expect(connectionPromise).rejects.toBe(apiError);
+    });
+
+    it('should fail when the connection is revoked while polling', async () => {
+      connectionRequest = createConnectionRequest(
+        mockClient as unknown as ComposioClient,
+        connectedAccountId,
+        ConnectedAccountStatuses.INITIATED,
+        redirectUrl
+      );
+
+      const revokedResponse = {
+        id: connectedAccountId,
+        status: ConnectedAccountStatuses.REVOKED,
+        status_reason: 'revoked by user',
+      };
+      mockClient.connectedAccounts.retrieve.mockResolvedValueOnce(revokedResponse);
+
+      await expect(connectionRequest.waitForConnection(3000)).rejects.toThrow(
+        ConnectionRequestFailedError
+      );
     });
   });
 

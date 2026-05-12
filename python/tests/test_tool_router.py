@@ -3,8 +3,13 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from composio_client import omit
+from pydantic import BaseModel, Field
 
+from composio.exceptions import ValidationError
+from composio.core.models.custom_tool import ExperimentalAPI
 from composio.core.models.tool_router import (
+    SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
     ToolkitConnectionState,
     ToolRouter,
@@ -16,6 +21,15 @@ from composio.core.models.tool_router import (
     ToolRouterToolkitsDisableConfig,
     ToolRouterToolkitsEnableConfig,
 )
+from composio.core.models.tool_router_session import (
+    DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
+)
+
+experimental_api = ExperimentalAPI()
+
+
+class GrepInput(BaseModel):
+    pattern: str = Field(description="Pattern to search for")
 
 
 @pytest.fixture
@@ -37,10 +51,13 @@ def mock_client():
     ]
     mock_session_response.config = MagicMock()
     mock_session_response.config.user_id = "user_123"
+    mock_session_response.config.preload = MagicMock()
+    mock_session_response.config.preload.tools = []
     mock_session_response.experimental = None  # Default to None
 
     client.tool_router.session.create.return_value = mock_session_response
     client.tool_router.session.retrieve.return_value = mock_session_response
+    client.tool_router.session.attach.return_value = mock_session_response
 
     # Mock link response
     mock_link_response = MagicMock()
@@ -494,7 +511,10 @@ class TestToolRouter:
 
         call_args = mock_client.tool_router.session.create.call_args
         kwargs = call_args.kwargs
-        assert kwargs["connected_accounts"] == {"github": "ca_xxx", "slack": "ca_yyy"}
+        assert kwargs["connected_accounts"] == {
+            "github": ["ca_xxx"],
+            "slack": ["ca_yyy"],
+        }
 
     def test_create_session_with_workbench_config(self, tool_router, mock_client):
         """Test creating a session with workbench configuration."""
@@ -548,6 +568,190 @@ class TestToolRouter:
         assert kwargs["workbench"]["enable_proxy_execution"] is False
         assert kwargs["workbench"]["auto_offload_threshold"] == 20000
 
+    def test_create_session_with_workbench_sandbox_size(self, tool_router, mock_client):
+        """sandbox_size is forwarded on the wire when set, omitted otherwise."""
+        tool_router.create(
+            user_id="user_123",
+            workbench={"sandbox_size": "large"},
+        )
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["workbench"]["sandbox_size"] == "large"
+
+        tool_router.create(
+            user_id="user_123",
+            workbench={"enable_proxy_execution": True},
+        )
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "sandbox_size" not in kwargs["workbench"]
+
+    def test_create_session_with_multi_account(self, tool_router, mock_client):
+        """multi_account is forwarded on the wire when set, omitted otherwise."""
+        # Forwarded as-is when provided (TypedDict already uses snake_case keys).
+        tool_router.create(
+            user_id="user_123",
+            multi_account={
+                "enable": True,
+                "max_accounts_per_toolkit": 3,
+                "require_explicit_selection": True,
+            },
+        )
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["multi_account"] == {
+            "enable": True,
+            "max_accounts_per_toolkit": 3,
+            "require_explicit_selection": True,
+        }
+
+        # Omitted entirely when not provided.
+        tool_router.create(user_id="user_123")
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert "multi_account" not in kwargs
+
+    def test_create_session_with_preload(self, tool_router, mock_client):
+        """preload is forwarded and exposed on the session."""
+        mock_client.tool_router.session.create.return_value.config.preload.tools = [
+            "GMAIL_FETCH_EMAILS"
+        ]
+
+        session = tool_router.create(
+            user_id="user_123",
+            preload={"tools": ["GMAIL_FETCH_EMAILS"]},
+        )
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": ["GMAIL_FETCH_EMAILS"]}
+        assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
+
+    def test_create_session_with_preload_all(self, tool_router, mock_client):
+        """preload tools='all' is forwarded and exposed on the session."""
+        mock_client.tool_router.session.create.return_value.config.preload.tools = "all"
+
+        session = tool_router.create(
+            user_id="user_123",
+            preload={"tools": "all"},
+        )
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": "all"}
+        assert session.preload.tools == "all"
+
+    def test_create_session_rejects_custom_slug_in_top_level_preload(
+        self, tool_router, mock_client
+    ):
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": []}
+
+        with pytest.raises(
+            ValidationError,
+            match="Set preload=True on the SDK custom tool",
+        ):
+            tool_router.create(
+                user_id="user_123",
+                preload={"tools": ["GREP"]},
+                experimental={"custom_tools": [grep]},
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_create_session_rejects_bare_string_preload_tools(
+        self, tool_router, mock_client
+    ):
+        with pytest.raises(
+            ValidationError,
+            match='preload.tools must be a list of Composio tool slugs or "all"',
+        ):
+            tool_router.create(
+                user_id="user_123",
+                preload={"tools": "GMAIL_FETCH_EMAILS"},
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_create_session_with_direct_tools_preset(self, tool_router, mock_client):
+        """direct_tools applies SDK-side defaults for direct tool exposure."""
+        mock_client.tool_router.session.create.return_value.config.preload.tools = "all"
+
+        session = tool_router.create(
+            user_id="user_123",
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            toolkits=["github"],
+        )
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["toolkits"] == {"enable": ["github"]}
+        assert kwargs["manage_connections"] == {"enable": False}
+        assert kwargs["workbench"] == {"enable": False}
+        assert kwargs["preload"] == {"tools": "all"}
+        assert kwargs["search"] == {"enable": False}
+        assert kwargs["execute"] == {"enable_multi_execute": False}
+        assert session.preload.tools == "all"
+
+    def test_create_session_with_direct_tools_preset_overrides(
+        self, tool_router, mock_client
+    ):
+        """Explicit user fields override direct_tools defaults."""
+        mock_client.tool_router.session.create.return_value.config.preload.tools = [
+            "GITHUB_CREATE_ISSUE"
+        ]
+
+        session = tool_router.create(
+            user_id="user_123",
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            toolkits=["github"],
+            manage_connections=True,
+            workbench={"enable": True},
+            preload={"tools": ["GITHUB_CREATE_ISSUE"]},
+        )
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["manage_connections"] == {"enable": True}
+        assert kwargs["workbench"] == {"enable": True}
+        assert kwargs["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
+        assert kwargs["search"] == {"enable": False}
+        assert kwargs["execute"] == {"enable_multi_execute": False}
+        assert session.preload.tools == ["GITHUB_CREATE_ISSUE"]
+
+    def test_direct_tools_does_not_default_custom_preload_when_preload_overridden(
+        self, tool_router, mock_client
+    ):
+        """Explicit preload config also overrides the custom-tool preload default."""
+
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": []}
+
+        mock_response = mock_client.tool_router.session.create.return_value
+        mock_response.config.preload.tools = ["GITHUB_CREATE_ISSUE"]
+        mock_response.experimental = MagicMock()
+        mock_response.experimental.assistive_prompt = None
+        mock_response.experimental.custom_toolkits = []
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.slug = "SERVER_GREP"
+        mock_custom_tool.original_slug = "GREP"
+        mock_custom_tool.extends_toolkit = None
+        mock_response.experimental.custom_tools = [mock_custom_tool]
+
+        tool_router.create(
+            user_id="user_123",
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            toolkits=["github"],
+            preload={"tools": ["GITHUB_CREATE_ISSUE"]},
+            experimental={"custom_tools": [grep]},
+        )
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["preload"] == {"tools": ["GITHUB_CREATE_ISSUE"]}
+        assert "preload" not in kwargs["experimental"]["custom_tools"][0]
+
     def test_create_session_complex_config(self, tool_router, mock_client):
         """Test creating a session with complex configuration."""
         session = tool_router.create(
@@ -564,6 +768,7 @@ class TestToolRouter:
             auth_configs={"github": "ac_xxx"},
             connected_accounts={"slack": "ca_yyy"},
             workbench={"enable_proxy_execution": True, "auto_offload_threshold": 600},
+            multi_account={"enable": True, "max_accounts_per_toolkit": 5},
         )
 
         assert session.session_id == "session_123"
@@ -580,6 +785,11 @@ class TestToolRouter:
         assert "auth_configs" in kwargs
         assert "connected_accounts" in kwargs
         assert "workbench" in kwargs
+        assert kwargs["multi_account"] == {
+            "enable": True,
+            "max_accounts_per_toolkit": 5,
+            "require_explicit_selection": True,
+        }
 
     def test_create_session_with_experimental_config(self, tool_router, mock_client):
         """Test creating a session with experimental configuration."""
@@ -727,6 +937,10 @@ class TestToolRouter:
 
     def test_use_session(self, tool_router, mock_client):
         """Test retrieving an existing session."""
+        mock_client.tool_router.session.retrieve.return_value.config.preload.tools = [
+            "GMAIL_FETCH_EMAILS"
+        ]
+
         session = tool_router.use(session_id="session_123")
 
         # Verify session properties
@@ -744,22 +958,170 @@ class TestToolRouter:
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
+        assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
 
-        # Verify retrieve was called
         mock_client.tool_router.session.retrieve.assert_called_once_with("session_123")
+        mock_client.tool_router.session.attach.assert_not_called()
+        mock_client.post.assert_not_called()
+
+    def test_use_session_with_custom_tools(self, tool_router, mock_client):
+        """Test attaching custom tools when reusing a session."""
+
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": []}
+
+        mock_response = mock_client.tool_router.session.attach.return_value
+        mock_response.experimental = MagicMock()
+        mock_response.experimental.assistive_prompt = None
+        mock_response.experimental.custom_toolkits = []
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.slug = "SERVER_GREP"
+        mock_custom_tool.original_slug = "GREP"
+        mock_custom_tool.extends_toolkit = None
+        mock_response.experimental.custom_tools = [mock_custom_tool]
+
+        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+
+        mock_client.tool_router.session.attach.assert_called_once()
+        kwargs = mock_client.tool_router.session.attach.call_args.kwargs
+        assert kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert "custom_toolkits" not in kwargs["experimental"]
+        mock_client.tool_router.session.retrieve.assert_not_called()
+        mock_client.post.assert_not_called()
+        assert session.custom_tools()[0].slug == "SERVER_GREP"
+        assert session.custom_tools()[0].name == "Grep"
+
+    @patch("composio.core.models.tools.Tools")
+    def test_use_session_attaches_preloaded_custom_tools(
+        self,
+        mock_tools_class,
+        tool_router,
+        mock_client,
+        mock_provider,
+    ):
+        """use() attaches customs and exposes SDK-preloaded schemas locally."""
+
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+            preload=True,
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": [input.pattern]}
+
+        attach_response = mock_client.tool_router.session.attach.return_value
+        attach_response.tool_router_tools = ["COMPOSIO_SEARCH_TOOLS"]
+        attach_response.config.preload.tools = []
+        attach_response.experimental = MagicMock()
+        attach_response.experimental.assistive_prompt = None
+        attach_response.experimental.custom_toolkits = []
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.slug = "LOCAL_GREP"
+        mock_custom_tool.original_slug = "GREP"
+        mock_custom_tool.extends_toolkit = None
+        attach_response.experimental.custom_tools = [mock_custom_tool]
+
+        mock_tools_instance = MagicMock()
+        mock_tool = MagicMock()
+        mock_tool.slug = "COMPOSIO_SEARCH_TOOLS"
+        mock_tool.toolkit.slug = "composio"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_class.return_value = mock_tools_instance
+        mock_provider.wrap_tools.return_value = "mocked-custom-tools"
+
+        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session.tools()
+
+        mock_client.tool_router.session.attach.assert_called_once()
+        attach_kwargs = mock_client.tool_router.session.attach.call_args.kwargs
+        assert attach_kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert attach_kwargs["experimental"]["custom_tools"][0]["preload"] is True
+        mock_client.post.assert_not_called()
+        mock_client.tool_router.session.retrieve.assert_not_called()
+
+        wrapped_tools = mock_provider.wrap_tools.call_args.kwargs["tools"]
+        assert [tool.slug for tool in wrapped_tools] == [
+            "COMPOSIO_SEARCH_TOOLS",
+            "LOCAL_GREP",
+        ]
+
+    @patch("composio.core.models.tools.Tools")
+    def test_use_session_applies_preload_all_to_custom_tools(
+        self,
+        mock_tools_class,
+        tool_router,
+        mock_client,
+        mock_provider,
+    ):
+        """preload.tools='all' on an existing session selects attached customs."""
+
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": [input.pattern]}
+
+        attach_response = mock_client.tool_router.session.attach.return_value
+        attach_response.tool_router_tools = ["COMPOSIO_SEARCH_TOOLS"]
+        attach_response.config.preload.tools = "all"
+        attach_response.experimental = MagicMock()
+        attach_response.experimental.assistive_prompt = None
+        attach_response.experimental.custom_toolkits = []
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.slug = "LOCAL_GREP"
+        mock_custom_tool.original_slug = "GREP"
+        mock_custom_tool.extends_toolkit = None
+        attach_response.experimental.custom_tools = [mock_custom_tool]
+
+        mock_tools_instance = MagicMock()
+        mock_tool = MagicMock()
+        mock_tool.slug = "COMPOSIO_SEARCH_TOOLS"
+        mock_tool.toolkit.slug = "composio"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_class.return_value = mock_tools_instance
+        mock_provider.wrap_tools.return_value = "mocked-custom-tools"
+
+        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session.tools()
+        session.search(query="search local text")
+
+        wrapped_tools = mock_provider.wrap_tools.call_args.kwargs["tools"]
+        assert [tool.slug for tool in wrapped_tools] == [
+            "COMPOSIO_SEARCH_TOOLS",
+            "LOCAL_GREP",
+        ]
+        mock_client.tool_router.session.search.assert_called_once()
+        search_kwargs = mock_client.tool_router.session.search.call_args.kwargs
+        assert search_kwargs["experimental"]["custom_tools"][0]["slug"] == "GREP"
+        assert search_kwargs["experimental"]["custom_tools"][0]["preload"] is True
 
     def test_use_session_with_different_user(self, tool_router, mock_client):
         """Test that use() extracts user_id from session config."""
-        mock_retrieve_response = MagicMock()
-        mock_retrieve_response.session_id = "session_456"
-        mock_retrieve_response.mcp = MagicMock()
-        mock_retrieve_response.mcp.type = "http"
-        mock_retrieve_response.mcp.url = "https://mcp.example.com/session_456"
-        mock_retrieve_response.tool_router_tools = ["TOOL_1"]
-        mock_retrieve_response.config = MagicMock()
-        mock_retrieve_response.config.user_id = "custom_user_789"
+        mock_attach_response = MagicMock()
+        mock_attach_response.session_id = "session_456"
+        mock_attach_response.mcp = MagicMock()
+        mock_attach_response.mcp.type = "http"
+        mock_attach_response.mcp.url = "https://mcp.example.com/session_456"
+        mock_attach_response.tool_router_tools = ["TOOL_1"]
+        mock_attach_response.config = MagicMock()
+        mock_attach_response.config.user_id = "custom_user_789"
+        mock_attach_response.config.preload = MagicMock()
+        mock_attach_response.config.preload.tools = []
+        mock_attach_response.experimental = None
 
-        mock_client.tool_router.session.retrieve.return_value = mock_retrieve_response
+        mock_client.tool_router.session.retrieve.return_value = mock_attach_response
 
         session = tool_router.use(session_id="session_456")
 
@@ -774,6 +1136,29 @@ class TestToolRouter:
 
         with pytest.raises(Exception, match="Session not found"):
             tool_router.use(session_id="invalid_session")
+
+    def test_session_execute_with_account(self, tool_router, mock_client):
+        """session.execute forwards account for direct app tool execution."""
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"ok": True}
+        mock_execute_response.error = None
+        mock_execute_response.log_id = "log_123"
+        mock_client.tool_router.session.execute.return_value = mock_execute_response
+
+        session = tool_router.create(user_id="user_123")
+        session.execute(
+            "GMAIL_FETCH_EMAILS",
+            arguments={"max_results": 1},
+            account="work",
+        )
+
+        mock_client.tool_router.session.execute.assert_called_once_with(
+            session_id="session_123",
+            tool_slug="GMAIL_FETCH_EMAILS",
+            arguments={"max_results": 1},
+            account="work",
+            experimental=omit,
+        )
 
     def test_authorize_function(self, tool_router, mock_client):
         """Test the authorize function returned by session."""
@@ -966,9 +1351,14 @@ class TestToolRouter:
         session = tool_router.create(user_id="user_123")
         result = session.tools()
 
-        # Verify Tools was instantiated
+        # Verify Tools was instantiated (resolved flag; default ToolRouter is off)
         mock_tools_class.assert_called_once_with(
-            client=mock_client, provider=mock_provider, auto_upload_download_files=True
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+            sensitive_file_upload_protection=True,
+            file_upload_path_deny_segments=None,
+            file_upload_dirs=None,
         )
 
         # Verify get_raw_tool_router_meta_tools was called
@@ -976,7 +1366,73 @@ class TestToolRouter:
 
         # Verify provider's wrap_tools was called
         mock_provider.wrap_tools.assert_called_once()
+        wrapped_tools = mock_provider.wrap_tools.call_args.kwargs["tools"]
+        assert [tool.slug for tool in wrapped_tools] == ["GMAIL_FETCH_EMAILS"]
         assert result == "mocked-wrapped-tools"
+
+    @patch("composio.core.models.tools.Tools")
+    def test_tools_function_includes_preloaded_custom_tools(
+        self,
+        mock_tools_class,
+        tool_router,
+        mock_client,
+        mock_provider,
+    ):
+        """Custom tools with SDK preload enabled are exposed locally."""
+
+        @experimental_api.tool(
+            slug="GREP",
+            name="Grep",
+            description="Search local text",
+            preload=True,
+        )
+        def grep(input: GrepInput, ctx):
+            return {"matches": [input.pattern]}
+
+        mock_response = mock_client.tool_router.session.create.return_value
+        mock_response.tool_router_tools = ["COMPOSIO_SEARCH_TOOLS"]
+        mock_response.experimental = MagicMock()
+        mock_response.experimental.assistive_prompt = None
+        mock_response.experimental.custom_toolkits = []
+        mock_custom_tool = MagicMock()
+        mock_custom_tool.slug = "SERVER_GREP"
+        mock_custom_tool.original_slug = "GREP"
+        mock_custom_tool.extends_toolkit = None
+        mock_response.experimental.custom_tools = [mock_custom_tool]
+
+        mock_tools_instance = MagicMock()
+        mock_tool = MagicMock()
+        mock_tool.slug = "COMPOSIO_SEARCH_TOOLS"
+        mock_tool.toolkit.slug = "composio"
+        mock_tool.input_parameters = {}
+        mock_tools_instance.get_raw_tool_router_meta_tools.return_value = [mock_tool]
+        mock_tools_instance._file_helper.enhance_schema_descriptions.return_value = {}
+        mock_tools_class.return_value = mock_tools_instance
+        mock_provider.wrap_tools.return_value = "mocked-custom-tools"
+
+        session = tool_router.create(
+            user_id="user_123",
+            experimental={"custom_tools": [grep]},
+        )
+        result = session.tools()
+
+        wrapped_tools = mock_provider.wrap_tools.call_args.kwargs["tools"]
+        assert [tool.slug for tool in wrapped_tools] == [
+            "COMPOSIO_SEARCH_TOOLS",
+            "SERVER_GREP",
+        ]
+        assert DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX in wrapped_tools[1].description
+        assert wrapped_tools[1].toolkit.slug == "custom"
+        assert result == "mocked-custom-tools"
+
+        execute_tool = mock_provider.wrap_tools.call_args.kwargs["execute_tool"]
+        local_result = execute_tool(slug="SERVER_GREP", arguments={"pattern": "needle"})
+        assert local_result == {
+            "data": {"matches": ["needle"]},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tool_router.session.execute.assert_not_called()
 
     @patch("composio.core.models.tools.Tools")
     def test_tools_function_with_modifiers(
@@ -1070,7 +1526,7 @@ class TestToolRouter:
 
     def test_use_vs_create_independence(self, tool_router, mock_client):
         """Test that use() and create() are independent."""
-        # Setup different responses for create and retrieve
+        # Setup different responses for create and attach
         mock_create_response = MagicMock()
         mock_create_response.session_id = "created_session"
         mock_create_response.mcp = MagicMock()
@@ -1078,17 +1534,20 @@ class TestToolRouter:
         mock_create_response.mcp.url = "https://mcp.example.com/created"
         mock_create_response.tool_router_tools = ["TOOL_1"]
 
-        mock_retrieve_response = MagicMock()
-        mock_retrieve_response.session_id = "retrieved_session"
-        mock_retrieve_response.mcp = MagicMock()
-        mock_retrieve_response.mcp.type = "http"
-        mock_retrieve_response.mcp.url = "https://mcp.example.com/retrieved"
-        mock_retrieve_response.tool_router_tools = ["TOOL_2"]
-        mock_retrieve_response.config = MagicMock()
-        mock_retrieve_response.config.user_id = "user_456"
+        mock_attach_response = MagicMock()
+        mock_attach_response.session_id = "retrieved_session"
+        mock_attach_response.mcp = MagicMock()
+        mock_attach_response.mcp.type = "http"
+        mock_attach_response.mcp.url = "https://mcp.example.com/retrieved"
+        mock_attach_response.tool_router_tools = ["TOOL_2"]
+        mock_attach_response.config = MagicMock()
+        mock_attach_response.config.user_id = "user_456"
+        mock_attach_response.config.preload = MagicMock()
+        mock_attach_response.config.preload.tools = []
+        mock_attach_response.experimental = None
 
         mock_client.tool_router.session.create.return_value = mock_create_response
-        mock_client.tool_router.session.retrieve.return_value = mock_retrieve_response
+        mock_client.tool_router.session.retrieve.return_value = mock_attach_response
 
         # Create a new session
         created_session = tool_router.create(user_id="user_123")
@@ -1100,7 +1559,10 @@ class TestToolRouter:
 
         # Verify both methods were called
         mock_client.tool_router.session.create.assert_called_once()
-        mock_client.tool_router.session.retrieve.assert_called_once()
+        mock_client.tool_router.session.retrieve.assert_called_once_with(
+            "retrieved_session"
+        )
+        mock_client.post.assert_not_called()
 
 
 class TestToolRouterTypes:
@@ -1245,22 +1707,23 @@ class TestToolRouterExecution:
         call_args = mock_tools_instance._wrap_execute_tool_for_tool_router.call_args
         assert call_args.kwargs["session_id"] == "session_123"
 
-    def test_execute_meta_endpoint_called(
+    def test_execute_endpoint_called_with_auto_offload_opt_in(
         self, tool_router, mock_client, mock_provider
     ):
-        """Test that execute_meta endpoint is called when executing tools."""
-        # Setup execute_meta response
+        """Test that session execute is called for agentic tool execution."""
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
-        mock_client.tool_router.session.execute_meta.return_value = (
-            mock_execute_response
-        )
+        mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real Tools instance to test the execute function
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
         execute_fn = real_tools._wrap_execute_tool_for_tool_router(
             session_id="session_123"
         )
@@ -1268,11 +1731,13 @@ class TestToolRouterExecution:
         # Execute the tool
         result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
 
-        # Verify execute_meta was called with correct parameters
-        mock_client.tool_router.session.execute_meta.assert_called_once_with(
+        # Verify execute was called with direct offload opt-in for agentic calls
+        mock_client.tool_router.session.execute.assert_called_once_with(
             session_id="session_123",
-            slug="GMAIL_SEND_EMAIL",
+            tool_slug="GMAIL_SEND_EMAIL",
             arguments={"to": "test@example.com"},
+            enable_auto_workbench_offload=True,
+            experimental=omit,
         )
 
         # Verify result format
@@ -1280,17 +1745,55 @@ class TestToolRouterExecution:
         assert result["error"] is None
         assert result["successful"] is True
 
+    def test_execute_endpoint_passes_inline_custom_tools(
+        self, tool_router, mock_client, mock_provider
+    ):
+        """Provider-wrapped session tools pass inline custom definitions."""
+        mock_execute_response = MagicMock()
+        mock_execute_response.data = {"result": "success"}
+        mock_execute_response.error = None
+        mock_client.tool_router.session.execute.return_value = mock_execute_response
+
+        from composio.core.models.tools import Tools as RealTools
+
+        inline_payload = {
+            "custom_tools": [
+                {
+                    "slug": "GREP",
+                    "name": "Grep",
+                    "description": "Search local text",
+                    "input_schema": {"type": "object", "properties": {}},
+                }
+            ]
+        }
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
+        execute_fn = real_tools._wrap_execute_tool_for_tool_router(
+            session_id="session_123",
+            inline_custom_tools_payload=inline_payload,
+        )
+
+        execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
+
+        mock_client.tool_router.session.execute.assert_called_once_with(
+            session_id="session_123",
+            tool_slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "test@example.com"},
+            enable_auto_workbench_offload=True,
+            experimental=inline_payload,
+        )
+
     def test_modifiers_applied_in_tool_router_execution(
         self, tool_router, mock_client, mock_provider
     ):
         """Test that modifiers are applied before and after tool execution."""
-        # Setup execute_meta response
         mock_execute_response = MagicMock()
         mock_execute_response.data = {"result": "success"}
         mock_execute_response.error = None
-        mock_client.tool_router.session.execute_meta.return_value = (
-            mock_execute_response
-        )
+        mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create modifier functions
         def before_modifier(tool, toolkit, params):
@@ -1307,7 +1810,11 @@ class TestToolRouterExecution:
         from composio.core.models._modifiers import Modifier
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
 
         modifiers = [
             Modifier(
@@ -1325,28 +1832,30 @@ class TestToolRouterExecution:
         # Execute the tool
         result = execute_fn("GMAIL_SEND_EMAIL", {"to": "test@example.com"})
 
-        # Verify execute_meta was called with modified arguments
-        mock_client.tool_router.session.execute_meta.assert_called_once()
-        call_args = mock_client.tool_router.session.execute_meta.call_args
+        # Verify execute was called with modified arguments
+        mock_client.tool_router.session.execute.assert_called_once()
+        call_args = mock_client.tool_router.session.execute.call_args
         assert call_args.kwargs["arguments"] == {"to": "modified@example.com"}
+        assert call_args.kwargs["enable_auto_workbench_offload"] is True
 
         # Verify result was modified by after_execute
         assert result["data"] == {"modified": True}
 
     def test_execute_tool_error_handling(self, tool_router, mock_client, mock_provider):
         """Test that tool execution errors are handled correctly."""
-        # Setup execute_meta to return an error
         mock_execute_response = MagicMock()
         mock_execute_response.data = {}
         mock_execute_response.error = "Authentication failed"
-        mock_client.tool_router.session.execute_meta.return_value = (
-            mock_execute_response
-        )
+        mock_client.tool_router.session.execute.return_value = mock_execute_response
 
         # Create a real execute function
         from composio.core.models.tools import Tools as RealTools
 
-        real_tools = RealTools(client=mock_client, provider=mock_provider)
+        real_tools = RealTools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=False,
+        )
         execute_fn = real_tools._wrap_execute_tool_for_tool_router(
             session_id="session_123"
         )
@@ -1402,7 +1911,7 @@ class TestToolRouterIntegration:
         assert tools == ["tool1", "tool2"]
 
     def test_create_and_use_same_session(self, tool_router, mock_client):
-        """Test creating a session and then retrieving it."""
+        """Test creating a session and then attaching it."""
         # Create session
         created_session = tool_router.create(user_id="user_123")
         created_session_id = created_session.session_id

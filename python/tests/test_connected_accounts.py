@@ -1,5 +1,6 @@
 import logging
 import time
+import warnings
 from unittest.mock import Mock, patch
 
 import pytest
@@ -11,6 +12,22 @@ from composio.core.models.connected_accounts import (
     ConnectedAccounts,
     ConnectionRequest,
 )
+
+
+def _set_initiate_response(mock_client, body, headers=None):
+    """SEC-339: route an `initiate()` mock response through the
+    ``with_raw_response.create`` surface that the SDK consumes for
+    deprecation-header gating.
+
+    ``headers`` defaults to ``None`` (no Deprecation header → no warning,
+    matching custom-auth-config / non-OAuth-scheme behavior). Pass
+    ``{"Deprecation": "@..."}`` to simulate the apollo retiring branch.
+    """
+    raw = Mock()
+    raw.parse.return_value = body
+    raw.headers = headers or {}
+    mock_client.connected_accounts.with_raw_response.create.return_value = raw
+    return raw
 
 
 class TestAuthScheme:
@@ -175,6 +192,72 @@ class TestConnectionRequest:
 
         assert "Timeout while waiting for connection conn-timeout" in str(excinfo.value)
 
+    @pytest.mark.parametrize("terminal_status", ["FAILED", "EXPIRED", "REVOKED"])
+    def test_wait_for_connection_fails_fast_on_terminal_status(
+        self, monkeypatch, terminal_status
+    ):
+        mock_client = Mock()
+        terminal = Mock()
+        terminal.status = terminal_status
+        mock_client.connected_accounts.retrieve.return_value = terminal
+
+        req = ConnectionRequest(
+            id="conn-terminal",
+            status="PENDING",
+            redirect_url=None,
+            client=mock_client,
+        )
+
+        # Patch `time.time` defensively — matches sibling tests.
+        current_time = {"value": 0.0}
+
+        def fake_time():
+            value = current_time["value"]
+            current_time["value"] += 0.1
+            return value
+
+        monkeypatch.setattr(time, "time", fake_time)
+        monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: None)
+
+        with pytest.raises(exceptions.SDKError) as excinfo:
+            req.wait_for_connection(timeout=10.0)
+
+        assert "conn-terminal" in str(excinfo.value)
+        assert terminal_status in str(excinfo.value)
+        # One retrieve call only — no polling once we hit a terminal state.
+        assert mock_client.connected_accounts.retrieve.call_count == 1
+
+    def test_wait_for_connection_does_not_treat_inactive_as_terminal(self, monkeypatch):
+        mock_client = Mock()
+        inactive = Mock()
+        inactive.status = "INACTIVE"
+        active = Mock()
+        active.status = "ACTIVE"
+        mock_client.connected_accounts.retrieve.side_effect = [inactive, active]
+
+        req = ConnectionRequest(
+            id="conn-inactive-recover",
+            status="PENDING",
+            redirect_url=None,
+            client=mock_client,
+        )
+
+        current_time = {"value": 0.0}
+
+        def fake_time():
+            value = current_time["value"]
+            current_time["value"] += 0.1
+            return value
+
+        monkeypatch.setattr(time, "time", fake_time)
+        monkeypatch.setattr(time, "sleep", lambda *_args, **_kwargs: None)
+
+        result = req.wait_for_connection(timeout=1.0)
+
+        assert result is active
+        assert req.status == "ACTIVE"
+        assert mock_client.connected_accounts.retrieve.call_count == 2
+
     def test_from_id_uses_client_retrieve(self):
         mock_client = Mock()
         retrieved = Mock()
@@ -201,6 +284,7 @@ class TestConnectedAccounts:
         client.connected_accounts.update_status = Mock()
         client.connected_accounts.refresh = Mock()
         client.connected_accounts.create = Mock()
+        client.connected_accounts.patch = Mock()
         client.link.create = Mock()
         return client
 
@@ -256,7 +340,7 @@ class TestConnectedAccounts:
         mock_response.id = "conn-123"
         mock_response.connection_data.val.status = "PENDING"
         mock_response.connection_data.val.redirect_url = "https://redirect"
-        mock_client.connected_accounts.create.return_value = mock_response
+        _set_initiate_response(mock_client, mock_response)
 
         connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
 
@@ -276,7 +360,7 @@ class TestConnectedAccounts:
         mock_response.id = "conn-123"
         mock_response.connection_data.val.status = "PENDING"
         mock_response.connection_data.val.redirect_url = "https://redirect"
-        mock_client.connected_accounts.create.return_value = mock_response
+        _set_initiate_response(mock_client, mock_response)
 
         config = {
             "auth_scheme": "API_KEY",
@@ -295,7 +379,9 @@ class TestConnectedAccounts:
         mock_client.connected_accounts.list.assert_called_once_with(
             user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
         )
-        call_kwargs = mock_client.connected_accounts.create.call_args.kwargs
+        call_kwargs = (
+            mock_client.connected_accounts.with_raw_response.create.call_args.kwargs
+        )
         assert call_kwargs["auth_config"] == {"id": "auth-1"}
         assert call_kwargs["connection"]["user_id"] == "user-1"
         assert call_kwargs["connection"]["callback_url"] == "https://cb"
@@ -310,6 +396,12 @@ class TestConnectedAccounts:
     def test_link_builds_payload_and_returns_connection_request(
         self, connected_accounts, mock_client
     ):
+        # link() now mirrors initiate() and pre-flights list() to enforce the
+        # allow_multiple guard; default to no existing connections here.
+        no_accounts = Mock()
+        no_accounts.items = []
+        mock_client.connected_accounts.list.return_value = no_accounts
+
         mock_response = Mock()
         mock_response.connected_account_id = "conn-999"
         mock_response.redirect_url = "https://redirect"
@@ -334,6 +426,10 @@ class TestConnectedAccounts:
     def test_link_omits_callback_url_when_not_provided(
         self, connected_accounts, mock_client
     ):
+        no_accounts = Mock()
+        no_accounts.items = []
+        mock_client.connected_accounts.list.return_value = no_accounts
+
         mock_response = Mock()
         mock_response.connected_account_id = "conn-000"
         mock_response.redirect_url = None
@@ -346,6 +442,46 @@ class TestConnectedAccounts:
         assert call_kwargs["user_id"] == "user-1"
         assert call_kwargs["callback_url"] is omit
 
+    def test_link_raises_when_active_connection_exists_and_not_allow_multiple(
+        self, connected_accounts, mock_client
+    ):
+        """link() guards against duplicate connections, mirroring initiate()."""
+        existing = Mock()
+        existing.items = [Mock()]
+        mock_client.connected_accounts.list.return_value = existing
+
+        with pytest.raises(exceptions.ComposioMultipleConnectedAccountsError):
+            connected_accounts.link(user_id="user-1", auth_config_id="auth-1")
+
+        mock_client.connected_accounts.list.assert_called_once_with(
+            user_ids=["user-1"], auth_config_ids=["auth-1"], statuses=["ACTIVE"]
+        )
+        mock_client.link.create.assert_not_called()
+
+    def test_link_skips_guard_when_allow_multiple_is_true(
+        self, connected_accounts, mock_client
+    ):
+        """allow_multiple=True bypasses the guard and proceeds with link.create."""
+        existing = Mock()
+        existing.items = [Mock()]
+        mock_client.connected_accounts.list.return_value = existing
+
+        mock_response = Mock()
+        mock_response.connected_account_id = "conn-new"
+        mock_response.redirect_url = "https://redirect"
+        mock_client.link.create.return_value = mock_response
+
+        result = connected_accounts.link(
+            user_id="user-1",
+            auth_config_id="auth-1",
+            alias="work",
+            allow_multiple=True,
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["alias"] == "work"
+        assert result.id == "conn-new"
+
     def test_initiate_with_oauth2_tokens_returns_active_connection_request(
         self, connected_accounts, mock_client
     ):
@@ -357,7 +493,7 @@ class TestConnectedAccounts:
         mock_response.id = "conn-active"
         mock_response.connection_data.val.status = "ACTIVE"
         mock_response.connection_data.val.redirect_url = None
-        mock_client.connected_accounts.create.return_value = mock_response
+        _set_initiate_response(mock_client, mock_response)
 
         scheme = AuthScheme()
         config = scheme.oauth2(
@@ -388,3 +524,318 @@ class TestConnectedAccounts:
         mock_from_id.assert_called_once_with(id="conn-123", client=mock_client)
         mock_request.wait_for_connection.assert_called_once_with(timeout=42.0)
         assert result == "connected"
+
+
+def _make_bad_request_error(message: str):
+    """Build a BadRequestError instance for testing the error mapper.
+
+    The composio_client BadRequestError constructor signature is internal —
+    rather than depend on it, we stub a minimal object that ``str(error)``
+    surfaces the message and which is recognized as the BadRequestError type
+    by ``isinstance``. This mirrors how production responses arrive: the
+    error class with a message body.
+    """
+    from composio_client import BadRequestError
+
+    error = BadRequestError.__new__(BadRequestError)
+    Exception.__init__(error, message)
+    return error
+
+
+class TestConnectedAccountsAcl:
+    """Tests for ``account_type`` + per-user ACL surfacing on ``link()``
+    and ``update_acl()``."""
+
+    @pytest.fixture
+    def mock_client(self):
+        client = Mock()
+        client.connected_accounts.retrieve = Mock()
+        client.connected_accounts.list = Mock()
+        client.connected_accounts.delete = Mock()
+        client.connected_accounts.update_status = Mock()
+        client.connected_accounts.refresh = Mock()
+        client.connected_accounts.create = Mock()
+        client.connected_accounts.patch = Mock()
+        client.link.create = Mock()
+        # Default: no existing connections, so link() doesn't trip the guard.
+        no_accounts = Mock()
+        no_accounts.items = []
+        client.connected_accounts.list.return_value = no_accounts
+        # Default link.create response — overridden per test where the
+        # response shape matters.
+        default_link = Mock()
+        default_link.connected_account_id = "ca_test_shared"
+        default_link.redirect_url = "https://redirect"
+        client.link.create.return_value = default_link
+        return client
+
+    @pytest.fixture
+    def connected_accounts(self, mock_client):
+        return ConnectedAccounts(client=mock_client)
+
+    # -- link() with accountType + ACL forwarding ---------------------------
+
+    def test_link_forwards_account_type_and_nested_acl(
+        self, connected_accounts, mock_client
+    ):
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            account_type="SHARED",
+            acl_config_for_shared={
+                "allow_all_users": True,
+                "not_allowed_user_ids": ["user_bob"],
+            },
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["account_type"] == "SHARED"
+        assert call_kwargs["acl_config_for_shared"] == {
+            "allow_all_users": True,
+            "not_allowed_user_ids": ["user_bob"],
+        }
+
+    def test_link_omits_acl_when_not_provided(self, connected_accounts, mock_client):
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            account_type="SHARED",
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["account_type"] == "SHARED"
+        assert call_kwargs["acl_config_for_shared"] is omit
+
+    def test_link_forwards_only_provided_acl_fields(
+        self, connected_accounts, mock_client
+    ):
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            account_type="SHARED",
+            acl_config_for_shared={"allowed_user_ids": ["user_alice"]},
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["acl_config_for_shared"] == {
+            "allowed_user_ids": ["user_alice"]
+        }
+
+    def test_link_preserves_explicit_empty_lists(self, connected_accounts, mock_client):
+        """An empty list is meaningful (clear the allow/deny list)."""
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            account_type="SHARED",
+            acl_config_for_shared={
+                "allowed_user_ids": [],
+                "not_allowed_user_ids": [],
+            },
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["acl_config_for_shared"] == {
+            "allowed_user_ids": [],
+            "not_allowed_user_ids": [],
+        }
+
+    def test_link_maps_acl_only_for_shared_to_typed_error(
+        self, connected_accounts, mock_client
+    ):
+        mock_client.link.create.side_effect = _make_bad_request_error(
+            "acl_config_for_shared is only valid on SHARED connections."
+        )
+
+        with pytest.raises(exceptions.ComposioAclOnlyForSharedError):
+            connected_accounts.link(
+                user_id="user_creator",
+                auth_config_id="auth_config_123",
+                account_type="PRIVATE",
+                acl_config_for_shared={"allow_all_users": True},
+            )
+
+    def test_link_rethrows_non_acl_bad_request_errors(
+        self, connected_accounts, mock_client
+    ):
+        unrelated = _make_bad_request_error("auth_config_id is required")
+        mock_client.link.create.side_effect = unrelated
+
+        from composio_client import BadRequestError
+
+        with pytest.raises(BadRequestError):
+            connected_accounts.link(
+                user_id="user_creator", auth_config_id="auth_config_123"
+            )
+
+    # -- update_acl() body construction + mapper ----------------------------
+
+    def test_update_acl_serializes_nested_body(self, connected_accounts, mock_client):
+        response = Mock()
+        response.id = "ca_abc"
+        response.status = "ACTIVE"
+        response.success = True
+        mock_client.connected_accounts.patch.return_value = response
+
+        result = connected_accounts.update_acl(
+            "ca_abc",
+            allow_all_users=True,
+            not_allowed_user_ids=["user_bob"],
+        )
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            acl_config_for_shared={
+                "allow_all_users": True,
+                "not_allowed_user_ids": ["user_bob"],
+            },
+        )
+        assert result is response
+
+    def test_update_acl_omits_absent_fields(self, connected_accounts, mock_client):
+        connected_accounts.update_acl("ca_abc", allowed_user_ids=["user_alice"])
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            acl_config_for_shared={"allowed_user_ids": ["user_alice"]},
+        )
+
+    def test_update_acl_preserves_empty_array(self, connected_accounts, mock_client):
+        connected_accounts.update_acl("ca_abc", allowed_user_ids=[])
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            acl_config_for_shared={"allowed_user_ids": []},
+        )
+
+    def test_update_acl_rejects_all_none(self, connected_accounts, mock_client):
+        with pytest.raises(exceptions.ValidationError):
+            connected_accounts.update_acl("ca_abc")
+        mock_client.connected_accounts.patch.assert_not_called()
+
+    def test_update_acl_maps_acl_only_for_shared_to_typed_error(
+        self, connected_accounts, mock_client
+    ):
+        mock_client.connected_accounts.patch.side_effect = _make_bad_request_error(
+            "acl_config_for_shared is only valid on SHARED connections."
+        )
+
+        with pytest.raises(exceptions.ComposioAclOnlyForSharedError):
+            connected_accounts.update_acl("ca_abc", allow_all_users=True)
+
+    def test_update_acl_rethrows_non_acl_bad_request_errors(
+        self, connected_accounts, mock_client
+    ):
+        unrelated = _make_bad_request_error("some other 400")
+        mock_client.connected_accounts.patch.side_effect = unrelated
+
+        from composio_client import BadRequestError
+
+        with pytest.raises(BadRequestError):
+            connected_accounts.update_acl("ca_abc", allow_all_users=True)
+
+
+# SEC-339: initiate() must gate its DeprecationWarning on the response
+# `Deprecation` HTTP header (RFC 9745) that apollo emits only on the
+# retiring branch (Composio-managed + redirectable OAuth). These tests pin
+# that contract so the previous false-positive behavior — warning purely
+# off auth_scheme, which over-fired for custom auth configs — can't come
+# back. See https://docs.composio.dev/docs/changelog/2026/04/24
+class TestInitiateDeprecationHeaderGate:
+    @pytest.fixture
+    def mock_client(self):
+        client = Mock()
+        client.connected_accounts.list = Mock()
+        return client
+
+    @pytest.fixture(autouse=True)
+    def _reset_warning_flag(self):
+        """Reset the module-level one-time warning guard before each test
+        so warning emission is deterministic regardless of test order."""
+        import composio.core.models.connected_accounts as ca_mod
+
+        ca_mod._legacy_initiate_warning_emitted = False
+        yield
+        ca_mod._legacy_initiate_warning_emitted = False
+
+    @staticmethod
+    def _no_existing_accounts(mock_client):
+        empty = Mock()
+        empty.items = []
+        mock_client.connected_accounts.list.return_value = empty
+
+    @staticmethod
+    def _make_response():
+        body = Mock()
+        body.id = "conn-dep"
+        body.connection_data.val.status = "INITIATED"
+        body.connection_data.val.redirect_url = "https://redirect"
+        return body
+
+    def test_warns_once_when_response_carries_deprecation_header(self, mock_client):
+        """Managed + redirectable-OAuth path: apollo sets `Deprecation`,
+        SDK emits a `DeprecationWarning` pointing callers at link()."""
+        self._no_existing_accounts(mock_client)
+        body = self._make_response()
+        _set_initiate_response(
+            mock_client,
+            body,
+            headers={
+                "Deprecation": "@1776988800",
+                "Sunset": "Fri, 08 May 2026 00:00:00 GMT",
+                "Link": (
+                    "<https://docs.composio.dev/docs/changelog/2026/04/24>; "
+                    'rel="deprecation"'
+                ),
+            },
+        )
+
+        connected_accounts = ConnectedAccounts(client=mock_client)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            req = connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+
+        assert isinstance(req, ConnectionRequest)
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecations) == 1
+        message = str(deprecations[0].message)
+        assert "composio.connected_accounts.link()" in message
+        assert "2026-07-03" in message
+
+    def test_does_not_warn_when_response_has_no_deprecation_header(self, mock_client):
+        """Custom auth config / non-OAuth scheme: apollo returns a clean
+        response, SDK must stay silent. Regression for the prior
+        auth_scheme-only check that over-fired here."""
+        self._no_existing_accounts(mock_client)
+        _set_initiate_response(mock_client, self._make_response(), headers={})
+
+        connected_accounts = ConnectedAccounts(client=mock_client)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert deprecations == []
+
+    def test_warns_at_most_once_per_process_across_calls(self, mock_client):
+        """The one-time guard must hold across multiple calls in the same
+        process even when each response carries the Deprecation header."""
+        self._no_existing_accounts(mock_client)
+        # Same headers for both calls; helper rewires the same return on
+        # each invocation, so both calls see the Deprecation header.
+        _set_initiate_response(
+            mock_client,
+            self._make_response(),
+            headers={"Deprecation": "@1776988800"},
+        )
+
+        connected_accounts = ConnectedAccounts(client=mock_client)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+            empty = Mock()
+            empty.items = []
+            mock_client.connected_accounts.list.return_value = empty
+            connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+
+        deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecations) == 1
