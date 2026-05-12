@@ -26,6 +26,37 @@ By default, a session has access to **all toolkits** in the Composio catalog. Yo
 
 You can also attach local experimental custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
+## Updating a session
+
+Use `session.update()` to patch an existing session's configuration without creating a new session. Only the fields you pass are changed; the rest of the session configuration is preserved.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    toolkits=["github", "gmail"],
+    auth_configs={"github": "ac_my_config"},
+    connected_accounts={"gmail": ["ca_work"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+await session.update({
+  toolkits: ["github", "gmail"],
+  authConfigs: { github: "ac_my_config" },
+  connectedAccounts: { gmail: ["ca_work"] },
+});
+```
+</Tab>
+</Tabs>
+
+The update accepts the same configuration options shown below, including toolkits, auth configs, connected accounts, workbench, multi-account mode, manage connections, tags, tools, and preload settings.
+
 ## Enabling toolkits
 
 Restrict the session to specific toolkits:

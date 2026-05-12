@@ -39,7 +39,7 @@ See [Native Tools vs MCP](/docs/native-tools-vs-mcp) for a full comparison.
 </Accordion>
 
 <Accordion title="When should I create a new session?">
-Create a new session when the config changes: different toolkits, different auth config, or a different connected account. You don't need to store or manage session IDs. Just call `create()` each time. See [Users and sessions](/docs/users-and-sessions).
+Store the session ID and reuse it with `composio.use()` for multi-turn conversations or web apps. Use `session.update()` when the same conversation needs different toolkits, auth configs, or connected accounts. Create a new session when you need a fundamentally different setup, such as a different user or a separate agentic task. See [Users and sessions](/docs/users-and-sessions).
 </Accordion>
 
 </Accordions>
