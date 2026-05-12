@@ -20,8 +20,19 @@ on:
         type: string
 
 jobs:
+  install-script-unit-tests:
+    name: Install Script Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Test release resolution fallback
+        run: bash test/install-sh-release-resolution.test.sh
+
   test-install-script:
     name: Test Install Script
+    needs: install-script-unit-tests
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -547,7 +558,7 @@ jobs:
 
   summary:
     name: Installation Test Summary
-    needs: [test-install-script, test-npm-fallback, test-architecture-detection, test-prerequisites]
+    needs: [install-script-unit-tests, test-install-script, test-npm-fallback, test-architecture-detection, test-prerequisites]
     runs-on: ubuntu-latest
     if: always()
 
@@ -556,6 +567,12 @@ jobs:
         run: |
           echo "## Installation Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.install-script-unit-tests.result }}" == "success" ]]; then
+            echo "✅ **Install Script Unit Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Install Script Unit Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
 
           if [[ "${{ needs.test-install-script.result }}" == "success" ]]; then
             echo "✅ **Install Script Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
