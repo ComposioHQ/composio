@@ -69,6 +69,7 @@ const main = async () => {
   console.log(`Building native local-tool binaries for ${target}...`);
   await runScript('build-beeper-imessage-binaries.ts', target);
   await runScript('build-peekaboo-binaries.ts', target);
+  await runScript('build-composio-native-ui-binaries.ts', target);
 };
 
 main().catch(error => {

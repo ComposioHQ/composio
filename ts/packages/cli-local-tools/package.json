@@ -38,6 +38,7 @@
     "build": "pnpm exec tsdown",
     "build:beeper-imessage": "bun run ./scripts/build-beeper-imessage-binaries.ts",
     "build:peekaboo": "bun run ./scripts/build-peekaboo-binaries.ts",
+    "build:composio-native-ui": "bun run ./scripts/build-composio-native-ui-binaries.ts",
     "build:local-tool-binaries": "bun run ./scripts/build-local-tool-binaries.ts",
     "test": "vitest run",
     "typecheck": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
