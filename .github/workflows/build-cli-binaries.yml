@@ -211,6 +211,10 @@ jobs:
             artifact: composio-linux-aarch64
             runner: ubuntu-latest
             local_tools_target: ''
+          - target: bun-darwin-x64
+            artifact: composio-darwin-x64
+            runner: macos-15-intel
+            local_tools_target: ''
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
             runner: macos-15
