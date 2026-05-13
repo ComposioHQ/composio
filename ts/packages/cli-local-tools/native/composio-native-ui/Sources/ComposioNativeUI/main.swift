@@ -3,13 +3,30 @@ import MetalKit
 import QuartzCore
 
 struct Configuration {
-    var title = "Composio"
-    var message = "Native UI sidecar scaffold"
-    var detail = "This window is rendered by a Swift sidecar bundled with the CLI."
-    var width: CGFloat = 560
-    var height: CGFloat = 320
+    // Content (programmatic):
+    var tool: String = "GMAIL_GET_PROFILE"
+    var account: String = "gmail_pall-seba"
+    var title: String? = nil           // overrides the auto-built title
+    var subtitle: String = "Approve once, for the rest of this session, or deny."
+    var denyLabel: String = "Deny"
+    var allowSessionLabel: String = "Allow for session"
+    var allowOnceLabel: String = "Allow once"
+
+    // Window:
+    var width: CGFloat = 460
+    var height: CGFloat = 200
     var margin: CGFloat = 24
     var timeoutSeconds: TimeInterval?
+
+    // Result channel: if set, the decision JSON is written to this file path.
+    // Otherwise it is written to stdout. Either way the process exits 0 for a
+    // button press, 1 for dismissed / timeout / window-close.
+    var callbackFile: String?
+
+    var resolvedTitle: String {
+        if let title, !title.isEmpty { return title }
+        return "Allow \(tool) on \(account)?"
+    }
 
     init(arguments: [String]) {
         var index = 0
@@ -18,36 +35,28 @@ struct Configuration {
             let value = index + 1 < arguments.count ? arguments[index + 1] : nil
 
             switch argument {
+            case "--tool":
+                if let value { tool = value; index += 1 }
+            case "--account":
+                if let value { account = value; index += 1 }
             case "--title":
-                if let value {
-                    title = value
-                    index += 1
-                }
-            case "--message":
-                if let value {
-                    message = value
-                    index += 1
-                }
-            case "--detail":
-                if let value {
-                    detail = value
-                    index += 1
-                }
+                if let value { title = value; index += 1 }
+            case "--subtitle", "--detail":
+                if let value { subtitle = value; index += 1 }
+            case "--deny-label":
+                if let value { denyLabel = value; index += 1 }
+            case "--allow-session-label":
+                if let value { allowSessionLabel = value; index += 1 }
+            case "--allow-once-label":
+                if let value { allowOnceLabel = value; index += 1 }
+            case "--callback-file":
+                if let value { callbackFile = value; index += 1 }
             case "--width":
-                if let value, let parsed = Double(value) {
-                    width = CGFloat(parsed)
-                    index += 1
-                }
+                if let value, let parsed = Double(value) { width = CGFloat(parsed); index += 1 }
             case "--height":
-                if let value, let parsed = Double(value) {
-                    height = CGFloat(parsed)
-                    index += 1
-                }
+                if let value, let parsed = Double(value) { height = CGFloat(parsed); index += 1 }
             case "--margin":
-                if let value, let parsed = Double(value) {
-                    margin = CGFloat(parsed)
-                    index += 1
-                }
+                if let value, let parsed = Double(value) { margin = CGFloat(parsed); index += 1 }
             case "--timeout":
                 if let value, let parsed = Double(value), parsed > 0 {
                     timeoutSeconds = parsed
@@ -57,14 +66,28 @@ struct Configuration {
                 print("""
                 Usage: composio-native-ui [options]
 
-                Options:
-                  --title <text>     Window title. Default: Composio
-                  --message <text>   Primary text. Default: Native UI sidecar scaffold
-                  --detail <text>    Secondary text.
-                  --width <points>   Window width. Default: 560
-                  --height <points>  Window height. Default: 320
-                  --margin <points>  Margin from visible screen edges. Default: 24
-                  --timeout <secs>   Auto-close after the given number of seconds.
+                Content:
+                  --tool <slug>             Tool slug shown in the title. Default: GMAIL_GET_PROFILE
+                  --account <name>          Account identifier. Default: gmail_pall-seba
+                  --title <text>            Override the auto-built title entirely.
+                  --subtitle <text>         Subtitle / description line.
+                  --deny-label <text>       Override the "Deny" button label.
+                  --allow-session-label <text>
+                  --allow-once-label <text> Override the action button labels.
+
+                Window:
+                  --width <points>          Window width. Default: 460
+                  --height <points>         Window height. Default: 200
+                  --margin <points>         Margin from visible screen edges. Default: 24
+                  --timeout <secs>          Auto-close after the given number of seconds.
+
+                Result:
+                  --callback-file <path>    Write the decision JSON to this file. If omitted, JSON is printed to stdout.
+
+                Emits a single JSON line:
+                  {"decision":"allow_once|allow_session|deny|dismissed","tool":"...","account":"..."}
+
+                Exit code: 0 on button press, 1 on dismissed/timeout/window-close.
                 """)
                 Foundation.exit(0)
             default:
@@ -108,129 +131,59 @@ final class ShaderRenderer: NSObject, MTKViewDelegate {
             return out;
         }
 
-        // -- hash / value-noise / fbm --------------------------------
-        float hash21(float2 p) {
-            p = fract(p * float2(234.34, 435.345));
-            p += dot(p, p + 34.23);
-            return fract(p.x * p.y);
+        // Ordered 8x8 Bayer matrix, normalised to [0,1).
+        float bayer8(int2 p) {
+            const int M[64] = {
+                 0, 32,  8, 40,  2, 34, 10, 42,
+                48, 16, 56, 24, 50, 18, 58, 26,
+                12, 44,  4, 36, 14, 46,  6, 38,
+                60, 28, 52, 20, 62, 30, 54, 22,
+                 3, 35, 11, 43,  1, 33,  9, 41,
+                51, 19, 59, 27, 49, 17, 57, 25,
+                15, 47,  7, 39, 13, 45,  5, 37,
+                63, 31, 55, 23, 61, 29, 53, 21
+            };
+            int x = ((p.x % 8) + 8) % 8;
+            int y = ((p.y % 8) + 8) % 8;
+            return float(M[y * 8 + x]) / 64.0;
         }
 
-        float vnoise(float2 p) {
-            float2 i = floor(p);
-            float2 f = fract(p);
-            f = f * f * (3.0 - 2.0 * f);
-            float a = hash21(i);
-            float b = hash21(i + float2(1.0, 0.0));
-            float c = hash21(i + float2(0.0, 1.0));
-            float d = hash21(i + float2(1.0, 1.0));
-            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-        }
-
-        // Rotated-octave FBM — kills the obvious axis-aligned grid.
-        float fbm(float2 p) {
-            const float2x2 rot = float2x2(0.80, 0.60, -0.60, 0.80);
-            float v = 0.0;
-            float a = 0.55;
-            for (int i = 0; i < 6; ++i) {
-                v += a * vnoise(p);
-                p = rot * p * 2.05;
-                a *= 0.5;
-            }
-            return v;
-        }
-
-        // IQ cosine palette — iridescent, smooth.
-        float3 palette(float t, float3 a, float3 b, float3 c, float3 d) {
-            return a + b * cos(6.28318 * (c * t + d));
-        }
-
-        // Per-channel soft-light blend (Photoshop formula).
-        float softLight1(float s, float d) {
-            return (s < 0.5)
-                ? d - (1.0 - 2.0 * s) * d * (1.0 - d)
-                : ((d < 0.25)
-                    ? d + (2.0 * s - 1.0) * d * ((16.0 * d - 12.0) * d + 3.0)
-                    : d + (2.0 * s - 1.0) * (sqrt(d) - d));
-        }
-        float3 softLight(float3 s, float3 d) {
-            return float3(softLight1(s.x, d.x),
-                          softLight1(s.y, d.y),
-                          softLight1(s.z, d.z));
-        }
-
-        // Built using Shadertoy idioms: aspect-corrected coords,
-        // domain-warped FBM ("warp the warp"), IQ palette, soft-light
-        // blend over an ink base, vignette, dither, gamma.
+        // Matches the dashboard's <Dither + SineWave> composition:
+        //   colorB="#c2c2c2"  pattern="bayer8"  pixelSize=2
+        //   spread=0.8  threshold=0.59
+        //   SineWave amplitude=0.1 angle=162 frequency=0.5 softness=1 speed=-0.4
         fragment float4 fragment_main(VertexOut in [[stage_in]], constant float &time [[buffer(0)]]) {
-            // Aspect-corrected, centered coords. 560x320 ≈ 1.75 aspect.
+            const float PI = 3.14159265;
             float2 uv = in.uv;
-            float aspect = 1.75;
-            float2 p = (uv - 0.5) * float2(aspect, 1.0);
 
-            float t = time * 0.085;
+            // SineWave field across the canvas. Angle 162° from horizontal.
+            float ang = 162.0 * PI / 180.0;
+            float2 dir = float2(cos(ang), sin(ang));
+            float frequency = 0.5;
+            float amplitude = 0.10;
+            float softness  = 1.0;
+            float speed     = -0.4;
 
-            // -- Warp-the-warp: two layers of vector FBM, then a final field.
-            float2 q = float2(
-                fbm(p * 1.4 + float2(0.0, t * 1.3)),
-                fbm(p * 1.4 + float2(5.2, -t * 1.1))
-            );
-            float2 r = float2(
-                fbm(p * 1.9 + 3.4 * q + float2(1.7, 9.2) + t * 0.7),
-                fbm(p * 1.9 + 3.4 * q + float2(8.3, 2.8) - t * 0.6)
-            );
-            float f = fbm(p * 2.4 + 4.0 * r);
+            float coord = dot(uv - 0.5, dir) * frequency * 6.28318 + time * speed * 3.0;
+            float wave  = 0.5 + 0.5 * sin(coord);          // 0..1
+            // softness=1 → broad, gentle band; softness<1 would sharpen.
+            wave = pow(wave, 1.0 / max(softness, 0.001));
+            // amplitude=0.1 modulates a small swing around 0.5.
+            float sineValue = 0.5 + (wave - 0.5) * (amplitude * 4.0);
 
-            // Wisp highlights — narrow ridges where the field crests.
-            float wisps = smoothstep(0.55, 0.92, f);
-            wisps = wisps * wisps;
+            // Bayer-ordered dither at pixelSize=2.
+            int2 pix = int2(floor(in.position.xy * 0.5));
+            float b = bayer8(pix);
+            float spread    = 0.80;
+            float threshold = 0.59;
 
-            // Two IQ palettes layered: a hot magenta/amber and a cool teal/indigo.
-            float3 hot  = palette(0.15 + 0.65 * f + 0.12 * sin(t * 1.7),
-                                  float3(0.55, 0.35, 0.45),
-                                  float3(0.45, 0.32, 0.42),
-                                  float3(1.00, 0.90, 0.85),
-                                  float3(0.00, 0.18, 0.38));
-            float3 cold = palette(0.25 + 0.50 * length(r) - 0.08 * cos(t * 1.1),
-                                  float3(0.20, 0.32, 0.45),
-                                  float3(0.18, 0.28, 0.40),
-                                  float3(1.00, 1.00, 1.10),
-                                  float3(0.55, 0.40, 0.20));
+            // Standard ordered-dither comparison.
+            float mask = step(threshold, sineValue + (b - 0.5) * spread);
 
-            float mixFactor = smoothstep(0.25, 0.85, f + 0.2 * r.x);
-            float3 plasma = mix(cold, hot, mixFactor);
+            float3 white = float3(1.0, 1.0, 1.0);
+            float3 grey  = float3(0.7607, 0.7607, 0.7607); // #c2c2c2
 
-            // Wisp specular highlight — soft white-warm.
-            plasma += wisps * float3(1.05, 0.86, 0.62) * 0.45;
-
-            // -- Composition mask: push energy toward the right side
-            //    so the left-aligned text stays readable.
-            float2 c = uv - float2(0.62, 0.45);
-            float radial = exp(-dot(c * float2(0.9, 1.25), c * float2(0.9, 1.25)) * 4.2);
-            float leftFade = smoothstep(-0.35, 0.55, p.x);  // dim left edge
-            float intensity = radial * (0.35 + 0.65 * leftFade);
-
-            // Deep warm ink base — slightly violet so the cool wisps separate.
-            float3 ink = float3(0.030, 0.032, 0.050);
-
-            // Soft-light compose: plasma tints the ink instead of replacing it.
-            float3 color = softLight(plasma * intensity, ink);
-            color = mix(ink, color, 0.55 + 0.45 * intensity);
-
-            // Additive wisp bloom on top — the "spark" highlights.
-            color += wisps * intensity * float3(1.0, 0.78, 0.52) * 0.35;
-
-            // Vignette (Shadertoy idiom, but aspect aware).
-            float2 vv = uv * (1.0 - uv.yx);
-            float vig = pow(clamp(vv.x * vv.y * 16.0, 0.0, 1.0), 0.32);
-            color *= 0.55 + 0.50 * vig;
-
-            // Dither + grain — kills banding, adds film-tooth.
-            float n = hash21(in.position.xy + time * 60.0);
-            color += (n - 0.5) * 0.022;
-
-            // Gentle gamma — preserves blacks for UI readability.
-            color = pow(max(color, 0.0), float3(0.94));
-
+            float3 color = mix(grey, white, mask);
             return float4(color, 1.0);
         }
         """
@@ -301,35 +254,61 @@ final class MetalBackgroundView: MTKView {
 
 // MARK: - Tokens
 
+// Composio logomark — embedded as SVG so the sidecar stays a single binary
+// with no asset bundle. macOS NSImage can decode SVG directly.
+enum Logo {
+    static let composioSVG = #"""
+    <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0_2367_5)">
+    <path d="M91.7032 28.1801L35.3611 16.6572C31.6669 15.8988 28.1929 18.7367 28.1929 22.5043V49.1954V50.6144V77.3052C28.1929 81.0729 31.6669 83.9112 35.3611 83.1526L91.7032 71.6296" stroke="black" stroke-width="2.8556" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M48.1992 7.38531C48.1993 2.09223 53.6097 -1.44765 58.4546 0.57874L58.6851 0.679333L58.6902 0.68227L88.8308 14.6023C91.4759 15.7947 93.1338 18.4366 93.1346 21.3053V33.0975C93.1346 37.3994 89.4707 40.797 85.1902 40.4658L51.0547 37.918V61.8914L85.185 59.3435L85.585 59.323C89.6842 59.2231 93.1331 62.5334 93.109 66.6876V78.4797C93.109 81.3707 91.4075 83.9737 88.8105 85.1812L88.806 85.1827L58.691 99.0774L58.6917 99.0782C53.7808 101.351 48.1992 97.7714 48.1992 92.3759V81.1383C47.9779 81.2256 47.741 81.2834 47.4921 81.3015L30.8347 82.5007C29.4429 82.6007 28.2584 81.4977 28.2582 80.1023V67.7354C28.2583 67.256 28.4014 66.8063 28.6474 66.4277L14.9439 67.4513H14.9388C10.6701 67.7539 7.00001 64.3671 7 60.0823V39.7271C7.00031 35.4239 10.6671 32.0248 14.9491 32.3589H14.9483L28.3486 33.3589C28.2905 33.152 28.2583 32.9345 28.2582 32.7099V19.6826C28.2582 17.7807 29.9597 16.3299 31.8377 16.6304L47.6992 19.168C47.8735 19.1959 48.0404 19.2435 48.1992 19.3059V7.38531ZM85.4075 62.191H85.4023L51.0547 64.755V79.6601L90.2541 71.4669V66.6774L90.2496 66.435C90.1323 63.9438 87.9489 61.9928 85.4075 62.191ZM27.7075 36.1748C27.9471 36.5495 28.0863 36.9936 28.0864 37.4678V62.7813C28.0864 63.0748 28.0314 63.3559 27.9344 63.6169L48.1992 62.1044V37.7043L27.7075 36.1748ZM51.0547 35.0544L85.4023 37.6183L85.4075 37.6191L85.6511 37.6316C88.1632 37.6928 90.279 35.6595 90.279 33.0975V28.1405L51.0547 19.9411V35.0544Z" fill="black"/>
+    </g>
+    <defs>
+    <clipPath id="clip0_2367_5">
+    <rect width="86.4662" height="100" fill="white" transform="translate(7)"/>
+    </clipPath>
+    </defs>
+    </svg>
+    """#
+
+    static func makeImage() -> NSImage? {
+        guard let data = composioSVG.data(using: .utf8),
+              let image = NSImage(data: data) else { return nil }
+        image.isTemplate = false
+        return image
+    }
+}
+
+// Matches the dashboard's light theme (oklch tokens flattened to sRGB).
 enum Palette {
-    static let amber = NSColor(srgbRed: 0.95, green: 0.71, blue: 0.31, alpha: 1.0)
-    static let amberDeep = NSColor(srgbRed: 0.78, green: 0.50, blue: 0.18, alpha: 1.0)
-    static let inkDeep = NSColor(srgbRed: 0.04, green: 0.04, blue: 0.055, alpha: 1.0)
-    static let textPrimary = NSColor.white
-    static let textSecondary = NSColor.white.withAlphaComponent(0.62)
-    static let textMuted = NSColor.white.withAlphaComponent(0.38)
-    static let hairline = NSColor.white.withAlphaComponent(0.08)
+    static let cardBg = NSColor.white.withAlphaComponent(0.86)   // bg-card/80
+    static let border = NSColor(white: 0.0, alpha: 0.10)         // border-border
+    static let divider = NSColor(white: 0.0, alpha: 0.08)
+    static let textPrimary = NSColor(white: 0.07, alpha: 1.0)    // near-black
+    static let textSecondary = NSColor(white: 0.40, alpha: 1.0)  // text-muted-foreground
+    static let textMuted = NSColor(white: 0.55, alpha: 1.0)
+    static let primary = NSColor(white: 0.09, alpha: 1.0)        // primary button
+    static let primaryHover = NSColor(white: 0.18, alpha: 1.0)
+    static let onPrimary = NSColor.white
 }
 
 // MARK: - Card chrome
 
+// Light-theme card: rounded-2xl + border + subtle inner stroke, like
+// `border-border bg-card/80 rounded-2xl shadow-* backdrop-blur-md`.
 @MainActor
 final class CardView: NSView {
-    private let topHairline = CALayer()
     private let innerStroke = CAShapeLayer()
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.cornerRadius = 18
+        layer?.cornerRadius = 16
         layer?.cornerCurve = .continuous
         layer?.masksToBounds = true
 
-        topHairline.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
-        layer?.addSublayer(topHairline)
-
         innerStroke.fillColor = NSColor.clear.cgColor
-        innerStroke.strokeColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        innerStroke.strokeColor = Palette.border.cgColor
         innerStroke.lineWidth = 1
         layer?.addSublayer(innerStroke)
     }
@@ -338,73 +317,32 @@ final class CardView: NSView {
 
     override func layout() {
         super.layout()
-        topHairline.frame = NSRect(x: 0, y: bounds.height - 1, width: bounds.width, height: 1)
         innerStroke.frame = bounds
         innerStroke.path = CGPath(
             roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
-            cornerWidth: 17.5, cornerHeight: 17.5, transform: nil
+            cornerWidth: 15.5, cornerHeight: 15.5, transform: nil
         )
     }
 }
 
-@MainActor
-final class PulsingDot: NSView {
-    private let core = CALayer()
-    private let halo = CALayer()
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = true
-
-        halo.backgroundColor = Palette.amber.withAlphaComponent(0.35).cgColor
-        halo.cornerRadius = 6
-        layer?.addSublayer(halo)
-
-        core.backgroundColor = Palette.amber.cgColor
-        core.cornerRadius = 3
-        core.shadowColor = Palette.amber.cgColor
-        core.shadowOpacity = 0.9
-        core.shadowRadius = 4
-        core.shadowOffset = .zero
-        layer?.addSublayer(core)
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override var intrinsicContentSize: NSSize { NSSize(width: 12, height: 12) }
-
-    override func layout() {
-        super.layout()
-        let cx = bounds.midX, cy = bounds.midY
-        core.frame = NSRect(x: cx - 3, y: cy - 3, width: 6, height: 6)
-        halo.frame = NSRect(x: cx - 6, y: cy - 6, width: 12, height: 12)
-    }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        guard window != nil else { return }
-        let pulse = CABasicAnimation(keyPath: "opacity")
-        pulse.fromValue = 0.50
-        pulse.toValue = 0.10
-        pulse.duration = 1.6
-        pulse.autoreverses = true
-        pulse.repeatCount = .infinity
-        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        halo.add(pulse, forKey: "pulse")
-    }
+enum AccentStyle {
+    case primary    // dark filled, white text
+    case secondary  // transparent w/ border, dark text
 }
 
 @MainActor
 final class AccentButton: NSButton {
     private let action_: () -> Void
+    private let style: AccentStyle
     private let fill = CALayer()
-    private let topGloss = CAGradientLayer()
+    private let stroke = CAShapeLayer()
     private let glow = CALayer()
     private var isHovering = false
     private var isPressed = false
 
-    init(title: String, action: @escaping () -> Void) {
+    init(title: String, style: AccentStyle = .primary, action: @escaping () -> Void) {
         self.action_ = action
+        self.style = style
         super.init(frame: .zero)
         self.title = ""
         isBordered = false
@@ -412,37 +350,38 @@ final class AccentButton: NSButton {
         layer?.masksToBounds = false
         focusRingType = .none
 
-        glow.backgroundColor = Palette.amber.withAlphaComponent(0.0).cgColor
-        glow.shadowColor = Palette.amber.cgColor
+        glow.backgroundColor = NSColor.clear.cgColor
+        glow.shadowColor = NSColor.black.cgColor
         glow.shadowOpacity = 0.0
-        glow.shadowRadius = 18
-        glow.shadowOffset = .zero
+        glow.shadowRadius = 12
+        glow.shadowOffset = CGSize(width: 0, height: 2)
         layer?.addSublayer(glow)
 
-        fill.backgroundColor = Palette.amber.cgColor
-        fill.cornerRadius = 11
+        fill.cornerRadius = 8
         fill.cornerCurve = .continuous
         layer?.addSublayer(fill)
 
-        topGloss.colors = [
-            NSColor.white.withAlphaComponent(0.28).cgColor,
-            NSColor.white.withAlphaComponent(0.0).cgColor,
-        ]
-        topGloss.startPoint = CGPoint(x: 0.5, y: 1.0)
-        topGloss.endPoint = CGPoint(x: 0.5, y: 0.0)
-        topGloss.cornerRadius = 11
-        topGloss.cornerCurve = .continuous
-        layer?.addSublayer(topGloss)
+        stroke.fillColor = NSColor.clear.cgColor
+        stroke.lineWidth = 1
+        layer?.addSublayer(stroke)
 
-        let arrow = "\u{2197}"
-        let attr = NSMutableAttributedString(string: title + "  " + arrow, attributes: [
-            .font: NSFont.systemFont(ofSize: 12.5, weight: .semibold),
-            .foregroundColor: NSColor(srgbRed: 0.10, green: 0.07, blue: 0.04, alpha: 1.0),
-            .kern: 0.4,
+        let textColor: NSColor
+        switch style {
+        case .primary:
+            fill.backgroundColor = Palette.primary.cgColor
+            stroke.strokeColor = NSColor.clear.cgColor
+            textColor = Palette.onPrimary
+        case .secondary:
+            fill.backgroundColor = NSColor.white.withAlphaComponent(0.55).cgColor
+            stroke.strokeColor = Palette.border.cgColor
+            textColor = Palette.textPrimary
+        }
+
+        let attr = NSMutableAttributedString(string: title, attributes: [
+            .font: NSFont.systemFont(ofSize: 12.5, weight: .medium),
+            .foregroundColor: textColor,
+            .kern: 0.1,
         ])
-        attr.addAttribute(.font,
-                          value: NSFont.systemFont(ofSize: 12.5, weight: .medium),
-                          range: NSRange(location: title.count + 2, length: 1))
         attributedTitle = attr
 
         target = self
@@ -458,15 +397,19 @@ final class AccentButton: NSButton {
 
     override var intrinsicContentSize: NSSize {
         let base = super.intrinsicContentSize
-        return NSSize(width: base.width + 36, height: 34)
+        return NSSize(width: base.width + 22, height: 30)
     }
 
     override func layout() {
         super.layout()
         fill.frame = bounds
-        topGloss.frame = NSRect(x: 0, y: bounds.height * 0.5, width: bounds.width, height: bounds.height * 0.5)
         glow.frame = bounds
-        glow.shadowPath = CGPath(roundedRect: bounds, cornerWidth: 11, cornerHeight: 11, transform: nil)
+        glow.shadowPath = CGPath(roundedRect: bounds, cornerWidth: 8, cornerHeight: 8, transform: nil)
+        stroke.frame = bounds
+        stroke.path = CGPath(
+            roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+            cornerWidth: 7.5, cornerHeight: 7.5, transform: nil
+        )
     }
 
     override func resetCursorRects() {
@@ -496,14 +439,68 @@ final class AccentButton: NSButton {
         CATransaction.setAnimationDuration(0.14)
         let scale: CGFloat = pressed ? 0.97 : 1.0
         layer?.transform = CATransform3DMakeScale(scale, scale, 1)
-        glow.shadowOpacity = hover ? 0.55 : 0.0
-        fill.backgroundColor = (hover
-            ? NSColor(srgbRed: 0.98, green: 0.76, blue: 0.36, alpha: 1.0)
-            : Palette.amber).cgColor
+        switch style {
+        case .primary:
+            glow.shadowOpacity = hover ? 0.18 : 0.0
+            fill.backgroundColor = (hover ? Palette.primaryHover : Palette.primary).cgColor
+        case .secondary:
+            glow.shadowOpacity = 0.0
+            fill.backgroundColor = (hover
+                ? NSColor.white.withAlphaComponent(0.85)
+                : NSColor.white.withAlphaComponent(0.55)).cgColor
+        }
         CATransaction.commit()
     }
 
     @objc private func invoke() { action_() }
+}
+
+// MARK: - Decision callback
+
+enum Decision: String {
+    case deny = "deny"
+    case allowOnce = "allow_once"
+    case allowSession = "allow_session"
+    case dismissed = "dismissed"
+}
+
+@MainActor
+final class DecisionSink {
+    static let shared = DecisionSink()
+    private var hasEmitted = false
+    private var configuration: Configuration?
+
+    func configure(_ config: Configuration) {
+        self.configuration = config
+    }
+
+    func emitAndExit(_ decision: Decision) {
+        guard !hasEmitted, let config = configuration else {
+            Foundation.exit(decision == .dismissed ? 1 : 0)
+        }
+        hasEmitted = true
+
+        let payload: [String: Any] = [
+            "decision": decision.rawValue,
+            "tool": config.tool,
+            "account": config.account,
+        ]
+        let line: String
+        if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
+           let json = String(data: data, encoding: .utf8) {
+            line = json + "\n"
+        } else {
+            line = "{\"decision\":\"\(decision.rawValue)\"}\n"
+        }
+
+        if let path = config.callbackFile {
+            try? line.write(toFile: path, atomically: true, encoding: .utf8)
+        } else {
+            FileHandle.standardOutput.write(Data(line.utf8))
+        }
+
+        Foundation.exit(decision == .dismissed ? 1 : 0)
+    }
 }
 
 // MARK: - App
@@ -520,19 +517,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        DecisionSink.shared.configure(configuration)
         createWindow()
 
         if let timeoutSeconds = configuration.timeoutSeconds {
             Timer.scheduledTimer(withTimeInterval: timeoutSeconds, repeats: false) { _ in
                 Task { @MainActor in
-                    NSApp.terminate(nil)
+                    DecisionSink.shared.emitAndExit(.dismissed)
                 }
             }
         }
     }
 
     func windowWillClose(_ notification: Notification) {
-        NSApp.terminate(nil)
+        DecisionSink.shared.emitAndExit(.dismissed)
     }
 
     private func createWindow() {
@@ -590,55 +588,141 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         root.layer?.backgroundColor = NSColor.clear.cgColor
         root.layer?.masksToBounds = false
 
+        // Soft drop shadow behind the card.
+        let shadowHost = NSView()
+        shadowHost.wantsLayer = true
+        shadowHost.translatesAutoresizingMaskIntoConstraints = false
+        if let l = shadowHost.layer {
+            l.shadowColor = NSColor.black.cgColor
+            l.shadowOpacity = 0.18
+            l.shadowRadius = 30
+            l.shadowOffset = CGSize(width: 0, height: -12)
+            l.masksToBounds = false
+        }
+        root.addSubview(shadowHost)
+
+        let card = CardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        shadowHost.addSubview(card)
+
+        // Dithered sine-wave shader — fills the card.
         let background = MetalBackgroundView(frame: .zero)
         background.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(background)
+        card.addSubview(background)
 
-        // Small label.
-        let kicker = NSTextField(labelWithString: "COMPOSIO WANTS TO RUN")
-        let kickerAttr = NSMutableAttributedString(string: kicker.stringValue, attributes: [
-            .font: NSFont.monospacedSystemFont(ofSize: 10.5, weight: .semibold),
-            .foregroundColor: Palette.textSecondary,
-            .kern: 3.0,
-        ])
-        kicker.attributedStringValue = kickerAttr
-        kicker.alignment = .center
-        kicker.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(kicker)
+        // Translucent white wash so the dither reads more softly under text.
+        let wash = NSView()
+        wash.wantsLayer = true
+        wash.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.55).cgColor
+        wash.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(wash)
 
-        // Big headline.
-        let headline = NSTextField(labelWithString: "Read Email")
-        let headlineAttr = NSMutableAttributedString(string: "Read Email", attributes: [
-            .font: NSFont.systemFont(ofSize: 38, weight: .semibold),
+        // --- Logo (left rail).
+        let logoView = NSImageView()
+        logoView.image = Logo.makeImage()
+        logoView.imageScaling = .scaleProportionallyUpOrDown
+        logoView.imageAlignment = .alignCenter
+        logoView.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(logoView)
+
+        // --- Header: title with inline mono tool slug + account, muted subtitle.
+        let toolSlug = configuration.tool
+        let account = configuration.account
+        let titleString = configuration.resolvedTitle
+        let title = NSTextField(labelWithString: titleString)
+        let titleAttr = NSMutableAttributedString(string: titleString, attributes: [
+            .font: NSFont.systemFont(ofSize: 15, weight: .semibold),
             .foregroundColor: Palette.textPrimary,
-            .kern: -0.6,
+            .kern: -0.2,
         ])
-        headline.attributedStringValue = headlineAttr
-        headline.alignment = .center
-        headline.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(headline)
-
-        let button = AccentButton(title: "Continue") {
-            fputs("button:continue\n", stdout)
-            fflush(stdout)
-            NSApp.terminate(nil)
+        let monoFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold)
+        if let slugRange = titleString.range(of: toolSlug) {
+            titleAttr.addAttribute(.font, value: monoFont,
+                                   range: NSRange(slugRange, in: titleString))
         }
-        button.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(button)
+        if let acctRange = titleString.range(of: account) {
+            titleAttr.addAttribute(.font, value: monoFont,
+                                   range: NSRange(acctRange, in: titleString))
+        }
+        title.attributedStringValue = titleAttr
+        title.lineBreakMode = .byTruncatingTail
+        title.maximumNumberOfLines = 2
+        title.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(title)
+
+        let subtitle = NSTextField(labelWithString: configuration.subtitle)
+        let subtitleAttr = NSMutableAttributedString(string: configuration.subtitle, attributes: [
+            .font: NSFont.systemFont(ofSize: 12, weight: .regular),
+            .foregroundColor: Palette.textSecondary,
+        ])
+        subtitle.attributedStringValue = subtitleAttr
+        subtitle.lineBreakMode = .byWordWrapping
+        subtitle.maximumNumberOfLines = 2
+        subtitle.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(subtitle)
+
+        // --- Three actions matching the elicitation oneOf decisions.
+        let denyButton = AccentButton(title: configuration.denyLabel, style: .secondary) {
+            DecisionSink.shared.emitAndExit(.deny)
+        }
+        let allowSessionButton = AccentButton(title: configuration.allowSessionLabel, style: .secondary) {
+            DecisionSink.shared.emitAndExit(.allowSession)
+        }
+        let allowOnceButton = AccentButton(title: configuration.allowOnceLabel, style: .primary) {
+            DecisionSink.shared.emitAndExit(.allowOnce)
+        }
+        // Enter triggers the default action.
+        allowOnceButton.keyEquivalent = "\r"
+
+        let buttonRow = NSStackView(views: [denyButton, allowSessionButton, allowOnceButton])
+        buttonRow.orientation = .horizontal
+        buttonRow.alignment = .centerY
+        buttonRow.spacing = 8
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(buttonRow)
+
+        let hPad: CGFloat = 22
+        let headerTop: CGFloat = 20
+        let bodyBottom: CGFloat = 18
+        let logoSize: CGFloat = 32
 
         NSLayoutConstraint.activate([
-            background.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            background.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            background.topAnchor.constraint(equalTo: root.topAnchor),
-            background.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            shadowHost.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            shadowHost.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            shadowHost.topAnchor.constraint(equalTo: root.topAnchor),
+            shadowHost.bottomAnchor.constraint(equalTo: root.bottomAnchor),
 
-            kicker.centerXAnchor.constraint(equalTo: root.centerXAnchor),
-            headline.centerXAnchor.constraint(equalTo: root.centerXAnchor),
-            button.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            card.leadingAnchor.constraint(equalTo: shadowHost.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: shadowHost.trailingAnchor),
+            card.topAnchor.constraint(equalTo: shadowHost.topAnchor),
+            card.bottomAnchor.constraint(equalTo: shadowHost.bottomAnchor),
 
-            headline.centerYAnchor.constraint(equalTo: root.centerYAnchor, constant: -10),
-            kicker.bottomAnchor.constraint(equalTo: headline.topAnchor, constant: -14),
-            button.topAnchor.constraint(equalTo: headline.bottomAnchor, constant: 26),
+            background.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            background.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            background.topAnchor.constraint(equalTo: card.topAnchor),
+            background.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+
+            wash.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            wash.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+            wash.topAnchor.constraint(equalTo: card.topAnchor),
+            wash.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+
+            // Logo anchored to the bottom-left, aligned with button row baseline.
+            logoView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: hPad),
+            logoView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -bodyBottom - 4),
+            logoView.widthAnchor.constraint(equalToConstant: logoSize),
+            logoView.heightAnchor.constraint(equalToConstant: logoSize),
+
+            title.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: hPad),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: card.trailingAnchor, constant: -hPad),
+            title.topAnchor.constraint(equalTo: card.topAnchor, constant: headerTop),
+
+            subtitle.leadingAnchor.constraint(equalTo: title.leadingAnchor),
+            subtitle.trailingAnchor.constraint(lessThanOrEqualTo: card.trailingAnchor, constant: -hPad),
+            subtitle.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 4),
+
+            buttonRow.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -hPad),
+            buttonRow.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -bodyBottom),
         ])
 
         return root
