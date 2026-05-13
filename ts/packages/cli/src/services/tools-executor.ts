@@ -9,6 +9,7 @@ import type {
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
+import { gateToolExecution } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -32,6 +33,7 @@ export interface ToolExecuteParams {
   readonly connectedAccounts?: Record<string, string>;
   readonly cacheScope?: {
     readonly orgId: string;
+    readonly projectId: string;
     readonly consumerUserId: string;
   };
 }
@@ -171,15 +173,26 @@ export const ToolsExecutorLive = Layer.effect(
           const client = yield* clientSingleton.get();
           const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.
-          const { sessionId, localExperimentalPayload } = yield* createToolRouterSessionContext(
-            resolvedClient,
-            params.userId,
-            {
-              manageConnections: true,
-              connectedAccounts: params.connectedAccounts,
-              cacheScope: params.cacheScope,
-            }
-          );
+          const {
+            sessionId,
+            localExperimentalPayload,
+            permissionSnapshot,
+            connectedAccounts,
+            connectedAccountWordIds,
+          } = yield* createToolRouterSessionContext(resolvedClient, params.userId, {
+            manageConnections: true,
+            connectedAccounts: params.connectedAccounts,
+            cacheScope: params.cacheScope,
+          });
+          const toolkitSlug = slug.split('_')[0]?.toLowerCase();
+          yield* gateToolExecution({
+            toolSlug: slug,
+            connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
+            connectedAccountWordId: toolkitSlug
+              ? connectedAccountWordIds?.[toolkitSlug]
+              : undefined,
+            snapshot: permissionSnapshot,
+          });
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(

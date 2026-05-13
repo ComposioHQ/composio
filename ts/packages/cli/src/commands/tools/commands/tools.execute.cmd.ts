@@ -1107,6 +1107,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
             ? {
                 orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
                 consumerUserId: resolvedProject.consumerUserId,
               }
             : undefined,

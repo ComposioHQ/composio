@@ -1,14 +1,9 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import {
-  detectCliPlatform,
-  ensureBundledBinaryExecutable,
-  getLocalToolsBundleRootCandidates,
-} from '@composio/cli-local-tools';
+import { ensureBundledBinaryExecutable } from '@composio/cli-local-tools';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { resolveNativeUiBinary } from 'src/services/native-ui-sidecar';
 
 const title = Options.text('title').pipe(
   Options.withDefault('Composio'),
@@ -28,34 +23,6 @@ const detail = Options.text('detail').pipe(
 const timeout = Options.optional(Options.text('timeout')).pipe(
   Options.withDescription('Optional auto-close timeout in seconds.')
 );
-
-const NATIVE_UI_BINARY_NAME = 'composio-native-ui';
-
-const resolveNativeUiBinary = () => {
-  const platform = detectCliPlatform();
-  if (!platform.startsWith('darwin-')) {
-    return {
-      _tag: 'unsupported' as const,
-      platform,
-    };
-  }
-
-  const candidates = getLocalToolsBundleRootCandidates().map(root =>
-    path.join(root, NATIVE_UI_BINARY_NAME, platform, NATIVE_UI_BINARY_NAME)
-  );
-  const binaryPath = candidates.find(candidate => fs.existsSync(candidate));
-
-  return binaryPath
-    ? {
-        _tag: 'found' as const,
-        binaryPath,
-      }
-    : {
-        _tag: 'missing' as const,
-        platform,
-        candidates,
-      };
-};
 
 export const devNativeUiCmd = Command.make('native-ui', { title, message, detail, timeout }).pipe(
   Command.withDescription('Open the experimental native macOS UI sidecar.'),

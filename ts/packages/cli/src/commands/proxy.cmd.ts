@@ -316,6 +316,7 @@ export const proxyCmd = Command.make('proxy', {
             toolkits: [normalizedToolkit],
             cacheScope: {
               orgId: resolvedProject.orgId,
+              projectId: resolvedProject.projectId,
               consumerUserId,
             },
           });
