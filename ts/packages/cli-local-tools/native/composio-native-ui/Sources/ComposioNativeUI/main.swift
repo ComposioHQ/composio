@@ -6,7 +6,7 @@ struct Configuration {
     // Content (programmatic):
     var tool: String = "GMAIL_GET_PROFILE"
     var account: String = "gmail_pall-seba"
-    var callerAgent: String = "composio"           // claude | codex | openclaw | composio
+    var callerAgent: String? = nil                 // claude | codex | openclaw | composio (omit → CLI mode)
     var callerName: String? = nil                  // overrides agent.displayName
     var title: String? = nil                       // overrides the auto-built title
     var subtitle: String? = nil                    // overrides the auto-built subtitle
@@ -25,8 +25,8 @@ struct Configuration {
     // button press, 1 for dismissed / timeout / window-close.
     var callbackFile: String?
 
-    var resolvedAgent: Agent { Agents.resolve(callerAgent) }
-    var resolvedCallerName: String { callerName ?? resolvedAgent.displayName }
+    var resolvedAgent: Agent? { callerAgent.map(Agents.resolve) }
+    var resolvedCallerName: String { callerName ?? resolvedAgent?.displayName ?? "The composio cli" }
 
     // Sentinel used when no custom --title is supplied; makeContentView
     // builds an attributed string with an inline agent logo at this point.
@@ -54,7 +54,7 @@ struct Configuration {
                 if let value { callerAgent = value; index += 1 }
             case "--caller-name":
                 if let value { callerName = value; index += 1 }
-            case "--title":
+            case "--title", "--message":
                 if let value { title = value; index += 1 }
             case "--subtitle", "--detail":
                 if let value { subtitle = value; index += 1 }
@@ -87,6 +87,7 @@ struct Configuration {
                   --caller-agent <id>       Agent calling the tool. claude | codex | openclaw | composio (default).
                   --caller-name <text>      Override the agent display name shown in the title.
                   --title <text>            Override the auto-built title entirely.
+                  --message <text>          Alias for --title, used by CLI dev previews.
                   --subtitle <text>         Subtitle / description line.
                   --deny-label <text>       Override the "Deny" button label.
                   --allow-session-label <text>
@@ -707,9 +708,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 titleAttr.addAttribute(.font, value: monoFont,
                                        range: NSRange(r, in: customTitle))
             }
-        } else {
+        } else if let agent = configuration.resolvedAgent {
             // Inline agent logo as the subject of the sentence.
-            if let agentImage = configuration.resolvedAgent.makeImage() {
+            if let agentImage = agent.makeImage() {
                 let attachment = NSTextAttachment()
                 attachment.image = agentImage
                 attachment.bounds = CGRect(x: 0, y: -7, width: 28, height: 28)
@@ -717,6 +718,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 titleAttr.append(NSAttributedString(string: "  ", attributes: textAttrs))
             }
             titleAttr.append(NSAttributedString(string: "wants to use ", attributes: textAttrs))
+            titleAttr.append(NSAttributedString(string: toolSlug, attributes: monoAttrs))
+        } else {
+            // No caller agent — plain CLI-mode sentence, no inline logo.
+            titleAttr.append(NSAttributedString(string: "The composio cli wants to execute ", attributes: textAttrs))
             titleAttr.append(NSAttributedString(string: toolSlug, attributes: monoAttrs))
         }
 
