@@ -1,6 +1,6 @@
 # @composio/claude-code-agents
 
-## 1.0.0
+## 0.9.2
 
 ### Patch Changes
 
