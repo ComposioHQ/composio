@@ -76,6 +76,8 @@ struct Configuration {
     }
 }
 
+// MARK: - Shader
+
 final class ShaderRenderer: NSObject, MTKViewDelegate {
     private let commandQueue: MTLCommandQueue
     private let pipelineState: MTLRenderPipelineState
@@ -106,13 +108,14 @@ final class ShaderRenderer: NSObject, MTKViewDelegate {
             return out;
         }
 
+        // -- hash / value-noise / fbm --------------------------------
         float hash21(float2 p) {
-            p = fract(p * float2(123.34, 456.21));
-            p += dot(p, p + 45.32);
+            p = fract(p * float2(234.34, 435.345));
+            p += dot(p, p + 34.23);
             return fract(p.x * p.y);
         }
 
-        float noise(float2 p) {
+        float vnoise(float2 p) {
             float2 i = floor(p);
             float2 f = fract(p);
             f = f * f * (3.0 - 2.0 * f);
@@ -123,53 +126,112 @@ final class ShaderRenderer: NSObject, MTKViewDelegate {
             return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
         }
 
+        // Rotated-octave FBM — kills the obvious axis-aligned grid.
+        float fbm(float2 p) {
+            const float2x2 rot = float2x2(0.80, 0.60, -0.60, 0.80);
+            float v = 0.0;
+            float a = 0.55;
+            for (int i = 0; i < 6; ++i) {
+                v += a * vnoise(p);
+                p = rot * p * 2.05;
+                a *= 0.5;
+            }
+            return v;
+        }
+
+        // IQ cosine palette — iridescent, smooth.
+        float3 palette(float t, float3 a, float3 b, float3 c, float3 d) {
+            return a + b * cos(6.28318 * (c * t + d));
+        }
+
+        // Per-channel soft-light blend (Photoshop formula).
+        float softLight1(float s, float d) {
+            return (s < 0.5)
+                ? d - (1.0 - 2.0 * s) * d * (1.0 - d)
+                : ((d < 0.25)
+                    ? d + (2.0 * s - 1.0) * d * ((16.0 * d - 12.0) * d + 3.0)
+                    : d + (2.0 * s - 1.0) * (sqrt(d) - d));
+        }
+        float3 softLight(float3 s, float3 d) {
+            return float3(softLight1(s.x, d.x),
+                          softLight1(s.y, d.y),
+                          softLight1(s.z, d.z));
+        }
+
+        // Built using Shadertoy idioms: aspect-corrected coords,
+        // domain-warped FBM ("warp the warp"), IQ palette, soft-light
+        // blend over an ink base, vignette, dither, gamma.
         fragment float4 fragment_main(VertexOut in [[stage_in]], constant float &time [[buffer(0)]]) {
+            // Aspect-corrected, centered coords. 560x320 ≈ 1.75 aspect.
             float2 uv = in.uv;
-            float2 centered = uv - 0.5;
+            float aspect = 1.75;
+            float2 p = (uv - 0.5) * float2(aspect, 1.0);
 
-            // Make the liquid field broad instead of squashed/ripple-dense.
-            float2 p = centered;
-            p.x *= 1.10;
-            p.y *= 0.74;
+            float t = time * 0.085;
 
-            float t = time * 0.38;
-            float pulse = 0.5 + 0.5 * sin(time * 0.82);
-
-            // Slow domain warp: this gives the water/glass impression without
-            // turning into obvious tight rings.
-            float2 warp = p;
-            warp += 0.080 * float2(
-                sin(p.y * 4.2 + t * 1.7),
-                cos(p.x * 3.8 - t * 1.4)
+            // -- Warp-the-warp: two layers of vector FBM, then a final field.
+            float2 q = float2(
+                fbm(p * 1.4 + float2(0.0, t * 1.3)),
+                fbm(p * 1.4 + float2(5.2, -t * 1.1))
             );
-            warp += 0.050 * float2(
-                noise(p * 2.0 + t) - 0.5,
-                noise(p * 2.0 - t + 4.0) - 0.5
+            float2 r = float2(
+                fbm(p * 1.9 + 3.4 * q + float2(1.7, 9.2) + t * 0.7),
+                fbm(p * 1.9 + 3.4 * q + float2(8.3, 2.8) - t * 0.6)
             );
+            float f = fbm(p * 2.4 + 4.0 * r);
 
-            float sheet = sin((warp.x + warp.y * 0.42) * 8.0 + time * 0.95);
-            sheet += 0.55 * sin((warp.x * -0.55 + warp.y) * 6.2 - time * 0.72);
-            float caustic = smoothstep(0.70, 1.32, sheet);
-            caustic = pow(caustic, 1.8);
+            // Wisp highlights — narrow ridges where the field crests.
+            float wisps = smoothstep(0.55, 0.92, f);
+            wisps = wisps * wisps;
 
-            // Extremely soft oval mask. Alpha reaches zero only outside the
-            // visible area, so there should be no readable border or bar.
-            float r = length(float2(centered.x * 0.78, centered.y * 1.12));
-            float edge = smoothstep(1.02, 0.20, r);
-            float edgeFeather = smoothstep(0.0, 0.24, uv.x) * smoothstep(1.0, 0.76, uv.x)
-                              * smoothstep(0.0, 0.22, uv.y) * smoothstep(1.0, 0.78, uv.y);
+            // Two IQ palettes layered: a hot magenta/amber and a cool teal/indigo.
+            float3 hot  = palette(0.15 + 0.65 * f + 0.12 * sin(t * 1.7),
+                                  float3(0.55, 0.35, 0.45),
+                                  float3(0.45, 0.32, 0.42),
+                                  float3(1.00, 0.90, 0.85),
+                                  float3(0.00, 0.18, 0.38));
+            float3 cold = palette(0.25 + 0.50 * length(r) - 0.08 * cos(t * 1.1),
+                                  float3(0.20, 0.32, 0.45),
+                                  float3(0.18, 0.28, 0.40),
+                                  float3(1.00, 1.00, 1.10),
+                                  float3(0.55, 0.40, 0.20));
 
-            float alpha = edge * edgeFeather * (0.22 + 0.10 * pulse + 0.13 * caustic);
+            float mixFactor = smoothstep(0.25, 0.85, f + 0.2 * r.x);
+            float3 plasma = mix(cold, hot, mixFactor);
 
-            float3 cyan = float3(0.16, 0.78, 1.0);
-            float3 violet = float3(0.55, 0.25, 1.0);
-            float3 warm = float3(1.0, 0.42, 0.72);
-            float colorMix = 0.5 + 0.5 * sin(warp.x * 3.2 + warp.y * 2.0 + time * 0.32);
-            float3 color = mix(violet, cyan, colorMix);
-            color = mix(color, warm, 0.18 + 0.18 * pulse);
-            color += caustic * float3(0.30, 0.42, 0.55);
+            // Wisp specular highlight — soft white-warm.
+            plasma += wisps * float3(1.05, 0.86, 0.62) * 0.45;
 
-            return float4(color * alpha, alpha);
+            // -- Composition mask: push energy toward the right side
+            //    so the left-aligned text stays readable.
+            float2 c = uv - float2(0.62, 0.45);
+            float radial = exp(-dot(c * float2(0.9, 1.25), c * float2(0.9, 1.25)) * 4.2);
+            float leftFade = smoothstep(-0.35, 0.55, p.x);  // dim left edge
+            float intensity = radial * (0.35 + 0.65 * leftFade);
+
+            // Deep warm ink base — slightly violet so the cool wisps separate.
+            float3 ink = float3(0.030, 0.032, 0.050);
+
+            // Soft-light compose: plasma tints the ink instead of replacing it.
+            float3 color = softLight(plasma * intensity, ink);
+            color = mix(ink, color, 0.55 + 0.45 * intensity);
+
+            // Additive wisp bloom on top — the "spark" highlights.
+            color += wisps * intensity * float3(1.0, 0.78, 0.52) * 0.35;
+
+            // Vignette (Shadertoy idiom, but aspect aware).
+            float2 vv = uv * (1.0 - uv.yx);
+            float vig = pow(clamp(vv.x * vv.y * 16.0, 0.0, 1.0), 0.32);
+            color *= 0.55 + 0.50 * vig;
+
+            // Dither + grain — kills banding, adds film-tooth.
+            float n = hash21(in.position.xy + time * 60.0);
+            color += (n - 0.5) * 0.022;
+
+            // Gentle gamma — preserves blacks for UI readability.
+            color = pow(max(color, 0.0), float3(0.94));
+
+            return float4(color, 1.0);
         }
         """
 
@@ -179,11 +241,7 @@ final class ShaderRenderer: NSObject, MTKViewDelegate {
             descriptor.vertexFunction = library.makeFunction(name: "vertex_main")
             descriptor.fragmentFunction = library.makeFunction(name: "fragment_main")
             descriptor.colorAttachments[0].pixelFormat = pixelFormat
-            descriptor.colorAttachments[0].isBlendingEnabled = true
-            descriptor.colorAttachments[0].sourceRGBBlendFactor = .one
-            descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-            descriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
-            descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
+            descriptor.colorAttachments[0].isBlendingEnabled = false
             self.pipelineState = try device.makeRenderPipelineState(descriptor: descriptor)
         } catch {
             fputs("Failed to compile Metal shader: \(error)\n", stderr)
@@ -214,39 +272,6 @@ final class ShaderRenderer: NSObject, MTKViewDelegate {
 }
 
 @MainActor
-final class SoftGlassView: NSVisualEffectView {
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        blendingMode = .behindWindow
-        material = .hudWindow
-        state = .active
-        wantsLayer = true
-        layer?.opacity = 0.58
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layout() {
-        super.layout()
-
-        let mask = CAGradientLayer()
-        mask.type = .radial
-        mask.frame = bounds
-        mask.startPoint = CGPoint(x: 0.5, y: 0.5)
-        mask.endPoint = CGPoint(x: 1.0, y: 1.0)
-        mask.colors = [
-            NSColor.white.withAlphaComponent(0.86).cgColor,
-            NSColor.white.withAlphaComponent(0.56).cgColor,
-            NSColor.white.withAlphaComponent(0.0).cgColor,
-        ]
-        mask.locations = [0.0, 0.48, 1.0]
-        layer?.mask = mask
-    }
-}
-
-@MainActor
 final class MetalBackgroundView: MTKView {
     private var shaderRenderer: ShaderRenderer?
 
@@ -255,13 +280,13 @@ final class MetalBackgroundView: MTKView {
         super.init(frame: frame, device: device)
 
         wantsLayer = true
-        layer?.isOpaque = false
+        layer?.isOpaque = true
         colorPixelFormat = .bgra8Unorm
-        framebufferOnly = false
+        framebufferOnly = true
         isPaused = false
         enableSetNeedsDisplay = false
         preferredFramesPerSecond = 60
-        clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
 
         if let device, let renderer = ShaderRenderer(device: device, pixelFormat: colorPixelFormat) {
             shaderRenderer = renderer
@@ -273,6 +298,215 @@ final class MetalBackgroundView: MTKView {
         fatalError("init(coder:) has not been implemented")
     }
 }
+
+// MARK: - Tokens
+
+enum Palette {
+    static let amber = NSColor(srgbRed: 0.95, green: 0.71, blue: 0.31, alpha: 1.0)
+    static let amberDeep = NSColor(srgbRed: 0.78, green: 0.50, blue: 0.18, alpha: 1.0)
+    static let inkDeep = NSColor(srgbRed: 0.04, green: 0.04, blue: 0.055, alpha: 1.0)
+    static let textPrimary = NSColor.white
+    static let textSecondary = NSColor.white.withAlphaComponent(0.62)
+    static let textMuted = NSColor.white.withAlphaComponent(0.38)
+    static let hairline = NSColor.white.withAlphaComponent(0.08)
+}
+
+// MARK: - Card chrome
+
+@MainActor
+final class CardView: NSView {
+    private let topHairline = CALayer()
+    private let innerStroke = CAShapeLayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.cornerRadius = 18
+        layer?.cornerCurve = .continuous
+        layer?.masksToBounds = true
+
+        topHairline.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
+        layer?.addSublayer(topHairline)
+
+        innerStroke.fillColor = NSColor.clear.cgColor
+        innerStroke.strokeColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        innerStroke.lineWidth = 1
+        layer?.addSublayer(innerStroke)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layout() {
+        super.layout()
+        topHairline.frame = NSRect(x: 0, y: bounds.height - 1, width: bounds.width, height: 1)
+        innerStroke.frame = bounds
+        innerStroke.path = CGPath(
+            roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
+            cornerWidth: 17.5, cornerHeight: 17.5, transform: nil
+        )
+    }
+}
+
+@MainActor
+final class PulsingDot: NSView {
+    private let core = CALayer()
+    private let halo = CALayer()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+
+        halo.backgroundColor = Palette.amber.withAlphaComponent(0.35).cgColor
+        halo.cornerRadius = 6
+        layer?.addSublayer(halo)
+
+        core.backgroundColor = Palette.amber.cgColor
+        core.cornerRadius = 3
+        core.shadowColor = Palette.amber.cgColor
+        core.shadowOpacity = 0.9
+        core.shadowRadius = 4
+        core.shadowOffset = .zero
+        layer?.addSublayer(core)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override var intrinsicContentSize: NSSize { NSSize(width: 12, height: 12) }
+
+    override func layout() {
+        super.layout()
+        let cx = bounds.midX, cy = bounds.midY
+        core.frame = NSRect(x: cx - 3, y: cy - 3, width: 6, height: 6)
+        halo.frame = NSRect(x: cx - 6, y: cy - 6, width: 12, height: 12)
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard window != nil else { return }
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = 0.50
+        pulse.toValue = 0.10
+        pulse.duration = 1.6
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        halo.add(pulse, forKey: "pulse")
+    }
+}
+
+@MainActor
+final class AccentButton: NSButton {
+    private let action_: () -> Void
+    private let fill = CALayer()
+    private let topGloss = CAGradientLayer()
+    private let glow = CALayer()
+    private var isHovering = false
+    private var isPressed = false
+
+    init(title: String, action: @escaping () -> Void) {
+        self.action_ = action
+        super.init(frame: .zero)
+        self.title = ""
+        isBordered = false
+        wantsLayer = true
+        layer?.masksToBounds = false
+        focusRingType = .none
+
+        glow.backgroundColor = Palette.amber.withAlphaComponent(0.0).cgColor
+        glow.shadowColor = Palette.amber.cgColor
+        glow.shadowOpacity = 0.0
+        glow.shadowRadius = 18
+        glow.shadowOffset = .zero
+        layer?.addSublayer(glow)
+
+        fill.backgroundColor = Palette.amber.cgColor
+        fill.cornerRadius = 11
+        fill.cornerCurve = .continuous
+        layer?.addSublayer(fill)
+
+        topGloss.colors = [
+            NSColor.white.withAlphaComponent(0.28).cgColor,
+            NSColor.white.withAlphaComponent(0.0).cgColor,
+        ]
+        topGloss.startPoint = CGPoint(x: 0.5, y: 1.0)
+        topGloss.endPoint = CGPoint(x: 0.5, y: 0.0)
+        topGloss.cornerRadius = 11
+        topGloss.cornerCurve = .continuous
+        layer?.addSublayer(topGloss)
+
+        let arrow = "\u{2197}"
+        let attr = NSMutableAttributedString(string: title + "  " + arrow, attributes: [
+            .font: NSFont.systemFont(ofSize: 12.5, weight: .semibold),
+            .foregroundColor: NSColor(srgbRed: 0.10, green: 0.07, blue: 0.04, alpha: 1.0),
+            .kern: 0.4,
+        ])
+        attr.addAttribute(.font,
+                          value: NSFont.systemFont(ofSize: 12.5, weight: .medium),
+                          range: NSRange(location: title.count + 2, length: 1))
+        attributedTitle = attr
+
+        target = self
+        self.action = #selector(invoke)
+
+        let tracking = NSTrackingArea(rect: .zero,
+                                      options: [.mouseEnteredAndExited, .inVisibleRect, .activeInActiveApp],
+                                      owner: self, userInfo: nil)
+        addTrackingArea(tracking)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override var intrinsicContentSize: NSSize {
+        let base = super.intrinsicContentSize
+        return NSSize(width: base.width + 36, height: 34)
+    }
+
+    override func layout() {
+        super.layout()
+        fill.frame = bounds
+        topGloss.frame = NSRect(x: 0, y: bounds.height * 0.5, width: bounds.width, height: bounds.height * 0.5)
+        glow.frame = bounds
+        glow.shadowPath = CGPath(roundedRect: bounds, cornerWidth: 11, cornerHeight: 11, transform: nil)
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        isHovering = true
+        setState(hover: true, pressed: isPressed)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        isHovering = false
+        setState(hover: false, pressed: false)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        isPressed = true
+        setState(hover: isHovering, pressed: true)
+        super.mouseDown(with: event)
+        isPressed = false
+        setState(hover: isHovering, pressed: false)
+    }
+
+    private func setState(hover: Bool, pressed: Bool) {
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.14)
+        let scale: CGFloat = pressed ? 0.97 : 1.0
+        layer?.transform = CATransform3DMakeScale(scale, scale, 1)
+        glow.shadowOpacity = hover ? 0.55 : 0.0
+        fill.backgroundColor = (hover
+            ? NSColor(srgbRed: 0.98, green: 0.76, blue: 0.36, alpha: 1.0)
+            : Palette.amber).cgColor
+        CATransaction.commit()
+    }
+
+    @objc private func invoke() { action_() }
+}
+
+// MARK: - App
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -313,7 +547,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = false
         panel.isMovableByWindowBackground = true
         panel.isFloatingPanel = true
         panel.animationBehavior = .none
@@ -354,61 +588,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let root = NSView(frame: NSRect(x: 0, y: 0, width: configuration.width, height: configuration.height))
         root.wantsLayer = true
         root.layer?.backgroundColor = NSColor.clear.cgColor
+        root.layer?.masksToBounds = false
 
-        let glass = SoftGlassView(frame: root.bounds)
-        glass.translatesAutoresizingMaskIntoConstraints = false
-        root.addSubview(glass)
-
-        let background = MetalBackgroundView(frame: root.bounds)
+        let background = MetalBackgroundView(frame: .zero)
         background.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(background)
 
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .centerX
-        stack.spacing = 10
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        // Small label.
+        let kicker = NSTextField(labelWithString: "COMPOSIO WANTS TO RUN")
+        let kickerAttr = NSMutableAttributedString(string: kicker.stringValue, attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: 10.5, weight: .semibold),
+            .foregroundColor: Palette.textSecondary,
+            .kern: 3.0,
+        ])
+        kicker.attributedStringValue = kickerAttr
+        kicker.alignment = .center
+        kicker.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(kicker)
 
-        let badge = NSTextField(labelWithString: "COMPOSIO")
-        badge.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold)
-        badge.textColor = NSColor.white.withAlphaComponent(0.72)
-        badge.alignment = .center
+        // Big headline.
+        let headline = NSTextField(labelWithString: "Read Email")
+        let headlineAttr = NSMutableAttributedString(string: "Read Email", attributes: [
+            .font: NSFont.systemFont(ofSize: 38, weight: .semibold),
+            .foregroundColor: Palette.textPrimary,
+            .kern: -0.6,
+        ])
+        headline.attributedStringValue = headlineAttr
+        headline.alignment = .center
+        headline.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(headline)
 
-        let title = NSTextField(labelWithString: configuration.message)
-        title.font = NSFont.systemFont(ofSize: 19, weight: .semibold)
-        title.textColor = NSColor.white
-        title.alignment = .center
-        title.lineBreakMode = .byWordWrapping
-        title.maximumNumberOfLines = 2
-
-        let detail = NSTextField(labelWithString: configuration.detail)
-        detail.font = NSFont.systemFont(ofSize: 13, weight: .regular)
-        detail.textColor = NSColor.white.withAlphaComponent(0.76)
-        detail.alignment = .center
-        detail.lineBreakMode = .byWordWrapping
-        detail.maximumNumberOfLines = 3
-
-        stack.addArrangedSubview(badge)
-        stack.addArrangedSubview(title)
-        stack.addArrangedSubview(detail)
-        root.addSubview(stack)
+        let button = AccentButton(title: "Continue") {
+            fputs("button:continue\n", stdout)
+            fflush(stdout)
+            NSApp.terminate(nil)
+        }
+        button.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(button)
 
         NSLayoutConstraint.activate([
-            glass.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            glass.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            glass.topAnchor.constraint(equalTo: root.topAnchor),
-            glass.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-
             background.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             background.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             background.topAnchor.constraint(equalTo: root.topAnchor),
             background.bottomAnchor.constraint(equalTo: root.bottomAnchor),
 
-            stack.centerXAnchor.constraint(equalTo: root.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: root.centerYAnchor),
-            stack.widthAnchor.constraint(lessThanOrEqualToConstant: 430),
-            stack.leadingAnchor.constraint(greaterThanOrEqualTo: root.leadingAnchor, constant: 32),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -32),
+            kicker.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            headline.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            button.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+
+            headline.centerYAnchor.constraint(equalTo: root.centerYAnchor, constant: -10),
+            kicker.bottomAnchor.constraint(equalTo: headline.topAnchor, constant: -14),
+            button.topAnchor.constraint(equalTo: headline.bottomAnchor, constant: 26),
         ])
 
         return root
