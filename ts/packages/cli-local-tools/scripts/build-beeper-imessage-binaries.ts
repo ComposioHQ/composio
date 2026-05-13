@@ -20,11 +20,6 @@ const targets = [
     swiftArch: 'arm64',
     buildPath: '.build/arm64-apple-macosx/release/imessage-cli',
   },
-  {
-    platform: 'darwin-x64',
-    swiftArch: 'x86_64',
-    buildPath: '.build/x86_64-apple-macosx/release/imessage-cli',
-  },
 ] as const;
 
 type Target = (typeof targets)[number];
@@ -181,12 +176,11 @@ These \`imessage-cli\` binaries are built from the Composio fork of Beeper platf
 - Upstream version: \`${params.version}\`
 - Upstream submodule commit: \`${params.commit}\`
 - License: MIT (\`license.txt\` in the upstream repository)
-- Build command: \`pnpm --filter @composio/cli-local-tools build:beeper-imessage -- --target <darwin-arm64|darwin-x64>\`
+- Build command: \`pnpm --filter @composio/cli-local-tools build:beeper-imessage -- --target <darwin-arm64>\`
 - Underlying Swift build commands:
   - \`swift build -c release --product imessage-cli --arch arm64\`
-  - \`swift build -c release --product imessage-cli --arch x86_64\`
 
-The binaries are stripped release builds for macOS arm64 and x64. They require local macOS Messages data and may prompt for Messages Data, Accessibility, Contacts, and Automation permissions depending on the command.
+The binaries are stripped release builds for macOS arm64. They require local macOS Messages data and may prompt for Messages Data, Accessibility, Contacts, and Automation permissions depending on the command.
 `;
   await fs.writeFile(path.join(outputRoot, 'NOTICE.md'), notice, 'utf8');
 };

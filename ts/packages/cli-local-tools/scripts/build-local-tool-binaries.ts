@@ -60,6 +60,11 @@ const main = async () => {
     return;
   }
 
+  if (target === 'darwin-x64') {
+    console.log('Skipping native local-tool binary build for darwin-x64 (unsupported target).');
+    return;
+  }
+
   if (process.platform !== 'darwin') {
     throw new Error(
       `Building native local-tool binaries for ${target} requires a macOS runner with the Swift toolchain.`

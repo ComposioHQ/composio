@@ -701,7 +701,7 @@ const commandTool = <TInput extends z.ZodTypeAny>(definition: {
   slug: definition.slug,
   name: definition.name,
   description: definition.description,
-  platforms: ['darwin-arm64', 'darwin-x64'],
+  platforms: ['darwin-arm64'],
   inputParams: definition.inputParams,
   outputParams: cliOutput,
   execution: {
@@ -724,7 +724,7 @@ const nativeTool = <TInput extends z.ZodTypeAny>(definition: {
   slug: definition.slug,
   name: definition.name,
   description: definition.description,
-  platforms: ['darwin-arm64', 'darwin-x64'],
+  platforms: ['darwin-arm64'],
   inputParams: definition.inputParams,
   outputParams: cliOutput,
   execution: {
@@ -844,7 +844,7 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
   name: 'Beeper iMessage (local)',
   description:
     'Local macOS iMessage tools backed by Beeper platform-imessage imessage-cli. Reads ~/Library/Messages and automates Messages.app for send/reaction/chat mutations.',
-  platforms: ['darwin-arm64', 'darwin-x64'],
+  platforms: ['darwin-arm64'],
   source: {
     type: 'cli',
     repository: 'https://github.com/ComposioHQ/platform-imessage',
@@ -858,10 +858,6 @@ export const beeperImessageToolkit: LocalToolkitDeclaration = {
         {
           platforms: ['darwin-arm64'],
           path: 'beeper-imessage/darwin-arm64/imessage-cli',
-        },
-        {
-          platforms: ['darwin-x64'],
-          path: 'beeper-imessage/darwin-x64/imessage-cli',
         },
       ],
     },

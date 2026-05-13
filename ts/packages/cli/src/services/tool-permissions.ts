@@ -3,10 +3,16 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import open from 'open';
+import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Effect, Option } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import { requestNativeUiPermissionDecision } from 'src/services/native-ui-sidecar';
 import { ComposioUserContext } from 'src/services/user-context';
+
+const ENHANCED_CONTROLS_UNSUPPORTED_PLATFORMS: ReadonlySet<string> = new Set(['darwin-x64']);
+
+const isEnhancedControlsPlatformSupported = (): boolean =>
+  !ENHANCED_CONTROLS_UNSUPPORTED_PLATFORMS.has(detectCliPlatform());
 
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';
 
@@ -174,7 +180,15 @@ export const refreshConsumerPermissionSnapshot = (params: {
         path: '/api/v3.1/org/consumer/config',
       })
     );
-    const enhancedControlsEnabled = readEnhancedControlsFlag(config);
+    const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
+    const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
+    if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
+      yield* Effect.logDebug(
+        'Enhanced controls are not supported on darwin-x64; disabling locally.'
+      );
+    }
+    const enhancedControlsEnabled =
+      remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
     const permissions =
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise(() =>
