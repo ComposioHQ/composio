@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: bump-homebrew-tap
+  cancel-in-progress: false
+
 jobs:
   bump:
     if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, '@composio/cli@')
@@ -58,7 +62,7 @@ jobs:
             --pattern checksums.txt \
             --output checksums.txt
           extract() {
-            grep "  $1\$" checksums.txt | awk '{print $1}'
+            grep "  $1\$" checksums.txt | awk '{print $1}' || true
           }
           {
             echo "darwin_arm=$(extract composio-darwin-aarch64.zip)"
@@ -89,44 +93,7 @@ jobs:
           formula="tap/Formula/composio.rb"
           [[ -f "$formula" ]] || { echo "::error::$formula not found"; exit 1; }
 
-          python3 - "$formula" <<'PY'
-          import os, re, sys
-          path = sys.argv[1]
-          tag = os.environ["TAG"]
-          version = os.environ["VERSION"]
-          shas = {
-              "darwin-aarch64": os.environ["DARWIN_ARM"],
-              "darwin-x64":     os.environ["DARWIN_X86"],
-              "linux-aarch64":  os.environ["LINUX_ARM"],
-              "linux-x64":      os.environ["LINUX_X86"],
-          }
-          for k, v in shas.items():
-              if not re.fullmatch(r"[0-9a-f]{64}", v or ""):
-                  sys.exit(f"missing/invalid sha for {k}: {v!r}")
-
-          src = open(path).read()
-          # Bump version line.
-          src = re.sub(r'^(\s*version\s+)"[^"]+"', rf'\g<1>"{version}"', src, count=1, flags=re.M)
-          # Bump each url's tag segment.
-          src = re.sub(
-              r'(releases/download/)@composio/cli@[^/]+(/composio-)',
-              rf'\g<1>{tag}\g<2>',
-              src,
-          )
-          # Bump each sha256 by matching the platform from the preceding url line.
-          def repl(match):
-              url_line, sha_line = match.group(1), match.group(2)
-              for plat, sha in shas.items():
-                  if f"composio-{plat}.zip" in url_line:
-                      return url_line + re.sub(r'"[0-9a-f]{64}"', f'"{sha}"', sha_line)
-              return match.group(0)
-          src = re.sub(
-              r'(url\s+"[^"]+"\s*\n)(\s*sha256\s+"[0-9a-f]{64}")',
-              repl,
-              src,
-          )
-          open(path, "w").write(src)
-          PY
+          .github/scripts/bump-homebrew-formula.py "$formula"
 
           echo "--- updated formula ---"
           cat "$formula"
