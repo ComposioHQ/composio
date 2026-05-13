@@ -133,7 +133,7 @@ Existing connected accounts are permanently tied to the auth config they were cr
 
 - Existing connections keep working. Tokens continue refreshing using the original auth config's credentials.
 - New connections use your custom auth config. Users who connect after the switch will see your app name on the consent screen.
-- To fully migrate a user, delete their old connected account and have them re-authenticate through your OAuth app.
+- To fully migrate a user, delete their old connected account and have them re-authenticate through your OAuth app. If you also need to kill provider-side OAuth tokens, [revoke the connected account](/docs/auth-configuration/connected-accounts#revoke-oauth-tokens) before deleting it.
 
 ## Sending users directly to the OAuth provider
 

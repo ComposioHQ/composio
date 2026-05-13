@@ -160,7 +160,7 @@ const session = await composio.create("user_123", {
 Existing users' connections continue using Composio's OAuth client credentials for token refresh until they re-authenticate.
 </Callout>
 
-**Fully migrate all users.** To move every user to your OAuth app, delete their old connected accounts and have them re-authenticate. There is no way to move an existing connection from one auth config to another without re-authentication.
+**Fully migrate all users.** To move every user to your OAuth app, delete their old connected accounts and have them re-authenticate. If you also need to kill provider-side OAuth tokens, [revoke each connected account](/docs/auth-configuration/connected-accounts#revoke-oauth-tokens) before deleting it. There is no way to move an existing connection from one auth config to another without re-authentication.
 
 ## Routing the callback through your domain
 

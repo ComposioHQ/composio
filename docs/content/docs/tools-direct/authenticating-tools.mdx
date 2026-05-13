@@ -419,6 +419,7 @@ After creating a connection, it will have one of the following statuses that ind
 | **EXPIRED** | Credentials are no longer valid and Composio cannot refresh them automatically. See [common causes](#why-connections-expire) below. | [Subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this proactively, and [re-authenticate the user](/docs/subscribing-to-connection-expiry-events#re-authenticate-the-user) to refresh the connection. |
 | **FAILED** | The authentication attempt did not succeed. Common causes: user denied consent during OAuth, invalid authorization code, or misconfigured auth config. | Check the `status_reason` field for details and retry the connection. |
 | **INACTIVE** | Manually disabled via the API. The connection is preserved but cannot be used to execute tools. | Re-enable it via the API or dashboard to restore access. |
+| **REVOKED** | OAuth tokens were revoked at the upstream provider through Composio's revoke endpoint. The connection cannot execute tools. | Create a new connection if the user needs access again. |
 
 ### Why connections expire
 
@@ -473,7 +474,7 @@ console.log(connectedAccount.id);
 
 The method continuously polls the Composio API until the connection:
 - Becomes **ACTIVE** (returns the connected account)
-- Enters a terminal state like **FAILED** or **EXPIRED** (throws an error)
+- Enters a terminal state like **FAILED**, **EXPIRED**, or **REVOKED** (throws an error)
 - Exceeds the specified timeout (throws a timeout error)
 
 ### Checking Connection Status

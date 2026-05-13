@@ -22,7 +22,7 @@ For setup guides by toolkit: [OAuth Configuration Guides](https://composio.dev/o
 
 ## Switching to a custom OAuth app
 
-If you're moving from Composio-managed auth to your own OAuth app, existing connections are not affected. New connections will use your custom auth config. To fully migrate users, delete their old connected accounts and have them re-authenticate.
+If you're moving from Composio-managed auth to your own OAuth app, existing connections are not affected. New connections will use your custom auth config. To fully migrate users, delete their old connected accounts and have them re-authenticate. If you also need to kill provider-side OAuth tokens, [revoke each connected account](/docs/auth-configuration/connected-accounts#revoke-oauth-tokens) before deleting it.
 
 - **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
 - **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).

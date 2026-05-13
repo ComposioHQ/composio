@@ -1,7 +1,7 @@
 ---
 title: Connected Accounts
 description: Manage and monitor user connections to toolkits
-keywords: [list accounts, refresh token, disable, delete account]
+keywords: [list accounts, refresh token, revoke token, disable, delete account]
 llmGuardrails: "direct-execution"
 ---
 
@@ -11,7 +11,7 @@ If you're building an agent, we recommend using [sessions](/docs/configuring-ses
 
 Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
 
-Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
+Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, revoking, enabling, disabling, and deleting accounts.
 
 ## List accounts
 
@@ -190,9 +190,42 @@ console.log('Account enabled status:', enabled.success);
 INACTIVE accounts cannot execute tools. Tool execution will fail until the status is changed.
 </Callout>
 
+## Revoke OAuth tokens
+
+For OAuth 2.0 connected accounts, revoke tokens at the upstream provider when you need to immediately stop the credentials from working outside Composio.
+
+```http
+POST /api/v3.1/connected_accounts/{nanoid}/revoke
+```
+
+```bash
+curl -X POST 'https://backend.composio.dev/api/v3.1/connected_accounts/ca_123/revoke' \
+  -H 'x-api-key: YOUR_API_KEY'
+```
+
+The response includes the account's new status and which token subjects were revoked during this call:
+
+```json
+{
+  "revoked_tokens": ["access_token", "refresh_token"],
+  "connected_account": {
+    "id": "ca_123",
+    "status": "REVOKED"
+  }
+}
+```
+
+`revoked_tokens` reflects exactly what the provider accepted on this request. Some providers can revoke only one token subject, and some do not expose a supported revoke endpoint. An empty array means the connected account was already revoked and Composio did not issue another upstream revoke request.
+
+Revoke is accepted for `ACTIVE` accounts and accounts already in `REVOKED` state. If revoke is unsupported for the toolkit, the API returns `400`.
+
+<Callout type="warn">
+Revoke is separate from delete. To remove a connection and kill provider-side OAuth credentials, call `POST /revoke` first, then delete the connected account.
+</Callout>
+
 ## Delete accounts
 
-Permanently remove a connected account:
+Permanently remove a connected account from Composio:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -216,7 +249,7 @@ console.log('Account deleted successfully');
 </Tabs>
 
 <Callout type="warn">
-Deletion is permanent and cannot be undone.
+Deletion is permanent and cannot be undone. Deleting a connected account removes the credentials from Composio, but it does not revoke OAuth tokens at the upstream provider. If you need provider-side tokens killed, [revoke the account](#revoke-oauth-tokens) before deleting it.
 </Callout>
 
 ## Credential masking

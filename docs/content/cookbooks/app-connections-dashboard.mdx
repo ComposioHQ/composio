@@ -69,6 +69,10 @@ Create `app/api/connections/disconnect/route.ts`. This endpoint takes a `connect
 
 `composio.connectedAccounts.delete()` is a standalone SDK method. No session or provider needed.
 
+<Callout type="warn">
+Deleting a connected account removes the connection from Composio, but it does not revoke OAuth tokens at the upstream provider. If your disconnect flow must immediately kill provider-side credentials, call the [connected account revoke endpoint](/docs/auth-configuration/connected-accounts#revoke-oauth-tokens) before deleting the account.
+</Callout>
+
 ## Build the dashboard
 
 Replace `app/page.tsx` with a dashboard that shows connection cards:

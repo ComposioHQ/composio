@@ -221,7 +221,7 @@ Nothing — existing connected accounts are permanently tied to the auth config 
 
 - **Existing connections keep working.** Tokens continue refreshing using the original auth config's credentials.
 - **New connections use your custom auth config.** Users who connect after the switch see your app name on the consent screen.
-- **To fully migrate a user**, delete their old connected account and have them re-authenticate through your OAuth app. There is no way to move an existing connection between auth configs without re-authentication.
+- **To fully migrate a user**, delete their old connected account and have them re-authenticate through your OAuth app. If you also need to kill provider-side OAuth tokens, [revoke the connected account](/docs/auth-configuration/connected-accounts#revoke-oauth-tokens) before deleting it. There is no way to move an existing connection between auth configs without re-authentication.
 
 This applies whether you're using sessions or direct tool execution:
 - **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
