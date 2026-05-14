@@ -71,6 +71,10 @@ jobs:
             echo "linux_x86=$(extract composio-linux-x64.zip)"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Checkout source repo (for bump script)
+        if: steps.meta.outputs.skip != 'true'
+        uses: actions/checkout@v4
+
       - name: Checkout homebrew tap
         if: steps.meta.outputs.skip != 'true'
         uses: actions/checkout@v4
