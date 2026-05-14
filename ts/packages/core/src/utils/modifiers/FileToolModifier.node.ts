@@ -193,9 +193,6 @@ const hydrateFiles = async (
   if (uploadableVariant) {
     return hydrateFiles(value, uploadableVariant, ctx);
   }
-  if (getSchemaVariants(schema).length > 0) {
-    // If no uploadable variants found, fall through to check base properties
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // 3. Object → traverse each property
