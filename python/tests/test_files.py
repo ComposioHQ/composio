@@ -743,6 +743,30 @@ class TestFileUploadSubstitutionWithUnionTypes:
             "/tmp/b.txt",
         ]
 
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_substitute_upload_array_drops_all_null_and_empty_items(
+        self, mock_from_path, file_helper, mock_tool
+    ):
+        """Array of file-uploadable items collapses to [] when every item is null/empty."""
+        mock_tool.input_parameters = {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {"type": "string", "file_uploadable": True},
+                }
+            },
+        }
+
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.input_parameters,
+            request={"attachments": [None, "", None]},
+        )
+
+        assert result["attachments"] == []
+        mock_from_path.assert_not_called()
+
 
 class TestFileDownloadSubstitutionWithUnionTypes:
     """Test cases for file download substitution with anyOf, oneOf, and allOf schemas."""

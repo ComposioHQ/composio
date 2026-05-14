@@ -58,7 +58,12 @@ Connect timeout is short to fail fast on unreachable hosts.
 Read timeout is longer to allow for slower file transfers.
 """
 
-_DELETE_VALUE = object()
+_DELETE_VALUE: t.Final = object()
+"""
+Sentinel returned by the upload walker to signal that a value should be dropped
+from its parent container. ``None`` and ``""`` are both legal payload values, so
+the walker cannot use either to mean "remove this key/item".
+"""
 
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
@@ -964,7 +969,11 @@ class FileHelper(WithLogger):
             request.clear()
             request.update(processed)
             return request
-        return t.cast(t.Dict, processed)
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_upload_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
 
     def substitute_file_uploads(
         self,
@@ -973,6 +982,14 @@ class FileHelper(WithLogger):
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
+        """Stage file-uploadable leaves in ``request`` and return it.
+
+        Mutation contract: the top-level ``request`` dict is mutated in place
+        and its identity is preserved (the return value is the same object).
+        Nested dicts inside ``request`` may be replaced with fresh dicts
+        rather than mutated, so callers should not retain references to
+        nested values across this call.
+        """
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
@@ -1070,13 +1087,25 @@ class FileHelper(WithLogger):
             request.clear()
             request.update(processed)
             return request
-        return t.cast(t.Dict, processed)
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_download_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
 
     def substitute_file_downloads(
         self,
         tool: Tool,
         response: ToolExecutionResponse,
     ) -> ToolExecutionResponse:
+        """Materialize file-downloadable leaves in ``response`` and return it.
+
+        Mutation contract: the top-level ``response`` dict is mutated in
+        place and its identity is preserved (the return value is the same
+        object). Nested dicts inside ``response`` may be replaced with
+        fresh dicts rather than mutated, so callers should not retain
+        references to nested values across this call.
+        """
         return t.cast(
             "ToolExecutionResponse",
             self._substitute_file_downloads_recursively(
