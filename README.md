@@ -185,6 +185,8 @@ The following table shows which AI frameworks and platforms are supported in eac
 
 > **Don't see your provider?** Learn how to [build a custom provider](https://docs.composio.dev/sdk/typescript/custom-providers) to integrate with any AI framework.
 
+OpenAI-compatible vendors such as Baidu Qianfan are supported through the existing OpenAI provider path.
+
 ## Packages
 
 ### Core Packages

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OpenAIResponsesProvider } from '../src';
+import { createQianfanClient, OpenAIResponsesProvider } from '../src';
 import { Tool } from '@composio/core';
 import { OpenAI } from 'openai';
 
@@ -73,6 +73,18 @@ describe('OpenAIResponsesProvider', () => {
   describe('name property', () => {
     it('should have the correct name', () => {
       expect(provider.name).toBe('openai');
+    });
+  });
+
+  describe('Qianfan helper client', () => {
+    it('creates an OpenAI client with Qianfan defaults', () => {
+      createQianfanClient({ apiKey: 'test-key', appid: 'app-123' });
+
+      expect(OpenAI).toHaveBeenCalledWith({
+        apiKey: 'test-key',
+        baseURL: 'https://qianfan.baidubce.com/v2/',
+        defaultHeaders: { appid: 'app-123' },
+      });
     });
   });
 

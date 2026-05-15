@@ -14,3 +14,9 @@
  */
 export { OpenAIProvider } from '@composio/core';
 export { OpenAIResponsesProvider } from './OpenAIResponsesProvider';
+export {
+  QIANFAN_BASE_URL,
+  createQianfanClient,
+  createQianfanConfig,
+  type QianfanConfigOptions,
+} from './qianfan';

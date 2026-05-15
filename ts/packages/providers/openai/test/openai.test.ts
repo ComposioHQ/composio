@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OpenAIProvider } from '../src';
+import { createQianfanConfig, OpenAIProvider } from '../src';
 import { Tool } from '@composio/core';
 import { OpenAI } from 'openai';
 
@@ -159,6 +159,26 @@ describe('OpenAIProvider', () => {
     it('should return an empty array for empty tools array', () => {
       const wrapped = provider.wrapTools([]);
       expect(wrapped).toEqual([]);
+    });
+  });
+
+  describe('Qianfan helper config', () => {
+    it('uses the Qianfan baseURL by default', () => {
+      const config = createQianfanConfig({ apiKey: 'test-key' });
+      expect(config.baseURL).toBe('https://qianfan.baidubce.com/v2/');
+    });
+
+    it('adds appid and merges custom headers', () => {
+      const config = createQianfanConfig({
+        apiKey: 'test-key',
+        appid: 'app-123',
+        defaultHeaders: { 'x-trace-id': 'trace-1' },
+      });
+
+      expect(config.defaultHeaders).toEqual({
+        appid: 'app-123',
+        'x-trace-id': 'trace-1',
+      });
     });
   });
 

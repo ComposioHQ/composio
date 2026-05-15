@@ -34,6 +34,34 @@ Optional environment variables:
 - `OPENAI_API_BASE`: Custom API base URL (for Azure OpenAI)
 - `OPENAI_ORGANIZATION`: OpenAI organization ID
 
+## Using Baidu Qianfan
+
+Qianfan is supported through the existing OpenAI-compatible path in `@composio/openai`. Use the same provider classes and create an OpenAI client with the Qianfan helper defaults:
+
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIResponsesProvider, createQianfanClient } from '@composio/openai';
+
+const composio = new Composio({
+  provider: new OpenAIResponsesProvider(),
+});
+
+const client = createQianfanClient({
+  apiKey: process.env.QIANFAN_API_KEY!,
+  appid: process.env.QIANFAN_APP_ID,
+});
+
+const tools = await composio.tools.get('user123', 'HACKERNEWS_GET_USER');
+
+const response = await client.responses.create({
+  model: 'ernie-4.5-8k-preview',
+  input: 'Tell me about the user `pg` in hackernews',
+  tools,
+});
+```
+
+For Chat Completions, keep the same client and switch the provider to `new OpenAIProvider()`. If you only need the config object, `createQianfanConfig(...)` returns plain OpenAI client options.
+
 ## Quick Start
 
 ```typescript

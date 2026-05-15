@@ -34,6 +34,32 @@ from openai import OpenAI
 openai_client = OpenAI()
 ```
 
+### Using Baidu Qianfan
+
+Qianfan is supported through the existing OpenAI-compatible path in `composio_openai`. Use the same Composio provider classes and create an OpenAI client with Qianfan defaults:
+
+```python
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider, create_qianfan_client
+
+composio = Composio(provider=OpenAIResponsesProvider())
+client = create_qianfan_client(
+    api_key="your-qianfan-api-key",
+    appid="app-optional",
+)
+
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+response = client.responses.create(
+    model="ernie-4.5-8k-preview",
+    tools=tools,
+    input="Summarize my latest Hacker News activity.",
+)
+```
+
+For Chat Completions, keep the same client and switch the provider to `OpenAIProvider()`. If you want a Responses-specific helper name, `create_qianfan_responses_client(...)` is also exported.
+
 ### Step 2: Integrating GitHub Tools with Composio
 
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.

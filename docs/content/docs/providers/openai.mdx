@@ -298,6 +298,67 @@ console.log(response.choices[0].message.content);
 
 </IntegrationTabs>
 
+## Use with Baidu Qianfan
+
+Baidu Qianfan is supported through the existing OpenAI-compatible provider path. Use the same `OpenAIProvider` or `OpenAIResponsesProvider`, and point your OpenAI client at Qianfan with the helper defaults below.
+
+<Callout type="info">
+This path keeps Qianfan on the existing OpenAI provider surface instead of introducing a separate provider package.
+</Callout>
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider, create_qianfan_client
+
+composio = Composio(provider=OpenAIResponsesProvider())
+client = create_qianfan_client(
+    api_key="your-qianfan-api-key",
+    appid="app-optional",
+)
+
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+response = client.responses.create(
+    model="ernie-4.5-8k-preview",
+    tools=tools,
+    input="Summarize my latest Hacker News activity.",
+)
+```
+
+For Chat Completions, keep the same client and switch the provider to `OpenAIProvider()`.
+If you prefer a more explicit helper name for the Responses API, `create_qianfan_responses_client(...)` is also available.
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIResponsesProvider, createQianfanClient } from '@composio/openai';
+
+const composio = new Composio({
+    provider: new OpenAIResponsesProvider(),
+});
+
+const client = createQianfanClient({
+    apiKey: process.env.QIANFAN_API_KEY!,
+    appid: process.env.QIANFAN_APP_ID,
+});
+
+const session = await composio.create("user_123");
+const tools = await session.tools();
+
+const response = await client.responses.create({
+    model: "ernie-4.5-8k-preview",
+    tools,
+    input: "Summarize my latest Hacker News activity.",
+});
+```
+
+For Chat Completions, keep the same client and switch the provider to `new OpenAIProvider()`.
+</Tab>
+</Tabs>
+
 ## Multi-turn chat
 
 For multi-turn apps, create the session once and reuse it across requests with `composio.use()`. Store the session ID in your database or chat state:
