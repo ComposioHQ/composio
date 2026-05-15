@@ -11,7 +11,7 @@ from openai import OpenAI
 from composio.core.provider._openai import OpenAIProvider
 from composio.core.provider._openai_responses import OpenAIResponsesProvider
 
-QIANFAN_BASE_URL = "https://qianfan.baidubce.com/v2"
+QIANFAN_BASE_URL = "https://qianfan.baidubce.com/v2/"
 
 
 def _build_qianfan_headers(
@@ -48,10 +48,11 @@ def create_qianfan_responses_client(
     default_headers: dict[str, str] | None = None,
     **kwargs: t.Any,
 ) -> OpenAI:
-    return OpenAI(
+    return create_qianfan_client(
         api_key=api_key,
+        appid=appid,
         base_url=base_url,
-        default_headers=_build_qianfan_headers(appid, default_headers),
+        default_headers=default_headers,
         **kwargs,
     )
 
