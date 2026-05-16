@@ -6,7 +6,7 @@
 
 - 42ebff3: feat(connected-accounts): namespace SHARED-connection surface under `experimental`
 
-  Aligns the TypeScript SDK with the experimental wire shape used by Shared Connections. The flat `accountType` / `aclConfigForShared` options on `connectedAccounts.link()` and `session.authorize()` have moved under a single `experimental` block, and `connectedAccounts.updateAcl()` has moved off the class onto a top-level `experimental_updateAcl(composio, id, opts)` export — same precedent as `experimental_createTool` / `experimental_createToolkit`.
+  Aligns the TypeScript SDK with the experimental wire shape used by Shared Connections. The flat `accountType` / `aclConfigForShared` options on `connectedAccounts.link()` and `session.authorize()` have moved under a single `experimental` block, and `connectedAccounts.updateAcl()` has moved off the class onto `composio.experimental.updateSharing(id, opts)`.
 
   The `experimental` namespace is the signal that the shape may change in future releases. Pinning a SHARED connection in a session config (`connectedAccounts: { gmail: [...] }`) and direct execute by `connectedAccountId` are unchanged — only the connection-create / patch / authorize surfaces are namespaced.
 
@@ -35,7 +35,17 @@
       aclConfigForShared: { allowAllUsers: true },
     },
   });
-  await experimental_updateAcl(composio, 'ca_abc', { allowAllUsers: true });
+  await composio.experimental.updateSharing('ca_abc', { allowAllUsers: true });
+
+  // new — promote without re-auth and grant access atomically
+  await composio.experimental.updateSharing('ca_abc', {
+    accountType: 'SHARED',
+    allowAllUsers: true,
+    notAllowedUserIds: ['user_bob'],
+  });
+
+  // new — demote; backend clears stored ACL atomically
+  await composio.experimental.updateSharing('ca_abc', { accountType: 'PRIVATE' });
   await session.authorize('github', {
     experimental: {
       accountType: 'SHARED',

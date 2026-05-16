@@ -367,10 +367,19 @@ export const UpdateConnectedAccountParamsSchema = z.object({
   enabled: z.boolean(),
 });
 
+const UpdateConnectedAccountSharingParamsBaseSchema = ConnectedAccountAclConfigSchema.extend({
+  /**
+   * Sharing model toggle. `SHARED` promotes a PRIVATE connection without
+   * re-auth; `PRIVATE` demotes and the backend clears stored ACL state.
+   */
+  accountType: ConnectedAccountTypeSchema.optional(),
+});
+
 /**
- * Params for `composio.connectedAccounts.updateAcl()`. Mirrors the inner
+ * Params for `composio.experimental.updateSharing()`. Mirrors the inner
  * shape of the wire's `acl_config_for_shared` block — the SDK adds the
- * outer nesting at the boundary, so callers pass the three fields flat.
+ * outer nesting at the boundary, so callers pass the account type and ACL
+ * fields flat.
  *
  * PATCH-style semantics — omit a field to leave it unchanged; pass an
  * empty array to clear an allow/deny list. Raises
@@ -379,10 +388,32 @@ export const UpdateConnectedAccountParamsSchema = z.object({
  * Each field is optional, but at least one must be provided — passing an
  * empty object is rejected as a no-op.
  */
-// NOTE: `UpdateConnectedAccountAclParamsSchema` is a ZodEffects (because of
+// NOTE: `UpdateConnectedAccountSharingParamsSchema` is a ZodEffects (because of
 // the `.refine` below) — it does not expose `.shape`. If you need to reuse
 // individual ACL fields elsewhere, pull them from
 // `ConnectedAccountAclConfigSchema.shape` (the unrefined base) instead.
+export const UpdateConnectedAccountSharingParamsSchema =
+  UpdateConnectedAccountSharingParamsBaseSchema.refine(
+    acl =>
+      acl.accountType !== undefined ||
+      acl.allowAllUsers !== undefined ||
+      acl.allowedUserIds !== undefined ||
+      acl.notAllowedUserIds !== undefined,
+    {
+      message:
+        'At least one of accountType, allowAllUsers, allowedUserIds, or notAllowedUserIds must be provided',
+    }
+  );
+export type UpdateConnectedAccountSharingParams = z.infer<
+  typeof UpdateConnectedAccountSharingParamsSchema
+>;
+
+/**
+ * Params for `composio.experimental.updateAcl()`.
+ *
+ * @deprecated Use `UpdateConnectedAccountSharingParams` with
+ * `composio.experimental.updateSharing()`.
+ */
 export const UpdateConnectedAccountAclParamsSchema = ConnectedAccountAclConfigSchema.refine(
   acl =>
     acl.allowAllUsers !== undefined ||

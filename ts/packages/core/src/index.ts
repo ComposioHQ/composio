@@ -39,7 +39,7 @@ export { createCustomTool as experimental_createTool } from './models/CustomTool
 export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
 
 // Experimental shared connected accounts — shape may change in future releases.
-// `updateAcl` is mounted as a method on `composio.experimental.updateAcl(...)`
+// `updateSharing` is mounted as a method on `composio.experimental.updateSharing(...)`
 // because it takes a client and performs I/O. The `Experimental` class
 // itself is re-exported so callers can type their own composio handles
 // (e.g. in test helpers).

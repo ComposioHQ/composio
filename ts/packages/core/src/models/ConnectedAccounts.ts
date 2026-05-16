@@ -591,8 +591,8 @@ export class ConnectedAccounts {
   /**
    * Enable or disable a connected account. Accepts `{ enabled: boolean }`.
    *
-   * For ACL writes on SHARED connections, see
-   * `composio.experimental.updateAcl()`.
+   * For sharing model and ACL writes, see
+   * `composio.experimental.updateSharing()`.
    *
    * @param {string} nanoid - The unique identifier of the connected account
    * @param {UpdateConnectedAccountParams} params - The update parameters

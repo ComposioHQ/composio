@@ -15,6 +15,8 @@ import {
   ConnectedAccountExperimental,
   UpdateConnectedAccountAclParams,
   UpdateConnectedAccountAclParamsSchema,
+  UpdateConnectedAccountSharingParams,
+  UpdateConnectedAccountSharingParamsSchema,
 } from '../types/connectedAccounts.types';
 import { ValidationError } from '../errors/ValidationErrors';
 import { ComposioAclOnlyForSharedError } from '../errors';
@@ -22,7 +24,7 @@ import { telemetry } from '../telemetry/Telemetry';
 
 /**
  * Server-side 400 message the API uses to reject ACL writes against a
- * PRIVATE connection. Substring-matched in `updateAcl` here, and in the
+ * PRIVATE connection. Substring-matched in `updateSharing` here, and in the
  * sibling `connectedAccounts.link()` / `session.authorize()` call sites
  * — kept as a single constant so a server-side message tweak only
  * requires one edit.
@@ -102,12 +104,15 @@ export class Experimental {
   }
 
   /**
-   * Update the per-user ACL on a SHARED connected account.
+   * Update the sharing model and/or per-user ACL on a connected account.
    * **Experimental — shape may change in future releases.**
    *
-   * Only meaningful for SHARED connections — calling this on a PRIVATE
-   * connection raises `ComposioAclOnlyForSharedError` (400). ACL writes
-   * require the connection's creator or an API key.
+   * `accountType: 'SHARED'` promotes a PRIVATE connection without re-auth.
+   * `accountType: 'PRIVATE'` demotes a SHARED connection and the backend
+   * clears its stored ACL atomically. ACL fields are only meaningful for
+   * SHARED connections — sending ACL fields on a PRIVATE connection raises
+   * `ComposioAclOnlyForSharedError` (400). Sharing writes require the
+   * connection's creator or an API key.
    *
    * PATCH semantics: omit a field to leave it unchanged; pass an empty
    * array to clear an allow/deny list. At least one field must be
@@ -125,22 +130,32 @@ export class Experimental {
    *
    * const composio = new Composio({ apiKey: '...' });
    *
+   * // Promote to SHARED and grant access in one call
+   * await composio.experimental.updateSharing('ca_abc', {
+   *   accountType: 'SHARED',
+   *   allowAllUsers: true,
+   *   notAllowedUserIds: ['user_bob'],
+   * });
+   *
    * // Allow every userId to use this connection
-   * await composio.experimental.updateAcl('ca_abc', { allowAllUsers: true });
+   * await composio.experimental.updateSharing('ca_abc', { allowAllUsers: true });
    *
    * // Everyone except a specific user
-   * await composio.experimental.updateAcl('ca_abc', {
+   * await composio.experimental.updateSharing('ca_abc', {
    *   allowAllUsers: true,
    *   notAllowedUserIds: ['user_bob'],
    * });
    *
    * // Targeted allow
-   * await composio.experimental.updateAcl('ca_abc', {
+   * await composio.experimental.updateSharing('ca_abc', {
    *   allowedUserIds: ['user_alice', 'user_bob'],
    * });
    *
    * // Revoke a previously-granted allow list (back to deny-by-default)
-   * await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
+   * await composio.experimental.updateSharing('ca_abc', { allowedUserIds: [] });
+   *
+   * // Demote to PRIVATE; backend clears stored ACL state
+   * await composio.experimental.updateSharing('ca_abc', { accountType: 'PRIVATE' });
    * ```
    *
    * **Empty-array semantics — read carefully.** Passing `[]` for either
@@ -157,21 +172,34 @@ export class Experimental {
    *   `composio.connectedAccounts.get(nanoid)` after the promise
    *   resolves and inspect `account.experimental?.aclConfigForShared`.
    */
-  async updateAcl(
+  async updateSharing(
     nanoid: string,
-    params: UpdateConnectedAccountAclParams
+    params: UpdateConnectedAccountSharingParams
   ): Promise<ConnectedAccountPatchResponse> {
-    const parsedParams = UpdateConnectedAccountAclParamsSchema.safeParse(params);
+    const parsedParams = UpdateConnectedAccountSharingParamsSchema.safeParse(params);
     if (!parsedParams.success) {
-      throw new ValidationError('Failed to parse connected account ACL update params', {
+      throw new ValidationError('Failed to parse connected account sharing update params', {
         cause: parsedParams.error,
       });
     }
 
+    const hasAclFields =
+      parsedParams.data.allowAllUsers !== undefined ||
+      parsedParams.data.allowedUserIds !== undefined ||
+      parsedParams.data.notAllowedUserIds !== undefined;
+    const aclWire = hasAclFields ? serializeAclConfigForWire(parsedParams.data) : undefined;
+    // Shim until the Stainless client includes
+    // `ConnectedAccountPatchParams.Experimental.account_type` from
+    // hermes#10032. The backend already accepts it under `experimental`.
+    const experimental: ExperimentalWire = {
+      ...(parsedParams.data.accountType !== undefined && {
+        account_type: parsedParams.data.accountType,
+      }),
+      ...(aclWire !== undefined && { acl_config_for_shared: aclWire }),
+    };
+
     const body: ConnectedAccountPatchParams = {
-      experimental: {
-        acl_config_for_shared: serializeAclConfigForWire(parsedParams.data),
-      },
+      experimental,
     };
 
     try {
@@ -186,5 +214,23 @@ export class Experimental {
       }
       throw error;
     }
+  }
+
+  /**
+   * @deprecated Use {@link updateSharing}. Kept as a compatibility alias for
+   * the alpha releases that exposed ACL-only updates under `updateAcl`.
+   */
+  async updateAcl(
+    nanoid: string,
+    params: UpdateConnectedAccountAclParams
+  ): Promise<ConnectedAccountPatchResponse> {
+    const parsedParams = UpdateConnectedAccountAclParamsSchema.safeParse(params);
+    if (!parsedParams.success) {
+      throw new ValidationError('Failed to parse connected account ACL update params', {
+        cause: parsedParams.error,
+      });
+    }
+
+    return this.updateSharing(nanoid, parsedParams.data);
   }
 }

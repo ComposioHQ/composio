@@ -197,7 +197,7 @@ export class Composio<
   connectedAccounts: ConnectedAccounts;
   /**
    * Experimental SDK methods whose shape may change in future releases.
-   * Houses stateful operations like {@link Experimental.updateAcl} that
+   * Houses stateful operations like {@link Experimental.updateSharing} that
    * take a client and perform I/O. Stateless experimental factories
    * (e.g. `experimental_createTool`) stay at the top level.
    * @experimental
