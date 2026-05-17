@@ -11,7 +11,7 @@ from composio.utils.openapi import function_signature_from_jsonschema
 
 
 class GoogleAdkProvider(
-    AgenticProvider[FunctionTool, list[FunctionTool]], name="gemini"
+    AgenticProvider[FunctionTool, list[FunctionTool]], name="google_adk"
 ):
     """
     Composio toolset for Google ADK framework.
@@ -26,9 +26,14 @@ class GoogleAdkProvider(
     ) -> FunctionTool:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
 
-        docstring = tool.description
+        input_parameters = tool.input_parameters or {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        }
+        docstring = tool.description or f"Execute {tool.slug}"
         docstring += "\nArgs:"
-        for _param, _schema in tool.input_parameters["properties"].items():  # type: ignore
+        for _param, _schema in input_parameters.get("properties", {}).items():
             docstring += "\n    "
             docstring += _param + ": " + _schema.get("description", _param.title())
 
@@ -45,7 +50,7 @@ class GoogleAdkProvider(
             closure=_execute.__closure__,
         )
         parameters = function_signature_from_jsonschema(
-            schema=tool.input_parameters,
+            schema=input_parameters,
             skip_default=self.skip_default,
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
