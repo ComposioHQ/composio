@@ -5,6 +5,7 @@
     "quickstart",
 
     "---Use Composio---",
+    "composio-connect",
     "cli",
     "claude-code-plugin",
     "signing-up-as-an-agent",
@@ -24,7 +25,6 @@
     "managing-multiple-connected-accounts",
     "importing-existing-connections",
     "subscribing-to-connection-expiry-events",
-    "composio-connect",
     "using-custom-auth-configuration",
     "white-labeling-authentication",
 
