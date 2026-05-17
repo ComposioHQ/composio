@@ -128,7 +128,13 @@ export class LangchainProvider extends BaseAgenticProvider<
       throw new Error('App name is not defined');
     }
     const func = async (...args: unknown[]): Promise<unknown> => {
-      const result = await executeTool(toolName, args[0] as Record<string, unknown>);
+      // Normalize input: some models intermittently emit tool arguments as a JSON
+      // string instead of an object. Let parse errors propagate to match the
+      // pattern in @composio/vercel and @composio/openai-agents.
+      // See https://github.com/ComposioHQ/composio/issues/2406
+      const raw = args[0];
+      const input = typeof raw === 'string' ? JSON.parse(raw) : (raw as Record<string, unknown>);
+      const result = await executeTool(toolName, input);
       return JSON.stringify(result);
     };
     if (!tool.inputParameters) {

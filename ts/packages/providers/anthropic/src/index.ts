@@ -210,8 +210,13 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Normalize input: some models intermittently emit tool input as a JSON
+    // string instead of an object. Let parse errors propagate to match the
+    // pattern in @composio/vercel and @composio/openai-agents.
+    // See https://github.com/ComposioHQ/composio/issues/2406
+    const input = typeof toolUse.input === 'string' ? JSON.parse(toolUse.input) : toolUse.input;
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      arguments: input,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

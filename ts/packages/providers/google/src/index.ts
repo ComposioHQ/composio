@@ -241,8 +241,13 @@ export class GoogleProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Normalize args: some models intermittently emit tool arguments as a JSON
+    // string instead of an object. Let parse errors propagate to match the
+    // pattern in @composio/vercel and @composio/openai-agents.
+    // See https://github.com/ComposioHQ/composio/issues/2406
+    const args = typeof tool.args === 'string' ? JSON.parse(tool.args) : tool.args;
     const payload: ToolExecuteParams = {
-      arguments: tool.args,
+      arguments: args,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
