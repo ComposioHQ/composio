@@ -49,8 +49,18 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
+        text: 'Use Composio',
+        url: '/docs/composio-connect',
+        active: 'nested-url',
+      },
+      {
         text: 'Toolkits',
         url: '/toolkits',
+        active: 'nested-url',
+      },
+      {
+        text: 'Changelog',
+        url: '/docs/changelog',
         active: 'nested-url',
       },
       {
