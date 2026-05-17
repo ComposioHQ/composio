@@ -1,5 +1,6 @@
 {
   "title": "Providers",
+  "defaultOpen": false,
   "pages": [
     "...",
     "claude-agent-sdk",

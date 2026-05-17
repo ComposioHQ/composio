@@ -105,3 +105,67 @@ Key maintenance notes:
 **Prefer cURL over "click"** - Most docs traffic comes from AI crawlers. When documenting API interactions, prefer showing cURL commands over UI instructions like "click this button" or "navigate to settings". cURL is machine-readable and can be directly executed by AI agents.
 
 **LLM guardrails** - Every `.md` endpoint appends invisible guardrails steering AI code generators toward the session-based pattern. Controlled via `llmGuardrails` frontmatter field. See [llm-guardrails.md](.claude/decisions/llm-guardrails.md).
+
+## Docs Organization Guidelines
+
+When adding new documentation or reviewing PRs, follow these principles:
+
+### Sidebar Structure
+
+The docs sidebar is organized into these sections (in order):
+
+1. **First Steps** - Quickstart, intro. New users land here.
+2. **Use Composio** - CLI, plugins, agent signup. For non-programmatic use (MCP, Claude Code).
+3. **Build with Composio** - Architecture, providers. For SDK developers.
+4. **Sessions** - THE core pattern: `composio.create(user_id)`. Sessions-first always.
+5. **Auth** - Simple → Advanced. Link Auth (Composio Managed) first, custom OAuth at bottom.
+6. **Tools** - Simple → Advanced. Tool Router, Workbench, custom tools at bottom.
+7. **Triggers** - Event-driven architecture. Independent from sessions.
+8. **Platform** - Projects, observability, limits. Production concerns.
+9. **Help** - Migration, glossary, FAQ, troubleshooting.
+10. **Legacy** - Deprecated patterns (direct execution, old MCP). Collapsed by default.
+
+### Progressive Disclosure
+
+- **Simple at top, advanced at bottom** within each section
+- New users should never encounter OAuth2 guides, custom auth, etc. in their first journey
+- Advanced topics go at the end of sections
+
+### Sessions-First Pattern
+
+- `composio.create(user_id)` is THE pattern - document it everywhere
+- Direct execution is legacy - only in Legacy section
+- Every page assumes sessions-based usage
+
+### Where to Add New Content
+
+| Content Type | Location |
+|--------------|----------|
+| New provider integration | `providers/` folder |
+| Auth flow guide | `Auth` section (bottom if advanced) |
+| New toolkit feature | `Tools` section |
+| Event/webhook guide | `Triggers` section |
+| Production/scaling | `Platform` section |
+| Deprecation/migration | `Help > Migration Guide` |
+| Deprecated pattern | `Legacy` section (collapsed) |
+
+### Terminology Standards
+
+Use these terms consistently:
+
+- **"sessions"** not "direct execution" for new patterns
+- **"1000+ apps"** not "200+ apps"
+- **"connected account"** not "connection" or "auth"
+- **"Tool Router"** (capitalized)
+- **"Auth Config"** (capitalized)
+- **"v3.1 APIs"** not "v3"
+
+### FAQ Pattern
+
+Each major section links to FAQ at bottom:
+- Sessions → `/docs/common-faq#sessions`
+- Auth → `/docs/common-faq#auth`
+- Tools → `/docs/common-faq#tools`
+- Triggers → `/docs/common-faq#triggers`
+
+Keep FAQ content in one place with anchor links from relevant sections.
