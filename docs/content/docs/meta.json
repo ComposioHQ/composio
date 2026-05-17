@@ -8,7 +8,6 @@
     "composio-connect",
     "cli",
     "claude-code-plugin",
-    "signing-up-as-an-agent",
 
     "---Build with Composio---",
     "how-composio-works",
@@ -42,6 +41,7 @@
     "---Platform---",
     "projects",
     "observability",
+    "signing-up-as-an-agent",
 
     "---Help---",
     "migration-guide",
