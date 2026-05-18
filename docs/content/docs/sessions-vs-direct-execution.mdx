@@ -6,9 +6,9 @@ keywords: [session, direct execution, tool router, meta tools, architecture, dec
 
 **Sessions** give your agent [meta tools](/docs/tools-and-toolkits#meta-tools). The agent discovers which app tools to use, authenticates users, and executes tools at runtime through these meta tools.
 
-**Direct execution** gives your code specific tool schemas. You decide which tools to fetch, manage auth yourself, and call `tools.execute()` directly.
+**Direct execution** is the legacy/manual path. It gives your code specific tool schemas, but you decide which tools to fetch, manage auth yourself, and call `tools.execute()` directly.
 
-Use sessions unless you need full control over which tools are available and when they run.
+Use sessions for new agent builds. Use direct execution only when you are maintaining an older integration or need a tightly controlled backend workflow that should not use meta tools.
 
 | | Sessions | Direct execution |
 |---|---|---|
@@ -75,7 +75,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 ```
 
 <Callout>
-`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.), not app tools (GMAIL_SEND_EMAIL, etc.). The agent discovers app tools at runtime through search. For app tools directly, use direct execution.
+`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.), not app tools (GMAIL_SEND_EMAIL, etc.). The agent discovers app tools at runtime through search. To load specific app tool schemas outside a session, see [Direct execution (legacy)](#direct-execution).
 </Callout>
 
 ### Configuration
@@ -110,6 +110,10 @@ const session = await composio.create("user_123", {
 See [Configuring Sessions](/docs/configuring-sessions) for details.
 
 ## Direct execution
+
+<Callout type="warn">
+Direct execution is a legacy/maintenance path. New agent builds should use sessions and meta tools. Use this section if you are maintaining an older integration or migrating to sessions.
+</Callout>
 
 Fetch tools by slug or toolkit. Pass them to your LLM or call `tools.execute()` without one.
 
@@ -187,5 +191,5 @@ See the [migration guide](/docs/migration-guide/direct-to-sessions). Auth config
 <Cards>
   <Card icon={<Rocket />} title="Quickstart" href="/docs/quickstart" description="Build an agent with sessions" />
   <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, and connected accounts" />
-  <Card icon={<Wrench />} title="Direct Tool Execution" href="/docs/legacy/tools-direct/executing-tools" description="Fetch and execute specific tools" />
+  <Card icon={<Wrench />} title="Direct Tool Execution (legacy)" href="/docs/legacy/tools-direct/executing-tools" description="Maintain or migrate older direct-execution integrations" />
 </Cards>

@@ -62,7 +62,7 @@ Pass one or more filters in the `filters` array. Filters are **AND**-combined.
 | `auth_config_id` | The auth config (integration) behind the connected account |
 | `status` | `success` or `failed` |
 | `user_id` | Entity that initiated the call |
-| `session_id` | Tool router session, if routed through a session |
+| `session_id` | Session ID, if the tool call was routed through a session |
 | `sandbox_id` | Sandbox the call ran in, if applicable |
 | `request_id` | Request ID (useful for correlating with your own logs) |
 | `log_id` | Exact log ID (equivalent to the detail endpoint) |
@@ -143,6 +143,10 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
 curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
   -H "x-api-key: YOUR_PROJECT_API_KEY"
 ```
+
+### Correlate Composio logs with external traces
+
+If you use an external agent observability or trace system (for example Raindrop), store Composio's `request_id`, `log_id`, and `session_id` alongside your own trace/span ID. Then use the Logs API filters above to jump from an external trace back to the exact Composio tool execution payload.
 
 ## What to read next
 

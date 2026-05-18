@@ -4,7 +4,9 @@ description: Isolate resources across environments or clients using projects for
 keywords: [projects, organizations, teams, api keys, environments, multi-tenancy, multitenancy, tenant isolation]
 ---
 
-Projects are Composio's multi-tenancy primitive. Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook configurations. Resources in one project are not accessible from another.
+Projects are useful for both regular app development and enterprise setups. Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook configurations. Resources in one project are not accessible from another.
+
+Use one project if you are building a single app or prototype. Add more projects when you need separate staging/production environments, multiple products, client isolation, or team/enterprise governance.
 
 ```mermaid
 graph LR

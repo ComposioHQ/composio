@@ -109,7 +109,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         <PostHogProvider>
           <RootProvider
             theme={{
-              defaultTheme: 'light',
+              defaultTheme: 'system',
               attribute: 'class',
               enableSystem: true,
             }}

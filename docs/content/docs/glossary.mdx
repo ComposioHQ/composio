@@ -88,11 +88,11 @@ An adapter package that transforms Composio tools into the format expected by an
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [Users and sessions](/docs/users-and-sessions).
+A persistent task or conversation context from `composio.create(userId)`. It ties together a user ID, available toolkits, auth config, connected accounts, and workbench context. Reuse it with `composio.use(sessionId)` for multi-turn conversations, or update its configuration with `session.update()`. See [Users and sessions](/docs/users-and-sessions).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
-Unique identifier for a session. Used internally by meta tools to share context across calls within the same session.
+Unique identifier for a session. Store it when you need to continue a multi-turn task with `composio.use()`. Meta tools also use it to share context across calls within the same session.
 </GlossaryTerm>
 
 <GlossaryTerm name="Tool">

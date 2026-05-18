@@ -140,16 +140,47 @@ curl -sS -X POST 'https://agents.composio.dev/api/claim' \
   -d '{"email":"human@example.com"}'
 ```
 
-Response:
+Response fields can vary by backend/CLI version. Treat `status`, `email`, and `org_id` as the stable fields:
 
 ```json
 {
   "status": "invited",
   "email": "human@example.com",
   "org_id": "org_xxx",
-  "invite_code": "inv_xxx"
+  "invite_code": null,
+  "claim_slug": "claim_xxx",
+  "expires_at": "2026-05-19T00:00:00.000Z"
 }
 ```
+
+- `status: "invited"` means the claim request was accepted and an invite record was created. It does **not** by itself prove that the email was delivered or accepted by the human.
+- `invite_code` may be `null` in CLI responses. Do not treat a null invite code as failure if `status` is `"invited"`.
+- `claim_slug` is an opaque claim identifier. Keep it redacted in logs and support tickets unless Composio support explicitly asks for it.
+- `expires_at`, when present, tells you when the claim invitation expires.
+
+To verify safely without printing secrets:
+
+```bash
+curl -sS -X POST 'https://agents.composio.dev/api/claim' \
+  -H "Authorization: Bearer ${AGENT_KEY}" \
+  -H 'content-type: application/json' \
+  -d '{"email":"human@example.com"}' \
+  | jq '{
+      status,
+      email,
+      org_id_present: (.org_id != null),
+      invite_code_present: (.invite_code != null),
+      claim_slug_present: (.claim_slug != null),
+      expires_at_present: (.expires_at != null)
+    }'
+```
+
+### Claim troubleshooting
+
+- **Missing email locally** — `/composio-claim` and similar helpers require a target email. If omitted, provide one and retry.
+- **No email received** — first confirm the API response has `status: "invited"` and the correct `email`. Then check spam/quarantine and retry the claim after a few minutes. If the invite still does not arrive, use the dashboard or contact support with redacted field-presence output.
+- **`invite_code: null`** — this can be normal for CLI responses. Look for `status: "invited"`, `org_id`, and, if present, `claim_slug`/`expires_at`.
+- **Cloudflare or upstream 5xx** — retry later. A 502 from `agents.composio.dev` indicates upstream service instability, not a local request-shape error.
 
 ## Read the agent inbox
 

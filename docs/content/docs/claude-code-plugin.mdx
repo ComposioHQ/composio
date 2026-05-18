@@ -1,25 +1,25 @@
 ---
-title: Plugin
-description: Install Composio in Claude Code as a plugin — connect 1000+ apps with managed OAuth and ready-made skills.
+title: Claude Code Plugin
+description: Install Composio in Claude Code with bundled skills — connect 1000+ apps with managed OAuth.
 keywords: [claude code, plugin, marketplace, mcp, composio connect, skills]
 ---
 
-The **Composio plugin for Claude Code** bundles the Composio Connect MCP server with a set of opinionated skills, so Claude Code can search, connect, and act across 1000+ apps right after install. Authentication is fully managed — no API key handling, no manual MCP config.
+The **Composio plugin for Claude Code** is the recommended Claude Code setup. It installs Composio skills and configures Composio Connect for you, so Claude Code can search, connect, and act across 1000+ apps right after install. Authentication is fully managed — no API key handling, no manual MCP config.
 
 <Callout type="info">
-Looking for the API-key based MCP setup (or other clients like Cursor, Codex, Claude Desktop)? See [Composio Connect](/docs/composio-connect).
+For Claude Code, prefer this plugin/skills path over manually adding an MCP server. Looking for the API-key based MCP setup (or other clients like Cursor, Codex, Claude Desktop)? See [Composio Connect](/docs/composio-connect).
 </Callout>
 
 ## What you get
 
 The plugin ships two things together:
 
-- **Composio Connect MCP server** — the same gateway documented in [Composio Connect](/docs/composio-connect), pre-configured. Auth is handled via in-flow OAuth, so you don't paste API keys into your config.
-- **Bundled skills** — pre-written prompts that show Claude how to use the MCP server effectively:
+- **Bundled skills** — pre-written prompts that show Claude how to use Composio effectively:
   - **`composio-mcp`** — reference for the Composio meta tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, etc.) and the recommended search → connect → execute flow.
   - **`onboarding`** — interactive setup that asks what you want to automate, recommends 2–4 apps, and walks you through connecting them.
   - **`company-activity-summary`** — cross-app activity summary across Slack, GitHub, Notion, Linear, Gmail, and more.
   - **`prefer-composio`** — routing skill that tells Claude to reach for Composio first whenever you paste an app URL or mention an external service, so you don't end up using less reliable native connectors.
+- **Composio Connect MCP server** — the same gateway documented in [Composio Connect](/docs/composio-connect), pre-configured behind the plugin. Auth is handled via in-flow OAuth, so you don't paste API keys into your config.
 
 ## Install
 

@@ -26,6 +26,12 @@ By default, a session has access to **all toolkits** in the Composio catalog. Yo
 
 You can also attach local experimental custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
+## Session lifecycle
+
+Sessions persist on the server and do not currently have an explicit SDK method to end/delete them or set a TTL. When a task is done, stop using that session ID. For multi-turn conversations, store the session ID and reuse it with `composio.use()`; for a fresh task or fundamentally different configuration, create a new session.
+
+If you need to change the allowed toolkits, auth configs, connected accounts, or other settings while keeping the same session, use [`session.update()`](#updating-a-session).
+
 ## Enabling toolkits
 
 Restrict the session to specific toolkits:

@@ -39,7 +39,7 @@ See [Native Tools vs MCP](/docs/native-tools-vs-mcp) for a full comparison.
 </Accordion>
 
 <Accordion title="When should I create a new session?">
-Create a new session when the config changes: different toolkits, different auth config, or a different connected account. You don't need to store or manage session IDs. Just call `create()` each time. See [Users and sessions](/docs/users-and-sessions).
+For multi-turn conversations, store the session ID and reuse it with `composio.use()` — do not call `create()` on every request. Create a new session only when the setup changes fundamentally: a different user, a completely different toolkit set, or a changed auth config. See [Users and sessions](/docs/users-and-sessions).
 </Accordion>
 
 </Accordions>
@@ -50,6 +50,10 @@ Create a new session when the config changes: different toolkits, different auth
 
 <Accordion title="Where can I see all available toolkits?">
 You can browse all toolkits on the [Toolkits page](/toolkits) in the docs or in the [Composio dashboard](https://platform.composio.dev?next_page=/marketplace). Both list every supported app along with available auth schemes and tools.
+</Accordion>
+
+<Accordion title="Can I end or delete a session?">
+Not today. Sessions persist on the server and do not currently expose an SDK method to end/delete a session or set a TTL. Stop using the session ID when the task is done. For a fresh task or different configuration, create a new session; for a multi-turn task, reuse the existing session with `composio.use()`.
 </Accordion>
 
 <Accordion title="What toolkits are available by default in a session?">

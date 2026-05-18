@@ -257,8 +257,18 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/tools-direct',
+        destination: '/docs/legacy/tools-direct/executing-tools',
+        permanent: true,
+      },
+      {
         source: '/docs/tools-direct/:path*',
         destination: '/docs/legacy/tools-direct/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth-configuration',
+        destination: '/docs/legacy/auth-configuration/custom-auth-configs',
         permanent: true,
       },
       {
@@ -305,6 +315,11 @@ const config = {
       {
         source: '/docs/executing-tools',
         destination: '/docs/legacy/tools-direct/executing-tools',
+        permanent: true,
+      },
+      {
+        source: '/docs/modify-tool-behavior',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/schema-modifiers',
         permanent: true,
       },
       {
@@ -657,6 +672,11 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/tools/modify',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/schema-modifiers',
+        permanent: true,
+      },
+      {
         source: '/docs/tools/modify/:path*',
         destination: '/docs/legacy/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
@@ -689,6 +709,11 @@ const config = {
       {
         source: '/docs/migration-guide/overview',
         destination: '/docs/migration-guide',
+        permanent: true,
+      },
+      {
+        source: '/docs/modifiers',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/schema-modifiers',
         permanent: true,
       },
       {
