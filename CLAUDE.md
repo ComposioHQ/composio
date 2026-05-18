@@ -13,16 +13,22 @@ composio/
 ├── ts/
 │   ├── packages/
 │   │   ├── core/              # @composio/core — main SDK
-│   │   ├── providers/         # @composio/openai, anthropic, google, langchain, vercel, mastra, ...
+│   │   ├── providers/         # @composio/{openai, anthropic, google, langchain, vercel,
+│   │   │                      #            mastra, llamaindex, cloudflare, openai-agents,
+│   │   │                      #            claude-agent-sdk}
 │   │   ├── cli/               # @composio/cli — Effect.ts + Bun (see ts/packages/cli/AGENTS.md)
-│   │   ├── cli-keyring/       # @composio/cli-keyring — macOS Keychain / Linux Secret Service
-│   │   ├── cli-local-tools/   # @composio/cli-local-tools — local toolkit declarations
+│   │   ├── cli-keyring/       # OS credential store (macOS Keychain / Linux Secret Service)
+│   │   ├── cli-local-tools/   # Local toolkit declarations
 │   │   ├── json-schema-to-zod/
 │   │   └── ts-builders/       # AST builders for code generation
 │   ├── vendor/                # Read-only Effect + Clack submodules (do NOT modify)
 │   ├── e2e-tests/             # Docker-based Node/Deno/Cloudflare runtime tests
 │   └── examples/
-├── python/                    # Python SDK (composio, providers, examples)
+├── python/
+│   ├── composio/              # main SDK (core, client, experimental, sdk.py)
+│   └── providers/             # anthropic, autogen, claude_agent_sdk, crewai, gemini,
+│                              # google, google_adk, langchain, langgraph, llamaindex,
+│                              # openai, openai_agents
 └── docs/                      # Fumadocs site (see docs/CLAUDE.md)
 ```
 
@@ -39,6 +45,7 @@ pnpm test                   # Vitest, all packages
 pnpm test:e2e               # All runtimes (Node CJS+ESM, Deno, Cloudflare Workers) via Docker
 pnpm test:e2e:node          # Override with COMPOSIO_E2E_NODE_VERSION=22.12.0
 pnpm test:e2e:deno          # Override with COMPOSIO_E2E_DENO_VERSION=2.6.7
+pnpm test:e2e:cli           # CLI E2E (see ts/e2e-tests/cli/)
 pnpm test:e2e:cloudflare
 pnpm changeset              # Create release changeset (required for stable CLI/SDK releases)
 pnpm create:provider <name> [--agentic]
@@ -60,7 +67,7 @@ pytest -m core              # Markers: core, openai, langchain, agno
 make build / make bump
 ```
 
-Python: >=3.10, <4. Formatter/linter: Ruff (88 char). Type checker: mypy strict. Core deps include `composio-client` (Stainless-generated; source repo is `ComposioHQ/composio-base-py`).
+Python: `>=3.10,<4`. Formatter/linter: Ruff (88 char). Type checker: mypy strict. Core deps include `composio-client` (Stainless-generated; source repo is `ComposioHQ/composio-base-py`). Changes that touch generated client types require a `composio-client` bump in `python/pyproject.toml`.
 
 ## Environment Variables
 
@@ -77,14 +84,18 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - **Docs PRs also target `next`** (see `docs/CLAUDE.md` rule).
 - `pnpm install` hard-fails on Bun version mismatch — use `BYPASS_BUN_VERSION_CHECK=1`.
 - `ts/vendor/effect/` and `ts/vendor/clack/` are **read-only reference submodules** — npm provides the actual deps.
-- The CLI is **Effect.ts + Bun**, not plain Node — see `ts/packages/cli/AGENTS.md` (CLI's `CLAUDE.md` is a symlink to it).
+- The CLI is **Effect.ts + Bun**, not plain Node. `ts/packages/cli/CLAUDE.md` is a **symlink to `AGENTS.md`** in the same dir — edit `AGENTS.md` if you need to change CLI agent guidance, and don't `rm` the symlink.
 - E2E tests run in **Docker** and require Docker daemon access; skip them in restricted sandboxes.
 - Tool execution code generation is auto-derived from OpenAPI specs in hermes — don't hand-edit generated files under `@composio/core/generated`.
+- **Experimental SHARED-connection surface**: account-type / per-user ACL options on `connectedAccounts.link()` and `session.authorize()` are namespaced under an `experimental` block, and `updateAcl` is a top-level `experimental_updateAcl(composio, id, opts)` (TS) / `composio.experimental.update_acl(...)` (Python). Shape may change; do not promote callers off `experimental` without aligning both SDKs.
+- **Changesets**: every CLI/SDK behavior change needs a `.changeset/*.md` entry; CI blocks releases without one. Use `pnpm changeset`.
 
 ## Key Files
 
 - Main SDK entry: `ts/packages/core/src/index.ts`
 - Core Composio class: `ts/packages/core/src/composio.ts`
+- Experimental TS: `ts/packages/core/src/experimental/` (re-exports), `ts/packages/core/src/models/Experimental.ts` (`updateAcl`)
+- Experimental Python: `python/composio/core/models/experimental.py`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
 - Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
 - CI release docs to update when bumping toolchain: `ts/docs/internal/release.md` (Node/Bun/pnpm versions)
@@ -94,4 +105,4 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 
 - `AGENTS.md` — Codex/generic-agent variant of this file
 - `docs/CLAUDE.md` — Fumadocs site, link-checker, API-reference versioning
-- `ts/packages/cli/AGENTS.md` — CLI architecture, services, commands, release flow
+- `ts/packages/cli/AGENTS.md` — CLI architecture, services, commands, release flow (CLI's `CLAUDE.md` is a symlink to this)
