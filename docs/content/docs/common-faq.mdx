@@ -9,9 +9,9 @@ keywords: [faq, questions, help, common questions]
 <Accordions>
 
 <Accordion title="Do I need an AI agent to use Composio?">
-No. If you're building an AI agent, Composio can give it [meta tools](/docs/quickstart) that handle tool discovery and execution automatically, or you can [fetch specific tools](/docs/tools-direct/fetching-tools) and pass them to your agent directly.
+No. If you're building an AI agent, start with [sessions and meta tools](/docs/quickstart); they handle tool discovery, authentication, and execution automatically.
 
-If you don't have an agent, you can [execute tools directly](/docs/tools-direct/executing-tools#direct-tool-execution) from any backend.
+If you're maintaining an older non-agent integration, legacy [direct tool execution](/docs/legacy/tools-direct/executing-tools#direct-tool-execution) is still documented, but it is not the recommended path for new agent builds.
 </Accordion>
 
 <Accordion title="What is the difference between a tool and a toolkit?">
@@ -93,7 +93,7 @@ Composio toolkits are versioned using date-based identifiers (e.g., `20251027_00
 
 **When to use `latest` vs a pinned version:** Use `latest` when tool outputs and trigger payloads are consumed by an LLM or AI agent — agents adapt to response changes dynamically and benefit from always having the newest tools. Pin to a specific version when your code parses outputs programmatically (e.g., destructuring fields, mapping to a schema, or feeding into a typed pipeline).
 
-This applies to direct tool execution only. Sessions with meta tools always use the latest version. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+This applies to direct tool execution only. Sessions with meta tools always use the latest version. See [Toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning).
 </Accordion>
 
 <Accordion title="Why does the API return fewer tools than the platform UI?">
@@ -106,7 +106,7 @@ curl 'https://backend.composio.dev/api/v3.1/tools?toolkit_slug=googledrive&toolk
   -H 'x-api-key: YOUR_API_KEY'
 ```
 
-See [Toolkit versioning](/docs/tools-direct/toolkit-versioning) for more details.
+See [Toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning) for more details.
 </Accordion>
 
 <Accordion title="Does Composio support triggers?">
@@ -126,7 +126,7 @@ An auth config is a blueprint that defines how authentication works for a toolki
 
 If you're using sessions with meta tools (`composio.create()`), you don't need to create auth configs yourself. When a user connects to a toolkit, Composio automatically uses a default auth config with managed credentials. The agent handles the entire flow through `COMPOSIO_MANAGE_CONNECTIONS`.
 
-You only need to create auth configs manually when you're [executing tools directly](/docs/tools-direct/authenticating-tools), want to [use your own OAuth app](/docs/white-labeling-authentication), need [custom scopes](/docs/auth-configuration/custom-auth-configs), or are working with a toolkit that doesn't have Composio-managed auth. See [Authentication](/docs/authentication) for the full overview and [When to use your own developer credentials](/docs/custom-app-vs-managed-app) for help deciding.
+You only need to create auth configs manually when you're using legacy direct execution, want to [use your own OAuth app](/docs/white-labeling-authentication), need [custom scopes](/docs/using-custom-auth-configuration), or are working with a toolkit that doesn't have Composio-managed auth. See [Authentication](/docs/authentication) for the full overview and [When to use your own developer credentials](/docs/custom-app-vs-managed-app) for help deciding.
 </Accordion>
 
 <Accordion title="What authentication types does Composio support?">
@@ -144,13 +144,13 @@ For direct tool execution, use `initiate()` with `allow_multiple: true` and pass
 <Accordion title="How does token refresh work?">
 Composio automatically refreshes OAuth tokens before they expire. You don't need to handle this yourself.
 
-If a refresh fails permanently (e.g., the user revoked access or the OAuth app was deleted), the connection status changes to `EXPIRED`. You can [subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this and prompt users to re-authenticate. See [Connection statuses](/docs/tools-direct/authenticating-tools#connection-statuses) for more details.
+If a refresh fails permanently (e.g., the user revoked access or the OAuth app was deleted), the connection status changes to `EXPIRED`. You can [subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this and prompt users to re-authenticate. See [Connection statuses](/docs/legacy/tools-direct/authenticating-tools#connection-statuses) for more details.
 </Accordion>
 
 <Accordion title="How do I redirect users back to my app after they connect?">
 Pass a `callbackUrl` when calling `link()`, `initiate()`, or `session.authorize()`. After authentication, Composio redirects the user to that URL with `status=success` or `status=failed` and the `connected_account_id` appended as query parameters.
 
-You can include your own query parameters in the callback URL (e.g., `?user_id=user_123&source=onboarding`) to carry context through the flow. Composio preserves them. See [sessions](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication) or [direct tool setup](/docs/tools-direct/authenticating-tools#redirecting-users-after-authentication).
+You can include your own query parameters in the callback URL (e.g., `?user_id=user_123&source=onboarding`) to carry context through the flow. Composio preserves them. See [sessions](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication) or [direct tool setup](/docs/legacy/tools-direct/authenticating-tools#redirecting-users-after-authentication).
 </Accordion>
 
 <Accordion title="How do I use my own API key for a toolkit instead of asking each user for theirs?">
@@ -185,7 +185,7 @@ const connection = await composio.connectedAccounts.initiate('user_123', 'your_a
   </Tab>
 </Tabs>
 
-Each user gets their own connected account scoped to their `user_id`, but they all share your API key under the hood. See [API key connections](/docs/tools-direct/authenticating-tools#api-key-connections) for the full setup.
+Each user gets their own connected account scoped to their `user_id`, but they all share your API key under the hood. See [API key connections](/docs/legacy/tools-direct/authenticating-tools#api-key-connections) for the full setup.
 </Accordion>
 
 <Accordion title="How do I configure sessions with custom auth configs?">
@@ -225,7 +225,7 @@ Nothing — existing connected accounts are permanently tied to the auth config 
 
 This applies whether you're using sessions or direct tool execution:
 - **Sessions:** Pass `authConfigs` when calling `composio.create()`. See [Switching auth configs (sessions)](/docs/white-labeling-authentication#switching-from-composio-managed-to-your-own-oauth-app).
-- **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).
+- **Direct tool execution:** Pass the new `authConfigId` when calling `initiate()`. See [Switching auth configs (direct)](/docs/legacy/auth-configuration/white-labeling#switching-from-composio-managed-to-your-own-oauth-app).
 </Accordion>
 
 </Accordions>
@@ -263,7 +263,7 @@ Connected account secrets are masked by default for security. The API returns th
 
 To disable masking, go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets", or use the Patch Project Config API.
 
-See [Connected accounts](/docs/auth-configuration/connected-accounts#get-account-credentials) for full details.
+See [Connected accounts](/docs/legacy/auth-configuration/connected-accounts#get-account-credentials) for full details.
 </Accordion>
 
 <Accordion title="Where can I find execution logs?">

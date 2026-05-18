@@ -115,15 +115,15 @@ When adding new documentation or reviewing PRs, follow these principles:
 The docs sidebar is organized into these sections (in order):
 
 1. **First Steps** - Quickstart, intro. New users land here.
-2. **Use Composio** - CLI, plugins, agent signup. For non-programmatic use (MCP, Claude Code).
-3. **Build with Composio** - Architecture, providers. For SDK developers.
-4. **Sessions** - THE core pattern: `composio.create(user_id)`. Sessions-first always.
-5. **Auth** - Simple → Advanced. Link Auth (Composio Managed) first, custom OAuth at bottom.
-6. **Tools** - Simple → Advanced. Tool Router, Workbench, custom tools at bottom.
-7. **Triggers** - Event-driven architecture. Independent from sessions.
-8. **Platform** - Projects, observability, limits. Production concerns.
+2. **Sessions** - THE core pattern: `composio.create(user_id)`. Sessions-first always.
+3. **Auth** - Simple → Advanced. Link Auth (Composio Managed) first, custom OAuth at bottom.
+4. **Tools** - Simple → Advanced. Tool Router, Workbench, custom tools at bottom.
+5. **Triggers** - Event-driven architecture. Independent from sessions.
+6. **Providers** - Framework integration reference for SDK developers.
+7. **Platform** - Projects, observability, limits. Production concerns.
+8. **MCP & Clients** - Composio Connect, CLI, plugins. For non-programmatic use (MCP, Claude Code).
 9. **Help** - Migration, glossary, FAQ, troubleshooting.
-10. **Legacy** - Deprecated patterns (direct execution, old MCP). Collapsed by default.
+10. **Legacy** - Deprecated patterns (direct execution, old MCP). Real folder with `defaultOpen: false`, not a separator.
 
 ### Progressive Disclosure
 
@@ -134,7 +134,7 @@ The docs sidebar is organized into these sections (in order):
 ### Sessions-First Pattern
 
 - `composio.create(user_id)` is THE pattern - document it everywhere
-- Direct execution is legacy - only in Legacy section
+- Direct execution is legacy - only link to it as legacy context, migration help, or maintenance support
 - Every page assumes sessions-based usage
 
 ### Where to Add New Content

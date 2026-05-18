@@ -54,7 +54,7 @@ Depending on your authentication method, you may need to configure scopes:
 You must provide your own credentials regardless of environment.
 
 <Callout type="info">
-Want to remove Composio branding from OAuth screens? See [White-labeling](/docs/auth-configuration/white-labeling) for details.
+Want to remove Composio branding from OAuth screens? See [White-labeling](/docs/legacy/auth-configuration/white-labeling) for details.
 </Callout>
 </Step>
 
@@ -79,10 +79,10 @@ You should create multiple auth configs for the same toolkit when you need:
 - **Different permission levels** - Limiting actions for specific use cases
 
 <Cards>
-  <Card title="Programmatic creation" href="/docs/auth-configuration/programmatic-auth-configs">
+  <Card title="Programmatic creation" href="/docs/legacy/auth-configuration/programmatic-auth-configs">
     For managing auth configs across multiple projects, you can create them programmatically via the API
   </Card>
-  <Card title="Production white-labeling" href="/docs/auth-configuration/white-labeling">
+  <Card title="Production white-labeling" href="/docs/legacy/auth-configuration/white-labeling">
     Remove Composio branding from OAuth screens for a fully white-labeled authentication experience
   </Card>
 </Cards>
@@ -159,7 +159,7 @@ console.log(`Visit: ${redirectUrl} to authenticate your account`);
 You can customize the Connect Link with your logo and app title, or fully white-label OAuth consent screens with your own developer apps.
 
 <Cards>
-  <Card icon={<Palette />} title="White-labeling" href="/docs/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
+  <Card icon={<Palette />} title="White-labeling" href="/docs/legacy/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
 </Cards>
 
 #### Redirecting users after authentication
@@ -186,7 +186,7 @@ https://your-app.com/callback?user_id=user_123&status=success&connected_account_
 <Callout type="warn">
 **`initiate()` is being retired for Composio-managed OAuth.** If your auth config is Composio-managed (the default — you didn't bring your own OAuth client credentials), `initiate()` will start returning `400 BadRequest` on **2026-05-08** for new organizations and **2026-07-03** for all remaining organizations. Use [Hosted Authentication (Connect Link)](#hosted-authentication-connect-link) above with `composio.connectedAccounts.link()` (TS) / `composio.connected_accounts.link()` (Python) instead — same return shape, same `redirectUrl` / `redirect_url` field, and it works for every redirectable scheme.
 
-Custom auth configs (your own OAuth app) and non-OAuth schemes (API key, bearer token, basic) continue to work on `initiate()` unchanged. See the [migration guide](/docs/auth-configuration/migrating-initiate-to-link) and the [changelog entry](/docs/changelog/2026/04/24).
+Custom auth configs (your own OAuth app) and non-OAuth schemes (API key, bearer token, basic) continue to work on `initiate()` unchanged. See the [migration guide](/docs/legacy/auth-configuration/migrating-initiate-to-link) and the [changelog entry](/docs/changelog/2026/04/24).
 </Callout>
 
 For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control where users return after authentication:
@@ -406,7 +406,7 @@ Composio also supports a wide range of other auth schemas:
 For any of these methods, [fetch the config parameter](#fetching-the-required-config-parameters-for-an-auth-config) to determine the exact fields required. Every toolkit has its own requirements, and understanding these is essential for successfully creating connections.
 </Callout>
 
-Learn how to [Manage connected accounts](/docs/auth-configuration/connected-accounts) after users authenticate.
+Learn how to [Manage connected accounts](/docs/legacy/auth-configuration/connected-accounts) after users authenticate.
 
 ## Connection Statuses
 
@@ -526,7 +526,7 @@ Only connections with **ACTIVE** status can be used to execute tools. If a conne
 ## What to read next
 
 <Cards>
-  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
-  <Card icon={<Palette />} title="White-labeling" href="/docs/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
+  <Card icon={<Play />} title="Executing tools" href="/docs/legacy/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Palette />} title="White-labeling" href="/docs/legacy/auth-configuration/white-labeling" description="Remove Composio branding from OAuth screens and auth flows" />
 </Cards>

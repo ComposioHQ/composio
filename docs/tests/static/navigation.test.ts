@@ -15,6 +15,11 @@ function isSeparator(entry: string): boolean {
   return entry.startsWith("---");
 }
 
+/** External links in Fumadocs meta use Markdown link syntax */
+function isExternalLink(entry: string): boolean {
+  return /^\[[^\]]+\]\(https?:\/\//.test(entry);
+}
+
 /** Recursively find all meta.json files under a directory */
 async function findMetaFiles(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -49,6 +54,7 @@ describe("Navigation - meta.json validity", () => {
 
     for (const entry of meta.pages as string[]) {
       if (isSeparator(entry)) continue;
+      if (isExternalLink(entry)) continue;
       if (entry === "...") continue;
 
       const asFile = join(CONTENT_DIR, `${entry}.mdx`);
@@ -76,6 +82,7 @@ describe("Navigation - meta.json validity", () => {
 
       for (const entry of (meta.pages || []) as string[]) {
         if (isSeparator(entry)) continue;
+        if (isExternalLink(entry)) continue;
 
         // Handle "..." (rest) entries which are valid fumadocs syntax
         if (entry === "...") continue;
@@ -103,7 +110,7 @@ describe("Navigation - meta.json validity", () => {
     const rootMetaPath = join(CONTENT_DIR, "meta.json");
     const rootMeta = JSON.parse(await readFile(rootMetaPath, "utf-8"));
     const rootEntries = new Set(
-      (rootMeta.pages as string[]).filter((e: string) => !isSeparator(e) && e !== "...")
+      (rootMeta.pages as string[]).filter((e: string) => !isSeparator(e) && !isExternalLink(e) && e !== "...")
     );
     // "..." means "include everything else", so skip orphan check for root
     if (rootEntries.has("...")) return;
@@ -124,7 +131,7 @@ describe("Navigation - meta.json validity", () => {
       const dir = dirname(metaPath);
       const meta = JSON.parse(await readFile(metaPath, "utf-8"));
       const entries = new Set(
-        ((meta.pages || []) as string[]).filter((e: string) => !isSeparator(e))
+        ((meta.pages || []) as string[]).filter((e: string) => !isSeparator(e) && !isExternalLink(e))
       );
       // "..." means "include everything else", so skip orphan check
       if (entries.has("...")) continue;

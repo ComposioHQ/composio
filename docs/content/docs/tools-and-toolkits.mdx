@@ -12,7 +12,7 @@ When you create a session, your agent gets these meta tools:
 
 | Meta tool | What it does |
 |-----------|--------------|
-| [`COMPOSIO_SEARCH_TOOLS`](/reference/meta-tools/search_tools) | Discover relevant tools across 500+ apps with execution plans |
+| [`COMPOSIO_SEARCH_TOOLS`](/reference/meta-tools/search_tools) | Discover relevant tools across 1000+ apps with execution plans |
 | [`COMPOSIO_GET_TOOL_SCHEMAS`](/reference/meta-tools/get_tool_schemas) | Retrieve complete input schemas for specific tools |
 | [`COMPOSIO_MULTI_EXECUTE_TOOL`](/reference/meta-tools/multi_execute_tool) | Execute up to 50 tools in parallel |
 | [`COMPOSIO_MANAGE_CONNECTIONS`](/reference/meta-tools/manage_connections) | Handle OAuth, API key, and other authentication methods |
@@ -67,9 +67,7 @@ A **toolkit** is a collection of related tools for a service. For example, the `
 
 A **tool** is an individual action your agent can execute. Each tool has an input schema (required and optional parameters) and an output schema (what it returns). Tools follow a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
 
-<Callout>
-If you know exactly which tools you need, you can [execute them directly](/docs/tools-direct/executing-tools) without meta tools.
-</Callout>
+If you know exactly which tools you need, keep the session pattern and restrict the session to those tools or toolkits instead of switching to legacy direct execution. See [Configuring Sessions](/docs/configuring-sessions) and [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
 
 You can also add local in-process tools to a session using the experimental custom tools and custom toolkits API. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
@@ -99,5 +97,5 @@ If a tool requires authentication and the user hasn't connected yet, the agent c
   <Card icon={<Monitor />} title="Workbench" href="/docs/workbench" description="Persistent Python sandbox for bulk operations and data processing" />
   <Card icon={<Blocks />} title="Browse toolkits" href="/toolkits" description="Explore all available toolkits" />
   <Card icon={<Wrench />} title="Fetching tools" href="/docs/toolkits/fetching-tools-and-toolkits" description="Browse the catalog and fetch tools for sessions" />
-  <Card icon={<Zap />} title="Direct tool execution" href="/docs/tools-direct/executing-tools" description="Execute tools without meta tools for deterministic workflows" />
+  <Card icon={<Wrench />} title="Configure sessions" href="/docs/configuring-sessions" description="Restrict tools, pre-load toolkits, and select connected accounts" />
 </Cards>

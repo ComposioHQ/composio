@@ -4,7 +4,7 @@ description: Sessions, meta tools, authentication, and tool execution
 keywords: [architecture, how it works, sessions, meta tools, execution]
 ---
 
-Composio connects AI agents to external services like GitHub, Gmail, and Slack. Your agent gets a small set of meta tools that can discover, authenticate, and execute tools across hundreds of apps at runtime.
+Composio connects AI agents to external services like GitHub, Gmail, and Slack. Your agent gets a small set of meta tools that can discover, authenticate, and execute tools across 1000+ apps at runtime.
 
 This page is a high-level overview. Each concept has a dedicated page with full details:
 
@@ -38,7 +38,7 @@ A session ties together:
 - **Available toolkits**: all by default, or a specific set you configure
 - **Auth configuration**: which authentication method and connected accounts to use
 
-Sessions are immutable. Their configuration is fixed at creation. If the context changes (different toolkits, different connected account), create a new session. You don't need to cache or manage session IDs.
+Sessions persist on the server and can be reused with `composio.use(session_id)` for multi-turn conversations. Start a new session when you want clean task isolation, and use `session.update()` when you need to change toolkits, auth configs, connected accounts, or other session settings.
 
 <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="How users and sessions scope tools and connections" />
 
@@ -106,7 +106,7 @@ This keeps the agent's context window lean while still letting it handle operati
 
 ## What to read next
 
-Start with the concepts in order, or jump to the quickstart to build right away:
+Start with the hands-on flow first, then use these pages when you need the details:
 
 <Cards>
   <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="How users and sessions scope tools and connections" />
@@ -117,4 +117,4 @@ Start with the concepts in order, or jump to the quickstart to build right away:
 
 Deciding how to connect? See:
 - [Native Tools vs MCP](/docs/native-tools-vs-mcp) — SDK vs MCP servers
-- [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) — meta tools vs fetching specific tools
+- [Sessions vs Direct Execution](/docs/sessions-vs-direct-execution) — why sessions are the recommended path for new builds

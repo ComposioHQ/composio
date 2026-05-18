@@ -27,7 +27,7 @@ Typical use cases:
 |---|---|---|
 | **Who can use it** | Only the owning `userId` | The creator + every `userId` permitted by the ACL |
 | **Default access for other users** | Always denied | Deny-by-default — the creator must grant access explicitly |
-| **How it's used** | Implicit lookup by `userId` | Must be **explicitly pinned** in a tool-router session, or referenced by `connectedAccountId` on a direct execute |
+| **How it's used** | Implicit lookup by `userId` | Must be **explicitly pinned** in a session, or referenced by `connectedAccountId` on a legacy direct execute |
 | **ACL fields** | Ignored | `allowAllUsers`, `allowedUserIds`, `notAllowedUserIds` (inside the `experimental` block) |
 
 <Callout type="info">
@@ -186,7 +186,7 @@ ACL writes are restricted to the connection's creator or an API key caller. Othe
 
 ## Using a shared connection
 
-### In a tool-router session
+### In a session
 
 Pin the SHARED connection into the session via `connectedAccounts`. The session belongs to a *different* `userId` than the creator — the pin is what makes the SHARED connection visible to that session.
 
@@ -365,7 +365,7 @@ if (account.experimental) {
 |---|---|
 | `ComposioAclOnlyForSharedError` (400) | ACL fields sent on a PRIVATE connection (at create or update time). |
 | `ComposioSharedAccessDeniedError` (403) | Direct execute with a SHARED `connectedAccountId` that the requesting `userId` isn't permitted to use. |
-| `ComposioSharedConnectionNotAccessibleError` (400) | A tool-router session pinned a SHARED connection that the session's `userId` cannot use — the error is raised at session create time, so the session never enters a state that fails mid-execution. |
+| `ComposioSharedConnectionNotAccessibleError` (400) | A session pinned a SHARED connection that the session's `userId` cannot use — the error is raised at session create time, so the session never enters a state that fails mid-execution. |
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -429,7 +429,7 @@ try {
 ## What to read next
 
 <Cards>
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
   <Card icon={<Plug />} title="Managing multiple connected accounts" href="/docs/managing-multiple-connected-accounts" description="Pin specific accounts into a session at runtime" />
   <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Session config — custom auth configs, pinned connections, multi-account" />
 </Cards>

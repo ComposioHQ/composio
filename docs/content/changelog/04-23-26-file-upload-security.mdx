@@ -19,7 +19,7 @@ The Composio SDKs add defense-in-depth for **automatic file uploads** (when a to
 
 - **Default sensitive path protection** — Before reading and uploading, the SDK checks the resolved local path against a built-in list of path segments (for example `.ssh`, `.aws`, `.claude`, `.kube`) and file-name patterns (for example `.env`, default SSH private key names, `credentials`). If the path matches, the upload is refused unless you change configuration.
 - **Extra denylist segments** — You can add path component names to merge with the built-in list (for example a proprietary secrets directory name).
-- **`beforeFileUpload` / `before_file_upload` hook** — Optional hook for each file upload: return a different path, return `false` to abort, or throw. TypeScript: pass `beforeFileUpload` on the third argument to `tools.execute`. Python: use [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) in the `modifiers` list (same as other Python modifiers), not a separate keyword. Use this to enforce app-specific policies, audit logging, or copy-on-write to a safe temp file before upload. See [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python).
+- **`beforeFileUpload` / `before_file_upload` hook** — Optional hook for each file upload: return a different path, return `false` to abort, or throw. TypeScript: pass `beforeFileUpload` on the third argument to `tools.execute`. Python: use [`@before_file_upload`](/reference/sdk-reference/python/index#before_file_upload) in the `modifiers` list (same as other Python modifiers), not a separate keyword. Use this to enforce app-specific policies, audit logging, or copy-on-write to a safe temp file before upload. See [Before file upload (Python)](/docs/legacy/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python).
 - **New errors** — `ComposioSensitiveFilePathBlockedError` / `SensitiveFilePathBlockedError` when a path is blocked, and `ComposioFileUploadAbortedError` / `FileUploadAbortedError` when the hook returns `false` or a hook throws in an aborting way.
 - **Python: modifier order** — `substitute_file_uploads` runs before `before_execute` modifiers, matching TypeScript behavior (including Tool Router `execute_meta`).
 
@@ -138,6 +138,6 @@ composio = Composio(
 
 ### Where to read more
 
-- [Executing tools: automatic file handling and security options](/docs/tools-direct/executing-tools#security-for-local-file-paths) — configuration and code patterns.
+- [Executing tools: automatic file handling and security options](/docs/legacy/tools-direct/executing-tools#security-for-local-file-paths) — configuration and code patterns.
 - [TypeScript `Composio` client](/reference/sdk-reference/typescript/composio#file-upload-security) — related constructor options in the reference.
 - TypeScript SDK (repository): `ts/docs/advanced/auto-upload-download.md` — extended guide with error types and edge cases.

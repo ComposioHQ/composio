@@ -43,7 +43,7 @@ Customizing the Connect Link only changes the Composio-hosted page. For OAuth to
 
 ## Using your own OAuth apps
 
-OAuth toolkits like Google and GitHub show a consent screen that says which app is requesting access. By default this reads "Composio wants to connect to your account." To show your app name instead, register your own OAuth app and tell Composio to use it. This is done by creating a [custom auth config](/docs/auth-configuration/custom-auth-configs) with your own credentials. See [when to use your own OAuth apps](#when-to-use-your-own-oauth-apps).
+OAuth toolkits like Google and GitHub show a consent screen that says which app is requesting access. By default this reads "Composio wants to connect to your account." To show your app name instead, register your own OAuth app and tell Composio to use it. This is done by creating a [custom auth config](/docs/legacy/auth-configuration/custom-auth-configs) with your own credentials. See [when to use your own OAuth apps](#when-to-use-your-own-oauth-apps).
 
 <Callout type="info" title="You don't need this for every toolkit">
 Only white-label toolkits where users see a consent screen (Google, GitHub, Slack, etc.). Toolkits that use API keys don't show consent screens, so there's nothing to white-label. You can mix and match freely.
@@ -263,7 +263,7 @@ For FAQs and setup guides for individual toolkits, browse the [toolkits page](/t
 ## What to read next
 
 <Cards>
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
-  <Card icon={<Wrench />} title="Custom auth configs" href="/docs/auth-configuration/custom-auth-configs" description="Customize auth configs with your own OAuth apps" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Wrench />} title="Custom auth configs" href="/docs/legacy/auth-configuration/custom-auth-configs" description="Customize auth configs with your own OAuth apps" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/legacy/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
 </Cards>

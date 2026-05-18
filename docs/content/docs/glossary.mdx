@@ -8,7 +8,7 @@ keywords: [glossary, definitions, terminology]
 <Glossary>
 
 <GlossaryTerm name="Auth Config">
-A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/users-and-sessions) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
+A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/users-and-sessions) when needed. You can [create a custom one](/docs/using-custom-auth-configuration) to use your own OAuth credentials or non-default scopes.
 </GlossaryTerm>
 
 <GlossaryTerm name="Auth Scheme">
@@ -40,7 +40,7 @@ The object returned when you initiate authentication. Contains the Connect Link 
 </GlossaryTerm>
 
 <GlossaryTerm name="Custom Tool">
-A user-defined tool used alongside Composio's built-in tools. For sessions, use local experimental custom tools and custom toolkits via [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits). For direct execution, see [Creating custom tools](/docs/tools-direct/custom-tools).
+A user-defined tool used alongside Composio's built-in tools. For sessions, use local experimental custom tools and custom toolkits via [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits). For direct execution, see [Creating custom tools](/docs/legacy/tools-direct/custom-tools).
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
@@ -60,7 +60,7 @@ A set of tools included in every session, including `COMPOSIO_SEARCH_TOOLS`, `CO
 </GlossaryTerm>
 
 <GlossaryTerm name="Modifiers">
-Middleware that transforms tool behavior: [schema modifiers](/docs/tools-direct/modify-tool-behavior/schema-modifiers) change a tool's schema before the agent sees it, [before-execution modifiers](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) modify arguments before a tool runs, [after-execution modifiers](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) transform the result. In Python, [`@before_file_upload`](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) intercepts local paths for `file_uploadable` parameters before read/upload.
+Middleware that transforms tool behavior: [schema modifiers](/docs/legacy/tools-direct/modify-tool-behavior/schema-modifiers) change a tool's schema before the agent sees it, [before-execution modifiers](/docs/legacy/tools-direct/modify-tool-behavior/before-execution-modifiers) modify arguments before a tool runs, [after-execution modifiers](/docs/legacy/tools-direct/modify-tool-behavior/after-execution-modifiers) transform the result. In Python, [`@before_file_upload`](/docs/legacy/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) intercepts local paths for `file_uploadable` parameters before read/upload.
 </GlossaryTerm>
 
 <GlossaryTerm name="Native Tools">
@@ -112,7 +112,7 @@ The lowercase identifier for a toolkit, e.g. `github`, `gmail`, `slack`. Used wh
 </GlossaryTerm>
 
 <GlossaryTerm name="Toolkit Versioning">
-Pinning a toolkit to a specific version so your integration uses a consistent set of tools even as Composio updates definitions. See [Toolkit versioning](/docs/tools-direct/toolkit-versioning).
+Pinning a toolkit to a specific version so your integration uses a consistent set of tools even as Composio updates definitions. See [Toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning).
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger">

@@ -16,13 +16,13 @@ This is useful when:
 ```mermaid
 graph LR
     A[Create auth config] --> B[Create connection with credentials]
-    B --> C[Use in Tool Router / Execute tools]
+    B --> C[Use in sessions]
     C --> D[Update credentials when needed]
 ```
 
 ## Prerequisites
 
-1. **An [auth config](/docs/auth-configuration/programmatic-auth-configs)** for the toolkit you're importing into
+1. **An [auth config](/docs/legacy/auth-configuration/programmatic-auth-configs)** for the toolkit you're importing into
 2. **The existing credentials** for each user (API keys, bearer tokens, username/password, etc.)
 3. **A user ID** for each user — any string that uniquely identifies them in your system
 
@@ -79,7 +79,7 @@ If you manage your own OAuth flow and already have an access token for a service
 
 Since you're providing your own token, Composio won't handle OAuth refresh — you're responsible for refreshing the token on your end and pushing the updated value to Composio via the [PATCH method](#updating-credentials) whenever it changes.
 
-After [creating an auth config](/docs/auth-configuration/programmatic-auth-configs) with `authScheme: "BEARER_TOKEN"`, use the snippet below to create a connected account:
+After [creating an auth config](/docs/legacy/auth-configuration/programmatic-auth-configs) with `authScheme: "BEARER_TOKEN"`, use the snippet below to create a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -333,6 +333,6 @@ const session = await composio.create('user_123', {
 
 <Cards>
   <Card icon={<Key />} title="Custom auth configs" href="/docs/using-custom-auth-configuration" description="Set up auth configs with your own OAuth credentials" />
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage connected accounts after importing" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Manage connected accounts after importing" />
   <Card icon={<Palette />} title="White-labeling" href="/docs/white-labeling-authentication" description="Use your own branding on OAuth consent screens" />
 </Cards>

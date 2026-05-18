@@ -4,11 +4,29 @@ description: How Composio scopes tools and connections to your users
 keywords: [session, user id, concepts]
 ---
 
-When building AI agents for multiple users, each user needs their own connections and context. This is represented through **users** and **sessions**.
+Start every agent task with a session for the user who is asking. The session gives your agent tools, handles auth, and keeps activity scoped to that user's connected accounts.
 
-<Callout>
-For a hands-on walkthrough, see the [quickstart](/docs/quickstart).
-</Callout>
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(user_id="user_123")
+tools = session.tools()
+# Pass tools to your agent
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+const tools = await session.tools();
+// Pass tools to your agent
+```
+</Tab>
+</Tabs>
+
+For a hands-on walkthrough, see the [quickstart](/docs/quickstart). For multi-turn conversations, store the session ID and reuse it with `composio.use()`.
 
 ## Users
 

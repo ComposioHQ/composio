@@ -9,7 +9,7 @@ llmGuardrails: "direct-execution"
 If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts) for how sessions handle account selection automatically.
 </Callout>
 
-Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
+Connected accounts are authenticated connections between your users and toolkits. After users authenticate (see [Authenticating tools](/docs/legacy/tools-direct/authenticating-tools)), you can manage these accounts throughout their lifecycle.
 
 Composio automatically handles token refresh and credential management. This guide covers manual operations: listing, retrieving, refreshing, enabling, disabling, and deleting accounts.
 
@@ -260,7 +260,7 @@ Disabling masking exposes full credentials in API responses. Only disable this i
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
 <Callout type="warn">
-**For Composio-managed OAuth, prefer `link()`.** The `initiate()` examples below will stop working for Composio-managed OAuth auth configs starting **2026-05-08** (new orgs) / **2026-07-03** (all orgs). `link()` provides hosted authentication, allows multiple accounts by default, and is unaffected by the rollout. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
+**For Composio-managed OAuth, prefer `link()`.** The `initiate()` examples below will stop working for Composio-managed OAuth auth configs starting **2026-05-08** (new orgs) / **2026-07-03** (all orgs). `link()` provides hosted authentication, allows multiple accounts by default, and is unaffected by the rollout. See [Connect Link authentication](/docs/legacy/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/legacy/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
 
 The `initiate()` examples remain accurate for **custom auth configs** (your own OAuth app) and **non-OAuth schemes** (API key, bearer, basic) — those are unaffected.
 </Callout>
@@ -377,7 +377,7 @@ console.log('Tool executed:', result);
 ## What to read next
 
 <Cards>
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Palette />} title="Custom auth configs" href="/docs/auth-configuration/custom-auth-configs" description="Use your own OAuth apps for white-labeled authentication" />
-  <Card icon={<Wrench />} title="Programmatic auth configs" href="/docs/auth-configuration/programmatic-auth-configs" description="Create auth configs programmatically via the SDK" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/legacy/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Palette />} title="Custom auth configs" href="/docs/legacy/auth-configuration/custom-auth-configs" description="Use your own OAuth apps for white-labeled authentication" />
+  <Card icon={<Wrench />} title="Programmatic auth configs" href="/docs/legacy/auth-configuration/programmatic-auth-configs" description="Create auth configs programmatically via the SDK" />
 </Cards>

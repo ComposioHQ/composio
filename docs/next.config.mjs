@@ -247,6 +247,26 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/proxy-execute',
+        destination: '/docs/legacy/proxy-execute',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-direct/:path*',
+        destination: '/docs/legacy/tools-direct/:path*',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth-configuration/:path*',
+        destination: '/docs/legacy/auth-configuration/:path*',
+        permanent: true,
+      },
+      {
         source: '/features/authentication',
         destination: '/docs/authentication',
         permanent: true,
@@ -258,69 +278,69 @@ const config = {
       },
       {
         source: '/docs/mcp-quickstart',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
         source: '/docs/mcp-server-management',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
         source: '/docs/mcp/:path*',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       // Tools section moved to tools-direct folder
       {
         source: '/docs/fetching-tools',
-        destination: '/docs/tools-direct/fetching-tools',
+        destination: '/docs/legacy/tools-direct/fetching-tools',
         permanent: true,
       },
       {
         source: '/docs/authenticating-tools',
-        destination: '/docs/tools-direct/authenticating-tools',
+        destination: '/docs/legacy/tools-direct/authenticating-tools',
         permanent: true,
       },
       {
         source: '/docs/executing-tools',
-        destination: '/docs/tools-direct/executing-tools',
+        destination: '/docs/legacy/tools-direct/executing-tools',
         permanent: true,
       },
       {
         source: '/docs/modify-tool-behavior/:path*',
-        destination: '/docs/tools-direct/modify-tool-behavior/:path*',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
       },
       {
         source: '/docs/custom-tools',
-        destination: '/docs/tools-direct/custom-tools',
+        destination: '/docs/legacy/tools-direct/custom-tools',
         permanent: true,
       },
       {
         source: '/docs/toolkit-versioning',
-        destination: '/docs/tools-direct/toolkit-versioning',
+        destination: '/docs/legacy/tools-direct/toolkit-versioning',
         permanent: true,
       },
       // Authentication section moved to auth-configuration folder
       {
         source: '/docs/custom-auth-configs',
-        destination: '/docs/auth-configuration/custom-auth-configs',
+        destination: '/docs/legacy/auth-configuration/custom-auth-configs',
         permanent: true,
       },
       {
         source: '/docs/programmatic-auth-configs',
-        destination: '/docs/auth-configuration/programmatic-auth-configs',
+        destination: '/docs/legacy/auth-configuration/programmatic-auth-configs',
         permanent: true,
       },
       {
         source: '/docs/custom-auth-params',
-        destination: '/docs/auth-configuration/custom-auth-params',
+        destination: '/docs/legacy/auth-configuration/custom-auth-params',
         permanent: true,
       },
       {
         source: '/docs/connected-accounts',
-        destination: '/docs/auth-configuration/connected-accounts',
+        destination: '/docs/legacy/auth-configuration/connected-accounts',
         permanent: true,
       },
       // /tools → /toolkits
@@ -353,7 +373,7 @@ const config = {
       },
       {
         source: '/js-sdk/tools/execute',
-        destination: '/docs/tools-direct/executing-tools',
+        destination: '/docs/legacy/tools-direct/executing-tools',
         permanent: true,
       },
       {
@@ -368,7 +388,7 @@ const config = {
       },
       {
         source: '/custom-tools/:path*',
-        destination: '/docs/tools-direct/custom-tools',
+        destination: '/docs/legacy/tools-direct/custom-tools',
         permanent: true,
       },
       // Error handling redirect (old fern URL)
@@ -396,7 +416,7 @@ const config = {
       // Old tool-calling section
       {
         source: '/tool-calling/processing-tools',
-        destination: '/docs/tools-direct/executing-tools',
+        destination: '/docs/legacy/tools-direct/executing-tools',
         permanent: true,
       },
       {
@@ -466,17 +486,17 @@ const config = {
       // MCP pages
       {
         source: '/mcp/overview',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
         source: '/mcp/:path*',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
         source: '/docs/mcp-providers',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       // Patterns section (old Fern)
@@ -623,7 +643,7 @@ const config = {
       // Docs pages that moved (confirmed real 404s from Datadog)
       {
         source: '/docs/authenticating-users',
-        destination: '/docs/tools-direct/authenticating-tools',
+        destination: '/docs/authentication',
         permanent: true,
       },
       {
@@ -638,7 +658,7 @@ const config = {
       },
       {
         source: '/docs/tools/modify/:path*',
-        destination: '/docs/tools-direct/modify-tool-behavior',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
       },
       {
@@ -648,12 +668,12 @@ const config = {
       },
       {
         source: '/docs/mcp-overview',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
         source: '/docs/what-is-mcp',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
@@ -663,7 +683,7 @@ const config = {
       },
       {
         source: '/docs/mcp-partner-api',
-        destination: '/docs/single-toolkit-mcp',
+        destination: '/docs/legacy/single-toolkit-mcp',
         permanent: true,
       },
       {
@@ -673,12 +693,12 @@ const config = {
       },
       {
         source: '/docs/modifiers/:path*',
-        destination: '/docs/tools-direct/modify-tool-behavior',
+        destination: '/docs/legacy/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
       },
       {
         source: '/docs/toolkit-versions',
-        destination: '/docs/tools-direct/toolkit-versioning',
+        destination: '/docs/legacy/tools-direct/toolkit-versioning',
         permanent: true,
       },
       {

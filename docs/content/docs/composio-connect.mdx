@@ -1,16 +1,16 @@
 ---
-title: MCP
+title: Composio Connect (MCP)
 description: Add Composio tools to your AI agent via MCP
 keywords: [composio connect, mcp, claude code, cursor, vscode, windsurf, cline, chatgpt, notion, n8n, codex]
 ---
 
-Give any AI agent the ability to act across 1000+ apps. Bring your agent to where you work.
+Give any AI agent the ability to act across 1000+ apps. Composio Connect is our MCP server for Claude Code, Cursor, VS Code, ChatGPT, and other MCP-compatible clients.
 
 ## How Composio Connect works
 
 Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps — Gmail, Notion, Slack, GitHub, Linear, HubSpot, Strava, and more — through a single connection.
 
-Rather than exposing every app tool directly, Composio exposes **7 meta-tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
+Rather than exposing every app tool directly, Composio exposes **meta tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
 
 To get started, pick your client below.
 
@@ -481,15 +481,15 @@ Your agent will prompt you to connect apps when needed. If you want to connect a
 
 ## Available MCP tools
 
-Composio Connect exposes 7 meta-tools that orchestrate access to all supported apps. Your agent uses these to discover, connect, and execute upstream tools — you don't need to call them directly.
+Composio Connect exposes meta tools that orchestrate access to all supported apps. Your agent uses these to discover, connect, and execute upstream tools — you don't need to call them directly.
 
 - **`COMPOSIO_SEARCH_TOOLS`** — Search the Composio catalog and return relevant tools for a user request, along with a suggested execution plan.
 - **`COMPOSIO_GET_TOOL_SCHEMAS`** — Fetch full input schemas for tool slugs returned by search.
 - **`COMPOSIO_MULTI_EXECUTE_TOOL`** — Execute one or more discovered tools in parallel across connected apps (up to 50 per call).
 - **`COMPOSIO_MANAGE_CONNECTIONS`** — Create, list, rename, or remove OAuth connections to upstream apps.
-- **`COMPOSIO_WAIT_FOR_CONNECTIONS`** — Wait for a user to complete an OAuth flow before the agent continues.
 - **`COMPOSIO_REMOTE_WORKBENCH`** — Run Python in a remote sandbox for bulk operations or processing large tool responses.
 - **`COMPOSIO_REMOTE_BASH_TOOL`** — Run bash in a remote sandbox for file processing and large data handling.
+- **`COMPOSIO_WAIT_FOR_CONNECTIONS`** — Optional tool that waits for a user to finish an OAuth flow before the agent continues, when wait-for-connections is enabled.
 
 ## Troubleshooting
 

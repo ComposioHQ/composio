@@ -4,19 +4,12 @@
     "index",
     "quickstart",
 
-    "---Use Composio---",
-    "composio-connect",
-    "cli",
-    "claude-code-plugin",
-
-    "---Build with Composio---",
-    "how-composio-works",
-    "providers",
-
     "---Sessions---",
     "users-and-sessions",
     "configuring-sessions",
     "native-tools-vs-mcp",
+    "sessions-vs-direct-execution",
+    "how-composio-works",
 
     "---Auth---",
     "authentication",
@@ -42,25 +35,28 @@
     "setting-up-triggers/managing-triggers",
     "webhook-verification",
 
+    "---Providers---",
+    "providers",
+
     "---Platform---",
     "projects",
     "observability/logs",
     "observability/usage",
     "signing-up-as-an-agent",
 
+    "---MCP & Clients---",
+    "composio-connect",
+    "cli",
+    "claude-code-plugin",
+
     "---Help---",
     "migration-guide",
-    "sessions-vs-direct-execution",
     "glossary",
     "debugging-info",
     "troubleshooting",
     "common-faq",
     "custom-app-vs-managed-app",
 
-    "---Legacy---",
-    "single-toolkit-mcp",
-    "proxy-execute",
-    "tools-direct",
-    "auth-configuration"
+    "legacy"
   ]
 }

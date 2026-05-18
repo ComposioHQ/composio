@@ -1,5 +1,5 @@
 {
-  "title": "Authentication",
+  "title": "Auth configuration (legacy)",
   "defaultOpen": false,
   "pages": [
     "custom-auth-configs",

@@ -16,7 +16,7 @@ Auth configs control how users authenticate with a toolkit. By default, Composio
 | Reason | Example |
 |--------|---------|
 | **Toolkit has no managed auth** | PostHog, Tavily, Perplexity: you must provide your own credentials |
-| **White-labeling** | Show your app name on OAuth consent screens instead of "Composio". See [White-labeling](/docs/auth-configuration/white-labeling) |
+| **White-labeling** | Show your app name on OAuth consent screens instead of "Composio". See [White-labeling](/docs/legacy/auth-configuration/white-labeling) |
 | **Rate limits and quota** | Composio's default OAuth app shares quota across all users. Your own app gets a dedicated quota |
 | **Custom scopes** | You need permissions beyond what Composio's default app has approved |
 | **Custom instance or subdomain** | Connecting to a self-hosted or regional variant (e.g., custom Salesforce subdomain) |
@@ -135,7 +135,7 @@ console.log(connection);
 ## What to read next
 
 <Cards>
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
-  <Card icon={<Wrench />} title="Programmatic auth configs" href="/docs/auth-configuration/programmatic-auth-configs" description="Create auth configs programmatically via the SDK" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Database />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
+  <Card icon={<Wrench />} title="Programmatic auth configs" href="/docs/legacy/auth-configuration/programmatic-auth-configs" description="Create auth configs programmatically via the SDK" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/legacy/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
 </Cards>

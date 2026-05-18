@@ -14,7 +14,7 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
 
 <Callout type="info">
-**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User Management](/docs/users-and-sessions). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/tools-direct/authenticating-tools).
+**User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User Management](/docs/users-and-sessions). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/legacy/tools-direct/authenticating-tools).
 </Callout>
 
 ## Using Chat Completions
@@ -243,11 +243,11 @@ console.log('GitHub stargazers:', JSON.stringify(result, null, 2));
 </Tabs>
 
 <Callout>
-The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/tools-direct/toolkit-versioning) for all configuration options.
+The examples above configure toolkit versions at SDK initialization. You can also pass versions per-execution or use environment variables. See [toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning) for all configuration options.
 </Callout>
 
 <Callout type="info">
-**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
+**Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/legacy/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
 </Callout>
 
 ### Proxy Execute
@@ -307,7 +307,7 @@ console.log(data);
 </Tabs>
 
 <Callout type="info">
-Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create custom tools](/docs/tools-direct/custom-tools).
+Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create custom tools](/docs/legacy/tools-direct/custom-tools).
 </Callout>
 
 ## Automatic File Handling
@@ -445,7 +445,7 @@ console.log(result);
 Automatic upload reads local paths (or uses them in `files.upload`) and sends file content to Composio storage. To reduce the chance of **accidentally uploading secrets** (SSH keys, cloud credentials, `.env` files, or assistant project folders), the SDK checks resolved paths against a **default denylist** of path segments and file-name patterns. **HTTP/HTTPS URLs and `File` objects are not matched like local path strings**; only local string paths go through this check.
 
 <Callout type="warn">
-Disabling protection or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer keeping protection on, adding [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and using a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing or strict allowlists. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
+Disabling protection or wiring a hook that always approves paths can allow **exfiltration of sensitive files** if an LLM or malicious input points at credential locations. Prefer keeping protection on, adding [`fileUploadPathDenySegments`](/reference/sdk-reference/typescript/composio#file-upload-security) (TypeScript) / `file_upload_path_deny_segments` (Python) for your own secret directories, and using a [`beforeFileUpload`](/reference/sdk-reference/typescript/composio#file-upload-security) / `before_file_upload` hook for auditing or strict allowlists. On Python, you can use the `@before_file_upload` decorator with `modifiers=[...]` the same way as `@before_execute` — see [Before file upload (Python)](/docs/legacy/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python) on the before-execution modifiers page.
 </Callout>
 
 **Constructor options (defaults protect sensitive locations):**
@@ -478,7 +478,7 @@ composio = Composio(
   </Tab>
 </Tabs>
 
-**Per-execution upload hook** (run after the path is chosen but before read/upload; return a new path, `false` to abort, or throw). TypeScript passes `beforeFileUpload` on the **third** argument to `tools.execute`. In Python, add **`@before_file_upload`** functions to the `modifiers` list for `get` / `execute` (see [Before file upload (Python)](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python)).
+**Per-execution upload hook** (run after the path is chosen but before read/upload; return a new path, `false` to abort, or throw). TypeScript passes `beforeFileUpload` on the **third** argument to `tools.execute`. In Python, add **`@before_file_upload`** functions to the `modifiers` list for `get` / `execute` (see [Before file upload (Python)](/docs/legacy/tools-direct/modify-tool-behavior/before-execution-modifiers#before-file-upload-python)).
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
   <Tab value="TypeScript">
@@ -597,7 +597,7 @@ await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
 ## What to read next
 
 <Cards>
-  <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Wrench />} title="Custom tools" href="/docs/tools-direct/custom-tools" description="Create your own standalone or toolkit-based tools" />
+  <Card icon={<Wrench />} title="Fetching tools" href="/docs/legacy/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/legacy/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Wrench />} title="Custom tools" href="/docs/legacy/tools-direct/custom-tools" description="Create your own standalone or toolkit-based tools" />
 </Cards>

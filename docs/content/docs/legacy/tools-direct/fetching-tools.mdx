@@ -35,7 +35,7 @@ const tools = await composio.tools.get(userId, {
   </Tab>
 </Tabs>
 
-Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/users-and-sessions) and [Authentication](/docs/tools-direct/authenticating-tools).
+Returns top 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User management](/docs/users-and-sessions) and [Authentication](/docs/legacy/tools-direct/authenticating-tools).
 
 ## Tool schemas
 
@@ -239,13 +239,13 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 </Tabs>
 
 <Callout type="warn">
-When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
+When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning).
 </Callout>
 
 ## What to read next
 
 <Cards>
-  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Blocks />} title="Toolkit versioning" href="/docs/tools-direct/toolkit-versioning" description="Pin specific tool versions for consistent behavior in production" />
+  <Card icon={<Play />} title="Executing tools" href="/docs/legacy/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
+  <Card icon={<Key />} title="Authenticating tools" href="/docs/legacy/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
+  <Card icon={<Blocks />} title="Toolkit versioning" href="/docs/legacy/tools-direct/toolkit-versioning" description="Pin specific tool versions for consistent behavior in production" />
 </Cards>

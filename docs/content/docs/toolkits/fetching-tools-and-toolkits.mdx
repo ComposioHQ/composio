@@ -119,60 +119,22 @@ To restrict which toolkits or tools are discoverable by the meta tools, configur
 
 ## Browsing the catalog
 
-Before configuring a session, you may want to explore what toolkits and tools are available. You can browse visually at [platform.composio.dev](https://platform.composio.dev) or in the [docs](/toolkits), or fetch programmatically:
+Before configuring a session, you may want to explore what toolkits and tools are available. Browse visually at [platform.composio.dev](https://platform.composio.dev) or in the [toolkit catalog](/toolkits).
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-# List toolkits
-toolkits = composio.toolkits.get()
+For code, keep the session-native flow:
 
-# List tools within a toolkit (top 20 by default)
-tools = composio.tools.get("user_123", toolkits=["GITHUB"])
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const userId = 'user_123';
-// ---cut---
-// List toolkits
-const toolkits = await composio.toolkits.get();
+1. Use `session.toolkits()` to see which toolkits are available and connected for this session.
+2. Use `session.tools()` to give your agent meta tools.
+3. Let the agent call `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_GET_TOOL_SCHEMAS` when it needs specific tool schemas.
+4. Restrict the session with `toolkits` or `tools` when you already know the allowed surface area.
 
-// List tools within a toolkit (top 20 by default)
-const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
-```
-</Tab>
-</Tabs>
+<Callout>
+Low-level catalog and direct tool APIs are legacy for new agent builds. Prefer sessions unless you are maintaining an older direct-execution integration.
+</Callout>
 
 ### Get a tool's schema
 
-To inspect a tool's input parameters and types without needing a user context, use `getRawComposioToolBySlug`:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
-print(tool.name)
-print(tool.description)
-print(tool.input_parameters)
-print(tool.output_parameters)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
-console.log(tool.name);
-console.log(tool.description);
-console.log(tool.inputParameters);
-console.log(tool.outputParameters);
-```
-</Tab>
-</Tabs>
+When your agent needs a schema, it should call [`COMPOSIO_GET_TOOL_SCHEMAS`](/reference/meta-tools/get_tool_schemas) from the session tools after discovering relevant tool slugs with [`COMPOSIO_SEARCH_TOOLS`](/reference/meta-tools/search_tools). This keeps schema lookup in the same session context as execution and authentication.
 
 ## What to read next
 

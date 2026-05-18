@@ -5,12 +5,12 @@ keywords: [proxy, proxy execute, custom api call, raw api, raw request, direct h
 llmGuardrails: "direct-execution"
 ---
 
-Proxy execute lets you call any HTTP endpoint on a supported toolkit using a [connected account](/docs/auth-configuration/connected-accounts). Composio injects the authentication (OAuth token, API key, basic auth, etc.) on the server side, so your code never handles raw credentials.
+Proxy execute lets you call any HTTP endpoint on a supported toolkit using a [connected account](/docs/legacy/auth-configuration/connected-accounts). Composio injects the authentication (OAuth token, API key, basic auth, etc.) on the server side, so your code never handles raw credentials.
 
 Use it when you need an endpoint that Composio's predefined tools do not cover, or when you want the flexibility of a raw HTTP call while keeping Composio as the source of truth for user auth.
 
-<Callout type="info">
-Proxy execute is a form of [direct tool execution](/docs/sessions-vs-direct-execution). It bypasses session state, tool schemas, and modifiers. If you are building an agent, prefer [sessions](/docs/configuring-sessions) — use the proxy only for the specific API call that isn't available as a tool.
+<Callout type="warn" title="Legacy/direct escape hatch">
+Proxy execute is a form of [direct tool execution](/docs/sessions-vs-direct-execution). It bypasses session state, tool schemas, and modifiers. If you are building an agent, prefer [sessions](/docs/configuring-sessions) — use the proxy only for a specific raw API call that is not available as a tool.
 </Callout>
 
 ## When to use proxy execute
@@ -321,7 +321,7 @@ curl --location 'https://backend.composio.dev/api/v3.1/tools/execute/proxy' \
 ```
 
 <Callout type="warn">
-`binary_body` posts the file as the request body with a single `Content-Type` header. It does **not** build a `multipart/form-data` payload, so APIs that require multipart uploads (for example, Twitter / X media upload, Slack `files.upload`, some Google upload endpoints) are not supported today. For those, wrap the call in a [custom tool](/docs/tools-direct/custom-tools) that constructs the multipart body yourself.
+`binary_body` posts the file as the request body with a single `Content-Type` header. It does **not** build a `multipart/form-data` payload, so APIs that require multipart uploads (for example, Twitter / X media upload, Slack `files.upload`, some Google upload endpoints) are not supported today. For those, wrap the call in a [custom tool](/docs/legacy/tools-direct/custom-tools) that constructs the multipart body yourself.
 </Callout>
 
 See the [binary data changelog entry](/docs/changelog/2025/12/30) for the full upload and download flow.
@@ -334,14 +334,14 @@ Proxy execute forwards the upstream response verbatim — `status`, `headers`, a
 |---|---|---|
 | `400 Bad Request` | Malformed endpoint path, invalid body, or unsupported `method`. | Check the upstream API docs for the expected request shape; proxy execute does not validate upstream schemas. |
 | `401 Unauthorized` | The connected account's token expired, was revoked, or is for the wrong project. | Re-authenticate the user, or [import fresh credentials](/docs/importing-existing-connections). Verify the `connected_account_id` belongs to the caller's project. |
-| `403 Forbidden` | The user's OAuth scopes or API key permissions do not cover this endpoint. | Update the [auth config scopes](/docs/auth-configuration/custom-auth-configs) and have the user re-consent. For API keys, regenerate with the required permissions. |
+| `403 Forbidden` | The user's OAuth scopes or API key permissions do not cover this endpoint. | Update the [auth config scopes](/docs/legacy/auth-configuration/custom-auth-configs) and have the user re-consent. For API keys, regenerate with the required permissions. |
 | `429 Too Many Requests` | Upstream rate limit (GitHub, Google, etc.). | Honor the `Retry-After` header from the response, back off exponentially, and batch requests where possible. Composio does not retry automatically. |
 
 ## What to read next
 
 <Cards>
-  <Card icon={<Wrench />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run predefined Composio tools with sessions or direct calls" />
-  <Card icon={<Code />} title="Custom tools" href="/docs/tools-direct/custom-tools" description="Wrap a proxy call in a reusable custom tool with its own schema" />
-  <Card icon={<Key />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Create, list, and manage the connected accounts used by proxy execute" />
+  <Card icon={<Wrench />} title="Executing tools" href="/docs/legacy/tools-direct/executing-tools" description="Run predefined Composio tools with sessions or direct calls" />
+  <Card icon={<Code />} title="Custom tools" href="/docs/legacy/tools-direct/custom-tools" description="Wrap a proxy call in a reusable custom tool with its own schema" />
+  <Card icon={<Key />} title="Connected accounts" href="/docs/legacy/auth-configuration/connected-accounts" description="Create, list, and manage the connected accounts used by proxy execute" />
   <Card icon={<Terminal />} title="API reference" href="/reference/api-reference/tools/postToolsExecuteProxy" description="Full request and response schema for POST /api/v3.1/tools/execute/proxy" />
 </Cards>

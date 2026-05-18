@@ -1,0 +1,10 @@
+{
+  "title": "Legacy",
+  "defaultOpen": false,
+  "pages": [
+    "single-toolkit-mcp",
+    "proxy-execute",
+    "tools-direct",
+    "auth-configuration"
+  ]
+}

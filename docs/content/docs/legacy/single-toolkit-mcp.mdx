@@ -5,8 +5,8 @@ keywords: [mcp, model context protocol, single toolkit]
 deprecated: true
 ---
 
-<Callout type="info">
-For most use cases, we recommend using the [quickstart](/docs/quickstart). This provides dynamic tool access and a much better MCP experience with context management handled by us.
+<Callout type="warn" title="Legacy pattern">
+This single-toolkit MCP setup is for older integrations. For new builds, use [Composio Connect](/docs/composio-connect) for MCP clients or create a session and use `session.mcp.url`. Start with the [quickstart](/docs/quickstart).
 </Callout>
 
 ## Install the SDK
@@ -54,7 +54,7 @@ const composio = new Composio({
     ### Create server configuration
 
     <Callout type="warn">
-    **Before you begin:** [Create an auth configuration](/docs/auth-configuration/custom-auth-configs) for your toolkit.
+    **Before you begin:** [Create an auth configuration](/docs/legacy/auth-configuration/custom-auth-configs) for your toolkit.
     </Callout>
 
     <Tabs groupId="language" items={['Python', 'TypeScript']} persist>

@@ -1,12 +1,12 @@
 import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
-// Insert changelog into page tree after Get Started section
+// Insert changelog into page tree after First Steps section
 const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/docs/changelog' };
 const children = source.pageTree.children;
 const getStartedIdx = children.findIndex(
   (c) => c.type === 'separator' && c.name === 'First Steps'
 );
-// Find next separator after Get Started, or use end of array if not found
+// Find next separator after First Steps, or use end of array if not found
 const nextSeparatorIdx = getStartedIdx === -1
   ? -1
   : children.findIndex((c, i) => i > getStartedIdx && c.type === 'separator');

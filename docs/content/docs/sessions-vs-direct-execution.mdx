@@ -16,12 +16,12 @@ Use sessions unless you need full control over which tools are available and whe
 | **Context cost** | Only meta tools in context, app tools loaded on demand | Every tool schema you select is loaded upfront |
 | **Guidance** | Search returns recommended steps and common pitfalls alongside schemas | You get tool schemas only |
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
-| **Auth** | [In-chat](/docs/authenticating-users/in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authenticating-users/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
+| **Auth** | [In-chat](/docs/authenticating-users/in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authenticating-users/manually-authenticating) | You build the auth flow with [connect links](/docs/legacy/tools-direct/authenticating-tools) |
 | **[Workbench](/docs/workbench)** | Built in, large responses offloaded automatically | Not available |
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
-Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/using-custom-auth-configuration) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
 
 ## Sessions
 
@@ -176,7 +176,7 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 `tools.get()` returns 20 tools by default. When fetching from multiple toolkits (e.g., `toolkits=["gmail", "github", "tavily"]`), the limit may cut off tools from later toolkits. Increase `limit` or fetch each toolkit separately.
 </Callout>
 
-With direct execution, you manage [auth configs](/docs/auth-configuration/custom-auth-configs), [connect links](/docs/tools-direct/authenticating-tools), and [toolkit versioning](/docs/tools-direct/toolkit-versioning) yourself.
+With direct execution, you manage [auth configs](/docs/using-custom-auth-configuration), [connect links](/docs/legacy/tools-direct/authenticating-tools), and [toolkit versioning](/docs/legacy/tools-direct/toolkit-versioning) yourself.
 
 ## Migrating
 
@@ -187,5 +187,5 @@ See the [migration guide](/docs/migration-guide/direct-to-sessions). Auth config
 <Cards>
   <Card icon={<Rocket />} title="Quickstart" href="/docs/quickstart" description="Build an agent with sessions" />
   <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, and connected accounts" />
-  <Card icon={<Wrench />} title="Direct Tool Execution" href="/docs/tools-direct/executing-tools" description="Fetch and execute specific tools" />
+  <Card icon={<Wrench />} title="Direct Tool Execution" href="/docs/legacy/tools-direct/executing-tools" description="Fetch and execute specific tools" />
 </Cards>
