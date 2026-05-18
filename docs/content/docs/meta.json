@@ -17,6 +17,7 @@
     "users-and-sessions",
     "configuring-sessions",
     "native-tools-vs-mcp",
+    "workbench",
 
     "---Auth---",
     "authentication",
@@ -30,17 +31,21 @@
 
     "---Tools---",
     "tools-and-toolkits",
-    "toolkits",
-    "workbench",
+    "toolkits/fetching-tools-and-toolkits",
+    "toolkits/enable-and-disable-toolkits",
+    "toolkits/custom-tools-and-toolkits",
 
     "---Triggers---",
     "triggers",
-    "setting-up-triggers",
+    "setting-up-triggers/creating-triggers",
+    "setting-up-triggers/subscribing-to-events",
+    "setting-up-triggers/managing-triggers",
     "webhook-verification",
 
     "---Platform---",
     "projects",
-    "observability",
+    "observability/logs",
+    "observability/usage",
     "signing-up-as-an-agent",
 
     "---Help---",
@@ -50,12 +55,12 @@
     "debugging-info",
     "troubleshooting",
     "common-faq",
+    "custom-app-vs-managed-app",
 
     "---Legacy---",
     "single-toolkit-mcp",
     "proxy-execute",
     "tools-direct",
-    "auth-configuration",
-    "custom-app-vs-managed-app"
+    "auth-configuration"
   ]
 }
