@@ -299,6 +299,17 @@ type StoredExecuteOutputSummary = {
 const serializeExecuteOutput = (result: unknown): string =>
   JSON.stringify(result, ciRedactReplacer, 2);
 
+const executionSuccessSuffix = (result: {
+  readonly logId?: string;
+  readonly permissionApproval?: string;
+}) => {
+  const metadata = [
+    result.permissionApproval === 'cached' ? 'cached approved' : undefined,
+    result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
+  ].filter((value): value is string => Boolean(value));
+  return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
+};
+
 const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
   Effect.gen(function* () {
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -1426,10 +1437,7 @@ const runExecuteWithSpinner = (params: {
           return yield* Effect.fail(new ToolExecutionError(summary.error));
         }
 
-        const logId = result.logId
-          ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-          : '';
-        yield* spinner.stop(`Execution successful${logId}`);
+        yield* spinner.stop(`Execution successful${executionSuccessSuffix(result)}`);
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
@@ -2004,11 +2012,9 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           continue;
         }
 
-        const logId =
-          'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-            : '';
-        yield* ui.log.step(`[${result.slug}] Execution successful${logId}`);
+        yield* ui.log.step(
+          `[${result.slug}] Execution successful${executionSuccessSuffix(result)}`
+        );
         if ('data' in result) {
           yield* ui.note(serializeExecuteOutput(result), `Response: ${result.slug}`);
         }
