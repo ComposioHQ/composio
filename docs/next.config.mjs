@@ -59,6 +59,26 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/changelog',
+        destination: '/reference/changelog',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:year/:month/:day',
+        destination: '/reference/changelog#:year-:month-:day',
+        permanent: true,
+      },
+      {
+        source: '/reference/changelog/:year/:month/:day',
+        destination: '/reference/changelog#:year-:month-:day',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*',
+        destination: '/reference/changelog',
+        permanent: true,
+      },
+      {
         source: '/getting-started/welcome',
         destination: '/docs',
         permanent: true,
