@@ -170,6 +170,27 @@ class ExperimentalAPI:
                 raise exceptions.ComposioAclOnlyForSharedError(message) from error
             raise
 
+    def update_acl(
+        self,
+        nanoid: str,
+        *,
+        allow_all_users: t.Optional[bool] = None,
+        allowed_user_ids: t.Optional[t.List[str]] = None,
+        not_allowed_user_ids: t.Optional[t.List[str]] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        """
+        Deprecated compatibility alias for ``update_sharing()``.
+
+        Use ``update_sharing()`` for new code. This alias only accepts the
+        ACL fields exposed by the older experimental helper.
+        """
+        return self.update_sharing(
+            nanoid,
+            allow_all_users=allow_all_users,
+            allowed_user_ids=allowed_user_ids,
+            not_allowed_user_ids=not_allowed_user_ids,
+        )
+
     @t.overload
     def tool(self, fn: t.Callable[..., t.Any], /) -> CustomTool: ...
 

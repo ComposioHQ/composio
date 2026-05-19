@@ -788,6 +788,16 @@ class TestConnectedAccountsAcl:
             experimental={"account_type": "SHARED"},
         )
 
+    def test_update_acl_alias_forwards_acl_fields(self, experimental, mock_client):
+        experimental.update_acl("ca_abc", allowed_user_ids=["user_alice"])
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={
+                "acl_config_for_shared": {"allowed_user_ids": ["user_alice"]}
+            },
+        )
+
     # -- list(account_type=...) — flat experimental filter -----------------
 
     def test_list_forwards_account_type_filter(self, connected_accounts, mock_client):
