@@ -9,6 +9,7 @@ bun install          # Install dependencies
 bun run dev          # Dev server (http://localhost:3000)
 bun run build        # Production build (validates TS code blocks)
 bun run types:check  # Type check
+bun run sync:search  # Sync Algolia docs search index (requires Algolia env vars)
 ```
 
 ## Project Structure
@@ -82,6 +83,12 @@ Detailed documentation for Claude is organized in `.claude/`:
 ## Glossary
 
 `content/docs/glossary.mdx` defines key Composio terms (auth config, session, toolkit, etc.) using `<Glossary>` and `<GlossaryTerm name="...">` components (`components/glossary.tsx`). The component renders a filterable two-column table. The markdown converter in `lib/source.ts` converts `<GlossaryTerm>` tags to `### Term` headings for LLM-friendly output. When adding new Composio concepts, add a `<GlossaryTerm>` entry and update the `keywords` frontmatter array.
+
+## Search
+
+The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_APP_ID` and `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` are configured. `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `composio_docs`. Without those variables it falls back to `/api/search` for local development and tests.
+
+Run `ALGOLIA_APP_ID=... ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=composio_docs bun run sync:search` from `docs/` to rebuild the Algolia index.
 
 ## API Versioning
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { liteClient } from 'algoliasearch/lite';
 import {
   SearchDialog,
   SearchDialogClose,
@@ -19,10 +20,7 @@ import { BotMessageSquare } from 'lucide-react';
 import { toggleDecimalWidget, detectMac } from './ask-ai-button';
 
 function MetaKey() {
-  const [key, setKey] = useState('⌘');
-  useEffect(() => {
-    if (!detectMac()) setKey('Ctrl');
-  }, []);
+  const [key] = useState(() => (detectMac() ? '⌘' : 'Ctrl'));
   return key;
 }
 
@@ -43,11 +41,28 @@ export default function CustomSearchDialog({
   ...props
 }: CustomSearchDialogProps) {
   const { locale } = useI18n();
-  const { search, setSearch, query } = useDocsSearch({
-    type: 'fetch',
-    locale,
-    api,
-  });
+  const clientOptions = useMemo(() => {
+    const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
+    const searchApiKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY;
+    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'composio_docs';
+
+    if (appId && searchApiKey) {
+      return {
+        type: 'algolia' as const,
+        client: liteClient(appId, searchApiKey),
+        indexName,
+        locale,
+      };
+    }
+
+    return {
+      type: 'fetch' as const,
+      locale,
+      api,
+    };
+  }, [api, locale]);
+
+  const { search, setSearch, query } = useDocsSearch(clientOptions);
 
   return (
     <SearchDialog
