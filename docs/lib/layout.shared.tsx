@@ -36,6 +36,7 @@ export function baseOptions(): BaseLayoutProps {
       title: <ComposioLogo />,
       transparentMode: 'top',
     },
+    themeSwitch: { enabled: false },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,
