@@ -9,7 +9,7 @@ import { ArrowUpRight } from 'lucide-react';
  */
 export function DocsHero() {
   return (
-    <div className="not-prose relative mb-12 grid grid-cols-1 items-center gap-10 border-b border-fd-border pb-12 sm:pb-16 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+    <div className="not-prose relative mb-12 grid grid-cols-1 items-center gap-10 border-b border-fd-border pb-12 sm:pb-16 lg:grid-cols-2 lg:gap-16">
       <div className="flex flex-col gap-6">
         <h1 className="text-4xl font-medium leading-[0.95] tracking-[-0.02em] text-fd-foreground md:text-5xl lg:text-[64px]">
           Composio
@@ -24,29 +24,31 @@ export function DocsHero() {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/docs/quickstart"
-            className="group inline-flex items-center gap-1.5 bg-[var(--composio-brand)] px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] text-white transition-colors hover:bg-[#0006a8]"
+            className="group inline-flex items-center gap-1.5 bg-[var(--composio-brand)] px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] !text-white no-underline transition-colors hover:bg-[#0006a8]"
+            style={{ color: '#ffffff' }}
           >
-            Get Started
-            <ArrowUpRight aria-hidden="true" className="size-4 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
+            <span style={{ color: '#ffffff' }}>Get Started</span>
+            <ArrowUpRight aria-hidden="true" className="size-4 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" style={{ color: '#ffffff' }} />
           </Link>
           <Link
             href="https://dashboard.composio.dev/~/project/playground"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-1.5 border border-fd-border bg-transparent px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] text-fd-foreground transition-colors hover:border-fd-foreground"
+            className="group inline-flex items-center gap-1.5 border border-fd-border bg-transparent px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] !text-fd-foreground no-underline transition-colors hover:border-fd-foreground"
+            style={{ color: 'var(--color-fd-foreground)' }}
           >
-            Playground
+            <span style={{ color: 'var(--color-fd-foreground)' }}>Playground</span>
             <ArrowUpRight aria-hidden="true" className="size-4 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
           </Link>
         </div>
       </div>
-      <div className="relative hidden aspect-[5/4] w-full max-w-[460px] justify-self-end overflow-hidden border border-fd-border lg:block">
+      <div className="relative hidden aspect-square w-full overflow-hidden border border-fd-border lg:block">
         <Image
           src="/images/hero/shader.jpg"
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 460px, 100vw"
+          sizes="(min-width: 1024px) 560px, 100vw"
           className="object-cover"
         />
       </div>
