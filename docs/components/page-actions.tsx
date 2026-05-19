@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Copy, ExternalLink } from 'lucide-react';
+import { Check, ChevronDown, Copy, ExternalLink, FileText } from 'lucide-react';
 
 interface PageActionsProps {
   path: string;
@@ -111,6 +111,13 @@ export function PageActions({ path }: PageActionsProps) {
               title={copied ? 'Copied!' : 'Copy page'}
               subtitle="Copy page as Markdown for LLMs"
               onClick={handleCopy}
+            />
+            <MenuItem
+              icon={<FileText className="size-4" aria-hidden="true" />}
+              external
+              title="View as Markdown"
+              subtitle="Open the raw .md source in a new tab"
+              href={`${path}.md`}
             />
             <MenuItem
               icon={<ChatGPTMark className="size-4" />}

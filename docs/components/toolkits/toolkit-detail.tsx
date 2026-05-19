@@ -7,6 +7,7 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
 import { FaqSection, type FaqItem } from '@/components/toolkits/faq-section';
 
@@ -454,6 +455,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
           </div>
         </div>
       )}
+      <EditOnGitHub path="docs/components/toolkits/toolkit-detail.tsx" />
     </div>
   );
 }

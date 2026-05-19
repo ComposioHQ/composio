@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { ApiPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { VersionBadge, extractVersionFromPath } from '@/components/version-badge';
 
 interface OpenAPIPageData {
@@ -48,6 +49,7 @@ export default async function Page({
         <PageActions path={page.url} />
         <DocsBody>
           <APIPage {...apiProps} />
+          <EditOnGitHub path={`docs/content/reference/${page.path}`} />
         </DocsBody>
       </DocsPage>
     );
@@ -68,6 +70,7 @@ export default async function Page({
             a: createRelativeLink(referenceSource as any, page),
           })}
         />
+        <EditOnGitHub path={`docs/content/reference/${page.path}`} />
       </DocsBody>
     </DocsPage>
   );

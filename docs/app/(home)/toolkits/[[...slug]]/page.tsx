@@ -215,6 +215,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
         <article className="prose prose-fd max-w-none">
           <MDXContent components={getMDXComponents()} />
         </article>
+        <EditOnGitHub path={`docs/content/toolkits/${page.path}`} />
       </div>
     );
   }
