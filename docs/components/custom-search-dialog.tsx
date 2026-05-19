@@ -61,6 +61,48 @@ type AlgoliaHitMeta = {
   queryID?: string;
 };
 
+type SearchResultItem = {
+  content: unknown;
+  breadcrumbs?: unknown[];
+};
+
+const SEARCH_BREADCRUMB_LABELS: Record<string, string> = {
+  toolkits: 'Toolkit',
+  toolkit: 'Toolkit',
+  cookbooks: 'Cookbook',
+  cookbook: 'Cookbook',
+  docs: 'Docs',
+  reference: 'Reference',
+  'api-reference': 'API Reference',
+  changelog: 'Changelog',
+};
+
+function normalizeSearchBreadcrumb(value: string): string {
+  return SEARCH_BREADCRUMB_LABELS[value.toLowerCase()] ?? value;
+}
+
+function normalizeSearchResult<T extends SearchResultItem>(result: T): T {
+  if (!result.breadcrumbs) return result;
+
+  const breadcrumbs = result.breadcrumbs.map((breadcrumb) =>
+    typeof breadcrumb === 'string' ? normalizeSearchBreadcrumb(breadcrumb) : breadcrumb,
+  );
+
+  const content = typeof result.content === 'string' ? result.content.toLowerCase() : null;
+  const dedupedBreadcrumbs = breadcrumbs.filter((breadcrumb, index) => {
+    if (index !== breadcrumbs.length - 1 || content === null || typeof breadcrumb !== 'string') {
+      return true;
+    }
+
+    return breadcrumb.toLowerCase() !== content;
+  });
+
+  return {
+    ...result,
+    breadcrumbs: dedupedBreadcrumbs,
+  };
+}
+
 export default function CustomSearchDialog({
   defaultLinks = [],
   api = '/api/search',
@@ -149,6 +191,10 @@ export default function CustomSearchDialog({
   }, [api, ensureAlgoliaInsights, locale]);
 
   const { search, setSearch, query } = useDocsSearch(clientOptions);
+  const searchResults = useMemo(() => {
+    if (query.data === 'empty' || !query.data) return query.data;
+    return query.data.map(normalizeSearchResult);
+  }, [query.data]);
 
   const trackAlgoliaClick = useCallback((href: string) => {
     const url = new URL(href, window.location.origin);
@@ -220,7 +266,7 @@ export default function CustomSearchDialog({
               ))}
             </div>
           ) : (
-            <SearchDialogList items={query.data === 'empty' ? null : query.data} />
+            <SearchDialogList items={searchResults === 'empty' ? null : searchResults} />
           )}
         </div>
         <div className="flex items-center justify-between border-t px-3 py-2">
