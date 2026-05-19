@@ -16,6 +16,7 @@ import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/co
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
+import { isInteractiveTerminal } from 'src/utils/stdio';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
@@ -404,7 +405,8 @@ export const browserLogin = (params: {
 
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
 
-    const effectiveNoBrowser = params.noBrowser || params.noWait;
+    const effectiveNoWait = params.noWait || !isInteractiveTerminal();
+    const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
     if (effectiveNoBrowser) {
       yield* ui.log.info('Please login using the following URL:');
     } else {
@@ -413,7 +415,7 @@ export const browserLogin = (params: {
 
     yield* ui.note(url, 'Login URL');
 
-    if (params.noWait) {
+    if (effectiveNoWait) {
       const loginInfo = {
         status: 'pending',
         message: 'Complete login by opening the URL',

@@ -38,9 +38,7 @@ const debug = Options.boolean('debug').pipe(
   Options.withDefault(false)
 );
 const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription(
-    'Compatibility flag. Helper logs are written to the run log file instead of stderr.'
-  ),
+  Options.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
   Options.withDefault(false)
 );
 const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(

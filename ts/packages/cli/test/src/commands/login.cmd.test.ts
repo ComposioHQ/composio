@@ -14,6 +14,25 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+const setTtyState = (state: { stdin: boolean; stdout: boolean; stderr: boolean }) => {
+  const descriptors = {
+    stdin: Object.getOwnPropertyDescriptor(process.stdin, 'isTTY'),
+    stdout: Object.getOwnPropertyDescriptor(process.stdout, 'isTTY'),
+    stderr: Object.getOwnPropertyDescriptor(process.stderr, 'isTTY'),
+  };
+  Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: state.stdin });
+  Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: state.stdout });
+  Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: state.stderr });
+  return () => {
+    if (descriptors.stdin) Object.defineProperty(process.stdin, 'isTTY', descriptors.stdin);
+    else delete (process.stdin as { isTTY?: boolean }).isTTY;
+    if (descriptors.stdout) Object.defineProperty(process.stdout, 'isTTY', descriptors.stdout);
+    else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    if (descriptors.stderr) Object.defineProperty(process.stderr, 'isTTY', descriptors.stderr);
+    else delete (process.stderr as { isTTY?: boolean }).isTTY;
+  };
+};
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('CLI: composio login', () => {
@@ -39,6 +58,24 @@ describe('CLI: composio login', () => {
         })
       );
     });
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[When] stdout is non-interactive [Then] login prints session JSON and exits', () =>
+      Effect.gen(function* () {
+        const restoreTty = setTtyState({ stdin: false, stdout: false, stderr: false });
+        try {
+          yield* cli(['login', '--no-skill-install']);
+        } finally {
+          restoreTty();
+        }
+
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('"status": "pending"');
+        expect(output).toContain('"login_url"');
+        expect(output).toContain('"cli_key": "te00st11-d0c4-4efa-8117-c638886063e0"');
+      })
+    );
   });
 
   layer(TestLive())(it => {

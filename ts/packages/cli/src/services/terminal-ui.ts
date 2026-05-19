@@ -1,6 +1,7 @@
 import process from 'node:process';
 import * as p from '@clack/prompts';
 import { Context, Effect, Exit, Layer } from 'effect';
+import { isInteractiveTerminal } from 'src/utils/stdio';
 
 // ---------------------------------------------------------------------------
 // SpinnerHandle — returned by `useMakeSpinner` for manual control
@@ -30,10 +31,7 @@ export interface TerminalUI {
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
-  readonly output: (
-    data: string,
-    options?: { readonly force?: boolean }
-  ) => Effect.Effect<void>;
+  readonly output: (data: string, options?: { readonly force?: boolean }) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -114,11 +112,11 @@ export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
 // ---------------------------------------------------------------------------
 
 /**
- * Whether the CLI is running interactively (stdout is a TTY).
- * When piped (stdout is NOT a TTY), all decoration is suppressed and only
- * `output()` writes raw data to stdout for machine consumption.
+ * Whether the CLI is attached to a human terminal. Decoration and prompts are
+ * shown only when stdin/stdout/stderr are all TTYs; agent and shell pipelines
+ * get machine-readable stdout without auxiliary terminal UI.
  */
-const isInteractive = !!process.stdout.isTTY;
+const isInteractive = isInteractiveTerminal();
 
 /** Run a decoration side-effect only in interactive mode. */
 function decorate(fn: () => void): void {
