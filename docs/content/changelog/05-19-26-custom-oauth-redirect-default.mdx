@@ -1,0 +1,21 @@
+---
+title: "Custom OAuth auth configs default to the v3.1 callback"
+description: "New custom OAuth auth configs now default oauth_redirect_uri to the v3.1 callback when the field is omitted."
+date: "2026-05-19"
+---
+
+Custom OAuth auth configs created through `POST /api/v3.1/auth_configs` now default `oauth_redirect_uri` to the v3.1 toolkit callback when the request omits the field.
+
+<Callout type="warn">
+**Behavior change**
+
+For new custom OAuth auth configs, the omitted `oauth_redirect_uri` default changes from the legacy v1 callback to `/api/v3.1/toolkits/auth/callback`. Existing auth configs and requests that explicitly pass `oauth_redirect_uri` are unchanged.
+</Callout>
+
+If you use your own OAuth app credentials, make sure the callback on your OAuth provider matches your backend host, for example:
+
+```txt
+https://backend.composio.dev/api/v3.1/toolkits/auth/callback
+```
+
+Composio-managed auth configs keep the existing managed-auth callback behavior.
