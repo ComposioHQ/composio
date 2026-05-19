@@ -6,7 +6,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="warn">
-Shared Connections APIs are experimental and may change in future releases. All new fields are nested under an `experimental` block on the wire, and the SDK methods that operate on them live under the `composio.experimental` namespace (`composio.experimental.update_acl` in Python, `composio.experimental.updateAcl` in TypeScript). The code samples below show the experimental shape — pin a specific SDK version if you depend on the current contract.
+Shared Connections APIs are experimental and may change in future releases. All new fields are nested under an `experimental` block on the wire, and the SDK methods that operate on them live under the `composio.experimental` namespace (`composio.experimental.update_sharing` in Python, `composio.experimental.updateSharing` in TypeScript). The code samples below show the experimental shape — pin a specific SDK version if you depend on the current contract.
 </Callout>
 
 <Callout type="info">
@@ -99,6 +99,72 @@ The returned `connectedAccountId` (`ca_...`) is the ID you'll pin into other use
 ACL fields are only valid on SHARED connections. Sending an `experimental.acl_config_for_shared` block on a PRIVATE connection raises `ComposioAclOnlyForSharedError`.
 </Callout>
 
+## Promoting an existing connection to SHARED
+
+If a user already authenticated a PRIVATE connection, you can promote that same connected account to SHARED without sending the user through auth again. Pass `account_type="SHARED"` / `accountType: "SHARED"` to `update_sharing()` / `updateSharing()`. You can include ACL fields in the same call to grant initial access.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Promote an existing PRIVATE connection to SHARED and grant access
+# in one call. No new redirect URL or OAuth flow is required.
+composio.experimental.update_sharing(
+    "ca_existing_gmail",
+    account_type="SHARED",
+    allow_all_users=True,
+    not_allowed_user_ids=["user_bob"],
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Promote an existing PRIVATE connection to SHARED and grant access
+// in one call. No new redirect URL or OAuth flow is required.
+await composio.experimental.updateSharing("ca_existing_gmail", {
+  accountType: "SHARED",
+  allowAllUsers: true,
+  notAllowedUserIds: ["user_bob"],
+});
+```
+  </Tab>
+</Tabs>
+
+## Demoting a SHARED connection
+
+Demote a SHARED connection back to PRIVATE by setting `account_type="PRIVATE"` / `accountType: "PRIVATE"`. Demotion revokes non-creator access and clears the connection's ACL settings.
+
+<Callout type="warn">
+Do not send ACL fields in the same demotion call. A request that sets `account_type` to `PRIVATE` and also sends `acl_config_for_shared` is rejected with `ComposioAclOnlyForSharedError`.
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# Demote a SHARED connection back to PRIVATE.
+composio.experimental.update_sharing(
+    "ca_gmail_shared",
+    account_type="PRIVATE",
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Demote a SHARED connection back to PRIVATE.
+await composio.experimental.updateSharing("ca_gmail_shared", {
+  accountType: "PRIVATE",
+});
+```
+  </Tab>
+</Tabs>
+
 ## ACL resolution rule
 
 When a non-creator `userId` attempts to use a SHARED connection, the ACL is evaluated in this order:
@@ -126,28 +192,28 @@ The table below shows the inner shape of the ACL block (`aclConfigForShared` in 
 
 Each list accepts up to 1000 entries; each `userId` is 1..256 characters.
 
-## Updating the ACL
+## Updating sharing settings and ACL
 
-Use the experimental ACL-update method to change access after creation. PATCH semantics — pass only the fields you want to change; omit a field to leave it unchanged; pass an empty array to clear an allow/deny list.
+Use the experimental sharing-update method to change access after creation. PATCH semantics — pass only the fields you want to change; omit a field to leave it unchanged; pass an empty array to clear an allow/deny list.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
 # Open access to everyone.
-composio.experimental.update_acl(
+composio.experimental.update_sharing(
     "ca_gmail_shared",
     allow_all_users=True,
 )
 
 # Add a targeted allow list (without touching the wildcard or deny list).
-composio.experimental.update_acl(
+composio.experimental.update_sharing(
     "ca_gmail_shared",
     allowed_user_ids=["user_alice", "user_bob"],
 )
 
 # Revoke the allow list — only the creator can use it again
 # (unless allow_all_users is True).
-composio.experimental.update_acl(
+composio.experimental.update_sharing(
     "ca_gmail_shared",
     allowed_user_ids=[],
 )
@@ -160,18 +226,18 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 // Open access to everyone.
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.experimental.updateSharing("ca_gmail_shared", {
   allowAllUsers: true,
 });
 
 // Add a targeted allow list (without touching the wildcard or deny list).
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.experimental.updateSharing("ca_gmail_shared", {
   allowedUserIds: ["user_alice", "user_bob"],
 });
 
 // Revoke the allow list — only the creator can use it again
 // (unless allowAllUsers is true).
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.experimental.updateSharing("ca_gmail_shared", {
   allowedUserIds: [],
 });
 ```
@@ -182,7 +248,7 @@ await composio.experimental.updateAcl("ca_gmail_shared", {
 Passing `notAllowedUserIds: []` **clears the deny list**, which silently re-grants access to users you previously blocked. Always audit the allow side when clearing a deny list.
 </Callout>
 
-ACL writes are restricted to the connection's creator or an API key caller. Other callers receive a permission error.
+Sharing-model and ACL writes are restricted to the connection's creator. Other callers receive a permission error.
 
 ## Using a shared connection
 
@@ -314,7 +380,7 @@ const sharedForAlice = await composio.connectedAccounts.list({
 
 ## Inspecting the ACL
 
-`get()` and `list()` responses surface `accountType` and `aclConfigForShared` under the same `experimental` block as the request shape. The `aclConfigForShared` field is populated only when the caller is the connection's creator or is using an API key — other callers see the `experimental` block without that field.
+`get()` and `list()` responses surface `accountType` and `aclConfigForShared` under the same `experimental` block as the request shape.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -329,9 +395,6 @@ if account.experimental:
         print(f"Allow all users: {acl.allow_all_users}")
         print(f"Allowed: {acl.allowed_user_ids}")
         print(f"Denied: {acl.not_allowed_user_ids}")
-    else:
-        # You're not authorised to see the ACL on this connection.
-        print("ACL hidden")
 ```
   </Tab>
   <Tab value="TypeScript">
@@ -350,9 +413,6 @@ if (account.experimental) {
     console.log("Allow all users:", acl.allowAllUsers);
     console.log("Allowed:", acl.allowedUserIds);
     console.log("Denied:", acl.notAllowedUserIds);
-  } else {
-    // You're not authorised to see the ACL on this connection.
-    console.log("ACL hidden");
   }
 }
 ```
@@ -363,7 +423,7 @@ if (account.experimental) {
 
 | Error | When |
 |---|---|
-| `ComposioAclOnlyForSharedError` (400) | ACL fields sent on a PRIVATE connection (at create or update time). |
+| `ComposioAclOnlyForSharedError` (400) | ACL fields sent when the target connection type is PRIVATE, including demote-to-PRIVATE requests that also include ACL fields. |
 | `ComposioSharedAccessDeniedError` (403) | Direct execute with a SHARED `connectedAccountId` that the requesting `userId` isn't permitted to use. |
 | `ComposioSharedConnectionNotAccessibleError` (400) | A tool-router session pinned a SHARED connection that the session's `userId` cannot use — the error is raised at session create time, so the session never enters a state that fails mid-execution. |
 
@@ -373,7 +433,7 @@ if (account.experimental) {
 from composio import exceptions
 
 try:
-    composio.experimental.update_acl(
+    composio.experimental.update_sharing(
         "ca_private_gmail",  # this connection is PRIVATE
         allow_all_users=True,
     )
@@ -402,7 +462,7 @@ import {
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 try {
-  await composio.experimental.updateAcl("ca_private_gmail", {
+  await composio.experimental.updateSharing("ca_private_gmail", {
     allowAllUsers: true,
   });
 } catch (error) {
