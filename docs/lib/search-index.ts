@@ -131,7 +131,7 @@ function slugifyHeading(value: string): string {
   return value
     .toLowerCase()
     .trim()
-    .replace(/<[^>]+>/g, '')
+    .replace(/[<>]/g, '')
     .replace(/[`*_~\[\]()]/g, '')
     .replace(/&[a-z]+;/g, '')
     .replace(/[^\w\s-]/g, '')
@@ -143,7 +143,7 @@ function stripMdx(value: string): string {
   return value
     .replace(/^---\n[\s\S]*?\n---\n?/, '')
     .replace(/```[\s\S]*?```/g, '')
-    .replace(/<[^>]+>/g, ' ')
+    .replace(/[<>]/g, ' ')
     .replace(/\{[^}]*\}/g, ' ')
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
