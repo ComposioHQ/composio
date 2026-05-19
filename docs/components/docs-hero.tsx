@@ -4,27 +4,41 @@ import { ArrowUpRight } from 'lucide-react';
 
 /**
  * Welcome-page hero — Composio brand language synced with composio.dev.
- * Right-side art is Malay's shader fallback from the landing site
- * (~/composio/landing/public/images/shader-fallback.jpg).
+ * Full-bleed shader background (Malay's `shader-fallback.jpg` from the
+ * landing site), centered content on top.
  */
 export function DocsHero() {
   return (
-    <div className="not-prose relative mb-12 grid grid-cols-1 items-center gap-10 border-b border-fd-border pb-12 sm:pb-16 lg:grid-cols-2 lg:gap-16">
-      <div className="flex flex-col gap-6">
+    <div className="not-prose relative isolate mb-12 overflow-hidden border border-fd-border">
+      <Image
+        src="/images/hero/shader.jpg"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 1280px) 1024px, 100vw"
+        className="-z-10 object-cover"
+      />
+      {/* readability scrim — soft white wash on light, soft black wash on dark */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-white/30 dark:bg-black/40"
+      />
+
+      <div className="relative flex flex-col items-center gap-6 px-6 py-20 text-center sm:py-24 lg:py-32">
         <h1 className="text-4xl font-medium leading-[0.95] tracking-[-0.02em] text-fd-foreground md:text-5xl lg:text-[64px]">
           Composio
-          <br />
-          Documentation
+          <br className="sm:hidden" />
+          <span className="sm:ml-3">Documentation</span>
         </h1>
-        <p className="max-w-[540px] text-base leading-[1.5] text-fd-muted-foreground md:text-lg">
+        <p className="max-w-[560px] text-base leading-[1.5] text-fd-foreground/80 md:text-lg">
           Composio powers 1000+ toolkits, tool search, context management,
           authentication, and a sandboxed workbench to help you build AI agents
           that turn intent into action.
         </p>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/docs/quickstart"
-            className="group inline-flex items-center gap-1.5 bg-[var(--composio-brand)] px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] !text-white no-underline transition-colors hover:bg-[#0006a8]"
+            className="group inline-flex items-center gap-1.5 bg-[var(--composio-brand)] px-5 py-3 font-mono text-sm uppercase tracking-[-0.28px] no-underline transition-colors hover:bg-[#0006a8]"
             style={{ color: '#ffffff' }}
           >
             <span style={{ color: '#ffffff' }}>Get Started</span>
@@ -34,23 +48,13 @@ export function DocsHero() {
             href="https://dashboard.composio.dev/~/project/playground"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-1.5 border border-fd-border bg-transparent px-4 py-2.5 font-mono text-sm uppercase tracking-[-0.28px] !text-fd-foreground no-underline transition-colors hover:border-fd-foreground"
+            className="group inline-flex items-center gap-1.5 border border-black/15 bg-white/70 px-5 py-3 font-mono text-sm uppercase tracking-[-0.28px] no-underline backdrop-blur-sm transition-colors hover:bg-white dark:border-white/20 dark:bg-black/40 dark:hover:bg-black/60"
             style={{ color: 'var(--color-fd-foreground)' }}
           >
             <span style={{ color: 'var(--color-fd-foreground)' }}>Playground</span>
             <ArrowUpRight aria-hidden="true" className="size-4 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
           </Link>
         </div>
-      </div>
-      <div className="relative hidden aspect-square w-full overflow-hidden border border-fd-border lg:block">
-        <Image
-          src="/images/hero/shader.jpg"
-          alt=""
-          fill
-          priority
-          sizes="(min-width: 1024px) 560px, 100vw"
-          className="object-cover"
-        />
       </div>
     </div>
   );

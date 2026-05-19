@@ -3,7 +3,7 @@ import type { MDXComponents } from 'mdx/types';
 import type { ComponentProps } from 'react';
 import { Accordion as BaseAccordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Tabs, Tab, TabsList, TabsTrigger, TabsContent } from 'fumadocs-ui/components/tabs';
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Callout } from '@/components/callout';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { ImageZoom } from 'fumadocs-ui/components/image-zoom';

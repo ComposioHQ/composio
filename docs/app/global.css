@@ -363,6 +363,18 @@ textarea:focus-visible {
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
+/* Callouts — muted links, not brand accent */
+[data-fumadocs-body] [data-callout] a:not([data-card]) {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--color-fd-border);
+}
+
+[data-fumadocs-body] [data-callout] a:not([data-card]):hover {
+  text-decoration-color: currentColor;
+}
+
 /* ==========================================================================
    Header Components
    ========================================================================== */

@@ -27,6 +27,7 @@ import {
 } from 'fumadocs-ui/layouts/docs/page';
 import { CopyLink } from '@/components/copy-link';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 
 const mdxComponents = getMDXComponents();
 
@@ -77,6 +78,7 @@ export default function ChangelogPage() {
             })}
           </div>
         </div>
+        <EditOnGitHub path="docs/app/(home)/docs/changelog/page.tsx" />
       </DocsBody>
     </DocsPage>
   );
