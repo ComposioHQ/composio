@@ -162,34 +162,36 @@ export function ManagedAuthList() {
         />
       </div>
 
-      {/* Tabs + Copy */}
-      <div className="flex items-center justify-between border-b border-fd-border">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setTab('managed')}
-            className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'managed'
-                ? 'border-green-500 text-fd-foreground'
-                : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
-            }`}
-          >
-            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-            Composio Managed App Available
-            <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{managed.length}</span>
-          </button>
-          <button
-            onClick={() => setTab('unmanaged')}
-            className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'unmanaged'
-                ? 'border-amber-500 text-fd-foreground'
-                : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
-            }`}
-          >
-            <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-            Requires your own credentials
-            <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{notManaged.length}</span>
-          </button>
-        </div>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-fd-border">
+        <button
+          onClick={() => setTab('managed')}
+          className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            tab === 'managed'
+              ? 'border-green-500 text-fd-foreground'
+              : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
+          }`}
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+          Composio Managed App Available
+          <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{managed.length}</span>
+        </button>
+        <button
+          onClick={() => setTab('unmanaged')}
+          className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            tab === 'unmanaged'
+              ? 'border-fd-muted-foreground text-fd-foreground'
+              : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
+          }`}
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-fd-muted-foreground/60" />
+          Requires your own credentials
+          <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{notManaged.length}</span>
+        </button>
+      </div>
+
+      {/* Copy slugs — separate row, aligned with list content */}
+      <div className="flex justify-end">
         <CopyButton toolkits={activeList} />
       </div>
 
