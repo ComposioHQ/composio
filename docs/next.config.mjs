@@ -157,6 +157,16 @@ const config = {
         permanent: true,
       },
       {
+        source: '/providers/google-adk',
+        destination: '/docs/providers/google',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/google-adk',
+        destination: '/docs/providers/google',
+        permanent: true,
+      },
+      {
         source: '/providers/langchain',
         destination: '/docs/providers/langchain',
         permanent: true,
@@ -178,7 +188,32 @@ const config = {
       },
       {
         source: '/providers/openai-agents',
-        destination: '/docs/providers/openai-agents',
+        destination: '/docs/providers/openai',
+        permanent: true,
+      },
+      {
+        source: '/providers/claude-agent-sdk',
+        destination: '/docs/providers/anthropic',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/openai-agents',
+        destination: '/docs/providers/openai',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/claude-agent-sdk',
+        destination: '/docs/providers/anthropic',
+        permanent: true,
+      },
+      {
+        source: '/providers/langgraph',
+        destination: '/docs/providers/langchain',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/langgraph',
+        destination: '/docs/providers/langchain',
         permanent: true,
       },
       {

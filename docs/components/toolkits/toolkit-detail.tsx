@@ -337,7 +337,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
                   <span>Latest version</span>
                   <button
                     onClick={copyVersion}
-                    className="inline-flex items-center gap-1 rounded border border-orange-500/30 bg-orange-500/10 px-1.5 py-0.5 font-mono text-xs text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
+                    className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
                   >
                     {toolkit.version}
                     {versionCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
@@ -356,7 +356,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
                   href={`https://platform.composio.dev/marketplace/${toolkit.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
                 >
                   Try {(toolkit.name?.trim() || toolkit.slug)}
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             >
               Tools ({tools.length})
               {activeTab === 'tools' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
               )}
             </button>
             {triggers.length > 0 && (
@@ -406,7 +406,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               >
                 Triggers ({triggers.length})
                 {activeTab === 'triggers' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}
               </button>
             )}
@@ -423,7 +423,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               autoComplete="off"
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
+              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
             />
           </div>
 

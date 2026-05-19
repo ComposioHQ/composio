@@ -25,7 +25,7 @@ export function TemplateCard({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex flex-col sm:flex-row items-start gap-8 rounded-xl border border-fd-border bg-fd-card p-8 transition-all hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)] [text-decoration:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+        className="flex flex-col sm:flex-row items-start gap-8 rounded-xl border border-fd-border bg-fd-card p-8 transition-all hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)] [text-decoration:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
       >
         <div className="flex flex-col gap-3 sm:w-1/2 shrink-0 pt-2">
           <h3 className="text-xl font-bold text-fd-foreground">{title}</h3>

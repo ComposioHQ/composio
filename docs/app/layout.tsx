@@ -2,7 +2,8 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import './global.css';
-import { Inter, IBM_Plex_Mono } from 'next/font/google';
+import { JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
 import { DecimalWidget } from '@/components/decimal-widget';
 import CustomSearchDialog from '@/components/custom-search-dialog';
@@ -46,15 +47,17 @@ export const metadata: Metadata = {
   },
 };
 
-const inter = Inter({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
+const abcDiatype = localFont({
+  src: [
+    { path: '../public/fonts/ABCDiatype-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/ABCDiatype-RegularItalic.woff2', weight: '400', style: 'italic' },
+    { path: '../public/fonts/ABCDiatype-Medium.woff2', weight: '500', style: 'normal' },
+  ],
   variable: '--font-sans',
   display: 'swap',
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
-  weight: ['400', '500', '600'],
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
@@ -64,7 +67,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${ibmPlexMono.variable}`}
+      className={`${abcDiatype.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <head>

@@ -18,11 +18,21 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = page.data as any;
   const MDX = data.body;
+  const isLanding = !params.slug || params.slug.length === 0;
 
   return (
-    <DocsPage toc={data.toc} full={data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
-      <DocsTitle>{data.title}</DocsTitle>
-      <PageActions path={page.url} />
+    <DocsPage
+      toc={data.toc}
+      full={isLanding ? true : data.full}
+      footer={{ enabled: false }}
+      tableOfContentPopover={{ enabled: false }}
+    >
+      {!isLanding && (
+        <>
+          <DocsTitle>{data.title}</DocsTitle>
+          <PageActions path={page.url} />
+        </>
+      )}
       <DocsBody>
         <MDX
           components={getMDXComponents({

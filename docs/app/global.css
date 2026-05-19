@@ -9,19 +9,20 @@
 /* ==========================================================================
    COMPOSIO DOCS
 
-   Palette:
-   - Light: Content #ffffff, Sidebar #f7f5f2
-   - Dark:  Content #1a1815, Sidebar #252220
-   - Accent: #ea580c (Tailwind orange-600)
+   Palette (synced with ~/composio/landing + ~/composio/composio_dashboard):
+   - Brand: #0007cd / oklch(0.387 0.264 264.1) — deep electric blue
+   - Light: Content #fbfbfb, Card #ffffff
+   - Dark:  Content #0f0f0f, Card #1a1a1a
 
    Typography:
-   - All text: Inter
-   - Code: IBM Plex Mono
+   - All text: ABC Diatype (sans, loaded locally in app/layout.tsx)
+   - Code: JetBrains Mono
    ========================================================================== */
 
 @theme inline {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --radius: 0.625rem;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 0;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -75,46 +76,47 @@ html {
 }
 
 :root {
-  /* Brand */
-  --composio-orange: #ea580c;
-  --composio-sidebar: #f7f5f2;
+  /* Brand — deep electric blue, shared with composio.dev + dashboard */
+  --composio-brand: #0007cd;
+  --composio-orange: var(--composio-brand); /* legacy alias — kept for back-compat */
+  --composio-sidebar: #fbfbfb;
 
   /* Fumadocs overrides - Light */
-  --color-fd-background: #ffffff;
-  --color-fd-foreground: #171414;
-  --color-fd-muted: #f6f4f2;
-  --color-fd-muted-foreground: #5c5858; /* Improved contrast */
-  --color-fd-border: #e5e0df;
+  --color-fd-background: #fbfbfb;
+  --color-fd-foreground: #0f0f0f;
+  --color-fd-muted: #f3f3f3;
+  --color-fd-muted-foreground: #585858;
+  --color-fd-border: #e5e5e5;
   --color-fd-card: #ffffff;
-  --color-fd-card-foreground: #171414;
+  --color-fd-card-foreground: #0f0f0f;
   --color-fd-popover: #ffffff;
-  --color-fd-popover-foreground: #171414;
-  --color-fd-primary: #171414;
-  --color-fd-primary-foreground: #ffffff;
-  --color-fd-secondary: #f6f4f2;
-  --color-fd-secondary-foreground: #171414;
-  --color-fd-accent: #f6f4f2;
-  --color-fd-accent-foreground: #171414;
-  --color-fd-ring: #e5e0df;
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --color-fd-popover-foreground: #0f0f0f;
+  --color-fd-primary: #0f0f0f;
+  --color-fd-primary-foreground: #fbfbfb;
+  --color-fd-secondary: #f3f3f3;
+  --color-fd-secondary-foreground: #0f0f0f;
+  --color-fd-accent: #f3f3f3;
+  --color-fd-accent-foreground: #0f0f0f;
+  --color-fd-ring: var(--composio-brand);
+  --radius: 0;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.218 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.218 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --popover-foreground: oklch(0.218 0 0);
+  --primary: oklch(0.387 0.264 264.1);
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: oklch(0.218 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.51 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --accent-foreground: oklch(0.218 0 0);
+  --destructive: oklch(0.577 0.215 27.3);
+  --border: oklch(0.931 0 0);
+  --input: oklch(0.931 0 0);
+  --ring: oklch(0.387 0.264 264.1);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -131,43 +133,43 @@ html {
 }
 
 .dark {
-  --composio-sidebar: #131211;
+  --composio-sidebar: #0f0f0f;
 
   /* Fumadocs overrides - Dark */
-  --color-fd-background: #131211;
-  --color-fd-foreground: #e8e4e0;
-  --color-fd-muted: #1e1d1c;
-  --color-fd-muted-foreground: #a8a29e; /* Improved contrast */
-  --color-fd-border: #2c2a28;
-  --color-fd-card: #131211;
-  --color-fd-card-foreground: #e8e4e0;
-  --color-fd-popover: #252220;
-  --color-fd-popover-foreground: #e8e4e0;
-  --color-fd-primary: #e8e4e0;
-  --color-fd-primary-foreground: #1a1815;
-  --color-fd-secondary: #2a2725;
-  --color-fd-secondary-foreground: #e8e4e0;
-  --color-fd-accent: #2a2725;
-  --color-fd-accent-foreground: #e8e4e0;
-  --color-fd-ring: #3d3935;
-  --background: oklch(0.145 0 0);
+  --color-fd-background: #0f0f0f;
+  --color-fd-foreground: #fbfbfb;
+  --color-fd-muted: #1a1a1a;
+  --color-fd-muted-foreground: #b4b4b4;
+  --color-fd-border: rgba(255, 255, 255, 0.10);
+  --color-fd-card: #141414;
+  --color-fd-card-foreground: #fbfbfb;
+  --color-fd-popover: #1a1a1a;
+  --color-fd-popover-foreground: #fbfbfb;
+  --color-fd-primary: #fbfbfb;
+  --color-fd-primary-foreground: #0f0f0f;
+  --color-fd-secondary: #1a1a1a;
+  --color-fd-secondary-foreground: #fbfbfb;
+  --color-fd-accent: #1a1a1a;
+  --color-fd-accent-foreground: #fbfbfb;
+  --color-fd-ring: var(--composio-brand);
+  --background: oklch(0.159 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.218 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.218 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.218 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: oklch(0.706 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 5%);
+  --destructive: oklch(0.637 0.208 25.3);
+  --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.745 0.128 275);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);

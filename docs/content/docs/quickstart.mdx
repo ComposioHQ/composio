@@ -6,70 +6,12 @@ keywords: [tutorial, setup, first agent]
 
 Build your first AI agent with Composio Tools. You'll create a [session](/docs/users-and-sessions) for a user, give your agent access to [tools](/docs/tools-and-toolkits), and let it take action across 1000+ apps.
 
-<Callout type="info">
-If you are an AI agent setting up Composio for yourself, you can [sign up as an agent](/docs/signing-up-as-an-agent) without a human-created account first.
-</Callout>
-
 <QuickstartFlow>
 
 <FrameworkOption id="openai-agents" name="OpenAI Agents" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg">
 
 <IntegrationTabs>
 <IntegrationContent value="native">
-
-<PromptBanner>
-**Add Composio tools to an OpenAI Agents app (Native Tools)**
-
-Give your OpenAI Agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio. Composio handles authentication, tool discovery, and execution. You create a **session** for a user, get tools from that session, and pass them to your Agent.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **Provider**: Translates Composio tools into the framework's tool format. For OpenAI Agents, use `OpenAIAgentsProvider`.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Initialize with `OpenAIAgentsProvider` as the provider
-- Create a session with a user ID before getting tools
-- Use `session.tools()` to get tools — this returns framework-ready tools
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Hardcode API keys in source code
-- Call tools directly without a session
-- Import from `composio-core` (the package is `composio` for Python, `@composio/core` for TS)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-
-**Deprecated (DO NOT use)**
-
-Python:
-```
-# WRONG — old direct execution pattern
-tools = composio.tools.get(user_id, { toolkits: ['github'] })
-result = composio.tools.execute('GITHUB_STAR_REPO', {...})
-
-# WRONG — old package name
-from composio_core import Composio
-```
-
-TypeScript:
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-const result = composio.tools.execute('GITHUB_STAR_REPO', {...});
-```
-
-**Verify before responding**
-
-1. Is `OpenAIAgentsProvider` passed to `Composio()`?
-2. Is a session created with `composio.create(user_id)`?
-3. Are tools retrieved from `session.tools()`, not `composio.tools.get()`?
-4. Are API keys in .env, not hardcoded?
-5. Are imports from `composio` (Python) or `@composio/core` (TS)?
-
-</PromptBanner>
 
 <Steps>
 <Step>
@@ -212,65 +154,6 @@ readline.close();
 
 </IntegrationContent>
 <IntegrationContent value="mcp">
-
-<PromptBanner>
-**Add Composio tools to an OpenAI Agents app (MCP)**
-
-Give your OpenAI Agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio's hosted MCP server. No provider package needed — you connect directly to Composio's MCP endpoint. Composio handles authentication, tool discovery, and execution. You create a **session** for a user and pass the MCP connection to your Agent.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **MCP mode**: Instead of using a provider package, you connect to Composio's hosted MCP server using `session.mcp.url` and `session.mcp.headers`. No `@composio/openai-agents` package needed.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Use `session.mcp.url` and `session.mcp.headers` from the session — these are unique per session
-- In Python, set `require_approval` to `"never"` in the tool_config
-- Create a session with a user ID before accessing `session.mcp`
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Hardcode MCP URLs or headers — they come from the session
-- Pass a provider to `Composio()` when using MCP mode (no provider needed)
-- Import from `composio-core` (the package is `composio` for Python, `@composio/core` for TS)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-
-**Deprecated (DO NOT use)**
-
-Python:
-```
-# WRONG — old direct execution pattern
-tools = composio.tools.get(user_id, { toolkits: ['github'] })
-result = composio.tools.execute('GITHUB_STAR_REPO', {...})
-
-# WRONG — using a provider with MCP (not needed)
-composio = Composio(provider=OpenAIAgentsProvider())
-
-# WRONG — old package name
-from composio_core import Composio
-```
-
-TypeScript:
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-
-// WRONG — using a provider with MCP (not needed)
-const composio = new Composio({ provider: new OpenAIAgentsProvider() });
-```
-
-**Verify before responding**
-
-1. Is `Composio()` initialized WITHOUT a provider?
-2. Is a session created with `composio.create(user_id)`?
-3. Are `session.mcp.url` and `session.mcp.headers` used for the MCP connection?
-4. In Python, is `require_approval` set to `"never"`?
-5. Are API keys in .env, not hardcoded?
-
-</PromptBanner>
 
 <Steps>
 <Step>
@@ -431,67 +314,6 @@ readline.close();
 
 <IntegrationTabs>
 <IntegrationContent value="native">
-
-<PromptBanner>
-**Add Composio tools to a Claude Agent SDK app (Native Tools)**
-
-Give your Claude agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio. Composio handles authentication, tool discovery, and execution. You create a **session** for a user, get tools, wrap them in an SDK MCP server, and pass that server to ClaudeAgentOptions.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **Provider**: Translates Composio tools into the framework's tool format. For Claude Agent SDK, use `ClaudeAgentSDKProvider`.
-- **SDK MCP server**: Tools must be wrapped in an SDK MCP server via `create_sdk_mcp_server` / `createSdkMcpServer` before passing to `ClaudeAgentOptions.mcp_servers`. Do NOT pass tools directly.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Initialize with `ClaudeAgentSDKProvider` as the provider
-- Create a session with a user ID before getting tools
-- Wrap tools in an SDK MCP server before passing to ClaudeAgentOptions
-- Use `async/await` — Claude Agent SDK is fully async
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Pass tools directly to ClaudeAgentOptions (must wrap in MCP server first)
-- Hardcode API keys in source code
-- Import from `composio-core` (the package is `composio` for Python, `@composio/core` for TS)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-
-**Deprecated (DO NOT use)**
-
-Python:
-```
-# WRONG — old direct execution pattern
-tools = composio.tools.get(user_id, { toolkits: ['github'] })
-result = composio.tools.execute('GITHUB_STAR_REPO', {...})
-
-# WRONG — passing tools directly without MCP server wrapper
-options = ClaudeAgentOptions(tools=tools)
-
-# WRONG — old package name
-from composio_core import Composio
-```
-
-TypeScript:
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-
-// WRONG — passing tools directly without MCP server wrapper
-const options = new ClaudeAgentOptions({ tools });
-```
-
-**Verify before responding**
-
-1. Is `ClaudeAgentSDKProvider` passed to `Composio()`?
-2. Is a session created with `composio.create(user_id)`?
-3. Are tools wrapped in `create_sdk_mcp_server` / `createSdkMcpServer` before passing to options?
-4. Is the code using `async/await`?
-5. Are API keys in .env, not hardcoded?
-
-</PromptBanner>
 
 <Steps>
 <Step>
@@ -658,67 +480,6 @@ readline.close();
 
 </IntegrationContent>
 <IntegrationContent value="mcp">
-
-<PromptBanner>
-**Add Composio tools to a Claude Agent SDK app (MCP)**
-
-Give your Claude agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio's hosted MCP server. No provider package needed — you connect directly to Composio's MCP endpoint. Composio handles authentication, tool discovery, and execution. You create a **session** for a user and pass the MCP connection to ClaudeAgentOptions.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **MCP mode**: Instead of using a provider package, you connect to Composio's hosted MCP server using `session.mcp.url` and `session.mcp.headers`. No `@composio/claude-agent-sdk` package needed.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Use `session.mcp.url` and `session.mcp.headers` from the session — these are unique per session
-- Set MCP server type to `"http"` in the mcp_servers config
-- In Python, set `permission_mode` to `"bypassPermissions"` in the mcp_servers config
-- Use `async/await` — Claude Agent SDK is fully async
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Hardcode MCP URLs or headers — they come from the session
-- Pass a provider to `Composio()` when using MCP mode (no provider needed)
-- Import from `composio-core` (the package is `composio` for Python, `@composio/core` for TS)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-
-**Deprecated (DO NOT use)**
-
-Python:
-```
-# WRONG — old direct execution pattern
-tools = composio.tools.get(user_id, { toolkits: ['github'] })
-result = composio.tools.execute('GITHUB_STAR_REPO', {...})
-
-# WRONG — using a provider with MCP (not needed)
-composio = Composio(provider=ClaudeAgentSDKProvider())
-
-# WRONG — old package name
-from composio_core import Composio
-```
-
-TypeScript:
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-
-// WRONG — using a provider with MCP (not needed)
-const composio = new Composio({ provider: new ClaudeAgentSDKProvider() });
-```
-
-**Verify before responding**
-
-1. Is `Composio()` initialized WITHOUT a provider?
-2. Is a session created with `composio.create(user_id)`?
-3. Are `session.mcp.url` and `session.mcp.headers` used in the `mcp_servers` config?
-4. Is the MCP server type set to `"http"`?
-5. Is the code using `async/await`?
-6. Are API keys in .env, not hardcoded?
-
-</PromptBanner>
 
 <Steps>
 <Step>
@@ -903,56 +664,6 @@ readline.close();
 <IntegrationTabs>
 <IntegrationContent value="native">
 
-<PromptBanner>
-**Add Composio tools to a Vercel AI SDK app (Native Tools)**
-
-Give your Vercel AI agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio. Composio handles authentication, tool discovery, and execution. You create a **session** for a user, get tools from that session, and pass them to `streamText` or `generateText`. TypeScript only.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **Provider**: Translates Composio tools into the framework's tool format. For Vercel AI, use `VercelProvider`.
-- **streamText vs generateText**: Use `streamText` for streaming responses, `generateText` for single responses. Both accept Composio tools via the `tools` parameter.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Initialize with `VercelProvider` as the provider
-- Create a session with a user ID before getting tools
-- Use `session.tools()` to get tools — this returns Vercel AI-compatible tools
-- Use `streamText` or `generateText` from the `ai` package
-- Set `maxSteps` to allow multi-step tool use (e.g., `maxSteps: 10`)
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Hardcode API keys in source code
-- Call tools directly without a session
-- Import from `composio-core` (the package is `@composio/core`)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-- Forget `maxSteps` — without it, the model won't execute tool calls
-
-**Deprecated (DO NOT use)**
-
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-const result = composio.tools.execute('GITHUB_STAR_REPO', {...});
-
-// WRONG — missing maxSteps (model won't execute tool calls)
-const result = await generateText({ model, tools, prompt });
-```
-
-**Verify before responding**
-
-1. Is `VercelProvider` passed to `Composio()`?
-2. Is a session created with `composio.create(userId)`?
-3. Are tools retrieved from `session.tools()`, not `composio.tools.get()`?
-4. Is `maxSteps` set in `streamText` / `generateText`?
-5. Are API keys in .env, not hardcoded?
-
-</PromptBanner>
-
 <Steps>
 <Step>
 <StepTitle>Install</StepTitle>
@@ -1046,60 +757,6 @@ readline.close();
 
 </IntegrationContent>
 <IntegrationContent value="mcp">
-
-<PromptBanner>
-**Add Composio tools to a Vercel AI SDK app (MCP)**
-
-Give your Vercel AI agent access to 1000+ tools (Gmail, GitHub, Slack, Notion, etc.) via Composio's hosted MCP server. No provider package needed — you connect directly to Composio's MCP endpoint using `@ai-sdk/mcp`. Composio handles authentication, tool discovery, and execution. TypeScript only.
-
-**Key concepts**
-
-- **Session**: Scoped environment for a user. Created with `composio.create(userId)`, reused with `composio.use(sessionId)`. Each `create()` returns a new session ID — store it and reuse for multi-turn conversations. Sessions have access to all toolkits by default.
-- **MCP mode**: Instead of using a provider package, you connect to Composio's hosted MCP server using `session.mcp.url` and `session.mcp.headers` via `@ai-sdk/mcp`. No `@composio/vercel` package needed.
-- **Client lifecycle**: Always close the MCP client with `await client.close()` when done.
-- **Authentication**: When a tool requires auth (e.g., GitHub OAuth), Composio returns an auth URL. The user authenticates once; Composio manages tokens.
-
-**Rules**
-
-ALWAYS:
-- Use `mcp.url` and `mcp.headers` from the session object returned by `composio.create(userId)`
-- Set transport type to `"http"` in createMCPClient
-- Set `maxSteps` to allow multi-step tool use (e.g., `maxSteps: 10`)
-- Close the MCP client when done: `await client.close()`
-- Store API keys in .env, load with dotenv
-
-NEVER:
-- Hardcode MCP URLs or headers — they come from the session
-- Pass a provider to `Composio()` when using MCP mode (no provider needed)
-- Import from `composio-core` (the package is `@composio/core`)
-- Use `composio.tools.get()` or `composio.tools.execute()` — these are deprecated direct execution patterns
-- Forget `maxSteps` — without it, the model won't execute tool calls
-- Forget `await client.close()` — this leaks the MCP connection
-
-**Deprecated (DO NOT use)**
-
-```
-// WRONG — old direct execution pattern
-const tools = composio.tools.get(userId, { toolkits: ['github'] });
-const result = composio.tools.execute('GITHUB_STAR_REPO', {...});
-
-// WRONG — using a provider with MCP (not needed)
-const composio = new Composio({ provider: new VercelProvider() });
-
-// WRONG — missing maxSteps (model won't execute tool calls)
-const result = await generateText({ model, tools, prompt });
-```
-
-**Verify before responding**
-
-1. Is `Composio()` initialized WITHOUT a provider?
-2. Are `mcp.url` and `mcp.headers` taken from the session returned by `composio.create(userId)`?
-3. Is transport type `"http"` in `createMCPClient`?
-4. Is `maxSteps` set in `streamText` / `generateText`?
-5. Is `client.close()` called when done?
-6. Are API keys in .env, not hardcoded?
-
-</PromptBanner>
 
 <Steps>
 <Step>
@@ -1210,13 +867,7 @@ readline.close();
 
 </QuickstartFlow>
 
-<Callout type="info">
-By default, sessions have access to **all available toolkits** in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. To restrict which toolkits are available, see [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
-</Callout>
-
-<Callout>
-Every `composio.create()` call returns a new session ID. For multi-turn conversations or web apps, store the session ID and call `composio.use(sessionId)` on subsequent requests instead of creating a new session each time. See [Reusing a session](/docs/users-and-sessions#reusing-a-session).
-</Callout>
+By default, each `composio.create()` call returns a new session with access to all toolkits. Sessions are highly configurable beyond that: [Reusing a session](/docs/users-and-sessions#reusing-a-session) covers storing a session ID and calling `composio.use()` across multi-turn requests, while [Configuring Sessions](/docs/configuring-sessions) covers restricting toolkits, auth configs, and connected accounts.
 
 ## Next steps
 

@@ -4,15 +4,13 @@
     "...",
     "anthropic",
     "openai",
+    "vercel",
+    "google",
+    "langchain",
     "autogen",
     "crewai",
-    "google",
-    "google-adk",
-    "langchain",
-    "langgraph",
     "llamaindex",
     "mastra",
-    "vercel",
     "custom-providers"
   ]
 }
