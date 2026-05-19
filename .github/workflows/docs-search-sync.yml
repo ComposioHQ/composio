@@ -18,9 +18,9 @@ jobs:
       run:
         working-directory: ./docs
     env:
-      ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+      ALGOLIA_APP_ID: ${{ vars.ALGOLIA_APP_ID || '62HI9PQZ1L' }}
       ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
-      ALGOLIA_INDEX_NAME: ${{ vars.ALGOLIA_INDEX_NAME || 'composio_docs' }}
+      ALGOLIA_INDEX_NAME: ${{ vars.ALGOLIA_INDEX_NAME || 'docs_composio_dev_62hi9pqz1l_pages' }}
 
     steps:
       - name: Checkout repository

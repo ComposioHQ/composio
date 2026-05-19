@@ -12,7 +12,7 @@ function requireEnv(name: string, fallback?: string): string {
 
 const dryRun = process.argv.includes('--dry-run');
 const indexName =
-  process.env.ALGOLIA_INDEX_NAME ?? process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'composio_docs';
+  process.env.ALGOLIA_INDEX_NAME ?? process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio_dev_62hi9pqz1l_pages';
 
 const documents = await getAlgoliaSearchDocuments();
 
@@ -25,7 +25,10 @@ if (dryRun) {
   process.exit(0);
 }
 
-const appId = requireEnv('ALGOLIA_APP_ID', process.env.NEXT_PUBLIC_ALGOLIA_APP_ID);
+const appId = requireEnv(
+  'ALGOLIA_APP_ID',
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? '62HI9PQZ1L',
+);
 const adminApiKey = requireEnv('ALGOLIA_ADMIN_API_KEY');
 const client = algoliasearch(appId, adminApiKey);
 
