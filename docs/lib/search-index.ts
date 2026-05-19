@@ -190,6 +190,39 @@ function slugTokens(url: string): string {
     .trim();
 }
 
+const typeLabels: Record<string, string> = {
+  docs: 'Docs',
+  cookbooks: 'Cookbook',
+  reference: 'Reference',
+  toolkits: 'Toolkit',
+  changelog: 'Changelog',
+  'api-reference': 'API Reference',
+};
+
+function titleizeSlug(value: string): string {
+  return value
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+    .replace(/\bApi\b/g, 'API')
+    .replace(/\bMcp\b/g, 'MCP')
+    .replace(/\bSdk\b/g, 'SDK')
+    .replace(/\bOauth\b/g, 'OAuth');
+}
+
+function breadcrumbsForUrl(url: string, type: string): string[] {
+  const label = typeLabels[type] ?? titleizeSlug(type);
+
+  if (type === 'toolkits' || type === 'cookbooks' || type === 'changelog') {
+    return [label];
+  }
+
+  const parts = url.split('/').filter(Boolean);
+  const parentParts = parts.slice(1, -1);
+  return [label, ...parentParts.map(titleizeSlug)].filter(Boolean);
+}
+
 function pageRank(url: string, type: string): number {
   if (url === '/docs' || url === '/docs/') return 1_000;
   if (url.includes('/quickstart')) return 980;
@@ -313,7 +346,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       description: getFrontmatterValue(frontmatter, 'description'),
       keywords: getFrontmatterList(frontmatter, 'keywords'),
       markdown: source,
-      breadcrumbs: [route.type, title],
+      breadcrumbs: breadcrumbsForUrl(route.url, route.type),
     });
   });
 }
@@ -352,7 +385,7 @@ function getDynamicToolkitRecords(): AlgoliaDocsRecord[] {
         description: toolkit.description,
         keywords: [toolkit.slug, toolkit.category].filter(Boolean) as string[],
         markdown: `# ${toolkit.name}\n\n${toolkit.description ?? ''}\n\n## Available tools\n\n${toolsText}`,
-        breadcrumbs: ['toolkits', toolkit.name],
+        breadcrumbs: breadcrumbsForUrl(`/toolkits/${toolkit.slug}`, 'toolkits'),
         tags: [toolkit.category].filter(Boolean) as string[],
       });
     });
@@ -404,7 +437,7 @@ function getChangelogRecords(): AlgoliaDocsRecord[] {
         description: getFrontmatterValue(frontmatter, 'description'),
         keywords: ['changelog', date],
         markdown: source,
-        breadcrumbs: ['changelog', title],
+        breadcrumbs: breadcrumbsForUrl(`/docs/changelog/${date.replace(/-/g, '/')}`, 'changelog'),
       });
     });
 }
@@ -467,7 +500,7 @@ async function getOpenApiRecords(): Promise<AlgoliaDocsRecord[]> {
       title: page.data.title ?? 'Untitled',
       description: page.data.description,
       markdown: `# ${page.data.title ?? 'Untitled'}\n\n${contents}`,
-      breadcrumbs: ['reference', 'api-reference', page.data.title ?? 'Untitled'],
+      breadcrumbs: breadcrumbsForUrl(page.url, 'api-reference'),
     });
   });
 }
