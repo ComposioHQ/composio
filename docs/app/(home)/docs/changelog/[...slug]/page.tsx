@@ -68,7 +68,7 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
           })}
         </div>
         {matchingEntries[0] && (
-          <EditOnGitHub path={`docs/content/changelog/${matchingEntries[0].path}`} />
+          <EditOnGitHub path={`docs/content/changelog/${matchingEntries[0].info.path}`} />
         )}
       </DocsBody>
     </DocsPage>
