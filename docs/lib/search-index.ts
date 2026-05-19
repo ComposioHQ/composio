@@ -17,6 +17,8 @@ export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio_dev_62hi9pqz1l_pages';
 
 const MAX_CHUNK_CHARS = 3_800;
 const MAX_CHUNK_BYTES = 9_000;
+const MAX_TOOL_ALIAS_ITEMS = 80;
+const MAX_TOOL_ALIAS_BYTES = 2_500;
 
 // Create loaders directly here to avoid the problematic lib/source.ts import in the
 // fallback route. This route is intentionally still Fumadocs/Orama-backed for local
@@ -51,7 +53,6 @@ export type AlgoliaDocsRecord = BaseIndex & {
   headings?: string[];
   tool_names?: string[];
   tool_slugs?: string[];
-  tool_descriptions?: string[];
   type: string;
   lang: string;
   page_rank: number;
@@ -252,7 +253,6 @@ function recordsFromMarkdownPage(input: {
   tags?: string[];
   toolNames?: string[];
   toolSlugs?: string[];
-  toolDescriptions?: string[];
 }): AlgoliaDocsRecord[] {
   const clean = mdxToCleanMarkdown(input.markdown);
   const lines = clean.split('\n');
@@ -327,7 +327,6 @@ function recordsFromMarkdownPage(input: {
         headings,
         tool_names: includeToolkitAliases ? input.toolNames : undefined,
         tool_slugs: includeToolkitAliases ? input.toolSlugs : undefined,
-        tool_descriptions: includeToolkitAliases ? input.toolDescriptions : undefined,
         type: input.type,
         lang: 'en',
         tags: input.tags,
@@ -342,14 +341,31 @@ function recordsFromMarkdownPage(input: {
 
 const toolkitBySlug = new Map(getAllToolkitsSync().map((toolkit) => [toolkit.slug, toolkit]));
 
-function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFromMarkdownPage>[0], 'toolNames' | 'toolSlugs' | 'toolDescriptions' | 'tags'> {
+function limitToolkitAliases(values: string[]): string[] {
+  const aliases: string[] = [];
+  let bytes = 0;
+
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+
+    const nextBytes = Buffer.byteLength(JSON.stringify(trimmed), 'utf8');
+    if (aliases.length >= MAX_TOOL_ALIAS_ITEMS || bytes + nextBytes > MAX_TOOL_ALIAS_BYTES) break;
+
+    aliases.push(trimmed);
+    bytes += nextBytes;
+  }
+
+  return aliases;
+}
+
+function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFromMarkdownPage>[0], 'toolNames' | 'toolSlugs' | 'tags'> {
   const toolkit = toolkitBySlug.get(slug);
   if (!toolkit) return {};
 
   return {
-    toolNames: toolkit.tools.map((tool) => tool.name).filter(Boolean),
-    toolSlugs: toolkit.tools.map((tool) => tool.slug).filter(Boolean),
-    toolDescriptions: toolkit.tools.map((tool) => tool.description).filter(Boolean),
+    toolNames: limitToolkitAliases(toolkit.tools.map((tool) => tool.name).filter(Boolean)),
+    toolSlugs: limitToolkitAliases(toolkit.tools.map((tool) => tool.slug).filter(Boolean)),
     tags: [toolkit.category].filter(Boolean) as string[],
   };
 }
