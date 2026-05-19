@@ -64,7 +64,7 @@ The \`composio-native-ui\` binaries are built from the in-repository Swift packa
 - Underlying Swift build commands:
   - \`swift build -c release --product composio-native-ui --arch arm64\`
 
-The scaffold currently opens a small AppKit panel near the bottom-right corner of the active screen. Generated executables are intentionally not committed; release jobs rebuild them before packaging CLI artifacts.
+The sidecar opens a small AppKit approval panel. On built-in Mac displays with a camera housing, it appears top-center and animates out from the notch; on other displays it falls back to the bottom-right corner of the active screen. Generated executables are intentionally not committed; release jobs rebuild them before packaging CLI artifacts.
 `;
   await fs.writeFile(path.join(outputRoot, 'NOTICE.md'), notice, 'utf8');
 };

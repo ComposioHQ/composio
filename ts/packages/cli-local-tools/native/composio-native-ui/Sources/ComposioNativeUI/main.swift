@@ -1,6 +1,33 @@
 import AppKit
+import CoreGraphics
 import MetalKit
 import QuartzCore
+
+private enum WindowPlacement {
+    case bottomRight
+    case topNotch
+}
+
+private extension NSScreen {
+    var composioDisplayID: CGDirectDisplayID? {
+        let key = NSDeviceDescriptionKey("NSScreenNumber")
+        if let displayID = deviceDescription[key] as? CGDirectDisplayID { return displayID }
+        if let number = deviceDescription[key] as? NSNumber { return number.uint32Value }
+        return nil
+    }
+
+    var composioIsBuiltInDisplay: Bool {
+        guard let displayID = composioDisplayID else { return false }
+        return CGDisplayIsBuiltin(displayID) != 0
+    }
+
+    var composioHasCameraHousing: Bool {
+        if #available(macOS 12.0, *) {
+            return composioIsBuiltInDisplay && safeAreaInsets.top > 0
+        }
+        return false
+    }
+}
 
 struct Configuration {
     // Content (programmatic):
@@ -587,10 +614,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func createWindow() {
-        let frame = bottomRightFrame()
+        let screen = screenForPlacement()
+        let placement = placement(for: screen)
+        let finalFrame = frame(for: placement, on: screen)
+        let initialFrame = initialFrame(for: placement, on: screen, finalFrame: finalFrame)
 
         let panel = NSPanel(
-            contentRect: frame,
+            contentRect: initialFrame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -606,18 +636,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.delegate = self
         panel.contentView = makeContentView()
-        panel.setFrame(frame, display: true, animate: false)
+        panel.setFrame(initialFrame, display: true, animate: false)
+        panel.alphaValue = placement == .topNotch ? 0.01 : 1
         panel.orderFrontRegardless()
 
-        DispatchQueue.main.async { [weak panel] in
-            panel?.setFrame(self.bottomRightFrame(), display: true, animate: false)
+        if placement == .topNotch {
+            animateFromNotch(panel, to: finalFrame)
+        } else {
+            panel.setFrame(finalFrame, display: true, animate: false)
         }
 
         window = panel
     }
 
-    private func bottomRightFrame() -> NSRect {
-        let screen = screenForPlacement()
+    private func placement(for screen: NSScreen) -> WindowPlacement {
+        screen.composioHasCameraHousing ? .topNotch : .bottomRight
+    }
+
+    private func frame(for placement: WindowPlacement, on screen: NSScreen) -> NSRect {
+        switch placement {
+        case .topNotch:
+            return topNotchFrame(on: screen)
+        case .bottomRight:
+            return bottomRightFrame(on: screen)
+        }
+    }
+
+    private func initialFrame(for placement: WindowPlacement, on screen: NSScreen, finalFrame: NSRect) -> NSRect {
+        switch placement {
+        case .topNotch:
+            return collapsedNotchFrame(on: screen, finalFrame: finalFrame)
+        case .bottomRight:
+            return finalFrame
+        }
+    }
+
+    private func bottomRightFrame(on screen: NSScreen) -> NSRect {
         let visibleFrame = screen.visibleFrame
         let size = NSSize(width: configuration.width, height: configuration.height)
         let origin = NSPoint(
@@ -625,6 +679,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             y: visibleFrame.minY + configuration.margin
         )
         return NSRect(origin: origin, size: size)
+    }
+
+    private func topNotchFrame(on screen: NSScreen) -> NSRect {
+        let visibleFrame = screen.visibleFrame
+        let size = NSSize(width: configuration.width, height: configuration.height)
+        let horizontalMargin = max(configuration.margin, 12)
+        let topGap: CGFloat = min(max(configuration.margin * 0.5, 10), 18)
+        let unclampedX = screen.frame.midX - size.width / 2
+        let minX = visibleFrame.minX + horizontalMargin
+        let maxX = visibleFrame.maxX - size.width - horizontalMargin
+        let x = maxX >= minX ? min(max(unclampedX, minX), maxX) : visibleFrame.midX - size.width / 2
+        let y = max(visibleFrame.minY + configuration.margin, visibleFrame.maxY - size.height - topGap)
+        return NSRect(origin: NSPoint(x: x, y: y), size: size)
+    }
+
+    private func collapsedNotchFrame(on screen: NSScreen, finalFrame: NSRect) -> NSRect {
+        let width = min(max(configuration.width * 0.38, 180), 260)
+        let height: CGFloat = 42
+        let topGap: CGFloat = 6
+        let origin = NSPoint(
+            x: finalFrame.midX - width / 2,
+            y: screen.frame.maxY - height - topGap
+        )
+        return NSRect(origin: origin, size: NSSize(width: width, height: height))
+    }
+
+    private func animateFromNotch(_ panel: NSPanel, to finalFrame: NSRect) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.38
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(finalFrame, display: true)
+        }
     }
 
     private func screenForPlacement() -> NSScreen {
