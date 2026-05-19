@@ -154,9 +154,9 @@ export function ToolkitsLanding() {
           <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
             Browse {toolkits.length} toolkits supported by Composio
           </p>
-          <PageActions path="/toolkits" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <PageActions path="/toolkits" variant="inline" />
           <a
             href="https://dashboard.composio.dev/~/project/playground"
             target="_blank"

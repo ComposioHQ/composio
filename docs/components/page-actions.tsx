@@ -5,6 +5,13 @@ import { Check, ChevronDown, Copy, ExternalLink, FileText } from 'lucide-react';
 
 interface PageActionsProps {
   path: string;
+  /**
+   * 'overlap-title' (default) lifts the button into the row above via a
+   * negative top margin so it lands to the right of `<DocsTitle>`.
+   * 'inline' renders the button as a normal inline-block — use when the
+   * caller already controls layout (e.g. the Toolkits landing header).
+   */
+  variant?: 'overlap-title' | 'inline';
 }
 
 const FALLBACK_ORIGIN = 'https://docs.composio.dev';
@@ -19,7 +26,7 @@ const FALLBACK_ORIGIN = 'https://docs.composio.dev';
  * so it overlaps the row above (next to <DocsTitle>) without ever crashing into
  * the title text on narrow viewports.
  */
-export function PageActions({ path }: PageActionsProps) {
+export function PageActions({ path, variant = 'overlap-title' }: PageActionsProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -70,7 +77,7 @@ export function PageActions({ path }: PageActionsProps) {
   }, [path]);
 
   return (
-    <div className="not-prose -mt-12 mb-2 flex justify-end">
+    <div className={variant === 'overlap-title' ? 'not-prose -mt-12 mb-2 flex justify-end' : 'not-prose inline-block'}>
       <div ref={wrapperRef} className="relative">
         <button
           type="button"

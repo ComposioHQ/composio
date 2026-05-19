@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
@@ -350,23 +350,8 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             {/* Description */}
             <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
 
-            {/* Actions */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`https://platform.composio.dev/marketplace/${toolkit.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
-                >
-                  Try {(toolkit.name?.trim() || toolkit.slug)}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-
             {/* Page actions */}
-            <PageActions path={path} />
+            <PageActions path={path} variant="inline" />
           </div>
       </div>
 
