@@ -9,7 +9,10 @@ function requireEnv(name: string, fallback?: string): string {
 }
 
 const appId = requireEnv('ALGOLIA_APP_ID', process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? ALGOLIA_DEFAULT_APP_ID);
-const searchApiKey = requireEnv('ALGOLIA_SEARCH_API_KEY', process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY);
+const searchApiKey = requireEnv(
+  'ALGOLIA_SEARCH_API_KEY',
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY ?? process.env.ALGOLIA_ADMIN_API_KEY,
+);
 const indexName = process.env.ALGOLIA_INDEX_NAME ?? process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? ALGOLIA_DEFAULT_INDEX_NAME;
 const queries = process.argv.slice(2);
 
