@@ -56,6 +56,7 @@ export type AlgoliaDocsRecord = BaseIndex & {
   type: string;
   lang: string;
   page_rank: number;
+  toolkit_popularity: number;
   section_rank: number;
   position: number;
   depth: number;
@@ -227,6 +228,44 @@ function breadcrumbsForUrl(url: string, type: string): string[] {
   return [label, ...parentParts.map(titleizeSlug)].filter(Boolean);
 }
 
+const TOOLKIT_POPULARITY_OVERRIDES: Record<string, number> = {
+  gmail: 1_000,
+  github: 980,
+  slack: 960,
+  googledrive: 940,
+  googlecalendar: 930,
+  notion: 920,
+  linear: 900,
+  jira: 890,
+  hubspot: 860,
+  salesforce: 850,
+  resend: 650,
+  zoho_mail: 520,
+  mailchimp: 500,
+  sendgrid: 480,
+  mailsoftly: 260,
+};
+
+function getToolkitSlugFromUrl(url: string): string | null {
+  return url.match(/^\/toolkits\/([^/#?]+)/)?.[1] ?? null;
+}
+
+function toolkitPopularity(url: string, type: string): number {
+  if (type !== 'toolkits') return 0;
+
+  const slug = getToolkitSlugFromUrl(url);
+  if (!slug) return 0;
+
+  const toolkit = toolkitBySlug.get(slug);
+  const override = TOOLKIT_POPULARITY_OVERRIDES[slug] ?? 0;
+  const managedAuthBoost = toolkit?.composioManagedAuthSchemes?.length ? 120 : 0;
+  const authBoost = toolkit?.authSchemes?.includes('OAUTH2') ? 40 : 0;
+  const triggerBoost = Math.min((toolkit?.triggerCount ?? 0) * 10, 80);
+  const toolCountBoost = Math.min((toolkit?.toolCount ?? 0), 100);
+
+  return override + managedAuthBoost + authBoost + triggerBoost + toolCountBoost;
+}
+
 function pageRank(url: string, type: string): number {
   if (url === '/docs' || url === '/docs/') return 1_000;
   if (url.includes('/quickstart')) return 980;
@@ -331,6 +370,7 @@ function recordsFromMarkdownPage(input: {
         lang: 'en',
         tags: input.tags,
         page_rank: pageRank(input.url, input.type),
+        toolkit_popularity: toolkitPopularity(input.url, input.type),
         section_rank: sectionRank,
         position,
         depth: section.depth,
@@ -422,7 +462,7 @@ function getDynamicToolkitRecords(): AlgoliaDocsRecord[] {
     .flatMap((toolkit) => {
       const toolsText = (toolkit.tools ?? [])
         .slice(0, 60)
-        .map((tool) => `${tool.slug ?? ''} ${tool.name ?? ''} ${tool.description ?? ''}`)
+        .map((tool) => `${tool.slug ?? ''} ${tool.name ?? ''}`)
         .join('\n');
 
       return recordsFromMarkdownPage({

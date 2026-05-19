@@ -145,7 +145,7 @@ export default function CustomSearchDialog({
                 type: 'default',
                 indexName,
                 query,
-                distinct: 5,
+                distinct: true,
                 hitsPerPage: 10,
                 filters: tag ? `tag:${tag}` : undefined,
                 clickAnalytics: true,

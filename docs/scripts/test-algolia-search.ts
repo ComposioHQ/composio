@@ -37,7 +37,7 @@ for (const query of queries) {
         indexName,
         query,
         hitsPerPage: 5,
-        distinct: 5,
+        distinct: true,
         getRankingInfo: true,
         clickAnalytics: true,
       },
