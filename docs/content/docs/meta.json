@@ -5,7 +5,6 @@
     "quickstart",
     "providers",
     "cli",
-    "claude-code-plugin",
     "---Core Concepts---",
     "how-composio-works",
     "users-and-sessions",
