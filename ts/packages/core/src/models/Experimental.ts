@@ -112,7 +112,7 @@ export class Experimental {
    * clears its stored ACL atomically. ACL fields are only meaningful for
    * SHARED connections — sending ACL fields on a PRIVATE connection raises
    * `ComposioAclOnlyForSharedError` (400). Sharing writes require the
-   * connection's creator or an API key.
+   * connection's creator.
    *
    * PATCH semantics: omit a field to leave it unchanged; pass an empty
    * array to clear an allow/deny list. At least one field must be
