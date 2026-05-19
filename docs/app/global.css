@@ -594,3 +594,48 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* ==========================================================================
+   404 glitch animation (ported from landing site)
+   ========================================================================== */
+@keyframes glitch-404 {
+  0%,
+  3% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+  6% {
+    text-shadow:
+      3px 0 var(--composio-brand),
+      -3px 0 #cd0700;
+    transform: translate(-3px, 1px);
+  }
+  12% {
+    text-shadow:
+      -3px 0 var(--composio-brand),
+      3px 0 #cd0700;
+    transform: translate(3px, -1px);
+  }
+  18% {
+    text-shadow:
+      2px 0 var(--composio-brand),
+      -2px 0 #cd0700;
+    transform: translate(-1px, 2px);
+  }
+  24% {
+    text-shadow:
+      -1px 0 var(--composio-brand),
+      1px 0 #cd0700;
+    transform: translate(2px, -1px);
+  }
+  30%,
+  100% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+}
+
+.animate-glitch-404 {
+  animation: glitch-404 2.6s ease-out infinite;
+}
+
