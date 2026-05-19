@@ -11,6 +11,7 @@
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",
     "sync:search": "bun scripts/sync-algolia-search.ts",
+    "test:search": "bun scripts/test-algolia-search.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
