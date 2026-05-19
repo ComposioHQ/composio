@@ -8,6 +8,9 @@ on:
       - 'docs/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-search:
     runs-on: ubuntu-latest
