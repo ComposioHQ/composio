@@ -28,7 +28,14 @@ const NO_CONNECTED_ACCOUNT = '__none__';
 export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_per_session';
 export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
-export type PermissionGateResult = { readonly approval: 'cached' | 'prompted' } | undefined;
+export type PermissionApprovalStatus =
+  | 'always_approved'
+  | 'cached_approved'
+  | 'approved_once'
+  | 'approved_for_session';
+export type PermissionGateResult =
+  | { readonly approvalStatus: PermissionApprovalStatus }
+  | undefined;
 
 export interface ToolRouterPermissionsConfig {
   readonly default: PermissionDefaultMode;
@@ -804,7 +811,9 @@ export const gateToolExecution = (params: GateParams) =>
     if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return;
 
     const state = resolvePermissionState(params);
-    if (state === 'allow_all' || state === 'always_allow') return;
+    if (state === 'allow_all' || state === 'always_allow') {
+      return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
+    }
     if (state === 'always_deny') {
       return yield* Effect.fail(
         new Error(`Tool execution denied by permissions: ${params.toolSlug}`)
@@ -815,7 +824,9 @@ export const gateToolExecution = (params: GateParams) =>
     const hasCachedAllow = yield* Effect.tryPromise(() => isAllowCached(cacheKey)).pipe(
       Effect.catchAll(() => Effect.succeed(false))
     );
-    if (hasCachedAllow) return { approval: 'cached' } satisfies PermissionGateResult;
+    if (hasCachedAllow) {
+      return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
+    }
 
     const decision = yield* Effect.tryPromise(() =>
       requestPermissionDecision({
@@ -836,5 +847,7 @@ export const gateToolExecution = (params: GateParams) =>
       );
     }
 
-    return { approval: 'prompted' } satisfies PermissionGateResult;
+    return {
+      approvalStatus: decision === 'allow_session' ? 'approved_for_session' : 'approved_once',
+    } satisfies PermissionGateResult;
   });

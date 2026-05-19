@@ -46,7 +46,7 @@ export interface ToolExecuteResponse {
   readonly data: Record<string, unknown>;
   readonly error: string | null;
   readonly logId: string;
-  readonly permissionApproval?: 'cached';
+  readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
 }
 
 export interface ToolsExecutor {
@@ -102,7 +102,9 @@ const normalizeResponse = (
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
-  ...(permissionGateResult?.approval === 'cached' ? { permissionApproval: 'cached' as const } : {}),
+  ...(permissionGateResult?.approvalStatus
+    ? { permissionApproval: permissionGateResult.approvalStatus }
+    : {}),
 });
 
 /**

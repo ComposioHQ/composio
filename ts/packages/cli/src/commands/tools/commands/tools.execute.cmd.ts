@@ -299,12 +299,27 @@ type StoredExecuteOutputSummary = {
 const serializeExecuteOutput = (result: unknown): string =>
   JSON.stringify(result, ciRedactReplacer, 2);
 
+const permissionApprovalLabel = (approval?: string): string | undefined => {
+  switch (approval) {
+    case 'always_approved':
+      return 'always approved';
+    case 'cached_approved':
+      return 'cached approved';
+    case 'approved_once':
+      return 'approved once';
+    case 'approved_for_session':
+      return 'approved for session';
+    default:
+      return undefined;
+  }
+};
+
 const executionSuccessSuffix = (result: {
   readonly logId?: string;
   readonly permissionApproval?: string;
 }) => {
   const metadata = [
-    result.permissionApproval === 'cached' ? 'cached approved' : undefined,
+    permissionApprovalLabel(result.permissionApproval),
     result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
   ].filter((value): value is string => Boolean(value));
   return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
