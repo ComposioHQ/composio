@@ -188,15 +188,13 @@ export class Experimental {
       parsedParams.data.allowedUserIds !== undefined ||
       parsedParams.data.notAllowedUserIds !== undefined;
     const aclWire = hasAclFields ? serializeAclConfigForWire(parsedParams.data) : undefined;
-    // Shim until the Stainless client includes
-    // `ConnectedAccountPatchParams.Experimental.account_type` from
-    // hermes#10032. The backend already accepts it under `experimental`.
-    const experimental: ExperimentalWire = {
-      ...(parsedParams.data.accountType !== undefined && {
-        account_type: parsedParams.data.accountType,
-      }),
-      ...(aclWire !== undefined && { acl_config_for_shared: aclWire }),
-    };
+    const experimental: ConnectedAccountPatchParams.Experimental = {};
+    if (parsedParams.data.accountType !== undefined) {
+      experimental.account_type = parsedParams.data.accountType;
+    }
+    if (aclWire !== undefined) {
+      experimental.acl_config_for_shared = aclWire;
+    }
 
     const body: ConnectedAccountPatchParams = {
       experimental,
