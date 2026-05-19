@@ -544,7 +544,7 @@ def _make_bad_request_error(message: str):
 
 class TestConnectedAccountsAcl:
     """Tests for SHARED accounts surface on ``link()`` and
-    ``composio.experimental.update_acl()``."""
+    ``composio.experimental.update_sharing()``."""
 
     @pytest.fixture
     def mock_client(self):
@@ -664,16 +664,16 @@ class TestConnectedAccountsAcl:
                 user_id="user_creator", auth_config_id="auth_config_123"
             )
 
-    # -- experimental.update_acl() body construction + mapper ---------------
+    # -- experimental.update_sharing() body construction + mapper -----------
 
-    def test_update_acl_serializes_nested_body(self, experimental, mock_client):
+    def test_update_sharing_serializes_nested_body(self, experimental, mock_client):
         response = Mock()
         response.id = "ca_abc"
         response.status = "ACTIVE"
         response.success = True
         mock_client.connected_accounts.patch.return_value = response
 
-        result = experimental.update_acl(
+        result = experimental.update_sharing(
             "ca_abc",
             allow_all_users=True,
             not_allowed_user_ids=["user_bob"],
@@ -690,8 +690,8 @@ class TestConnectedAccountsAcl:
         )
         assert result is response
 
-    def test_update_acl_omits_absent_fields(self, experimental, mock_client):
-        experimental.update_acl("ca_abc", allowed_user_ids=["user_alice"])
+    def test_update_sharing_omits_absent_fields(self, experimental, mock_client):
+        experimental.update_sharing("ca_abc", allowed_user_ids=["user_alice"])
 
         mock_client.connected_accounts.patch.assert_called_once_with(
             "ca_abc",
@@ -700,20 +700,20 @@ class TestConnectedAccountsAcl:
             },
         )
 
-    def test_update_acl_preserves_empty_array(self, experimental, mock_client):
-        experimental.update_acl("ca_abc", allowed_user_ids=[])
+    def test_update_sharing_preserves_empty_array(self, experimental, mock_client):
+        experimental.update_sharing("ca_abc", allowed_user_ids=[])
 
         mock_client.connected_accounts.patch.assert_called_once_with(
             "ca_abc",
             experimental={"acl_config_for_shared": {"allowed_user_ids": []}},
         )
 
-    def test_update_acl_rejects_all_none(self, experimental, mock_client):
+    def test_update_sharing_rejects_all_none(self, experimental, mock_client):
         with pytest.raises(exceptions.ValidationError):
-            experimental.update_acl("ca_abc")
+            experimental.update_sharing("ca_abc")
         mock_client.connected_accounts.patch.assert_not_called()
 
-    def test_update_acl_maps_acl_only_for_shared_to_typed_error(
+    def test_update_sharing_maps_acl_only_for_shared_to_typed_error(
         self, experimental, mock_client
     ):
         mock_client.connected_accounts.patch.side_effect = _make_bad_request_error(
@@ -721,9 +721,9 @@ class TestConnectedAccountsAcl:
         )
 
         with pytest.raises(exceptions.ComposioAclOnlyForSharedError):
-            experimental.update_acl("ca_abc", allow_all_users=True)
+            experimental.update_sharing("ca_abc", allow_all_users=True)
 
-    def test_update_acl_rethrows_non_acl_bad_request_errors(
+    def test_update_sharing_rethrows_non_acl_bad_request_errors(
         self, experimental, mock_client
     ):
         unrelated = _make_bad_request_error("some other 400")
@@ -732,13 +732,61 @@ class TestConnectedAccountsAcl:
         from composio_client import BadRequestError
 
         with pytest.raises(BadRequestError):
-            experimental.update_acl("ca_abc", allow_all_users=True)
+            experimental.update_sharing("ca_abc", allow_all_users=True)
 
-    def test_update_acl_requires_client(self):
+    def test_update_sharing_requires_client(self):
         from composio.core.models.experimental import ExperimentalAPI
 
         with pytest.raises(exceptions.ValidationError):
-            ExperimentalAPI().update_acl("ca_abc", allow_all_users=True)
+            ExperimentalAPI().update_sharing("ca_abc", allow_all_users=True)
+
+    # -- experimental.update_sharing() account_type promotion / demotion ----
+
+    def test_update_sharing_promotes_with_acl_in_one_call(
+        self, experimental, mock_client
+    ):
+        """PRIVATE → SHARED with an ACL grant in the same request."""
+        response = Mock()
+        response.id = "ca_abc"
+        response.status = "ACTIVE"
+        response.success = True
+        mock_client.connected_accounts.patch.return_value = response
+
+        experimental.update_sharing(
+            "ca_abc",
+            account_type="SHARED",
+            allow_all_users=True,
+            not_allowed_user_ids=["user_bob"],
+        )
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={
+                "account_type": "SHARED",
+                "acl_config_for_shared": {
+                    "allow_all_users": True,
+                    "not_allowed_user_ids": ["user_bob"],
+                },
+            },
+        )
+
+    def test_update_sharing_demote_only(self, experimental, mock_client):
+        """SHARED → PRIVATE with no ACL fields."""
+        experimental.update_sharing("ca_abc", account_type="PRIVATE")
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={"account_type": "PRIVATE"},
+        )
+
+    def test_update_sharing_promote_only_no_acl(self, experimental, mock_client):
+        """PRIVATE → SHARED without ACL fields."""
+        experimental.update_sharing("ca_abc", account_type="SHARED")
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={"account_type": "SHARED"},
+        )
 
     # -- list(account_type=...) — flat experimental filter -----------------
 

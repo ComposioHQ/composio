@@ -180,7 +180,7 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self.mcp = MCP(client=self._client)
 
         # experimental API — decorators for custom tools and toolkits,
-        # plus experimental SDK methods (e.g. update_acl)
+        # plus experimental SDK methods (e.g. update_sharing)
         from composio.core.models.experimental import ExperimentalAPI
 
         self.experimental = ExperimentalAPI(client=self._client)
