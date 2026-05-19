@@ -76,7 +76,7 @@ See `CLAUDE.md` for detailed patterns and troubleshooting.
 
 ## Search
 
-Docs search uses Algolia when these public variables are set; otherwise it falls back to the local Fumadocs `/api/search` endpoint for development and tests.
+Docs search uses Algolia when these public variables are set; otherwise it falls back to the local Fumadocs `/api/search` endpoint for development and tests. The Algolia client requests `clickAnalytics` and sends search result view/click events with `search-insights`.
 
 ```bash
 NEXT_PUBLIC_ALGOLIA_APP_ID=...
