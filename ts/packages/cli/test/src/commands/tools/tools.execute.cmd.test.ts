@@ -147,8 +147,10 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const outputText = lines.join('\n');
         const output = parseLastJson(lines);
 
+        expect(outputText).not.toContain('Response\n{');
         // Response flows through real ToolsExecutorLive → mock session.execute
         expect(output.successful).toBe(true);
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');

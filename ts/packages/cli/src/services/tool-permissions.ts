@@ -319,6 +319,52 @@ const permissionField = (toolSlug: string, connectedAccountId?: string) =>
 const accountPermissionField = (connectedAccountId?: string) =>
   `*:${connectedAccountId ?? NO_CONNECTED_ACCOUNT}`;
 
+export const getOrgEnhancedControlsStatus = (params: {
+  readonly orgId: string;
+  readonly projectId: string;
+}) =>
+  Effect.gen(function* () {
+    const userContext = yield* ComposioUserContext;
+    const apiKey = Option.getOrUndefined(userContext.data.apiKey);
+    if (!apiKey) return undefined;
+
+    const config = yield* Effect.tryPromise(() =>
+      fetchJson<ConsumerConfigResponse>({
+        baseURL: userContext.data.baseURL,
+        apiKey,
+        orgId: params.orgId,
+        projectId: params.projectId,
+        path: '/api/v3.1/org/consumer/config',
+      })
+    );
+    const remoteEnabled = readEnhancedControlsFlag(config);
+    const platformSupported = isEnhancedControlsPlatformSupported();
+    return {
+      enabled: remoteEnabled && platformSupported,
+      remoteEnabled,
+      platformSupported,
+    };
+  }).pipe(
+    Effect.catchAll(error =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug('Failed to read enhanced controls status', error);
+        return undefined;
+      })
+    )
+  );
+
+export const getConnectedAccountPermissionGroup = (params: {
+  readonly snapshot?: ConsumerPermissionSnapshot;
+  readonly connectedAccountId?: string;
+}): PermissionOverrideState | PermissionDefaultMode | undefined => {
+  if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return undefined;
+  return (
+    params.snapshot.permissions.overrides?.[accountPermissionField(params.connectedAccountId)] ??
+    params.snapshot.permissions.default ??
+    'allow_all'
+  );
+};
+
 const resolvePermissionState = (
   params: GateParams
 ): PermissionOverrideState | PermissionDefaultMode => {

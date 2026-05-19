@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore test fixtures and assertions in TypeScript test files"
+paths = [
+  '''\.test\.ts$''',
+]
