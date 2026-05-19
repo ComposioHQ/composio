@@ -74,24 +74,6 @@ All TypeScript code blocks in MDX files are **type-checked at build time** using
 
 See `CLAUDE.md` for detailed patterns and troubleshooting.
 
-## Search
-
-Docs search uses Algolia when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is set; otherwise it falls back to the local Fumadocs `/api/search` endpoint for development and tests. The Algolia client requests `clickAnalytics` and sends search result view/click events with `search-insights`.
-
-```bash
-NEXT_PUBLIC_ALGOLIA_APP_ID=62HI9PQZ1L # optional; default shown
-NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY=...
-NEXT_PUBLIC_ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages # optional; default shown
-```
-
-Sync the Algolia index with an admin key:
-
-```bash
-ALGOLIA_APP_ID=62HI9PQZ1L
-ALGOLIA_ADMIN_API_KEY=...
-ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search
-```
-
 ## Commands
 
 | Command | Description |
@@ -99,5 +81,4 @@ ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search
 | `bun run dev` | Dev server |
 | `bun run build` | Production build (validates TS code blocks) |
 | `bun run types:check` | Type check |
-| `bun run sync:search` | Sync docs search records to Algolia |
 

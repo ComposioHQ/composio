@@ -1,9 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { liteClient } from 'algoliasearch/lite';
-import aa from 'search-insights';
 import {
   SearchDialog,
   SearchDialogClose,
@@ -17,20 +15,14 @@ import {
 } from 'fumadocs-ui/components/dialog/search';
 import { useI18n } from 'fumadocs-ui/contexts/i18n';
 import { useDocsSearch } from 'fumadocs-core/search/client';
-import type { BaseIndex } from 'fumadocs-core/search/algolia';
 import { BotMessageSquare } from 'lucide-react';
 import { toggleDecimalWidget, detectMac } from './ask-ai-button';
 
 function MetaKey() {
   const [key, setKey] = useState('⌘');
-
   useEffect(() => {
-    if (detectMac()) return;
-
-    const id = window.setTimeout(() => setKey('Ctrl'), 0);
-    return () => window.clearTimeout(id);
+    if (!detectMac()) setKey('Ctrl');
   }, []);
-
   return key;
 }
 
@@ -45,136 +37,17 @@ interface CustomSearchDialogProps extends SharedProps {
   api?: string;
 }
 
-type AlgoliaHit = {
-  objectID: string;
-  url?: string;
-};
-
-type AlgoliaSearchResponse = {
-  hits: AlgoliaHit[];
-  queryID?: string;
-};
-
-type AlgoliaHitMeta = {
-  objectID: string;
-  position: number;
-  queryID?: string;
-};
-
 export default function CustomSearchDialog({
   defaultLinks = [],
   api = '/api/search',
   ...props
 }: CustomSearchDialogProps) {
   const { locale } = useI18n();
-  const algoliaHitMetaRef = useRef(new Map<string, AlgoliaHitMeta>());
-  const insightsInitializedRef = useRef(false);
-
-  const ensureAlgoliaInsights = useCallback((appId: string, searchApiKey: string) => {
-    if (insightsInitializedRef.current) return;
-
-    aa('init', {
-      appId,
-      apiKey: searchApiKey,
-      useCookie: true,
-    });
-    insightsInitializedRef.current = true;
-  }, []);
-
-  const clientOptions = useMemo(() => {
-    const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? '62HI9PQZ1L';
-    const searchApiKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY;
-    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio_dev_62hi9pqz1l_pages';
-
-    if (appId && searchApiKey) {
-      const client = liteClient(appId, searchApiKey);
-
-      return {
-        type: 'algolia' as const,
-        client,
-        indexName,
-        locale,
-        onSearch: async (query: string, tag?: string) => {
-          ensureAlgoliaInsights(appId, searchApiKey);
-
-          const result = await client.searchForHits<BaseIndex>({
-            requests: [
-              {
-                type: 'default',
-                indexName,
-                query,
-                distinct: 5,
-                hitsPerPage: 10,
-                filters: tag ? `tag:${tag}` : undefined,
-                clickAnalytics: true,
-              },
-            ],
-          });
-          const response = result.results[0] as AlgoliaSearchResponse;
-          const metadata = new Map<string, AlgoliaHitMeta>();
-
-          response.hits.forEach((hit, index) => {
-            if (!hit.url || metadata.has(hit.url)) return;
-            metadata.set(hit.url, {
-              objectID: hit.objectID,
-              position: index + 1,
-              queryID: response.queryID,
-            });
-          });
-
-          algoliaHitMetaRef.current = metadata;
-
-          const viewedObjectIDs = Array.from(metadata.values())
-            .slice(0, 20)
-            .map((hit) => hit.objectID);
-
-          if (viewedObjectIDs.length > 0) {
-            aa('viewedObjectIDs', {
-              index: indexName,
-              eventName: 'Docs Search Results Viewed',
-              objectIDs: viewedObjectIDs,
-            });
-          }
-
-          return result;
-        },
-      };
-    }
-
-    return {
-      type: 'fetch' as const,
-      locale,
-      api,
-    };
-  }, [api, ensureAlgoliaInsights, locale]);
-
-  const { search, setSearch, query } = useDocsSearch(clientOptions);
-
-  const trackAlgoliaClick = useCallback((href: string) => {
-    const url = new URL(href, window.location.origin);
-    const path = `${url.pathname}${url.hash}`;
-    const hit = algoliaHitMetaRef.current.get(path) ?? algoliaHitMetaRef.current.get(url.pathname);
-    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio_dev_62hi9pqz1l_pages';
-
-    if (!hit) return;
-
-    if (hit.queryID) {
-      aa('clickedObjectIDsAfterSearch', {
-        index: indexName,
-        eventName: 'Docs Search Result Clicked',
-        queryID: hit.queryID,
-        objectIDs: [hit.objectID],
-        positions: [hit.position],
-      });
-      return;
-    }
-
-    aa('clickedObjectIDs', {
-      index: indexName,
-      eventName: 'Docs Search Result Clicked',
-      objectIDs: [hit.objectID],
-    });
-  }, []);
+  const { search, setSearch, query } = useDocsSearch({
+    type: 'fetch',
+    locale,
+    api,
+  });
 
   return (
     <SearchDialog
@@ -190,19 +63,7 @@ export default function CustomSearchDialog({
           <SearchDialogInput />
           <SearchDialogClose />
         </SearchDialogHeader>
-        <div
-          className="search-scroll-container max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto"
-          onClickCapture={(event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-
-            const anchor = target.closest('a[href]');
-            const href = anchor?.getAttribute('href');
-            if (!href) return;
-
-            trackAlgoliaClick(href);
-          }}
-        >
+        <div className="search-scroll-container max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto">
           {query.data === 'empty' && defaultLinks.length > 0 ? (
             <div className="flex flex-col p-2">
               {defaultLinks.map((link) => (

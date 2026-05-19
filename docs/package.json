@@ -10,7 +10,6 @@
     "postinstall": "fumadocs-mdx",
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",
-    "sync:search": "bun scripts/sync-algolia-search.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
@@ -21,7 +20,6 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@shikijs/twoslash": "^3.21.0",
     "@vercel/analytics": "^1.6.1",
-    "algoliasearch": "^5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "fumadocs-core": "^16.4.2",
@@ -34,7 +32,6 @@
     "posthog-js": "^1.319.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "search-insights": "^2",
     "shiki": "^3.20.0",
     "tailwind-merge": "^3.4.0"
   },
