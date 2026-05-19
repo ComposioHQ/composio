@@ -14,7 +14,7 @@ Webhooks are the recommended way to receive trigger events in production. To sta
 | `composio.connected_account.expired` | Fired when a connected account expires and needs re-authentication. See [Subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events). |
 | `composio.trigger.disabled` | **Fired when** Composio automatically disables a trigger — expired connection, webhook refresh failure, or unhealthy polling. **Not fired when** you disable a trigger through the manage API or deactivate its connected account via `PATCH /api/v3/connected_accounts/{id}/status`. |
 
-Set your webhook URL in the [dashboard settings](https://platform.composio.dev?next_page=/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions):
+Set your webhook URL in the [dashboard settings](https://dashboard.composio.dev/~/project/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions):
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
