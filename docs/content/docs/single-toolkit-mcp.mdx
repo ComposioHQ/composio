@@ -104,6 +104,10 @@ console.log(`Server created: ${server.id}`);
     Users must authenticate with the toolkits configured in your MCP server first. See [authentication](/docs/authentication) for details.
     </Callout>
 
+    <Callout type="info">
+    Generated MCP URLs are scoped to a user. If you build an MCP URL yourself, include either `user_id` or `connected_account_id` as a query parameter.
+    </Callout>
+
     <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
       <Tab value="Python">
 ```python

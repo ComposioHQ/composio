@@ -26,6 +26,8 @@ By default, a session has access to **all toolkits** in the Composio catalog. Yo
 
 You can also attach local experimental custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits).
 
+Every `create()` call returns a new session ID. For multi-turn conversations, store the session ID and reuse it with `composio.use()` instead of calling `create()` for each turn.
+
 ## Enabling toolkits
 
 Restrict the session to specific toolkits:
@@ -494,11 +496,74 @@ const session = await composio.create("user_123", {
 
 Changing `sandbox_size` on an existing session recreates the sandbox on next access. The sandbox's in-memory filesystem state is lost, but the persistent `/mnt/files/` mount survives the restart.
 
-## Session methods
+## Session lifecycle and methods
+
+### use()
+
+Reuse an existing session by ID. This keeps tool, auth, MCP, and workbench context available across multi-turn requests.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# First request
+session = composio.create(user_id="user_123")
+session_id = session.session_id
+
+# Later request
+session = composio.use(session_id)
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// First request
+const session = await composio.create("user_123");
+const sessionId = session.sessionId;
+
+// Later request
+const reusedSession = await composio.use(sessionId);
+const tools = await reusedSession.tools();
+```
+</Tab>
+</Tabs>
+
+### update()
+
+Patch an existing session without creating a new session ID. Only the fields you pass are changed.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    toolkits=["gmail", "slack"],
+    auth_configs={"gmail": "ac_new_config"},
+    connected_accounts={"slack": ["ca_work_slack"]},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.use("session_id");
+// ---cut---
+await session.update({
+  toolkits: ["gmail", "slack"],
+  authConfigs: { gmail: "ac_new_config" },
+  connectedAccounts: { slack: ["ca_work_slack"] },
+});
+```
+</Tab>
+</Tabs>
 
 ### mcp
 
 Get the MCP server URL to use with any MCP-compatible client.
+
+Use the SDK-generated `session.mcp.url` as-is. MCP URLs include the session's user context; if you construct a single-toolkit MCP URL manually, include either `user_id` or `connected_account_id`.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">

@@ -214,6 +214,10 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+<Callout type="info">
+Arrays are the preferred format for `connected_accounts` / `connectedAccounts`. A single connected account ID string is still accepted for backwards compatibility and is treated as a one-item array.
+</Callout>
+
 ## Viewing session's active accounts
 
 Use `session.toolkits()` to see which accounts are currently active:
