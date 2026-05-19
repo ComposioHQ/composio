@@ -318,41 +318,41 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
       </Link>
 
       {/* Header */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 gap-4">
           <ToolkitIcon key={toolkit.slug} toolkit={toolkit} />
           <div className="min-w-0 flex-1">
             {/* Title row */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
-                <button
-                  onClick={copySlug}
-                  className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
-                >
-                  {toolkit.slug.toUpperCase()}
-                  {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
+              <button
+                onClick={copySlug}
+                className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+              >
+                {toolkit.slug.toUpperCase()}
+                {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+              </button>
               {toolkit.version && (
-                <div className="flex items-center gap-2 text-sm text-fd-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-xs text-fd-muted-foreground">
                   <span>Latest version</span>
                   <button
                     onClick={copyVersion}
-                    className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
+                    className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
                   >
                     {toolkit.version}
                     {versionCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
                   </button>
-                </div>
+                </span>
               )}
             </div>
 
             {/* Description */}
             <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
-
-            {/* Page actions */}
-            <PageActions path={path} variant="inline" />
           </div>
+        </div>
+
+        {/* Page actions */}
+        <PageActions path={path} variant="inline" />
       </div>
 
       {/* Authentication Details */}
