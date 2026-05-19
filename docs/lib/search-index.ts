@@ -49,6 +49,9 @@ export type AlgoliaDocsRecord = BaseIndex & {
   keywords?: string[];
   slug?: string;
   headings?: string[];
+  tool_names?: string[];
+  tool_slugs?: string[];
+  tool_descriptions?: string[];
   type: string;
   lang: string;
   page_rank: number;
@@ -247,6 +250,9 @@ function recordsFromMarkdownPage(input: {
   markdown: string;
   breadcrumbs?: string[];
   tags?: string[];
+  toolNames?: string[];
+  toolSlugs?: string[];
+  toolDescriptions?: string[];
 }): AlgoliaDocsRecord[] {
   const clean = mdxToCleanMarkdown(input.markdown);
   const lines = clean.split('\n');
@@ -303,6 +309,9 @@ function recordsFromMarkdownPage(input: {
       const objectID = `${input.url}__${sectionPart}__${chunkIndex}__${contentHash(chunk)}`;
       const sectionRank = Math.max(10, 120 - section.depth * 12 - chunkIndex * 2);
 
+      const position = recordPosition++;
+      const includeToolkitAliases = input.type === 'toolkits' && position === 0;
+
       return {
         objectID,
         title: input.title,
@@ -316,16 +325,33 @@ function recordsFromMarkdownPage(input: {
         keywords: input.keywords,
         slug: slugTokens(input.url),
         headings,
+        tool_names: includeToolkitAliases ? input.toolNames : undefined,
+        tool_slugs: includeToolkitAliases ? input.toolSlugs : undefined,
+        tool_descriptions: includeToolkitAliases ? input.toolDescriptions : undefined,
         type: input.type,
         lang: 'en',
         tags: input.tags,
         page_rank: pageRank(input.url, input.type),
         section_rank: sectionRank,
-        position: recordPosition++,
+        position,
         depth: section.depth,
       } satisfies AlgoliaDocsRecord;
     });
   });
+}
+
+const toolkitBySlug = new Map(getAllToolkitsSync().map((toolkit) => [toolkit.slug, toolkit]));
+
+function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFromMarkdownPage>[0], 'toolNames' | 'toolSlugs' | 'toolDescriptions' | 'tags'> {
+  const toolkit = toolkitBySlug.get(slug);
+  if (!toolkit) return {};
+
+  return {
+    toolNames: toolkit.tools.map((tool) => tool.name).filter(Boolean),
+    toolSlugs: toolkit.tools.map((tool) => tool.slug).filter(Boolean),
+    toolDescriptions: toolkit.tools.map((tool) => tool.description).filter(Boolean),
+    tags: [toolkit.category].filter(Boolean) as string[],
+  };
 }
 
 function getFilesystemRecords(): AlgoliaDocsRecord[] {
@@ -339,6 +365,10 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
     const title = getFrontmatterValue(frontmatter, 'title');
     if (!title) return [];
 
+    const toolkitFields = route.type === 'toolkits'
+      ? getToolkitSearchFields(route.url.replace(/^\/toolkits\//, ''))
+      : {};
+
     return recordsFromMarkdownPage({
       url: route.url,
       type: route.type,
@@ -347,6 +377,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       keywords: getFrontmatterList(frontmatter, 'keywords'),
       markdown: source,
       breadcrumbs: breadcrumbsForUrl(route.url, route.type),
+      ...toolkitFields,
     });
   });
 }
@@ -386,7 +417,7 @@ function getDynamicToolkitRecords(): AlgoliaDocsRecord[] {
         keywords: [toolkit.slug, toolkit.category].filter(Boolean) as string[],
         markdown: `# ${toolkit.name}\n\n${toolkit.description ?? ''}\n\n## Available tools\n\n${toolsText}`,
         breadcrumbs: breadcrumbsForUrl(`/toolkits/${toolkit.slug}`, 'toolkits'),
-        tags: [toolkit.category].filter(Boolean) as string[],
+        ...getToolkitSearchFields(toolkit.slug),
       });
     });
 }
