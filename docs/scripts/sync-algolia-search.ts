@@ -66,9 +66,9 @@ await client.setSettings({
       'unordered(section)',
       'unordered(headings)',
       'unordered(description)',
-      'unordered(content)',
       'unordered(tool_names)',
       'unordered(tool_slugs)',
+      'unordered(content)',
     ],
     customRanking: [
       'desc(page_rank)',
