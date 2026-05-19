@@ -34,6 +34,7 @@
     "posthog-js": "^1.319.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "search-insights": "^2",
     "shiki": "^3.20.0",
     "tailwind-merge": "^3.4.0"
   },
