@@ -114,7 +114,8 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             theme={{
               defaultTheme: 'light',
               attribute: 'class',
-              enableSystem: true,
+              enableSystem: false,
+              forcedTheme: 'light',
             }}
             search={{
               SearchDialog: CustomSearchDialog,
