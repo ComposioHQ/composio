@@ -27,6 +27,7 @@ import { DocsHero } from '@/components/docs-hero';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
 import { ApiBaseUrl } from '@/components/api-base-url';
 import { ApiEndpointsTable } from '@/components/api-endpoints-table';
+import { ClaudeMockUI } from '@/components/claude-mock-ui';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -105,6 +106,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     GlossaryTerm,
     ApiBaseUrl,
     ApiEndpointsTable,
+    ClaudeMockUI,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

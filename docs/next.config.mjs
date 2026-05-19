@@ -86,7 +86,7 @@ const config = {
       // Core concepts moved from tool-router to docs
       {
         source: '/tool-router/users-and-sessions',
-        destination: '/docs/users-and-sessions',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -122,12 +122,12 @@ const config = {
       },
       {
         source: '/tool-router/using-custom-auth-configs',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {
         source: '/docs/authenticating-users/using-custom-auth-configs',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {
@@ -257,8 +257,13 @@ const config = {
       },
       // Features section redirects
       {
+        source: '/docs/users-and-sessions',
+        destination: '/docs/how-composio-works',
+        permanent: true,
+      },
+      {
         source: '/docs/user-management',
-        destination: '/docs/users-and-sessions#users',
+        destination: '/docs/how-composio-works#users',
         permanent: true,
       },
             {
@@ -727,8 +732,13 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
+        permanent: true,
+      },
+      {
         source: '/docs/guides/using-custom-auth-configuration',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {

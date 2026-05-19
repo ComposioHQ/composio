@@ -8,7 +8,7 @@ keywords: [glossary, definitions, terminology]
 <Glossary>
 
 <GlossaryTerm name="Auth Config">
-A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/users-and-sessions) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
+A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/how-composio-works) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
 </GlossaryTerm>
 
 <GlossaryTerm name="Auth Scheme">
@@ -88,7 +88,7 @@ An adapter package that transforms Composio tools into the format expected by an
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [Users and sessions](/docs/users-and-sessions).
+An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
@@ -132,7 +132,7 @@ The URL Composio delivers signed events to in your application. One per project,
 </GlossaryTerm>
 
 <GlossaryTerm name="User ID">
-An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [Users and sessions](/docs/users-and-sessions).
+An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="White-Labeling">
