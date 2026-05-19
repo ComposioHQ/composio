@@ -130,7 +130,7 @@ export const resolveCommandProject = (params: { mode: ProjectMode; projectName?:
 export const formatResolveCommandProjectError = (error: unknown): Error => {
   if (error instanceof MissingDefaultOrgError) {
     return new Error(
-      'No default org configured. Run `composio login` or `composio dev orgs switch`.'
+      'No current org configured. Run `composio login` or `composio dev orgs switch`.'
     );
   }
   if (error instanceof MissingDeveloperProjectError) {
