@@ -86,9 +86,9 @@ Detailed documentation for Claude is organized in `.claude/`:
 
 ## Search
 
-The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_APP_ID` and `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` are configured. `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `composio_docs`. Without those variables it falls back to `/api/search` for local development and tests. Algolia searches request `clickAnalytics`, and the client sends search result view/click events with `search-insights`.
+The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is configured. `NEXT_PUBLIC_ALGOLIA_APP_ID` defaults to `62HI9PQZ1L`, and `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `docs_composio_dev_62hi9pqz1l_pages`. Without a search API key it falls back to `/api/search` for local development and tests. Algolia searches request `clickAnalytics`, and the client sends search result view/click events with `search-insights`.
 
-Run `ALGOLIA_APP_ID=... ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=composio_docs bun run sync:search` from `docs/` to rebuild the Algolia index.
+Run `ALGOLIA_APP_ID=62HI9PQZ1L ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search` from `docs/` to rebuild the Algolia index.
 
 ## API Versioning
 
