@@ -158,7 +158,7 @@ export function ToolkitsLanding() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
-            href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
+            href="https://dashboard.composio.dev/~/project/playground"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"

@@ -565,6 +565,13 @@ body {
   transition: max-width 0.3s ease;
 }
 
+/* Hide Decimal's built-in launcher tab and floating button — we trigger
+   the widget from our own "Ask AI" button in the nav (see ask-ai-button.tsx). */
+.decimal-widget-sidebar-tab,
+.decimal-widget-button {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

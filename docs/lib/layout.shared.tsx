@@ -84,7 +84,7 @@ export function baseOptions(): BaseLayoutProps {
             Playground
           </span>
         ),
-        url: 'https://platform.composio.dev/auth?next_page=%2Ftool-router&utm_source=docs&utm_medium=navbar&utm_campaign=tool_router',
+        url: 'https://dashboard.composio.dev/~/project/playground?utm_source=docs&utm_medium=navbar&utm_campaign=playground',
         external: true,
         secondary: true,
       },
