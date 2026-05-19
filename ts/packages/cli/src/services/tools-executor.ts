@@ -9,7 +9,7 @@ import type {
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
-import { gateToolExecution } from 'src/services/tool-permissions';
+import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -46,6 +46,7 @@ export interface ToolExecuteResponse {
   readonly data: Record<string, unknown>;
   readonly error: string | null;
   readonly logId: string;
+  readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
 }
 
 export interface ToolsExecutor {
@@ -94,12 +95,16 @@ const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] 
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse
+  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
   successful: raw.error === null,
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
+  ...(permissionGateResult?.approvalStatus
+    ? { permissionApproval: permissionGateResult.approvalStatus }
+    : {}),
 });
 
 /**
@@ -185,7 +190,7 @@ export const ToolsExecutorLive = Layer.effect(
             cacheScope: params.cacheScope,
           });
           const toolkitSlug = slug.split('_')[0]?.toLowerCase();
-          yield* gateToolExecution({
+          const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
             connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
             connectedAccountWordId: toolkitSlug
@@ -230,7 +235,7 @@ export const ToolsExecutorLive = Layer.effect(
             }
           );
 
-          return normalizeResponse(raw);
+          return normalizeResponse(raw, permissionGateResult);
         }).pipe(
           Effect.catchAll((error): Effect.Effect<never, unknown> => {
             const mapped = mapComposioError({ error, toolSlug: slug });

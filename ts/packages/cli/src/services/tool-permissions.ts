@@ -20,12 +20,22 @@ const isEnhancedControlsPlatformSupported = (): boolean =>
 export const ENHANCED_LINK_URL_OVERWRITE = 'https://connect.composio.dev/enhanced';
 
 const CACHE_FILE_NAME = 'tool-permissions-cache.json';
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const PERMISSION_SNAPSHOT_CACHE_TTL_MS = 5 * 60 * 1000;
+const ALLOW_FOR_DURATION_LABEL = '1 hr';
+const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
 
 export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_per_session';
 export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
+export type PermissionApprovalStatus =
+  | 'always_approved'
+  | 'cached_approved'
+  | 'approved_once'
+  | 'approved_for_session';
+export type PermissionGateResult =
+  | { readonly approvalStatus: PermissionApprovalStatus }
+  | undefined;
 
 export interface ToolRouterPermissionsConfig {
   readonly default: PermissionDefaultMode;
@@ -42,8 +52,13 @@ export interface ConsumerPermissionSnapshot {
   readonly fetchedAt: number;
 }
 
+interface CachedAllowDecision {
+  readonly expiresAt: number;
+}
+
 interface CacheFile {
   readonly entries: Readonly<Record<string, ConsumerPermissionSnapshot>>;
+  readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>>;
 }
 
 interface PermissionResolveResponse {
@@ -64,7 +79,7 @@ interface GateParams {
   readonly snapshot?: ConsumerPermissionSnapshot;
 }
 
-const sessionAllowCache = new Set<string>();
+const allowDecisionMemoryCache = new Map<string, number>();
 
 const cachePath = () => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
@@ -75,34 +90,79 @@ const uniq = (values: ReadonlyArray<string | undefined>) => [
   ...new Set(values.filter((value): value is string => Boolean(value))),
 ];
 
+const pruneAllowEntries = (
+  entries: Readonly<Record<string, CachedAllowDecision>> | undefined,
+  now = Date.now()
+): Record<string, CachedAllowDecision> => {
+  const freshEntries: Record<string, CachedAllowDecision> = {};
+  for (const [key, entry] of Object.entries(entries ?? {})) {
+    if (typeof entry.expiresAt === 'number' && entry.expiresAt > now) {
+      freshEntries[key] = entry;
+    }
+  }
+  return freshEntries;
+};
+
 const readCacheFile = async (): Promise<CacheFile> => {
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
     const parsed = JSON.parse(raw) as CacheFile;
-    return parsed && typeof parsed === 'object' && parsed.entries ? parsed : { entries: {} };
+    return parsed && typeof parsed === 'object' && parsed.entries
+      ? { entries: parsed.entries, allowEntries: pruneAllowEntries(parsed.allowEntries) }
+      : { entries: {} };
   } catch {
     return { entries: {} };
   }
 };
 
-const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void> => {
-  await fs.mkdir(path.dirname(cachePath()), { recursive: true });
-  const current = await readCacheFile();
-  await fs.writeFile(
-    cachePath(),
-    `${JSON.stringify(
-      {
-        entries: {
-          ...current.entries,
-          [cacheKey(entry)]: entry,
-        },
-      } satisfies CacheFile,
-      null,
-      2
-    )}\n`,
-    'utf8'
-  );
+const writeCacheFile = async (cache: CacheFile): Promise<void> => {
+  const targetPath = cachePath();
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+
+  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(
+      tempPath,
+      `${JSON.stringify(
+        {
+          entries: cache.entries,
+          allowEntries: pruneAllowEntries(cache.allowEntries),
+        } satisfies CacheFile,
+        null,
+        2
+      )}\n`,
+      'utf8'
+    );
+    await fs.rename(tempPath, targetPath);
+  } catch (error) {
+    await fs.rm(tempPath, { force: true }).catch(() => undefined);
+    throw error;
+  }
 };
+
+let cacheWriteQueue: Promise<void> = Promise.resolve();
+
+const updateCacheFile = async (
+  update: (current: CacheFile) => CacheFile | Promise<CacheFile>
+): Promise<void> => {
+  const previous = cacheWriteQueue.catch(() => undefined);
+  const next = previous.then(async () => {
+    const current = await readCacheFile();
+    await writeCacheFile(await update(current));
+  });
+
+  cacheWriteQueue = next.catch(() => undefined);
+  await next;
+};
+
+const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void> =>
+  updateCacheFile(current => ({
+    entries: {
+      ...current.entries,
+      [cacheKey(entry)]: entry,
+    },
+    allowEntries: current.allowEntries,
+  }));
 
 const readCachedEntry = async (params: {
   orgId: string;
@@ -118,7 +178,7 @@ const isFreshForAccounts = (
   connectedAccountIds: ReadonlyArray<string>
 ): entry is ConsumerPermissionSnapshot => {
   if (!entry) return false;
-  if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) return false;
+  if (Date.now() - entry.fetchedAt > PERMISSION_SNAPSHOT_CACHE_TTL_MS) return false;
   const cachedIds = new Set(entry.connectedAccountIds);
   return connectedAccountIds.every(id => cachedIds.has(id));
 };
@@ -269,8 +329,42 @@ const resolvePermissionState = (
   return override ?? permissions?.default ?? 'allow_all';
 };
 
-const sessionCacheKey = (params: GateParams) =>
+const allowCacheKey = (params: GateParams) =>
   `${params.snapshot?.orgId ?? 'unknown'}:${params.snapshot?.projectId ?? 'unknown'}:${params.snapshot?.consumerUserId ?? 'unknown'}:${permissionField(params.toolSlug, params.connectedAccountId)}`;
+
+const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
+  const expiresAt = allowDecisionMemoryCache.get(cacheKey);
+  if (expiresAt === undefined) return false;
+  if (expiresAt <= now) {
+    allowDecisionMemoryCache.delete(cacheKey);
+    return false;
+  }
+  return true;
+};
+
+const isAllowCached = async (cacheKey: string, now = Date.now()): Promise<boolean> => {
+  if (isAllowCachedInMemory(cacheKey, now)) return true;
+
+  const cache = await readCacheFile();
+  const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
+  if (expiresAt === undefined || expiresAt <= now) return false;
+
+  allowDecisionMemoryCache.set(cacheKey, expiresAt);
+  return true;
+};
+
+const cacheAllowDecision = async (cacheKey: string, now = Date.now()): Promise<void> => {
+  const expiresAt = now + ALLOW_FOR_DURATION_MS;
+  allowDecisionMemoryCache.set(cacheKey, expiresAt);
+
+  await updateCacheFile(current => ({
+    entries: current.entries,
+    allowEntries: {
+      ...current.allowEntries,
+      [cacheKey]: { expiresAt },
+    },
+  }));
+};
 
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"']/g, char => {
@@ -294,7 +388,7 @@ const escapeHtml = (value: string): string =>
 const AGENT_SVGS: Readonly<Record<NativeUiCallerAgent, string>> = {
   composio: `<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_2367_5)"><path d="M91.7032 28.1801L35.3611 16.6572C31.6669 15.8988 28.1929 18.7367 28.1929 22.5043V49.1954V50.6144V77.3052C28.1929 81.0729 31.6669 83.9112 35.3611 83.1526L91.7032 71.6296" stroke="black" stroke-width="2.8556" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M48.1992 7.38531C48.1993 2.09223 53.6097 -1.44765 58.4546 0.57874L58.6851 0.679333L58.6902 0.68227L88.8308 14.6023C91.4759 15.7947 93.1338 18.4366 93.1346 21.3053V33.0975C93.1346 37.3994 89.4707 40.797 85.1902 40.4658L51.0547 37.918V61.8914L85.185 59.3435L85.585 59.323C89.6842 59.2231 93.1331 62.5334 93.109 66.6876V78.4797C93.109 81.3707 91.4075 83.9737 88.8105 85.1812L88.806 85.1827L58.691 99.0774L58.6917 99.0782C53.7808 101.351 48.1992 97.7714 48.1992 92.3759V81.1383C47.9779 81.2256 47.741 81.2834 47.4921 81.3015L30.8347 82.5007C29.4429 82.6007 28.2584 81.4977 28.2582 80.1023V67.7354C28.2583 67.256 28.4014 66.8063 28.6474 66.4277L14.9439 67.4513H14.9388C10.6701 67.7539 7.00001 64.3671 7 60.0823V39.7271C7.00031 35.4239 10.6671 32.0248 14.9491 32.3589H14.9483L28.3486 33.3589C28.2905 33.152 28.2583 32.9345 28.2582 32.7099V19.6826C28.2582 17.7807 29.9597 16.3299 31.8377 16.6304L47.6992 19.168C47.8735 19.1959 48.0404 19.2435 48.1992 19.3059V7.38531ZM85.4075 62.191H85.4023L51.0547 64.755V79.6601L90.2541 71.4669V66.6774L90.2496 66.435C90.1323 63.9438 87.9489 61.9928 85.4075 62.191ZM27.7075 36.1748C27.9471 36.5495 28.0863 36.9936 28.0864 37.4678V62.7813C28.0864 63.0748 28.0314 63.3559 27.9344 63.6169L48.1992 62.1044V37.7043L27.7075 36.1748ZM51.0547 35.0544L85.4023 37.6183L85.4075 37.6191L85.6511 37.6316C88.1632 37.6928 90.279 35.6595 90.279 33.0975V28.1405L51.0547 19.9411V35.0544Z" fill="black"/></g><defs><clipPath id="clip0_2367_5"><rect width="86.4662" height="100" fill="white" transform="translate(7)"/></clipPath></defs></svg>`,
   claude: `<svg preserveAspectRatio="xMidYMid" viewBox="0 0 256 257" xmlns="http://www.w3.org/2000/svg"><path fill="#D97757" d="m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z"/></svg>`,
-  codex: `<svg fill="#0A0A0A" fill-rule="evenodd" style="flex:none;line-height:1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117.117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.703 2.33 1.77 2.918 3.198.278.679.418 1.388.421 2.126a5.655 5.655 0 01-.18 1.631.167.167 0 00.04.155 5.982 5.982 0 011.578 2.891c.385 1.901-.01 3.615-1.183 5.14l-.182.22a6.063 6.063 0 01-2.934 1.851.162.162 0 00-.108.102c-.255.736-.511 1.364-.987 1.992-1.199 1.582-2.962 2.462-4.948 2.451-1.583-.008-2.986-.587-4.21-1.736a.145.145 0 00-.14-.032c-.518.167-1.04.191-1.604.185a5.924 5.924 0 01-2.595-.622 6.058 6.058 0 01-2.146-1.781c-.203-.269-.404-.522-.551-.821a7.74 7.74 0 01-.495-1.283 6.11 6.11 0 01-.017-3.064.166.166 0 00.008-.074.115.115 0 00-.037-.064 5.958 5.958 0 01-1.38-2.202 5.196 5.196 0 01-.333-1.589 6.915 6.915 0 01.188-2.132c.45-1.484 1.309-2.648 2.577-3.493.282-.188.55-.334.802-.438.286-.12.573-.22.861-.304a.129.129 0 00.087-.087A6.016 6.016 0 015.635 2.31C6.315 1.464 7.132.846 8.086.457zm-.804 7.85a.848.848 0 00-1.473.842l1.694 2.965-1.688 2.848a.849.849 0 001.46.864l1.94-3.272a.849.849 0 00.007-.854l-1.94-3.393zm5.446 6.24a.849.849 0 000 1.695h4.848a.849.849 0 000-1.696h-4.848z"/></svg>`,
+  codex: `<svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M9.064 3.344a4.578 4.578 0 012.285-.312c1 .115 1.891.54 2.673 1.275.01.01.024.017.037.021a.09.09 0 00.043 0 4.55 4.55 0 013.046.275l.047.022.116.057a4.581 4.581 0 012.188 2.399c.209.51.313 1.041.315 1.595a4.24 4.24 0 01-.134 1.223.123.123 0 00.03.115c.594.607.988 1.33 1.183 2.17.289 1.425-.007 2.71-.887 3.854l-.136.166a4.548 4.548 0 01-2.201 1.388.123.123 0 00-.081.076c-.191.551-.383 1.023-.74 1.494-.9 1.187-2.222 1.846-3.711 1.838-1.187-.006-2.239-.44-3.157-1.302a.107.107 0 00-.105-.024c-.388.125-.78.143-1.204.138a4.441 4.441 0 01-1.945-.466 4.544 4.544 0 01-1.61-1.335c-.152-.202-.303-.392-.414-.617a5.81 5.81 0 01-.37-.961 4.582 4.582 0 01-.014-2.298.124.124 0 00.006-.056.085.085 0 00-.027-.048 4.467 4.467 0 01-1.034-1.651 3.896 3.896 0 01-.251-1.192 5.189 5.189 0 01.141-1.6c.337-1.112.982-1.985 1.933-2.618.212-.141.413-.251.601-.33.215-.089.43-.164.646-.227a.098.098 0 00.065-.066 4.51 4.51 0 01.829-1.615 4.535 4.535 0 011.837-1.388zm3.482 10.565a.637.637 0 000 1.272h3.636a.637.637 0 100-1.272h-3.636zM8.462 9.23a.637.637 0 00-1.106.631l1.272 2.224-1.266 2.136a.636.636 0 101.095.649l1.454-2.455a.636.636 0 00.005-.64L8.462 9.23z" fill="url(#lobe-icons-codex-_R_0_)"></path><defs><linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-codex-_R_0_" x1="12" x2="12" y1="3" y2="21"><stop stop-color="#B1A7FF"></stop><stop offset=".5" stop-color="#7A9DFF"></stop><stop offset="1" stop-color="#3941FF"></stop></linearGradient></defs></svg>`,
   openclaw: `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="openclaw__lobster-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ff4d4d"/><stop offset="100%" stop-color="#991b1b"/></linearGradient></defs><path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#openclaw__lobster-gradient)"/><path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#openclaw__lobster-gradient)"/><path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#openclaw__lobster-gradient)"/><path d="M45 15 Q35 5 30 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/><path d="M75 15 Q85 5 90 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/><circle cx="45" cy="35" r="6" fill="#050810"/><circle cx="75" cy="35" r="6" fill="#050810"/><circle cx="46" cy="34" r="2.5" fill="#00e5cc"/><circle cx="76" cy="34" r="2.5" fill="#00e5cc"/></svg>`,
 };
 
@@ -464,7 +558,7 @@ const approvalHtml = (params: {
       align-items: center;
       justify-content: center;
     }
-    .agent-mark svg { width: 100%; height: 100%; }
+    .agent-mark svg, .agent-mark img { width: 100%; height: 100%; display: block; }
     .agent-name { font-weight: 600; }
     .title code, .account code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -547,7 +641,7 @@ const approvalHtml = (params: {
         <span class="logo" aria-hidden="true">${AGENT_SVGS.composio}</span>
         <div class="actions">
           <a class="btn" href="/deny?token=${token}">Deny</a>
-          <a class="btn" href="/allow-session?token=${token}">Allow for session</a>
+          <a class="btn" href="/allow-session?token=${token}">Allow for ${ALLOW_FOR_DURATION_LABEL}</a>
           <a class="btn primary" href="/allow-once?token=${token}">Allow once</a>
         </div>
       </div>
@@ -565,8 +659,8 @@ const COMPLETION_COPY: Readonly<
     body: 'This tool call is going through now. We’ll ask again next time it’s used.',
   },
   allow_session: {
-    title: 'Allowed for this session',
-    body: 'This tool can run again for the rest of this CLI session without asking.',
+    title: `Allowed for ${ALLOW_FOR_DURATION_LABEL}`,
+    body: 'This tool can run again for the next hour without asking.',
   },
   deny: {
     title: 'Denied',
@@ -717,16 +811,22 @@ export const gateToolExecution = (params: GateParams) =>
     if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return;
 
     const state = resolvePermissionState(params);
-    if (state === 'allow_all' || state === 'always_allow') return;
+    if (state === 'allow_all' || state === 'always_allow') {
+      return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
+    }
     if (state === 'always_deny') {
       return yield* Effect.fail(
         new Error(`Tool execution denied by permissions: ${params.toolSlug}`)
       );
     }
 
-    const cacheKey = sessionCacheKey(params);
-    const readsSessionCache = state === 'ask_once' || state === 'ask_once_per_session';
-    if (readsSessionCache && sessionAllowCache.has(cacheKey)) return;
+    const cacheKey = allowCacheKey(params);
+    const hasCachedAllow = yield* Effect.tryPromise(() => isAllowCached(cacheKey)).pipe(
+      Effect.catchAll(() => Effect.succeed(false))
+    );
+    if (hasCachedAllow) {
+      return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
+    }
 
     const decision = yield* Effect.tryPromise(() =>
       requestPermissionDecision({
@@ -738,7 +838,16 @@ export const gateToolExecution = (params: GateParams) =>
     if (decision === 'deny') {
       return yield* Effect.fail(new Error(`Tool execution denied by user: ${params.toolSlug}`));
     }
-    if (decision === 'allow_session' || (readsSessionCache && decision === 'allow_once')) {
-      sessionAllowCache.add(cacheKey);
+    const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
+    if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
+      yield* Effect.tryPromise(() => cacheAllowDecision(cacheKey)).pipe(
+        Effect.catchAll(error =>
+          Effect.logDebug('Failed to cache tool permission allow decision', error)
+        )
+      );
     }
+
+    return {
+      approvalStatus: decision === 'allow_session' ? 'approved_for_session' : 'approved_once',
+    } satisfies PermissionGateResult;
   });

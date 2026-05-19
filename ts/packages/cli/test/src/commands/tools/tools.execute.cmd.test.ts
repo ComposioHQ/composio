@@ -98,6 +98,43 @@ describe('CLI: composio execute', () => {
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          successful: true,
+          data: { ok: true },
+          error: null,
+          logId: 'log_approval_status',
+          permissionApproval: 'approved_once',
+        },
+      },
+    })
+  )('[Given] an approval status [Then] execute includes it in the success line', it => {
+    it.scoped('prints approval status before the log id', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const text = lines.join('\n');
+        const output = parseLastJson(lines) as ReturnType<typeof parseLastJson> & {
+          readonly permissionApproval?: string;
+        };
+
+        expect(text).toContain('Execution successful (approved once, logId: log_approval_status)');
+        expect(output.permissionApproval).toBe('approved_once');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
     })
   )('[Given] -d inline JSON [Then] executes via Tool Router with defaults', it => {
     it.scoped('executes via Tool Router with defaults', () =>
