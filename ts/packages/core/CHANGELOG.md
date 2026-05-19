@@ -37,14 +37,14 @@
   });
   await composio.experimental.updateSharing('ca_abc', { allowAllUsers: true });
 
-  // new — promote without re-auth and grant access atomically
+  // new — promote without re-auth and grant access in one call
   await composio.experimental.updateSharing('ca_abc', {
     accountType: 'SHARED',
     allowAllUsers: true,
     notAllowedUserIds: ['user_bob'],
   });
 
-  // new — demote; backend clears stored ACL atomically
+  // new — demote and clear ACL settings
   await composio.experimental.updateSharing('ca_abc', { accountType: 'PRIVATE' });
   await session.authorize('github', {
     experimental: {

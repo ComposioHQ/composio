@@ -23,11 +23,9 @@ import { ComposioAclOnlyForSharedError } from '../errors';
 import { telemetry } from '../telemetry/Telemetry';
 
 /**
- * Server-side 400 message the API uses to reject ACL writes against a
- * PRIVATE connection. Substring-matched in `updateSharing` here, and in the
- * sibling `connectedAccounts.link()` / `session.authorize()` call sites
- * — kept as a single constant so a server-side message tweak only
- * requires one edit.
+ * API error fragment returned when ACL fields are sent for a connection
+ * that is not SHARED. Substring-matched in `updateSharing` here and in
+ * the sibling `connectedAccounts.link()` / `session.authorize()` call sites.
  */
 export const ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT = 'acl_config_for_shared is only valid on SHARED';
 
@@ -108,11 +106,11 @@ export class Experimental {
    * **Experimental — shape may change in future releases.**
    *
    * `accountType: 'SHARED'` promotes a PRIVATE connection without re-auth.
-   * `accountType: 'PRIVATE'` demotes a SHARED connection and the backend
-   * clears its stored ACL atomically. ACL fields are only meaningful for
-   * SHARED connections — sending ACL fields on a PRIVATE connection raises
-   * `ComposioAclOnlyForSharedError` (400). Sharing writes require the
-   * connection's creator.
+   * `accountType: 'PRIVATE'` demotes a SHARED connection, revokes
+   * non-creator access, and clears existing ACL settings. ACL fields are
+   * only meaningful for SHARED connections — sending ACL fields on a
+   * PRIVATE connection raises `ComposioAclOnlyForSharedError` (400).
+   * Sharing writes require the connection's creator.
    *
    * PATCH semantics: omit a field to leave it unchanged; pass an empty
    * array to clear an allow/deny list. At least one field must be
@@ -154,7 +152,7 @@ export class Experimental {
    * // Revoke a previously-granted allow list (back to deny-by-default)
    * await composio.experimental.updateSharing('ca_abc', { allowedUserIds: [] });
    *
-   * // Demote to PRIVATE; backend clears stored ACL state
+   * // Demote to PRIVATE and clear ACL settings
    * await composio.experimental.updateSharing('ca_abc', { accountType: 'PRIVATE' });
    * ```
    *

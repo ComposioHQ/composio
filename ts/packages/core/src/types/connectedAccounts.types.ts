@@ -370,7 +370,7 @@ export const UpdateConnectedAccountParamsSchema = z.object({
 const UpdateConnectedAccountSharingParamsBaseSchema = ConnectedAccountAclConfigSchema.extend({
   /**
    * Sharing model toggle. `SHARED` promotes a PRIVATE connection without
-   * re-auth; `PRIVATE` demotes and the backend clears stored ACL state.
+   * re-auth; `PRIVATE` demotes and clears existing ACL settings.
    */
   accountType: ConnectedAccountTypeSchema.optional(),
 });
