@@ -175,7 +175,8 @@ function urlFromContentPath(path: string): { url: string; type: string } | undef
     return { url: `/cookbooks/${parts.join('/')}`.replace(/\/index$/, ''), type: 'cookbooks' };
   }
   if (collection === 'reference') {
-    return { url: `/reference/${parts.join('/')}`.replace(/\/index$/, ''), type: 'reference' };
+    const url = `/reference/${parts.join('/')}`.replace(/\/index$/, '');
+    return { url, type: url.startsWith('/reference/v3') ? 'v3-reference' : 'reference' };
   }
   if (collection === 'toolkits') {
     if (parts[0] === 'faq') return undefined;
@@ -199,6 +200,7 @@ const typeLabels: Record<string, string> = {
   docs: 'Docs',
   cookbooks: 'Cookbook',
   reference: 'Reference',
+  'v3-reference': 'Legacy v3 Reference',
   toolkits: 'Toolkit',
   changelog: 'Changelog',
   'api-reference': 'API Reference',
@@ -267,17 +269,26 @@ function toolkitPopularity(url: string, type: string): number {
 }
 
 function pageRank(url: string, type: string): number {
-  if (url === '/docs' || url === '/docs/') return 1_000;
-  if (url.includes('/quickstart')) return 980;
-  if (url.includes('/authentication')) return 930;
-  if (url.includes('/tools-and-toolkits')) return 920;
-  if (url.includes('/configuring-sessions')) return 900;
-  if (type === 'docs') return 800;
-  if (type === 'cookbooks') return 700;
-  if (type === 'reference') return 620;
-  if (type === 'toolkits') return 560;
-  if (type === 'api-reference') return 520;
-  if (type === 'changelog') return 200;
+  // Prefer conceptual docs over generated/reference material when textual
+  // relevance is otherwise close. Toolkit aliases can still win earlier via
+  // searchableAttributes when the query matches a tool name/slug exactly.
+  if (type === 'docs') {
+    if (url === '/docs' || url === '/docs/') return 2_400;
+    if (url.includes('/quickstart')) return 2_300;
+    if (url.includes('/authentication')) return 2_220;
+    if (url.includes('/tools-and-toolkits')) return 2_180;
+    if (url.includes('/configuring-sessions')) return 2_120;
+    return 2_000;
+  }
+
+  if (type === 'cookbooks') return 1_500;
+  if (type === 'toolkits') return 1_250;
+  // Current v3.1 reference should be available, but conceptual docs should
+  // win whenever both match. Legacy v3 reference is only a last-resort result.
+  if (type === 'reference') return 650;
+  if (type === 'api-reference') return 560;
+  if (type === 'v3-reference') return 25;
+  if (type === 'changelog') return 300;
   return 400;
 }
 
