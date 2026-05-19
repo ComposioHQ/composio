@@ -20,10 +20,7 @@ export class TelemetryService {
       });
       return result;
     } catch (error) {
-      // ignore error for now
-      // @TODO in cloudflare workers and other services, there is no way to log errors without blocking the request
-      // this is likely happening because the telemetry is batched and the request is not blocking
-      // we should find a way to log errors without blocking the request
+      // ignore error for now; telemetry failures should never affect SDK calls
       logger.debug('Error sending metric telemetry', error);
     }
   }
@@ -44,9 +41,7 @@ export class TelemetryService {
       });
       return result;
     } catch (error) {
-      // ignore error for now
-      // @TODO in cloudflare workers and other services, there is no way to log errors without blocking the request
-      // we should find a way to log errors without blocking the request
+      // ignore error for now; telemetry failures should never affect SDK calls
       logger.debug('Error sending error telemetry', error);
     }
   }

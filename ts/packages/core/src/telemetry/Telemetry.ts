@@ -43,6 +43,7 @@ export class TelemetryTransport {
   private readonly telemetryServiceName = 'sdk';
   private readonly telemetryLanguage = 'typescript';
   private exitHandlersRegistered = false;
+  private pendingImmediateTelemetry: Set<Promise<void>> = new Set();
 
   private batchProcessor = new BatchProcessor(200, 10, async (data: TelemetryMetricPayloadBody) => {
     logger.debug('Sending batch of telemetry metrics', data);
@@ -63,20 +64,22 @@ export class TelemetryTransport {
     // Register exit handlers to automatically flush telemetry before process exit
     this.registerExitHandlers();
 
-    // send telemetry event for SDK initialization
-    this.sendMetric([
-      {
-        functionName: TELEMETRY_EVENTS.SDK_INITIALIZED,
-        durationMs: 0,
-        timestamp: Date.now() / 1000,
-        props: {},
-        source: this.telemetrySource,
-        metadata: {
-          provider: this.telemetryMetadata?.provider ?? 'openai',
+    // send telemetry event for SDK initialization without blocking setup
+    this.deferTelemetry(() =>
+      this.sendMetric([
+        {
+          functionName: TELEMETRY_EVENTS.SDK_INITIALIZED,
+          durationMs: 0,
+          timestamp: Date.now() / 1000,
+          props: {},
+          source: this.telemetrySource,
+          metadata: {
+            provider: this.telemetryMetadata?.provider ?? 'openai',
+          },
+          error: undefined,
         },
-        error: undefined,
-      },
-    ]);
+      ])
+    );
   }
 
   /**
@@ -144,7 +147,7 @@ export class TelemetryTransport {
               // Only send error telemetry if telemetry is enabled
               if (telemetryEnabled && startTime !== undefined) {
                 const durationMs = Date.now() - startTime;
-                await this.prepareAndSendErrorTelemetry(
+                this.prepareAndSendErrorTelemetry(
                   error,
                   instrumentedClassName,
                   name,
@@ -178,15 +181,13 @@ export class TelemetryTransport {
   /**
    * Prepare and send the error telemetry.
    *
-   * @TODO This currently blocks the thread and sends the telemetry to the server.
-   *
    * @param {unknown} error - The error to send.
    * @param {string} instrumentedClassName - The class name of the instrumented class.
    * @param {string} name - The name of the method that threw the error.
    * @param {number} startTime - The start time of the method invocation in milliseconds.
    * @param {number} durationMs - The duration of the method invocation in milliseconds.
    */
-  private async prepareAndSendErrorTelemetry(
+  private prepareAndSendErrorTelemetry(
     error: unknown,
     instrumentedClassName: string,
     name: string,
@@ -231,7 +232,37 @@ export class TelemetryTransport {
       };
     }
 
-    await this.sendErrorTelemetry(telemetryPayload);
+    this.deferTelemetry(() => this.sendErrorTelemetry(telemetryPayload));
+  }
+
+  private deferTelemetry(callback: () => Promise<void>): void {
+    const pending = new Promise<void>(resolve => {
+      const run = () => {
+        Promise.resolve()
+          .then(callback)
+          .catch(error => {
+            logger.debug('Error sending deferred telemetry', error);
+          })
+          .finally(resolve);
+      };
+
+      if (typeof queueMicrotask === 'function') {
+        queueMicrotask(run);
+      } else {
+        setTimeout(run, 0);
+      }
+    });
+
+    this.pendingImmediateTelemetry.add(pending);
+    pending.finally(() => {
+      this.pendingImmediateTelemetry.delete(pending);
+    });
+  }
+
+  private async flushImmediateTelemetry(): Promise<void> {
+    while (this.pendingImmediateTelemetry.size > 0) {
+      await Promise.all(Array.from(this.pendingImmediateTelemetry));
+    }
   }
 
   /**
@@ -271,6 +302,7 @@ export class TelemetryTransport {
    */
   async flush(): Promise<void> {
     await this.batchProcessor.flush();
+    await this.flushImmediateTelemetry();
   }
 
   /**
