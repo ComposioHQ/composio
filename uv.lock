@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <4"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -22,7 +22,7 @@ members = [
 ]
 
 [manifest.dependency-groups]
-dev = [{ name = "composio", virtual = "python" }]
+dev = [{ name = "composio", editable = "python" }]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -236,14 +236,15 @@ wheels = [
 
 [[package]]
 name = "authlib"
-version = "1.6.0"
+version = "1.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
+    { name = "joserfc" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/9d/b1e08d36899c12c8b894a44a5583ee157789f26fc4b176f8e4b6217b56e1/authlib-1.6.0.tar.gz", hash = "sha256:4367d32031b7af175ad3a323d571dc7257b7099d55978087ceae4a0d88cd3210", size = 158371, upload-time = "2025-05-23T00:21:45.011Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/98/7d93f30d029643c0275dbc0bd6d5a6f670661ee6c9a94d93af7ab4887600/authlib-1.7.2.tar.gz", hash = "sha256:2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231", size = 176511, upload-time = "2026-05-06T08:10:23.116Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/29/587c189bbab1ccc8c86a03a5d0e13873df916380ef1be461ebe6acebf48d/authlib-1.6.0-py2.py3-none-any.whl", hash = "sha256:91685589498f79e8655e8a8947431ad6288831d643f11c55c2143ffcc738048d", size = 239981, upload-time = "2025-05-23T00:21:43.075Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/95/adcb68e20c34162e9135f370d6e31737719c2b6f94bc953fe7ed1f10fe21/authlib-1.7.2-py2.py3-none-any.whl", hash = "sha256:3e1faedc9d87e7d56a164eca3ccb6ace0d61b94abe83e92242f8dc8bba9b4a9f", size = 259548, upload-time = "2026-05-06T08:10:21.436Z" },
 ]
 
 [[package]]
@@ -591,8 +592,8 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.14.0"
-source = { virtual = "python" }
+version = "0.13.1"
+source = { editable = "python" }
 dependencies = [
     { name = "composio-client" },
     { name = "json-schema-to-pydantic" },
@@ -632,7 +633,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "click", specifier = ">=8.2.1" },
-    { name = "composio", virtual = "python" },
+    { name = "composio", editable = "python" },
     { name = "fastapi", specifier = ">=0.115.9" },
     { name = "langchain-openai", specifier = "==1.1.0" },
     { name = "nox", specifier = ">=2025.5.1" },
@@ -648,8 +649,8 @@ dev = [
 
 [[package]]
 name = "composio-anthropic"
-version = "0.13.0"
-source = { virtual = "python/providers/anthropic" }
+version = "0.13.1"
+source = { editable = "python/providers/anthropic" }
 dependencies = [
     { name = "anthropic" },
     { name = "composio" },
@@ -680,8 +681,8 @@ wheels = [
 
 [[package]]
 name = "composio-crewai"
-version = "0.13.0"
-source = { virtual = "python/providers/crewai" }
+version = "0.13.1"
+source = { editable = "python/providers/crewai" }
 dependencies = [
     { name = "composio" },
     { name = "crewai" },
@@ -695,7 +696,7 @@ requires-dist = [
 
 [[package]]
 name = "composio-gemini"
-version = "0.13.0"
+version = "0.13.1"
 source = { virtual = "python/providers/gemini" }
 dependencies = [
     { name = "composio" },
@@ -710,8 +711,8 @@ requires-dist = [
 
 [[package]]
 name = "composio-google"
-version = "0.13.0"
-source = { virtual = "python/providers/google" }
+version = "0.13.1"
+source = { editable = "python/providers/google" }
 dependencies = [
     { name = "composio" },
     { name = "google-cloud-aiplatform" },
@@ -725,8 +726,8 @@ requires-dist = [
 
 [[package]]
 name = "composio-google-adk"
-version = "0.13.0"
-source = { virtual = "python/providers/google_adk" }
+version = "0.13.1"
+source = { editable = "python/providers/google_adk" }
 dependencies = [
     { name = "composio" },
     { name = "google-adk" },
@@ -740,8 +741,8 @@ requires-dist = [
 
 [[package]]
 name = "composio-langchain"
-version = "0.13.0"
-source = { virtual = "python/providers/langchain" }
+version = "0.13.1"
+source = { editable = "python/providers/langchain" }
 dependencies = [
     { name = "composio" },
     { name = "langchain" },
@@ -755,8 +756,8 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai"
-version = "0.13.0"
-source = { virtual = "python/providers/openai" }
+version = "0.13.1"
+source = { editable = "python/providers/openai" }
 dependencies = [
     { name = "composio" },
     { name = "openai" },
@@ -770,8 +771,8 @@ requires-dist = [
 
 [[package]]
 name = "composio-openai-agents"
-version = "0.13.0"
-source = { virtual = "python/providers/openai_agents" }
+version = "0.13.1"
+source = { editable = "python/providers/openai_agents" }
 dependencies = [
     { name = "composio" },
     { name = "openai-agents" },
@@ -2086,6 +2087,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3a/65/43d7971ca82ee100b7b9b520573eeef7eabc0a45d490168ebb9a9b5bb8b2/jiter-0.11.1-graalpy312-graalpy250_312_native-macosx_11_0_arm64.whl", hash = "sha256:f78d151c83a87a6cf5461d5ee55bc730dd9ae227377ac6f115b922989b95f838", size = 297034, upload-time = "2025-10-17T11:31:10.975Z" },
     { url = "https://files.pythonhosted.org/packages/19/4c/000e1e0c0c67e96557a279f8969487ea2732d6c7311698819f977abae837/jiter-0.11.1-graalpy312-graalpy250_312_native-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c9022974781155cd5521d5cb10997a03ee5e31e8454c9d999dcdccd253f2353f", size = 337328, upload-time = "2025-10-17T11:31:12.399Z" },
     { url = "https://files.pythonhosted.org/packages/d9/71/71408b02c6133153336d29fa3ba53000f1e1a3f78bb2fc2d1a1865d2e743/jiter-0.11.1-graalpy312-graalpy250_312_native-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:18c77aaa9117510d5bdc6a946baf21b1f0cfa58ef04d31c8d016f206f2118960", size = 343697, upload-time = "2025-10-17T11:31:13.773Z" },
+]
+
+[[package]]
+name = "joserfc"
+version = "1.6.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3b/dc/5f768c2e391e9afabe5d18e3221346deb5fb6338565f1ccc9e7c6d7befdd/joserfc-1.6.5.tar.gz", hash = "sha256:1482a7db78fb4602e44ed89e51b599d052e091288c7c532c5b694e20149dec48", size = 231881, upload-time = "2026-05-06T04:58:13.408Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/3b/ad1cb22e75c963b1f07c8a2329bf47227ce7e4361df5eb2fb101b2ce33ef/joserfc-1.6.5-py3-none-any.whl", hash = "sha256:e9878a0f8243fe7b95e11fdda81374ca9f7a689e302751579d3dfdeec559675e", size = 70464, upload-time = "2026-05-06T04:58:11.668Z" },
 ]
 
 [[package]]
