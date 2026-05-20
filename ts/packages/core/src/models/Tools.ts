@@ -242,8 +242,19 @@ export class Tools<
       toolkitSlug: string;
       params: ToolExecuteParams;
     },
-    modifiers?: ExecuteToolModifiers
+    modifiers?: ExecuteToolModifiers,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteParams> {
+    // Gate every transition on signal.aborted. The auto file-upload path
+    // and the user-supplied beforeExecute hook both do non-trivial work
+    // (S3 PUTs, fetches); without these gates an abort that fires while
+    // the main execute is queued would still let the modifiers complete
+    // their full work. We can't preempt in-flight S3 uploads from here —
+    // those run inside FileToolModifier — but stopping the chain between
+    // segments bounds the wasted work to one in-flight client call.
+    if (requestOptions?.signal?.aborted) {
+      throw new ComposioRequestCancelledError();
+    }
     let modifiedParams = params;
     // if auto upload download files is enabled, upload the files to the Composio API
     if (this.autoUploadDownloadFiles) {
@@ -256,6 +267,9 @@ export class Tools<
         toolkitSlug,
         params: modifiedParams,
       });
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
     } else if (
       schemaHasFileUploadable(tool.inputParameters) &&
       !this.warnedAutoUploadDisabledForTool.has(toolSlug)
@@ -285,6 +299,9 @@ export class Tools<
           toolkitSlug,
           params: modifiedParams,
         });
+        if (requestOptions?.signal?.aborted) {
+          throw new ComposioRequestCancelledError();
+        }
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -311,8 +328,17 @@ export class Tools<
       toolkitSlug: string;
       result: ToolExecuteResponse;
     },
-    modifier?: afterExecuteModifier
+    modifier?: afterExecuteModifier,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
+    // Same gating pattern as `applyBeforeExecuteModifiers`: stop additional
+    // post-execute work (file downloads + user afterExecute) the moment the
+    // caller's signal fires. The main `tools.execute` itself was already
+    // cancellable via withCancellation upstream; this prevents an aborted
+    // call from continuing to do downloads after the response lands.
+    if (requestOptions?.signal?.aborted) {
+      throw new ComposioRequestCancelledError();
+    }
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
     if (this.autoUploadDownloadFiles) {
@@ -322,6 +348,9 @@ export class Tools<
         toolkitSlug,
         result: modifiedResult,
       });
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
     }
     // apply the after execute modifiers
     if (modifier) {
@@ -1072,7 +1101,8 @@ export class Tools<
         toolkitSlug,
         params: executeParams.data,
       },
-      modifiers
+      modifiers,
+      requestOptions
     );
 
     // Execute the tool (custom or composio).
@@ -1098,7 +1128,8 @@ export class Tools<
         toolkitSlug,
         result,
       },
-      modifiers?.afterExecute
+      modifiers?.afterExecute,
+      requestOptions
     );
 
     return result;

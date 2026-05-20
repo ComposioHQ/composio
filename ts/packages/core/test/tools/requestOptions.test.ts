@@ -485,6 +485,29 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       );
     });
 
+    it('aborts before applyBeforeExecuteModifiers short-circuits with ComposioRequestCancelledError', async () => {
+      // Bugbot caught: file modifiers (auto upload/download) do additional
+      // Composio client I/O. Without a pre-modifier gate, aborting after
+      // the main execute call can leave file work running. Gate checks
+      // before each modifier transition stop the chain.
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+      vi.spyOn(tools, 'getRawComposioToolBySlug').mockResolvedValueOnce(
+        toolMocks.transformedTool as never
+      );
+
+      const controller = new AbortController();
+      controller.abort(); // fire BEFORE execute starts
+
+      await expect(
+        tools.execute(
+          'COMPOSIO_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          { beforeExecute: vi.fn(p => p.params) },
+          { signal: controller.signal }
+        )
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+    });
+
     it('aborts during execute surface as ComposioRequestCancelledError, not ComposioToolExecutionError', async () => {
       const controller = new AbortController();
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
