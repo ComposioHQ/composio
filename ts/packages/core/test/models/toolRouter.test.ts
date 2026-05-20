@@ -2490,7 +2490,11 @@ describe('ToolRouter', () => {
       });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        undefined,
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2515,9 +2519,11 @@ describe('ToolRouter', () => {
       const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifiers.modifySchema,
-      });
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifiers.modifySchema },
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2837,9 +2843,11 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalledTimes(2);
 
       const firstToolsInstance = (Tools as any).mock.results[0].value;
-      expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifier1.modifySchema,
-      });
+      expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifier1.modifySchema },
+        undefined
+      );
       expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2847,9 +2855,11 @@ describe('ToolRouter', () => {
       );
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
-      expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifier2.modifySchema,
-      });
+      expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifier2.modifySchema },
+        undefined
+      );
       expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2876,6 +2886,7 @@ describe('ToolRouter', () => {
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'custom_session_123',
+        undefined,
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2904,6 +2915,7 @@ describe('ToolRouter', () => {
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'empty_session_123',
+        undefined,
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -3106,7 +3118,11 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalled();
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        undefined,
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],

@@ -152,11 +152,15 @@ export class ToolRouterSession<
    * When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL
    * is intercepted: local tools are executed in-process, remote tools are sent to the backend.
    */
-  async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType<TProvider['wrapTools']>> {
+  async tools(
+    modifiers?: SessionMetaToolOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
     const tools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined
+      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      requestOptions
     );
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
     const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
