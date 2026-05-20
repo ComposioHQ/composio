@@ -26,6 +26,7 @@ import {
 import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
+import { withCancellation } from '../utils/cancellation';
 
 /**
  * Concrete implementation of SessionContext.
@@ -94,9 +95,16 @@ export class SessionContextImpl implements SessionContext {
       executeParams.experimental = experimental;
     }
 
-    const response = await (requestOptions
-      ? this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions)
-      : this.client.toolRouter.session.execute(this.sessionId, executeParams));
+    // Route through withCancellation so an abort during the helper surfaces
+    // as ComposioRequestCancelledError. Without this, a custom tool that
+    // try/catches around `ctx.execute(...)` would see the raw client
+    // APIUserAbortError and any `instanceof ComposioRequestCancelledError`
+    // check would silently fail.
+    const response = await withCancellation(() =>
+      requestOptions
+        ? this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions)
+        : this.client.toolRouter.session.execute(this.sessionId, executeParams)
+    );
     return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
   }
 
@@ -120,9 +128,13 @@ export class SessionContextImpl implements SessionContext {
     const requestOptions = signal ? { signal } : undefined;
 
     const clientParams = transformProxyParams(validated.data);
-    const response = await (requestOptions
-      ? this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions)
-      : this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams));
+    // Same as `execute`: normalize aborts so an in-tool try/catch can
+    // detect cancellation via `instanceof ComposioRequestCancelledError`.
+    const response = await withCancellation(() =>
+      requestOptions
+        ? this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions)
+        : this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams)
+    );
 
     return {
       status: response.status,

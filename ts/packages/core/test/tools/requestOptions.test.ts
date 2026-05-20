@@ -199,6 +199,54 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       expect(proxyArgs[2]).toEqual(requestOptions);
     });
 
+    it('SessionContext.execute aborts are normalized so in-tool try/catch can detect cancellation', async () => {
+      // Codex caught: ctx.execute / ctx.proxyExecute now forward the signal,
+      // but if user code wraps them in try/catch, an abort would surface as
+      // raw APIUserAbortError (instanceof ComposioRequestCancelledError = false).
+      // Fix routes them through withCancellation so the typed error reaches
+      // the user's catch block.
+      const { SessionContextImpl } = await import('../../src/models/SessionContext');
+      const { executeCustomTool: execCustomTool } =
+        await import('../../src/models/customToolExecution');
+
+      const sessionExecuteSpy = vi.fn().mockImplementation(async () => {
+        throw new APIUserAbortError();
+      });
+      const fakeClient = {
+        toolRouter: { session: { execute: sessionExecuteSpy, proxyExecute: vi.fn() } },
+      };
+      const ctxInstance = new SessionContextImpl(fakeClient as never, 'u', 's');
+
+      let observedInToolError: unknown = undefined;
+      const { z } = await import('zod');
+      const customToolEntry = {
+        handle: {
+          slug: 'INTOOL_CATCH',
+          name: 'in-tool catch',
+          inputParams: z.object({}),
+          execute: async (_input: unknown, ctx: SessionContext) => {
+            try {
+              await ctx.execute('SOMETHING', {});
+              return { reached: true };
+            } catch (err) {
+              observedInToolError = err;
+              throw err; // re-throw so outer wrapper sees it too
+            }
+          },
+        },
+      };
+
+      await expect(
+        execCustomTool(customToolEntry as never, {}, ctxInstance, {
+          signal: new AbortController().signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+
+      // The CRUCIAL assertion: the user's in-tool catch must have seen
+      // the typed error, not the raw APIUserAbortError.
+      expect(observedInToolError).toBeInstanceOf(ComposioRequestCancelledError);
+    });
+
     it('ToolRouter custom-tool signal injection preserves SessionContext prototype methods', async () => {
       // Codex caught: spreading a SessionContextImpl class instance into a
       // plain object (`{...sessionContext, signal}`) drops prototype methods
