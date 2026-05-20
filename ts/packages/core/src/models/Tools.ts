@@ -59,6 +59,8 @@ import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
@@ -462,9 +464,11 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = requestOptions
-      ? await this.client.tools.list(filters, requestOptions)
-      : await this.client.tools.list(filters);
+    const tools = await withCancellation(() =>
+      requestOptions
+        ? this.client.tools.list(filters, requestOptions)
+        : this.client.tools.list(filters)
+    );
 
     if (!tools) {
       return [];
@@ -529,9 +533,11 @@ export class Tools<
         limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
         ...(cursor ? { cursor } : {}),
       };
-      const response = requestOptions
-        ? await this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
-        : await this.client.toolRouter.session.tools(sessionId, sessionToolsParams);
+      const response = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
+          : this.client.toolRouter.session.tools(sessionId, sessionToolsParams)
+      );
       tools.push(...response.items.map(tool => this.transformToolCases(tool)));
       cursor = response.next_cursor;
     } while (cursor);
@@ -628,10 +634,17 @@ export class Tools<
         ? { version: options.version } // Explicit version → use 'version' param
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
 
-      tool = requestOptions
-        ? await this.client.tools.retrieve(slug, retrieveParams, requestOptions)
-        : await this.client.tools.retrieve(slug, retrieveParams);
+      tool = await withCancellation(() =>
+        requestOptions
+          ? this.client.tools.retrieve(slug, retrieveParams, requestOptions)
+          : this.client.tools.retrieve(slug, retrieveParams)
+      );
     } catch (error) {
+      // Caller-initiated cancellation must NOT be remapped to a domain error;
+      // surface it as the typed cancellation error so callers can detect it.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
         cause: error,
       });
@@ -931,12 +944,18 @@ export class Tools<
         version: toolkitVersion,
         text: body.text,
       };
-      const result = requestOptions
-        ? await this.client.tools.execute(tool.slug, executeBody, requestOptions)
-        : await this.client.tools.execute(tool.slug, executeBody);
+      const result = await withCancellation(() =>
+        requestOptions
+          ? this.client.tools.execute(tool.slug, executeBody, requestOptions)
+          : this.client.tools.execute(tool.slug, executeBody)
+      );
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
     } catch (error) {
+      // Don't remap caller-initiated cancellation into a tool-execution error.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       const toolError = handleToolExecutionError(tool.slug, error as Error);
       throw toolError;
     }
@@ -1124,9 +1143,11 @@ export class Tools<
       executePayload.experimental = options.experimental;
     }
 
-    const response = requestOptions
-      ? await this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
-      : await this.client.toolRouter.session.execute(body.sessionId, executePayload);
+    const response = await withCancellation(() =>
+      requestOptions
+        ? this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
+        : this.client.toolRouter.session.execute(body.sessionId, executePayload)
+    );
 
     // Prepare the result
     let result: ToolExecuteResponse = {
@@ -1164,9 +1185,11 @@ export class Tools<
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
-    return requestOptions
-      ? this.client.tools.retrieveEnum(requestOptions)
-      : this.client.tools.retrieveEnum();
+    return withCancellation(() =>
+      requestOptions
+        ? this.client.tools.retrieveEnum(requestOptions)
+        : this.client.tools.retrieveEnum()
+    );
   }
 
   /**
@@ -1192,9 +1215,11 @@ export class Tools<
     body: ToolGetInputParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolGetInputResponse> {
-    return requestOptions
-      ? this.client.tools.getInput(slug, body, requestOptions)
-      : this.client.tools.getInput(slug, body);
+    return withCancellation(() =>
+      requestOptions
+        ? this.client.tools.getInput(slug, body, requestOptions)
+        : this.client.tools.getInput(slug, body)
+    );
   }
 
   /**
@@ -1262,9 +1287,11 @@ export class Tools<
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
-    return requestOptions
-      ? this.client.tools.proxy(proxyBody, requestOptions)
-      : this.client.tools.proxy(proxyBody);
+    return withCancellation(() =>
+      requestOptions
+        ? this.client.tools.proxy(proxyBody, requestOptions)
+        : this.client.tools.proxy(proxyBody)
+    );
   }
 
   /**

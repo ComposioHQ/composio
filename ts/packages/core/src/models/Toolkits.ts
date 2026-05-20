@@ -23,6 +23,8 @@ import {
   transformToolkitRetrieveResponse,
 } from '../utils/transformers/toolkits';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 /**
  * Toolkits class
  *
@@ -66,12 +68,17 @@ export class Toolkits {
         cursor: parsedQuery.data.cursor,
         limit: parsedQuery.data.limit,
       };
-      const result = requestOptions
-        ? await this.client.toolkits.list(listParams, requestOptions)
-        : await this.client.toolkits.list(listParams);
+      const result = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolkits.list(listParams, requestOptions)
+          : this.client.toolkits.list(listParams)
+      );
 
       return transformToolkitListResponse(result);
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       throw new ComposioToolkitFetchError('Failed to fetch toolkits', {
         cause: error,
       });
@@ -95,11 +102,16 @@ export class Toolkits {
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveResponse> {
     try {
-      const result = requestOptions
-        ? await this.client.toolkits.retrieve(slug, undefined, requestOptions)
-        : await this.client.toolkits.retrieve(slug);
+      const result = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolkits.retrieve(slug, undefined, requestOptions)
+          : this.client.toolkits.retrieve(slug)
+      );
       return transformToolkitRetrieveResponse(result);
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
         throw new ComposioToolkitNotFoundError(`Toolkit with slug ${slug} not found`, {
           meta: {
@@ -300,9 +312,11 @@ export class Toolkits {
   async listCategories(
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveCategoriesResponse> {
-    const result = requestOptions
-      ? await this.client.toolkits.retrieveCategories(requestOptions)
-      : await this.client.toolkits.retrieveCategories();
+    const result = await withCancellation(() =>
+      requestOptions
+        ? this.client.toolkits.retrieveCategories(requestOptions)
+        : this.client.toolkits.retrieveCategories()
+    );
     return transformToolkitRetrieveCategoriesResponse(result);
   }
 

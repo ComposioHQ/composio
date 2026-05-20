@@ -2,24 +2,30 @@
 "@composio/core": minor
 ---
 
-Add per-request `ComposioRequestOptions` (signal/timeout) to public SDK methods so callers can cancel in-flight requests or impose a per-call timeout. Without this, a slow search or tool execution had no way to be aborted — a 100s `tools.list` would block the calling agent indefinitely. The trailing argument is optional and forwarded to the underlying `@composio/client` fetch.
+Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal | null }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
+
+Without this, a slow `tools.list` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
 
 ```typescript
 const controller = new AbortController();
 setTimeout(() => controller.abort(), 5_000);
 
-// Cancellable search
-const tools = await composio.tools.get('user_1', { search: 'send email' }, undefined, {
-  signal: controller.signal,
-});
-
-// Per-call timeout override
-const result = await composio.tools.execute(
-  'GITHUB_GET_REPOS',
-  { userId: 'user_1', arguments: { owner: 'composio' } },
-  undefined,
-  { timeout: 10_000 }
-);
+try {
+  const tools = await composio.tools.get(
+    'user_1',
+    { search: 'send email', limit: 50 },
+    undefined,                 // provider options
+    { signal: controller.signal }
+  );
+} catch (err) {
+  if (err instanceof ComposioRequestCancelledError) {
+    // caller-initiated cancellation — clean up and exit
+    return;
+  }
+  throw err;
+}
 ```
+
+The signal is forwarded to the underlying `@composio/client` fetch. Any abort error (`APIUserAbortError`, `AbortError`, or `DOMException(name='AbortError')`) coming back is normalized to `ComposioRequestCancelledError` so callers can `instanceof`-detect cancellation without unwrapping nested causes. Catch-and-wrap paths in `tools.execute` / `tools.getRawComposioToolBySlug` / `toolkits.get` re-throw the cancellation error rather than remapping it to `ComposioToolExecutionError` / `ComposioToolNotFoundError` / `ComposioToolkitFetchError`.
 
 Wired through on: `tools.{get,getRawComposioTools,getRawComposioToolBySlug,getRawToolRouterSessionTools,execute,executeSessionTool,getToolsEnum,getInput,proxyExecute}`, `toolkits.{get,listCategories}`, `authConfigs.{list,create,get,update,delete,updateStatus,enable,disable}`, `connectedAccounts.{list,get,delete,refresh,updateStatus,enable,disable,update}`, `triggers.{listActive,create,update,delete,enable,disable,listTypes,getType,listEnum}`, `mcp.{create,list,get,delete,update,generate}`.

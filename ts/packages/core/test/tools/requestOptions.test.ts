@@ -7,19 +7,21 @@ import { AuthConfigs } from '../../src/models/AuthConfigs';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient from '@composio/client';
 import { MockProvider } from '../utils/mocks/provider.mock';
+import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
+import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 /**
- * Verifies that ComposioRequestOptions (`signal`, `timeout`) is forwarded as
- * the final positional argument to the underlying `@composio/client` call.
+ * Verifies that ComposioRequestOptions (`signal`) is forwarded as the final
+ * positional argument to the underlying `@composio/client` call, and that
+ * aborts are translated into a typed {@link ComposioRequestCancelledError}.
  *
  * Two-mode behaviour is intentional:
  *   - When NO requestOptions is supplied, the SDK calls the client WITHOUT a
  *     trailing argument (so existing wire/test assertions stay stable).
  *   - When requestOptions IS supplied, it's forwarded verbatim — letting the
- *     caller cancel an in-flight request via AbortController or impose a
- *     tighter per-call timeout.
+ *     caller cancel an in-flight request via AbortController.
  */
-describe('Tools — requestOptions (signal/timeout) forwarding', () => {
+describe('Tools — requestOptions (signal) forwarding', () => {
   let tools: Tools<unknown, unknown, MockProvider>;
 
   beforeEach(() => {
@@ -28,9 +30,9 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
   });
 
   describe('getRawComposioTools', () => {
-    it('forwards signal + timeout to client.tools.list', async () => {
+    it('forwards signal to client.tools.list', async () => {
       const controller = new AbortController();
-      const requestOptions = { signal: controller.signal, timeout: 5_000 };
+      const requestOptions = { signal: controller.signal };
       mockClient.tools.list.mockResolvedValueOnce({ items: [], totalPages: 1 });
 
       await tools.getRawComposioTools({ search: 'send email' }, undefined, requestOptions);
@@ -49,11 +51,10 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
       expect(calls[0]).toHaveLength(1);
     });
 
-    it('propagates an AbortError when the signal is already aborted', async () => {
+    it('translates a client abort into ComposioRequestCancelledError', async () => {
       const controller = new AbortController();
       controller.abort();
       mockClient.tools.list.mockImplementationOnce(async (_q, opts) => {
-        // Mirror @composio/client behaviour: throw if signal is aborted.
         if (opts?.signal?.aborted) {
           const err = new Error('Request was aborted');
           err.name = 'APIUserAbortError';
@@ -66,16 +67,15 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
         tools.getRawComposioTools({ search: 'send email' }, undefined, {
           signal: controller.signal,
         })
-      ).rejects.toMatchObject({ name: 'APIUserAbortError' });
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
   });
 
   describe('execute', () => {
-    it('forwards signal + timeout to client.tools.execute', async () => {
+    it('forwards signal to client.tools.execute', async () => {
       const controller = new AbortController();
-      const requestOptions = { signal: controller.signal, timeout: 100_000 };
+      const requestOptions = { signal: controller.signal };
 
-      // Mock the schema lookup path inside execute.
       mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
       const getRawComposioToolBySlugSpy = vi.spyOn(tools, 'getRawComposioToolBySlug');
       getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as never);
@@ -101,10 +101,55 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
         requestOptions
       );
     });
+
+    it('aborts during execute surface as ComposioRequestCancelledError, not ComposioToolExecutionError', async () => {
+      const controller = new AbortController();
+      mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
+      const getRawComposioToolBySlugSpy = vi.spyOn(tools, 'getRawComposioToolBySlug');
+      getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as never);
+      mockClient.tools.execute.mockImplementationOnce(async () => {
+        const err = new Error('Request was aborted');
+        err.name = 'APIUserAbortError';
+        throw err;
+      });
+
+      try {
+        await tools.execute(
+          'COMPOSIO_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          undefined,
+          { signal: controller.signal }
+        );
+        throw new Error('expected throw');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ComposioRequestCancelledError);
+        expect(err).not.toBeInstanceOf(ComposioToolExecutionError);
+      }
+    });
+
+    it('aborts during schema retrieval surface as ComposioRequestCancelledError, not ComposioToolNotFoundError', async () => {
+      // Reset because earlier tests in this describe block queue mocks on
+      // mockClient.tools.retrieve via mockResolvedValueOnce; without a reset,
+      // the throwing mock would be queued behind a stale resolve.
+      mockClient.tools.retrieve.mockReset();
+      const controller = new AbortController();
+      mockClient.tools.retrieve.mockImplementationOnce(async () => {
+        const err = new Error('Request was aborted');
+        err.name = 'APIUserAbortError';
+        throw err;
+      });
+      vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValueOnce(undefined);
+
+      await expect(
+        tools.getRawComposioToolBySlug('GITHUB_GET_REPOS', undefined, {
+          signal: controller.signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+    });
   });
 
   describe('proxyExecute', () => {
-    it('forwards signal + timeout to client.tools.proxy', async () => {
+    it('forwards signal to client.tools.proxy', async () => {
       const controller = new AbortController();
       const requestOptions = { signal: controller.signal };
       mockClient.tools.proxy.mockResolvedValueOnce({ data: {} });
@@ -120,7 +165,8 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
 
   describe('getToolsEnum / getInput', () => {
     it('forwards requestOptions on retrieveEnum', async () => {
-      const requestOptions = { timeout: 1_000 };
+      const controller = new AbortController();
+      const requestOptions = { signal: controller.signal };
       mockClient.tools.retrieveEnum.mockResolvedValueOnce({ items: [] });
 
       await tools.getToolsEnum(requestOptions);
@@ -129,7 +175,8 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
     });
 
     it('forwards requestOptions on getInput', async () => {
-      const requestOptions = { timeout: 1_000 };
+      const controller = new AbortController();
+      const requestOptions = { signal: controller.signal };
       mockClient.tools.getInput.mockResolvedValueOnce({ data: {} });
 
       await tools.getInput('GITHUB_GET_REPOS', { userId: 'user_1' }, requestOptions);
@@ -153,7 +200,7 @@ describe('Tools — requestOptions (signal/timeout) forwarding', () => {
   });
 });
 
-describe('Other models — requestOptions (signal/timeout) forwarding', () => {
+describe('Other models — requestOptions (signal) forwarding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -170,7 +217,7 @@ describe('Other models — requestOptions (signal/timeout) forwarding', () => {
 
   it('forwards requestOptions on toolkits.get(query)', async () => {
     const toolkits = new Toolkits(mockClient as unknown as ComposioClient);
-    const requestOptions = { timeout: 5_000 };
+    const requestOptions = { signal: new AbortController().signal };
     mockClient.toolkits.list.mockResolvedValueOnce({ items: [], totalPages: 1 });
 
     await toolkits.get({}, requestOptions);
@@ -180,7 +227,7 @@ describe('Other models — requestOptions (signal/timeout) forwarding', () => {
 
   it('forwards requestOptions on authConfigs.list', async () => {
     const authConfigs = new AuthConfigs(mockClient as unknown as ComposioClient);
-    const requestOptions = { timeout: 5_000 };
+    const requestOptions = { signal: new AbortController().signal };
     mockClient.authConfigs.list.mockResolvedValueOnce({ items: [], totalPages: 1 });
 
     await authConfigs.list(undefined, requestOptions);
