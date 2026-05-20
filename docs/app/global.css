@@ -133,15 +133,20 @@ html {
 }
 
 .dark {
+  /* Lift the brand blue on dark backgrounds — `#0007cd` is too dark
+     against `#0f0f0f`. */
+  --composio-brand: #5B8BF0;
+  --composio-orange: var(--composio-brand);
+
   --composio-sidebar: #0f0f0f;
 
   /* Fumadocs overrides - Dark */
   --color-fd-background: #0f0f0f;
   --color-fd-foreground: #fbfbfb;
-  --color-fd-muted: #1a1a1a;
+  --color-fd-muted: #1f1f1f;
   --color-fd-muted-foreground: #b4b4b4;
-  --color-fd-border: rgba(255, 255, 255, 0.10);
-  --color-fd-card: #141414;
+  --color-fd-border: rgba(255, 255, 255, 0.06);
+  --color-fd-card: #1c1c1c;
   --color-fd-card-foreground: #fbfbfb;
   --color-fd-popover: #1a1a1a;
   --color-fd-popover-foreground: #fbfbfb;
@@ -167,7 +172,7 @@ html {
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.637 0.208 25.3);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 6%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.745 0.128 275);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -181,7 +186,7 @@ html {
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 6%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 
@@ -758,5 +763,14 @@ body {
   100% {
     background-position: -100% 0;
   }
+}
+
+/* Square the navbar theme toggle (and its inner icons) to match the
+   zero-radius search input. Fumadocs hard-codes `rounded-full` via
+   Tailwind utilities, so the override needs !important to beat the
+   utility layer's specificity. */
+[data-theme-toggle],
+[data-theme-toggle] > * {
+  border-radius: 0 !important;
 }
 
