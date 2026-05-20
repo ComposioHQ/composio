@@ -1075,10 +1075,20 @@ export class Tools<
       modifiers
     );
 
-    // Execute the tool (custom or composio)
-    let result = customTool
-      ? await this.customTools.executeCustomTool(customTool.slug, params)
-      : await this.executeComposioTool(tool, params, requestOptions);
+    // Execute the tool (custom or composio).
+    // Custom-tool path also threads `requestOptions` so its pre-flight
+    // (toolkit retrieve, connected-account list) and in-tool `tools.proxy`
+    // calls honor the caller's AbortSignal. We only forward the third arg
+    // when defined to stay byte-for-byte compatible with the previous call
+    // shape when no caller passes requestOptions.
+    let result: ToolExecuteResponse;
+    if (customTool) {
+      result = requestOptions
+        ? await this.customTools.executeCustomTool(customTool.slug, params, requestOptions)
+        : await this.customTools.executeCustomTool(customTool.slug, params);
+    } else {
+      result = await this.executeComposioTool(tool, params, requestOptions);
+    }
 
     // Apply after execute modifiers
     result = await this.applyAfterExecuteModifiers(

@@ -18,7 +18,16 @@ export async function withCancellation<T>(call: () => Promise<T>): Promise<T> {
     return await call();
   } catch (error) {
     if (isRequestAbortError(error)) {
-      throw new ComposioRequestCancelledError(undefined, {
+      // Carry the underlying abort's message forward when present so the
+      // wrapped error logs the original transport reason (e.g. "The
+      // operation was aborted"); fall back to the constructor default
+      // otherwise. Passing `undefined` would also trigger the default in
+      // JS, but being explicit is clearer and immune to future refactors.
+      const underlyingMessage = error instanceof Error ? error.message : '';
+      const message = underlyingMessage
+        ? `Request was cancelled by the caller: ${underlyingMessage}`
+        : 'Request was cancelled by the caller';
+      throw new ComposioRequestCancelledError(message, {
         cause: error instanceof Error ? error : undefined,
       });
     }

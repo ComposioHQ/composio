@@ -146,6 +146,70 @@ describe('Tools — requestOptions (signal) forwarding', () => {
         })
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
+
+    it('forwards requestOptions through the custom-tool branch (proxy + lookups cancellable)', async () => {
+      const controller = new AbortController();
+      const requestOptions = { signal: controller.signal };
+
+      // Register a custom tool with a toolkitSlug so executeCustomTool walks
+      // through getConnectedAccountForToolkit + the inner executeToolRequest
+      // closure (which calls client.tools.proxy).
+      // We bypass createTool's validation by directly stubbing
+      // getCustomToolBySlug + executeCustomTool spy verification.
+      const customToolStub = {
+        slug: 'CUSTOM_TOOL',
+        name: 'Custom Tool',
+        description: 'test',
+        inputParameters: { type: 'object', properties: {} },
+        outputParameters: undefined,
+        availableVersions: undefined,
+        isDeprecated: false,
+        isNoAuth: undefined,
+        toolkit: { slug: 'github', name: 'GitHub', logo: 'x' },
+      };
+      vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValue(
+        customToolStub as never
+      );
+      const executeCustomToolSpy = vi
+        .spyOn(tools['customTools'], 'executeCustomTool')
+        .mockResolvedValueOnce({ data: {}, error: null, successful: true });
+
+      await tools.execute(
+        'CUSTOM_TOOL',
+        { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+        undefined,
+        requestOptions
+      );
+
+      // The custom-tool branch must receive the same requestOptions so its
+      // pre-flight HTTP and in-tool proxy calls can be cancelled.
+      expect(executeCustomToolSpy).toHaveBeenCalledWith(
+        'CUSTOM_TOOL',
+        expect.any(Object),
+        requestOptions
+      );
+    });
+
+    it('ComposioRequestCancelledError carries a non-empty message', async () => {
+      mockClient.tools.list.mockReset();
+      mockClient.tools.list.mockImplementationOnce(async () => {
+        const err = new Error('The operation was aborted');
+        err.name = 'APIUserAbortError';
+        throw err;
+      });
+
+      try {
+        await tools.getRawComposioTools({ search: 'send email' }, undefined, {
+          signal: new AbortController().signal,
+        });
+        throw new Error('expected throw');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ComposioRequestCancelledError);
+        // Message must be non-empty so logs/UIs don't render a blank error.
+        expect((err as Error).message).not.toEqual('');
+        expect((err as Error).message).toMatch(/cancelled/i);
+      }
+    });
   });
 
   describe('proxyExecute', () => {

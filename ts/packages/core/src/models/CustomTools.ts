@@ -33,6 +33,9 @@ import { ValidationError } from '../errors';
 import { transformConnectedAccountResponse } from '../utils/transformers/connectedAccounts';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 import { AuthSchemeTypes } from '../types/authConfigs.types';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -185,12 +188,18 @@ export class CustomTools {
   private async getConnectedAccountForToolkit(
     toolkitSlug: string,
     userId: string,
-    connectedAccountId?: string
+    connectedAccountId?: string,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRetrieveResponse | null> {
     try {
-      await this.client.toolkits.retrieve(toolkitSlug);
-      // check if the toolkit is a no auth toolkit
-      const toolkit = await this.client.toolkits.retrieve(toolkitSlug);
+      // Single retrieve was previously called twice — collapsed and routed
+      // through withCancellation so the caller's AbortSignal can interrupt
+      // the pre-flight toolkit lookup.
+      const toolkit = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolkits.retrieve(toolkitSlug, undefined, requestOptions)
+          : this.client.toolkits.retrieve(toolkitSlug)
+      );
       const isNoAuthToolkit = toolkit.auth_config_details?.some(
         details => details.mode === AuthSchemeTypes.NO_AUTH
       );
@@ -198,14 +207,23 @@ export class CustomTools {
         return null;
       }
     } catch (error) {
+      // Preserve cancellation as a typed error; don't remap it to "not found".
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       throw new ComposioToolNotFoundError(`Toolkit with slug ${toolkitSlug} not found`, {
         cause: error,
       });
     }
-    const connectedAccounts = await this.client.connectedAccounts.list({
+    const connectedAccountsListParams = {
       toolkit_slugs: [toolkitSlug],
       user_ids: [userId],
-    });
+    };
+    const connectedAccounts = await withCancellation(() =>
+      requestOptions
+        ? this.client.connectedAccounts.list(connectedAccountsListParams, requestOptions)
+        : this.client.connectedAccounts.list(connectedAccountsListParams)
+    );
 
     if (!connectedAccounts.items.length) {
       throw new ComposioConnectedAccountNotFoundError(
@@ -238,7 +256,11 @@ export class CustomTools {
    * @param {ExecuteMetadata} metadata The metadata of the execution
    * @returns {Promise<ToolExecuteResponse>} The response from the tool
    */
-  async executeCustomTool(slug: string, body: ToolExecuteParams): Promise<ToolExecuteResponse> {
+  async executeCustomTool(
+    slug: string,
+    body: ToolExecuteParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolExecuteResponse> {
     const tool = this.customToolsRegistry.get(slug.toLowerCase());
     if (!tool) {
       throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`);
@@ -253,7 +275,8 @@ export class CustomTools {
       const connectedAccount = await this.getConnectedAccountForToolkit(
         toolkitSlug,
         body.userId,
-        body.connectedAccountId
+        body.connectedAccountId,
+        requestOptions
       );
       logger.debug(
         `[CustomTool] Connected account for ${toolkitSlug} found for user ${body.userId}`,
@@ -303,22 +326,24 @@ export class CustomTools {
       }));
 
       // execute the tool
-      const response = await this.client.tools.proxy({
+      const proxyBody = {
         endpoint: data.endpoint,
         method: data.method,
         parameters: parameters,
         body: data.body,
         connected_account_id: connectedAccountId,
         /**
-         * @deprecated
-         * @description
-         * This parameter is deprecated and will be removed in the future.
-         * Please use custom_auth_params instead.
-         *
+         * @deprecated `custom_connection_data` — kept for back-compat;
+         * upstream client typing has narrowed but the wire shape still
+         * accepts our older union, so we widen via cast.
          */
-        // @ts-ignore
         custom_connection_data: data.customConnectionData,
-      });
+      } as Parameters<typeof this.client.tools.proxy>[0];
+      const response = await withCancellation(() =>
+        requestOptions
+          ? this.client.tools.proxy(proxyBody, requestOptions)
+          : this.client.tools.proxy(proxyBody)
+      );
 
       return {
         data: response.data as Record<string, unknown>,
