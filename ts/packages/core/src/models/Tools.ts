@@ -331,13 +331,13 @@ export class Tools<
     modifier?: afterExecuteModifier,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
-    // Same gating pattern as `applyBeforeExecuteModifiers`: stop additional
-    // post-execute work (file downloads + user afterExecute) the moment the
-    // caller's signal fires. The main `tools.execute` itself was already
-    // cancellable via withCancellation upstream; this prevents an aborted
-    // call from continuing to do downloads after the response lands.
+    // Post-execute: the remote tool has already run and may have mutated
+    // external state (sent an email, created an issue, etc.). Throwing
+    // ComposioRequestCancelledError here would hide a successful execution
+    // from the caller, who might retry a non-idempotent operation. Instead,
+    // skip remaining post-processing and return the result as-is.
     if (requestOptions?.signal?.aborted) {
-      throw new ComposioRequestCancelledError();
+      return result;
     }
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
@@ -349,7 +349,7 @@ export class Tools<
         result: modifiedResult,
       });
       if (requestOptions?.signal?.aborted) {
-        throw new ComposioRequestCancelledError();
+        return modifiedResult;
       }
     }
     // apply the after execute modifiers
@@ -493,11 +493,7 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = await withCancellation(() =>
-      requestOptions
-        ? this.client.tools.list(filters, requestOptions)
-        : this.client.tools.list(filters)
-    );
+    const tools = await withCancellation(() => this.client.tools.list(filters, requestOptions));
 
     if (!tools) {
       return [];
@@ -563,9 +559,7 @@ export class Tools<
         ...(cursor ? { cursor } : {}),
       };
       const response = await withCancellation(() =>
-        requestOptions
-          ? this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
-          : this.client.toolRouter.session.tools(sessionId, sessionToolsParams)
+        this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
       );
       tools.push(...response.items.map(tool => this.transformToolCases(tool)));
       cursor = response.next_cursor;
@@ -664,9 +658,7 @@ export class Tools<
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
 
       tool = await withCancellation(() =>
-        requestOptions
-          ? this.client.tools.retrieve(slug, retrieveParams, requestOptions)
-          : this.client.tools.retrieve(slug, retrieveParams)
+        this.client.tools.retrieve(slug, retrieveParams, requestOptions)
       );
     } catch (error) {
       // Caller-initiated cancellation must NOT be remapped to a domain error;
@@ -703,7 +695,7 @@ export class Tools<
    *
    * @param {string} userId - The user id to get the tools for
    * @param {ToolListParams} filters - The filters to apply when fetching tools
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @param {ProviderOptions<TProvider> & ComposioRequestOptions} [options] - Provider options, modifiers, and/or AbortSignal
    * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tools collection
    *
    * @example
@@ -714,29 +706,17 @@ export class Tools<
    *   limit: 10
    * });
    *
-   * // Get tools with search
-   * const searchTools = await composio.tools.get('default', {
-   *   search: 'user',
-   *   limit: 10
-   * });
-   *
-   * // Get a specific tool by slug
-   * const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
-   *
-   * // Get a tool with schema modifications
-   * const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
-   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
-   *     // Customize the tool schema
-   *     return {...schema, description: 'Custom description'};
-   *   }
-   * });
+   * // Cancel a slow search
+   * const controller = new AbortController();
+   * const tools = await composio.tools.get('default', {
+   *   search: 'send email',
+   * }, { signal: controller.signal });
    * ```
    */
   async get<T extends TProvider>(
     userId: string,
     filters: ToolListParams,
-    options?: ProviderOptions<TProvider>,
-    requestOptions?: ComposioRequestOptions
+    options?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
@@ -745,7 +725,7 @@ export class Tools<
    *
    * @param {string} userId - The user id to get the tool for
    * @param {string} slug - The slug of the tool to fetch
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @param {ProviderOptions<TProvider> & ComposioRequestOptions} [options] - Optional provider options including modifiers and signal
    * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tool
    *
    * @example
@@ -760,36 +740,29 @@ export class Tools<
    *     return {...schema, description: 'Custom description'};
    *   }
    * });
+   *
+   * // Get tools with cancellation
+   * const controller = new AbortController();
+   * const tools = await composio.tools.get('user_1', { search: 'email' }, {
+   *   signal: controller.signal
+   * });
    * ```
    */
   async get<T extends TProvider>(
     userId: string,
     slug: string,
-    options?: ProviderOptions<TProvider>,
-    requestOptions?: ComposioRequestOptions
+    options?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
-  /**
-   * Get a tool or list of tools based on the provided arguments.
-   * This is an implementation method that handles all overloads.
-   *
-   * @param {string} userId - The user id to get the tool(s) for
-   * @param {ToolListParams | string} arg2 - Either a slug string or filters object
-   * @param {ProviderOptions<TProvider> | ToolkitVersion} [arg3] - Optional provider options or version string
-   * @param {ProviderOptions<TProvider>} [arg4] - Optional provider options (when arg3 is version)
-   * @returns {Promise<TToolCollection>} The tool collection
-   */
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    arg3?: ProviderOptions<TProvider>,
-    arg4?: ComposioRequestOptions
+    arg3?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<TToolCollection> {
-    // Handle the two-parameter overloads
-    const options = arg3 as ProviderOptions<TProvider>;
-    const requestOptions = arg4;
+    const options = arg3;
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
 
-    // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
       const tool = await this.getRawComposioToolBySlug(
         arg2,
@@ -804,7 +777,6 @@ export class Tools<
         options as ExecuteToolModifiers
       ) as TToolCollection;
     } else {
-      // if the second argument is an object, get a list of tools
       const tools = await this.getRawComposioTools(
         arg2,
         {
@@ -974,9 +946,7 @@ export class Tools<
         text: body.text,
       };
       const result = await withCancellation(() =>
-        requestOptions
-          ? this.client.tools.execute(tool.slug, executeBody, requestOptions)
-          : this.client.tools.execute(tool.slug, executeBody)
+        this.client.tools.execute(tool.slug, executeBody, requestOptions)
       );
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
@@ -1062,12 +1032,22 @@ export class Tools<
    *   }
    * });
    * ```
+   *
+   * @example Execute with cancellation
+   * ```typescript
+   * const controller = new AbortController();
+   * setTimeout(() => controller.abort(), 5_000);
+   * const result = await composio.tools.execute('HACKERNEWS_GET_FRONTPAGE', {
+   *   userId: 'default',
+   *   arguments: {},
+   *   dangerouslySkipVersionCheck: true,
+   * }, { signal: controller.signal });
+   * ```
    */
   async execute(
     slug: string,
     body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers,
-    requestOptions?: ComposioRequestOptions
+    options?: ExecuteToolModifiers & ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     if (!this.customTools) {
       throw new ComposioCustomToolsNotInitializedError(
@@ -1079,6 +1059,9 @@ export class Tools<
     if (!executeParams.success) {
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
+
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
 
     // Determine if it's a custom tool or composio tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
@@ -1101,21 +1084,13 @@ export class Tools<
         toolkitSlug,
         params: executeParams.data,
       },
-      modifiers,
+      options,
       requestOptions
     );
 
-    // Execute the tool (custom or composio).
-    // Custom-tool path also threads `requestOptions` so its pre-flight
-    // (toolkit retrieve, connected-account list) and in-tool `tools.proxy`
-    // calls honor the caller's AbortSignal. We only forward the third arg
-    // when defined to stay byte-for-byte compatible with the previous call
-    // shape when no caller passes requestOptions.
     let result: ToolExecuteResponse;
     if (customTool) {
-      result = requestOptions
-        ? await this.customTools.executeCustomTool(customTool.slug, params, requestOptions)
-        : await this.customTools.executeCustomTool(customTool.slug, params);
+      result = await this.customTools.executeCustomTool(customTool.slug, params, requestOptions);
     } else {
       result = await this.executeComposioTool(tool, params, requestOptions);
     }
@@ -1128,7 +1103,7 @@ export class Tools<
         toolkitSlug,
         result,
       },
-      modifiers?.afterExecute,
+      options?.afterExecute,
       requestOptions
     );
 
@@ -1185,9 +1160,7 @@ export class Tools<
     }
 
     const response = await withCancellation(() =>
-      requestOptions
-        ? this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
-        : this.client.toolRouter.session.execute(body.sessionId, executePayload)
+      this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
     );
 
     // Prepare the result
@@ -1226,11 +1199,7 @@ export class Tools<
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
-    return withCancellation(() =>
-      requestOptions
-        ? this.client.tools.retrieveEnum(requestOptions)
-        : this.client.tools.retrieveEnum()
-    );
+    return withCancellation(() => this.client.tools.retrieveEnum(requestOptions));
   }
 
   /**
@@ -1256,11 +1225,7 @@ export class Tools<
     body: ToolGetInputParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolGetInputResponse> {
-    return withCancellation(() =>
-      requestOptions
-        ? this.client.tools.getInput(slug, body, requestOptions)
-        : this.client.tools.getInput(slug, body)
-    );
+    return withCancellation(() => this.client.tools.getInput(slug, body, requestOptions));
   }
 
   /**
@@ -1328,11 +1293,7 @@ export class Tools<
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
-    return withCancellation(() =>
-      requestOptions
-        ? this.client.tools.proxy(proxyBody, requestOptions)
-        : this.client.tools.proxy(proxyBody)
-    );
+    return withCancellation(() => this.client.tools.proxy(proxyBody, requestOptions));
   }
 
   /**

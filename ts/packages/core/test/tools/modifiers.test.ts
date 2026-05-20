@@ -98,7 +98,8 @@ describe('Tools Modifiers', () => {
         slug,
         expect.objectContaining({
           arguments: { limit: 10 },
-        })
+        }),
+        undefined
       );
     });
 

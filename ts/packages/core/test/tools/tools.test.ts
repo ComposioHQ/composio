@@ -62,11 +62,14 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        tool_slugs: 'TOOL1,TOOL2',
-        limit: 9999,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          tool_slugs: 'TOOL1,TOOL2',
+          limit: 9999,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should handle toolkit query parameters correctly', async () => {
@@ -81,11 +84,14 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        important: 'true',
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          important: 'true',
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should respect explicit important=false to opt-out', async () => {
@@ -102,11 +108,14 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        limit: 10,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          limit: 10,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should handle toolkit search parameters correctly', async () => {
@@ -123,12 +132,15 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        limit: 10,
-        search: 'test',
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          limit: 10,
+          search: 'test',
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should handle toolkit scopes parameters correctly', async () => {
@@ -144,12 +156,15 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'todoist',
-        important: 'true',
-        scopes: ['task:add', 'task:read'],
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'todoist',
+          important: 'true',
+          scopes: ['task:add', 'task:read'],
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should handle toolkit scopes with search parameters correctly', async () => {
@@ -167,13 +182,16 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'todoist',
-        limit: 10,
-        search: 'add task',
-        scopes: ['task:add'],
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'todoist',
+          limit: 10,
+          search: 'add task',
+          scopes: ['task:add'],
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should respect explicit important=true', async () => {
@@ -190,12 +208,15 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        important: 'true',
-        limit: 10,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          important: 'true',
+          limit: 10,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should NOT auto-apply important when tags are passed with values', async () => {
@@ -212,12 +233,15 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        tags: ['important', 'custom'],
-        limit: 10,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          tags: ['important', 'custom'],
+          limit: 10,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       // Should NOT include important: 'true' when tags are provided
     });
 
@@ -234,11 +258,14 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        tags: [],
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          tags: [],
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       // Should NOT include important: 'true' when tags array is present (even if empty)
     });
 
@@ -255,11 +282,14 @@ describe('Tools', () => {
 
       await context.tools.getRawComposioTools(query);
 
-      expect(mockClient.tools.list).toHaveBeenCalledWith({
-        toolkit_slug: 'github',
-        limit: 10,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: 'github',
+          limit: 10,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       // Should NOT include important: 'true' when limit is provided
     });
 
@@ -370,13 +400,23 @@ describe('Tools', () => {
       const result = await context.tools.getRawToolRouterSessionTools('session_123');
 
       expect(result.map(tool => tool.slug)).toEqual(['FIRST_TOOL', 'SECOND_TOOL']);
-      expect(mockClient.toolRouter.session.tools).toHaveBeenNthCalledWith(1, 'session_123', {
-        limit: 500,
-      });
-      expect(mockClient.toolRouter.session.tools).toHaveBeenNthCalledWith(2, 'session_123', {
-        limit: 500,
-        cursor: 'next_page',
-      });
+      expect(mockClient.toolRouter.session.tools).toHaveBeenNthCalledWith(
+        1,
+        'session_123',
+        {
+          limit: 500,
+        },
+        undefined
+      );
+      expect(mockClient.toolRouter.session.tools).toHaveBeenNthCalledWith(
+        2,
+        'session_123',
+        {
+          limit: 500,
+          cursor: 'next_page',
+        },
+        undefined
+      );
     });
   });
 
@@ -388,7 +428,11 @@ describe('Tools', () => {
 
       const result = await context.tools.getRawComposioToolBySlug(slug);
 
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, { toolkit_versions: 'latest' });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        { toolkit_versions: 'latest' },
+        undefined
+      );
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
@@ -444,9 +488,13 @@ describe('Tools', () => {
       });
 
       // Should use 'version' param, not 'toolkit_versions'
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        version: explicitVersion,
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          version: explicitVersion,
+        },
+        undefined
+      );
     });
 
     it('should use version parameter when provided (latest string)', async () => {
@@ -459,9 +507,13 @@ describe('Tools', () => {
       });
 
       // Should use 'version' param with 'latest'
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        version: 'latest',
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          version: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should use version parameter when provided (version mapping object)', async () => {
@@ -479,9 +531,13 @@ describe('Tools', () => {
       await toolsWithVersions.getRawComposioToolBySlug(slug);
 
       // Should use 'toolkit_versions' param with mapping object (not 'version')
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: versionMapping,
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: versionMapping,
+        },
+        undefined
+      );
     });
 
     it('should fallback to SDK toolkitVersions when version not provided', async () => {
@@ -493,9 +549,13 @@ describe('Tools', () => {
       await context.tools.getRawComposioToolBySlug(slug);
 
       // Should use 'toolkit_versions' param with SDK-level config
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should prioritize explicit version over SDK toolkitVersions', async () => {
@@ -515,9 +575,13 @@ describe('Tools', () => {
       });
 
       // Explicit version should take precedence, using 'version' param
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        version: explicitVersion,
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          version: explicitVersion,
+        },
+        undefined
+      );
     });
 
     it('should support combining version and modifySchema options', async () => {
@@ -535,9 +599,13 @@ describe('Tools', () => {
       });
 
       // Should use version param
-      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(slug, {
-        version: explicitVersion,
-      });
+      expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          version: explicitVersion,
+        },
+        undefined
+      );
       // Should also apply schema modifier
       expect(schemaModifier).toHaveBeenCalled();
       expect(result.description).toEqual('Modified description');
@@ -690,7 +758,7 @@ describe('Tools', () => {
       const result = await context.tools.execute(slug, body);
 
       expect(getCustomToolBySlugSpy).toHaveBeenCalledWith(slug);
-      expect(executeCustomToolSpy).toHaveBeenCalledWith(slug, body);
+      expect(executeCustomToolSpy).toHaveBeenCalledWith(slug, body, undefined);
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
@@ -707,16 +775,20 @@ describe('Tools', () => {
 
       const result = await context.tools.execute(slug, body);
 
-      expect(mockClient.tools.execute).toHaveBeenCalledWith(slug, {
-        allow_tracing: undefined,
-        connected_account_id: undefined,
-        custom_auth_params: undefined,
-        custom_connection_data: undefined,
-        arguments: body.arguments,
-        user_id: body.userId,
-        version: 'latest',
-        text: undefined,
-      });
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        slug,
+        {
+          allow_tracing: undefined,
+          connected_account_id: undefined,
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: body.arguments,
+          user_id: body.userId,
+          version: 'latest',
+          text: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
@@ -733,16 +805,20 @@ describe('Tools', () => {
 
       const result = await context.tools.execute(slug, body);
 
-      expect(mockClient.tools.execute).toHaveBeenCalledWith(slug, {
-        allow_tracing: undefined,
-        connected_account_id: 'test-connected-account-id',
-        custom_auth_params: undefined,
-        custom_connection_data: undefined,
-        arguments: body.arguments,
-        user_id: body.userId,
-        version: 'latest',
-        text: undefined,
-      });
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        slug,
+        {
+          allow_tracing: undefined,
+          connected_account_id: 'test-connected-account-id',
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          arguments: body.arguments,
+          user_id: body.userId,
+          version: 'latest',
+          text: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
@@ -764,20 +840,24 @@ describe('Tools', () => {
 
       const result = await context.tools.execute(slug, body);
 
-      expect(mockClient.tools.execute).toHaveBeenCalledWith(slug, {
-        allow_tracing: undefined,
-        connected_account_id: 'test-connected-account-id',
-        custom_auth_params: {
-          base_url: 'https://custom-api.example.com',
-          parameters: [{ name: 'x-api-key', value: 'test-key', in: 'header' }],
-          body: { extra: 'data' },
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        slug,
+        {
+          allow_tracing: undefined,
+          connected_account_id: 'test-connected-account-id',
+          custom_auth_params: {
+            base_url: 'https://custom-api.example.com',
+            parameters: [{ name: 'x-api-key', value: 'test-key', in: 'header' }],
+            body: { extra: 'data' },
+          },
+          custom_connection_data: undefined,
+          arguments: body.arguments,
+          user_id: body.userId,
+          version: 'latest',
+          text: undefined,
         },
-        custom_connection_data: undefined,
-        arguments: body.arguments,
-        user_id: body.userId,
-        version: 'latest',
-        text: undefined,
-      });
+        undefined
+      );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
 
@@ -808,7 +888,8 @@ describe('Tools', () => {
         slug,
         expect.objectContaining({
           version: explicitVersion,
-        })
+        }),
+        undefined
       );
     });
 
@@ -898,34 +979,37 @@ describe('Tools', () => {
 
       const result = await context.tools.proxyExecute(proxyParams);
 
-      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
-        endpoint: '/api/test',
-        method: 'POST',
-        body: { data: 'test' },
-        connected_account_id: 'test-account-id',
-        parameters: [
-          {
-            name: 'Authorization',
-            type: 'header',
-            value: 'Bearer token123',
-          },
-          {
-            name: 'Content-Type',
-            type: 'header',
-            value: 'application/json',
-          },
-          {
-            name: 'page',
-            type: 'query',
-            value: '1',
-          },
-          {
-            name: 'limit',
-            type: 'query',
-            value: '10',
-          },
-        ],
-      });
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        {
+          endpoint: '/api/test',
+          method: 'POST',
+          body: { data: 'test' },
+          connected_account_id: 'test-account-id',
+          parameters: [
+            {
+              name: 'Authorization',
+              type: 'header',
+              value: 'Bearer token123',
+            },
+            {
+              name: 'Content-Type',
+              type: 'header',
+              value: 'application/json',
+            },
+            {
+              name: 'page',
+              type: 'query',
+              value: '1',
+            },
+            {
+              name: 'limit',
+              type: 'query',
+              value: '10',
+            },
+          ],
+        },
+        undefined
+      );
 
       expect(result).toEqual(expectedProxyResponse);
     });
@@ -957,24 +1041,27 @@ describe('Tools', () => {
 
       const result = await context.tools.proxyExecute(proxyParams);
 
-      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
-        endpoint: '/api/headers-only',
-        method: 'GET',
-        body: undefined,
-        connected_account_id: undefined,
-        parameters: [
-          {
-            name: 'Authorization',
-            type: 'header',
-            value: 'Bearer token123',
-          },
-          {
-            name: 'Accept',
-            type: 'header',
-            value: 'application/json',
-          },
-        ],
-      });
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        {
+          endpoint: '/api/headers-only',
+          method: 'GET',
+          body: undefined,
+          connected_account_id: undefined,
+          parameters: [
+            {
+              name: 'Authorization',
+              type: 'header',
+              value: 'Bearer token123',
+            },
+            {
+              name: 'Accept',
+              type: 'header',
+              value: 'application/json',
+            },
+          ],
+        },
+        undefined
+      );
 
       expect(result).toEqual(expectedProxyResponse);
     });
@@ -1006,24 +1093,27 @@ describe('Tools', () => {
 
       const result = await context.tools.proxyExecute(proxyParams);
 
-      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
-        endpoint: '/api/search',
-        method: 'GET',
-        body: undefined,
-        connected_account_id: undefined,
-        parameters: [
-          {
-            name: 'q',
-            type: 'query',
-            value: 'test search',
-          },
-          {
-            name: 'page',
-            type: 'query',
-            value: '2',
-          },
-        ],
-      });
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        {
+          endpoint: '/api/search',
+          method: 'GET',
+          body: undefined,
+          connected_account_id: undefined,
+          parameters: [
+            {
+              name: 'q',
+              type: 'query',
+              value: 'test search',
+            },
+            {
+              name: 'page',
+              type: 'query',
+              value: '2',
+            },
+          ],
+        },
+        undefined
+      );
 
       expect(result).toEqual(expectedProxyResponse);
     });
@@ -1045,13 +1135,16 @@ describe('Tools', () => {
 
       const result = await context.tools.proxyExecute(proxyParams);
 
-      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
-        endpoint: '/api/no-params',
-        method: 'PUT',
-        body: { update: 'data' },
-        connected_account_id: 'test-account-id',
-        parameters: [],
-      });
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        {
+          endpoint: '/api/no-params',
+          method: 'PUT',
+          body: { update: 'data' },
+          connected_account_id: 'test-account-id',
+          parameters: [],
+        },
+        undefined
+      );
 
       expect(result).toEqual(expectedProxyResponse);
     });
@@ -1083,24 +1176,27 @@ describe('Tools', () => {
 
       const result = await context.tools.proxyExecute(proxyParams);
 
-      expect(mockClient.tools.proxy).toHaveBeenCalledWith({
-        endpoint: '/api/numeric',
-        method: 'GET',
-        body: undefined,
-        connected_account_id: undefined,
-        parameters: [
-          {
-            name: 'count',
-            type: 'query',
-            value: '42',
-          },
-          {
-            name: 'Version',
-            type: 'header',
-            value: '1.5',
-          },
-        ],
-      });
+      expect(mockClient.tools.proxy).toHaveBeenCalledWith(
+        {
+          endpoint: '/api/numeric',
+          method: 'GET',
+          body: undefined,
+          connected_account_id: undefined,
+          parameters: [
+            {
+              name: 'count',
+              type: 'query',
+              value: '42',
+            },
+            {
+              name: 'Version',
+              type: 'header',
+              value: '1.5',
+            },
+          ],
+        },
+        undefined
+      );
 
       expect(result).toEqual(expectedProxyResponse);
     });
@@ -1143,11 +1239,15 @@ describe('Tools', () => {
 
         const result = await context.tools.executeSessionTool(toolSlug, body);
 
-        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-          tool_slug: toolSlug,
-          arguments: body.arguments,
-          enable_auto_workbench_offload: true,
-        });
+        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+          sessionId,
+          {
+            tool_slug: toolSlug,
+            arguments: body.arguments,
+            enable_auto_workbench_offload: true,
+          },
+          undefined
+        );
         expect(result).toEqual({
           data: { results: true },
           error: null,
@@ -1182,14 +1282,18 @@ describe('Tools', () => {
           },
         });
 
-        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-          tool_slug: toolSlug,
-          arguments: body.arguments,
-          enable_auto_workbench_offload: true,
-          experimental: {
-            custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+          sessionId,
+          {
+            tool_slug: toolSlug,
+            arguments: body.arguments,
+            enable_auto_workbench_offload: true,
+            experimental: {
+              custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should throw validation error for invalid parameters', async () => {
@@ -1252,11 +1356,15 @@ describe('Tools', () => {
           params: { query: 'original' },
         });
 
-        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-          tool_slug: toolSlug,
-          arguments: { query: 'modified' },
-          enable_auto_workbench_offload: true,
-        });
+        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+          sessionId,
+          {
+            tool_slug: toolSlug,
+            arguments: { query: 'modified' },
+            enable_auto_workbench_offload: true,
+          },
+          undefined
+        );
       });
 
       it('should apply afterExecute modifier', async () => {
@@ -1396,11 +1504,15 @@ describe('Tools', () => {
         // Call the captured execute function
         const result = await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
 
-        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-          tool_slug: 'COMPOSIO_TOOL',
-          arguments: { query: 'test' },
-          enable_auto_workbench_offload: true,
-        });
+        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+          sessionId,
+          {
+            tool_slug: 'COMPOSIO_TOOL',
+            arguments: { query: 'test' },
+            enable_auto_workbench_offload: true,
+          },
+          undefined
+        );
         expect(result).toEqual({
           data: { results: true },
           error: null,
@@ -1437,11 +1549,15 @@ describe('Tools', () => {
         await capturedExecuteFn!('COMPOSIO_TOOL', { query: 'test' });
 
         expect(modifiers.beforeExecute).toHaveBeenCalled();
-        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-          tool_slug: 'COMPOSIO_TOOL',
-          arguments: { query: 'test', modified: true },
-          enable_auto_workbench_offload: true,
-        });
+        expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+          sessionId,
+          {
+            tool_slug: 'COMPOSIO_TOOL',
+            arguments: { query: 'test', modified: true },
+            enable_auto_workbench_offload: true,
+          },
+          undefined
+        );
       });
 
       it('should handle multiple tools', async () => {
@@ -1483,11 +1599,14 @@ describe('Tools', () => {
 
         await context.tools.getRawComposioTools({ tools: ['TEST_TOOL'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          tool_slugs: 'TEST_TOOL',
-          limit: 9999,
-          toolkit_versions: 'latest',
-        });
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            tool_slugs: 'TEST_TOOL',
+            limit: 9999,
+            toolkit_versions: 'latest',
+          },
+          undefined
+        );
       });
 
       it('should pass global version string when configured', async () => {
@@ -1504,11 +1623,14 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ toolkits: ['github'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          toolkit_slug: 'github',
-          important: 'true',
-          toolkit_versions: '20251201_03',
-        });
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            toolkit_slug: 'github',
+            important: 'true',
+            toolkit_versions: '20251201_03',
+          },
+          undefined
+        );
       });
 
       it('should pass toolkit-specific versions when configured as object', async () => {
@@ -1529,15 +1651,18 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ toolkits: ['github'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          toolkit_slug: 'github',
-          important: 'true',
-          toolkit_versions: {
-            github: '20251201_01',
-            slack: 'latest',
-            gmail: '20251201_05',
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            toolkit_slug: 'github',
+            important: 'true',
+            toolkit_versions: {
+              github: '20251201_01',
+              slack: 'latest',
+              gmail: '20251201_05',
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should pass versions when fetching tools by tool slugs', async () => {
@@ -1557,14 +1682,17 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ tools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          tool_slugs: 'GITHUB_CREATE_ISSUE,SLACK_SEND_MESSAGE',
-          limit: 9999,
-          toolkit_versions: {
-            github: '20251201_01',
-            slack: 'latest',
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            tool_slugs: 'GITHUB_CREATE_ISSUE,SLACK_SEND_MESSAGE',
+            limit: 9999,
+            toolkit_versions: {
+              github: '20251201_01',
+              slack: 'latest',
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should pass versions when searching tools', async () => {
@@ -1581,10 +1709,13 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ search: 'create issue' });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          search: 'create issue',
-          toolkit_versions: 'latest',
-        });
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            search: 'create issue',
+            toolkit_versions: 'latest',
+          },
+          undefined
+        );
       });
     });
 
@@ -1596,9 +1727,13 @@ describe('Tools', () => {
 
         await context.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
 
-        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('GITHUB_CREATE_ISSUE', {
-          toolkit_versions: 'latest',
-        });
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+          'GITHUB_CREATE_ISSUE',
+          {
+            toolkit_versions: 'latest',
+          },
+          undefined
+        );
       });
 
       it('should pass global version when retrieving single tool', async () => {
@@ -1612,9 +1747,13 @@ describe('Tools', () => {
 
         await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
 
-        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('GITHUB_CREATE_ISSUE', {
-          toolkit_versions: '20251201_03',
-        });
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+          'GITHUB_CREATE_ISSUE',
+          {
+            toolkit_versions: '20251201_03',
+          },
+          undefined
+        );
       });
 
       it('should pass toolkit-specific versions when retrieving single tool', async () => {
@@ -1632,13 +1771,17 @@ describe('Tools', () => {
 
         await tools.getRawComposioToolBySlug('SLACK_SEND_MESSAGE');
 
-        expect(mockClient.tools.retrieve).toHaveBeenCalledWith('SLACK_SEND_MESSAGE', {
-          toolkit_versions: {
-            github: '20251201_01',
-            slack: 'latest',
-            gmail: '20251201_05',
+        expect(mockClient.tools.retrieve).toHaveBeenCalledWith(
+          'SLACK_SEND_MESSAGE',
+          {
+            toolkit_versions: {
+              github: '20251201_01',
+              slack: 'latest',
+              gmail: '20251201_05',
+            },
           },
-        });
+          undefined
+        );
       });
     });
 
@@ -1655,16 +1798,20 @@ describe('Tools', () => {
 
         await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: 'latest', // should use latest as default
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: 'latest', // should use latest as default
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should use global version when configured', async () => {
@@ -1682,16 +1829,20 @@ describe('Tools', () => {
 
         await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: '20251201_03', // should use global version
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: '20251201_03', // should use global version
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should use toolkit-specific version when configured as object', async () => {
@@ -1723,16 +1874,20 @@ describe('Tools', () => {
 
         await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: '20251201_01', // should use test-toolkit-specific version
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: '20251201_01', // should use test-toolkit-specific version
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should use fallback to "latest" when toolkit not in version mapping', async () => {
@@ -1762,16 +1917,20 @@ describe('Tools', () => {
 
         await tools.execute('NOTION_CREATE_PAGE', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Page' },
-          user_id: undefined,
-          version: 'latest', // should fallback to latest for unknown toolkit
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Page' },
+            user_id: undefined,
+            version: 'latest', // should fallback to latest for unknown toolkit
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should prioritize explicit version parameter over configured versions', async () => {
@@ -1794,16 +1953,20 @@ describe('Tools', () => {
 
         await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: '20251201_03', // explicit version takes precedence
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: '20251201_03', // explicit version takes precedence
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should handle tool without toolkit gracefully', async () => {
@@ -1834,16 +1997,20 @@ describe('Tools', () => {
 
         await tools.execute('SOME_CUSTOM_TOOL', executeParams);
 
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { query: 'test' },
-          user_id: undefined,
-          version: 'latest', // should fallback to latest for unknown toolkit
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { query: 'test' },
+            user_id: undefined,
+            version: 'latest', // should fallback to latest for unknown toolkit
+            text: undefined,
+          },
+          undefined
+        );
       });
     });
 
@@ -1880,14 +2047,17 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ toolkits: ['github'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          toolkit_slug: 'github',
-          important: 'true',
-          toolkit_versions: {
-            github: '20251201_08',
-            slack: 'latest',
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            toolkit_slug: 'github',
+            important: 'true',
+            toolkit_versions: {
+              github: '20251201_08',
+              slack: 'latest',
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should prioritize user config over environment variables', async () => {
@@ -1911,14 +2081,17 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ toolkits: ['github'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          toolkit_slug: 'github',
-          important: 'true',
-          toolkit_versions: {
-            github: '20251201_04', // user config wins
-            gmail: '20251201_05', // from user config
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            toolkit_slug: 'github',
+            important: 'true',
+            toolkit_versions: {
+              github: '20251201_04', // user config wins
+              gmail: '20251201_05', // from user config
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should use global version string to override everything', async () => {
@@ -1939,11 +2112,14 @@ describe('Tools', () => {
 
         await tools.getRawComposioTools({ toolkits: ['github'] });
 
-        expect(mockClient.tools.list).toHaveBeenCalledWith({
-          toolkit_slug: 'github',
-          important: 'true',
-          toolkit_versions: '20251201_09', // global version ignores env vars
-        });
+        expect(mockClient.tools.list).toHaveBeenCalledWith(
+          {
+            toolkit_slug: 'github',
+            important: 'true',
+            toolkit_versions: '20251201_09', // global version ignores env vars
+          },
+          undefined
+        );
       });
     });
 
@@ -1991,16 +2167,20 @@ describe('Tools', () => {
         const result = await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: 'latest',
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: 'latest',
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should succeed when executing with a specific version (not "latest") without dangerouslySkipVersionCheck', async () => {
@@ -2030,16 +2210,20 @@ describe('Tools', () => {
         const result = await tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: '20251201_01', // specific version should work without skip flag
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: '20251201_01', // specific version should work without skip flag
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should succeed when explicit version parameter overrides "latest" config', async () => {
@@ -2056,16 +2240,20 @@ describe('Tools', () => {
         const result = await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: 'test-account',
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: undefined,
-          version: '20251201_03',
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: 'test-account',
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: undefined,
+            version: '20251201_03',
+            text: undefined,
+          },
+          undefined
+        );
       });
 
       it('should throw error when explicit version parameter is "latest" without dangerouslySkipVersionCheck', async () => {
@@ -2175,16 +2363,20 @@ describe('Tools', () => {
         const result = await storedExecuteToolFn('GITHUB_CREATE_ISSUE', { title: 'Test Issue' });
 
         expect(result).toEqual(toolMocks.toolExecuteResponse);
-        expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-          allow_tracing: undefined,
-          connected_account_id: undefined,
-          custom_auth_params: undefined,
-          custom_connection_data: undefined,
-          arguments: { title: 'Test Issue' },
-          user_id: userId,
-          version: 'latest',
-          text: undefined,
-        });
+        expect(mockClient.tools.execute).toHaveBeenCalledWith(
+          'COMPOSIO_TOOL',
+          {
+            allow_tracing: undefined,
+            connected_account_id: undefined,
+            custom_auth_params: undefined,
+            custom_connection_data: undefined,
+            arguments: { title: 'Test Issue' },
+            user_id: userId,
+            version: 'latest',
+            text: undefined,
+          },
+          undefined
+        );
       });
     });
   });

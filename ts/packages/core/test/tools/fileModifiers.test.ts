@@ -1862,18 +1862,22 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       });
 
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
-      expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-        arguments: {
-          file: '/path/to/file.txt',
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        'COMPOSIO_TOOL',
+        {
+          arguments: {
+            file: '/path/to/file.txt',
+          },
+          allow_tracing: undefined,
+          connected_account_id: undefined,
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          text: undefined,
+          user_id: 'test-user',
+          version: 'latest',
         },
-        allow_tracing: undefined,
-        connected_account_id: undefined,
-        custom_auth_params: undefined,
-        custom_connection_data: undefined,
-        text: undefined,
-        user_id: 'test-user',
-        version: 'latest',
-      });
+        undefined
+      );
     });
 
     it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {

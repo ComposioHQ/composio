@@ -1,11 +1,10 @@
 /**
  * Per-request transport options for cancelling an SDK call.
  *
- * Passed as a trailing argument to public SDK methods (e.g.
- * `composio.tools.execute`, `composio.tools.get`, `composio.toolkits.list`)
- * and forwarded to the underlying `@composio/client` request. Use this when
- * a single call must be cancellable independently of any global timeout —
- * long-running searches, user-cancellable jobs, or server-side aborts.
+ * For `tools.get` and `tools.execute`, pass `signal` directly in the
+ * options bag (3rd argument) alongside any modifiers or provider options.
+ * For other methods (e.g. `toolkits.get`, `authConfigs.list`), pass as a
+ * trailing argument. Forwarded to the underlying `@composio/client` request.
  *
  * If the underlying request is aborted via this signal, the SDK throws a
  * {@link ComposioRequestCancelledError} so callers can `instanceof`-detect
@@ -20,7 +19,6 @@
  *   await composio.tools.execute(
  *     'HACKERNEWS_GET_FRONTPAGE',
  *     { userId: 'default', arguments: {} },
- *     undefined,
  *     { signal: controller.signal }
  *   );
  * } catch (err) {
@@ -34,15 +32,20 @@
  *
  * @example Cancel a slow search
  * ```typescript
- * // The provider-options arg (3rd) stays `undefined`; `requestOptions` is the
- * // trailing 4th positional argument on `tools.get`.
  * const controller = new AbortController();
  * const tools = await composio.tools.get(
  *   'user_123',
  *   { search: 'send email', limit: 50 },
- *   undefined,
  *   { signal: controller.signal }
  * );
+ * ```
+ *
+ * @example Combine signal with modifiers
+ * ```typescript
+ * const result = await composio.tools.execute('TOOL', body, {
+ *   signal: controller.signal,
+ *   beforeExecute: ({ params }) => params,
+ * });
  * ```
  */
 export type ComposioRequestOptions = {
