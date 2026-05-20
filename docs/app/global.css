@@ -677,13 +677,17 @@ body {
   --hero-shimmer: #0a0a0a;
 }
 .dark {
-  --hero-surface: #141416;
-  --hero-surface-2: #1c1c20;
-  --hero-bubble: #25262a;
+  /* Aligned with --color-fd-card / --color-fd-muted so the hero chat
+     panel sits at the same grey as the feature cards below it; the
+     darker `#141416` chat surface used to read as a shadow patch
+     against the page bg. */
+  --hero-surface: #1c1c1c;
+  --hero-surface-2: #222222;
+  --hero-bubble: #262626;
   --hero-text: rgba(245, 245, 247, 0.92);
   --hero-text-muted: rgba(245, 245, 247, 0.5);
-  --hero-border: rgba(255, 255, 255, 0.14);
-  --hero-border-soft: rgba(255, 255, 255, 0.06);
+  --hero-border: rgba(255, 255, 255, 0.08);
+  --hero-border-soft: rgba(255, 255, 255, 0.04);
   --hero-shimmer: #f5f5f7;
 }
 
