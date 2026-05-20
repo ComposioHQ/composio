@@ -134,6 +134,71 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       expect(ctxArg.signal).toBe(controller.signal);
     });
 
+    it('SessionContext.execute / proxyExecute forward the wrapper-injected signal to client calls', async () => {
+      // Codex caught: SessionContextImpl.execute and .proxyExecute were
+      // calling the client without requestOptions. So a custom tool that
+      // received the forwarded signal and called `ctx.execute()` or
+      // `ctx.proxyExecute()` would still have THOSE in-flight HTTP calls
+      // un-cancellable. Fix: methods read `(this as SessionContext).signal`
+      // and forward it as requestOptions. The wrapper from
+      // customToolExecution sets signal as an own property, which inherits
+      // method lookups through the Object.create chain.
+      const { SessionContextImpl } = await import('../../src/models/SessionContext');
+      const { executeCustomTool: execCustomTool } =
+        await import('../../src/models/customToolExecution');
+
+      // Wire a mock client whose toolRouter.session.execute / proxyExecute
+      // capture their args.
+      const sessionExecuteSpy = vi.fn().mockResolvedValue({
+        data: { ok: true },
+        error: null,
+        successful: true,
+        session_info: undefined,
+        log_id: 'log_x',
+      });
+      const sessionProxySpy = vi.fn().mockResolvedValue({
+        status: 200,
+        data: 'ok',
+        headers: {},
+      });
+      const fakeClient = {
+        toolRouter: { session: { execute: sessionExecuteSpy, proxyExecute: sessionProxySpy } },
+      };
+      const ctxInstance = new SessionContextImpl(fakeClient as never, 'user_1', 'session_1');
+
+      const controller = new AbortController();
+      const requestOptions = { signal: controller.signal };
+
+      // Execute a tool whose user-execute calls ctx.execute AND ctx.proxyExecute.
+      const { z } = await import('zod');
+      const customToolEntry = {
+        handle: {
+          slug: 'CTX_USAGE_TOOL',
+          name: 'ctx-usage',
+          inputParams: z.object({}),
+          execute: async (_input: unknown, ctx: SessionContext) => {
+            await ctx.execute('SOMETHING_REMOTE', { x: 1 });
+            await ctx.proxyExecute({
+              toolkit: 'x',
+              endpoint: '/y',
+              method: 'GET',
+            } as never);
+            return { ok: true };
+          },
+        },
+      };
+      await execCustomTool(customToolEntry as never, {}, ctxInstance, requestOptions);
+
+      // Both client calls must have received our requestOptions trailing.
+      expect(sessionExecuteSpy).toHaveBeenCalledTimes(1);
+      const execArgs = sessionExecuteSpy.mock.calls[0];
+      expect(execArgs[2]).toEqual(requestOptions);
+
+      expect(sessionProxySpy).toHaveBeenCalledTimes(1);
+      const proxyArgs = sessionProxySpy.mock.calls[0];
+      expect(proxyArgs[2]).toEqual(requestOptions);
+    });
+
     it('ToolRouter custom-tool signal injection preserves SessionContext prototype methods', async () => {
       // Codex caught: spreading a SessionContextImpl class instance into a
       // plain object (`{...sessionContext, signal}`) drops prototype methods

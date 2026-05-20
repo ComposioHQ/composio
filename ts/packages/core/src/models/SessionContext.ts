@@ -60,10 +60,20 @@ export class SessionContextImpl implements SessionContext {
     toolSlug: string,
     arguments_: Record<string, unknown>
   ): Promise<ToolRouterSessionExecuteResponse> {
+    // The caller's AbortSignal may have been injected by customToolExecution
+    // when wrapping this context for a per-call cancellation flow. Forward
+    // it to BOTH the local-tool fallback AND the remote client call so the
+    // helper methods we hand to custom tools actually honor cancellation.
+    // `this` here is the wrapper-with-signal when invoked through the
+    // prototype chain; reading `(this as SessionContext).signal` picks up
+    // the wrapper's own `signal` prop without a separate override.
+    const signal = (this as SessionContext).signal;
+    const requestOptions = signal ? { signal } : undefined;
+
     // Try local tool first (sibling routing)
     const entry = findCustomTool(this.customToolsMap, toolSlug);
     if (entry) {
-      const result = await executeCustomTool(entry, arguments_, this);
+      const result = await executeCustomTool(entry, arguments_, this, { signal });
       return ToolRouterSessionExecuteResponseSchema.parse({
         data: result.data,
         error: result.error,
@@ -84,7 +94,9 @@ export class SessionContextImpl implements SessionContext {
       executeParams.experimental = experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(this.sessionId, executeParams);
+    const response = await (requestOptions
+      ? this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions)
+      : this.client.toolRouter.session.execute(this.sessionId, executeParams));
     return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
   }
 
@@ -100,11 +112,17 @@ export class SessionContextImpl implements SessionContext {
       throw new ValidationError('Invalid proxy execute parameters', { cause: validated.error });
     }
 
+    // Same pattern as `execute`: forward the wrapper-injected signal so
+    // calling `ctx.proxyExecute(...)` inside a custom tool honors caller
+    // cancellation. `this.signal` resolves against the wrapper-with-signal
+    // when invoked through the prototype chain.
+    const signal = (this as SessionContext).signal;
+    const requestOptions = signal ? { signal } : undefined;
+
     const clientParams = transformProxyParams(validated.data);
-    const response = await this.client.toolRouter.session.proxyExecute(
-      this.sessionId,
-      clientParams
-    );
+    const response = await (requestOptions
+      ? this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions)
+      : this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams));
 
     return {
       status: response.status,
