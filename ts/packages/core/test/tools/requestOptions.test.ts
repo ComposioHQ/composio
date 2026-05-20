@@ -5,7 +5,7 @@ import { Tools } from '../../src/models/Tools';
 import { Toolkits } from '../../src/models/Toolkits';
 import { AuthConfigs } from '../../src/models/AuthConfigs';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
-import ComposioClient from '@composio/client';
+import ComposioClient, { APIUserAbortError } from '@composio/client';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
@@ -51,21 +51,39 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       expect(calls[0]).toHaveLength(1);
     });
 
-    it('translates a client abort into ComposioRequestCancelledError', async () => {
-      const controller = new AbortController();
-      controller.abort();
-      mockClient.tools.list.mockImplementationOnce(async (_q, opts) => {
-        if (opts?.signal?.aborted) {
-          const err = new Error('Request was aborted');
-          err.name = 'APIUserAbortError';
-          throw err;
-        }
-        return { items: [], totalPages: 1 };
+    it('translates a real @composio/client APIUserAbortError into ComposioRequestCancelledError', async () => {
+      // Use the REAL APIUserAbortError class — not a stub — so we catch the
+      // case Codex flagged: the class inherits `name === "Error"` because it
+      // never sets `this.name`. A name-only detector misses this; instanceof
+      // is the canonical path.
+      const realAbort = new APIUserAbortError();
+      // Sanity-check the contract we're testing.
+      expect(realAbort.name).toBe('Error');
+      expect(realAbort.constructor.name).toBe('APIUserAbortError');
+
+      mockClient.tools.list.mockImplementationOnce(async () => {
+        throw realAbort;
       });
 
       await expect(
         tools.getRawComposioTools({ search: 'send email' }, undefined, {
-          signal: controller.signal,
+          signal: new AbortController().signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+    });
+
+    it('translates a generic AbortError into ComposioRequestCancelledError', async () => {
+      // Some transports surface a generic AbortError (DOM-style). Confirm
+      // the name fallback still works.
+      mockClient.tools.list.mockImplementationOnce(async () => {
+        const err = new Error('The operation was aborted');
+        err.name = 'AbortError';
+        throw err;
+      });
+
+      await expect(
+        tools.getRawComposioTools({ search: 'send email' }, undefined, {
+          signal: new AbortController().signal,
         })
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });

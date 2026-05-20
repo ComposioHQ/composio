@@ -1,3 +1,4 @@
+import { APIUserAbortError } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const SDKErrorCodes = {
@@ -66,20 +67,34 @@ export class ComposioRequestCancelledError extends ComposioError {
 
 /**
  * Type guard that detects an aborted request from `@composio/client`'s
- * `APIUserAbortError` (or a generic `AbortError`) by name. Avoids a hard
- * dependency on the concrete client class so this works across client
- * versions and through transport wrappers.
+ * `APIUserAbortError`, the underlying fetch `AbortError`, or a generic
+ * `AbortError` propagated through a transport wrapper.
+ *
+ * IMPORTANT: `APIUserAbortError` instances do NOT set `this.name`, so the
+ * inherited `.name` is `"Error"` at runtime — a name-only check misses
+ * them. We use `instanceof` (against the imported class) as the primary
+ * signal, plus `constructor.name` as a defensive fallback for dual-package
+ * hazard or multiple-client-version situations. DOMException is detected
+ * separately because it doesn't extend Error in some runtimes.
  *
  * @internal
  */
 export function isRequestAbortError(error: unknown): boolean {
+  if (error instanceof APIUserAbortError) return true;
+  if (
+    typeof DOMException !== 'undefined' &&
+    error instanceof DOMException &&
+    error.name === 'AbortError'
+  ) {
+    return true;
+  }
   if (!(error instanceof Error)) return false;
+  // Defensive fallbacks: matches across-package class duplication (where
+  // `instanceof APIUserAbortError` could fail) and any other transport that
+  // surfaces a generic AbortError.
   return (
-    error.name === 'APIUserAbortError' ||
+    error.constructor.name === 'APIUserAbortError' ||
     error.name === 'AbortError' ||
-    // DOMException with name 'AbortError' (fetch in some runtimes)
-    (typeof DOMException !== 'undefined' &&
-      error instanceof DOMException &&
-      error.name === 'AbortError')
+    error.name === 'APIUserAbortError'
   );
 }
