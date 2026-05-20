@@ -52,11 +52,6 @@
     "clean:workspace": "pnpm turbo clean"
   },
   "packageManager": "pnpm@10.28.2",
-  "pnpm": {
-    "overrides": {
-      "protobufjs": "7.5.5"
-    }
-  },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@changesets/cli": "^2.29.8",

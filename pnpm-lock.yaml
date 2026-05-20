@@ -98,7 +98,8 @@ catalogs:
       version: 3.25.1
 
 overrides:
-  protobufjs: 7.5.5
+  qs@<6.14.1: '>=6.14.1'
+  protobufjs: 7.5.9
 
 pnpmfileChecksum: sha256-X6eCJXmBNe7VV40iD0uZlsr4IMg+ZL/Qodvx5bNk4wI=
 
@@ -5835,8 +5836,8 @@ packages:
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
-  protobufjs@7.5.5:
-    resolution: {integrity: sha512-3wY1AxV+VBNW8Yypfd1yQY9pXnqTAN+KwQxL8iYm3/BjKYMNg4i0owhEe26PWDOMaIrzeeF98Lqd5NGz4omiIg==}
+  protobufjs@7.5.9:
+    resolution: {integrity: sha512-Od4muIm3HW1AouyHF5lONOf1FWo3hY1NbFDoy191X9GzhpgW1clCoaFjfVs2rKJNFYpTNJbje4cbAIDBZJ63ZA==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -7712,7 +7713,7 @@ snapshots:
     dependencies:
       google-auth-library: 10.5.0
       p-retry: 7.1.1
-      protobufjs: 7.5.5
+      protobufjs: 7.5.9
       ws: 8.19.0
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
@@ -11133,7 +11134,7 @@ snapshots:
 
   process-nextick-args@2.0.1: {}
 
-  protobufjs@7.5.5:
+  protobufjs@7.5.9:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
