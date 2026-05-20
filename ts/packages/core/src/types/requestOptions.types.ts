@@ -23,10 +23,13 @@
  *
  * @example Cap a search at 10 seconds
  * ```typescript
+ * // The provider-options arg (3rd) stays `undefined`; `requestOptions` is the
+ * // trailing 4th positional argument on `tools.get`.
  * const tools = await composio.tools.get(
  *   'user_123',
  *   { search: 'send email', limit: 50 },
- *   { requestOptions: { timeout: 10_000 } }
+ *   undefined,
+ *   { timeout: 10_000 }
  * );
  * ```
  */
