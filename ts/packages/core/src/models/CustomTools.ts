@@ -35,7 +35,7 @@ import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 import { AuthSchemeTypes } from '../types/authConfigs.types';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
-import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { ComposioRequestCancelledError, isRequestAbortError } from '../errors/SDKErrors';
 
 export class CustomTools {
   private readonly client: ComposioClient;
@@ -389,9 +389,19 @@ export class CustomTools {
       });
     } catch (err) {
       // Surface cancellation as the typed error rather than letting it bubble
-      // up as a generic execution failure.
+      // up as a generic execution failure. Covers BOTH:
+      //   1. The pre-execute guard throwing ComposioRequestCancelledError
+      //      directly,
+      //   2. User code that wired ctx.signal into fetch — fetch rejects with
+      //      AbortError / DOMException(AbortError) which `isRequestAbortError`
+      //      detects (via instanceof + cause-chain + name fallbacks).
       if (err instanceof ComposioRequestCancelledError) {
         throw err;
+      }
+      if (isRequestAbortError(err)) {
+        throw new ComposioRequestCancelledError(undefined, {
+          cause: err instanceof Error ? err : undefined,
+        });
       }
       throw err;
     }

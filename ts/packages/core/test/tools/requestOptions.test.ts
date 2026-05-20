@@ -133,6 +133,45 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       expect(ctxArg.signal).toBe(controller.signal);
     });
 
+    it('custom-tool that throws AbortError from user code surfaces as ComposioRequestCancelledError', async () => {
+      // The cooperative-cancellation contract: when user code wires
+      // ctx.signal into fetch and abort fires mid-call, fetch rejects
+      // with an AbortError — the SDK must normalize that into
+      // ComposioRequestCancelledError, NOT leak the raw DOMException or
+      // wrap it as a generic execution failure. Drives the real
+      // CustomTools.executeCustomTool path (not a spy mock) so the
+      // production catch+normalize logic runs.
+      const userExecuteThrowsAbort = vi.fn().mockImplementation(async () => {
+        // Simulate fetch rejecting due to AbortController.abort().
+        const err = new Error('The operation was aborted');
+        err.name = 'AbortError';
+        throw err;
+      });
+
+      // Register a real custom tool with toolkitSlug 'custom' so the
+      // executeCustomTool path skips the toolkit-retrieve preflight.
+      const { z } = await import('zod');
+      await tools.createCustomTool({
+        slug: 'COOP_CANCEL_TOOL',
+        name: 'Coop cancel',
+        description: 'test',
+        inputParams: z.object({}),
+        toolkitSlug: 'custom',
+        execute: userExecuteThrowsAbort,
+      });
+
+      const controller = new AbortController();
+      await expect(
+        tools.execute(
+          'COOP_CANCEL_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          undefined,
+          { signal: controller.signal }
+        )
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+      expect(userExecuteThrowsAbort).toHaveBeenCalledTimes(1);
+    });
+
     it('pre-execute aborted signal short-circuits custom-tool execution with ComposioRequestCancelledError', async () => {
       // Custom-tool can't preempt user code, so the SDK does a synchronous
       // signal.aborted check BEFORE invoking the user fn. This ensures a

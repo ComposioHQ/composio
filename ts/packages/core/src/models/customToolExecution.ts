@@ -9,7 +9,7 @@ import type {
 } from '../types/customTool.types';
 import type { ToolExecuteResponse } from '../types/tool.types';
 import { ValidationError } from '../errors';
-import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { ComposioRequestCancelledError, isRequestAbortError } from '../errors/SDKErrors';
 
 /**
  * Find a custom tool entry by slug.
@@ -105,9 +105,18 @@ export async function executeCustomTool(
     };
   } catch (err: unknown) {
     // Surface cancellation as the typed error, not as a wrapped
-    // tool-execution failure — callers `instanceof`-detect this.
+    // tool-execution failure — callers `instanceof`-detect this. Also
+    // covers the cooperative-cancellation path where user code wired
+    // ctx.signal into fetch and the abort surfaced as AbortError /
+    // DOMException(AbortError) — `isRequestAbortError` catches all those
+    // shapes via instanceof + cause-chain + name fallbacks.
     if (err instanceof ComposioRequestCancelledError) {
       throw err;
+    }
+    if (isRequestAbortError(err)) {
+      throw new ComposioRequestCancelledError(undefined, {
+        cause: err instanceof Error ? err : undefined,
+      });
     }
     const message = err instanceof Error ? err.message : String(err);
     return {
