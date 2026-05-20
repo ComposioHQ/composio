@@ -94,8 +94,18 @@ export async function executeCustomTool(
     // The session context now exposes `signal` so cooperative cancellation is
     // possible: long-running user code that respects `ctx.signal` can abort
     // mid-execution (e.g. by passing it into fetch).
+    //
+    // CRITICAL: `sessionContext` is a class instance (SessionContextImpl).
+    // Object-spread (`{...sessionContext, signal}`) would discard the
+    // prototype and break `ctx.execute(...)` / `ctx.proxyExecute(...)` —
+    // exactly the helpers most custom tools rely on. Preserve the prototype
+    // by creating a new object whose [[Prototype]] is the original instance,
+    // then defining `signal` on the proxy. Lookups for `execute` /
+    // `proxyExecute` fall through to the original instance unchanged.
     const ctxWithSignal: SessionContext = options?.signal
-      ? { ...sessionContext, signal: options.signal }
+      ? Object.assign(Object.create(sessionContext as object) as SessionContext, {
+          signal: options.signal,
+        })
       : sessionContext;
     const data = await handle.execute(parsed.data, ctxWithSignal);
     return {

@@ -8,6 +8,7 @@ import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient, { APIUserAbortError } from '@composio/client';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
+import type { SessionContext } from '../../src/types/customTool.types';
 import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 /**
@@ -131,6 +132,61 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       const ctxArg = userExecute.mock.calls[0][3];
       expect(ctxArg).toBeDefined();
       expect(ctxArg.signal).toBe(controller.signal);
+    });
+
+    it('ToolRouter custom-tool signal injection preserves SessionContext prototype methods', async () => {
+      // Codex caught: spreading a SessionContextImpl class instance into a
+      // plain object (`{...sessionContext, signal}`) drops prototype methods
+      // like `execute` and `proxyExecute`. Any custom tool that calls
+      // `ctx.execute(...)` would fail only when requestOptions is supplied.
+      // The fix uses Object.create with the instance as [[Prototype]] so
+      // method lookups fall through to the original.
+      const { executeCustomTool: execCustomTool } =
+        await import('../../src/models/customToolExecution');
+
+      // Build a minimal class-instance SessionContext (mirroring
+      // SessionContextImpl). Class methods are on the prototype, not own props.
+      class FakeSessionContext implements Pick<
+        SessionContext,
+        'userId' | 'execute' | 'proxyExecute'
+      > {
+        readonly userId = 'user_1';
+        async execute() {
+          return { data: { fromCtxMethod: true }, error: null, logId: '' };
+        }
+        async proxyExecute() {
+          return { data: 'ok', status: 200, headers: {} };
+        }
+      }
+      const ctxInstance = new FakeSessionContext() as unknown as SessionContext;
+
+      let observedExecute: unknown = undefined;
+      let observedProxy: unknown = undefined;
+      let observedSignal: AbortSignal | undefined = undefined;
+
+      const customToolEntry = {
+        handle: {
+          slug: 'CTX_METHODS_TOOL',
+          name: 'ctx',
+          inputParams: (await import('zod')).z.object({}),
+          execute: async (_input: unknown, ctx: SessionContext) => {
+            // Capture all three: methods should still be reachable through
+            // the proxy/Object.create chain.
+            observedExecute = ctx.execute;
+            observedProxy = ctx.proxyExecute;
+            observedSignal = ctx.signal;
+            return { ok: true };
+          },
+        },
+      };
+
+      await execCustomTool(customToolEntry as never, {}, ctxInstance, {
+        signal: new AbortController().signal,
+      });
+
+      expect(observedExecute).toBeTypeOf('function');
+      expect(observedProxy).toBeTypeOf('function');
+      expect(observedSignal).toBeInstanceOf(AbortSignal);
     });
 
     it('custom-tool that throws AbortError from user code surfaces as ComposioRequestCancelledError', async () => {
