@@ -77,9 +77,21 @@ export class ComposioRequestCancelledError extends ComposioError {
  * hazard or multiple-client-version situations. DOMException is detected
  * separately because it doesn't extend Error in some runtimes.
  *
+ * Also walks `error.cause` (up to 5 levels) so an abort wrapped in an
+ * outer transport-level error — e.g. an `APIError` carrying the abort
+ * as its cause from a future client refactor or a third-party retry
+ * wrapper — is still detected. Today's `@composio/client` throws
+ * `APIUserAbortError` directly without wrapping, but the cause walk
+ * costs nothing and future-proofs the detection.
+ *
  * @internal
  */
 export function isRequestAbortError(error: unknown): boolean {
+  return _isRequestAbortErrorAt(error, /* depth= */ 0);
+}
+
+function _isRequestAbortErrorAt(error: unknown, depth: number): boolean {
+  if (depth > 5) return false;
   if (error instanceof APIUserAbortError) return true;
   if (
     typeof DOMException !== 'undefined' &&
@@ -92,9 +104,18 @@ export function isRequestAbortError(error: unknown): boolean {
   // Defensive fallbacks: matches across-package class duplication (where
   // `instanceof APIUserAbortError` could fail) and any other transport that
   // surfaces a generic AbortError.
-  return (
+  if (
     error.constructor.name === 'APIUserAbortError' ||
     error.name === 'AbortError' ||
     error.name === 'APIUserAbortError'
-  );
+  ) {
+    return true;
+  }
+  // Walk the cause chain. Some wrappers (e.g. future `APIError`-wrapping
+  // retry logic) carry the original abort as `error.cause`; without this
+  // walk, name-only inspection of the outer error would miss it.
+  if ('cause' in error && error.cause !== undefined && error.cause !== null) {
+    return _isRequestAbortErrorAt(error.cause, depth + 1);
+  }
+  return false;
 }

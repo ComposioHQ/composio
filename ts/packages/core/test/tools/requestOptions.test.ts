@@ -87,6 +87,24 @@ describe('Tools — requestOptions (signal) forwarding', () => {
         })
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
+
+    it('translates an abort wrapped in error.cause into ComposioRequestCancelledError', async () => {
+      // Defensive against future @composio/client refactors that might
+      // wrap APIUserAbortError in an outer APIError (e.g. retry-context
+      // wrapping). The detector must walk `error.cause` so it still fires.
+      mockClient.tools.list.mockImplementationOnce(async () => {
+        const inner = new APIUserAbortError();
+        const outer = new Error('Request failed during retry', { cause: inner });
+        outer.name = 'APIError';
+        throw outer;
+      });
+
+      await expect(
+        tools.getRawComposioTools({ search: 'send email' }, undefined, {
+          signal: new AbortController().signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+    });
   });
 
   describe('execute', () => {
