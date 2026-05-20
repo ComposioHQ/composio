@@ -48,6 +48,7 @@ import {
 } from '../errors';
 import logger from '../utils/logger';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
 
 // One-time-per-process guard so long-running services don't spam the deprecation
 // warning on every initiate() call.
@@ -91,7 +92,10 @@ export class ConnectedAccounts {
    * });
    * ```
    */
-  async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse> {
+  async list(
+    query?: ConnectedAccountListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountListResponse> {
     let rawQuery: ConnectedAccountListParamsRaw | undefined = undefined;
 
     if (query) {
@@ -119,7 +123,9 @@ export class ConnectedAccounts {
       };
     }
 
-    const result = await this.client.connectedAccounts.list(rawQuery);
+    const result = requestOptions
+      ? await this.client.connectedAccounts.list(rawQuery, requestOptions)
+      : await this.client.connectedAccounts.list(rawQuery);
     return transformConnectedAccountListResponse(result);
   }
 
@@ -459,8 +465,13 @@ export class ConnectedAccounts {
    * console.log(account.toolkit.slug); // e.g., 'github'
    * ```
    */
-  async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
-    const response = await this.client.connectedAccounts.retrieve(nanoid);
+  async get(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountRetrieveResponse> {
+    const response = requestOptions
+      ? await this.client.connectedAccounts.retrieve(nanoid, requestOptions)
+      : await this.client.connectedAccounts.retrieve(nanoid);
     return transformConnectedAccountResponse(response);
   }
 
@@ -480,8 +491,13 @@ export class ConnectedAccounts {
    * await composio.connectedAccounts.delete('conn_abc123');
    * ```
    */
-  async delete(nanoid: string): Promise<ConnectedAccountDeleteResponse> {
-    return this.client.connectedAccounts.delete(nanoid);
+  async delete(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountDeleteResponse> {
+    return requestOptions
+      ? this.client.connectedAccounts.delete(nanoid, requestOptions)
+      : this.client.connectedAccounts.delete(nanoid);
   }
 
   /**
@@ -502,7 +518,8 @@ export class ConnectedAccounts {
    */
   async refresh(
     nanoid: string,
-    options?: ConnectedAccountRefreshOptions
+    options?: ConnectedAccountRefreshOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRefreshResponse> {
     let params: ConnectedAccountRefreshParams | undefined = undefined;
 
@@ -520,7 +537,9 @@ export class ConnectedAccounts {
       };
     }
 
-    return this.client.connectedAccounts.refresh(nanoid, params);
+    return requestOptions
+      ? this.client.connectedAccounts.refresh(nanoid, params, requestOptions)
+      : this.client.connectedAccounts.refresh(nanoid, params);
   }
 
   /**
@@ -545,9 +564,12 @@ export class ConnectedAccounts {
    */
   async updateStatus(
     nanoid: string,
-    params: ConnectedAccountUpdateStatusParams
+    params: ConnectedAccountUpdateStatusParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, params);
+    return requestOptions
+      ? this.client.connectedAccounts.updateStatus(nanoid, params, requestOptions)
+      : this.client.connectedAccounts.updateStatus(nanoid, params);
   }
 
   /**
@@ -562,8 +584,13 @@ export class ConnectedAccounts {
    * console.log(enabledAccount.isDisabled); // false
    * ```
    */
-  async enable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
+  async enable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return requestOptions
+      ? this.client.connectedAccounts.updateStatus(nanoid, { enabled: true }, requestOptions)
+      : this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
   }
 
   /**
@@ -584,8 +611,13 @@ export class ConnectedAccounts {
    * // });
    * ```
    */
-  async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  async disable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return requestOptions
+      ? this.client.connectedAccounts.updateStatus(nanoid, { enabled: false }, requestOptions)
+      : this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
   }
 
   /**
@@ -606,7 +638,8 @@ export class ConnectedAccounts {
    */
   async update(
     nanoid: string,
-    params: UpdateConnectedAccountParams
+    params: UpdateConnectedAccountParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -615,6 +648,8 @@ export class ConnectedAccounts {
       });
     }
 
-    return this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
+    return requestOptions
+      ? this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data, requestOptions)
+      : this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
   }
 }

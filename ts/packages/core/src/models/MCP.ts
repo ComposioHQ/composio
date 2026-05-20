@@ -22,6 +22,7 @@ import { ValidationError } from '../errors/ValidationErrors';
 import { transform } from '../utils/transform';
 import { McpUpdateResponse } from '@composio/client/resources.js';
 import { McpRetrieveResponse } from '@composio/client/resources';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
 
 function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveResponse): MCPItem {
   return transform(response)
@@ -77,7 +78,11 @@ export class MCP {
    * });
    * ```
    */
-  async create(name: string, mcpConfig: MCPConfigCreationParams): Promise<MCPConfigCreateResponse> {
+  async create(
+    name: string,
+    mcpConfig: MCPConfigCreationParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<MCPConfigCreateResponse> {
     const config = MCPConfigCreationParamsSchema.safeParse(mcpConfig);
     if (config.error) {
       throw new ValidationError('Invalid parameters passed to create mcp config', {
@@ -100,14 +105,17 @@ export class MCP {
       }
     });
 
-    const server = await this.client.mcp.custom.create({
+    const createBody = {
       name,
       toolkits,
       auth_config_ids,
       custom_tools,
       // if manually manage account is set to true, disable composio account management tools
       managed_auth_via_composio: config.data.manuallyManageConnections ? false : true,
-    });
+    };
+    const server = requestOptions
+      ? await this.client.mcp.custom.create(createBody, requestOptions)
+      : await this.client.mcp.custom.create(createBody);
 
     const camelCaseServer = transform(server)
       .with(MCPConfigResponseSchema)
@@ -162,7 +170,10 @@ export class MCP {
    * });
    * ```
    */
-  async list(options: MCPListParams): Promise<MCPListResponse> {
+  async list(
+    options: MCPListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<MCPListResponse> {
     const { data: params, error } = MCPListParamsSchema.safeParse(options);
     if (error) {
       throw new ValidationError('Failed to validate list options', {
@@ -170,13 +181,16 @@ export class MCP {
       });
     }
 
-    const listResponse = await this.client.mcp.list({
+    const listParams = {
       page_no: params.page,
       limit: params.limit,
       toolkits: params.toolkits?.length > 0 ? params.toolkits.join(',') : undefined,
       auth_config_ids: params.authConfigs?.length > 0 ? params.authConfigs.join(',') : undefined,
       name: params.name,
-    });
+    };
+    const listResponse = requestOptions
+      ? await this.client.mcp.list(listParams, requestOptions)
+      : await this.client.mcp.list(listParams);
 
     const transformedListResponse = transform(listResponse)
       .with(MCPListResponseSchema)
@@ -225,8 +239,10 @@ export class MCP {
    *
    * @throws {ValidationError} When the server ID is invalid or server not found
    */
-  async get(serverId: string): Promise<MCPItem> {
-    const response = await this.client.mcp.retrieve(serverId);
+  async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MCPItem> {
+    const response = requestOptions
+      ? await this.client.mcp.retrieve(serverId, requestOptions)
+      : await this.client.mcp.retrieve(serverId);
     return transformMCPItemResponse(response);
   }
 
@@ -266,8 +282,13 @@ export class MCP {
    *
    * @warning This operation is irreversible. Once deleted, the MCP server configuration and all its associated data will be permanently removed.
    */
-  async delete(serverId: string): Promise<{ id: string; deleted: boolean }> {
-    return await this.client.mcp.delete(serverId);
+  async delete(
+    serverId: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<{ id: string; deleted: boolean }> {
+    return requestOptions
+      ? await this.client.mcp.delete(serverId, requestOptions)
+      : await this.client.mcp.delete(serverId);
   }
 
   /**
@@ -334,7 +355,11 @@ export class MCP {
    * @note Only provided fields will be updated. Omitted fields will retain their current values.
    * @note When updating toolkits, the entire toolkit configuration is replaced, not merged.
    */
-  async update(serverId: string, config: MCPUpdateParams): Promise<MCPItem> {
+  async update(
+    serverId: string,
+    config: MCPUpdateParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<MCPItem> {
     const { data: params, error } = MCPUpdateParamsSchema.safeParse(config);
     if (error) {
       throw new ValidationError('Failed to validate update params', {
@@ -356,7 +381,7 @@ export class MCP {
         auth_config_ids.push(toolkit.authConfigId);
       }
     });
-    const response = await this.client.mcp.update(serverId, {
+    const updateBody = {
       ...{ name: params.name ?? undefined },
       ...(params.toolkits
         ? {
@@ -366,7 +391,10 @@ export class MCP {
           }
         : {}),
       ...{ managed_auth_via_composio: params.manuallyManageConnections ?? undefined },
-    });
+    };
+    const response = requestOptions
+      ? await this.client.mcp.update(serverId, updateBody, requestOptions)
+      : await this.client.mcp.update(serverId, updateBody);
     return transformMCPItemResponse(response);
   }
 
@@ -390,9 +418,12 @@ export class MCP {
   async generate(
     userId: string,
     mcpConfigId: string,
-    options?: MCPGetInstanceParams
+    options?: MCPGetInstanceParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<MCPServerInstance> {
-    const server = await this.client.mcp.retrieve(mcpConfigId);
+    const server = requestOptions
+      ? await this.client.mcp.retrieve(mcpConfigId, requestOptions)
+      : await this.client.mcp.retrieve(mcpConfigId);
     const params = MCPGetInstanceParamsSchema.safeParse(
       options ?? { manuallyManageConnections: false }
     );
@@ -402,11 +433,14 @@ export class MCP {
       });
     }
 
-    const urlResponse = await this.client.mcp.generate.url({
+    const urlBody = {
       mcp_server_id: mcpConfigId,
       user_ids: [userId],
       managed_auth_by_composio: options?.manuallyManageConnections ? false : true,
-    });
+    };
+    const urlResponse = requestOptions
+      ? await this.client.mcp.generate.url(urlBody, requestOptions)
+      : await this.client.mcp.generate.url(urlBody);
 
     const userIdsURL = urlResponse.user_ids_url[0];
     const serverInstance = MCPServerInstanceSchema.safeParse({

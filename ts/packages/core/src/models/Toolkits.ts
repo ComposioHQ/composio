@@ -22,6 +22,7 @@ import {
   transformToolkitRetrieveCategoriesResponse,
   transformToolkitRetrieveResponse,
 } from '../utils/transformers/toolkits';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
 /**
  * Toolkits class
  *
@@ -47,7 +48,10 @@ export class Toolkits {
    *
    * @private
    */
-  private async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
+  private async getToolkits(
+    query: ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolKitListResponse> {
     try {
       const parsedQuery = ToolkitsListParamsSchema.safeParse(query);
       if (!parsedQuery.success) {
@@ -55,13 +59,16 @@ export class Toolkits {
           cause: parsedQuery.error,
         });
       }
-      const result = await this.client.toolkits.list({
+      const listParams = {
         category: parsedQuery.data.category,
         managed_by: parsedQuery.data.managedBy,
         sort_by: parsedQuery.data.sortBy,
         cursor: parsedQuery.data.cursor,
         limit: parsedQuery.data.limit,
-      });
+      };
+      const result = requestOptions
+        ? await this.client.toolkits.list(listParams, requestOptions)
+        : await this.client.toolkits.list(listParams);
 
       return transformToolkitListResponse(result);
     } catch (error) {
@@ -83,9 +90,14 @@ export class Toolkits {
    *
    * @private
    */
-  protected async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+  protected async getToolkitBySlug(
+    slug: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveResponse> {
     try {
-      const result = await this.client.toolkits.retrieve(slug);
+      const result = requestOptions
+        ? await this.client.toolkits.retrieve(slug, undefined, requestOptions)
+        : await this.client.toolkits.retrieve(slug);
       return transformToolkitRetrieveResponse(result);
     } catch (error) {
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
@@ -120,7 +132,10 @@ export class Toolkits {
    * console.log(githubToolkit.authConfigDetails); // Authentication configuration details
    * ```
    */
-  async get(slug: string): Promise<ToolkitRetrieveResponse>;
+  async get(
+    slug: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveResponse>;
 
   /**
    * Retrieves a list of toolkits based on the provided query parameters.
@@ -144,21 +159,26 @@ export class Toolkits {
    * });
    * ```
    */
-  async get(query?: ToolkitListParams): Promise<ToolKitListResponse>;
+  async get(
+    query?: ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolKitListResponse>;
 
   /**
    * Implementation method that handles both overloads for retrieving toolkits.
    *
    * @param {string | ToolkitListParams} arg - Either a toolkit slug or query parameters
+   * @param {ComposioRequestOptions} [requestOptions] - Per-request cancellation/timeout options
    * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit or list of toolkits
    */
   async get(
-    arg?: string | ToolkitListParams
+    arg?: string | ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
     if (typeof arg === 'string') {
-      return this.getToolkitBySlug(arg);
+      return this.getToolkitBySlug(arg, requestOptions);
     }
-    return this.getToolkits(arg ?? {});
+    return this.getToolkits(arg ?? {}, requestOptions);
   }
 
   private async getAuthConfigFields(
@@ -277,8 +297,12 @@ export class Toolkits {
    * console.log(categories.items); // Array of category objects
    * ```
    */
-  async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
-    const result = await this.client.toolkits.retrieveCategories();
+  async listCategories(
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveCategoriesResponse> {
+    const result = requestOptions
+      ? await this.client.toolkits.retrieveCategories(requestOptions)
+      : await this.client.toolkits.retrieveCategories();
     return transformToolkitRetrieveCategoriesResponse(result);
   }
 

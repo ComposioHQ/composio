@@ -58,6 +58,7 @@ import type { SessionExecuteParams } from '@composio/client/resources/tool-route
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
@@ -395,7 +396,8 @@ export class Tools<
    */
   async getRawComposioTools(
     query: ToolListParams,
-    options?: SchemaModifierOptions
+    options?: SchemaModifierOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolList> {
     if ('tools' in query && 'toolkits' in query) {
       throw new ValidationError(
@@ -460,7 +462,9 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = await this.client.tools.list(filters);
+    const tools = requestOptions
+      ? await this.client.tools.list(filters, requestOptions)
+      : await this.client.tools.list(filters);
 
     if (!tools) {
       return [];
@@ -514,16 +518,20 @@ export class Tools<
    */
   async getRawToolRouterSessionTools(
     sessionId: string,
-    options?: SchemaModifierOptions
+    options?: SchemaModifierOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolList> {
     const tools: ToolList = [];
     let cursor: string | null | undefined;
 
     do {
-      const response = await this.client.toolRouter.session.tools(sessionId, {
+      const sessionToolsParams = {
         limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
         ...(cursor ? { cursor } : {}),
-      });
+      };
+      const response = requestOptions
+        ? await this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
+        : await this.client.toolRouter.session.tools(sessionId, sessionToolsParams);
       tools.push(...response.items.map(tool => this.transformToolCases(tool)));
       cursor = response.next_cursor;
     } while (cursor);
@@ -599,7 +607,11 @@ export class Tools<
    * });
    * ```
    */
-  async getRawComposioToolBySlug(slug: string, options?: ToolRetrievalOptions): Promise<Tool> {
+  async getRawComposioToolBySlug(
+    slug: string,
+    options?: ToolRetrievalOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<Tool> {
     // check if the tool is a custom tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     if (customTool) {
@@ -616,7 +628,9 @@ export class Tools<
         ? { version: options.version } // Explicit version → use 'version' param
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
 
-      tool = await this.client.tools.retrieve(slug, retrieveParams);
+      tool = requestOptions
+        ? await this.client.tools.retrieve(slug, retrieveParams, requestOptions)
+        : await this.client.tools.retrieve(slug, retrieveParams);
     } catch (error) {
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
         cause: error,
@@ -679,7 +693,8 @@ export class Tools<
   async get<T extends TProvider>(
     userId: string,
     filters: ToolListParams,
-    options?: ProviderOptions<TProvider>
+    options?: ProviderOptions<TProvider>,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
@@ -708,7 +723,8 @@ export class Tools<
   async get<T extends TProvider>(
     userId: string,
     slug: string,
-    options?: ProviderOptions<TProvider>
+    options?: ProviderOptions<TProvider>,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
@@ -724,16 +740,22 @@ export class Tools<
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    arg3?: ProviderOptions<TProvider>
+    arg3?: ProviderOptions<TProvider>,
+    arg4?: ComposioRequestOptions
   ): Promise<TToolCollection> {
     // Handle the two-parameter overloads
     const options = arg3 as ProviderOptions<TProvider>;
+    const requestOptions = arg4;
 
     // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(arg2, {
-        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-      });
+      const tool = await this.getRawComposioToolBySlug(
+        arg2,
+        {
+          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
+        },
+        requestOptions
+      );
       return this.wrapToolsForProvider(
         userId,
         [tool],
@@ -741,9 +763,13 @@ export class Tools<
       ) as TToolCollection;
     } else {
       // if the second argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(arg2, {
-        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-      });
+      const tools = await this.getRawComposioTools(
+        arg2,
+        {
+          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
+        },
+        requestOptions
+      );
       return this.wrapToolsForProvider(
         userId,
         tools,
@@ -871,7 +897,8 @@ export class Tools<
    */
   private async executeComposioTool(
     tool: Tool,
-    body: ToolExecuteParams
+    body: ToolExecuteParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     const toolkitVersion =
       body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
@@ -880,7 +907,7 @@ export class Tools<
       throw new ComposioToolVersionRequiredError();
     }
     try {
-      const result = await this.client.tools.execute(tool.slug, {
+      const executeBody: ComposioToolExecuteParams = {
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
         custom_auth_params: body.customAuthParams
@@ -903,7 +930,10 @@ export class Tools<
         user_id: body.userId,
         version: toolkitVersion,
         text: body.text,
-      });
+      };
+      const result = requestOptions
+        ? await this.client.tools.execute(tool.slug, executeBody, requestOptions)
+        : await this.client.tools.execute(tool.slug, executeBody);
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
     } catch (error) {
@@ -988,7 +1018,8 @@ export class Tools<
   async execute(
     slug: string,
     body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
+    modifiers?: ExecuteToolModifiers,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     if (!this.customTools) {
       throw new ComposioCustomToolsNotInitializedError(
@@ -1005,9 +1036,13 @@ export class Tools<
     const customTool = await this.customTools.getCustomToolBySlug(slug);
     const tool =
       customTool ??
-      (await this.getRawComposioToolBySlug(slug, {
-        version: body.version,
-      }));
+      (await this.getRawComposioToolBySlug(
+        slug,
+        {
+          version: body.version,
+        },
+        requestOptions
+      ));
     const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
 
     // Apply before execute modifiers
@@ -1024,7 +1059,7 @@ export class Tools<
     // Execute the tool (custom or composio)
     let result = customTool
       ? await this.customTools.executeCustomTool(customTool.slug, params)
-      : await this.executeComposioTool(tool, params);
+      : await this.executeComposioTool(tool, params, requestOptions);
 
     // Apply after execute modifiers
     result = await this.applyAfterExecuteModifiers(
@@ -1056,7 +1091,8 @@ export class Tools<
     body: ToolExecuteMetaParams,
     modifiers?: SessionExecuteMetaModifiers,
     tool?: Tool,
-    options?: ToolRouterSessionExecuteOptions
+    options?: ToolRouterSessionExecuteOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     const executeParams = ToolExecuteMetaParamsSchema.safeParse(body);
     if (!executeParams.success) {
@@ -1088,7 +1124,9 @@ export class Tools<
       executePayload.experimental = options.experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(body.sessionId, executePayload);
+    const response = requestOptions
+      ? await this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
+      : await this.client.toolRouter.session.execute(body.sessionId, executePayload);
 
     // Prepare the result
     let result: ToolExecuteResponse = {
@@ -1125,8 +1163,10 @@ export class Tools<
    * console.log(toolsEnum.items);
    * ```
    */
-  async getToolsEnum(): Promise<ToolRetrieveEnumResponse> {
-    return this.client.tools.retrieveEnum();
+  async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
+    return requestOptions
+      ? this.client.tools.retrieveEnum(requestOptions)
+      : this.client.tools.retrieveEnum();
   }
 
   /**
@@ -1147,8 +1187,14 @@ export class Tools<
    * console.log(inputParams.schema);
    * ```
    */
-  async getInput(slug: string, body: ToolGetInputParams): Promise<ToolGetInputResponse> {
-    return this.client.tools.getInput(slug, body);
+  async getInput(
+    slug: string,
+    body: ToolGetInputParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolGetInputResponse> {
+    return requestOptions
+      ? this.client.tools.getInput(slug, body, requestOptions)
+      : this.client.tools.getInput(slug, body);
   }
 
   /**
@@ -1174,7 +1220,10 @@ export class Tools<
    * console.log(response.data);
    * ```
    */
-  async proxyExecute(body: ToolProxyParams): Promise<ToolProxyResponse> {
+  async proxyExecute(
+    body: ToolProxyParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolProxyResponse> {
     const toolProxyParams = ToolProxyParamsSchema.safeParse(body);
     if (!toolProxyParams.success) {
       throw new ValidationError('Invalid tool proxy parameters', { cause: toolProxyParams.error });
@@ -1197,7 +1246,7 @@ export class Tools<
       );
     }
 
-    return this.client.tools.proxy({
+    const proxyBody = {
       endpoint: toolProxyParams.data.endpoint,
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
@@ -1212,7 +1261,10 @@ export class Tools<
        */
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
-    });
+    } as ComposioToolProxyParams;
+    return requestOptions
+      ? this.client.tools.proxy(proxyBody, requestOptions)
+      : this.client.tools.proxy(proxyBody);
   }
 
   /**

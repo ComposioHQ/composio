@@ -617,9 +617,13 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, slug);
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        modifySchema: undefined,
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          modifySchema: undefined,
+        },
+        undefined
+      );
       expect(context.mockProvider.wrapTools).toHaveBeenCalledWith(
         [toolMocks.transformedTool],
         expect.any(Function)
@@ -638,7 +642,11 @@ describe('Tools', () => {
 
       const result = await context.tools.get(userId, filters);
 
-      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(filters, { modifySchema: undefined });
+      expect(getRawComposioToolsSpy).toHaveBeenCalledWith(
+        filters,
+        { modifySchema: undefined },
+        undefined
+      );
       expect(context.mockProvider.wrapTools).toHaveBeenCalled();
       expect(result).toEqual('wrapped-tools-collection');
     });
@@ -657,9 +665,13 @@ describe('Tools', () => {
 
       await context.tools.get(userId, slug, { modifySchema: schemaModifier });
 
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        modifySchema: schemaModifier,
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          modifySchema: schemaModifier,
+        },
+        undefined
+      );
     });
   });
 
@@ -783,9 +795,13 @@ describe('Tools', () => {
       await context.tools.execute(slug, body);
 
       // Verify getRawComposioToolBySlug was called with version
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        version: explicitVersion,
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          version: explicitVersion,
+        },
+        undefined
+      );
 
       // Verify the API execute call received the version
       expect(mockClient.tools.execute).toHaveBeenCalledWith(
@@ -810,9 +826,13 @@ describe('Tools', () => {
       await context.tools.execute(slug, body);
 
       // Verify getRawComposioToolBySlug was called with version: 'latest'
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        version: 'latest',
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          version: 'latest',
+        },
+        undefined
+      );
     });
 
     it('should not pass version to getRawComposioToolBySlug() when not provided in execute()', async () => {
@@ -828,9 +848,13 @@ describe('Tools', () => {
       await context.tools.execute(slug, body);
 
       // Verify getRawComposioToolBySlug was called without version (should fallback to SDK config)
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        version: undefined,
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          version: undefined,
+        },
+        undefined
+      );
     });
   });
 

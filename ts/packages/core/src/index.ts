@@ -30,6 +30,7 @@ export * from './types/files.types';
 export * from './types/connectionRequest.types';
 export * from './types/toolRouter.types';
 export * from './types/ToolRouterSessionFilesMount.types';
+export * from './types/requestOptions.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
