@@ -389,16 +389,20 @@ export class CustomTools {
       });
     } catch (err) {
       // Surface cancellation as the typed error rather than letting it bubble
-      // up as a generic execution failure. Covers BOTH:
-      //   1. The pre-execute guard throwing ComposioRequestCancelledError
-      //      directly,
-      //   2. User code that wired ctx.signal into fetch — fetch rejects with
-      //      AbortError / DOMException(AbortError) which `isRequestAbortError`
-      //      detects (via instanceof + cause-chain + name fallbacks).
+      // up as a generic execution failure. Two paths:
+      //   1. Pre-execute guard threw ComposioRequestCancelledError directly,
+      //   2. User code wired ctx.signal into fetch — fetch rejects with
+      //      AbortError / DOMException(AbortError) and we MUST normalize.
+      //
+      // Critically, we only normalize an AbortError to caller-cancellation
+      // when the caller's signal ACTUALLY fired. A custom tool that throws
+      // AbortError for its own reason (its own timeout, internal abort)
+      // must keep surfacing as a tool failure — converting it would steer
+      // callers' catch blocks down the wrong branch.
       if (err instanceof ComposioRequestCancelledError) {
         throw err;
       }
-      if (isRequestAbortError(err)) {
+      if (requestOptions?.signal?.aborted && isRequestAbortError(err)) {
         throw new ComposioRequestCancelledError(undefined, {
           cause: err instanceof Error ? err : undefined,
         });

@@ -123,7 +123,13 @@ export async function executeCustomTool(
     if (err instanceof ComposioRequestCancelledError) {
       throw err;
     }
-    if (isRequestAbortError(err)) {
+    // Only normalize an AbortError to caller-cancellation when the caller's
+    // signal actually fired. A custom tool that throws AbortError for its
+    // OWN reason (internal timeout, library abort, an unrelated
+    // AbortController) must keep surfacing as a tool failure — converting
+    // it would lie about the cause and steer callers' catch blocks down
+    // the wrong branch.
+    if (options?.signal?.aborted && isRequestAbortError(err)) {
       throw new ComposioRequestCancelledError(undefined, {
         cause: err instanceof Error ? err : undefined,
       });

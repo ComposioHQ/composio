@@ -189,34 +189,86 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       expect(observedSignal).toBeInstanceOf(AbortSignal);
     });
 
-    it('custom-tool that throws AbortError from user code surfaces as ComposioRequestCancelledError', async () => {
+    it('custom-tool AbortError from its OWN internal abort (signal NOT fired) is NOT misclassified as cancellation', async () => {
+      // Regression for Codex review: a custom tool that has its own internal
+      // AbortController (timeout, library abort, anything unrelated to the
+      // caller's signal) throws AbortError naturally. We must NOT convert
+      // that into ComposioRequestCancelledError — the caller didn't cancel,
+      // and lying about the cause steers their catch block down the wrong
+      // branch. The conversion is gated on `requestOptions.signal.aborted`
+      // being true at catch time.
+      const userExecuteThrowsOwnAbort = vi.fn().mockImplementation(async () => {
+        const err = new Error('Tool internal timeout');
+        err.name = 'AbortError';
+        throw err;
+      });
+
+      const { z } = await import('zod');
+      await tools.createCustomTool({
+        slug: 'OWN_ABORT_TOOL',
+        name: 'Own abort',
+        description: 'test',
+        inputParams: z.object({}),
+        toolkitSlug: 'custom',
+        execute: userExecuteThrowsOwnAbort,
+      });
+
+      // Caller passes a signal that DOES NOT abort. The tool throws
+      // AbortError for its own reason. Must surface as the raw AbortError,
+      // NOT as ComposioRequestCancelledError.
+      const controller = new AbortController();
+      // controller.abort() NOT called.
+
+      await expect(
+        tools.execute(
+          'OWN_ABORT_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          undefined,
+          { signal: controller.signal }
+        )
+      ).rejects.toMatchObject({ name: 'AbortError' });
+
+      // And it MUST NOT be a ComposioRequestCancelledError.
+      try {
+        await tools.execute(
+          'OWN_ABORT_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          undefined,
+          { signal: controller.signal }
+        );
+      } catch (err) {
+        expect(err).not.toBeInstanceOf(ComposioRequestCancelledError);
+      }
+    });
+
+    it('custom-tool that throws AbortError after caller abort surfaces as ComposioRequestCancelledError', async () => {
       // The cooperative-cancellation contract: when user code wires
-      // ctx.signal into fetch and abort fires mid-call, fetch rejects
-      // with an AbortError — the SDK must normalize that into
-      // ComposioRequestCancelledError, NOT leak the raw DOMException or
-      // wrap it as a generic execution failure. Drives the real
-      // CustomTools.executeCustomTool path (not a spy mock) so the
-      // production catch+normalize logic runs.
-      const userExecuteThrowsAbort = vi.fn().mockImplementation(async () => {
-        // Simulate fetch rejecting due to AbortController.abort().
+      // ctx.signal into fetch and the CALLER aborts mid-call, fetch
+      // rejects with an AbortError — the SDK must normalize that into
+      // ComposioRequestCancelledError. The gate is `signal.aborted`
+      // being true at catch time, so we abort the controller before the
+      // tool throws.
+      const { z } = await import('zod');
+      const controller = new AbortController();
+      const userExecuteAbortsAfterCallerCancel = vi.fn().mockImplementation(async () => {
+        // Mirror real fetch behaviour: caller aborts → fetch rejects
+        // with AbortError. We simulate by inspecting the (caller's)
+        // signal right before throwing.
+        controller.abort();
         const err = new Error('The operation was aborted');
         err.name = 'AbortError';
         throw err;
       });
 
-      // Register a real custom tool with toolkitSlug 'custom' so the
-      // executeCustomTool path skips the toolkit-retrieve preflight.
-      const { z } = await import('zod');
       await tools.createCustomTool({
         slug: 'COOP_CANCEL_TOOL',
         name: 'Coop cancel',
         description: 'test',
         inputParams: z.object({}),
         toolkitSlug: 'custom',
-        execute: userExecuteThrowsAbort,
+        execute: userExecuteAbortsAfterCallerCancel,
       });
 
-      const controller = new AbortController();
       await expect(
         tools.execute(
           'COOP_CANCEL_TOOL',
@@ -225,7 +277,7 @@ describe('Tools — requestOptions (signal) forwarding', () => {
           { signal: controller.signal }
         )
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
-      expect(userExecuteThrowsAbort).toHaveBeenCalledTimes(1);
+      expect(userExecuteAbortsAfterCallerCancel).toHaveBeenCalledTimes(1);
     });
 
     it('pre-execute aborted signal short-circuits custom-tool execution with ComposioRequestCancelledError', async () => {
