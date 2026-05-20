@@ -14,15 +14,39 @@ import {
 import { useState, type ReactNode, type MouseEvent } from 'react';
 import { SectionHeading } from './home-features';
 
-const PROVIDERS = [
-  { name: 'Anthropic', logo: '/images/providers/anthropic-logo.svg' },
-  { name: 'OpenAI', logo: '/images/providers/openai-logo.svg' },
-  { name: 'Vercel AI', logo: '/images/providers/vercel-logo.svg' },
+// Some provider logos ship a dedicated `-dark` variant (white-on-dark
+// or stroke-inverted). Use those in dark mode instead of inverting the
+// light SVG via CSS — `dark:invert` mangles full-colour logos
+// (Google's primary palette, LlamaIndex's gradient, CrewAI's brand).
+const PROVIDERS: { name: string; logo: string; logoDark?: string }[] = [
+  {
+    name: 'Anthropic',
+    logo: '/images/providers/anthropic-logo.svg',
+    logoDark: '/images/providers/anthropic-logo-dark.svg',
+  },
+  {
+    name: 'OpenAI',
+    logo: '/images/providers/openai-logo.svg',
+    logoDark: '/images/providers/openai-logo-dark.svg',
+  },
+  {
+    name: 'Vercel AI',
+    logo: '/images/providers/vercel-logo.svg',
+    logoDark: '/images/providers/vercel-logo-dark.svg',
+  },
   { name: 'Google', logo: '/images/providers/google-logo.svg' },
-  { name: 'LangChain', logo: '/images/providers/langchain-logo.svg' },
+  {
+    name: 'LangChain',
+    logo: '/images/providers/langchain-logo.svg',
+    logoDark: '/images/providers/langchain-logo-dark.svg',
+  },
   { name: 'CrewAI', logo: '/images/providers/crewai-logo.svg' },
   { name: 'LlamaIndex', logo: '/images/providers/llamaIndex-logo.svg' },
-  { name: 'Mastra', logo: '/images/providers/mastra-logo.svg' },
+  {
+    name: 'Mastra',
+    logo: '/images/providers/mastra-logo.svg',
+    logoDark: '/images/providers/mastra-logo-dark.svg',
+  },
 ];
 
 const CLIENTS: { name: string; logo: string; h: number }[] = [
@@ -211,13 +235,33 @@ function ProviderStrip() {
           className="flex h-10 items-center justify-center gap-2 rounded-md border border-fd-border bg-fd-card px-3"
           title={p.name}
         >
-          <Image
-            alt={p.name}
-            className="h-4 w-auto object-contain dark:invert"
-            height={16}
-            src={p.logo}
-            width={64}
-          />
+          {p.logoDark ? (
+            <>
+              <Image
+                alt={p.name}
+                className="h-4 w-auto object-contain dark:hidden"
+                height={16}
+                src={p.logo}
+                width={64}
+              />
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="hidden h-4 w-auto object-contain dark:block"
+                height={16}
+                src={p.logoDark}
+                width={64}
+              />
+            </>
+          ) : (
+            <Image
+              alt={p.name}
+              className="h-4 w-auto object-contain"
+              height={16}
+              src={p.logo}
+              width={64}
+            />
+          )}
           <span className="text-[12px] text-fd-foreground/75">{p.name}</span>
         </div>
       ))}
