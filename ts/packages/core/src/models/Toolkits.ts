@@ -336,16 +336,24 @@ export class Toolkits {
   async authorize(
     userId: string,
     toolkitSlug: string,
-    authConfigId?: string
+    authConfigId?: string,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const toolkit = await this.getToolkitBySlug(toolkitSlug);
+    // High-level helper that fans out to 3-4 network calls (toolkit retrieve,
+    // optional authConfigs list, optional authConfigs create, then
+    // connectedAccounts.initiate). Forward the caller's signal to every
+    // underlying call so the whole composite is cancellable as a single unit.
+    const toolkit = await this.getToolkitBySlug(toolkitSlug, requestOptions);
     const composioAuthConfig = new AuthConfigs(this.client);
     let authConfigIdToUse: string | undefined = authConfigId;
 
     if (!authConfigIdToUse) {
-      const authConfig = await composioAuthConfig.list({
-        toolkit: toolkitSlug,
-      });
+      const authConfig = await composioAuthConfig.list(
+        {
+          toolkit: toolkitSlug,
+        },
+        requestOptions
+      );
       // pick the first auth config if none is passed
       authConfigIdToUse = authConfig.items[0]?.id;
     }
@@ -355,10 +363,14 @@ export class Toolkits {
       // create authConfig using composioManagedAuthSchemes
       if (toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0) {
         try {
-          const authConfig = await composioAuthConfig.create(toolkitSlug, {
-            type: 'use_composio_managed_auth',
-            name: `${toolkit.name} Auth Config`,
-          });
+          const authConfig = await composioAuthConfig.create(
+            toolkitSlug,
+            {
+              type: 'use_composio_managed_auth',
+              name: `${toolkit.name} Auth Config`,
+            },
+            requestOptions
+          );
           authConfigIdToUse = authConfig.id;
         } catch (error) {
           if (error instanceof ComposioClient.APIError && error.status === 400) {
@@ -390,9 +402,14 @@ export class Toolkits {
     }
     // create the auth config
     const composioConnectedAccount = new ConnectedAccounts(this.client);
-    return await composioConnectedAccount.initiate(userId, authConfigIdToUse, {
-      // in this magic function we allow multiple connected accounts per user for an auth config
-      allowMultiple: true,
-    });
+    return await composioConnectedAccount.initiate(
+      userId,
+      authConfigIdToUse,
+      {
+        // in this magic function we allow multiple connected accounts per user for an auth config
+        allowMultiple: true,
+      },
+      requestOptions
+    );
   }
 }
