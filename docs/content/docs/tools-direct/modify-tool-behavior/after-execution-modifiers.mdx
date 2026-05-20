@@ -94,7 +94,7 @@ if (tool_calls) {
       afterExecute: ({ toolSlug, toolkitSlug, result }) => {
         if (toolSlug === "HACKERNEWS_GET_USER") {
           const { data } = result;
-          const { karma } = data.response_data as { karma: number };
+          const { karma } = data as { karma: number };
           return {
             ...result,
             data: { karma },
@@ -167,9 +167,7 @@ const agenticTools = await composio.tools.get(
   {
     afterExecute: ({ toolSlug, toolkitSlug, result }) => {
       if (toolSlug === "HACKERNEWS_GET_USER") {
-        const {
-          data: { response_data: { karma } = {} } = {},
-        } = result;
+        const { karma } = result.data as { karma: number };
         return {
           ...result,
           data: { karma },

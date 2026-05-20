@@ -126,7 +126,7 @@ The payload schema tells you what fields will be in the `data` object of the web
 
 ### Webhook payload (V3)
 
-New organizations receive V3 payloads by default. V3 separates event metadata from the actual event data:
+New organizations receive V3 payloads by default. V3 separates event metadata from the actual event data and includes the `x-composio-webhook-version: V3` header:
 
 ```json
 {
@@ -150,7 +150,7 @@ New organizations receive V3 payloads by default. V3 separates event metadata fr
 ```
 
 <Callout>
-See [webhook payload versions](/docs/webhook-verification#webhook-payload-versions) for V2 and V1 formats.
+Existing organizations may still receive V1 or V2 payloads until their project webhook payload version is changed. See [webhook payload versions](/docs/webhook-verification#webhook-payload-versions) for V2 and V1 formats.
 </Callout>
 
 ## Testing locally

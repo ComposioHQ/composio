@@ -64,7 +64,7 @@ If you are not using the Composio SDK and want to verify signatures manually.
 Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`. You can fetch it from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) at any time or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) if it leaks.
 </Callout>
 
-Every webhook request includes three headers: `webhook-signature`, `webhook-id`, and `webhook-timestamp`. Use these along with the raw request body to verify the signature:
+Every webhook request includes `webhook-signature`, `webhook-id`, and `webhook-timestamp`. V3 deliveries also include `x-composio-webhook-version: V3`. Use the signature headers along with the raw request body to verify the signature:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -132,7 +132,7 @@ function verifyWebhook(
 
 <Tabs items={['V3 (default)', 'V2 (legacy)', 'V1 (legacy)']}>
   <Tab value="V3 (default)">
-Metadata is separated from event data. New organizations receive V3 payloads by default.
+Metadata is separated from event data. New organizations receive V3 payloads by default, and V3 deliveries include the `x-composio-webhook-version: V3` header.
 
 ```json
 {
@@ -193,6 +193,8 @@ Metadata fields are mixed into the `data` object alongside event data.
   </Tab>
 </Tabs>
 
+Existing organizations may still receive V1 or V2 payloads until their project webhook payload version is changed. If your handler parses webhook bodies manually, support the version your project is configured to receive or switch the project to V3 before relying on the V3 shape.
+
 ## What to read next
 
 <Cards>
@@ -201,4 +203,3 @@ Metadata fields are mixed into the `data` object alongside event data.
   <Card icon={<Zap />} title="Triggers overview" href="/docs/triggers" description="How Composio delivers event data from connected apps" />
   <Card icon={<Key />} title="Connection expiry events" href="/docs/subscribing-to-connection-expiry-events" description="Detect when OAuth connections expire and prompt re-authentication" />
 </Cards>
-

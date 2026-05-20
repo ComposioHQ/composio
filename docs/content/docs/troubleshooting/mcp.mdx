@@ -7,8 +7,8 @@ description: Troubleshooting MCP server issues
 
 This error occurs when MCP cannot find a valid connected account for authentication:
 
-- **Specify an account**: Provide either `connected_account_id` or `user_id` in your MCP configuration
-- **Default behavior**: Without specification, MCP uses `user_id=default`. If multiple connections exist with the same user_id, the most recent is used
+- **Specify an account**: Provide either `connected_account_id` or `user_id` in your MCP URL or configuration. MCP URLs without one of these identifiers are not supported.
+- **Choose the right scope**: Use `user_id` when the server should resolve the user's active connection automatically. Use `connected_account_id` when you need a specific account.
 - **Verification checklist**:
   - Account status is `ACTIVE` (not deleted)
   - Account belongs to the same auth config used to create the MCP server. MCP servers only resolve connected accounts through their bound auth configs, so connections under a different auth config will not be found.
@@ -31,7 +31,7 @@ If your MCP client gets `401 Unauthorized`, include your Composio project API ke
 - Header name: `x-api-key`
 - Value: your project API key from the Composio dashboard
 
-When `require_mcp_api_key` is enabled on your project, requests without this header are rejected.
+When `require_mcp_api_key` is enabled on your project, requests without this header are rejected. This setting is enabled by default for newly created organizations, so pass the header in all MCP clients unless your project has explicitly disabled MCP API key enforcement.
 
 ## Testing and debugging
 

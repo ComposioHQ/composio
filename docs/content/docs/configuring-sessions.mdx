@@ -518,6 +518,8 @@ console.log(mcp.url);
 </Tab>
 </Tabs>
 
+The session MCP URL is scoped to the session's `user_id`. Always pass both `session.mcp.url` and `session.mcp.headers` to your MCP client; the headers include the Composio project authentication required by projects with MCP API key enforcement enabled.
+
 For framework examples, see provider-specific documentation like [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel).
 
 ### tools()

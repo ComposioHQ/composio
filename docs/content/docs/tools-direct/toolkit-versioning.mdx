@@ -157,6 +157,8 @@ As a rule of thumb: if an LLM reads the output, use `latest`. If your code parse
 
 Most agentic applications — including all [session-based](/docs/configuring-sessions) workflows — use `latest` by default and benefit from always having the most up-to-date tools. If you're building structured data pipelines or integrations with fixed response parsing, pin to a tested version and upgrade on your own schedule.
 
+Newer toolkit versions can return flattened, strongly typed fields in `result.data` instead of a generic `response_data` object. Inspect the tool's output schema in the dashboard or with `composio generate` before destructuring direct-execute responses.
+
 ## Version resolution order
 
 1. Per-execution version (highest priority)

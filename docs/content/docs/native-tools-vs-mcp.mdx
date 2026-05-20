@@ -77,6 +77,8 @@ const mcpHeaders = session.mcp.headers;
 
 Then pass `session.mcp.url` and `session.mcp.headers` to your framework:
 
+The URL is scoped to the session's `user_id`, and the headers include the Composio project authentication required by projects with MCP API key enforcement enabled.
+
 <Tabs items={['OpenAI Agents (Python)', 'Claude Agent SDK (Python)', 'Vercel AI SDK (TypeScript)']}>
 <Tab value="OpenAI Agents (Python)">
 ```python

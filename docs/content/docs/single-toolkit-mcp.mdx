@@ -124,6 +124,8 @@ console.log("MCP Server URL:", instance.url);
 ```
       </Tab>
     </Tabs>
+
+    Generated URLs are scoped to the `user_id` you pass. If you construct an MCP URL manually, include either `user_id` or `connected_account_id` as a query parameter so the server can resolve the correct connection.
   </Step>
 
   <Step>
