@@ -24,6 +24,9 @@ import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { DocsHero } from '@/components/docs-hero';
+import { HomeFeatures } from '@/components/home-features';
+import { HomeSurfaces } from '@/components/home-surfaces';
+import { HomeResources } from '@/components/home-resources';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
 import { ApiBaseUrl } from '@/components/api-base-url';
 import { ApiEndpointsTable } from '@/components/api-endpoints-table';
@@ -101,6 +104,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Mermaid,
     AIToolsBanner,
     DocsHero,
+    HomeFeatures,
+    HomeSurfaces,
+    HomeResources,
     StepTitle,
     Glossary,
     GlossaryTerm,

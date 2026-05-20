@@ -25,6 +25,7 @@
     "algoliasearch": "^5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.39.0",
     "fumadocs-core": "^16.4.2",
     "fumadocs-mdx": "^14.2.4",
     "fumadocs-openapi": "^10.2.2",

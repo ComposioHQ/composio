@@ -639,3 +639,124 @@ body {
   animation: glitch-404 2.6s ease-out infinite;
 }
 
+/* ==========================================================================
+   Hero demo — fade-in for prompts, traces, and responses
+   ========================================================================== */
+@keyframes hero-demo-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: hero-demo-fade-in 280ms ease-out both;
+}
+
+/* ==========================================================================
+   Landing-hero theme tokens — keep chat / card skins legible in both
+   light and dark mode. Skins reference these via `var(--hero-*)`.
+   ========================================================================== */
+:root {
+  --hero-surface: #ffffff;
+  --hero-surface-2: #f6f5f3;
+  --hero-bubble: #f3f3f1;
+  --hero-text: rgba(15, 15, 15, 0.9);
+  --hero-text-muted: rgba(15, 15, 15, 0.45);
+  --hero-border: rgba(15, 15, 15, 0.12);
+  --hero-border-soft: rgba(15, 15, 15, 0.06);
+  --hero-shimmer: #0a0a0a;
+}
+.dark {
+  --hero-surface: #141416;
+  --hero-surface-2: #1c1c20;
+  --hero-bubble: #25262a;
+  --hero-text: rgba(245, 245, 247, 0.92);
+  --hero-text-muted: rgba(245, 245, 247, 0.5);
+  --hero-border: rgba(255, 255, 255, 0.14);
+  --hero-border-soft: rgba(255, 255, 255, 0.06);
+  --hero-shimmer: #f5f5f7;
+}
+
+/* ==========================================================================
+   Hero "active card" drop shadow — neutral black blur around any card
+   that lights up in the agent loop. Lives in plain CSS because Tailwind
+   v4's arbitrary `shadow-[...rgba(...)...]` doesn't parse the commas
+   inside `rgba()` cleanly.
+   ========================================================================== */
+.hero-card-shadow {
+  /* `!important` needed because Tailwind v4's `transition-shadow` chains
+     `box-shadow` through several CSS variables (`--tw-shadow`, etc.) that
+     default to `0 0 #0000`, which otherwise overrides this declaration. */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.18) !important;
+}
+.dark .hero-card-shadow {
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Latest tool-call name in the mock chat — shimmer effect on a dark
+   gradient (light mode) / light gradient (dark mode). Defined in CSS
+   instead of inline so the gradient stops can reference theme tokens
+   without breaking on `var(...) + hex-alpha` concatenation. */
+.hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(15, 15, 15, 0.35) 0%,
+    rgba(15, 15, 15, 0.7) 40%,
+    rgba(15, 15, 15, 1) 50%,
+    rgba(15, 15, 15, 0.7) 60%,
+    rgba(15, 15, 15, 0.35) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-text 2s ease-in-out infinite;
+}
+.dark .hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(245, 245, 247, 0.35) 0%,
+    rgba(245, 245, 247, 0.7) 40%,
+    rgba(245, 245, 247, 1) 50%,
+    rgba(245, 245, 247, 0.7) 60%,
+    rgba(245, 245, 247, 0.35) 100%
+  );
+}
+
+/* ==========================================================================
+   Landing-hero keyframes (ported from landing-new)
+   ========================================================================== */
+@keyframes hero-cpu-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes shimmer-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
