@@ -9,6 +9,7 @@ import type {
 } from '../types/customTool.types';
 import type { ToolExecuteResponse } from '../types/tool.types';
 import { ValidationError } from '../errors';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 /**
  * Find a custom tool entry by slug.
@@ -62,9 +63,17 @@ export function assertUnambiguousCustomToolSlug(
 export async function executeCustomTool(
   entry: CustomToolsMapEntry,
   arguments_: Record<string, unknown>,
-  sessionContext: SessionContext
+  sessionContext: SessionContext,
+  options?: { signal?: AbortSignal }
 ): Promise<ToolExecuteResponse> {
   const { handle } = entry;
+
+  // Bail before invoking user code if the signal already fired. This is
+  // checked again post-validation so a synchronous abort right after Zod
+  // parsing also short-circuits.
+  if (options?.signal?.aborted) {
+    throw new ComposioRequestCancelledError();
+  }
 
   // Validate and transform input using the original Zod schema.
   // This applies defaults, coercions, and transforms (e.g. z.string().default('all')).
@@ -76,16 +85,30 @@ export async function executeCustomTool(
       successful: false,
     };
   }
+  if (options?.signal?.aborted) {
+    throw new ComposioRequestCancelledError();
+  }
 
   try {
-    // User's execute returns data directly — we wrap into { data, error, successful }
-    const data = await handle.execute(parsed.data, sessionContext);
+    // User's execute returns data directly — we wrap into { data, error, successful }.
+    // The session context now exposes `signal` so cooperative cancellation is
+    // possible: long-running user code that respects `ctx.signal` can abort
+    // mid-execution (e.g. by passing it into fetch).
+    const ctxWithSignal: SessionContext = options?.signal
+      ? { ...sessionContext, signal: options.signal }
+      : sessionContext;
+    const data = await handle.execute(parsed.data, ctxWithSignal);
     return {
       data: data ?? {},
       error: null,
       successful: true,
     };
   } catch (err: unknown) {
+    // Surface cancellation as the typed error, not as a wrapped
+    // tool-execution failure — callers `instanceof`-detect this.
+    if (err instanceof ComposioRequestCancelledError) {
+      throw err;
+    }
     const message = err instanceof Error ? err.message : String(err);
     return {
       data: {},

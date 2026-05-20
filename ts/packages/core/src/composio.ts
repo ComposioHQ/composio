@@ -15,6 +15,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
+import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
@@ -237,18 +238,25 @@ export class Composio<
    */
   create: (
     userId: string,
-    routerConfig?: ToolRouterCreateSessionConfig
+    routerConfig?: ToolRouterCreateSessionConfig,
+    requestOptions?: ComposioRequestOptions
   ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**
    * Use an existing tool router session
    *
    * @param id {string} The id of the session to use
+   * @param options {object} Custom tools / toolkits to attach to the session
+   * @param requestOptions {ComposioRequestOptions} Per-request cancellation
+   *   options. The supplied AbortSignal aborts the underlying session
+   *   retrieve/attach call only. Subsequent session method calls accept
+   *   their own per-call requestOptions.
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
   use: (
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] },
+    requestOptions?: ComposioRequestOptions
   ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**

@@ -23,11 +23,27 @@ type BaseCustomToolOptions<T extends z.ZodType> = {
   inputParams: T;
 };
 
+/**
+ * Cooperative-cancellation context passed as the trailing optional argument
+ * to {@link CustomToolOptions.execute}. When the caller of `tools.execute`
+ * supplies `{ signal }`, the same `AbortSignal` is forwarded here so
+ * long-running custom-tool implementations can wire it into their own
+ * fetch / IO and abort mid-execution. Throwing — or letting fetch reject
+ * with `AbortError` — surfaces as `ComposioRequestCancelledError`.
+ *
+ * Backward compatible: existing custom tools ignore the new arg and keep
+ * working unchanged.
+ */
+export type CustomToolExecuteContext = {
+  signal?: AbortSignal | undefined;
+};
+
 type ToolkitBasedExecute<T extends z.ZodType> = {
   execute: (
     input: z.infer<T>,
     connectionConfig: ConnectionData | null,
-    executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>
+    executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>,
+    ctx?: CustomToolExecuteContext
   ) => Promise<ToolExecuteResponse>;
   toolkitSlug: string;
 };
@@ -85,6 +101,14 @@ export interface SessionContext {
   ): Promise<ToolRouterSessionExecuteResponse>;
   /** Proxy API calls through Composio's auth layer (resolved from session toolkit). */
   proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse>;
+  /**
+   * Caller-supplied AbortSignal forwarded from `session.execute(..., { signal })`.
+   * Custom-tool execution is cooperative: long-running user code that respects
+   * this signal (e.g. by passing it into `fetch`) can abort mid-execution and
+   * surface as `ComposioRequestCancelledError`. Undefined when the caller did
+   * not pass `requestOptions`.
+   */
+  readonly signal?: AbortSignal;
 }
 
 /**

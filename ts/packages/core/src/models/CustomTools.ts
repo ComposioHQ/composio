@@ -362,6 +362,38 @@ export class CustomTools {
       });
     }
 
-    return execute(parsedInput.data, connectionConfig, executeToolRequest);
+    // Bail before invoking user code if the caller's signal already fired.
+    // After this point custom-tool execution is *cooperative* — long-running
+    // user code observes later aborts only if the user wires the signal into
+    // their own work (e.g. into fetch). The signal is exposed via the 4th
+    // positional arg of `execute` so they can.
+    if (requestOptions?.signal?.aborted) {
+      throw new ComposioRequestCancelledError();
+    }
+
+    try {
+      // The two execute variants (ToolkitBasedExecute / StandaloneExecute) form
+      // a discriminated union and TS narrowing fights with calling the union
+      // with 4 args. ToolkitBasedExecute already accepts a 4th `ctx` arg via
+      // the typed signature; StandaloneExecute (no toolkit, 1-arg) just ignores
+      // the trailing args at runtime. Cast to the more-permissive type for
+      // the call.
+      const exec = execute as (
+        input: unknown,
+        connectionConfig: ConnectionData | null,
+        executeToolRequestFn: (data: ToolProxyParams) => Promise<ToolExecuteResponse>,
+        ctx?: { signal?: AbortSignal }
+      ) => Promise<ToolExecuteResponse>;
+      return await exec(parsedInput.data, connectionConfig, executeToolRequest, {
+        signal: requestOptions?.signal ?? undefined,
+      });
+    } catch (err) {
+      // Surface cancellation as the typed error rather than letting it bubble
+      // up as a generic execution failure.
+      if (err instanceof ComposioRequestCancelledError) {
+        throw err;
+      }
+      throw err;
+    }
   }
 }

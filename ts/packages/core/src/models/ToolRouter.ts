@@ -52,6 +52,8 @@ import {
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { ToolRouterSession } from './ToolRouterSession';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
 import {
   assertNoCustomToolSlugsInPreload,
   buildCustomToolsMap,
@@ -167,7 +169,8 @@ export class ToolRouter<
    */
   async create(
     userId: string,
-    config?: ToolRouterCreateSessionConfig
+    config?: ToolRouterCreateSessionConfig,
+    requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
@@ -231,7 +234,11 @@ export class ToolRouter<
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
-    const session = await this.client.toolRouter.session.create(payload);
+    const session = await withCancellation(() =>
+      requestOptions
+        ? this.client.toolRouter.session.create(payload, requestOptions)
+        : this.client.toolRouter.session.create(payload)
+    );
 
     // Build custom tools map from the response's slug/original_slug mapping
     // instead of computing LOCAL_ prefix client-side
@@ -282,7 +289,8 @@ export class ToolRouter<
    */
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] },
+    requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const customTools = options?.customTools;
     const customToolkits = options?.customToolkits;
@@ -296,11 +304,18 @@ export class ToolRouter<
     let inlineCustomToolsPayload = attachInlineCustomToolsPayload;
 
     if (hasCustoms) {
-      session = await this.client.toolRouter.session.attach(id, {
-        experimental: attachInlineCustomToolsPayload,
-      });
+      const attachBody = { experimental: attachInlineCustomToolsPayload };
+      session = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolRouter.session.attach(id, attachBody, requestOptions)
+          : this.client.toolRouter.session.attach(id, attachBody)
+      );
     } else {
-      session = await this.client.toolRouter.session.retrieve(id);
+      session = await withCancellation(() =>
+        requestOptions
+          ? this.client.toolRouter.session.retrieve(id, requestOptions)
+          : this.client.toolRouter.session.retrieve(id)
+      );
     }
 
     const defaultCustomPreload = preloadsAllCustomTools(session.config.preload);

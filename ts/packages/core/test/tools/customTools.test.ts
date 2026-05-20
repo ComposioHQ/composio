@@ -106,7 +106,11 @@ describe('CustomTools', () => {
       expect(toolOptions.execute).toHaveBeenCalledWith(
         executeParams.arguments,
         null,
-        expect.any(Function)
+        expect.any(Function),
+        // 4th arg: cooperative-cancellation context. `signal` is undefined
+        // when no requestOptions was passed, but the ctx object is always
+        // present so custom-tool authors can rely on its shape.
+        { signal: undefined }
       );
       expect(result).toEqual(toolMocks.toolExecuteResponse);
     });
@@ -182,7 +186,8 @@ describe('CustomTools', () => {
         expect(toolkitTool.execute).toHaveBeenCalledWith(
           executeParams.arguments,
           mockConnectedAccount.state,
-          expect.any(Function)
+          expect.any(Function),
+          { signal: undefined }
         );
       });
 
@@ -206,7 +211,8 @@ describe('CustomTools', () => {
         expect(toolkitTool.execute).toHaveBeenCalledWith(
           executeParams.arguments,
           specificConnectedAccount.state,
-          expect.any(Function)
+          expect.any(Function),
+          { signal: undefined }
         );
       });
 

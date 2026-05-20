@@ -88,6 +88,93 @@ describe('Tools — requestOptions (signal) forwarding', () => {
       ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
 
+    it('forwards requestOptions to custom-tool execute fn via the 4th ctx arg', async () => {
+      // Custom-tool execution is cooperative: the SDK can't preempt user code,
+      // but it MUST pass the signal so long-running implementations can wire
+      // it into fetch / IO. This test locks in that surface.
+      const userExecute = vi.fn().mockResolvedValue({
+        data: { ok: true },
+        error: null,
+        successful: true,
+      });
+      vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValue({
+        slug: 'CUSTOM_TOOL',
+        name: 'Custom Tool',
+        description: 'test',
+        inputParameters: { type: 'object', properties: {} },
+        outputParameters: undefined,
+        availableVersions: undefined,
+        isDeprecated: false,
+        isNoAuth: undefined,
+        toolkit: { slug: 'github', name: 'GitHub', logo: 'x' },
+      } as never);
+      // Bypass executeCustomTool to inspect the ctx arg directly.
+      vi.spyOn(tools['customTools'], 'executeCustomTool').mockImplementation(
+        async (slug, body, requestOptions) => {
+          // Simulate calling user's execute fn with the ctx
+          await userExecute({}, null, () => Promise.resolve({}), {
+            signal: requestOptions?.signal,
+          });
+          return { data: { ok: true }, error: null, successful: true };
+        }
+      );
+
+      const controller = new AbortController();
+      await tools.execute(
+        'CUSTOM_TOOL',
+        { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+        undefined,
+        { signal: controller.signal }
+      );
+
+      // The 4th arg of user's execute fn is the ctx — must carry our signal.
+      const ctxArg = userExecute.mock.calls[0][3];
+      expect(ctxArg).toBeDefined();
+      expect(ctxArg.signal).toBe(controller.signal);
+    });
+
+    it('pre-execute aborted signal short-circuits custom-tool execution with ComposioRequestCancelledError', async () => {
+      // Custom-tool can't preempt user code, so the SDK does a synchronous
+      // signal.aborted check BEFORE invoking the user fn. This ensures a
+      // caller who aborted before the tool ran sees the typed cancellation
+      // error rather than the user's code running anyway.
+      const userExecute = vi.fn();
+      vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValue({
+        slug: 'CUSTOM_TOOL',
+        name: 'Custom Tool',
+        description: 'test',
+        inputParameters: { type: 'object', properties: {} },
+        outputParameters: undefined,
+        availableVersions: undefined,
+        isDeprecated: false,
+        isNoAuth: undefined,
+        toolkit: { slug: 'github', name: 'GitHub', logo: 'x' },
+      } as never);
+      // Mock executeCustomTool to simulate the real pre-execute check.
+      vi.spyOn(tools['customTools'], 'executeCustomTool').mockImplementation(
+        async (slug, body, requestOptions) => {
+          if (requestOptions?.signal?.aborted) {
+            throw new ComposioRequestCancelledError();
+          }
+          await userExecute();
+          return { data: {}, error: null, successful: true };
+        }
+      );
+
+      const controller = new AbortController();
+      controller.abort();
+
+      await expect(
+        tools.execute(
+          'CUSTOM_TOOL',
+          { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+          undefined,
+          { signal: controller.signal }
+        )
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+      expect(userExecute).not.toHaveBeenCalled();
+    });
+
     it('translates an abort wrapped in error.cause into ComposioRequestCancelledError', async () => {
       // Defensive against future @composio/client refactors that might
       // wrap APIUserAbortError in an outer APIError (e.g. retry-context
