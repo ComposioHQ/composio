@@ -31,6 +31,7 @@ export class FileToolModifier {
       toolSlug: string;
       toolkitSlug?: string;
       params: ToolExecuteParams;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteParams> {
     throw new Error(UNSUPPORTED_MESSAGE);
@@ -42,6 +43,7 @@ export class FileToolModifier {
       toolSlug: string;
       toolkitSlug: string;
       result: ToolExecuteResponse;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteResponse> {
     throw new Error(UNSUPPORTED_MESSAGE);

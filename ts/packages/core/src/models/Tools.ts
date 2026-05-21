@@ -259,6 +259,7 @@ export class Tools<
         toolSlug,
         toolkitSlug,
         params: modifiedParams,
+        signal: requestOptions?.signal,
       });
       if (requestOptions?.signal?.aborted) {
         throw new ComposioRequestCancelledError();
@@ -336,6 +337,7 @@ export class Tools<
         toolSlug,
         toolkitSlug,
         result: modifiedResult,
+        signal: requestOptions?.signal,
       });
       if (requestOptions?.signal?.aborted) {
         return modifiedResult;
