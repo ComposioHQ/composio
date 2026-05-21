@@ -235,9 +235,7 @@ export class ToolRouter<
     };
 
     const session = await withCancellation(() =>
-      requestOptions
-        ? this.client.toolRouter.session.create(payload, requestOptions)
-        : this.client.toolRouter.session.create(payload)
+      this.client.toolRouter.session.create(payload, requestOptions)
     );
 
     // Build custom tools map from the response's slug/original_slug mapping
@@ -306,15 +304,11 @@ export class ToolRouter<
     if (hasCustoms) {
       const attachBody = { experimental: attachInlineCustomToolsPayload };
       session = await withCancellation(() =>
-        requestOptions
-          ? this.client.toolRouter.session.attach(id, attachBody, requestOptions)
-          : this.client.toolRouter.session.attach(id, attachBody)
+        this.client.toolRouter.session.attach(id, attachBody, requestOptions)
       );
     } else {
       session = await withCancellation(() =>
-        requestOptions
-          ? this.client.toolRouter.session.retrieve(id, requestOptions)
-          : this.client.toolRouter.session.retrieve(id)
+        this.client.toolRouter.session.retrieve(id, requestOptions)
       );
     }
 

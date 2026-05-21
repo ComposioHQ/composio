@@ -126,9 +126,7 @@ export class ConnectedAccounts {
     }
 
     const result = await withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.list(rawQuery, requestOptions)
-        : this.client.connectedAccounts.list(rawQuery)
+      this.client.connectedAccounts.list(rawQuery, requestOptions)
     );
     return transformConnectedAccountListResponse(result);
   }
@@ -258,9 +256,7 @@ export class ConnectedAccounts {
       // caller needs to migrate. Custom auth configs and non-OAuth schemes
       // never see the header, eliminating the false-positive warning that
       // an `auth_scheme`-only check produced for `link()`-unaffected callers.
-      const apiCall = requestOptions
-        ? this.client.connectedAccounts.create(createParams, requestOptions)
-        : this.client.connectedAccounts.create(createParams);
+      const apiCall = this.client.connectedAccounts.create(createParams, requestOptions);
       if (typeof (apiCall as { withResponse?: unknown }).withResponse === 'function') {
         const resolved = await withCancellation(() =>
           (
@@ -412,11 +408,7 @@ export class ConnectedAccounts {
     };
 
     try {
-      const response = await withCancellation(() =>
-        requestOptions
-          ? this.client.link.create(body, requestOptions)
-          : this.client.link.create(body)
-      );
+      const response = await withCancellation(() => this.client.link.create(body, requestOptions));
 
       const connectionRequest = createConnectionRequest(
         this.client,
@@ -502,9 +494,7 @@ export class ConnectedAccounts {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRetrieveResponse> {
     const response = await withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.retrieve(nanoid, requestOptions)
-        : this.client.connectedAccounts.retrieve(nanoid)
+      this.client.connectedAccounts.retrieve(nanoid, requestOptions)
     );
     return transformConnectedAccountResponse(response);
   }
@@ -529,11 +519,7 @@ export class ConnectedAccounts {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountDeleteResponse> {
-    return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.delete(nanoid, requestOptions)
-        : this.client.connectedAccounts.delete(nanoid)
-    );
+    return withCancellation(() => this.client.connectedAccounts.delete(nanoid, requestOptions));
   }
 
   /**
@@ -574,9 +560,7 @@ export class ConnectedAccounts {
     }
 
     return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.refresh(nanoid, params, requestOptions)
-        : this.client.connectedAccounts.refresh(nanoid, params)
+      this.client.connectedAccounts.refresh(nanoid, params, requestOptions)
     );
   }
 
@@ -606,9 +590,7 @@ export class ConnectedAccounts {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.updateStatus(nanoid, params, requestOptions)
-        : this.client.connectedAccounts.updateStatus(nanoid, params)
+      this.client.connectedAccounts.updateStatus(nanoid, params, requestOptions)
     );
   }
 
@@ -629,9 +611,7 @@ export class ConnectedAccounts {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.updateStatus(nanoid, { enabled: true }, requestOptions)
-        : this.client.connectedAccounts.updateStatus(nanoid, { enabled: true })
+      this.client.connectedAccounts.updateStatus(nanoid, { enabled: true }, requestOptions)
     );
   }
 
@@ -658,9 +638,7 @@ export class ConnectedAccounts {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.updateStatus(nanoid, { enabled: false }, requestOptions)
-        : this.client.connectedAccounts.updateStatus(nanoid, { enabled: false })
+      this.client.connectedAccounts.updateStatus(nanoid, { enabled: false }, requestOptions)
     );
   }
 
@@ -693,9 +671,7 @@ export class ConnectedAccounts {
     }
 
     return withCancellation(() =>
-      requestOptions
-        ? this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data, requestOptions)
-        : this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data)
+      this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data, requestOptions)
     );
   }
 }

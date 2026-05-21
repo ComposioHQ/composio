@@ -69,9 +69,7 @@ export class Toolkits {
         limit: parsedQuery.data.limit,
       };
       const result = await withCancellation(() =>
-        requestOptions
-          ? this.client.toolkits.list(listParams, requestOptions)
-          : this.client.toolkits.list(listParams)
+        this.client.toolkits.list(listParams, requestOptions)
       );
 
       return transformToolkitListResponse(result);
@@ -103,9 +101,7 @@ export class Toolkits {
   ): Promise<ToolkitRetrieveResponse> {
     try {
       const result = await withCancellation(() =>
-        requestOptions
-          ? this.client.toolkits.retrieve(slug, undefined, requestOptions)
-          : this.client.toolkits.retrieve(slug)
+        this.client.toolkits.retrieve(slug, undefined, requestOptions)
       );
       return transformToolkitRetrieveResponse(result);
     } catch (error) {
@@ -313,9 +309,7 @@ export class Toolkits {
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveCategoriesResponse> {
     const result = await withCancellation(() =>
-      requestOptions
-        ? this.client.toolkits.retrieveCategories(requestOptions)
-        : this.client.toolkits.retrieveCategories()
+      this.client.toolkits.retrieveCategories(requestOptions)
     );
     return transformToolkitRetrieveCategoriesResponse(result);
   }

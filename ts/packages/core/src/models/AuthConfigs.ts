@@ -92,9 +92,7 @@ export class AuthConfigs {
       toolkit_slug: parsedQuery?.toolkit,
     };
     const result = await withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.list(listParams, requestOptions)
-        : this.client.authConfigs.list(listParams)
+      this.client.authConfigs.list(listParams, requestOptions)
     );
     return transformAuthConfigListResponse(result);
   }
@@ -167,9 +165,7 @@ export class AuthConfigs {
             },
     };
     const result = await withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.create(createBody, requestOptions)
-        : this.client.authConfigs.create(createBody)
+      this.client.authConfigs.create(createBody, requestOptions)
     );
     return transformCreateAuthConfigResponse(result);
   }
@@ -198,9 +194,7 @@ export class AuthConfigs {
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigRetrieveResponse> {
     const result = await withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.retrieve(nanoid, requestOptions)
-        : this.client.authConfigs.retrieve(nanoid)
+      this.client.authConfigs.retrieve(nanoid, requestOptions)
     );
     return transformAuthConfigRetrieveResponse(result);
   }
@@ -273,9 +267,7 @@ export class AuthConfigs {
             },
           };
     return withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.update(nanoid, updateBody, requestOptions)
-        : this.client.authConfigs.update(nanoid, updateBody)
+      this.client.authConfigs.update(nanoid, updateBody, requestOptions)
     );
   }
 
@@ -300,11 +292,7 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigDeleteResponse> {
-    return withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.delete(nanoid, requestOptions)
-        : this.client.authConfigs.delete(nanoid)
-    );
+    return withCancellation(() => this.client.authConfigs.delete(nanoid, requestOptions));
   }
 
   /**
@@ -334,9 +322,7 @@ export class AuthConfigs {
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.updateStatus(status, { nanoid }, requestOptions)
-        : this.client.authConfigs.updateStatus(status, { nanoid })
+      this.client.authConfigs.updateStatus(status, { nanoid }, requestOptions)
     );
   }
 
@@ -362,9 +348,7 @@ export class AuthConfigs {
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.updateStatus('ENABLED', { nanoid }, requestOptions)
-        : this.client.authConfigs.updateStatus('ENABLED', { nanoid })
+      this.client.authConfigs.updateStatus('ENABLED', { nanoid }, requestOptions)
     );
   }
 
@@ -390,9 +374,7 @@ export class AuthConfigs {
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
     return withCancellation(() =>
-      requestOptions
-        ? this.client.authConfigs.updateStatus('DISABLED', { nanoid }, requestOptions)
-        : this.client.authConfigs.updateStatus('DISABLED', { nanoid })
+      this.client.authConfigs.updateStatus('DISABLED', { nanoid }, requestOptions)
     );
   }
 }

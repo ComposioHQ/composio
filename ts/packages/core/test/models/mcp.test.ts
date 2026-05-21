@@ -75,13 +75,16 @@ describe('MCP', () => {
       expect(result).toHaveProperty('name', 'test-server');
       expect(result).toHaveProperty('generate');
       expect(typeof result.generate).toBe('function');
-      expect(mockClient.mcp.custom.create).toHaveBeenCalledWith({
-        name: 'test-server',
-        toolkits: ['gmail'],
-        auth_config_ids: [],
-        custom_tools: [],
-        managed_auth_via_composio: true,
-      });
+      expect(mockClient.mcp.custom.create).toHaveBeenCalledWith(
+        {
+          name: 'test-server',
+          toolkits: ['gmail'],
+          auth_config_ids: [],
+          custom_tools: [],
+          managed_auth_via_composio: true,
+        },
+        undefined
+      );
     });
 
     it('should handle toolkits with auth config IDs', async () => {
@@ -104,13 +107,16 @@ describe('MCP', () => {
         toolkits: [{ toolkit: 'gmail', authConfigId: 'auth_456' }],
       });
 
-      expect(mockClient.mcp.custom.create).toHaveBeenCalledWith({
-        name: 'test-server',
-        toolkits: ['gmail'],
-        auth_config_ids: [],
-        custom_tools: [],
-        managed_auth_via_composio: true,
-      });
+      expect(mockClient.mcp.custom.create).toHaveBeenCalledWith(
+        {
+          name: 'test-server',
+          toolkits: ['gmail'],
+          auth_config_ids: [],
+          custom_tools: [],
+          managed_auth_via_composio: true,
+        },
+        undefined
+      );
     });
 
     it('should validate configuration', async () => {
@@ -150,13 +156,16 @@ describe('MCP', () => {
       expect(result).toHaveProperty('currentPage', 1);
       expect(result).toHaveProperty('totalPages', 1);
       expect(result.items).toHaveLength(1);
-      expect(mockClient.mcp.list).toHaveBeenCalledWith({
-        page_no: 1,
-        limit: 10,
-        toolkits: undefined,
-        auth_config_ids: undefined,
-        name: undefined,
-      });
+      expect(mockClient.mcp.list).toHaveBeenCalledWith(
+        {
+          page_no: 1,
+          limit: 10,
+          toolkits: undefined,
+          auth_config_ids: undefined,
+          name: undefined,
+        },
+        undefined
+      );
     });
 
     it('should list MCP servers with filters', async () => {
@@ -176,13 +185,16 @@ describe('MCP', () => {
         name: 'test',
       });
 
-      expect(mockClient.mcp.list).toHaveBeenCalledWith({
-        page_no: 2,
-        limit: 20,
-        toolkits: 'gmail,slack',
-        auth_config_ids: 'auth_1',
-        name: 'test',
-      });
+      expect(mockClient.mcp.list).toHaveBeenCalledWith(
+        {
+          page_no: 2,
+          limit: 20,
+          toolkits: 'gmail,slack',
+          auth_config_ids: 'auth_1',
+          name: 'test',
+        },
+        undefined
+      );
     });
 
     it('should handle validation errors', async () => {
@@ -215,7 +227,7 @@ describe('MCP', () => {
       expect(result).toHaveProperty('id', 'mcp_123');
       expect(result).toHaveProperty('name', 'test-server');
       expect(result).toHaveProperty('serverInstanceCount', 5);
-      expect(mockClient.mcp.retrieve).toHaveBeenCalledWith('mcp_123');
+      expect(mockClient.mcp.retrieve).toHaveBeenCalledWith('mcp_123', undefined);
     });
   });
 
@@ -231,7 +243,7 @@ describe('MCP', () => {
       const result = await mcp.delete('mcp_123');
 
       expect(result).toEqual(mockResponse);
-      expect(mockClient.mcp.delete).toHaveBeenCalledWith('mcp_123');
+      expect(mockClient.mcp.delete).toHaveBeenCalledWith('mcp_123', undefined);
     });
   });
 
@@ -262,12 +274,16 @@ describe('MCP', () => {
 
       expect(result).toHaveProperty('id', 'mcp_123');
       expect(result).toHaveProperty('name', 'updated-server');
-      expect(mockClient.mcp.update).toHaveBeenCalledWith('mcp_123', {
-        name: 'updated-server',
-        custom_tools: undefined,
-        toolkits: ['slack'],
-        auth_config_ids: [],
-      });
+      expect(mockClient.mcp.update).toHaveBeenCalledWith(
+        'mcp_123',
+        {
+          name: 'updated-server',
+          custom_tools: undefined,
+          toolkits: ['slack'],
+          auth_config_ids: [],
+        },
+        undefined
+      );
     });
 
     it('should validate update parameters', async () => {
@@ -301,11 +317,14 @@ describe('MCP', () => {
       expect(result).toHaveProperty('userId', 'user123');
       expect(result).toHaveProperty('type', 'streamable_http');
       expect(result).toHaveProperty('url', 'https://mcp.example.com/instance/user123');
-      expect(mockClient.mcp.generate.url).toHaveBeenCalledWith({
-        mcp_server_id: 'mcp_123',
-        user_ids: ['user123'],
-        managed_auth_by_composio: true,
-      });
+      expect(mockClient.mcp.generate.url).toHaveBeenCalledWith(
+        {
+          mcp_server_id: 'mcp_123',
+          user_ids: ['user123'],
+          managed_auth_by_composio: true,
+        },
+        undefined
+      );
     });
 
     it('should handle manual connection management', async () => {
@@ -329,11 +348,14 @@ describe('MCP', () => {
         manuallyManageConnections: true,
       });
 
-      expect(mockClient.mcp.generate.url).toHaveBeenCalledWith({
-        mcp_server_id: 'mcp_123',
-        user_ids: ['user123'],
-        managed_auth_by_composio: false,
-      });
+      expect(mockClient.mcp.generate.url).toHaveBeenCalledWith(
+        {
+          mcp_server_id: 'mcp_123',
+          user_ids: ['user123'],
+          managed_auth_by_composio: false,
+        },
+        undefined
+      );
     });
 
     it('should validate parameters', async () => {

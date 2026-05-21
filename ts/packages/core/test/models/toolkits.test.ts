@@ -133,7 +133,7 @@ describe('Toolkits', () => {
           noAuth: false,
         },
       ]);
-      expect(mockClient.toolkits.list).toHaveBeenCalledWith({});
+      expect(mockClient.toolkits.list).toHaveBeenCalledWith({}, undefined);
     });
 
     it('should get a single toolkit by slug', async () => {
@@ -174,7 +174,7 @@ describe('Toolkits', () => {
         getCurrentUserEndpoint: '/user',
         getCurrentUserEndpointMethod: 'GET',
       });
-      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith('github');
+      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith('github', undefined, undefined);
     });
 
     it('should handle toolkit without getCurrentUserEndpointMethod', async () => {
@@ -354,29 +354,38 @@ describe('Toolkits', () => {
       const connectionRequest = await toolkits.authorize(userId, toolkitSlug);
 
       // Verify the flow
-      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith(toolkitSlug);
-      expect(mockClient.authConfigs.list).toHaveBeenCalledWith({
-        toolkit_slug: toolkitSlug,
-      });
-      expect(mockClient.authConfigs.create).toHaveBeenCalledWith({
-        toolkit: {
-          slug: toolkitSlug,
+      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith(toolkitSlug, undefined, undefined);
+      expect(mockClient.authConfigs.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: toolkitSlug,
         },
-        auth_config: {
-          type: 'use_composio_managed_auth',
-          credentials: undefined,
-          name: 'Test Toolkit Auth Config',
-          tool_access_config: undefined,
+        undefined
+      );
+      expect(mockClient.authConfigs.create).toHaveBeenCalledWith(
+        {
+          toolkit: {
+            slug: toolkitSlug,
+          },
+          auth_config: {
+            type: 'use_composio_managed_auth',
+            credentials: undefined,
+            name: 'Test Toolkit Auth Config',
+            tool_access_config: undefined,
+          },
         },
-      });
-      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: 'auth_config_123',
+        undefined
+      );
+      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: 'auth_config_123',
+          },
+          connection: {
+            user_id: userId,
+          },
         },
-        connection: {
-          user_id: userId,
-        },
-      });
+        undefined
+      );
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
       expect(typeof connectionRequest.waitForConnection).toBe('function');
@@ -431,19 +440,25 @@ describe('Toolkits', () => {
       const connectionRequest = await toolkits.authorize(userId, toolkitSlug);
 
       // Verify the flow
-      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith(toolkitSlug);
-      expect(mockClient.authConfigs.list).toHaveBeenCalledWith({
-        toolkit_slug: toolkitSlug,
-      });
+      expect(mockClient.toolkits.retrieve).toHaveBeenCalledWith(toolkitSlug, undefined, undefined);
+      expect(mockClient.authConfigs.list).toHaveBeenCalledWith(
+        {
+          toolkit_slug: toolkitSlug,
+        },
+        undefined
+      );
       expect(mockClient.authConfigs.create).not.toHaveBeenCalled();
-      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: 'existing_auth_123',
+      expect(mockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: 'existing_auth_123',
+          },
+          connection: {
+            user_id: userId,
+          },
         },
-        connection: {
-          user_id: userId,
-        },
-      });
+        undefined
+      );
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
       expect(typeof connectionRequest.waitForConnection).toBe('function');

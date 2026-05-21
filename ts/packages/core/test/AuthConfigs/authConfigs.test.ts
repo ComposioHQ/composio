@@ -171,12 +171,15 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.list();
 
-      expect(mockClient.authConfigs.list).toHaveBeenCalledWith({
-        cursor: undefined,
-        is_composio_managed: undefined,
-        limit: undefined,
-        toolkit_slug: undefined,
-      });
+      expect(mockClient.authConfigs.list).toHaveBeenCalledWith(
+        {
+          cursor: undefined,
+          is_composio_managed: undefined,
+          limit: undefined,
+          toolkit_slug: undefined,
+        },
+        undefined
+      );
 
       expect(result).toEqual({
         items: [mockTransformedAuthConfigResponse],
@@ -197,12 +200,15 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.list(query);
 
-      expect(mockClient.authConfigs.list).toHaveBeenCalledWith({
-        cursor: 'cursor_123',
-        is_composio_managed: true,
-        limit: 10,
-        toolkit_slug: 'github',
-      });
+      expect(mockClient.authConfigs.list).toHaveBeenCalledWith(
+        {
+          cursor: 'cursor_123',
+          is_composio_managed: true,
+          limit: 10,
+          toolkit_slug: 'github',
+        },
+        undefined
+      );
 
       expect(result).toEqual({
         items: [mockTransformedAuthConfigResponse],
@@ -258,17 +264,20 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.create('github');
 
-      expect(mockClient.authConfigs.create).toHaveBeenCalledWith({
-        toolkit: {
-          slug: 'github',
+      expect(mockClient.authConfigs.create).toHaveBeenCalledWith(
+        {
+          toolkit: {
+            slug: 'github',
+          },
+          auth_config: {
+            type: 'use_composio_managed_auth',
+            credentials: undefined,
+            name: undefined,
+            tool_access_config: undefined,
+          },
         },
-        auth_config: {
-          type: 'use_composio_managed_auth',
-          credentials: undefined,
-          name: undefined,
-          tool_access_config: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(result).toEqual({
         id: 'auth_12345',
@@ -302,22 +311,25 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.create('github', options);
 
-      expect(mockClient.authConfigs.create).toHaveBeenCalledWith({
-        toolkit: {
-          slug: 'github',
-        },
-        auth_config: {
-          type: 'use_custom_auth',
-          name: 'Custom GitHub Auth',
-          authScheme: 'OAUTH2',
-          credentials: {
-            client_id: 'test_client_id',
-            client_secret: 'test_client_secret',
+      expect(mockClient.authConfigs.create).toHaveBeenCalledWith(
+        {
+          toolkit: {
+            slug: 'github',
           },
-          proxy_config: undefined,
-          tool_access_config: undefined,
+          auth_config: {
+            type: 'use_custom_auth',
+            name: 'Custom GitHub Auth',
+            authScheme: 'OAUTH2',
+            credentials: {
+              client_id: 'test_client_id',
+              client_secret: 'test_client_secret',
+            },
+            proxy_config: undefined,
+            tool_access_config: undefined,
+          },
         },
-      });
+        undefined
+      );
 
       expect(result).toEqual({
         id: 'auth_12345',
@@ -343,19 +355,22 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.create('github', options);
 
-      expect(mockClient.authConfigs.create).toHaveBeenCalledWith({
-        toolkit: {
-          slug: 'github',
-        },
-        auth_config: {
-          type: 'use_composio_managed_auth',
-          credentials: {
-            custom_field: 'value',
+      expect(mockClient.authConfigs.create).toHaveBeenCalledWith(
+        {
+          toolkit: {
+            slug: 'github',
           },
-          name: 'My GitHub Config',
-          tool_access_config: undefined,
+          auth_config: {
+            type: 'use_composio_managed_auth',
+            credentials: {
+              custom_field: 'value',
+            },
+            name: 'My GitHub Config',
+            tool_access_config: undefined,
+          },
         },
-      });
+        undefined
+      );
 
       expect(result).toEqual({
         id: 'auth_12345',
@@ -387,7 +402,7 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.get('auth_12345');
 
-      expect(mockClient.authConfigs.retrieve).toHaveBeenCalledWith('auth_12345');
+      expect(mockClient.authConfigs.retrieve).toHaveBeenCalledWith('auth_12345', undefined);
       expect(result).toEqual(mockTransformedAuthConfigResponse);
     });
 
@@ -454,16 +469,20 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.update('auth_12345', updateData);
 
-      expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
-        type: 'custom',
-        credentials: {
-          client_id: 'new_client_id',
-          client_secret: 'new_client_secret',
+      expect(mockClient.authConfigs.update).toHaveBeenCalledWith(
+        'auth_12345',
+        {
+          type: 'custom',
+          credentials: {
+            client_id: 'new_client_id',
+            client_secret: 'new_client_secret',
+          },
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(result).toEqual(mockUpdateResponse);
     });
@@ -478,13 +497,17 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.update('auth_12345', updateData);
 
-      expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
-        type: 'default',
-        scopes: 'read:user,repo',
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
+      expect(mockClient.authConfigs.update).toHaveBeenCalledWith(
+        'auth_12345',
+        {
+          type: 'default',
+          scopes: 'read:user,repo',
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
-      });
+        undefined
+      );
 
       expect(result).toEqual(mockUpdateResponse);
     });
@@ -501,15 +524,19 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.update('auth_12345', updateData);
 
-      expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
-        type: 'custom',
-        credentials: {
-          api_key: 'new_api_key',
+      expect(mockClient.authConfigs.update).toHaveBeenCalledWith(
+        'auth_12345',
+        {
+          type: 'custom',
+          credentials: {
+            api_key: 'new_api_key',
+          },
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(result).toEqual(mockUpdateResponse);
     });
@@ -552,7 +579,7 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.delete('auth_12345');
 
-      expect(mockClient.authConfigs.delete).toHaveBeenCalledWith('auth_12345');
+      expect(mockClient.authConfigs.delete).toHaveBeenCalledWith('auth_12345', undefined);
       expect(result).toEqual(mockDeleteResponse);
     });
 
@@ -575,9 +602,13 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.updateStatus('ENABLED', 'auth_12345');
 
-      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith('ENABLED', {
-        nanoid: 'auth_12345',
-      });
+      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith(
+        'ENABLED',
+        {
+          nanoid: 'auth_12345',
+        },
+        undefined
+      );
       expect(result).toEqual(mockStatusUpdateResponse);
     });
 
@@ -590,9 +621,13 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.updateStatus('DISABLED', 'auth_12345');
 
-      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith('DISABLED', {
-        nanoid: 'auth_12345',
-      });
+      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith(
+        'DISABLED',
+        {
+          nanoid: 'auth_12345',
+        },
+        undefined
+      );
       expect(result).toEqual(disabledResponse);
     });
 
@@ -617,9 +652,13 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.enable('auth_12345');
 
-      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith('ENABLED', {
-        nanoid: 'auth_12345',
-      });
+      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith(
+        'ENABLED',
+        {
+          nanoid: 'auth_12345',
+        },
+        undefined
+      );
       expect(result).toEqual(mockStatusUpdateResponse);
     });
 
@@ -642,9 +681,13 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.disable('auth_12345');
 
-      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith('DISABLED', {
-        nanoid: 'auth_12345',
-      });
+      expect(mockClient.authConfigs.updateStatus).toHaveBeenCalledWith(
+        'DISABLED',
+        {
+          nanoid: 'auth_12345',
+        },
+        undefined
+      );
       expect(result).toEqual(mockStatusUpdateResponse);
     });
 
@@ -757,13 +800,17 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.update('auth_12345', updateData);
 
-      expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
-        type: 'custom',
-        credentials: largeCredentials,
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
+      expect(mockClient.authConfigs.update).toHaveBeenCalledWith(
+        'auth_12345',
+        {
+          type: 'custom',
+          credentials: largeCredentials,
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
-      });
+        undefined
+      );
 
       expect(result).toEqual(mockUpdateResponse);
     });
@@ -785,13 +832,17 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.update('auth_12345', updateData);
 
-      expect(mockClient.authConfigs.update).toHaveBeenCalledWith('auth_12345', {
-        type: 'default',
-        scopes: longScopes,
-        tool_access_config: {
-          tools_for_connected_account_creation: undefined,
+      expect(mockClient.authConfigs.update).toHaveBeenCalledWith(
+        'auth_12345',
+        {
+          type: 'default',
+          scopes: longScopes,
+          tool_access_config: {
+            tools_for_connected_account_creation: undefined,
+          },
         },
-      });
+        undefined
+      );
 
       expect(result).toEqual(mockUpdateResponse);
     });
