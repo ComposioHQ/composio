@@ -245,13 +245,6 @@ export class Tools<
     modifiers?: ExecuteToolModifiers,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteParams> {
-    // Gate every transition on signal.aborted. The auto file-upload path
-    // and the user-supplied beforeExecute hook both do non-trivial work
-    // (S3 PUTs, fetches); without these gates an abort that fires while
-    // the main execute is queued would still let the modifiers complete
-    // their full work. We can't preempt in-flight S3 uploads from here —
-    // those run inside FileToolModifier — but stopping the chain between
-    // segments bounds the wasted work to one in-flight client call.
     if (requestOptions?.signal?.aborted) {
       throw new ComposioRequestCancelledError();
     }
@@ -331,11 +324,7 @@ export class Tools<
     modifier?: afterExecuteModifier,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
-    // Post-execute: the remote tool has already run and may have mutated
-    // external state (sent an email, created an issue, etc.). Throwing
-    // ComposioRequestCancelledError here would hide a successful execution
-    // from the caller, who might retry a non-idempotent operation. Instead,
-    // skip remaining post-processing and return the result as-is.
+    // Return early — the tool already executed and may have mutated external state.
     if (requestOptions?.signal?.aborted) {
       return result;
     }
@@ -661,8 +650,6 @@ export class Tools<
         this.client.tools.retrieve(slug, retrieveParams, requestOptions)
       );
     } catch (error) {
-      // Caller-initiated cancellation must NOT be remapped to a domain error;
-      // surface it as the typed cancellation error so callers can detect it.
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }
@@ -951,7 +938,6 @@ export class Tools<
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
     } catch (error) {
-      // Don't remap caller-initiated cancellation into a tool-execution error.
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }

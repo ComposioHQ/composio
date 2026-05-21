@@ -68,9 +68,6 @@ export async function executeCustomTool(
 ): Promise<ToolExecuteResponse> {
   const { handle } = entry;
 
-  // Bail before invoking user code if the signal already fired. This is
-  // checked again post-validation so a synchronous abort right after Zod
-  // parsing also short-circuits.
   if (options?.signal?.aborted) {
     throw new ComposioRequestCancelledError();
   }
@@ -90,18 +87,7 @@ export async function executeCustomTool(
   }
 
   try {
-    // User's execute returns data directly — we wrap into { data, error, successful }.
-    // The session context now exposes `signal` so cooperative cancellation is
-    // possible: long-running user code that respects `ctx.signal` can abort
-    // mid-execution (e.g. by passing it into fetch).
-    //
-    // CRITICAL: `sessionContext` is a class instance (SessionContextImpl).
-    // Object-spread (`{...sessionContext, signal}`) would discard the
-    // prototype and break `ctx.execute(...)` / `ctx.proxyExecute(...)` —
-    // exactly the helpers most custom tools rely on. Preserve the prototype
-    // by creating a new object whose [[Prototype]] is the original instance,
-    // then defining `signal` on the proxy. Lookups for `execute` /
-    // `proxyExecute` fall through to the original instance unchanged.
+    // Object.create preserves prototype methods (execute, proxyExecute) that spread would drop
     const ctxWithSignal: SessionContext = options?.signal
       ? Object.assign(Object.create(sessionContext as object) as SessionContext, {
           signal: options.signal,
@@ -114,21 +100,9 @@ export async function executeCustomTool(
       successful: true,
     };
   } catch (err: unknown) {
-    // Surface cancellation as the typed error, not as a wrapped
-    // tool-execution failure — callers `instanceof`-detect this. Also
-    // covers the cooperative-cancellation path where user code wired
-    // ctx.signal into fetch and the abort surfaced as AbortError /
-    // DOMException(AbortError) — `isRequestAbortError` catches all those
-    // shapes via instanceof + cause-chain + name fallbacks.
     if (err instanceof ComposioRequestCancelledError) {
       throw err;
     }
-    // Only normalize an AbortError to caller-cancellation when the caller's
-    // signal actually fired. A custom tool that throws AbortError for its
-    // OWN reason (internal timeout, library abort, an unrelated
-    // AbortController) must keep surfacing as a tool failure — converting
-    // it would lie about the cause and steer callers' catch blocks down
-    // the wrong branch.
     if (options?.signal?.aborted && isRequestAbortError(err)) {
       throw new ComposioRequestCancelledError(undefined, {
         cause: err instanceof Error ? err : undefined,

@@ -192,9 +192,6 @@ export class CustomTools {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRetrieveResponse | null> {
     try {
-      // Single retrieve was previously called twice — collapsed and routed
-      // through withCancellation so the caller's AbortSignal can interrupt
-      // the pre-flight toolkit lookup.
       const toolkit = await withCancellation(() =>
         requestOptions
           ? this.client.toolkits.retrieve(toolkitSlug, undefined, requestOptions)
@@ -207,7 +204,6 @@ export class CustomTools {
         return null;
       }
     } catch (error) {
-      // Preserve cancellation as a typed error; don't remap it to "not found".
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }
@@ -362,22 +358,13 @@ export class CustomTools {
       });
     }
 
-    // Bail before invoking user code if the caller's signal already fired.
-    // After this point custom-tool execution is *cooperative* — long-running
-    // user code observes later aborts only if the user wires the signal into
-    // their own work (e.g. into fetch). The signal is exposed via the 4th
-    // positional arg of `execute` so they can.
+    // Check signal before invoking user code
     if (requestOptions?.signal?.aborted) {
       throw new ComposioRequestCancelledError();
     }
 
     try {
-      // The two execute variants (ToolkitBasedExecute / StandaloneExecute) form
-      // a discriminated union and TS narrowing fights with calling the union
-      // with 4 args. ToolkitBasedExecute already accepts a 4th `ctx` arg via
-      // the typed signature; StandaloneExecute (no toolkit, 1-arg) just ignores
-      // the trailing args at runtime. Cast to the more-permissive type for
-      // the call.
+      // Cast needed: TS can't narrow the execute union with 4 args
       const exec = execute as (
         input: unknown,
         connectionConfig: ConnectionData | null,
@@ -388,17 +375,7 @@ export class CustomTools {
         signal: requestOptions?.signal ?? undefined,
       });
     } catch (err) {
-      // Surface cancellation as the typed error rather than letting it bubble
-      // up as a generic execution failure. Two paths:
-      //   1. Pre-execute guard threw ComposioRequestCancelledError directly,
-      //   2. User code wired ctx.signal into fetch — fetch rejects with
-      //      AbortError / DOMException(AbortError) and we MUST normalize.
-      //
-      // Critically, we only normalize an AbortError to caller-cancellation
-      // when the caller's signal ACTUALLY fired. A custom tool that throws
-      // AbortError for its own reason (its own timeout, internal abort)
-      // must keep surfacing as a tool failure — converting it would steer
-      // callers' catch blocks down the wrong branch.
+      // Only reclassify AbortError as cancellation when the caller's signal actually fired
       if (err instanceof ComposioRequestCancelledError) {
         throw err;
       }
