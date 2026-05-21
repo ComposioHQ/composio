@@ -7,19 +7,14 @@ Add per-request cancellation to public SDK methods via a new `ComposioRequestOpt
 Without this, a slow `tools.list` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
 
 ```typescript
-const controller = new AbortController();
-setTimeout(() => controller.abort(), 5_000);
-
 try {
   const tools = await composio.tools.get(
     'user_1',
     { search: 'send email', limit: 50 },
-    undefined,                 // provider options
-    { signal: controller.signal }
+    { signal: AbortSignal.timeout(5_000) }
   );
 } catch (err) {
   if (err instanceof ComposioRequestCancelledError) {
-    // caller-initiated cancellation — clean up and exit
     return;
   }
   throw err;

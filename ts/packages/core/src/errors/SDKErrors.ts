@@ -34,13 +34,10 @@ export class ComposioNoAPIKeyError extends ComposioError {
  *
  * @example
  * ```typescript
- * const controller = new AbortController();
  * try {
- *   await composio.tools.execute(slug, body, { signal: controller.signal });
+ *   await composio.tools.execute(slug, body, { signal: AbortSignal.timeout(5_000) });
  * } catch (err) {
- *   if (err instanceof ComposioRequestCancelledError) {
- *     return;
- *   }
+ *   if (err instanceof ComposioRequestCancelledError) return;
  *   throw err;
  * }
  * ```

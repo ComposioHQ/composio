@@ -693,11 +693,10 @@ export class Tools<
    *   limit: 10
    * });
    *
-   * // Cancel a slow search
-   * const controller = new AbortController();
+   * // Timeout a slow search after 5s
    * const tools = await composio.tools.get('default', {
    *   search: 'send email',
-   * }, { signal: controller.signal });
+   * }, { signal: AbortSignal.timeout(5_000) });
    * ```
    */
   async get<T extends TProvider>(
@@ -728,10 +727,9 @@ export class Tools<
    *   }
    * });
    *
-   * // Get tools with cancellation
-   * const controller = new AbortController();
+   * // Timeout after 5s
    * const tools = await composio.tools.get('user_1', { search: 'email' }, {
-   *   signal: controller.signal
+   *   signal: AbortSignal.timeout(5_000)
    * });
    * ```
    */
@@ -1019,15 +1017,13 @@ export class Tools<
    * });
    * ```
    *
-   * @example Execute with cancellation
+   * @example Execute with timeout
    * ```typescript
-   * const controller = new AbortController();
-   * setTimeout(() => controller.abort(), 5_000);
    * const result = await composio.tools.execute('HACKERNEWS_GET_FRONTPAGE', {
    *   userId: 'default',
    *   arguments: {},
    *   dangerouslySkipVersionCheck: true,
-   * }, { signal: controller.signal });
+   * }, { signal: AbortSignal.timeout(5_000) });
    * ```
    */
   async execute(
