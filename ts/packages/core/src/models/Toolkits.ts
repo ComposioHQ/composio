@@ -68,8 +68,9 @@ export class Toolkits {
         cursor: parsedQuery.data.cursor,
         limit: parsedQuery.data.limit,
       };
-      const result = await withCancellation(() =>
-        this.client.toolkits.list(listParams, requestOptions)
+      const result = await withCancellation(
+        () => this.client.toolkits.list(listParams, requestOptions),
+        requestOptions?.signal
       );
 
       return transformToolkitListResponse(result);
@@ -100,8 +101,9 @@ export class Toolkits {
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveResponse> {
     try {
-      const result = await withCancellation(() =>
-        this.client.toolkits.retrieve(slug, undefined, requestOptions)
+      const result = await withCancellation(
+        () => this.client.toolkits.retrieve(slug, undefined, requestOptions),
+        requestOptions?.signal
       );
       return transformToolkitRetrieveResponse(result);
     } catch (error) {
@@ -308,8 +310,9 @@ export class Toolkits {
   async listCategories(
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveCategoriesResponse> {
-    const result = await withCancellation(() =>
-      this.client.toolkits.retrieveCategories(requestOptions)
+    const result = await withCancellation(
+      () => this.client.toolkits.retrieveCategories(requestOptions),
+      requestOptions?.signal
     );
     return transformToolkitRetrieveCategoriesResponse(result);
   }

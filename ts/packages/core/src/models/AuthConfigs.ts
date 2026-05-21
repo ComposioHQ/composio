@@ -91,8 +91,9 @@ export class AuthConfigs {
       limit: parsedQuery?.limit,
       toolkit_slug: parsedQuery?.toolkit,
     };
-    const result = await withCancellation(() =>
-      this.client.authConfigs.list(listParams, requestOptions)
+    const result = await withCancellation(
+      () => this.client.authConfigs.list(listParams, requestOptions),
+      requestOptions?.signal
     );
     return transformAuthConfigListResponse(result);
   }
@@ -164,8 +165,9 @@ export class AuthConfigs {
                 : undefined,
             },
     };
-    const result = await withCancellation(() =>
-      this.client.authConfigs.create(createBody, requestOptions)
+    const result = await withCancellation(
+      () => this.client.authConfigs.create(createBody, requestOptions),
+      requestOptions?.signal
     );
     return transformCreateAuthConfigResponse(result);
   }
@@ -193,8 +195,9 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigRetrieveResponse> {
-    const result = await withCancellation(() =>
-      this.client.authConfigs.retrieve(nanoid, requestOptions)
+    const result = await withCancellation(
+      () => this.client.authConfigs.retrieve(nanoid, requestOptions),
+      requestOptions?.signal
     );
     return transformAuthConfigRetrieveResponse(result);
   }
@@ -266,8 +269,9 @@ export class AuthConfigs {
                 parsedData.data.restrictToFollowingTools,
             },
           };
-    return withCancellation(() =>
-      this.client.authConfigs.update(nanoid, updateBody, requestOptions)
+    return withCancellation(
+      () => this.client.authConfigs.update(nanoid, updateBody, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -292,7 +296,10 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigDeleteResponse> {
-    return withCancellation(() => this.client.authConfigs.delete(nanoid, requestOptions));
+    return withCancellation(
+      () => this.client.authConfigs.delete(nanoid, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -321,8 +328,9 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
-    return withCancellation(() =>
-      this.client.authConfigs.updateStatus(status, { nanoid }, requestOptions)
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus(status, { nanoid }, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -347,8 +355,9 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
-    return withCancellation(() =>
-      this.client.authConfigs.updateStatus('ENABLED', { nanoid }, requestOptions)
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus('ENABLED', { nanoid }, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -373,8 +382,9 @@ export class AuthConfigs {
     nanoid: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
-    return withCancellation(() =>
-      this.client.authConfigs.updateStatus('DISABLED', { nanoid }, requestOptions)
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus('DISABLED', { nanoid }, requestOptions),
+      requestOptions?.signal
     );
   }
 }

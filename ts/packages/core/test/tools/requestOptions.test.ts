@@ -27,7 +27,7 @@ describe('Cancellation — error normalization', () => {
 
     await expect(
       tools.getRawComposioTools({ search: 'send email' }, undefined, {
-        signal: new AbortController().signal,
+        signal: AbortSignal.abort(),
       })
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
@@ -41,7 +41,7 @@ describe('Cancellation — error normalization', () => {
 
     await expect(
       tools.getRawComposioTools({ search: 'send email' }, undefined, {
-        signal: new AbortController().signal,
+        signal: AbortSignal.abort(),
       })
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
@@ -56,7 +56,7 @@ describe('Cancellation — error normalization', () => {
 
     await expect(
       tools.getRawComposioTools({ search: 'send email' }, undefined, {
-        signal: new AbortController().signal,
+        signal: AbortSignal.abort(),
       })
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
@@ -67,6 +67,7 @@ describe('Cancellation — error normalization', () => {
       toolMocks.transformedTool as never
     );
     mockClient.tools.execute.mockImplementationOnce(async () => {
+      controller.abort();
       const err = new Error('Request was aborted');
       err.name = 'APIUserAbortError';
       throw err;
@@ -96,7 +97,7 @@ describe('Cancellation — error normalization', () => {
 
     await expect(
       tools.getRawComposioToolBySlug('GITHUB_GET_REPOS', undefined, {
-        signal: new AbortController().signal,
+        signal: AbortSignal.abort(),
       })
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
@@ -111,7 +112,7 @@ describe('Cancellation — error normalization', () => {
 
     try {
       await tools.getRawComposioTools({ search: 'send email' }, undefined, {
-        signal: new AbortController().signal,
+        signal: AbortSignal.abort(),
       });
       throw new Error('expected throw');
     } catch (err) {
@@ -305,7 +306,9 @@ describe('Cancellation — SessionContext signal forwarding', () => {
     const { executeCustomTool: execCustomTool } =
       await import('../../src/models/customToolExecution');
 
+    const controller = new AbortController();
     const sessionExecuteSpy = vi.fn().mockImplementation(async () => {
+      controller.abort();
       throw new APIUserAbortError();
     });
     const fakeClient = {
@@ -334,7 +337,7 @@ describe('Cancellation — SessionContext signal forwarding', () => {
 
     await expect(
       execCustomTool(customToolEntry as never, {}, ctxInstance, {
-        signal: new AbortController().signal,
+        signal: controller.signal,
       })
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
 

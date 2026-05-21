@@ -375,8 +375,9 @@ export class ToolRouterSession<
 
     let response;
     try {
-      response = await withCancellation(() =>
-        this.client.toolRouter.session.link(this.sessionId, body, requestOptions)
+      response = await withCancellation(
+        () => this.client.toolRouter.session.link(this.sessionId, body, requestOptions),
+        requestOptions?.signal
       );
     } catch (error) {
       // Caller-initiated cancellation must surface as the typed error,
@@ -423,8 +424,9 @@ export class ToolRouterSession<
       is_connected: toolkitOptions.data.isConnected,
       search: toolkitOptions.data.search,
     };
-    const result = await withCancellation(() =>
-      this.client.toolRouter.session.toolkits(this.sessionId, toolkitsParams, requestOptions)
+    const result = await withCancellation(
+      () => this.client.toolRouter.session.toolkits(this.sessionId, toolkitsParams, requestOptions),
+      requestOptions?.signal
     );
 
     const toolkitConnectedStates = result.items.map(item => {
@@ -481,8 +483,9 @@ export class ToolRouterSession<
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
       ...(experimental ? { experimental } : {}),
     };
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions)
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions),
+      requestOptions?.signal
     );
     const transformed = transformSearchResponse(response);
     return ToolRouterSessionSearchResponseSchema.parse(transformed);
@@ -544,8 +547,9 @@ export class ToolRouterSession<
       executeParams.experimental = experimental;
     }
 
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions)
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      requestOptions?.signal
     );
     const transformed = transformExecuteResponse(response);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
@@ -568,8 +572,10 @@ export class ToolRouterSession<
     }
 
     const clientParams = transformProxyParams(validated.data);
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions)
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+      requestOptions?.signal
     );
 
     return {
@@ -600,8 +606,9 @@ export class ToolRouterSession<
   ): Promise<void> {
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
     const params = transformToolRouterUpdateParams(parsed);
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.patch(this.sessionId, params, requestOptions)
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
+      requestOptions?.signal
     );
     this.configVersion = response.config_version;
     this.preload = response.config.preload;

@@ -482,7 +482,10 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = await withCancellation(() => this.client.tools.list(filters, requestOptions));
+    const tools = await withCancellation(
+      () => this.client.tools.list(filters, requestOptions),
+      requestOptions?.signal
+    );
 
     if (!tools) {
       return [];
@@ -547,8 +550,9 @@ export class Tools<
         limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
         ...(cursor ? { cursor } : {}),
       };
-      const response = await withCancellation(() =>
-        this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions)
+      const response = await withCancellation(
+        () => this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions),
+        requestOptions?.signal
       );
       tools.push(...response.items.map(tool => this.transformToolCases(tool)));
       cursor = response.next_cursor;
@@ -646,8 +650,9 @@ export class Tools<
         ? { version: options.version } // Explicit version → use 'version' param
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
 
-      tool = await withCancellation(() =>
-        this.client.tools.retrieve(slug, retrieveParams, requestOptions)
+      tool = await withCancellation(
+        () => this.client.tools.retrieve(slug, retrieveParams, requestOptions),
+        requestOptions?.signal
       );
     } catch (error) {
       if (error instanceof ComposioRequestCancelledError) {
@@ -747,6 +752,9 @@ export class Tools<
     const options = arg3;
     const requestOptions: ComposioRequestOptions | undefined =
       options?.signal != null ? { signal: options.signal } : undefined;
+    // Strip signal so it isn't captured in the provider execution closure —
+    // an expired AbortSignal.timeout() would poison every future tool call.
+    const { signal: _, ...modifiers } = options ?? {};
 
     if (typeof arg2 === 'string') {
       const tool = await this.getRawComposioToolBySlug(
@@ -759,7 +767,7 @@ export class Tools<
       return this.wrapToolsForProvider(
         userId,
         [tool],
-        options as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers
       ) as TToolCollection;
     } else {
       const tools = await this.getRawComposioTools(
@@ -772,7 +780,7 @@ export class Tools<
       return this.wrapToolsForProvider(
         userId,
         tools,
-        options as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers
       ) as TToolCollection;
     }
   }
@@ -930,8 +938,9 @@ export class Tools<
         version: toolkitVersion,
         text: body.text,
       };
-      const result = await withCancellation(() =>
-        this.client.tools.execute(tool.slug, executeBody, requestOptions)
+      const result = await withCancellation(
+        () => this.client.tools.execute(tool.slug, executeBody, requestOptions),
+        requestOptions?.signal
       );
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
@@ -1044,6 +1053,7 @@ export class Tools<
 
     const requestOptions: ComposioRequestOptions | undefined =
       options?.signal != null ? { signal: options.signal } : undefined;
+    const { signal: _, ...modifiers } = options ?? {};
 
     // Determine if it's a custom tool or composio tool
     const customTool = await this.customTools.getCustomToolBySlug(slug);
@@ -1066,7 +1076,7 @@ export class Tools<
         toolkitSlug,
         params: executeParams.data,
       },
-      options,
+      modifiers as ExecuteToolModifiers,
       requestOptions
     );
 
@@ -1085,7 +1095,7 @@ export class Tools<
         toolkitSlug,
         result,
       },
-      options?.afterExecute,
+      modifiers.afterExecute,
       requestOptions
     );
 
@@ -1141,8 +1151,9 @@ export class Tools<
       executePayload.experimental = options.experimental;
     }
 
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions)
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
+      requestOptions?.signal
     );
 
     // Prepare the result
@@ -1181,7 +1192,10 @@ export class Tools<
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
-    return withCancellation(() => this.client.tools.retrieveEnum(requestOptions));
+    return withCancellation(
+      () => this.client.tools.retrieveEnum(requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -1207,7 +1221,10 @@ export class Tools<
     body: ToolGetInputParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolGetInputResponse> {
-    return withCancellation(() => this.client.tools.getInput(slug, body, requestOptions));
+    return withCancellation(
+      () => this.client.tools.getInput(slug, body, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -1275,7 +1292,10 @@ export class Tools<
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     } as ComposioToolProxyParams;
-    return withCancellation(() => this.client.tools.proxy(proxyBody, requestOptions));
+    return withCancellation(
+      () => this.client.tools.proxy(proxyBody, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**

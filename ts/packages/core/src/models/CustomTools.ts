@@ -192,8 +192,9 @@ export class CustomTools {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRetrieveResponse | null> {
     try {
-      const toolkit = await withCancellation(() =>
-        this.client.toolkits.retrieve(toolkitSlug, undefined, requestOptions)
+      const toolkit = await withCancellation(
+        () => this.client.toolkits.retrieve(toolkitSlug, undefined, requestOptions),
+        requestOptions?.signal
       );
       const isNoAuthToolkit = toolkit.auth_config_details?.some(
         details => details.mode === AuthSchemeTypes.NO_AUTH
@@ -213,8 +214,9 @@ export class CustomTools {
       toolkit_slugs: [toolkitSlug],
       user_ids: [userId],
     };
-    const connectedAccounts = await withCancellation(() =>
-      this.client.connectedAccounts.list(connectedAccountsListParams, requestOptions)
+    const connectedAccounts = await withCancellation(
+      () => this.client.connectedAccounts.list(connectedAccountsListParams, requestOptions),
+      requestOptions?.signal
     );
 
     if (!connectedAccounts.items.length) {
@@ -331,8 +333,9 @@ export class CustomTools {
          */
         custom_connection_data: data.customConnectionData,
       } as Parameters<typeof this.client.tools.proxy>[0];
-      const response = await withCancellation(() =>
-        this.client.tools.proxy(proxyBody, requestOptions)
+      const response = await withCancellation(
+        () => this.client.tools.proxy(proxyBody, requestOptions),
+        requestOptions?.signal
       );
 
       return {

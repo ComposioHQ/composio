@@ -114,8 +114,9 @@ export class MCP {
       // if manually manage account is set to true, disable composio account management tools
       managed_auth_via_composio: config.data.manuallyManageConnections ? false : true,
     };
-    const server = await withCancellation(() =>
-      this.client.mcp.custom.create(createBody, requestOptions)
+    const server = await withCancellation(
+      () => this.client.mcp.custom.create(createBody, requestOptions),
+      requestOptions?.signal
     );
 
     const camelCaseServer = transform(server)
@@ -189,8 +190,9 @@ export class MCP {
       auth_config_ids: params.authConfigs?.length > 0 ? params.authConfigs.join(',') : undefined,
       name: params.name,
     };
-    const listResponse = await withCancellation(() =>
-      this.client.mcp.list(listParams, requestOptions)
+    const listResponse = await withCancellation(
+      () => this.client.mcp.list(listParams, requestOptions),
+      requestOptions?.signal
     );
 
     const transformedListResponse = transform(listResponse)
@@ -241,8 +243,9 @@ export class MCP {
    * @throws {ValidationError} When the server ID is invalid or server not found
    */
   async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MCPItem> {
-    const response = await withCancellation(() =>
-      this.client.mcp.retrieve(serverId, requestOptions)
+    const response = await withCancellation(
+      () => this.client.mcp.retrieve(serverId, requestOptions),
+      requestOptions?.signal
     );
     return transformMCPItemResponse(response);
   }
@@ -287,7 +290,10 @@ export class MCP {
     serverId: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<{ id: string; deleted: boolean }> {
-    return withCancellation(() => this.client.mcp.delete(serverId, requestOptions));
+    return withCancellation(
+      () => this.client.mcp.delete(serverId, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -391,8 +397,9 @@ export class MCP {
         : {}),
       ...{ managed_auth_via_composio: params.manuallyManageConnections ?? undefined },
     };
-    const response = await withCancellation(() =>
-      this.client.mcp.update(serverId, updateBody, requestOptions)
+    const response = await withCancellation(
+      () => this.client.mcp.update(serverId, updateBody, requestOptions),
+      requestOptions?.signal
     );
     return transformMCPItemResponse(response);
   }
@@ -420,8 +427,9 @@ export class MCP {
     options?: MCPGetInstanceParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<MCPServerInstance> {
-    const server = await withCancellation(() =>
-      this.client.mcp.retrieve(mcpConfigId, requestOptions)
+    const server = await withCancellation(
+      () => this.client.mcp.retrieve(mcpConfigId, requestOptions),
+      requestOptions?.signal
     );
     const params = MCPGetInstanceParamsSchema.safeParse(
       options ?? { manuallyManageConnections: false }
@@ -437,8 +445,9 @@ export class MCP {
       user_ids: [userId],
       managed_auth_by_composio: options?.manuallyManageConnections ? false : true,
     };
-    const urlResponse = await withCancellation(() =>
-      this.client.mcp.generate.url(urlBody, requestOptions)
+    const urlResponse = await withCancellation(
+      () => this.client.mcp.generate.url(urlBody, requestOptions),
+      requestOptions?.signal
     );
 
     const userIdsURL = urlResponse.user_ids_url[0];

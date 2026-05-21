@@ -125,8 +125,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
           trigger_names: parsedParams.data.triggerNames,
         }
       : undefined;
-    const result = await withCancellation(() =>
-      this.client.triggerInstances.listActive(listParams, requestOptions)
+    const result = await withCancellation(
+      () => this.client.triggerInstances.listActive(listParams, requestOptions),
+      requestOptions?.signal
     );
     return transformTriggerInstanceListActiveResponse(result);
   }
@@ -184,8 +185,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
         user_ids: [userId],
         toolkit_slugs: [toolkitSlug],
       };
-      const { items: connectedAccounts } = await withCancellation(() =>
-        this.client.connectedAccounts.list(connectedAccountListParams, requestOptions)
+      const { items: connectedAccounts } = await withCancellation(
+        () => this.client.connectedAccounts.list(connectedAccountListParams, requestOptions),
+        requestOptions?.signal
       );
 
       if (connectedAccounts.length === 0) {
@@ -240,8 +242,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       trigger_config: parsedBody.data.triggerConfig,
       toolkit_versions: this.toolkitVersions,
     };
-    const result = await withCancellation(() =>
-      this.client.triggerInstances.upsert(slug, upsertBody, requestOptions)
+    const result = await withCancellation(
+      () => this.client.triggerInstances.upsert(slug, upsertBody, requestOptions),
+      requestOptions?.signal
     );
 
     return {
@@ -261,8 +264,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     body: TriggerInstanceManageUpdateParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceManageUpdateResponse> {
-    return withCancellation(() =>
-      this.client.triggerInstances.manage.update(triggerId, body, requestOptions)
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -276,8 +280,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     triggerId: string,
     requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceManageDeleteResponse> {
-    const result = await withCancellation(() =>
-      this.client.triggerInstances.manage.delete(triggerId, requestOptions)
+    const result = await withCancellation(
+      () => this.client.triggerInstances.manage.delete(triggerId, requestOptions),
+      requestOptions?.signal
     );
     return {
       triggerId: result.trigger_id,
@@ -292,8 +297,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async disable(triggerId: string, requestOptions?: ComposioRequestOptions) {
     const body = { status: 'disable' as const };
-    return withCancellation(() =>
-      this.client.triggerInstances.manage.update(triggerId, body, requestOptions)
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -305,8 +311,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async enable(triggerId: string, requestOptions?: ComposioRequestOptions) {
     const body = { status: 'enable' as const };
-    return withCancellation(() =>
-      this.client.triggerInstances.manage.update(triggerId, body, requestOptions)
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -334,8 +341,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       toolkit_slugs: parsedQuery.toolkits,
       toolkit_versions: this.toolkitVersions,
     };
-    const result = await withCancellation(() =>
-      this.client.triggersTypes.list(listParams, requestOptions)
+    const result = await withCancellation(
+      () => this.client.triggersTypes.list(listParams, requestOptions),
+      requestOptions?.signal
     );
 
     return transformTriggerTypeListResponse(result);
@@ -356,8 +364,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       // if the version is provided override the global version
       toolkit_versions: this.toolkitVersions,
     };
-    const result = await withCancellation(() =>
-      this.client.triggersTypes.retrieve(slug, retrieveParams, requestOptions)
+    const result = await withCancellation(
+      () => this.client.triggersTypes.retrieve(slug, retrieveParams, requestOptions),
+      requestOptions?.signal
     );
     return transformTriggerTypeRetrieveResponse(result);
   }
@@ -371,7 +380,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   async listEnum(
     requestOptions?: ComposioRequestOptions
   ): Promise<TriggersTypeRetrieveEnumResponse> {
-    return withCancellation(() => this.client.triggersTypes.retrieveEnum(requestOptions));
+    return withCancellation(
+      () => this.client.triggersTypes.retrieveEnum(requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**

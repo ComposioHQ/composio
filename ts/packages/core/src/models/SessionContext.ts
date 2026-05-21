@@ -86,8 +86,9 @@ export class SessionContextImpl implements SessionContext {
       executeParams.experimental = experimental;
     }
 
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions)
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      requestOptions?.signal
     );
     return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
   }
@@ -108,8 +109,10 @@ export class SessionContextImpl implements SessionContext {
     const requestOptions = signal ? { signal } : undefined;
 
     const clientParams = transformProxyParams(validated.data);
-    const response = await withCancellation(() =>
-      this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions)
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+      requestOptions?.signal
     );
 
     return {

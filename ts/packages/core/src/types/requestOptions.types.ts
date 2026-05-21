@@ -33,5 +33,5 @@ export type ComposioRequestOptions = {
    * signal aborts, the underlying fetch is aborted and the SDK throws a
    * {@link ComposioRequestCancelledError} (subclass of {@link ComposioError}).
    */
-  signal?: AbortSignal | null;
+  signal?: AbortSignal;
 };
