@@ -86,20 +86,30 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
 export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
-const ParametersSchema = z.object({
-  type: z.literal('object'),
-  anyOf: z.array(JSONSchemaPropertySchema).optional(),
-  oneOf: z.array(JSONSchemaPropertySchema).optional(),
-  allOf: z.array(JSONSchemaPropertySchema).optional(),
-  not: JSONSchemaPropertySchema.optional(),
-  properties: z.record(z.string(), JSONSchemaPropertySchema),
-  required: z.array(z.string()).optional(),
-  title: z.string().optional(),
-  default: z.any().optional(),
-  nullable: z.boolean().optional(),
-  description: z.string().optional(),
-  additionalProperties: z.boolean().default(false).optional(),
-});
+export const ParametersSchema = z.preprocess(
+  (val) => {
+    if (val && typeof val === 'object' && Object.keys(val).length === 0) {
+      return undefined;
+    }
+    return val;
+  },
+  z
+    .object({
+      type: z.string().optional(),
+      anyOf: z.array(JSONSchemaPropertySchema).optional(),
+      oneOf: z.array(JSONSchemaPropertySchema).optional(),
+      allOf: z.array(JSONSchemaPropertySchema).optional(),
+      not: JSONSchemaPropertySchema.optional(),
+      properties: z.record(z.string(), JSONSchemaPropertySchema).optional(),
+      required: z.array(z.string()).optional(),
+      title: z.string().optional(),
+      default: z.any().optional(),
+      nullable: z.boolean().optional(),
+      description: z.string().optional(),
+      additionalProperties: z.boolean().default(false).optional(),
+    })
+    .optional()
+);
 
 /**
  * Tool is a single action that can be performed by a toolkit.
