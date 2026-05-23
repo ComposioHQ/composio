@@ -22,6 +22,7 @@ export function PersonaRecipes({ slug }: { slug: string }) {
       const overlap = current.tags.filter((t) => other.tags.includes(t)).length;
       return { slug: s, overlap, ...other };
     })
+    .filter((entry) => entry.overlap > 0)
     .sort((a, b) => b.overlap - a.overlap)
     .slice(0, 3);
 
