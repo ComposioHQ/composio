@@ -144,7 +144,7 @@ export function ToolkitsLanding() {
   const filteredToolkits = useMemo(() => {
     if (!deferredSearch) return categoryFiltered;
     return fuse.search(deferredSearch).map((result) => result.item);
-  }, [deferredSearch, categoryFiltered]);
+  }, [deferredSearch, categoryFiltered, fuse]);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
@@ -230,16 +230,15 @@ export function ToolkitsLanding() {
         />
       </div>
 
-      {/* Category filter pills */}
       <div>
         <div
           className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none"
-          role="tablist"
+          role="radiogroup"
           aria-label="Filter by category"
         >
           <button
-            role="tab"
-            aria-selected={selectedCategory === null}
+            role="radio"
+            aria-checked={selectedCategory === null}
             onClick={() => setSelectedCategory(null)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
               selectedCategory === null
@@ -252,8 +251,8 @@ export function ToolkitsLanding() {
           {categories.map((category) => (
             <button
               key={category}
-              role="tab"
-              aria-selected={selectedCategory === category}
+              role="radio"
+              aria-checked={selectedCategory === category}
               onClick={() => setSelectedCategory(category)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
                 selectedCategory === category
