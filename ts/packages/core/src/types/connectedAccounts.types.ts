@@ -308,8 +308,8 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
   /**
    * The url to redirect the user to post connecting their account.
    *
-   * For sucessfull connections, you will get a query param called status=success
-   * And for failed connections you will get a query param called satus=failed
+   * For successful connections, you will get a query param called status=success
+   * And for failed connections you will get a query param called status=failed
    *
    * @example https://your-app.com/callback
    *
