@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useDeferredValue } from 'react';
 import Link from 'next/link';
+import Fuse from 'fuse.js';
 import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import toolkitsData from '@/public/data/toolkits-list.json';
@@ -98,6 +99,7 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
 
 export function ToolkitsLanding() {
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   // Get popular toolkits
@@ -107,29 +109,53 @@ export function ToolkitsLanding() {
       .filter((t): t is ToolkitSummary => t !== undefined);
   }, []);
 
-  const filteredToolkits = useMemo(() => {
-    if (!deferredSearch) return toolkits;
+  // Unique categories sorted by toolkit count (most toolkits first)
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    toolkits.forEach((t) => {
+      const cat = t.category ?? 'Uncategorized';
+      counts.set(cat, (counts.get(cat) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([category]) => category);
+  }, []);
 
-    const searchLower = deferredSearch.toLowerCase();
-    return toolkits.filter(
-      (toolkit) =>
-        toolkit.name.toLowerCase().includes(searchLower) ||
-        toolkit.slug.toLowerCase().includes(searchLower)
-    );
-  }, [deferredSearch]);
+  // Filter by selected category (exact match)
+  const categoryFiltered = useMemo(() => {
+    if (!selectedCategory) return toolkits;
+    return toolkits.filter((t) => (t.category ?? 'Uncategorized') === selectedCategory);
+  }, [selectedCategory]);
+
+  // Fuse instance scoped to the category-filtered list
+  const fuse = useMemo(
+    () => new Fuse(categoryFiltered, {
+      keys: [
+        { name: 'name', weight: 2 },
+        { name: 'slug', weight: 1.5 },
+      ],
+      threshold: 0.4,
+      distance: 200,
+      minMatchCharLength: 1,
+    }),
+    [categoryFiltered]
+  );
+
+  const filteredToolkits = useMemo(() => {
+    if (!deferredSearch) return categoryFiltered;
+    return fuse.search(deferredSearch).map((result) => result.item);
+  }, [deferredSearch, categoryFiltered]);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
     const groups: Record<string, ToolkitSummary[]> = {};
 
-    // First sort all toolkits alphabetically (trim to handle leading spaces)
     const sorted = [...filteredToolkits].sort((a, b) =>
       (a.name?.trim() || '').localeCompare(b.name?.trim() || '')
     );
 
     sorted.forEach((toolkit) => {
       const firstChar = (toolkit.name?.trim() || '#').charAt(0).toUpperCase();
-      // Group all numbers under '#'
       const letter = /[0-9]/.test(firstChar) ? '#' : firstChar;
       if (!groups[letter]) {
         groups[letter] = [];
@@ -137,13 +163,17 @@ export function ToolkitsLanding() {
       groups[letter].push(toolkit);
     });
 
-    // Sort groups with letters first (A-Z), then # (numbers) at end
     return Object.entries(groups).sort(([a], [b]) => {
       if (a === '#') return 1;
       if (b === '#') return -1;
       return a.localeCompare(b);
     });
   }, [filteredToolkits]);
+
+  const clearAll = () => {
+    setSearch('');
+    setSelectedCategory(null);
+  };
 
   return (
     <div className="space-y-5 sm:space-y-8">
@@ -164,7 +194,7 @@ export function ToolkitsLanding() {
             className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
           >
             Playground
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
           <a
             href="https://request.composio.dev/boards/tool-requests"
@@ -174,7 +204,7 @@ export function ToolkitsLanding() {
           >
             <Grip className="h-3.5 w-3.5" />
             Request Tools
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -196,18 +226,66 @@ export function ToolkitsLanding() {
           autoComplete="off"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/60 focus-visible:ring-2 focus-visible:ring-blue-500/40"
         />
       </div>
 
-      {/* Results count */}
-      <p className="text-sm text-fd-muted-foreground">
-        {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
-        {deferredSearch && ` matching "${deferredSearch}"`}
-      </p>
+      {/* Category filter pills */}
+      <div>
+        <div
+          className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none"
+          role="tablist"
+          aria-label="Filter by category"
+        >
+          <button
+            role="tab"
+            aria-selected={selectedCategory === null}
+            onClick={() => setSelectedCategory(null)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+              selectedCategory === null
+                ? 'bg-fd-foreground text-fd-background'
+                : 'bg-fd-muted text-fd-muted-foreground hover:text-fd-foreground'
+            }`}
+          >
+            All
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category}
+              role="tab"
+              aria-selected={selectedCategory === category}
+              onClick={() => setSelectedCategory(category)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                selectedCategory === category
+                  ? 'bg-fd-foreground text-fd-background'
+                  : 'bg-fd-muted text-fd-muted-foreground hover:text-fd-foreground'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Popular Toolkits - only show when no search */}
-      {!deferredSearch && popularToolkits.length > 0 && (
+      {/* Results count + clear */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-fd-muted-foreground">
+          {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
+          {deferredSearch && ` matching "${deferredSearch}"`}
+          {selectedCategory && !deferredSearch && ` in ${selectedCategory}`}
+        </p>
+        {(selectedCategory || deferredSearch) && (
+          <button
+            onClick={clearAll}
+            className="text-xs text-fd-muted-foreground underline-offset-2 hover:underline hover:text-fd-foreground"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* Popular Toolkits - only show when no search and no category filter */}
+      {!deferredSearch && !selectedCategory && popularToolkits.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
           <div className="divide-y divide-fd-border">
@@ -218,7 +296,7 @@ export function ToolkitsLanding() {
         </div>
       )}
 
-      {/* Alphabetically grouped list - table style */}
+      {/* Alphabetically grouped list */}
       {groupedToolkits.length > 0 ? (
         <div className="space-y-6">
           {groupedToolkits.map(([letter, items]) => (
@@ -236,10 +314,10 @@ export function ToolkitsLanding() {
         <div className="py-12 text-center">
           <p className="text-fd-muted-foreground">No toolkits found.</p>
           <button
-            onClick={() => setSearch('')}
+            onClick={clearAll}
             className="mt-2 text-sm text-fd-primary hover:underline"
           >
-            Clear search
+            Clear filters
           </button>
         </div>
       )}

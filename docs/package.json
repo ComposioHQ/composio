@@ -30,6 +30,7 @@
     "fumadocs-mdx": "^14.2.4",
     "fumadocs-openapi": "^10.2.2",
     "fumadocs-ui": "^16.4.2",
+    "fuse.js": "^7.3.0",
     "lucide-react": "^0.562.0",
     "mermaid": "^11.12.3",
     "next": "16.2.1",

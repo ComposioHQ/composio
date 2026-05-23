@@ -1,0 +1,67 @@
+{
+  "chat-app": {
+    "tags": ["nextjs", "typescript", "frontend", "beginner", "vercel-ai-sdk"],
+    "title": "Build a Chat App",
+    "description": "Build an AI chat app with tool access to 1000+ apps in about 30 lines of code"
+  },
+  "app-connections-dashboard": {
+    "tags": ["nextjs", "typescript", "frontend", "auth", "dashboard"],
+    "title": "Build an App Connections Dashboard",
+    "description": "Build a dashboard for managing user app connections and auth status"
+  },
+  "fast-api": {
+    "tags": ["python", "backend", "fastapi", "beginner", "server"],
+    "title": "Basic FastAPI Server",
+    "description": "Build an AI agent with access to 1000+ tools using Composio and FastAPI"
+  },
+  "hono": {
+    "tags": ["typescript", "backend", "hono", "beginner", "server"],
+    "title": "Basic Hono Server",
+    "description": "Build an AI agent with access to 1000+ tools using Composio and Hono.js"
+  },
+  "workplace-search": {
+    "tags": ["python", "multi-app", "search", "oauth", "openai-agents-sdk"],
+    "title": "Workplace Search Agent",
+    "description": "Search across GitHub, Slack, Gmail, and Notion from a single agent"
+  },
+  "background-agent": {
+    "tags": ["typescript", "automation", "cron", "multi-app", "vercel-ai-sdk"],
+    "title": "Background Agent",
+    "description": "Build an autonomous agent that monitors GitHub, Gmail, and Slack and takes action while you sleep"
+  },
+  "support-agent": {
+    "tags": ["python", "rag", "multi-app", "streaming", "openai-agents-sdk"],
+    "title": "Support Knowledge Agent",
+    "description": "Build an agentic RAG system that searches Notion, checks Datadog, and manages GitHub issues for support triage"
+  },
+  "gmail-labeler": {
+    "tags": ["python", "triggers", "event-driven", "claude", "automation"],
+    "title": "Gmail Labeler",
+    "description": "Build a Python script that listens for new Gmail messages and labels them using Composio and the Claude Agent SDK"
+  },
+  "slack-summariser": {
+    "tags": ["python", "openai-agents-sdk", "summarization", "beginner"],
+    "title": "Slack Summarizer",
+    "description": "Build an agent that summarizes Slack channel messages using Composio"
+  },
+  "supabase-sql-agent": {
+    "tags": ["python", "database", "sql", "natural-language", "openai-agents-sdk"],
+    "title": "Supabase SQL Agent",
+    "description": "Build an agent that executes SQL queries on Supabase using natural language"
+  },
+  "pr-review-agent": {
+    "tags": ["python", "github-actions", "devops", "ci", "openai-agents-sdk"],
+    "title": "PR Review Agent",
+    "description": "Build an AI PR review agent that reads your CLAUDE.md, reviews diffs, and posts feedback on every pull request"
+  },
+  "tool-generator": {
+    "tags": ["python", "platform", "api", "metadata", "developer-tools"],
+    "title": "Tool Type Generator",
+    "description": "Build a platform on top of Composio using raw tool definitions and toolkit metadata"
+  },
+  "templates": {
+    "tags": ["all", "starter", "reference", "quickstart"],
+    "title": "Templates",
+    "description": "Open-source templates and starter projects built with Composio"
+  }
+}
