@@ -1,0 +1,90 @@
+---
+title: Formula Workbook Tool
+description: Give an agent a deterministic pricing workbook tool using Composio custom tools and Bilig WorkPaper
+keywords: [custom tool, formula workbook, spreadsheet formulas, workpaper, pricing agent]
+---
+
+[View source on GitHub](https://github.com/ComposioHQ/composio/tree/next/docs/examples/formula-workbook-tool)
+
+This cookbook shows how to expose spreadsheet-style business logic as a local Composio custom tool. The agent writes inputs into a Bilig WorkPaper, reads recalculated formula outputs, and returns a small proof that the workbook state can be exported as JSON.
+
+Use this pattern when your team already reviews pricing, payout, quota, or finance logic as spreadsheet formulas, but your agent should not drive Excel, Google Sheets, or a browser UI to get a computed value.
+
+## Prerequisites
+
+- Node.js 24+
+- [Composio API key](https://dashboard.composio.dev/settings)
+- [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Project setup
+
+Create a new project and install the dependencies:
+
+```bash
+mkdir formula-workbook-tool && cd formula-workbook-tool
+npm init -y
+npm install @composio/core @composio/vercel @ai-sdk/openai ai @bilig/workpaper zod dotenv tsx
+```
+
+Add your API keys to a `.env` file:
+
+```bash title=".env"
+COMPOSIO_API_KEY=your_composio_api_key
+OPENAI_API_KEY=your_openai_api_key
+COMPOSIO_USER_ID=formula-workbook-demo
+```
+
+## Build the workbook
+
+The workbook has one input sheet and one formula sheet. Bilig recalculates formulas in process, so the agent gets computed values without opening a spreadsheet app.
+
+<include meta="no-twoslash">../../examples/formula-workbook-tool/server.ts#workbook</include>
+
+## Register the custom tool
+
+`experimental_createTool` turns the workbook into an agent-callable tool. The tool writes only the input cells, then reads the formula outputs and exports the WorkPaper snapshot as a persistence check.
+
+<include meta="no-twoslash">../../examples/formula-workbook-tool/server.ts#custom-tool</include>
+
+## Add it to a session
+
+Pass the custom tool into the Composio session. `preload: true` makes this tool available immediately alongside any remote tools the session can discover.
+
+<include meta="no-twoslash">../../examples/formula-workbook-tool/server.ts#session</include>
+
+## Run the agent
+
+Ask the agent to calculate a quote. The model calls the local workbook tool, then summarizes the formula output.
+
+<include meta="no-twoslash">../../examples/formula-workbook-tool/server.ts#run</include>
+
+## Complete script
+
+<include meta='no-twoslash title="server.ts"'>../../examples/formula-workbook-tool/server.ts</include>
+
+## Run it
+
+```bash
+npx tsx server.ts
+```
+
+You should see the agent report the net revenue and approval result from the workbook formulas.
+
+## Take it further
+
+- Load the workbook definition from a saved WorkPaper JSON file instead of building it inline.
+- Store the exported snapshot after every run so later agents can inspect what changed.
+- Add Composio toolkits such as Slack, Gmail, or GitHub to send the approved quote or open a follow-up issue.
+
+<Cards>
+  <Card
+    title="Custom Tools and Toolkits"
+    href="/docs/toolkits/custom-tools-and-toolkits"
+    description="Define local tools that run in process alongside remote Composio tools"
+  />
+  <Card
+    title="Background Agent"
+    href="/cookbooks/background-agent"
+    description="Run scheduled agents with Composio sessions"
+  />
+</Cards>

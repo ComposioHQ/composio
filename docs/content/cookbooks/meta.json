@@ -17,6 +17,7 @@
     "supabase-sql-agent",
     "---Developer Tools---",
     "pr-review-agent",
+    "formula-workbook-tool",
     "---Behind the Curtain---",
     "tool-generator"
   ]
