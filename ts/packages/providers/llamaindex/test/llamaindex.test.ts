@@ -105,6 +105,20 @@ describe('LlamaindexProvider', () => {
       });
     });
 
+    it('should normalize a stringified JSON input to an object before executing (issue #2406)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+      const searchParams = { query: 'test search' };
+
+      // Object input is forwarded unchanged.
+      await wrappedTool.call(searchParams);
+      expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, searchParams);
+
+      // A stringified-JSON input must be parsed to the same object, not forwarded as a raw string.
+      vi.clearAllMocks();
+      await wrappedTool.call(JSON.stringify(searchParams) as unknown as Record<string, unknown>);
+      expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, searchParams);
+    });
+
     it('should handle tools without input parameters', () => {
       const toolWithoutParams = { ...sampleTool, inputParameters: undefined };
 

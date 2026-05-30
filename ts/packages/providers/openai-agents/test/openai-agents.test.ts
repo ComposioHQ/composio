@@ -99,6 +99,23 @@ describe('OpenAIAgentsProvider', () => {
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
     });
 
+    it('should normalize a stringified JSON input to an object before executing (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(
+        mockTool,
+        mockExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+      const params = { input: 'test-value' };
+
+      // Object input is forwarded unchanged.
+      await (wrapped as any).execute(params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+
+      // A stringified-JSON input must be parsed to the same object, not forwarded as a raw string.
+      vi.clearAllMocks();
+      await (wrapped as any).execute(JSON.stringify(params));
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
     it('should handle tools without input parameters', () => {
       const toolWithoutParams: Tool = {
         ...mockTool,

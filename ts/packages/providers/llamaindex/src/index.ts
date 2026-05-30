@@ -39,7 +39,11 @@ export class LlamaindexProvider extends BaseAgenticProvider<
       description: tool.description ?? tool.name ?? '',
       parameters: inputParametersSchema,
       execute: async input => {
-        const result = await executeTool(tool.slug, input as Record<string, unknown>);
+        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        // ExecuteToolFn promises a Record<string, unknown>, so normalize before forwarding — mirrors
+        // the guard already shipped in the vercel/cloudflare/openai-agents providers.
+        const normalizedInput = typeof input === 'string' ? JSON.parse(input) : input;
+        const result = await executeTool(tool.slug, normalizedInput as Record<string, unknown>);
         return JSON.stringify(result);
       },
     });

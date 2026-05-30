@@ -173,6 +173,21 @@ describe('ClaudeAgentSDKProvider', () => {
       });
     });
 
+    it('should normalize a stringified JSON input to an object before executing (issue #2406)', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+      const handler = (tool as any).mock.calls[0][3];
+      const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
+
+      // Object input is forwarded unchanged.
+      await handler(params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+
+      // A stringified-JSON input must be parsed to the same object, not forwarded as a raw string.
+      vi.clearAllMocks();
+      await handler(JSON.stringify(params));
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
     it('should handle string results from tool execution', async () => {
       mockExecuteToolFn.mockResolvedValueOnce('Simple string result');
       provider.wrapTool(mockTool, mockExecuteToolFn);
