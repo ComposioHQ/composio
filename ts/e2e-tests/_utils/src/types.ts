@@ -1,4 +1,8 @@
-import { WELL_KNOWN_NODE_VERSIONS, WELL_KNOWN_DENO_VERSIONS, WELL_KNOWN_CLI_VERSIONS } from './const';
+import {
+  WELL_KNOWN_NODE_VERSIONS,
+  WELL_KNOWN_DENO_VERSIONS,
+  WELL_KNOWN_CLI_VERSIONS,
+} from './const';
 
 export type NonEmptyArray<T> = [T, ...T[]];
 
@@ -13,9 +17,9 @@ export type NonEmptyArray<T> = [T, ...T[]];
  */
 export type NonEmptyString<T extends string> = T extends '' ? never : T;
 
-export type NodeVersionFromUser = typeof WELL_KNOWN_NODE_VERSIONS[number];
-export type DenoVersionFromUser = typeof WELL_KNOWN_DENO_VERSIONS[number];
-export type CliVersionFromUser = typeof WELL_KNOWN_CLI_VERSIONS[number];
+export type NodeVersionFromUser = (typeof WELL_KNOWN_NODE_VERSIONS)[number];
+export type DenoVersionFromUser = (typeof WELL_KNOWN_DENO_VERSIONS)[number];
+export type CliVersionFromUser = (typeof WELL_KNOWN_CLI_VERSIONS)[number];
 
 /**
  * Result of CI skip check for a specific Node version.
@@ -30,7 +34,11 @@ export interface SkipInCI {
  * Includes skip state for CI mode.
  */
 export type NodeVersionMeta =
-  | { kind: 'static'; value: Exclude<typeof WELL_KNOWN_NODE_VERSIONS[number], 'current'>; skip: SkipInCI }
+  | {
+      kind: 'static';
+      value: Exclude<(typeof WELL_KNOWN_NODE_VERSIONS)[number], 'current'>;
+      skip: SkipInCI;
+    }
   | { kind: 'overridden'; value: string; skip: SkipInCI }
   | { kind: 'current'; value: string; skip: SkipInCI };
 
@@ -39,7 +47,11 @@ export type NodeVersionMeta =
  * Includes skip state for CI mode.
  */
 export type DenoVersionMeta =
-  | { kind: 'static'; value: Exclude<typeof WELL_KNOWN_DENO_VERSIONS[number], 'current'>; skip: SkipInCI }
+  | {
+      kind: 'static';
+      value: Exclude<(typeof WELL_KNOWN_DENO_VERSIONS)[number], 'current'>;
+      skip: SkipInCI;
+    }
   | { kind: 'overridden'; value: string; skip: SkipInCI }
   | { kind: 'current'; value: string; skip: SkipInCI };
 
@@ -128,7 +140,10 @@ export interface DefineTestsContext {
   /** Run an arbitrary command in the Docker container */
   runCmd: {
     <const C extends string>(command: NonEmptyString<C>): Promise<E2ETestResult>;
-    <const C extends string, const F extends string>(options: { command: NonEmptyString<C>; files: NonEmptyArray<F> }): Promise<E2ETestResultWithFiles<F>>;
+    <const C extends string, const F extends string>(options: {
+      command: NonEmptyString<C>;
+      files: NonEmptyArray<F>;
+    }): Promise<E2ETestResultWithFiles<F>>;
   };
   /**
    * Run a fixture file with Node.js.

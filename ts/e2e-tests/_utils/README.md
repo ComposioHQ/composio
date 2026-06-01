@@ -319,8 +319,6 @@ All packages work together!
 Summary
 ================================================================================
 Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.16.0: PASS (2 phases, 3.09s total)
-Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

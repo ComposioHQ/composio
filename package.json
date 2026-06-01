@@ -55,7 +55,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "20.20.2",
+      "version": "22.22.3",
       "onFail": "warn"
     },
     "packageManager": {

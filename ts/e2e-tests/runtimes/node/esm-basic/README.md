@@ -9,7 +9,7 @@ ESM is the modern JavaScript module standard. This suite ensures:
 - `import('@composio/core')` resolves without errors
 - Named imports work (`import { Composio } from '@composio/core'`)
 - All public exports are accessible
-- No CJS-only patterns break ESM consumers
+- The ESM-only package entrypoints resolve correctly
 
 ## What It Tests
 

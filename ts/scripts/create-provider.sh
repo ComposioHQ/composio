@@ -30,14 +30,13 @@ cat > "$TOOLSET_PATH/package.json" << EOL
   "type": "module",
   "publishConfig": {
     "access": "public",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts"
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     }
   },
   "files": [
@@ -45,7 +44,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
     "dist"
   ],
   "scripts": {
-    "build": "bun run --bun tsdown",
+    "build": "pnpm exec tsdown",
     "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],
@@ -83,17 +82,14 @@ cat > "$TOOLSET_PATH/tsconfig.json" << EOL
 }
 EOL
 
-# Create tsup.config.ts
-cat > "$TOOLSET_PATH/tsup.config.ts" << EOL
-import { defineConfig } from 'tsup';
+# Create tsdown.config.ts
+cat > "$TOOLSET_PATH/tsdown.config.ts" << EOL
+import { defineConfig } from 'tsdown';
+import { baseConfig } from '../../../../tsdown.config.base.ts';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
-  format: ['esm', 'cjs'],
-  dts: true,
-  clean: true,
-  minify: false,
-  outDir: 'dist',
+  ...baseConfig,
+  tsconfig: 'tsconfig.json',
 });
 EOL
 
@@ -254,4 +250,4 @@ chmod +x "$TOOLSET_PATH"
 cd "$TOOLSET_PATH" && pnpm install
 
 echo "✨ Created new ${IS_AGENTIC:+agentic }provider at $TOOLSET_PATH"
-echo "✨ Dependencies installed successfully"    
+echo "✨ Dependencies installed successfully"

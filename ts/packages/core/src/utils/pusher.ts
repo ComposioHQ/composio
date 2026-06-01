@@ -62,10 +62,7 @@ export class PusherUtils {
   static async getPusherClient(baseURL: string, apiKey: string): Promise<PusherClient> {
     try {
       if (!PusherUtils.pusherClient) {
-        // Dynamic import not available, using require for now
-        // TODO: Update to use dynamic import when available
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const PusherClient = require('pusher-js');
+        const { default: PusherClient } = await import('pusher-js');
         PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
           cluster: PUSHER_CLUSTER,
           channelAuthorization: {
