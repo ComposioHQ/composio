@@ -4,10 +4,18 @@ on:
   push:
     branches: [master]
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.build.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   pull_request:
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.build.yml'
+      - 'mise.toml'
+      - 'mise.lock'
 
 jobs:
   build:

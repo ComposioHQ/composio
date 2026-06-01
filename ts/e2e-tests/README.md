@@ -66,7 +66,7 @@ pnpm test:e2e
 pnpm test:e2e:node
 ```
 
-Runs Node.js tests in Docker using `bun test`. The default Node.js version is determined by `.nvmrc`.
+Runs Node.js tests in Docker using `bun test`. The default Node.js version is determined by `mise.toml`.
 
 To run with a specific Node.js version:
 
@@ -80,7 +80,7 @@ COMPOSIO_E2E_NODE_VERSION=22.12.0 pnpm test:e2e:node
 pnpm test:e2e:deno
 ```
 
-Runs Deno tests in Docker using `bun test`. The default Deno version is determined by `.dvmrc`.
+Runs Deno tests in Docker using `bun test`. The default Deno version is determined by `mise.toml`.
 
 To run with a specific Deno version:
 
@@ -122,9 +122,9 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['20.18.0', '22.12.0'],  // Optional: defaults to .nvmrc version
+    node: ['20.18.0', '22.12.0'], // Optional: defaults to the current version in mise.toml
   },
-  env: { MY_VAR: process.env.MY_VAR },   // Optional: env vars (validated at startup)
+  env: { MY_VAR: process.env.MY_VAR }, // Optional: env vars (validated at startup)
   defineTests: ({ runtime, runFixture }) => {
     let result: E2ETestResult;
 
@@ -161,7 +161,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    deno: ['2.6.7'],  // Optional: defaults to .dvmrc version
+    deno: ['2.6.7'], // Optional: defaults to the current version in mise.toml
   },
   usesFixtures: true,
   defineTests: ({ runtime, runFixture }) => {
@@ -197,7 +197,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   nodeVersions: ['20.19.0', '22.12.0'],
-  usesFixtures: true,  // Sets cwd to fixtures/ directory
+  usesFixtures: true, // Sets cwd to fixtures/ directory
   env: { MY_API_KEY: process.env.MY_API_KEY },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResultWithSetup;
@@ -205,7 +205,7 @@ e2e(import.meta.url, {
     beforeAll(async () => {
       result = await runFixture({
         filename: 'index.mjs',
-        setup: 'npm install --legacy-peer-deps',  // Runs before fixture
+        setup: 'npm install --legacy-peer-deps', // Runs before fixture
       });
     }, TIMEOUTS.FIXTURE);
 

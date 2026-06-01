@@ -14,11 +14,11 @@ It performs a real round-trip:
 
 ## What It Tests
 
-| Test | Description |
-| ---- | ----------- |
-| Upload | Uploads a deterministic binary payload via `composio.files.upload()` |
-| Download | Downloads the uploaded object back from storage |
-| Integrity | Compares byte length and SHA-256 checksum |
+| Test      | Description                                                          |
+| --------- | -------------------------------------------------------------------- |
+| Upload    | Uploads a deterministic binary payload via `composio.files.upload()` |
+| Download  | Downloads the uploaded object back from storage                      |
+| Integrity | Compares byte length and SHA-256 checksum                            |
 
 ## Requirements
 
@@ -31,7 +31,7 @@ If `COMPOSIO_API_KEY` is not set, the suite is skipped.
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+**Docker** with Node.js versions: current (as specified in `mise.toml`).
 
 This ensures the behavior is tested against specific Node.js versions independent of the developer's local setup.
 

@@ -13,29 +13,41 @@ import { $ } from 'bun';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { WELL_KNOWN_NODE_VERSIONS, WELL_KNOWN_DENO_VERSIONS } from '../src/const';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+type DockerToolchain = {
+  nodeVersion: string;
+  nodeMajorVersion: string;
+  bunVersion: string;
+};
 
 function getRepoRoot(): string {
   // From scripts/ to repo root: scripts -> _utils -> e2e-tests -> ts -> composio
   return resolve(__dirname, '../../../..');
 }
 
-function getNvmrcVersion(repoRoot: string): string {
+function getMiseVersion(repoRoot: string, tool: 'node' | 'bun' | 'deno'): string {
   try {
-    return readFileSync(resolve(repoRoot, '.nvmrc'), 'utf-8').trim();
-  } catch {
-    return process.versions.node;
+    return execFileSync('mise', ['current', tool], { cwd: repoRoot, encoding: 'utf-8' }).trim();
+  } catch (err) {
+    throw new Error(`Failed to resolve ${tool} version from mise.toml: ${(err as Error).message}`);
   }
 }
 
-function getDvmrcVersion(repoRoot: string): string {
-  try {
-    return readFileSync(resolve(repoRoot, '.dvmrc'), 'utf-8').trim();
-  } catch {
-    return '2.6.7'; // fallback default
-  }
+function getMajorVersion(version: string): string {
+  return version.split('.')[0] ?? version;
+}
+
+function getDockerToolchain(repoRoot: string): DockerToolchain {
+  const nodeVersion = getMiseVersion(repoRoot, 'node');
+  return {
+    nodeVersion,
+    nodeMajorVersion: getMajorVersion(nodeVersion),
+    bunVersion: getMiseVersion(repoRoot, 'bun'),
+  };
 }
 
 function getCliPackageVersion(repoRoot: string): string {
@@ -63,7 +75,11 @@ function defaultNodeLabels(nodeVersion: string): Record<string, string> {
   };
 }
 
-async function buildNodeImage(nodeVersion: string, repoRoot: string): Promise<boolean> {
+async function buildNodeImage(
+  nodeVersion: string,
+  toolchain: DockerToolchain,
+  repoRoot: string
+): Promise<boolean> {
   const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.node');
   const imageTag = imageTagForNodeVersion(nodeVersion);
   const labels = defaultNodeLabels(nodeVersion);
@@ -73,9 +89,10 @@ async function buildNodeImage(nodeVersion: string, repoRoot: string): Promise<bo
 
   console.log(`\nBuilding image for Node.js ${nodeVersion}...`);
 
-  const result = await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
-    .cwd(repoRoot)
-    .nothrow();
+  const result =
+    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+      .cwd(repoRoot)
+      .nothrow();
 
   if (result.exitCode !== 0) {
     console.error(`  Failed to build ${imageTag}:`);
@@ -103,7 +120,11 @@ function defaultDenoLabels(denoVersion: string): Record<string, string> {
   };
 }
 
-async function buildDenoImage(denoVersion: string, repoRoot: string): Promise<boolean> {
+async function buildDenoImage(
+  denoVersion: string,
+  toolchain: DockerToolchain,
+  repoRoot: string
+): Promise<boolean> {
   const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.deno');
   const imageTag = imageTagForDenoVersion(denoVersion);
   const labels = defaultDenoLabels(denoVersion);
@@ -113,9 +134,10 @@ async function buildDenoImage(denoVersion: string, repoRoot: string): Promise<bo
 
   console.log(`\nBuilding image for Deno ${denoVersion}...`);
 
-  const result = await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
-    .cwd(repoRoot)
-    .nothrow();
+  const result =
+    await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} --build-arg NODE_MAJOR=${toolchain.nodeMajorVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+      .cwd(repoRoot)
+      .nothrow();
 
   if (result.exitCode !== 0) {
     console.error(`  Failed to build ${imageTag}:`);
@@ -143,7 +165,11 @@ function defaultCliLabels(cliVersion: string): Record<string, string> {
   };
 }
 
-async function buildCliImage(cliVersion: string, repoRoot: string): Promise<boolean> {
+async function buildCliImage(
+  cliVersion: string,
+  toolchain: DockerToolchain,
+  repoRoot: string
+): Promise<boolean> {
   const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
   const imageTag = imageTagForCliVersion(cliVersion);
   const labels = defaultCliLabels(cliVersion);
@@ -153,9 +179,10 @@ async function buildCliImage(cliVersion: string, repoRoot: string): Promise<bool
 
   console.log(`\nBuilding image for CLI ${cliVersion}...`);
 
-  const result = await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
-    .cwd(repoRoot)
-    .nothrow();
+  const result =
+    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+      .cwd(repoRoot)
+      .nothrow();
 
   if (result.exitCode !== 0) {
     console.error(`  Failed to build ${imageTag}:`);
@@ -173,8 +200,9 @@ async function buildCliImage(cliVersion: string, repoRoot: string): Promise<bool
 
 async function main() {
   const repoRoot = getRepoRoot();
-  const currentNodeVersion = getNvmrcVersion(repoRoot);
-  const currentDenoVersion = getDvmrcVersion(repoRoot);
+  const dockerToolchain = getDockerToolchain(repoRoot);
+  const currentNodeVersion = dockerToolchain.nodeVersion;
+  const currentDenoVersion = getMiseVersion(repoRoot, 'deno');
   const currentCliVersion = getCliPackageVersion(repoRoot);
   const envNodeVersion = Bun.env.COMPOSIO_E2E_NODE_VERSION;
   const envDenoVersion = Bun.env.COMPOSIO_E2E_DENO_VERSION;
@@ -243,7 +271,7 @@ async function main() {
   // Build Node.js images
   for (const version of nodeVersions) {
     total++;
-    const success = await buildNodeImage(version, repoRoot);
+    const success = await buildNodeImage(version, dockerToolchain, repoRoot);
     if (!success) {
       failed++;
     }
@@ -252,7 +280,7 @@ async function main() {
   // Build Deno images
   for (const version of denoVersions) {
     total++;
-    const success = await buildDenoImage(version, repoRoot);
+    const success = await buildDenoImage(version, dockerToolchain, repoRoot);
     if (!success) {
       failed++;
     }
@@ -261,7 +289,7 @@ async function main() {
   // Build CLI images
   for (const version of cliVersions) {
     total++;
-    const success = await buildCliImage(version, repoRoot);
+    const success = await buildCliImage(version, dockerToolchain, repoRoot);
     if (!success) {
       failed++;
     }
@@ -275,7 +303,7 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('Error:', err);
   process.exit(1);
 });

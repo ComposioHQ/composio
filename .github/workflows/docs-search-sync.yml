@@ -6,6 +6,10 @@ on:
       - next
     paths:
       - 'docs/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/docs-search-sync.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   workflow_dispatch:
 
 permissions:
@@ -26,10 +30,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: '.bun-version'
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install dependencies
         run: bun install

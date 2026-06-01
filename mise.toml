@@ -2,7 +2,7 @@
 # Tracked in: https://linear.app/composio/issue/PLEN-1368
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
-# CI:         driven by `jdx/mise-action@v4` in the composite actions under `.github/actions/`
+# CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
 #
 # pnpm is intentionally NOT pinned here. Pattern A (corepack-driven) is in effect:
 # the version comes from `packageManager` in `package.json` and corepack shims it.
@@ -21,11 +21,5 @@ uv      = "0.8.19"
 _.path = ["{{config_root}}/node_modules/.bin"]
 
 [settings]
-# Read .nvmrc / .python-version / .bun-version during the transition window.
-# Removed in Phase 3 once the legacy files are deleted.
-idiomatic_version_file_enable_tools = ["node", "python", "bun"]
-
-# uv integration: mise installs Python, uv owns the venv.
-# "source" activates an existing .venv when entering the repo;
-# use "create|source" if you want mise to also create the venv automatically.
-python.uv_venv_auto = "source"
+lockfile = true
+locked = true

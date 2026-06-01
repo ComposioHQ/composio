@@ -6,6 +6,11 @@ on:
     paths:
       - 'ts/packages/core/src/**'
       - 'python/composio/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/generate-sdk-docs.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   workflow_dispatch:
 
 jobs:

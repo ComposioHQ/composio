@@ -4,13 +4,19 @@ on:
     branches:
       - master
     paths:
-      - "python/**/*.py"
-      - ".github/workflows/py.check.yaml"
+      - 'python/**/*.py'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/py.check.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
   pull_request:
     types: [opened, synchronize]
     paths:
-      - "python/**/*.py"
-      - ".github/workflows/py.check.yaml"
+      - 'python/**/*.py'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/py.check.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
 
 jobs:
   common-checks:

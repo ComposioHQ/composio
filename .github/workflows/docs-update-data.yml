@@ -36,10 +36,8 @@ jobs:
             echo "Timestamp: $DEPLOY_TIMESTAMP"
           fi
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: '.bun-version'
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install dependencies
         run: bun install

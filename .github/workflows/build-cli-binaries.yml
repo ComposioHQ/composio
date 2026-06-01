@@ -6,6 +6,10 @@ on:
     paths:
       - 'ts/packages/cli/**'
       - 'ts/packages/cli-local-tools/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/build-cli-binaries.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   workflow_dispatch:
     inputs:
       action:
