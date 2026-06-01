@@ -1,5 +1,5 @@
 # Reusable Dockerfile for CLI e2e tests (debian runtime)
-# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=20.20.2 --build-arg BUN_VERSION=1.3.10 -t test-name .
+# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 -t test-name .
 
 ARG NODE_VERSION
 ARG BUN_VERSION

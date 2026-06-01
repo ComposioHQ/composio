@@ -34,7 +34,7 @@ The `setup` phase runs `npm install --legacy-peer-deps` in a Docker volume, then
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: 20.19.0, 22.12.0.
+**Docker** with Node.js versions: 22.22.3, 24.16.0, 25.9.0.
 
 ## Running
 

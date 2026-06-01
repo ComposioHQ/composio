@@ -25,7 +25,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['20.18.0', '20.19.0', '22.12.0'], // optional, defaults to mise.toml
+    node: ['22.22.3', '24.16.0', '25.9.0'], // optional, defaults to mise.toml
     deno: ['2.6.7'], // optional, defaults to mise.toml
     cli: ['current'], // optional, defaults to CLI package.json version
   },
@@ -192,9 +192,9 @@ Node.js versions to test are resolved in this order:
 
 The following versions are pre-defined in `const.ts`:
 
-- `20.18.0`
-- `20.19.0`
-- `22.12.0`
+- `22.22.3`
+- `24.16.0`
+- `25.9.0`
 - `current` (resolves to `mise.toml` version)
 
 ### Deno Version Resolution
@@ -281,16 +281,16 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Node versions: 20.19.0, 22.12.0
+Runtime versions: Node.js 22.22.3, Node.js 24.16.0, Node.js 25.9.0
 ================================================================================
 
 ################################################################################
-### Node.js 20.19.0
+### Node.js 22.22.3
 ################################################################################
-Image: composio-e2e-node:20.19.0
+Image: composio-e2e-node:22.22.3
 
 --- Phase 1/2: setup ---
-Container: e2e-openai-zod4-compat-20-19-0-1769775520382-setup
+Container: e2e-openai-zod4-compat-22-22-3-1769775520382-setup
 Command: npm install --legacy-peer-deps
 Duration: 2.55s
 Exit Code: 0 (success)
@@ -302,7 +302,7 @@ added 3 packages, and audited 5 packages in 2s
 (empty)
 
 --- Phase 2/2: fixture ---
-Container: e2e-openai-zod4-compat-20-19-0-1769775520382-fixture
+Container: e2e-openai-zod4-compat-22-22-3-1769775520382-fixture
 Command: node index.mjs
 Duration: 0.56s
 Exit Code: 0 (success)
@@ -315,16 +315,12 @@ All packages work together!
 [stderr]
 (empty)
 
-################################################################################
-### Node.js 22.12.0 (SKIPPED)
-################################################################################
-Reason: Not selected via COMPOSIO_E2E_NODE_VERSION
-
 ================================================================================
 Summary
 ================================================================================
-Node.js 20.19.0: PASS (2 phases, 3.11s total)
-Node.js 22.12.0: SKIPPED
+Node.js 22.22.3: PASS (2 phases, 3.11s total)
+Node.js 24.16.0: PASS (2 phases, 3.09s total)
+Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s
