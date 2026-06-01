@@ -28,8 +28,7 @@ pnpm test               # Run tests
 ### Package Management
 
 ```bash
-mise install            # Install Node, Bun, Deno, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
-corepack enable         # Activate pnpm from package.json#packageManager
+mise install            # Install Node, Bun, Deno, pnpm, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
 pnpm install            # Install dependencies
 pnpm check:peer-deps    # Check peer dependencies
 pnpm update:peer-deps   # Update peer dependencies
@@ -222,9 +221,9 @@ Toolchain versions are coalesced in `mise.toml`. To check the current values:
 - **Deno**: `mise current deno`
 - **Python**: `mise current python`
 - **uv**: `mise current uv`
-- **pnpm**: `node -p "require('./package.json').packageManager"`
+- **pnpm**: `mise current npm:pnpm`
 
-To bump, edit `mise.toml` (or `package.json#packageManager` for pnpm), then run:
+To bump, edit `mise.toml`, then run:
 
 ```bash
 mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64

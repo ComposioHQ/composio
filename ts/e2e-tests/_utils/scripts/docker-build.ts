@@ -22,6 +22,7 @@ type DockerToolchain = {
   nodeVersion: string;
   nodeMajorVersion: string;
   bunVersion: string;
+  pnpmVersion: string;
 };
 
 function getRepoRoot(): string {
@@ -29,7 +30,7 @@ function getRepoRoot(): string {
   return resolve(__dirname, '../../../..');
 }
 
-function getMiseVersion(repoRoot: string, tool: 'node' | 'bun' | 'deno'): string {
+function getMiseVersion(repoRoot: string, tool: 'node' | 'bun' | 'deno' | 'npm:pnpm'): string {
   try {
     return execFileSync('mise', ['current', tool], { cwd: repoRoot, encoding: 'utf-8' }).trim();
   } catch (err) {
@@ -47,6 +48,7 @@ function getDockerToolchain(repoRoot: string): DockerToolchain {
     nodeVersion,
     nodeMajorVersion: getMajorVersion(nodeVersion),
     bunVersion: getMiseVersion(repoRoot, 'bun'),
+    pnpmVersion: getMiseVersion(repoRoot, 'npm:pnpm'),
   };
 }
 
@@ -90,7 +92,7 @@ async function buildNodeImage(
   console.log(`\nBuilding image for Node.js ${nodeVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} --build-arg PNPM_VERSION=${toolchain.pnpmVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -135,7 +137,7 @@ async function buildDenoImage(
   console.log(`\nBuilding image for Deno ${denoVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} --build-arg NODE_MAJOR=${toolchain.nodeMajorVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} --build-arg NODE_MAJOR=${toolchain.nodeMajorVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} --build-arg PNPM_VERSION=${toolchain.pnpmVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -180,7 +182,7 @@ async function buildCliImage(
   console.log(`\nBuilding image for CLI ${cliVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} --build-arg PNPM_VERSION=${toolchain.pnpmVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 

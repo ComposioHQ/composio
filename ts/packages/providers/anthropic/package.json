@@ -37,7 +37,6 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
     "@composio/core": ">=0.10.0 <1.0.0",

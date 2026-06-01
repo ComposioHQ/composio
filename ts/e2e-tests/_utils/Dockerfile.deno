@@ -1,5 +1,5 @@
 # Reusable Dockerfile for Deno e2e tests
-# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 --build-arg NODE_MAJOR=20 --build-arg BUN_VERSION=1.3.10 -t test-name .
+# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 --build-arg NODE_MAJOR=22 --build-arg BUN_VERSION=1.3.10 --build-arg PNPM_VERSION=10.28.2 -t test-name .
 #
 # Uses official denoland/deno images. For multi-version testing, run the build/run
 # multiple times with different DENO_VERSION values from the shell script.
@@ -9,6 +9,7 @@ ARG DENO_VERSION
 FROM denoland/deno:${DENO_VERSION}
 ARG NODE_MAJOR
 ARG BUN_VERSION
+ARG PNPM_VERSION
 
 ENV PNPM_HOME="/pnpm"
 ENV BUN_INSTALL="/usr/local"
@@ -29,9 +30,9 @@ RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Install corepack (for pnpm)
-RUN npm i -g corepack@latest && \
-    corepack enable
+# Install pnpm without Corepack. The version is resolved from mise.toml by callers.
+RUN npm install -g "pnpm@${PNPM_VERSION}" && \
+    pnpm --version
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v${BUN_VERSION}" && \

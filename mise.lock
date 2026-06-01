@@ -35,6 +35,10 @@ backend = "core:node"
 "platforms.macos-arm64" = { checksum = "sha256:0da7ff74ef8611328c8212f17943368713a2ad953fb7d89a8c8a0eae87c23207", url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-darwin-arm64.tar.gz"}
 "platforms.macos-x64" = { checksum = "sha256:45830ba752fa0d892c6dcd640946669801293cac820a33591ded40ac075198ec", url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-darwin-x64.tar.gz"}
 
+[[tools."npm:pnpm"]]
+version = "10.28.2"
+backend = "npm:pnpm"
+
 [[tools.python]]
 version = "3.12.13"
 backend = "core:python"

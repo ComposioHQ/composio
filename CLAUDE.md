@@ -29,8 +29,7 @@ composio/
 ## TypeScript Commands
 
 ```bash
-mise install                # Installs Node, Bun, Deno, Python, uv from mise.toml (one-time per machine)
-corepack enable             # Activates pnpm pinned in package.json#packageManager
+mise install                # Installs Node, Bun, Deno, pnpm, Python, uv from mise.toml (one-time per machine)
 pnpm install                # First-time setup
 pnpm build                  # Build all packages (Turbo)
 pnpm build:packages         # TS packages only
@@ -47,7 +46,7 @@ pnpm create:provider <name> [--agentic]
 pnpm create:example <name>
 ```
 
-Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, Python, uv) and `package.json#packageManager` (pnpm via corepack). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. CI can set `BYPASS_TOOLCHAIN_CHECK=1` only when using prebuilt toolchain images.
+Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, pnpm, Python, uv). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. CI can set `BYPASS_TOOLCHAIN_CHECK=1` only when using prebuilt toolchain images.
 
 ## Python Commands
 
@@ -89,7 +88,7 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - Core Composio class: `ts/packages/core/src/composio.ts`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
 - Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-- Toolchain pins: `mise.toml` (Node, Bun, Deno, Python, uv), `mise.lock`, `toolchain-versions.json` (test matrices), `package.json#packageManager` (pnpm)
+- Toolchain pins: `mise.toml` (Node, Bun, Deno, pnpm, Python, uv), `mise.lock`, `toolchain-versions.json` (test matrices)
 - CI release docs to update when bumping toolchain: `ts/docs/internal/release.md`
 - Python config: `python/Makefile`, `python/noxfile.py`, `python/config/{pytest.ini,ruff.toml}`
 

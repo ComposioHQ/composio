@@ -81,6 +81,7 @@ jobs:
           docker build -f ts/e2e-tests/_utils/Dockerfile.node \
             --build-arg NODE_VERSION=${{ matrix.node-version }} \
             --build-arg BUN_VERSION=${{ steps.setup-toolchain.outputs.bun-version }} \
+            --build-arg PNPM_VERSION=${{ steps.setup-toolchain.outputs.pnpm-version }} \
             --label composio.e2e=true \
             --label composio.runtime=node \
             --label "composio.node_version=${{ matrix.node-version }}" \
@@ -174,6 +175,7 @@ jobs:
             --build-arg CLI_VERSION="${CLI_VERSION}" \
             --build-arg NODE_VERSION="${{ steps.setup-toolchain.outputs.node-version }}" \
             --build-arg BUN_VERSION="${{ steps.setup-toolchain.outputs.bun-version }}" \
+            --build-arg PNPM_VERSION="${{ steps.setup-toolchain.outputs.pnpm-version }}" \
             --label composio.e2e=true \
             --label composio.runtime=cli \
             --label "composio.cli_version=${CLI_VERSION}" \

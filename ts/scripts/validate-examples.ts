@@ -43,7 +43,6 @@ const validatePackageJson = (exampleName: string, exampleDir: string) => {
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
       name?: string;
-      packageManager?: string;
       private?: boolean;
       scripts?: Record<string, string>;
     };
@@ -54,10 +53,6 @@ const validatePackageJson = (exampleName: string, exampleDir: string) => {
 
     if (pkg.private !== true) {
       addIssue(exampleName, packageJsonPath, 'Examples must be marked private');
-    }
-
-    if (!pkg.packageManager?.startsWith('pnpm@')) {
-      addIssue(exampleName, packageJsonPath, 'Examples must declare a pnpm packageManager');
     }
 
     if (!pkg.scripts || (!pkg.scripts.start && !pkg.scripts.dev)) {
