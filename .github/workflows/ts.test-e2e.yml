@@ -205,7 +205,7 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
-          node-version: '22.12.0'
+          node-version: '22.22.3'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

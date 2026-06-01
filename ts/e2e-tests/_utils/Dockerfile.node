@@ -1,5 +1,5 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 --build-arg BUN_VERSION=1.3.10 -t test-name .
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 -t test-name .
 #
 # Uses official node:slim images. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
