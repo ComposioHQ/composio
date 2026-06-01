@@ -6,7 +6,7 @@ Verifies that `@composio/core` can still be loaded from a CommonJS caller on Nod
 
 The TypeScript SDK packages are ESM-only. This suite ensures:
 
-- `require('@composio/core')` works on the current Node.js 22 runtime.
+- `require('@composio/core')` works on Node.js 22, 24, and 25.
 - `require.resolve('@composio/core')` resolves to `dist/index.mjs`, not a `.cjs` artifact.
 - The main public exports remain available through Node's native CommonJS-to-ESM interop.
 
@@ -34,7 +34,7 @@ fixtures/
 
 ## Isolation Tool
 
-**Docker** with the current Node.js version from `mise.toml`.
+**Docker** with Node.js versions: 22.22.3, 24.16.0, 25.9.0.
 
 ## Running
 
