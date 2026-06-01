@@ -1,5 +1,4 @@
 # Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
-# Tracked in: https://linear.app/composio/issue/PLEN-1368
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
 # CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
