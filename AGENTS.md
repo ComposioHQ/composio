@@ -26,6 +26,8 @@ pnpm test               # Run tests
 
 ### Package Management
 ```bash
+mise install            # Install Node, Bun, Deno, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
+corepack enable         # Activate pnpm from package.json#packageManager
 pnpm install            # Install dependencies
 pnpm check:peer-deps    # Check peer dependencies
 pnpm update:peer-deps   # Update peer dependencies
@@ -195,10 +197,15 @@ make build     # Build packages
 
 ### When Updating GitHub Actions
 
-Update the "Prerequisites" section in `ts/docs/internal/release.md` with current tool versions:
+Toolchain versions are coalesced in `mise.toml`. To check the current values:
 
-- **Node.js**: `cat .nvmrc`
-- **Bun**: `cat .bun-version`
-- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
+- **Node.js**: `mise current node`
+- **Bun**: `mise current bun`
+- **Deno**: `mise current deno`
+- **Python**: `mise current python`
+- **uv**: `mise current uv`
+- **pnpm**: `node -p "require('./package.json').packageManager"`
+
+To bump, edit `mise.toml` (or `package.json#packageManager` for pnpm). The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
 
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
