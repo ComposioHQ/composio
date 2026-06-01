@@ -60,7 +60,6 @@ The automated release process is triggered when code is merged into the `main` b
 ### Using Automated Release
 
 1. **For Regular Releases (via main branch)**
-
    - Make sure your changeset is added to the PR you are merging to main. Run `pnpm changeset` on your branch before submiting the PR
    - Get your PR merged to main
    - The workflow will automatically:
@@ -79,9 +78,8 @@ The manual release process is available for cases where direct control over the 
 
 ### Prerequisites
 
-- Node.js (version: `20.20.2`)
-- Bun (version: `1.3.10`)
-- pnpm (version: `10.28.2`)
+- Node.js, Bun, Python, Deno, and uv from `mise.toml`
+- pnpm from `package.json#packageManager` via corepack
 - Access to npm registry
 - Write access to the repository
 
@@ -95,6 +93,8 @@ The manual release process is available for cases where direct control over the 
    git pull origin main
 
    # Install dependencies
+   mise install
+   corepack enable
    pnpm install
 
    # Run quality checks
@@ -142,13 +142,11 @@ The manual release process is available for cases where direct control over the 
 ### Troubleshooting
 
 1. **Authentication Issues**
-
    - Ensure you're logged in to npm (`npm login`)
    - Check npm token validity
    - Verify registry settings in `.npmrc`
 
 2. **Build Failures**
-
    - Clear node_modules: `pnpm clean`
    - Reinstall dependencies: `pnpm install`
    - Check for peer dependency issues
@@ -161,13 +159,11 @@ The manual release process is available for cases where direct control over the 
 ## Best Practices
 
 1. **Changesets**
-
    - Write clear, descriptive changeset messages
    - Include breaking changes prominently
    - Reference relevant issues/PRs
 
 2. **Version Management**
-
    - Follow semver strictly
    - Document breaking changes
    - Update peer dependencies appropriately
@@ -180,13 +176,11 @@ The manual release process is available for cases where direct control over the 
 ## Post-Release
 
 1. **Verification**
-
    - Check npm registry for new versions
    - Verify package installations
    - Test example projects
 
 2. **Documentation**
-
    - Update changelog if needed
    - Update version numbers in docs
    - Announce breaking changes

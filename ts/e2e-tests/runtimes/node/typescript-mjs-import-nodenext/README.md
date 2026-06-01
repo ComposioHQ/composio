@@ -16,11 +16,11 @@ This causes `TS2307: Cannot find module './foo.mjs'` errors.
 
 ## What It Tests
 
-| Test                   | Description                                                    |
-| ---------------------- | -------------------------------------------------------------- |
+| Test                   | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
 | composio generate ts   | Runs CLI to generate TypeScript files for hackernews toolkit |
-| File existence         | Verifies generated .ts files exist                             |
-| TypeScript compilation | Runs `tsc --noEmit` to check import resolution                 |
+| File existence         | Verifies generated .ts files exist                           |
+| TypeScript compilation | Runs `tsc --noEmit` to check import resolution               |
 
 ## Fixture
 
@@ -55,7 +55,7 @@ The fixture script:
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+**Docker** with Node.js versions: current (as specified in `mise.toml`).
 
 ## Running
 
