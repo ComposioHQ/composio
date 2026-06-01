@@ -4,7 +4,8 @@
 # CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
 #
 # pnpm is pinned through mise's npm backend so mise owns the full local and CI
-# toolchain. CI cannot assume Corepack has created a pnpm shim before caching.
+# toolchain. We do not rely on Corepack because Node.js no longer distributes it
+# starting with v25.
 
 min_version = "2026.1.0"
 

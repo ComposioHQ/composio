@@ -1,13 +1,15 @@
 # Reusable Dockerfile for CLI e2e tests (debian runtime)
-# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 -t test-name .
+# Usage: docker build -f Dockerfile.cli --build-arg CLI_VERSION=0.1.24 --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 --build-arg PNPM_VERSION=10.28.2 -t test-name .
 
 ARG NODE_VERSION
 ARG BUN_VERSION
+ARG PNPM_VERSION
 ARG CLI_VERSION=0.0.0
 
 FROM oven/bun:${BUN_VERSION} AS bun
 
 FROM node:${NODE_VERSION}-slim AS builder
+ARG PNPM_VERSION
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:/usr/local/bin:$PATH"
@@ -17,8 +19,9 @@ WORKDIR /app
 # Bring in bun binary from the official image (no curl)
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 
-# Install corepack (pnpm) without curl/git
-RUN corepack enable
+# Install pnpm without Corepack. The version is resolved from mise.toml by callers.
+RUN npm install -g "pnpm@${PNPM_VERSION}" && \
+    pnpm --version
 
 # Copy lockfile first for optimal layer caching
 COPY pnpm-lock.yaml ./

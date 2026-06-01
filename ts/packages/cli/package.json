@@ -56,7 +56,6 @@
   ],
   "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@effect/eslint-plugin": "catalog:",
     "@effect/language-service": "catalog:",

@@ -33,7 +33,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
     "ai": "^5.0.0 || ^6.0.0"
