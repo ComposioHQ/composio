@@ -321,6 +321,15 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/node/cjs-basic:
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+
   ts/e2e-tests/runtimes/node/custom-tools:
     dependencies:
       '@composio/core':

@@ -38,7 +38,7 @@ pnpm lint / lint:fix
 pnpm format
 pnpm typecheck              # MANDATORY before pushing CLI changes
 pnpm test                   # Vitest, all packages
-pnpm test:e2e               # All runtimes (Node ESM, Deno, Cloudflare Workers) via Docker
+pnpm test:e2e               # All runtimes (Node ESM + require(esm), Deno, Cloudflare Workers) via Docker
 pnpm test:e2e:node          # Override with COMPOSIO_E2E_NODE_VERSION=22.22.3
 pnpm test:e2e:deno          # Override with COMPOSIO_E2E_DENO_VERSION=2.6.7
 pnpm test:e2e:cloudflare
