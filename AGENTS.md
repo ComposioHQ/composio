@@ -115,7 +115,7 @@ composio/
 
 ```bash
 pnpm test:e2e              # All (Node.js + Deno + Cloudflare)
-pnpm test:e2e:node         # Node.js CJS/ESM compatibility (Docker)
+pnpm test:e2e:node         # Node.js ESM compatibility (Docker)
 pnpm test:e2e:deno         # Deno npm: specifier compatibility (Docker)
 pnpm test:e2e:cloudflare   # Cloudflare Workers
 ```

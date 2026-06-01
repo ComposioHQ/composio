@@ -39,7 +39,7 @@ jobs:
           echo "deno=$(jq -c '.deno' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
 
   # Node.js E2E tests, running in Docker to isolate environment
-  # Each test suite defines its own nodeVersions in e2e.test.ts
+  # Each test suite defines its own versions.node in e2e.test.ts
   # Tests that don't support the matrix version are automatically skipped
   test-e2e-node-docker:
     name: E2E Test Node.js ${{ matrix.node-version }}

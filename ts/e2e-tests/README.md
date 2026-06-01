@@ -26,7 +26,6 @@ ts/e2e-tests/
 │   └── README.md                            # Utils documentation
 ├── runtimes/
     ├── node/                                # Node.js runtime tests
-    │   ├── cjs-basic/                       # CommonJS compatibility tests
     │   ├── custom-tools/                    # Custom local tools execution (session.execute, proxyExecute, Zod validation)
     │   ├── esm-basic/                       # ESM compatibility tests
     │   ├── json-schema-to-zod-v3/           # @composio/json-schema-to-zod + Zod v3 tests
@@ -196,7 +195,9 @@ import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
-  nodeVersions: ['22.22.3', '24.16.0', '25.9.0'],
+  versions: {
+    node: ['22.22.3', '24.16.0', '25.9.0'],
+  },
   usesFixtures: true, // Sets cwd to fixtures/ directory
   env: { MY_API_KEY: process.env.MY_API_KEY },
   defineTests: ({ runFixture }) => {
@@ -312,8 +313,6 @@ Test passed!
 Summary
 ================================================================================
 Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.16.0: PASS (2 phases, 3.09s total)
-Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

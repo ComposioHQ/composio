@@ -9,7 +9,7 @@ import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
-  versions: { node: ['current'] },
+  versions: { node: ['22.22.3', '24.16.0', '25.9.0'] },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;
 

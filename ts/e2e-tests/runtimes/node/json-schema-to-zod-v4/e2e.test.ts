@@ -10,7 +10,7 @@ import { e2e } from '@e2e-tests/utils';
 import { describe, it, expect } from 'bun:test';
 
 e2e(import.meta.url, {
-  versions: { node: ['current'] },
+  versions: { node: ['22.22.3', '24.16.0', '25.9.0'] },
   defineTests: () => {
     describe('json-schema-to-zod with Zod v4', () => {
       describe('Basic functionality', () => {

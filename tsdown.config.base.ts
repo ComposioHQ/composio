@@ -1,4 +1,4 @@
-import type { UserConfig, OutExtensionContext } from 'tsdown';
+import type { UserConfig } from 'tsdown';
 
 // Turbo task execution triggers a tsdown ATTW tarball path bug for scoped packages.
 // Keep ATTW for direct package builds, but disable it for workspace builds.
@@ -19,21 +19,16 @@ export const baseConfig = {
    * Output directory for the build.
    */
   outDir: 'dist',
-  outExtensions: (ctx) => ({
-    js: isESM(ctx)
-      ? '.mjs'
-      : '.cjs',
-    dts: isESM(ctx)
-      ? '.d.mts'
-      : '.d.cts',
+  outExtensions: () => ({
+    js: '.mjs',
+    dts: '.d.mts',
   }),
 
   /**
    * Configures the output formats for the build.
    * - 'esm' generates ESM (ECMAScript Module) output
-   * - 'cjs' generates lecayse CommonJS output
    */
-  format: ['esm', 'cjs' /* legacy */],
+  format: ['esm'],
 
   /**
    * Generates TypeScript declaration files (.d.mts, .d.ts)
@@ -77,14 +72,16 @@ export const baseConfig = {
    * Configuration for @arethetypeswrong/cli.
    * Uses '.' entrypoint to check the package root via the exports field,
    * since src/index.ts is only used during development and not exported.
-   * Uses 'node16' profile since packages support both ESM and CJS.
+   * Uses the ESM-only profile because packages no longer publish CJS entrypoints.
    */
   attw: {
     entrypoints: ['.'],
     enabled: !isTurboTask,
     level: 'error',
-    profile: 'node16',
-    ignoreRules: [/* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error'],
+    profile: 'esm-only',
+    ignoreRules: [
+      /* Node.js 10 only, attw doesn't automatically exclude it despite the selected profile */ 'internal-resolution-error',
+    ],
   },
 
   /**
@@ -95,8 +92,4 @@ export const baseConfig = {
     level: 'error',
     pack: 'pnpm',
   },
-} satisfies UserConfig
-
-function isESM(ctx: OutExtensionContext) {
-  return ctx.format === 'es'
-}
+} satisfies UserConfig;

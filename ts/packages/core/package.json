@@ -13,50 +13,26 @@
     "#platform": {
       "workerd": "./dist/platform/workerd.mjs",
       "edge-light": "./dist/platform/workerd.mjs",
-      "node": {
-        "import": "./dist/platform/node.mjs",
-        "require": "./dist/platform/node.cjs"
-      },
-      "default": {
-        "import": "./dist/platform/node.mjs",
-        "require": "./dist/platform/node.cjs"
-      }
+      "node": "./dist/platform/node.mjs",
+      "default": "./dist/platform/node.mjs"
     },
     "#files": {
       "workerd": "./dist/models/Files.workerd.mjs",
       "edge-light": "./dist/models/Files.workerd.mjs",
-      "node": {
-        "import": "./dist/models/Files.node.mjs",
-        "require": "./dist/models/Files.node.cjs"
-      },
-      "default": {
-        "import": "./dist/models/Files.node.mjs",
-        "require": "./dist/models/Files.node.cjs"
-      }
+      "node": "./dist/models/Files.node.mjs",
+      "default": "./dist/models/Files.node.mjs"
     },
     "#file_tool_modifier": {
       "workerd": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
       "edge-light": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
-      "node": {
-        "import": "./dist/utils/modifiers/FileToolModifier.node.mjs",
-        "require": "./dist/utils/modifiers/FileToolModifier.node.cjs"
-      },
-      "default": {
-        "import": "./dist/utils/modifiers/FileToolModifier.node.mjs",
-        "require": "./dist/utils/modifiers/FileToolModifier.node.cjs"
-      }
+      "node": "./dist/utils/modifiers/FileToolModifier.node.mjs",
+      "default": "./dist/utils/modifiers/FileToolModifier.node.mjs"
     },
     "#config_defaults": {
       "workerd": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
       "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
-      "node": {
-        "import": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
-        "require": "./dist/utils/config-defaults/ConfigDefaults.node.cjs"
-      },
-      "default": {
-        "import": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
-        "require": "./dist/utils/config-defaults/ConfigDefaults.node.cjs"
-      }
+      "node": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
+      "default": "./dist/utils/config-defaults/ConfigDefaults.node.mjs"
     }
   },
   "exports": {
@@ -65,13 +41,9 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
       "default": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       }
     },
     "./experimental": {
@@ -79,13 +51,9 @@
         "types": "./dist/experimental/index.d.mts",
         "default": "./dist/experimental/index.mjs"
       },
-      "require": {
-        "types": "./dist/experimental/index.d.cts",
-        "default": "./dist/experimental/index.cjs"
-      },
       "default": {
-        "types": "./dist/experimental/index.d.cts",
-        "default": "./dist/experimental/index.cjs"
+        "types": "./dist/experimental/index.d.mts",
+        "default": "./dist/experimental/index.mjs"
       }
     },
     "./platform": {
@@ -98,24 +66,12 @@
         "default": "./dist/platform/workerd.mjs"
       },
       "node": {
-        "import": {
-          "types": "./dist/platform/node.d.mts",
-          "default": "./dist/platform/node.mjs"
-        },
-        "require": {
-          "types": "./dist/platform/node.d.cts",
-          "default": "./dist/platform/node.cjs"
-        }
+        "types": "./dist/platform/node.d.mts",
+        "default": "./dist/platform/node.mjs"
       },
       "default": {
-        "import": {
-          "types": "./dist/platform/node.d.mts",
-          "default": "./dist/platform/node.mjs"
-        },
-        "require": {
-          "types": "./dist/platform/node.d.cts",
-          "default": "./dist/platform/node.cjs"
-        }
+        "types": "./dist/platform/node.d.mts",
+        "default": "./dist/platform/node.mjs"
       }
     },
     "./generated": {
