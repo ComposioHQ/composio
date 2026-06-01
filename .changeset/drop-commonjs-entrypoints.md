@@ -2,6 +2,7 @@
 '@composio/core': minor
 '@composio/json-schema-to-zod': minor
 '@composio/ts-builders': minor
+'@composio/cli': minor
 '@composio/cli-local-tools': minor
 '@composio/anthropic': minor
 '@composio/claude-agent-sdk': minor
