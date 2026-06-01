@@ -29,6 +29,8 @@ composio/
 ## TypeScript Commands
 
 ```bash
+mise install                # Installs Node, Bun, Deno, Python, uv from mise.toml (one-time per machine)
+corepack enable             # Activates pnpm pinned in package.json#packageManager
 pnpm install                # First-time setup. Use BYPASS_BUN_VERSION_CHECK=1 if .bun-version mismatch
 pnpm build                  # Build all packages (Turbo)
 pnpm build:packages         # TS packages only
@@ -45,7 +47,7 @@ pnpm create:provider <name> [--agentic]
 pnpm create:example <name>
 ```
 
-Pinned tool versions: Node `.nvmrc` (20.20.2), Bun `.bun-version` (1.3.10), pnpm via `packageManager` in `package.json`. CI sets `BYPASS_BUN_VERSION_CHECK=1`; local sandboxes often need it too.
+Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, Python, uv) and `package.json#packageManager` (pnpm via corepack). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. Legacy `.nvmrc` / `.bun-version` / `.python-version` are still read during the transition. CI sets `BYPASS_BUN_VERSION_CHECK=1`; local sandboxes often need it too.
 
 ## Python Commands
 
@@ -87,7 +89,8 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - Core Composio class: `ts/packages/core/src/composio.ts`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
 - Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-- CI release docs to update when bumping toolchain: `ts/docs/internal/release.md` (Node/Bun/pnpm versions)
+- Toolchain pins: `mise.toml` (Node, Bun, Deno, Python, uv), `package.json#packageManager` (pnpm), `.dvmrc` (Deno; mirrors mise.toml for `denoland/setup-deno` and `_utils/src/config.ts`)
+- CI release docs to update when bumping toolchain: `ts/docs/internal/release.md`
 - Python config: `python/Makefile`, `python/noxfile.py`, `python/config/{pytest.ini,ruff.toml}`
 
 ## See Also
