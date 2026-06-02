@@ -3,7 +3,9 @@ Shared utils.
 """
 
 import copy
+import hashlib
 import keyword
+import re
 import typing as t
 import uuid
 from inspect import Parameter
@@ -42,6 +44,38 @@ reserved_names = ["validate"]
 
 _OBJ_MARKER = "-_object_-"
 
+_VALID_PROPERTY_KEY_RE = re.compile(r"^[a-zA-Z0-9_.-]{1,64}$")
+
+_ILLEGAL_CHAR_MAP: t.Dict[str, str] = {
+    "$": "dollar_",
+    "@": "at_",
+}
+
+
+def _sanitize_property_key(name: str) -> str:
+    """Sanitize a property key to comply with LLM provider constraints.
+
+    Replaces characters not matching ``^[a-zA-Z0-9_.-]{1,64}$`` with safe
+    alternatives and truncates keys longer than 64 characters with a hash
+    suffix to preserve uniqueness.
+    """
+    sanitized = name
+    for char, replacement in _ILLEGAL_CHAR_MAP.items():
+        sanitized = sanitized.replace(char, replacement)
+
+    sanitized = re.sub(r"[^a-zA-Z0-9_.-]", "_", sanitized)
+
+    if len(sanitized) > 64:
+        hash_suffix = hashlib.md5(name.encode()).hexdigest()[:8]
+        sanitized = sanitized[:55] + "_" + hash_suffix
+
+    return sanitized
+
+
+def _needs_sanitization(name: str) -> bool:
+    """Check if a property key needs sanitization."""
+    return keyword.iskeyword(name) or not _VALID_PROPERTY_KEY_RE.match(name)
+
 
 def _make_safe_name(name: str) -> str:
     """Append ``_rs`` to a Python keyword so it can be used as a parameter name."""
@@ -51,11 +85,16 @@ def _make_safe_name(name: str) -> str:
 def substitute_reserved_python_keywords(
     schema: t.Dict,
 ) -> t.Tuple[dict, dict]:
-    """Replace Python reserved keywords in a JSON schema's property names.
+    """Replace Python reserved keywords and illegal characters in property names.
 
     Returns a ``(schema, keywords)`` tuple where *schema* has safe property
     names and *keywords* maps each safe name back to the original.  Nested
     object schemas are processed recursively.
+
+    Property keys are sanitized to comply with LLM provider constraints
+    (e.g. Anthropic's ``^[a-zA-Z0-9_.-]{1,64}$`` pattern). Characters like
+    ``$`` and ``@`` are replaced with readable alternatives, and keys longer
+    than 64 characters are truncated with a hash suffix.
 
     The schema is deep-copied before any mutation so the caller's original
     is never modified.
@@ -67,15 +106,19 @@ def substitute_reserved_python_keywords(
 
     keywords: t.Dict[str, t.Any] = {}
     for p_name in list(schema["properties"]):
-        if not keyword.iskeyword(p_name):
+        if not _needs_sanitization(p_name):
             continue
 
         _nested_kw: t.Dict[str, t.Any] = {}
         p_val = schema["properties"].pop(p_name)
-        if p_val.get("type") == "object":
+        if isinstance(p_val, dict) and p_val.get("type") == "object":
             p_val, _nested_kw = substitute_reserved_python_keywords(schema=p_val)
 
-        safe = _make_safe_name(p_name)
+        if keyword.iskeyword(p_name):
+            safe = _make_safe_name(p_name)
+        else:
+            safe = _sanitize_property_key(p_name)
+
         schema["properties"][safe] = p_val
         keywords[safe] = p_name
         keywords[f"{safe}{_OBJ_MARKER}"] = _nested_kw
