@@ -117,7 +117,17 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
           // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
           // ExecuteToolFn promises a Record<string, unknown>, so normalize before forwarding — mirrors
           // the guard already shipped in the vercel/cloudflare/openai-agents providers.
-          const normalizedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+          // If the string isn't valid JSON, keep it as-is so executeTool raises a typed error instead of a SyntaxError.
+          const normalizedArgs =
+            typeof args === 'string'
+              ? (() => {
+                  try {
+                    return JSON.parse(args);
+                  } catch {
+                    return args;
+                  }
+                })()
+              : args;
           const result = await executeTool(composioTool.slug, normalizedArgs as Record<string, unknown>);
           return {
             content: [

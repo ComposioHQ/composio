@@ -119,6 +119,16 @@ describe('LlamaindexProvider', () => {
       expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, searchParams);
     });
 
+    it('should pass a malformed-JSON string through unchanged rather than throwing (graceful fallback)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      // A string that looks like JSON but is malformed must not throw a SyntaxError at the normalize
+      // step; it falls through as the raw string so executeTool can surface its own typed error.
+      const malformed = '{"query": "test"'; // missing closing brace
+      await wrappedTool.call(malformed as unknown as Record<string, unknown>);
+      expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, malformed);
+    });
+
     it('should handle tools without input parameters', () => {
       const toolWithoutParams = { ...sampleTool, inputParameters: undefined };
 

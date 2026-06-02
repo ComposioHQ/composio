@@ -188,6 +188,17 @@ describe('ClaudeAgentSDKProvider', () => {
       expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
     });
 
+    it('should pass a malformed-JSON string through unchanged rather than throwing (graceful fallback)', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+      const handler = (tool as any).mock.calls[0][3];
+
+      // A string that looks like JSON but is malformed must not throw a SyntaxError at the normalize
+      // step; it falls through as the raw string so executeTool can surface its own typed error.
+      const malformed = '{"to": "test@example.com"'; // missing closing brace
+      await handler(malformed);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, malformed);
+    });
+
     it('should handle string results from tool execution', async () => {
       mockExecuteToolFn.mockResolvedValueOnce('Simple string result');
       provider.wrapTool(mockTool, mockExecuteToolFn);
