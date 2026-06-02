@@ -1,4 +1,3 @@
-import type * as z3 from 'zod/v3';
 import * as z4 from 'zod/v4';
 import * as zodToJsonSchema from 'zod-to-json-schema';
 import type { AnyZodSchema } from '../types/customTool.types';
@@ -24,7 +23,7 @@ const getZodDef = (value: unknown): ZodDef | undefined =>
 // Discriminate Zod v4 from the bundled v3 compat layer. v4-native exposes `_def.type` as a string
 // literal; v3 exposes `_def.typeName` and, when `_def.type` is present (arrays/promises), it is a
 // ZodType object, not a string. Re-verify this invariant on a Zod major bump.
-const isZodV4Schema = (schema: AnyZodSchema): boolean =>
+const isZodV4Schema = (schema: AnyZodSchema): schema is z4.ZodType =>
   typeof getZodDef(schema)?.type === 'string';
 
 const stripSchemaKeyword = (schema: JsonSchemaObject): JsonSchemaObject => {
@@ -56,19 +55,16 @@ export const zodSchemaToJsonSchema = (
   mode: ZodJsonSchemaMode = 'output'
 ): JsonSchemaObject => {
   if (isZodV4Schema(schema)) {
-    // Narrowed to a v4 schema by isZodV4Schema above.
-    return stripSchemaKeyword(
-      z4.toJSONSchema(schema as z4.ZodType, { io: mode }) as JsonSchemaObject
-    );
+    return stripSchemaKeyword(z4.toJSONSchema(schema, { io: mode }));
   }
 
   // Mirror the v4 `io` mode on the v3 converter so the two runtimes serialize `.default()`,
   // `.transform()` and `.pipe()` schemas consistently at this boundary.
-  const converted = zodToJsonSchema.default(schema as z3.ZodTypeAny, {
+  const converted = zodToJsonSchema.default(schema, {
     name,
     pipeStrategy: mode,
     effectStrategy: mode === 'input' ? 'input' : 'any',
-  }) as JsonSchemaObject;
+  });
 
   return stripSchemaKeyword(getNamedDefinition(converted, name));
 };
