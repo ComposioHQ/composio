@@ -55,15 +55,17 @@ _ILLEGAL_CHAR_MAP: t.Dict[str, str] = {
 def _sanitize_property_key(name: str) -> str:
     """Sanitize a property key to comply with LLM provider constraints.
 
-    Replaces characters not matching ``^[a-zA-Z0-9_.-]{1,64}$`` with safe
+    Replaces characters not matching ``^[a-zA-Z0-9_]{1,64}$`` with safe
     alternatives and truncates keys longer than 64 characters with a hash
-    suffix to preserve uniqueness.
+    suffix to preserve uniqueness.  Dots and hyphens are also replaced with
+    underscores because downstream provider code creates Python
+    ``inspect.Parameter`` objects that require valid identifiers.
     """
     sanitized = name
     for char, replacement in _ILLEGAL_CHAR_MAP.items():
         sanitized = sanitized.replace(char, replacement)
 
-    sanitized = re.sub(r"[^a-zA-Z0-9_.-]", "_", sanitized)
+    sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", sanitized)
 
     if len(sanitized) > 64:
         hash_suffix = hashlib.md5(name.encode()).hexdigest()[:8]
