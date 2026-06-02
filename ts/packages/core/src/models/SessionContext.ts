@@ -40,6 +40,14 @@ import { withCancellation } from '../utils/cancellation';
 export class SessionContextImpl implements SessionContext {
   public readonly userId: string;
 
+  /**
+   * Per-execution AbortSignal. Never set on the base instance; `executeCustomTool`
+   * grafts it onto a per-call `Object.create` child so concurrent executions
+   * sharing this context don't observe each other's signal. Declared here (rather
+   * than read via a cast) so the contract is explicit.
+   */
+  public readonly signal?: AbortSignal;
+
   constructor(
     private readonly client: ComposioClient,
     userId: string,
@@ -61,7 +69,7 @@ export class SessionContextImpl implements SessionContext {
     toolSlug: string,
     arguments_: Record<string, unknown>
   ): Promise<ToolRouterSessionExecuteResponse> {
-    const signal = (this as SessionContext).signal;
+    const signal = this.signal;
     const requestOptions = signal ? { signal } : undefined;
 
     const entry = findCustomTool(this.customToolsMap, toolSlug);
@@ -105,7 +113,7 @@ export class SessionContextImpl implements SessionContext {
       throw new ValidationError('Invalid proxy execute parameters', { cause: validated.error });
     }
 
-    const signal = (this as SessionContext).signal;
+    const signal = this.signal;
     const requestOptions = signal ? { signal } : undefined;
 
     const clientParams = transformProxyParams(validated.data);
