@@ -2,7 +2,7 @@
 "@composio/core": minor
 ---
 
-Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal | null }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
+Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
 
 Without this, a slow `tools.list` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
 
