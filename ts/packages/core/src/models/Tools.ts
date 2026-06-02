@@ -325,10 +325,14 @@ export class Tools<
     modifier?: afterExecuteModifier,
     requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
-    // Return early — the tool already executed and may have mutated external state.
-    if (requestOptions?.signal?.aborted) {
-      return result;
-    }
+    // The tool already executed and may have mutated external state, so a late
+    // abort does NOT short-circuit post-processing: skipping the caller's
+    // afterExecute modifier here would leave a half-finished pipeline that
+    // still looks like success-shaped data. Once the remote call has committed
+    // we run file download + afterExecute to completion. The signal is still
+    // forwarded to the download so a stuck transfer degrades gracefully
+    // (file_downloaded: false) rather than blocking, but it never skips
+    // afterExecute.
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
     if (this.autoUploadDownloadFiles) {
@@ -339,9 +343,6 @@ export class Tools<
         result: modifiedResult,
         signal: requestOptions?.signal,
       });
-      if (requestOptions?.signal?.aborted) {
-        return modifiedResult;
-      }
     }
     // apply the after execute modifiers
     if (modifier) {

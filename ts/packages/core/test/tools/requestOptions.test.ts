@@ -197,6 +197,33 @@ describe('Cancellation — execute signal forwarding', () => {
       signal: controller.signal,
     });
   });
+
+  it('runs afterExecute to completion when the signal fires after the tool already executed', async () => {
+    const controller = new AbortController();
+
+    vi.spyOn(tools, 'getRawComposioToolBySlug').mockResolvedValueOnce(
+      toolMocks.transformedTool as never
+    );
+    // The remote tool executes successfully, then the caller's signal fires
+    // (e.g. an AbortSignal.timeout) before post-processing runs.
+    mockClient.tools.execute.mockImplementationOnce(async () => {
+      controller.abort();
+      return toolMocks.rawToolExecuteResponse;
+    });
+
+    const afterExecute = vi.fn(({ result }) => result);
+
+    const result = await tools.execute(
+      'COMPOSIO_TOOL',
+      { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+      { afterExecute, signal: controller.signal }
+    );
+
+    // The tool already committed (the side effect happened), so the abort lost
+    // the race: afterExecute MUST still run rather than being silently skipped.
+    expect(afterExecute).toHaveBeenCalledTimes(1);
+    expect(result).toBeDefined();
+  });
 });
 
 describe('Cancellation — custom-tool AbortError classification', () => {
