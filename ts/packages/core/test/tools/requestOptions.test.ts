@@ -61,6 +61,24 @@ describe('Cancellation — error normalization', () => {
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
 
+  it('does NOT relabel an unrelated failure as cancellation even if the signal aborts after it', async () => {
+    // TOCTOU guard: classification keys on the error being abort-shaped, not just
+    // on signal.aborted. A genuine failure (e.g. a 500) that happens to coincide
+    // with a late abort must surface as-is, never as a caller cancellation.
+    const controller = new AbortController();
+    const serverError = new Error('Internal Server Error');
+    mockClient.tools.list.mockImplementationOnce(async () => {
+      controller.abort();
+      throw serverError;
+    });
+
+    await expect(
+      tools.getRawComposioTools({ search: 'send email' }, undefined, {
+        signal: controller.signal,
+      })
+    ).rejects.toBe(serverError);
+  });
+
   it('abort during execute surfaces as ComposioRequestCancelledError, not ComposioToolExecutionError', async () => {
     const controller = new AbortController();
     vi.spyOn(tools, 'getRawComposioToolBySlug').mockResolvedValueOnce(

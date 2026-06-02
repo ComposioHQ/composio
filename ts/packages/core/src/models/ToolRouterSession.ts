@@ -522,7 +522,7 @@ export class ToolRouterSession<
         throw new ComposioRequestCancelledError();
       }
       const result = await executeCustomTool(entry, arguments_ ?? {}, this.sessionContext!, {
-        signal: requestOptions?.signal ?? undefined,
+        signal: requestOptions?.signal,
       });
       return {
         data: result.data,
