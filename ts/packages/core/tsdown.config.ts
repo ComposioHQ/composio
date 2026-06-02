@@ -24,6 +24,9 @@ export default defineConfig({
     // #config_defaults
     'src/utils/config-defaults/ConfigDefaults.node.ts',
     'src/utils/config-defaults/ConfigDefaults.workerd.ts',
+
+    // public utility subpaths
+    'src/utils/json-schema.ts',
   ],
   /**
    * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)

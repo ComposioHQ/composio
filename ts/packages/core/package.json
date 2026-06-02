@@ -74,6 +74,16 @@
         "default": "./dist/platform/node.mjs"
       }
     },
+    "./utils/json-schema": {
+      "import": {
+        "types": "./dist/utils/json-schema.d.mts",
+        "default": "./dist/utils/json-schema.mjs"
+      },
+      "default": {
+        "types": "./dist/utils/json-schema.d.mts",
+        "default": "./dist/utils/json-schema.mjs"
+      }
+    },
     "./generated": {
       "types": "./generated/index.d.ts",
       "default": "./generated/index.js"
