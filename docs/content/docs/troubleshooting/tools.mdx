@@ -21,7 +21,7 @@ Verify the connected account has necessary permissions:
 
 ## API returning fewer tools than expected
 
-If the Get Tools API (`GET /api/v3.1/tools`) returns fewer tools than what's shown on the [platform UI](https://platform.composio.dev), you likely need to specify a toolkit version.
+If the Get Tools API (`GET /api/v3.1/tools`) returns fewer tools than what's shown on the [platform UI](https://dashboard.composio.dev), you likely need to specify a toolkit version.
 
 When `toolkit_versions` is not provided, the API defaults to the base version (`00000000_00`), which only includes tools from the initial release. Tools added in later versions won't appear.
 

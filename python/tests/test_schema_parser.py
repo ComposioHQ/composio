@@ -121,7 +121,26 @@ class TestJsonSchemaToPydanticField:
         )
 
         assert field_name == "validate_"  # Should be renamed
-        assert field_info.alias == "validate_"  # Should have alias
+        assert field_info.alias == "validate"  # Should preserve original name
+
+    def test_reserved_required_field_name_preserves_required_status(self):
+        """Test that reserved field names keep the original alias and required status."""
+        name = "validate"
+        json_schema = {
+            "type": "string",
+            "description": "A required field with reserved name",
+            "title": "Validate",
+        }
+        required = ["validate"]
+
+        field_name, field_type, field_info = json_schema_to_pydantic_field(
+            name, json_schema, required
+        )
+
+        assert field_name == "validate_"
+        assert field_type is str
+        assert field_info.alias == "validate"
+        assert field_info.default is PydanticUndefined
 
     def test_field_with_examples(self):
         """Test that examples are properly preserved in field info."""
@@ -393,6 +412,14 @@ class TestJsonSchemaToPydanticType:
         for json_schema, expected_type in test_cases:
             result = json_schema_to_pydantic_type(json_schema)
             assert result == expected_type
+
+    def test_anyof_null_only_preserves_nullability(self):
+        """Test that anyOf with only null maps to Optional[Any] instead of str."""
+        result = json_schema_to_pydantic_type({"anyOf": [{"type": "null"}]})
+
+        assert t.get_origin(result) is t.Union
+        assert t.Any in t.get_args(result)
+        assert type(None) in t.get_args(result)
 
     def test_array_type(self):
         """Test array type conversion."""

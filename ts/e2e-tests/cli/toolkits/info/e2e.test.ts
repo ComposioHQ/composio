@@ -149,10 +149,8 @@ e2e(import.meta.url, {
 
     describe('mock API usage', () => {
       it('requests the detailed toolkit route for known and unknown slugs', () => {
-        expect(server.requests).toContain('GET /api/v3/toolkits/gmail');
-        expect(server.requests).toContain(
-          'GET /api/v3/toolkits/nonexistent_toolkit_xyz12345'
-        );
+        expect(server.requests).toContain('GET /api/v3.1/toolkits/gmail');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits/nonexistent_toolkit_xyz12345');
       });
     });
   },

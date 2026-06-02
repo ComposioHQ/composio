@@ -58,6 +58,13 @@ Connect timeout is short to fail fast on unreachable hosts.
 Read timeout is longer to allow for slower file transfers.
 """
 
+_DELETE_VALUE: t.Final = object()
+"""
+Sentinel returned by the upload walker to signal that a value should be dropped
+from its parent container. ``None`` and ``""`` are both legal payload values, so
+the walker cannot use either to mean "remove this key/item".
+"""
+
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
 Local cache directory name for composio CLI
@@ -547,7 +554,18 @@ class FileDownloadable(BaseModel):
     s3url: str = Field(..., description="URL of the file.")
 
     def download(self, outdir: Path, chunk_size: int = _DEFAULT_CHUNK_SIZE) -> Path:
-        outfile = outdir / self.name
+        # SEC-316: `self.name` comes from the (potentially compromised or
+        # MITM'd) Composio API response. Strip directory components with
+        # `Path(...).name` so traversal sequences like `../../../foo` collapse
+        # to `foo`, then verify the resolved output stays under `outdir` so a
+        # name like `output_evil/foo` (sibling-prefix attack) is also rejected.
+        safe_name = Path(self.name).name
+        outfile = outdir / safe_name
+        if not outfile.resolve().is_relative_to(outdir.resolve()):
+            raise ErrorDownloadingFile(
+                f"Path traversal detected: filename '{self.name}' resolves "
+                "outside the intended output directory."
+            )
         outdir.mkdir(exist_ok=True, parents=True)
         response = requests.get(url=self.s3url, stream=True)
         if response.status_code != 200:
@@ -721,7 +739,13 @@ class FileHelper(WithLogger):
 
         This is separate from file processing and should always run
         regardless of `dangerously_allow_auto_upload_download_files`.
+
+        Schemas with no `properties` key (e.g. `{}` for tools that declare
+        no input parameters — common with MCP-backed toolkits) are returned
+        unchanged, matching the sibling `process_file_uploadable_schema`.
         """
+        if "properties" not in schema:
+            return schema
         required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
             if _schema.get("type") in ["string", "integer", "number", "boolean"]:
@@ -765,27 +789,171 @@ class FileHelper(WithLogger):
         self.enhance_schema_descriptions(schema)
         return schema
 
-    def _find_uploadable_schema_variant(self, schema: t.Dict) -> t.Optional[t.Dict]:
+    def _schema_variants(self, schema: t.Dict) -> t.List[t.Dict]:
+        """Return composed schema variants in the SDK's historical order."""
+        variants: t.List[t.Dict] = []
+        for key in ("anyOf", "oneOf", "allOf"):
+            schema_variants = schema.get(key)
+            if not isinstance(schema_variants, list):
+                continue
+            variants.extend(v for v in schema_variants if isinstance(v, dict))
+        return variants
+
+    def _json_schema_type_matches_value(self, schema: t.Dict, value: t.Any) -> bool:
+        """Best-effort runtime shape match for selecting composed schemas."""
+        schema_type = schema.get("type")
+        if isinstance(schema_type, list):
+            return any(
+                self._json_schema_type_matches_value({**schema, "type": tpe}, value)
+                for tpe in schema_type
+            )
+
+        if schema_type is None:
+            if "properties" in schema:
+                return isinstance(value, dict)
+            if "items" in schema:
+                return isinstance(value, list)
+            return False
+
+        if schema_type == "array":
+            return isinstance(value, list)
+        if schema_type == "object":
+            return isinstance(value, dict)
+        if schema_type == "string":
+            return isinstance(value, str)
+        if schema_type == "integer":
+            return isinstance(value, int) and not isinstance(value, bool)
+        if schema_type == "number":
+            return isinstance(value, (int, float)) and not isinstance(value, bool)
+        if schema_type == "boolean":
+            return isinstance(value, bool)
+        if schema_type == "null":
+            return value is None
+
+        return False
+
+    def _find_schema_variant_with_file_property(
+        self,
+        schema: t.Dict,
+        property_name: str,
+        value: t.Any = None,
+    ) -> t.Optional[t.Dict]:
+        """Find the composed schema variant that should process a file value.
+
+        ``anyOf``, ``oneOf`` and ``allOf`` are intentionally treated the same
+        here, matching the SDK's existing convention. When a runtime value is
+        available, prefer the file-bearing variant with the matching JSON Schema
+        shape; otherwise keep the historical first-match behavior.
+        """
+        candidates = [
+            variant
+            for variant in self._schema_variants(schema)
+            if self._has_file_property(variant, property_name)
+        ]
+        if not candidates:
+            return None
+
+        if value is not None:
+            for candidate in candidates:
+                if self._json_schema_type_matches_value(candidate, value):
+                    return candidate
+
+        return candidates[0]
+
+    def _find_uploadable_schema_variant(
+        self, schema: t.Dict, value: t.Any = None
+    ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_uploadable properties."""
-        # Check anyOf variants
-        if "anyOf" in schema:
-            for variant in schema["anyOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+        return self._find_schema_variant_with_file_property(
+            schema=schema,
+            property_name="file_uploadable",
+            value=value,
+        )
 
-        # Check oneOf variants
-        if "oneOf" in schema:
-            for variant in schema["oneOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+    def _upload_file_value(
+        self,
+        value: t.Any,
+        tool: Tool,
+        before_file_upload: t.Optional[BeforeFileUpload],
+    ) -> t.Any:
+        if value is None or value == "":
+            return _DELETE_VALUE
 
-        # Check allOf - merge all variants
-        if "allOf" in schema:
-            for variant in schema["allOf"]:
-                if self._has_file_property(variant, "file_uploadable"):
-                    return variant
+        return FileUploadable.from_path(
+            client=self._client,
+            file=value,
+            tool=tool.slug,
+            toolkit=tool.toolkit.slug,
+            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
+            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
+            file_upload_allowlist=self._file_upload_allowlist,
+            before_file_upload=before_file_upload,
+        ).model_dump()
 
-        return None
+    def _substitute_file_upload_value(
+        self,
+        value: t.Any,
+        schema: t.Optional[t.Dict],
+        tool: Tool,
+        *,
+        before_file_upload: t.Optional[BeforeFileUpload] = None,
+    ) -> t.Any:
+        """Return ``value`` with file-uploadable leaves staged for execution."""
+        if not isinstance(schema, dict):
+            return value
+
+        if schema.get("file_uploadable", False):
+            return self._upload_file_value(
+                value=value,
+                tool=tool,
+                before_file_upload=before_file_upload,
+            )
+
+        uploadable_variant = self._find_uploadable_schema_variant(
+            schema=schema,
+            value=value,
+        )
+        if uploadable_variant is not None:
+            return self._substitute_file_upload_value(
+                value=value,
+                schema=uploadable_variant,
+                tool=tool,
+                before_file_upload=before_file_upload,
+            )
+
+        if isinstance(value, dict) and "properties" in schema:
+            processed: t.Dict[str, t.Any] = {}
+            properties = schema["properties"]
+            for key, item in value.items():
+                item_schema = properties.get(key)
+                processed_item = self._substitute_file_upload_value(
+                    value=item,
+                    schema=item_schema,
+                    tool=tool,
+                    before_file_upload=before_file_upload,
+                )
+                if processed_item is not _DELETE_VALUE:
+                    processed[key] = processed_item
+            return processed
+
+        if isinstance(value, list) and "items" in schema:
+            items_schema = schema["items"]
+            if isinstance(items_schema, list):
+                items_schema = items_schema[0] if items_schema else None
+
+            processed_items: t.List[t.Any] = []
+            for item in value:
+                processed_item = self._substitute_file_upload_value(
+                    value=item,
+                    schema=items_schema,
+                    tool=tool,
+                    before_file_upload=before_file_upload,
+                )
+                if processed_item is not _DELETE_VALUE:
+                    processed_items.append(processed_item)
+            return processed_items
+
+        return value
 
     def _substitute_file_uploads_recursively(
         self,
@@ -795,123 +963,23 @@ class FileHelper(WithLogger):
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
-        if "properties" not in schema:
+        processed = self._substitute_file_upload_value(
+            value=request,
+            schema=schema,
+            tool=tool,
+            before_file_upload=before_file_upload,
+        )
+        if processed is request:
             return request
-
-        params = schema["properties"]
-        for _param in list(request.keys()):
-            if _param not in params:
-                continue
-
-            param_schema = params[_param]
-
-            # Direct file_uploadable check
-            if param_schema.get("file_uploadable", False):
-                # skip if the file is not provided
-                if request[_param] is None or request[_param] == "":
-                    del request[_param]
-                    continue
-
-                request[_param] = FileUploadable.from_path(
-                    client=self._client,
-                    file=request[_param],
-                    tool=tool.slug,
-                    toolkit=tool.toolkit.slug,
-                    sensitive_file_upload_protection=self._sensitive_file_upload_protection,
-                    file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-                    file_upload_allowlist=self._file_upload_allowlist,
-                    before_file_upload=before_file_upload,
-                ).model_dump()
-                continue
-
-            # Check anyOf/oneOf/allOf for file_uploadable
-            uploadable_variant = self._find_uploadable_schema_variant(param_schema)
-            if uploadable_variant is not None:
-                # If the variant itself is file_uploadable
-                if uploadable_variant.get("file_uploadable", False):
-                    if request[_param] is None or request[_param] == "":
-                        del request[_param]
-                        continue
-
-                    request[_param] = FileUploadable.from_path(
-                        client=self._client,
-                        file=request[_param],
-                        tool=tool.slug,
-                        toolkit=tool.toolkit.slug,
-                        sensitive_file_upload_protection=self._sensitive_file_upload_protection,
-                        file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-                        file_upload_allowlist=self._file_upload_allowlist,
-                        before_file_upload=before_file_upload,
-                    ).model_dump()
-                    continue
-
-                # If the variant has nested properties with file_uploadable
-                if (
-                    isinstance(request[_param], dict)
-                    and uploadable_variant.get("type") == "object"
-                ):
-                    request[_param] = self._substitute_file_uploads_recursively(
-                        schema=uploadable_variant,
-                        request=request[_param],
-                        tool=tool,
-                        before_file_upload=before_file_upload,
-                    )
-                    continue
-
-            # Handle nested objects
-            if (
-                isinstance(request[_param], dict)
-                and param_schema.get("type") == "object"
-            ):
-                request[_param] = self._substitute_file_uploads_recursively(
-                    schema=param_schema,
-                    request=request[_param],
-                    tool=tool,
-                    before_file_upload=before_file_upload,
-                )
-                continue
-
-            # Handle arrays with file_uploadable items
-            if (
-                isinstance(request[_param], list)
-                and param_schema.get("type") == "array"
-                and "items" in param_schema
-            ):
-                items_schema = param_schema["items"]
-                if isinstance(items_schema, dict):
-                    processed_items: t.List[t.Any] = []
-                    for item in request[_param]:
-                        if self._has_file_property(items_schema, "file_uploadable"):
-                            if items_schema.get("file_uploadable", False):
-                                if item is not None and item != "":
-                                    processed_items.append(
-                                        FileUploadable.from_path(
-                                            client=self._client,
-                                            file=item,
-                                            tool=tool.slug,
-                                            toolkit=tool.toolkit.slug,
-                                            sensitive_file_upload_protection=self._sensitive_file_upload_protection,
-                                            file_upload_path_deny_segments=self._file_upload_path_deny_segments,
-                                            file_upload_allowlist=self._file_upload_allowlist,
-                                            before_file_upload=before_file_upload,
-                                        ).model_dump()
-                                    )
-                            elif isinstance(item, dict):
-                                processed_items.append(
-                                    self._substitute_file_uploads_recursively(
-                                        schema=items_schema,
-                                        request=item,
-                                        tool=tool,
-                                        before_file_upload=before_file_upload,
-                                    )
-                                )
-                            else:
-                                processed_items.append(item)
-                        else:
-                            processed_items.append(item)
-                    request[_param] = processed_items
-
-        return request
+        if isinstance(processed, dict):
+            request.clear()
+            request.update(processed)
+            return request
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_upload_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
 
     def substitute_file_uploads(
         self,
@@ -920,6 +988,14 @@ class FileHelper(WithLogger):
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
     ) -> t.Dict:
+        """Stage file-uploadable leaves in ``request`` and return it.
+
+        Mutation contract: the top-level ``request`` dict is mutated in place
+        and its identity is preserved (the return value is the same object).
+        Nested dicts inside ``request`` may be replaced with fresh dicts
+        rather than mutated, so callers should not retain references to
+        nested values across this call.
+        """
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
@@ -931,27 +1007,74 @@ class FileHelper(WithLogger):
         """Check if a schema has file_downloadable property."""
         return self._has_file_property(schema, "file_downloadable")
 
-    def _find_downloadable_schema_variant(self, schema: t.Dict) -> t.Optional[t.Dict]:
+    def _find_downloadable_schema_variant(
+        self, schema: t.Dict, value: t.Any = None
+    ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_downloadable properties."""
-        # Check anyOf variants
-        if "anyOf" in schema:
-            for variant in schema["anyOf"]:
-                if self._has_file_property(variant, "file_downloadable"):
-                    return variant
+        return self._find_schema_variant_with_file_property(
+            schema=schema,
+            property_name="file_downloadable",
+            value=value,
+        )
 
-        # Check oneOf variants
-        if "oneOf" in schema:
-            for variant in schema["oneOf"]:
-                if self._has_file_property(variant, "file_downloadable"):
-                    return variant
+    def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
+        if isinstance(value, dict) and "s3url" in value:
+            return str(
+                FileDownloadable(**value).download(
+                    self._outdir / tool.toolkit.slug / tool.slug
+                )
+            )
+        return value
 
-        # Check allOf variants
-        if "allOf" in schema:
-            for variant in schema["allOf"]:
-                if self._has_file_property(variant, "file_downloadable"):
-                    return variant
+    def _substitute_file_download_value(
+        self,
+        value: t.Any,
+        schema: t.Optional[t.Dict],
+        tool: Tool,
+    ) -> t.Any:
+        """Return ``value`` with file-downloadable leaves saved locally."""
+        if not isinstance(schema, dict):
+            return value
 
-        return None
+        if schema.get("file_downloadable", False):
+            return self._download_file_value(value=value, tool=tool)
+
+        downloadable_variant = self._find_downloadable_schema_variant(
+            schema=schema,
+            value=value,
+        )
+        if downloadable_variant is not None:
+            return self._substitute_file_download_value(
+                value=value,
+                schema=downloadable_variant,
+                tool=tool,
+            )
+
+        if isinstance(value, dict) and "properties" in schema:
+            properties = schema["properties"]
+            return {
+                key: self._substitute_file_download_value(
+                    value=item,
+                    schema=properties.get(key),
+                    tool=tool,
+                )
+                for key, item in value.items()
+            }
+
+        if isinstance(value, list) and "items" in schema:
+            items_schema = schema["items"]
+            if isinstance(items_schema, list):
+                items_schema = items_schema[0] if items_schema else None
+            return [
+                self._substitute_file_download_value(
+                    value=item,
+                    schema=items_schema,
+                    tool=tool,
+                )
+                for item in value
+            ]
+
+        return value
 
     def _substitute_file_downloads_recursively(
         self,
@@ -959,127 +1082,36 @@ class FileHelper(WithLogger):
         schema: t.Dict,
         request: t.Dict,
     ) -> t.Dict:
-        if "properties" not in schema:
+        processed = self._substitute_file_download_value(
+            value=request,
+            schema=schema,
+            tool=tool,
+        )
+        if processed is request:
             return request
-
-        params = schema["properties"]
-        for _param in list(request.keys()):
-            if _param not in params:
-                continue
-
-            param_schema = params[_param]
-            param_value = request[_param]
-
-            # Skip None values
-            if param_value is None:
-                continue
-
-            # Direct file_downloadable check
-            if param_schema.get("file_downloadable", False):
-                if isinstance(param_value, dict) and "s3url" in param_value:
-                    request[_param] = str(
-                        FileDownloadable(**param_value).download(
-                            self._outdir / tool.toolkit.slug / tool.slug
-                        )
-                    )
-                continue
-
-            # Check anyOf/oneOf/allOf for file_downloadable
-            downloadable_variant = self._find_downloadable_schema_variant(param_schema)
-            if downloadable_variant is not None:
-                # If the variant itself is file_downloadable
-                if downloadable_variant.get("file_downloadable", False):
-                    if isinstance(param_value, dict) and "s3url" in param_value:
-                        request[_param] = str(
-                            FileDownloadable(**param_value).download(
-                                self._outdir / tool.toolkit.slug / tool.slug
-                            )
-                        )
-                    continue
-
-                # If the variant has nested properties with file_downloadable
-                if (
-                    isinstance(param_value, dict)
-                    and downloadable_variant.get("type") == "object"
-                ):
-                    request[_param] = self._substitute_file_downloads_recursively(
-                        schema=downloadable_variant,
-                        request=param_value,
-                        tool=tool,
-                    )
-                    continue
-
-            # Handle nested objects
-            if isinstance(param_value, dict) and param_schema.get("type") == "object":
-                request[_param] = self._substitute_file_downloads_recursively(
-                    schema=param_schema,
-                    request=param_value,
-                    tool=tool,
-                )
-                continue
-
-            # Handle arrays with file_downloadable items
-            if (
-                isinstance(param_value, list)
-                and param_schema.get("type") == "array"
-                and "items" in param_schema
-            ):
-                items_schema = param_schema["items"]
-                if isinstance(items_schema, dict):
-                    processed_items: t.List[t.Any] = []
-                    for item in param_value:
-                        if item is None:
-                            processed_items.append(item)
-                            continue
-
-                        if self._has_file_property(items_schema, "file_downloadable"):
-                            if items_schema.get("file_downloadable", False):
-                                if isinstance(item, dict) and "s3url" in item:
-                                    processed_items.append(
-                                        str(
-                                            FileDownloadable(**item).download(
-                                                self._outdir
-                                                / tool.toolkit.slug
-                                                / tool.slug
-                                            )
-                                        )
-                                    )
-                                else:
-                                    processed_items.append(item)
-                            elif isinstance(item, dict):
-                                # Check for anyOf/oneOf/allOf in items schema
-                                item_variant = self._find_downloadable_schema_variant(
-                                    items_schema
-                                )
-                                if item_variant is not None:
-                                    processed_items.append(
-                                        self._substitute_file_downloads_recursively(
-                                            schema=item_variant,
-                                            request=item,
-                                            tool=tool,
-                                        )
-                                    )
-                                else:
-                                    processed_items.append(
-                                        self._substitute_file_downloads_recursively(
-                                            schema=items_schema,
-                                            request=item,
-                                            tool=tool,
-                                        )
-                                    )
-                            else:
-                                processed_items.append(item)
-                        else:
-                            processed_items.append(item)
-                    request[_param] = processed_items
-
-        return request
+        if isinstance(processed, dict):
+            request.clear()
+            request.update(processed)
+            return request
+        assert isinstance(processed, dict), (
+            "expected dict from _substitute_file_download_value at the root; "
+            f"got {type(processed).__name__}"
+        )
+        return processed
 
     def substitute_file_downloads(
         self,
         tool: Tool,
         response: ToolExecutionResponse,
     ) -> ToolExecutionResponse:
+        """Materialize file-downloadable leaves in ``response`` and return it.
+
+        Mutation contract: the top-level ``response`` dict is mutated in
+        place and its identity is preserved (the return value is the same
+        object). Nested dicts inside ``response`` may be replaced with
+        fresh dicts rather than mutated, so callers should not retain
+        references to nested values across this call.
+        """
         return t.cast(
             "ToolExecutionResponse",
             self._substitute_file_downloads_recursively(

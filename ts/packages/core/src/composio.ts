@@ -5,6 +5,7 @@ import { Toolkits } from './models/Toolkits';
 import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
+import { Experimental } from './models/Experimental';
 import { MCP } from './models/MCP';
 import { telemetry } from './telemetry/Telemetry';
 import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
@@ -19,6 +20,7 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
+import type { CustomTool, CustomToolkit } from './types/customTool.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
@@ -193,6 +195,14 @@ export class Composio<
   authConfigs: AuthConfigs;
   /** Manage authenticated connections */
   connectedAccounts: ConnectedAccounts;
+  /**
+   * Experimental SDK methods whose shape may change in future releases.
+   * Houses stateful operations like {@link Experimental.updateAcl} that
+   * take a client and perform I/O. Stateless experimental factories
+   * (e.g. `experimental_createTool`) stay at the top level.
+   * @experimental
+   */
+  experimental: Experimental;
   /** Model Context Protocol server management */
   mcp: MCP;
   /**
@@ -202,6 +212,8 @@ export class Composio<
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
   /**
    * Creates a new tool router session for a user.
+   * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+   * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterConfig} The config for the tool router session
@@ -234,7 +246,10 @@ export class Composio<
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  use: (id: string) => Promise<Session<unknown, unknown, TProvider>>;
+  use: (
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
+  ) => Promise<Session<unknown, unknown, TProvider>>;
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -325,6 +340,7 @@ export class Composio<
       fileDownloadDir: this.config.fileDownloadDir,
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
+    this.experimental = new Experimental(this.client);
     this.toolRouter = new ToolRouter(this.client, this.config);
 
     /**

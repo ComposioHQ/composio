@@ -31,7 +31,8 @@ type Shell = 'bash' | 'zsh' | 'fish';
 
 interface ShellConfig {
   readonly shell: Shell;
-  readonly rcFile: string;
+  readonly pathFile: string;
+  readonly completionFile: string;
   readonly pathBlock: string;
   readonly completionBlock: string | undefined;
 }
@@ -108,10 +109,15 @@ const buildShellConfig = (
   shell: Shell,
   rcFile: string,
   installDir: string,
-  completionScript: string | undefined
+  completionScript: string | undefined,
+  homedir: string
 ): ShellConfig => ({
   shell,
-  rcFile,
+  pathFile: rcFile,
+  completionFile:
+    shell === 'fish'
+      ? path.join(homedir, '.config', 'fish', 'completions', 'composio.fish')
+      : rcFile,
   pathBlock: pathBlockForShell(shell, installDir),
   completionBlock: completionScript ? `${COMPLETIONS_MARKER}\n${completionScript}` : undefined,
 });
@@ -122,6 +128,18 @@ const fileContains = (contents: string, marker: string): boolean =>
 
 const tildify = (p: string, homedir: string): string =>
   p.startsWith(homedir + '/') ? `~/${p.slice(homedir.length + 1)}` : p;
+
+const readMaybeMissingFile = (
+  filePath: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<string, PlatformError> =>
+  fs
+    .readFileString(filePath)
+    .pipe(
+      Effect.catchAll(e =>
+        Effect.logDebug('File does not exist yet, will create:', e).pipe(Effect.as(''))
+      )
+    );
 
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
@@ -187,23 +205,27 @@ export const installShellIntegration = (params: {
     }
 
     const rcFile = yield* resolveRcFile(rcFileCandidates(shell, os.homedir), fs);
-    const config = buildShellConfig(shell, rcFile, installDir, completionScript);
+    const config = buildShellConfig(shell, rcFile, installDir, completionScript, os.homedir);
 
-    // Read existing rc file (or empty if it doesn't exist yet)
-    const rcPath = config.rcFile;
-    const existing = yield* fs
-      .readFileString(rcPath)
-      .pipe(
-        Effect.catchAll(e =>
-          Effect.logDebug('RC file does not exist yet, will create:', e).pipe(Effect.as(''))
-        )
-      );
+    const uniqueTargetFiles = [...new Set([config.pathFile, config.completionFile])];
+    const existingByFile = new Map<string, string>();
+    for (const filePath of uniqueTargetFiles) {
+      existingByFile.set(filePath, yield* readMaybeMissingFile(filePath, fs));
+    }
 
-    // Build blocks to append (idempotently)
-    const blocks: string[] = [];
+    const blocksByFile = new Map<string, Array<string>>();
+    const pushBlock = (filePath: string, block: string) => {
+      const blocks = blocksByFile.get(filePath);
+      if (blocks) {
+        blocks.push(block);
+      } else {
+        blocksByFile.set(filePath, [block]);
+      }
+    };
 
-    if (!fileContains(existing, MARKER)) {
-      blocks.push(config.pathBlock);
+    const existingPathFile = existingByFile.get(config.pathFile) ?? '';
+    if (!fileContains(existingPathFile, MARKER)) {
+      pushBlock(config.pathFile, config.pathBlock);
       yield* ui.log.step(`PATH: will add ${tildify(installDir, os.homedir)} to $PATH`);
     } else {
       yield* ui.log.step('PATH: already configured');
@@ -213,42 +235,55 @@ export const installShellIntegration = (params: {
       yield* ui.log.step('Completions: skipped for zsh');
     } else if (!params.completions) {
       yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
-    } else if (config.completionBlock && !fileContains(existing, COMPLETIONS_MARKER)) {
-      blocks.push(config.completionBlock);
-      yield* ui.log.step('Completions: will install shell completions');
     } else if (!config.completionBlock) {
       yield* ui.log.step('Completions: not available for this shell');
     } else {
-      yield* ui.log.step('Completions: already configured');
+      const existingCompletionFile = existingByFile.get(config.completionFile) ?? '';
+      if (!fileContains(existingCompletionFile, COMPLETIONS_MARKER)) {
+        pushBlock(config.completionFile, config.completionBlock);
+        yield* ui.log.step(
+          config.shell === 'fish'
+            ? `Completions: will install fish completions to ${tildify(config.completionFile, os.homedir)}`
+            : 'Completions: will install shell completions'
+        );
+      } else {
+        yield* ui.log.step('Completions: already configured');
+      }
     }
 
-    if (blocks.length > 0) {
-      // Ensure parent directory exists (for fish config)
-      yield* fs
-        .makeDirectory(path.dirname(rcPath), { recursive: true })
-        .pipe(
-          Effect.catchAll(e =>
-            Effect.logDebug('Could not create parent directory (may already exist):', e)
-          )
-        );
+    if (blocksByFile.size > 0) {
+      for (const [filePath, blocks] of blocksByFile.entries()) {
+        const existingContents = existingByFile.get(filePath) ?? '';
 
-      const appendContent = '\n' + blocks.join('\n\n') + '\n';
+        yield* fs
+          .makeDirectory(path.dirname(filePath), { recursive: true })
+          .pipe(
+            Effect.catchAll(e =>
+              Effect.logDebug('Could not create parent directory (may already exist):', e)
+            )
+          );
 
-      // Atomic write: write to a temp file then rename, so a crash mid-write
-      // cannot leave the user's rc file truncated/corrupted.
-      const tmpPath = `${rcPath}.composio-tmp`;
-      yield* fs.writeFileString(tmpPath, existing + appendContent);
-      yield* fs.rename(tmpPath, rcPath);
+        const appendContent = '\n' + blocks.join('\n\n') + '\n';
+        const tmpPath = `${filePath}.composio-tmp`;
 
-      yield* ui.log.success(`Updated ${tildify(rcPath, os.homedir)}`);
-      yield* ui.note(
-        shell === 'fish' || shell === 'zsh'
-          ? `source ${tildify(rcPath, os.homedir)}`
-          : 'exec $SHELL',
-        'Restart your shell to apply changes'
-      );
+        yield* fs.writeFileString(tmpPath, existingContents + appendContent);
+        yield* fs.rename(tmpPath, filePath);
+
+        yield* ui.log.success(`Updated ${tildify(filePath, os.homedir)}`);
+      }
     } else {
       yield* ui.log.success('Shell integration already configured — nothing to do.');
+    }
+
+    if (blocksByFile.size > 0) {
+      yield* ui.note(
+        shell === 'fish'
+          ? 'exec fish'
+          : shell === 'zsh'
+            ? `source ${tildify(rcFile, os.homedir)}`
+            : 'exec $SHELL',
+        'Restart your shell to apply changes'
+      );
     }
 
     yield* ui.outro('Done');

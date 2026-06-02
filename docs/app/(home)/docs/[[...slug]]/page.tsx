@@ -9,6 +9,7 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -18,11 +19,21 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = page.data as any;
   const MDX = data.body;
+  const isLanding = !params.slug || params.slug.length === 0;
 
   return (
-    <DocsPage toc={data.toc} full={data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
-      <DocsTitle>{data.title}</DocsTitle>
-      <PageActions path={page.url} />
+    <DocsPage
+      toc={data.toc}
+      full={isLanding ? true : data.full}
+      footer={{ enabled: false }}
+      tableOfContentPopover={{ enabled: false }}
+    >
+      {!isLanding && (
+        <>
+          <DocsTitle>{data.title}</DocsTitle>
+          <PageActions path={page.url} />
+        </>
+      )}
       <DocsBody>
         <MDX
           components={getMDXComponents({
@@ -30,6 +41,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
             a: createRelativeLink(source, page),
           })}
         />
+        {!isLanding && <EditOnGitHub path={`docs/content/docs/${page.path}`} />}
       </DocsBody>
     </DocsPage>
   );

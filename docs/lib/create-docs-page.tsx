@@ -8,12 +8,13 @@ import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Source = any;
 
-export function createDocsPage(source: Source) {
+export function createDocsPage(source: Source, contentDir: string = 'content/docs') {
   return async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
     const { slug } = await params;
     const page = source.getPage(slug);
@@ -31,6 +32,7 @@ export function createDocsPage(source: Source) {
               a: createRelativeLink(source, page),
             })}
           />
+          <EditOnGitHub path={`docs/${contentDir}/${page.path}`} />
         </DocsBody>
       </DocsPage>
     );

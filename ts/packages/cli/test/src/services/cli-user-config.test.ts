@@ -1,7 +1,7 @@
 import path from 'node:path';
 import * as tempy from 'tempy';
 import fs from 'node:fs';
-import { describe, it } from '@effect/vitest';
+import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { FileSystem } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
@@ -41,6 +41,32 @@ describe('ComposioCliUserConfig', () => {
 
       const fs = yield* FileSystem.FileSystem;
       assertEquals(yield* fs.exists(path.join(cwd, '.composio', 'config.json')), true);
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
+  it.scoped('uses installed beta release metadata for experimental defaults', () => {
+    const cwd = tempy.temporaryDirectory();
+    const installDir = tempy.temporaryDirectory();
+    const fakeExecPath = path.join(installDir, 'composio');
+    fs.writeFileSync(fakeExecPath, 'fake binary');
+    fs.writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@1.2.4-beta.5\n');
+    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+    const map = new Map() satisfies Map<string, string>;
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      try {
+        const config = yield* ComposioCliUserConfig;
+        assertEquals(config.channel, 'beta');
+        assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
+        assertEquals(config.isExperimentalFeatureEnabled('local_tools'), true);
+      } finally {
+        execPathSpy.mockRestore();
+      }
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 

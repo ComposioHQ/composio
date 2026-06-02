@@ -1,0 +1,110 @@
+---
+title: Claude Code Plugin
+description: Install Composio in Claude Code as a plugin — connect 1000+ apps with managed OAuth and ready-made skills.
+keywords: [claude code, plugin, marketplace, mcp, composio connect, skills]
+---
+
+The **Composio plugin for Claude Code** bundles the Composio Connect MCP server with a set of opinionated skills, so Claude Code can search, connect, and act across 1000+ apps right after install. Authentication is fully managed — no API key handling, no manual MCP config.
+
+<Callout type="info">
+Looking for the API-key based MCP setup (or other clients like Cursor, Codex, Claude Desktop)? See [Composio Connect](/docs/composio-connect).
+</Callout>
+
+## What you get
+
+The plugin ships two things together:
+
+- **Composio Connect MCP server** — the same gateway documented in [Composio Connect](/docs/composio-connect), pre-configured. Auth is handled via in-flow OAuth, so you don't paste API keys into your config.
+- **Bundled skills** — pre-written prompts that show Claude how to use the MCP server effectively:
+  - **`composio-mcp`** — reference for the 7 meta-tools (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_MANAGE_CONNECTIONS`, etc.) and the recommended search → connect → execute flow.
+  - **`onboarding`** — interactive setup that asks what you want to automate, recommends 2–4 apps, and walks you through connecting them.
+  - **`company-activity-summary`** — cross-app activity summary across Slack, GitHub, Notion, Linear, Gmail, and more.
+  - **`prefer-composio`** — routing skill that tells Claude to reach for Composio first whenever you paste an app URL or mention an external service, so you don't end up using less reliable native connectors.
+
+## Install
+
+<Steps>
+<Step>
+<StepTitle>Add the Composio marketplace</StepTitle>
+
+In Claude Code, run:
+
+```bash
+/plugin marketplace add ComposioHQ/composio-plugin-cc
+```
+
+This registers the catalog. No plugins are installed yet.
+
+</Step>
+<Step>
+<StepTitle>Install the Composio plugin</StepTitle>
+
+```bash
+/plugin install composio-mcp@composio
+```
+
+Restart Claude Code (or run `/reload-plugins`) when prompted.
+
+</Step>
+<Step>
+<StepTitle>Connect your first app</StepTitle>
+
+Ask Claude something that needs an external service — for example: *"Star `composiohq/composio` on GitHub"* — and Claude will run the `onboarding` skill, walk you through connecting GitHub, and execute the action. Subsequent runs reuse the same connection.
+
+</Step>
+</Steps>
+
+## Team setup
+
+To pre-install the plugin for everyone on your team, add this to your project's `.claude/settings.json`:
+
+```json title=".claude/settings.json"
+{
+  "extraKnownMarketplaces": {
+    "composio": {
+      "source": {
+        "source": "github",
+        "repo": "ComposioHQ/composio-plugin-cc"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "composio-mcp@composio": true
+  }
+}
+```
+
+Anyone who clones the repo and opens it in Claude Code will be prompted to enable the plugin. See the Claude Code [plugin scopes](https://docs.claude.com/en/docs/claude-code/plugins-reference#plugin-installation-scopes) reference for `user` vs `project` vs `local` scope behavior.
+
+## Updating
+
+The plugin is versioned via the `version` field in its `plugin.json`. To pull the latest release:
+
+```bash
+/plugin marketplace update composio
+/reload-plugins
+```
+
+## How it differs from the API-key MCP setup
+
+Both paths give Claude Code access to the same Composio Connect MCP server and the same 1000+ apps. The differences:
+
+| | Plugin install | `claude mcp add` |
+|---|---|---|
+| Setup steps | Two slash commands | One terminal command, requires copying an API key |
+| Auth | OAuth, no API key in your config | API key in `--header "x-consumer-api-key: ..."` |
+| Bundled skills | Yes (onboarding, routing, summaries) | No |
+| Discoverable in Claude Code marketplace | Yes | No |
+| Updates | `/plugin marketplace update composio` | Manual re-run of `claude mcp add` |
+
+Pick the plugin path if you want the fastest install and the bundled skills. Pick the `claude mcp add` path if you already have an API key and want a single-command setup script you can replicate across machines.
+
+## Source code
+
+The plugin is open source: [ComposioHQ/composio-plugin-cc](https://github.com/ComposioHQ/composio-plugin-cc). Issues and PRs welcome.
+
+## Troubleshooting
+
+For tools-not-appearing, OAuth, and connection issues, see the [Composio Connect troubleshooting section](/docs/composio-connect#troubleshooting). The same checks apply to the plugin install (the underlying MCP server is identical).
+
+For plugin-specific issues — install errors, marketplace not updating, skills not appearing — see the [Claude Code plugin troubleshooting docs](https://docs.claude.com/en/docs/claude-code/plugins-reference#common-issues).

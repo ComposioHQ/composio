@@ -4,6 +4,7 @@ set -euo pipefail
 COMPOSIO_GITHUB_OWNER=${COMPOSIO_GITHUB_OWNER-"ComposioHQ"}
 COMPOSIO_GITHUB_REPO=${COMPOSIO_GITHUB_REPO-"composio"}
 COMPOSIO_GITHUB_URL=${COMPOSIO_GITHUB_URL-"https://github.com"}
+COMPOSIO_GITHUB_API_BASE_URL=${COMPOSIO_GITHUB_API_BASE_URL:-}
 COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-$HOME/.composio}
 
 # --- Input validation ---
@@ -24,7 +25,22 @@ if [[ ! "$COMPOSIO_GITHUB_REPO" =~ ^[a-zA-Z0-9._-]+$ ]]; then
     exit 1
 fi
 
+if [[ -n "$COMPOSIO_GITHUB_API_BASE_URL" && ! "$COMPOSIO_GITHUB_API_BASE_URL" =~ ^https:// ]]; then
+    echo "error: COMPOSIO_GITHUB_API_BASE_URL must start with https:// (got \"$COMPOSIO_GITHUB_API_BASE_URL\")" >&2
+    exit 1
+fi
+
 github_repo="$COMPOSIO_GITHUB_URL/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
+
+if [[ -n "$COMPOSIO_GITHUB_API_BASE_URL" ]]; then
+    github_api_base="${COMPOSIO_GITHUB_API_BASE_URL%/}"
+elif [[ "$COMPOSIO_GITHUB_URL" = "https://github.com" ]]; then
+    github_api_base="https://api.github.com"
+else
+    github_api_base="${COMPOSIO_GITHUB_URL%/}/api/v3"
+fi
+
+github_api_repo="$github_api_base/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO"
 
 # --- Colors (only when interactive) ---
 
@@ -57,11 +73,33 @@ tildify() {
 
 command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
 command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
-command -v git   >/dev/null || error 'git is required to install Composio CLI'
 
-if [[ $# -gt 1 ]]; then
-    error 'Too many arguments. Usage: install.sh [version-tag]  (e.g. "@composio/cli@0.1.32")'
-fi
+install_agent=false
+version_arg=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --agent)
+        install_agent=true
+        shift
+        ;;
+    -h|--help)
+        echo 'Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+        echo '  --agent    After installing, sign up/log in as a Composio agent.'
+        exit 0
+        ;;
+    --*)
+        error "Unknown option: $1"
+        ;;
+    *)
+        if [[ -n "$version_arg" ]]; then
+            error 'Too many arguments. Usage: install.sh [--agent] [version-tag]  (e.g. "@composio/cli@0.1.32")'
+        fi
+        version_arg=$1
+        shift
+        ;;
+    esac
+done
 
 # --- Platform detection ---
 
@@ -90,24 +128,68 @@ if [[ $target = darwin-x64 ]]; then
     fi
 fi
 
+archive_name="composio-$target.zip"
+
+resolve_latest_cli_release() {
+    local page release_json release_line
+
+    for page in 1 2 3 4 5; do
+        release_json=$(curl --fail --silent --location "$github_api_repo/releases?per_page=100&page=$page") || return 1
+
+        release_line=$(printf '%s\n' "$release_json" \
+            | sed 's/"tag_name"/\
+"tag_name"/g; s/"browser_download_url"/\
+"browser_download_url"/g' \
+            | awk -v asset_name="$archive_name" '
+                BEGIN {
+                    tag = ""
+                    stable_cli_release = "^@composio/cli@[0-9]+\\.[0-9]+\\.[0-9]+$"
+                }
+                /"tag_name":[[:space:]]*"/ {
+                    tag = $0
+                    sub(/^.*"tag_name":[[:space:]]*"/, "", tag)
+                    sub(/".*$/, "", tag)
+                    if (tag !~ stable_cli_release) {
+                        tag = ""
+                    }
+                }
+                tag != "" && /"browser_download_url":[[:space:]]*"/ && index($0, "/" asset_name "\"") > 0 {
+                    url = $0
+                    sub(/^.*"browser_download_url":[[:space:]]*"/, "", url)
+                    sub(/".*$/, "", url)
+                    print tag "\t" url
+                    exit
+                }
+            ')
+
+        if [[ -n "$release_line" ]]; then
+            printf '%s\n' "$release_line"
+            return 0
+        fi
+
+        if ! printf '%s\n' "$release_json" | grep -q '"tag_name"'; then
+            break
+        fi
+    done
+
+    return 1
+}
+
 # --- Version resolution ---
 
-if [[ $# = 0 ]]; then
+if [[ -z "$version_arg" ]]; then
     info "Finding latest CLI release..."
 
-    version=$(git ls-remote --tags "$github_repo" "@composio/cli@*" \
-        | awk '{print $2}' \
-        | sed 's#^refs/tags/##; s#\^{}$##' \
-        | sort -V \
-        | tail -1)
+    latest_release=$(resolve_latest_cli_release) ||
+        error "Failed to determine the latest CLI release with a $archive_name asset. Please specify a version manually."
 
-    if [[ -z "$version" ]]; then
-        error "Failed to determine the latest version. Please specify a version manually."
-    fi
+    version=${latest_release%%$'\t'*}
+    archive_url=${latest_release#*$'\t'}
 
     info "Found latest version: $version"
 else
-    version=$1
+    version=$version_arg
+    archive_url="$github_repo/releases/download/$version/$archive_name"
 fi
 
 # --- Download into temp directory ---
@@ -115,8 +197,6 @@ fi
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-archive_name="composio-$target.zip"
-archive_url="$github_repo/releases/download/$version/$archive_name"
 checksums_url="$github_repo/releases/download/$version/checksums.txt"
 
 info "Installing Composio CLI $version for $target"
@@ -311,6 +391,14 @@ else
 fi
 rm -f "$install_err"
 
+if [[ $install_agent = true ]]; then
+    echo
+    info "Setting up Composio agent login..."
+    if ! "$exe" login --agent --no-skill-install; then
+        error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
+    fi
+fi
+
 echo
 info "To get started, run:"
 echo
@@ -320,4 +408,8 @@ if [[ ${refresh_command:-} ]]; then
 fi
 
 info_bold "  composio --help"
-info_bold "  composio login"
+if [[ $install_agent = true ]]; then
+    info_bold "  composio agent whoami"
+else
+    info_bold "  composio login"
+fi

@@ -2,6 +2,7 @@
   "title": "Authenticating users",
   "pages": [
     "in-chat-authentication",
-    "manually-authenticating"
+    "manually-authenticating",
+    "shared-connections"
   ]
 }

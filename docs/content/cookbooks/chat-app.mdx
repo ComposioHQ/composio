@@ -16,7 +16,7 @@ Give your AI agent access to Gmail, GitHub, Slack, Notion, and 1000+ other apps.
 ## Prerequisites
 
 - [Bun](https://bun.sh) (or Node.js 18+)
-- [Composio API key](https://platform.composio.dev/settings)
+- [Composio API key](https://dashboard.composio.dev/settings)
 - [OpenAI API key](https://platform.openai.com/api-keys)
 
 **Stack:** Next.js, Vercel AI SDK, OpenAI, Composio
@@ -32,7 +32,7 @@ bun add @composio/core @composio/vercel @ai-sdk/openai ai @ai-sdk/react
 ```
 
 <Callout type="info">
-Get your `COMPOSIO_API_KEY` from [Settings](https://platform.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
+Get your `COMPOSIO_API_KEY` from [Settings](https://dashboard.composio.dev/settings) and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys).
 </Callout>
 
 Add your API keys to a `.env.local` file in the project root:
@@ -54,7 +54,7 @@ A **session** scopes tools and credentials to a specific user. Create `app/api/c
 
 <include meta='title="app/api/chat/route.ts"'>../../examples/chat-app/route.ts</include>
 
-That's the entire backend. `composio.create("user_123")` creates a session that lets the agent search for tools, authenticate users, and execute actions. This ID scopes all connections and credentials to this user. In production, use the user ID from your auth system.
+That's the entire backend. On the first request, `composio.create("user_123")` creates a session that lets the agent search for tools, authenticate users, and execute actions. Subsequent requests reuse the same session via `composio.use(sessionId)` so tool access and connected accounts carry over. In production, store the session ID per user in your database and use the user ID from your auth system.
 
 ## Build the chat UI
 
@@ -121,7 +121,7 @@ Try a few more requests:
   <Card title="Configuring sessions" href="/docs/configuring-sessions">
     Lock down which toolkits your agent can access
   </Card>
-  <Card title="How Composio works" href="/docs/how-composio-works">
+  <Card title="What is a session?" href="/docs/how-composio-works">
     Understand sessions, tool discovery, and execution under the hood
   </Card>
 </Cards>

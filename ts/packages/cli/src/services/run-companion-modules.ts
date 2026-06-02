@@ -250,6 +250,20 @@ export const readInstalledReleaseTag = (execPath: string) =>
     path.join(resolveCompanionInstallDirectory(execPath), RUN_COMPANION_RELEASE_TAG_FILENAME)
   );
 
+export const normalizeCliReleaseVersion = (releaseIdentifier: string): string => {
+  const trimmed = releaseIdentifier.trim();
+  if (trimmed.startsWith('@composio/cli@')) {
+    return trimmed.slice('@composio/cli@'.length);
+  }
+  if (/^v\d+\.\d+\.\d+(?:[-+].*)?$/.test(trimmed)) {
+    return trimmed.slice(1);
+  }
+  return trimmed;
+};
+
+export const resolveInstalledCliVersion = (execPath: string, fallbackVersion: string): string =>
+  normalizeCliReleaseVersion(readInstalledReleaseTag(execPath) ?? fallbackVersion);
+
 export const writeInstalledReleaseTag = (installDir: string, releaseTag: string) => {
   fs.writeFileSync(
     path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME),

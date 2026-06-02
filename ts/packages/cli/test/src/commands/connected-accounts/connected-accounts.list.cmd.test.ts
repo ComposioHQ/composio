@@ -179,7 +179,7 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.scoped('warns user to login', () =>
         Effect.gen(function* () {
           const error = yield* Effect.flip(cli(['dev', 'connected-accounts', 'list']));
-          expect(String(error)).toContain('No default org configured');
+          expect(String(error)).toContain('No current org configured');
         })
       );
     }
@@ -231,4 +231,34 @@ describe('CLI: composio dev connected-accounts list', () => {
       );
     }
   );
+
+  // Forward-compat: server returns a status the CLI doesn't know about.
+  const unknownStatusAccounts = [
+    {
+      ...testConnectedAccounts[0],
+      id: 'con_future_status',
+      // Cast bypasses the closed status literal — that's the point.
+      status: 'FUTURE_NOT_YET_KNOWN' as ConnectedAccountItem['status'],
+    },
+  ];
+
+  layer(
+    TestLive({
+      baseConfigProvider: testDevConfigProvider,
+      connectedAccountsData: { items: unknownStatusAccounts },
+    })
+  )('[Given] server returns unknown status [Then] warns and degrades instead of crashing', it => {
+    it.scoped('does not crash on unknown status', () =>
+      Effect.gen(function* () {
+        const userContext = yield* ComposioUserContext;
+        yield* userContext.login('test_api_key', 'org_test');
+        yield* cli(['dev', 'connected-accounts', 'list']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('composio upgrade');
+        expect(output).toContain('con_future_status');
+      })
+    );
+  });
 });

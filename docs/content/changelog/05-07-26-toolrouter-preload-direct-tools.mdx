@@ -1,0 +1,214 @@
+---
+title: "Sessions add preloaded tools and direct tools preset"
+description: "Sessions can now expose frequently used tools directly from session.tools(), and specialized agents can use a direct tools preset with selected meta tools enabled as needed."
+date: "2026-05-07"
+---
+
+Sessions now support preloading frequently used tools into `session.tools()` and
+the session MCP tool list, so agents can call them without searching each time.
+This works for Composio-managed tools, while SDK custom tools can be exposed
+directly from `session.tools()` with `preload: true`.
+
+Keep the preloaded set focused, generally fewer than 20 tools, to avoid context
+bloat.
+
+### SDK versions
+
+| SDK | Minimum version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.9.0` |
+| Python `composio` | `0.13.0` |
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    preload={
+        "tools": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+    },
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+# COMPOSIO_SEARCH_TOOLS
+# ... other default meta tools
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  preload: {
+    tools: ['GMAIL_FETCH_EMAILS', 'GMAIL_CREATE_EMAIL_DRAFT'],
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+// COMPOSIO_SEARCH_TOOLS
+// ... other default meta tools
+```
+</Tab>
+</Tabs>
+
+### Direct tools preset
+
+Specialized agents with a narrow tool set can use the direct tools preset to
+load every tool allowed by session filters into the session's tool list and
+disable session meta tools by default.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_CREATE_EMAIL_DRAFT'],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+```
+</Tab>
+</Tabs>
+
+For agents that still need selected helper behavior, supported meta tool groups
+can be enabled alongside the preset:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+        },
+    },
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    manage_connections={"enable": True},
+    workbench={"enable": True},
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# GMAIL_FETCH_EMAILS
+# GMAIL_CREATE_EMAIL_DRAFT
+# COMPOSIO_MANAGE_CONNECTIONS
+# COMPOSIO_REMOTE_WORKBENCH
+# COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, SessionPreset } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+
+const composio = new Composio({
+  apiKey: 'your_api_key',
+  provider: new OpenAIAgentsProvider(),
+});
+
+const session = await composio.create('user_123', {
+  toolkits: ['gmail'],
+  tools: {
+    gmail: {
+      enable: ['GMAIL_FETCH_EMAILS', 'GMAIL_CREATE_EMAIL_DRAFT'],
+    },
+  },
+  sessionPreset: SessionPreset.DIRECT_TOOLS,
+  manageConnections: {
+    enable: true,
+  },
+  workbench: {
+    enable: true,
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// GMAIL_FETCH_EMAILS
+// GMAIL_CREATE_EMAIL_DRAFT
+// COMPOSIO_MANAGE_CONNECTIONS
+// COMPOSIO_REMOTE_WORKBENCH
+// COMPOSIO_REMOTE_BASH_TOOL
+```
+</Tab>
+</Tabs>
+
+See [Preloading tools](/docs/configuring-sessions#preloading-tools),
+[Direct tools preset](/docs/configuring-sessions#direct-tools-preset), and
+[Preloading custom tools](/docs/toolkits/custom-tools-and-toolkits#preloading-custom-tools)
+for Python examples and full guidance.

@@ -49,7 +49,7 @@ function CopySlugButton({ slug }: { slug: string }) {
     <button
       onClick={handleCopy}
       aria-label={`Copy ${slug.toUpperCase()} to clipboard`}
-      className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+      className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <span className="max-w-[120px] truncate sm:max-w-none">{slug.toUpperCase()}</span>
       {copied ? <Check className="h-3 w-3 text-green-500" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
@@ -158,38 +158,40 @@ export function ManagedAuthList() {
           autoComplete="off"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
+          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
         />
       </div>
 
-      {/* Tabs + Copy */}
-      <div className="flex items-center justify-between border-b border-fd-border">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setTab('managed')}
-            className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'managed'
-                ? 'border-green-500 text-fd-foreground'
-                : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
-            }`}
-          >
-            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-            Composio Managed App Available
-            <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{managed.length}</span>
-          </button>
-          <button
-            onClick={() => setTab('unmanaged')}
-            className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === 'unmanaged'
-                ? 'border-amber-500 text-fd-foreground'
-                : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
-            }`}
-          >
-            <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-            Requires your own credentials
-            <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{notManaged.length}</span>
-          </button>
-        </div>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-fd-border">
+        <button
+          onClick={() => setTab('managed')}
+          className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            tab === 'managed'
+              ? 'border-green-500 text-fd-foreground'
+              : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
+          }`}
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+          Composio Managed App Available
+          <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{managed.length}</span>
+        </button>
+        <button
+          onClick={() => setTab('unmanaged')}
+          className={`flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+            tab === 'unmanaged'
+              ? 'border-fd-muted-foreground text-fd-foreground'
+              : 'border-transparent text-fd-muted-foreground hover:text-fd-foreground'
+          }`}
+        >
+          <span className="inline-block h-2 w-2 rounded-full bg-fd-muted-foreground/60" />
+          Requires your own credentials
+          <span className="rounded-full bg-fd-muted px-1.5 py-0.5 text-xs">{notManaged.length}</span>
+        </button>
+      </div>
+
+      {/* Copy slugs — separate row, aligned with list content */}
+      <div className="flex justify-end">
         <CopyButton toolkits={activeList} />
       </div>
 

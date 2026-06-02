@@ -17,7 +17,11 @@ from composio.client.types import (
 )
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
+from composio.core.models.custom_tool_types import InlineCustomToolsWirePayload
 from composio.core.models.custom_tools import CustomTools
+from composio.core.models.inline_custom_tools_payload import (
+    inline_custom_tools_execute_experimental,
+)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.agentic import AgenticProvider, AgenticProviderExecuteFn
 from composio.core.provider.base import ExecuteToolFn
@@ -39,6 +43,8 @@ from ._modifiers import (
     merge_before_file_upload,
     schema_modifier,
 )
+
+TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500
 
 
 def _needs_serialization(obj: t.Any) -> bool:
@@ -238,11 +244,11 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         modifiers: t.Optional["Modifiers"] = None,
     ) -> list[Tool]:
         """
-        Fetches the meta tools for a tool router session.
+        Fetches the tools exposed by a tool router session.
 
-        This method fetches the meta tools from the Composio API and transforms them to
-        the expected format. It provides access to the underlying meta tool data without
-        provider-specific wrapping.
+        This method fetches helper/meta tools and any preloaded app tools from the
+        Composio API and transforms them to the expected format. It provides access
+        to the underlying tool data without provider-specific wrapping.
 
         :param session_id: The session ID to get the meta tools for
         :param modifiers: Optional modifiers to apply to the tool schemas
@@ -274,10 +280,22 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             )
             ```
         """
-        # Fetch meta tools from the API
-        tools_response = self._client.tool_router.session.tools(session_id=session_id)
-        # Cast to Tool type - session.tools returns compatible Item type from different response schema
-        tools_list: t.List[Tool] = [t.cast(Tool, item) for item in tools_response.items]
+        # Fetch session tools from the API
+        tools_list: t.List[Tool] = []
+        cursor: t.Optional[str] = None
+
+        while True:
+            tools_response = self._client.tool_router.session.tools(
+                session_id=session_id,
+                cursor=none_to_omit(cursor),
+                limit=TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
+            )
+            # Cast to Tool type - session.tools returns compatible Item type from different response schema
+            tools_list.extend(t.cast(Tool, item) for item in tools_response.items)
+
+            cursor = getattr(tools_response, "next_cursor", None)
+            if not cursor:
+                break
 
         # Apply schema modifiers if provided
         if modifiers is not None:
@@ -296,6 +314,10 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 )
                 for tool in tools_list
             ]
+
+        self._tool_schemas.update(
+            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
+        )
 
         return tools_list
 
@@ -438,12 +460,13 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         self,
         session_id: str,
         modifiers: t.Optional[Modifiers] = None,
+        inline_custom_tools_payload: t.Optional[InlineCustomToolsWirePayload] = None,
     ) -> AgenticProviderExecuteFn:
         """
-        Create an execute function for tool router that uses the session's execute_meta endpoint.
+        Create an execute function for tool router session tools.
 
         This method creates a function that executes tools within a tool router session context.
-        It uses the session's execute_meta endpoint which handles authentication and connection
+        It uses the session's execute endpoint which handles authentication and connection
         management automatically.
 
         :param session_id: The session ID
@@ -456,7 +479,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             Execute a tool in the tool router session.
 
             This function is used by agentic providers to execute tools within
-            a tool router session context. It uses the session's execute_meta
+            a tool router session context. It uses the session's execute
             endpoint which handles authentication and connection management
             automatically.
 
@@ -482,7 +505,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 self._tool_schemas[slug] = tool
 
             if self._auto_upload_download_files:
-                meta_tk = tool.toolkit.slug if tool.toolkit else "unknown"
+                meta_tk = tool.toolkit.slug if tool.toolkit else "composio"
                 bfu = merge_before_file_upload(
                     modifiers,
                     tool=slug,
@@ -494,8 +517,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                     before_file_upload=bfu,
                 )
 
+            toolkit_slug = tool.toolkit.slug if tool.toolkit else "composio"
+
             # Apply before_execute modifiers
-            # Meta tools are always from the 'composio' toolkit
             processed_arguments = arguments
             if modifiers is not None:
                 params: ToolExecuteParams = {
@@ -504,7 +528,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 type_before: t.Literal["before_execute"] = "before_execute"
                 modified_params = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit="composio",
+                    toolkit=toolkit_slug,
                     tool=slug,
                     type=type_before,
                     request=params,
@@ -514,13 +538,16 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             # Serialize any Pydantic model instances before sending to the API
             processed_arguments = _serialize_arguments(processed_arguments)
 
-            # Execute the tool via the session's execute_meta endpoint
-            # Note: execute_meta accepts regular tool slugs at runtime, not just meta tool slugs
-            # The type signature expects Literal meta tool slugs, but runtime accepts any str
-            response = self._client.tool_router.session.execute_meta(
+            response = self._client.tool_router.session.execute(
                 session_id=session_id,
-                slug=slug,  # type: ignore[arg-type]
+                tool_slug=slug,
                 arguments=processed_arguments,
+                # Provider-wrapped session tools are agentic calls, so they opt into
+                # direct tool offload when the backend session workbench allows it.
+                enable_auto_workbench_offload=True,
+                experimental=inline_custom_tools_execute_experimental(
+                    inline_custom_tools_payload
+                ),
             )
 
             # Convert response to standard format
@@ -535,7 +562,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
                 type_after: t.Literal["after_execute"] = "after_execute"
                 result = apply_modifier_by_type(
                     modifiers=modifiers,
-                    toolkit="composio",
+                    toolkit=toolkit_slug,
                     tool=slug,
                     type=type_after,
                     response=result,

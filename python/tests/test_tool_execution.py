@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from pydantic import BaseModel, RootModel
+from composio_client import omit
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
@@ -47,6 +48,35 @@ class TestToolExecution:
             is_deprecated=False,
             no_auth=False,
             tags=[],
+        )
+
+    def test_get_raw_tool_router_meta_tools_fetches_all_pages(self):
+        """Test that ToolRouter session tools are fetched across all pages."""
+        mock_client = Mock()
+        mock_provider = Mock()
+        tools = Tools(client=mock_client, provider=mock_provider)
+
+        first_tool = self.create_mock_tool("FIRST_TOOL", "github")
+        second_tool = self.create_mock_tool("SECOND_TOOL", "slack")
+        first_response = Mock(items=[first_tool], next_cursor="next_page")
+        second_response = Mock(items=[second_tool], next_cursor=None)
+        mock_client.tool_router.session.tools.side_effect = [
+            first_response,
+            second_response,
+        ]
+
+        result = tools.get_raw_tool_router_meta_tools("session_123")
+
+        assert [tool.slug for tool in result] == ["FIRST_TOOL", "SECOND_TOOL"]
+        mock_client.tool_router.session.tools.assert_any_call(
+            session_id="session_123",
+            cursor=omit,
+            limit=500,
+        )
+        mock_client.tool_router.session.tools.assert_any_call(
+            session_id="session_123",
+            limit=500,
+            cursor="next_page",
         )
 
     def test_tool_execution_uses_toolkit_version(self):

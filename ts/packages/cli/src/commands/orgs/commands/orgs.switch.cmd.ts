@@ -31,14 +31,15 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
     }
 
     yield* ui.note(
-      'This updates your default org for CLI commands. Use `composio dev init` for local developer project setup.',
-      'Global defaults'
+      'This updates your current org for CLI commands. Use `composio dev init` for local developer project setup.',
+      'Current org'
     );
 
     const result = yield* runOrgSelection({
       apiKey,
       baseURL: ctx.data.baseURL,
       explicitOrgId: Option.getOrUndefined(orgId),
+      currentOrgId: Option.getOrUndefined(ctx.data.orgId),
       limit,
     });
 
@@ -49,13 +50,13 @@ export const orgsCmd$Switch = Command.make('switch', { orgId, limit }, ({ orgId,
 
     yield* ctx.login(apiKey, result.id, Option.getOrUndefined(ctx.data.testUserId));
 
-    yield* ui.log.success(`Updated default org to "${result.name}".`);
+    yield* ui.log.success(`Updated current org to "${result.name}".`);
     yield* ui.output(
       JSON.stringify({
         scope: 'global',
         org_id: result.id,
       })
     );
-    yield* ui.outro('Default org updated.');
+    yield* ui.outro('Current org updated.');
   })
-).pipe(Command.withDescription('Switch default organization context.'));
+).pipe(Command.withDescription('Switch current organization context.'));

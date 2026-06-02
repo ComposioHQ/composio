@@ -49,6 +49,34 @@ const copyBundledAcpAdapters = async (outputDir: string): Promise<void> => {
   await copyDirectoryRecursive(acpAdaptersCacheDir, acpOutputDir);
 };
 
+export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
+
+const localToolsBinaryAssetsSourceDir = (): string =>
+  path.resolve(process.cwd(), '../cli-local-tools', LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+
+const copyLocalToolBinaryAssetsDirectory = async (outputDir: string): Promise<boolean> => {
+  const sourceDir = localToolsBinaryAssetsSourceDir();
+  const sourceExists = await stat(sourceDir)
+    .then(stats => stats.isDirectory())
+    .catch(() => false);
+  if (!sourceExists) return false;
+
+  const outputAssetDir = path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+  await rm(outputAssetDir, { force: true, recursive: true });
+  await copyDirectoryRecursive(sourceDir, outputAssetDir);
+  return true;
+};
+
+export const copyLocalToolBinaryAssets = (outputDir: string) =>
+  Effect.gen(function* () {
+    const copied = yield* Effect.tryPromise(() => copyLocalToolBinaryAssetsDirectory(outputDir));
+    if (copied) {
+      yield* Effect.logDebug(
+        `Copied local tool binary assets into ${path.join(outputDir, LOCAL_TOOLS_BINARY_ASSET_DIRNAME)}`
+      );
+    }
+  });
+
 const isAllowedRuntimeSpecifier = (specifier: string): boolean =>
   specifier.startsWith('.') ||
   specifier.startsWith('/') ||

@@ -12,9 +12,11 @@ Covers:
 - Multi-execute routing (all-local, all-remote, mixed, parallel)
 """
 
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pytest
+from composio_client import omit
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -24,21 +26,20 @@ from composio_client.types.tool_router.session_proxy_execute_response import (
 from pydantic import BaseModel, Field
 
 from composio.core.models.custom_tool import (
-    ExperimentalAPI,
     ExperimentalToolkit,
     build_custom_tools_map,
     build_custom_tools_map_from_response,
-    serialize_custom_tools,
     serialize_custom_toolkits,
+    serialize_custom_tools,
 )
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
 )
+from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
 from composio.core.models.tool_router_session import ToolRouterSession
 from composio.exceptions import ValidationError
-
 
 # ────────────────────────────────────────────────────────────────
 # Fixtures
@@ -144,6 +145,14 @@ class TestDecoratorTool:
             return {}
 
         assert fetch_mail.extends_toolkit == "gmail"
+
+    def test_decorator_with_preload(self):
+        @exp.tool(preload=True)
+        def fetch_context(input: GrepInput, ctx):
+            """Fetch context."""
+            return {}
+
+        assert fetch_context.preload is True
 
     def test_decorator_explicit_overrides(self):
         @exp.tool(slug="CUSTOM", name="Custom Name", description="Custom desc")
@@ -408,11 +417,27 @@ class TestSerialization:
         result = serialize_custom_tools([email_tool])
         assert result[0]["extends_toolkit"] == "gmail"
 
+    def test_serialize_custom_tool_preload_hint(self, grep_tool):
+        preloaded = replace(grep_tool, preload=True)
+        result = serialize_custom_tools([preloaded])
+        assert result[0]["preload"] is True
+
+    def test_serialize_custom_tool_omits_redundant_preload_false(self, grep_tool):
+        search_only = replace(grep_tool, preload=False)
+        result = serialize_custom_tools([search_only])
+        assert "preload" not in result[0]
+
     def test_serialize_toolkit(self, role_toolkit):
         result = serialize_custom_toolkits([role_toolkit])
         assert len(result) == 1
         assert result[0]["slug"] == "ROLE_MANAGER"
         assert len(result[0]["tools"]) == 1
+
+    def test_serialize_toolkit_preload_hint(self, role_toolkit):
+        role_toolkit.preload = True
+        result = serialize_custom_toolkits([role_toolkit])
+        assert result[0]["preload"] is True
+        assert result[0]["tools"][0]["preload"] is True
 
 
 # ────────────────────────────────────────────────────────────────
@@ -540,7 +565,41 @@ class TestSessionContextImpl:
             client=mock_client, user_id="u", session_id="s", custom_tools_map=m
         )
         ctx.execute("NONEXISTENT", {"arg": "val"})
-        mock_client.tool_router.session.execute.assert_called_once()
+        mock_client.tool_router.session.execute.assert_called_once_with(
+            session_id="s",
+            tool_slug="NONEXISTENT",
+            arguments={"arg": "val"},
+            experimental=omit,
+        )
+
+    def test_remote_fallback_passes_inline_custom_tools(self):
+        mock_client = MagicMock()
+        mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"remote": True}, error=None, log_id="log_123"
+        )
+        inline_payload = {
+            "custom_tools": [
+                {
+                    "slug": "GREP",
+                    "name": "Grep",
+                    "description": "Search local text",
+                    "input_schema": {"type": "object", "properties": {}},
+                }
+            ]
+        }
+        ctx = SessionContextImpl(
+            client=mock_client,
+            user_id="u",
+            session_id="s",
+            inline_custom_tools_payload=inline_payload,
+        )
+        ctx.execute("GMAIL_SEND_EMAIL", {"to": "a@b.com"})
+        mock_client.tool_router.session.execute.assert_called_once_with(
+            session_id="s",
+            tool_slug="GMAIL_SEND_EMAIL",
+            arguments={"to": "a@b.com"},
+            experimental=inline_payload,
+        )
 
     def test_proxy_execute(self):
         mock_client = MagicMock()
@@ -608,10 +667,39 @@ class TestToolRouterSessionCustomTools:
         s = _session(mock_session_deps)
         result = s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
         mock_session_deps["client"].tool_router.session.execute.assert_called_once()
+        call_args = mock_session_deps["client"].tool_router.session.execute.call_args
+        assert call_args.kwargs["session_id"] == "s"
+        assert call_args.kwargs["tool_slug"] == "GMAIL_SEND_EMAIL"
+        assert call_args.kwargs["arguments"] == {"to": "a@b.com"}
+        assert "extra_body" not in call_args.kwargs
+        assert "enable_auto_workbench_offload" not in call_args.kwargs
         # Remote returns client model as-is (backward compat, supports attribute access)
         assert isinstance(result, SessionExecuteResponse)
         assert result.data == {"sent": True}
         assert result.log_id == "log_123"
+
+    def test_execute_remote_passes_inline_custom_tools(self, mock_session_deps):
+        mock_response = SessionExecuteResponse(
+            data={"sent": True}, error=None, log_id="log_123"
+        )
+        mock_session_deps[
+            "client"
+        ].tool_router.session.execute.return_value = mock_response
+        inline_payload = {
+            "custom_tools": [
+                {
+                    "slug": "GREP",
+                    "name": "Grep",
+                    "description": "Search local text",
+                    "input_schema": {"type": "object", "properties": {}},
+                }
+            ]
+        }
+        s = _session(mock_session_deps, inline_custom_tools_payload=inline_payload)
+        s.execute("GMAIL_SEND_EMAIL", arguments={"to": "a@b.com"})
+
+        call_args = mock_session_deps["client"].tool_router.session.execute.call_args
+        assert call_args.kwargs["experimental"] == inline_payload
 
     def test_proxy_execute(self, mock_session_deps):
         mock_session_deps[
@@ -658,7 +746,7 @@ class TestToolRouterSessionCustomTools:
 
 
 class TestMultiExecuteRouting:
-    def _make_session(self, *tools):
+    def _make_session(self, *tools, inline_custom_tools_payload=None):
         m = build_custom_tools_map(list(tools))
         return ToolRouterSession(
             client=MagicMock(),
@@ -669,6 +757,7 @@ class TestMultiExecuteRouting:
             experimental=MagicMock(),
             custom_tools_map=m,
             user_id="u",
+            inline_custom_tools_payload=inline_custom_tools_payload,
         )
 
     def test_single_local(self, grep_tool):
@@ -689,6 +778,31 @@ class TestMultiExecuteRouting:
             {"tools": [{"tool_slug": "REMOTE", "arguments": {}}]}, tm
         )
         assert result == remote
+
+    def test_all_remote_passes_inline_custom_tools(self, grep_tool):
+        inline_payload = {
+            "custom_tools": [
+                {
+                    "slug": "GREP",
+                    "name": "Grep",
+                    "description": "Search local text",
+                    "input_schema": {"type": "object", "properties": {}},
+                }
+            ]
+        }
+        s = self._make_session(grep_tool, inline_custom_tools_payload=inline_payload)
+        tm = MagicMock()
+        remote = {"data": {"results": []}, "error": None, "successful": True}
+        tm._wrap_execute_tool_for_tool_router.return_value = lambda slug, args: remote
+        s._route_multi_execute(
+            {"tools": [{"tool_slug": "REMOTE", "arguments": {}}]}, tm
+        )
+
+        tm._wrap_execute_tool_for_tool_router.assert_called_once_with(
+            session_id="s",
+            modifiers=None,
+            inline_custom_tools_payload=inline_payload,
+        )
 
     def test_mixed(self, grep_tool):
         s = self._make_session(grep_tool)

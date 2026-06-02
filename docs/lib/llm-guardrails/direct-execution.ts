@@ -18,7 +18,7 @@ export const DIRECT_EXECUTION_GUARDRAILS = `
 
 ### Authenticating Users
 
-Create an **Auth Config** on [platform.composio.dev](https://platform.composio.dev), then use the auth config ID to generate a hosted auth URL:
+Create an **Auth Config** on [dashboard.composio.dev](https://dashboard.composio.dev), then use the auth config ID to generate a hosted auth URL:
 
 \`\`\`python
 from composio import Composio

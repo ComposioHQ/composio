@@ -15,6 +15,7 @@ import {
   ToolkitVersionParam,
   SchemaModifierOptions,
   ToolRetrievalOptions,
+  ToolExecuteMetaParams,
   ToolExecuteMetaParamsSchema,
 } from '../types/tool.types';
 import {
@@ -53,11 +54,40 @@ import { telemetry } from '../telemetry/Telemetry';
 import { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
-import { ToolExecuteMetaParams } from '../types/tool.types';
-import { SessionExecuteMetaParams } from '@composio/client/resources/tool-router.mjs';
+import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+
+const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
+
+type ToolRouterSessionExecuteOptions = {
+  experimental?: SessionExecuteParams.Experimental;
+};
+
+type RawToolParameters =
+  | ToolRetrieveResponse['input_parameters']
+  | ComposioToolListResponse['items'][0]['input_parameters'];
+
+/**
+ * Normalize a raw `input_parameters` / `output_parameters` payload returned by
+ * the Composio API. Maps `null`, `undefined`, and empty `{}` — all of which
+ * mean "no declared schema" — to `undefined` so the strict `ParametersSchema`
+ * validator never sees them. Non-empty objects pass through unchanged and
+ * remain subject to strict Zod validation.
+ *
+ * MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
+ * declared output schema and the API serializes that as `{}`, which would
+ * otherwise trip `ParametersSchema`. See
+ * https://github.com/ComposioHQ/composio/issues/3354.
+ */
+function normalizeRawToolParameters(
+  params: RawToolParameters | null | undefined
+): RawToolParameters | undefined {
+  if (params == null || Object.keys(params).length === 0) return undefined;
+  return params;
+}
+
 /**
  * This class is used to manage tools in the Composio SDK.
  * It provides methods to list, get, and execute tools.
@@ -135,8 +165,8 @@ export class Tools<
   ): Tool {
     return ToolSchema.parse({
       ...tool,
-      inputParameters: tool.input_parameters,
-      outputParameters: tool.output_parameters,
+      inputParameters: normalizeRawToolParameters(tool.input_parameters),
+      outputParameters: normalizeRawToolParameters(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,
@@ -467,27 +497,38 @@ export class Tools<
   }
 
   /**
-   * Fetches the meta tools for a tool router session.
-   * This method fetches the meta tools from the Composio API and transforms them to the expected format.
-   * It provides access to the underlying meta tool data without provider-specific wrapping.
+   * Fetches tools exposed by a tool router session.
+   * This includes helper/meta tools plus any tools preloaded into the session.
+   * It provides access to the underlying tool data without provider-specific wrapping.
    *
-   * @param sessionId {string} The session id to get the meta tools for
+   * @param sessionId {string} The session id to get tools for
    * @param options {SchemaModifierOptions} Optional configuration for tool retrieval
    * @param {TransformToolSchemaModifier} [options.modifySchema] - Function to transform the tool schema
-   * @returns {Promise<ToolList>} The list of meta tools
+   * @returns {Promise<ToolList>} The list of session tools
    *
    * @example
    * ```typescript
-   * const metaTools = await composio.tools.getRawToolRouterMetaTools('session_123');
-   * console.log(metaTools);
+   * const sessionTools = await composio.tools.getRawToolRouterSessionTools('session_123');
+   * console.log(sessionTools);
    * ```
    */
-  async getRawToolRouterMetaTools(
+  async getRawToolRouterSessionTools(
     sessionId: string,
     options?: SchemaModifierOptions
   ): Promise<ToolList> {
-    const tools = await this.client.toolRouter.session.tools(sessionId);
-    let modifiedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const tools: ToolList = [];
+    let cursor: string | null | undefined;
+
+    do {
+      const response = await this.client.toolRouter.session.tools(sessionId, {
+        limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
+        ...(cursor ? { cursor } : {}),
+      });
+      tools.push(...response.items.map(tool => this.transformToolCases(tool)));
+      cursor = response.next_cursor;
+    } while (cursor);
+
+    let modifiedTools = tools;
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
       const modifier = options.modifySchema;
@@ -759,7 +800,7 @@ export class Tools<
     tools: Tool[],
     modifiers?: SessionExecuteMetaModifiers
   ): Tool[] {
-    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, modifiers);
+    const executeToolFn = this.createExecuteToolFnForToolRouter(sessionId, tools, modifiers);
     return this.provider.wrapTools(tools, executeToolFn) as Tool[];
   }
 
@@ -800,19 +841,22 @@ export class Tools<
    */
   private createExecuteToolFnForToolRouter(
     sessionId: string,
+    tools: Tool[],
     modifiers?: SessionExecuteMetaModifiers
   ): ExecuteToolFn {
+    const toolBySlug = new Map(tools.map(tool => [tool.slug.toUpperCase(), tool]));
     const executeToolFn = async (
       toolSlug: string,
       input: Record<string, unknown>
     ): Promise<ToolExecuteResponse> => {
-      return await this.executeMetaTool(
+      return await this.executeSessionTool(
         toolSlug,
         {
           sessionId,
           arguments: input,
         },
-        modifiers
+        modifiers,
+        toolBySlug.get(toolSlug.toUpperCase())
       );
     };
     return executeToolFn;
@@ -997,44 +1041,54 @@ export class Tools<
   }
 
   /**
-   * Executes a composio meta tool based on tool router session
+   * Executes a tool based on a tool router session.
    *
    * @param {string} toolSlug - The slug of the tool to execute
    * @param {ToolExecuteMetaParams} body - The execution parameters
    * @param {string} body.sessionId - The session id to execute the tool for
    * @param {Record<string, unknown>} body.arguments - The input to pass to the tool
    * @param {SessionExecuteMetaModifiers} modifiers - The modifiers to apply to the tool
+   * @param {Tool} tool - Optional tool schema used to resolve toolkit metadata for modifiers
    * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
    */
-  async executeMetaTool(
+  async executeSessionTool(
     toolSlug: string,
     body: ToolExecuteMetaParams,
-    modifiers?: SessionExecuteMetaModifiers
+    modifiers?: SessionExecuteMetaModifiers,
+    tool?: Tool,
+    options?: ToolRouterSessionExecuteOptions
   ): Promise<ToolExecuteResponse> {
-    const executeMetaParams = ToolExecuteMetaParamsSchema.safeParse(body);
-    if (!executeMetaParams.success) {
-      throw new ValidationError('Invalid tool execute meta parameters', {
-        cause: executeMetaParams.error,
+    const executeParams = ToolExecuteMetaParamsSchema.safeParse(body);
+    if (!executeParams.success) {
+      throw new ValidationError('Invalid tool execute session parameters', {
+        cause: executeParams.error,
       });
     }
 
     // Apply beforeExecute modifier if provided
     let modifiedParams = body.arguments ?? {};
+    const toolkitSlug = tool?.toolkit?.slug ?? 'composio';
     if (modifiers?.beforeExecute) {
       modifiedParams = await modifiers.beforeExecute({
         toolSlug,
-        toolkitSlug: 'composio',
+        toolkitSlug,
         sessionId: body.sessionId,
         params: modifiedParams,
       });
     }
 
-    // Execute the meta tool
-    const response = await this.client.toolRouter.session.executeMeta(body.sessionId, {
-      // assert this because backend might keep adding more tool slugs
-      slug: toolSlug as SessionExecuteMetaParams['slug'],
+    const executePayload: SessionExecuteParams = {
+      tool_slug: toolSlug,
       arguments: modifiedParams,
-    });
+      // Provider-wrapped session tools are agentic calls, so they opt into
+      // direct tool offload when the backend session workbench allows it.
+      enable_auto_workbench_offload: true,
+    };
+    if (options?.experimental) {
+      executePayload.experimental = options.experimental;
+    }
+
+    const response = await this.client.toolRouter.session.execute(body.sessionId, executePayload);
 
     // Prepare the result
     let result: ToolExecuteResponse = {
@@ -1048,7 +1102,7 @@ export class Tools<
     if (modifiers?.afterExecute) {
       result = await modifiers.afterExecute({
         toolSlug,
-        toolkitSlug: 'composio',
+        toolkitSlug,
         sessionId: body.sessionId,
         result,
       });

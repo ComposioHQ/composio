@@ -29,6 +29,7 @@ class ConnectionStatusEnum(str, Enum):
     FAILED = "FAILED"
     EXPIRED = "EXPIRED"
     INACTIVE = "INACTIVE"
+    REVOKED = "REVOKED"
 
 
 # =============================================================================

@@ -76,7 +76,7 @@ export function SearchAndAskAI() {
         <button
           type="button"
           data-search-full=""
-          className="inline-flex items-center gap-2 rounded-full border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground w-full max-w-[240px]"
+          className="inline-flex items-center gap-2 rounded-none border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground w-full max-w-[240px]"
           onClick={() => setOpenSearch(true)}
         >
           <Search className="size-4" />

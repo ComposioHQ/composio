@@ -8,7 +8,7 @@ keywords: [glossary, definitions, terminology]
 <Glossary>
 
 <GlossaryTerm name="Auth Config">
-A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/users-and-sessions) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
+A blueprint defining how authentication works for a toolkit: auth method (OAuth2, API key, Bearer token, Basic Auth), scopes, and credentials. Created automatically by a [session](/docs/how-composio-works) when needed. You can [create a custom one](/docs/auth-configuration/custom-auth-configs) to use your own OAuth credentials or non-default scopes.
 </GlossaryTerm>
 
 <GlossaryTerm name="Auth Scheme">
@@ -40,7 +40,7 @@ The object returned when you initiate authentication. Contains the Connect Link 
 </GlossaryTerm>
 
 <GlossaryTerm name="Custom Tool">
-A user-defined tool used alongside Composio's built-in tools. For sessions, use local experimental custom tools and custom toolkits (TypeScript only) via [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits). For direct execution, see [Creating custom tools](/docs/tools-direct/custom-tools).
+A user-defined tool used alongside Composio's built-in tools. For sessions, use local experimental custom tools and custom toolkits via [Custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits). For direct execution, see [Creating custom tools](/docs/tools-direct/custom-tools).
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
@@ -88,7 +88,7 @@ An adapter package that transforms Composio tools into the format expected by an
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [Users and sessions](/docs/users-and-sessions).
+An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
@@ -116,15 +116,23 @@ Pinning a toolkit to a specific version so your integration uses a consistent se
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger">
-Sends structured payloads to your application when something happens in a connected app. Two delivery types: **webhook** (the app pushes events in real time, e.g. GitHub, Slack) and **polling** (Composio periodically checks for new data, e.g. Gmail). See [Triggers](/docs/triggers).
+Sends structured payloads to your application when something happens in a connected app. Two delivery types: **webhook** (the provider pushes events in real time, e.g. Slack, GitHub, Asana) and **polling** (Composio polls the provider on a schedule, e.g. Gmail). See [Triggers](/docs/triggers).
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger Instance">
 A specific, active trigger scoped to a user's connected account.
 </GlossaryTerm>
 
+<GlossaryTerm name="Webhook Endpoint">
+The ingress URL Composio issues per OAuth app for webhook triggers, plus the signing secret used to verify each inbound request. Composio configures it for you in most cases. When a trigger type's `requires_webhook_endpoint_setup` flag is true, you configure it yourself once per OAuth app via the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). See [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint).
+</GlossaryTerm>
+
+<GlossaryTerm name="Webhook Subscription">
+The URL Composio delivers signed events to in your application. One per project, configured via the dashboard or the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions). See [Subscribing to events](/docs/setting-up-triggers/subscribing-to-events).
+</GlossaryTerm>
+
 <GlossaryTerm name="User ID">
-An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [Users and sessions](/docs/users-and-sessions).
+An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="White-Labeling">

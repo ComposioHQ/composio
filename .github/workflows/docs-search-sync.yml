@@ -1,0 +1,46 @@
+name: Docs - Sync Algolia Search
+
+on:
+  push:
+    branches:
+      - next
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-search:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs
+    env:
+      ALGOLIA_APP_ID: ${{ vars.ALGOLIA_APP_ID || '62HI9PQZ1L' }}
+      ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
+      ALGOLIA_INDEX_NAME: ${{ vars.ALGOLIA_INDEX_NAME || 'docs_composio_dev_62hi9pqz1l_pages' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: '.bun-version'
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Validate search index generation
+        run: bun run sync:search --dry-run
+
+      - name: Sync Algolia search index
+        if: env.ALGOLIA_APP_ID != '' && env.ALGOLIA_ADMIN_API_KEY != ''
+        run: bun run sync:search
+
+      - name: Skip sync without Algolia secrets
+        if: env.ALGOLIA_APP_ID == '' || env.ALGOLIA_ADMIN_API_KEY == ''
+        run: echo "Skipping Algolia sync because ALGOLIA_APP_ID or ALGOLIA_ADMIN_API_KEY is not configured."

@@ -424,29 +424,29 @@ export type ExecuteToolModifiers = {
 } & BeforeFileUploadHook;
 
 /**
- * Type alias for meta tool execution arguments.
- * Represents the arguments passed to a meta tool during execution.
+ * Type alias for session tool execution arguments.
+ * Represents the arguments passed to a tool during session execution.
  * This is derived from ToolExecuteMetaParams but guaranteed to be non-null.
  */
 export type MetaToolArguments = NonNullable<ToolExecuteMetaParams['arguments']>;
 
 /**
- * Modifier for altering the meta tool execute parameters before execution in a session context.
+ * Modifier for altering tool execute parameters before execution in a session context.
  *
- * This function is specifically designed for meta tools executed within a tool router session,
- * allowing you to intercept and modify the parameters before execution. Meta tools are
- * grouped under the 'composio' toolkit slug for organizational purposes.
+ * This function is specifically designed for tools executed within a tool router session,
+ * allowing you to intercept and modify the parameters before execution. Helper tools use
+ * the 'composio' toolkit slug; preloaded app tools use their own toolkit slug when available.
  *
- * @param {string} toolSlug - The slug identifier of the meta tool being executed
- * @param {string} toolkitSlug - The toolkit slug (always 'composio' for meta tools)
+ * @param {string} toolSlug - The slug identifier of the tool being executed
+ * @param {string} toolkitSlug - The toolkit slug for this tool
  * @param {string} sessionId - The session ID for the tool router context
- * @param {MetaToolArguments} params - The parameters being passed to the meta tool
+ * @param {MetaToolArguments} params - The parameters being passed to the tool
  * @returns {MetaToolArguments} The modified parameters
  *
  * @example
  * ```typescript
  * const beforeExecuteMeta = ({ toolSlug, toolkitSlug, sessionId, params }) => {
- *   console.log(`Executing ${toolkitSlug} meta tool ${toolSlug} in session ${sessionId}`);
+ *   console.log(`Executing ${toolkitSlug} tool ${toolSlug} in session ${sessionId}`);
  *
  *   // Add or modify parameters
  *   return {
@@ -464,14 +464,14 @@ export type beforeExecuteMetaModifier = (context: {
 }) => Promise<MetaToolArguments> | MetaToolArguments;
 
 /**
- * Modifier for altering the meta tool execution response after execution completes in a session context.
+ * Modifier for altering a tool execution response after execution completes in a session context.
  *
- * This function is specifically designed for meta tools executed within a tool router session,
+ * This function is specifically designed for tools executed within a tool router session,
  * allowing you to intercept and modify the response after execution. This is useful for
  * session-specific transformations, logging, or error handling.
  *
- * @param {string} toolSlug - The slug identifier of the meta tool that was executed
- * @param {string} toolkitSlug - The toolkit slug (always 'composio' for meta tools)
+ * @param {string} toolSlug - The slug identifier of the tool that was executed
+ * @param {string} toolkitSlug - The toolkit slug for this tool
  * @param {string} sessionId - The session ID for the tool router context
  * @param {ToolExecuteResponse} result - The original execution response
  * @returns {ToolExecuteResponse} The modified execution response
@@ -480,7 +480,7 @@ export type beforeExecuteMetaModifier = (context: {
  * ```typescript
  * const afterExecuteMeta = ({ toolSlug, toolkitSlug, sessionId, result }) => {
  *   // Log session-specific execution
- *   console.log(`${toolkitSlug} meta tool ${toolSlug} completed in session ${sessionId}`);
+ *   console.log(`${toolkitSlug} tool ${toolSlug} completed in session ${sessionId}`);
  *
  *   if (!result.successful) {
  *     console.error(`Session ${sessionId} error:`, result.error);
@@ -498,15 +498,15 @@ export type afterExecuteMetaModifier = (context: {
 }) => Promise<ToolExecuteResponse> | ToolExecuteResponse;
 
 /**
- * Modifiers specifically for meta tool execution within a session context.
+ * Modifiers specifically for tool execution within a session context.
  *
- * These modifiers are designed for tool router session-based meta tool execution,
- * providing hooks to intercept and modify both the request and response of meta tools.
- * Meta tools are grouped under the 'composio' toolkit for organizational consistency.
+ * These modifiers are designed for tool router session-based execution,
+ * providing hooks to intercept and modify both the request and response of helper
+ * tools and preloaded app tools.
  *
  * @example
  * ```typescript
- * const metaModifiers: SessionExecuteMetaModifiers = {
+ * const sessionModifiers: SessionExecuteMetaModifiers = {
  *   beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
  *     // Add session tracking
  *     console.log(`Executing ${toolkitSlug}/${toolSlug}`);
@@ -536,13 +536,13 @@ export type afterExecuteMetaModifier = (context: {
  */
 export type SessionExecuteMetaModifiers = {
   /**
-   * Function to intercept and modify meta tool execution parameters before the tool is executed.
+   * Function to intercept and modify session tool execution parameters before the tool is executed.
    * This allows customizing the request based on session-specific needs.
    */
   beforeExecute?: beforeExecuteMetaModifier;
 
   /**
-   * Function to intercept and modify meta tool execution responses after the tool has executed.
+   * Function to intercept and modify session tool execution responses after the tool has executed.
    * This allows transforming the response or implementing custom session-specific handling.
    */
   afterExecute?: afterExecuteMetaModifier;
@@ -587,15 +587,15 @@ export type SessionExecuteMetaModifiers = {
 export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
 
 /**
- * Options for session-based meta tool configuration in tool router contexts.
+ * Options for session-based tool configuration in tool router contexts.
  *
  * These options combine schema modification capabilities with session-specific execution
  * behavior customization, providing control over both the definition and execution
- * of meta tools within a tool router session. Meta tools are grouped under the 'composio' toolkit.
+ * of tools within a tool router session.
  *
  * @example
  * ```typescript
- * // Configure meta tools with schema and session-specific execution modifications
+ * // Configure session tools with schema and session-specific execution modifications
  * const sessionTools = await toolRouter.getTools(sessionId, {
  *   modifySchema: (context) => {
  *     return {
@@ -604,7 +604,7 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  *     };
  *   },
  *
- *   // Intercept before meta tool execution
+ *   // Intercept before session tool execution
  *   beforeExecute: ({ toolSlug, toolkitSlug, sessionId, params }) => {
  *     // Add session tracking
  *     console.log(`Executing ${toolkitSlug}/${toolSlug}`);
@@ -614,7 +614,7 @@ export type AgenticToolOptions = ToolOptions & ExecuteToolModifiers;
  *     };
  *   },
  *
- *   // Transform after meta tool execution
+ *   // Transform after session tool execution
  *   afterExecute: ({ toolSlug, toolkitSlug, sessionId, result }) => {
  *     // Log session results
  *     if (!result.successful) {

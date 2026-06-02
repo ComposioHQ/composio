@@ -12,6 +12,7 @@
  *
  * Usage:
  *   COMPOSIO_API_KEY=... OPENAI_API_KEY=... bun src/custom-tools-agent.ts
+ *   COMPOSIO_SESSION_ID=... bun src/custom-tools-agent.ts  # reuse a session
  */
 import "dotenv/config";
 import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
@@ -161,6 +162,9 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
   tools: [setUserRole, updateUserStatus],
 });
 
+const customTools = [getUserDetails, listUserKeys, formatGmailEmail];
+const customToolkits = [userManagement];
+
 // ── Agent ─────────────────────────────────────────────────────────
 
 const composio = new Composio({
@@ -169,16 +173,19 @@ const composio = new Composio({
   provider: new OpenAIAgentsProvider(),
 });
 
-const session = await composio.create(`agent-e2e-${Date.now()}`, {
-  toolkits: ["weathermap", "gmail"],
-  manageConnections: false,
-  experimental: {
-    customTools: [getUserDetails, listUserKeys, formatGmailEmail],
-    customToolkits: [userManagement],
-  },
-});
+const existingSessionId = process.env.COMPOSIO_SESSION_ID;
+const session = existingSessionId
+  ? await composio.use(existingSessionId, { customTools, customToolkits })
+  : await composio.create("custom-tools-agent-user", {
+      toolkits: ["weathermap", "gmail"],
+      manageConnections: false,
+      experimental: {
+        customTools,
+        customToolkits,
+      },
+    });
 
-console.log(`Session: ${session.sessionId}\n`);
+console.log(`${existingSessionId ? "Reused" : "Created"} session: ${session.sessionId}\n`);
 const tools = await session.tools();
 
 const agent = new Agent({

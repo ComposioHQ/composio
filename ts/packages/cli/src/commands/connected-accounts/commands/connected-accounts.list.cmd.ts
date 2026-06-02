@@ -1,10 +1,9 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option, Schema } from 'effect';
-import {
-  ComposioClientSingleton,
-  ConnectedAccountListResponse,
-} from 'src/services/composio-clients';
+import { Effect, Option } from 'effect';
+import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { redact } from 'src/ui/redact';
@@ -33,6 +32,7 @@ const status = Options.choice('status', [
   'FAILED',
   'EXPIRED',
   'INACTIVE',
+  'REVOKED',
 ] as const).pipe(Options.withDescription('Filter by connection status'), Options.optional);
 
 const limit = Options.integer('limit').pipe(
@@ -77,12 +77,16 @@ export const connectedAccountsCmd$List = Command.make(
           client.connectedAccounts.list({
             toolkit_slugs: toolkitSlugs,
             user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-            statuses: Option.isSome(status) ? [status.value] : undefined,
+            // Bypass the stale Stainless union (still missing 'REVOKED')
+            // until @composio/client is regenerated.
+            statuses: Option.isSome(status)
+              ? ([status.value] as ConnectedAccountListParams['statuses'])
+              : undefined,
             limit: clampLimit(limit),
           })
         )
       );
-      const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
+      const result = yield* decodeConnectedAccountListWithFallback(rawResult);
 
       if (result.items.length === 0) {
         let hint: string;

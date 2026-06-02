@@ -1,5 +1,43 @@
 # @composio/cli
 
+## 0.2.30
+
+### Patch Changes
+
+- Updated dependencies [42ebff3]
+  - @composio/core@0.10.0
+  - @composio/cli-local-tools@0.0.4
+
+## 0.2.29
+
+### Patch Changes
+
+- Updated dependencies [84a3a07]
+- Updated dependencies [c358ffa]
+  - @composio/core@0.9.1
+  - @composio/cli-local-tools@0.0.3
+
+## 0.2.28
+
+### Patch Changes
+
+- 79ac220: Scaffold the CLI local-tools foundation package, wire it into Tool Router search/execute sessions, and expose `composio local-tools list|doctor|configure|meta` for discovery, readiness checks, setup hints, and local metadata state. Concrete app integrations are added in follow-up stack PRs.
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [c9b6525]
+- Updated dependencies [cc673b6]
+- Updated dependencies [79ac220]
+- Updated dependencies [9f14971]
+- Updated dependencies [81f8027]
+- Updated dependencies [711a703]
+- Updated dependencies [bccd32b]
+- Updated dependencies [bccd32b]
+- Updated dependencies [07c9bab]
+- Updated dependencies [3ece424]
+  - @composio/cli-local-tools@0.0.2
+  - @composio/core@0.9.0
+
 ## 0.2.27
 
 ### Patch Changes

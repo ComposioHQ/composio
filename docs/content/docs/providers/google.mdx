@@ -1,10 +1,19 @@
 ---
-title: Google Generative AI
-description: Build an agent with Gemini and enable it to use 1000+ tools with Composio.
-keywords: [gemini, google generative ai, google genai]
+title: Google
+description: Build an agent with Gemini or Google ADK and enable it to use 1000+ tools with Composio.
+keywords: [gemini, google generative ai, google genai, google adk, agent development kit]
 ---
 
-The Google Generative AI provider transforms Composio tools into a format compatible with [Gemini's function calling](https://ai.google.dev/) capabilities.
+Composio integrates with Google through [Gemini function calling](https://ai.google.dev/) and the [Agent Development Kit (ADK)](https://google.github.io/adk-docs/). Pick the tab that matches your integration.
+
+<IntegrationTabs tabs={[
+  { value: "gemini", label: "Gemini" },
+  { value: "adk", label: "ADK" },
+]}>
+
+<IntegrationContent value="gemini">
+
+The Google Generative AI provider transforms Composio tools into a format compatible with Gemini function calling.
 
 <Steps>
 <Step>
@@ -28,7 +37,7 @@ npm install @composio/core @composio/google @google/genai
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
 </Callout>
 
 ```txt title=".env"
@@ -121,3 +130,84 @@ console.log(response.text);
 </Tabs>
 </Step>
 </Steps>
+
+</IntegrationContent>
+
+<IntegrationContent value="adk">
+
+The Google ADK provider transforms Composio tools into Google ADK's FunctionTool format for use with Google ADK agents. ADK integration is Python-only.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+pip install composio composio_google_adk google-adk
+```
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `GOOGLE_API_KEY` with your [Google API key](https://aistudio.google.com/apikey).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+GOOGLE_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+```python
+from composio import Composio
+from composio_google_adk import GoogleAdkProvider
+from google.adk.agents import Agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+composio = Composio(provider=GoogleAdkProvider())
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+agent = Agent(
+    name="email_agent",
+    model="gemini-3-pro-preview",
+    instruction="You are an AI agent that sends emails using Gmail.",
+    tools=tools,
+)
+
+session_service = InMemorySessionService()
+adk_session = session_service.create_session_sync(
+    app_name="email_agent",
+    user_id="user_123",
+    session_id="session_1",
+)
+runner = Runner(
+    agent=agent,
+    app_name="email_agent",
+    session_service=session_service,
+)
+
+content = types.Content(
+    role="user",
+    parts=[types.Part(text="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")],
+)
+
+events = runner.run(user_id="user_123", session_id="session_1", new_message=content)
+for event in events:
+    if event.is_final_response() and event.content and event.content.parts:
+        print(event.content.parts[0].text)
+```
+</Step>
+</Steps>
+
+</IntegrationContent>
+
+</IntegrationTabs>

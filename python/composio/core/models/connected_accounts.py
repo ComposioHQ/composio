@@ -4,23 +4,36 @@ import functools
 import logging
 import time
 import typing as t
+import warnings
 
 import typing_extensions as te
+from composio_client import BadRequestError, omit
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio_client import omit
 from composio.client.types import (
     connected_account_create_params,
     connected_account_patch_params,
     connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
+    link_create_params,
 )
 
 from .base import Resource
+from .experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 
 logger = logging.getLogger(__name__)
+
+# Mirrors TS `ConnectionRequest.ts:terminalErrorStates`. INACTIVE is excluded
+# on purpose — it can recover to ACTIVE.
+_TERMINAL_CONNECTION_STATES: t.FrozenSet[str] = frozenset(
+    {"FAILED", "EXPIRED", "REVOKED"}
+)
+
+# One-time-per-process guard so long-running services don't spam the deprecation
+# warning on every initiate() call.
+_legacy_initiate_warning_emitted = False
 
 
 class ConnectionRequest(Resource):
@@ -67,10 +80,16 @@ class ConnectionRequest(Resource):
         while deadline > time.time():
             connection = self._client.connected_accounts.retrieve(nanoid=self.id)
             self.status = connection.status
-            if self.status != "ACTIVE":
-                time.sleep(1)
-                continue
-            return connection
+            if self.status == "ACTIVE":
+                return connection
+            if self.status in _TERMINAL_CONNECTION_STATES:
+                raise exceptions.SDKError(
+                    message=(
+                        f"Connection {self.id} entered terminal state "
+                        f"{self.status!r} before becoming active"
+                    ),
+                )
+            time.sleep(1)
 
         raise exceptions.ComposioSDKTimeoutError(
             message=f"Timeout while waiting for connection {self.id} to be active",
@@ -403,7 +422,26 @@ class ConnectedAccounts:
         a new connected account and returns a connection request.
 
         Users can then wait for the connection to be established using the
-        `wait_for_connection` method.
+        ``wait_for_connection`` method.
+
+        .. deprecated::
+            For Composio-managed (default) auth configs on redirectable OAuth
+            schemes (OAuth1, OAuth2, DCR_OAUTH), the legacy endpoint this
+            method wraps is being retired: **2026-05-08** for new
+            organizations and **2026-07-03** for all remaining organizations.
+            After your org's cutover, this method will raise
+            :class:`composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError`
+            for that specific combination.
+
+            Use :meth:`ConnectedAccounts.link` for Composio-managed OAuth — it
+            works for every redirectable scheme regardless of whether the
+            auth config is Composio-managed or custom, and the return shape
+            is the same.
+
+            Custom auth configs (your own OAuth app) and non-OAuth schemes
+            (API key, bearer token, basic auth) are unaffected and continue
+            to work on ``initiate()``. See
+            https://docs.composio.dev/docs/changelog/2026/04/24
 
         :param user_id: The user ID to create the connected account for.
         :param auth_config_id: The auth config ID to create the connected account for.
@@ -437,10 +475,76 @@ class ConnectedAccounts:
         if alias is not None:
             connection["alias"] = alias
 
-        response = self._client.connected_accounts.create(
-            auth_config={"id": auth_config_id},
-            connection=t.cast(connected_account_create_params.Connection, connection),
-        )
+        # Use `with_raw_response.create` so we can read the SEC-339
+        # `Deprecation` header (RFC 9745) the apollo retiring branch sets —
+        # that header is emitted only when the auth config is Composio-managed
+        # AND on a redirectable OAuth scheme, so it's the canonical signal
+        # that this caller needs to migrate. Custom auth configs and non-OAuth
+        # schemes never see the header, eliminating the false-positive warning
+        # that an auth_scheme-only check produced for link()-unaffected callers.
+        deprecation_header: t.Optional[str] = None
+        try:
+            ca_client = self._client.connected_accounts
+            raw_create = getattr(
+                getattr(ca_client, "with_raw_response", None), "create", None
+            )
+            if callable(raw_create):
+                raw = raw_create(
+                    auth_config={"id": auth_config_id},
+                    connection=t.cast(
+                        connected_account_create_params.Connection, connection
+                    ),
+                )
+                response = raw.parse() if callable(getattr(raw, "parse", None)) else raw
+                headers = getattr(raw, "headers", None)
+                if headers is not None and hasattr(headers, "get"):
+                    value = headers.get("Deprecation") or headers.get("deprecation")
+                    if isinstance(value, str):
+                        deprecation_header = value
+            else:
+                # Test mocks may not stub `with_raw_response`. Fall back to
+                # the parsed-only path; the deprecation gate stays off (no
+                # header to read).
+                response = ca_client.create(
+                    auth_config={"id": auth_config_id},
+                    connection=t.cast(
+                        connected_account_create_params.Connection, connection
+                    ),
+                )
+        except BadRequestError as error:
+            # When the server has flipped this org to the retired path, the
+            # legacy endpoint returns 400 with a stable migration message.
+            # Surface it as a typed error so callers get an actionable hint
+            # instead of a generic BadRequestError.
+            message = str(error)
+            if (
+                "no longer supported" in message
+                and "/api/v3/connected_accounts/link" in message
+            ):
+                raise exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError(
+                    message
+                ) from error
+            raise
+
+        # Warn once per process when apollo flags this response as on the
+        # retiring path. Header presence is a 1:1 signal — custom auth
+        # configs and non-OAuth schemes get a clean response and stay silent,
+        # fixing the false-positive that auth_scheme-based detection
+        # produced.
+        global _legacy_initiate_warning_emitted
+        if not _legacy_initiate_warning_emitted and deprecation_header:
+            _legacy_initiate_warning_emitted = True
+            warnings.warn(
+                "composio.connected_accounts.initiate() will stop working "
+                "for this auth config on or before 2026-07-03 (see Sunset "
+                "header on the response). Switch to "
+                "composio.connected_accounts.link() — same return shape, "
+                "same allow_multiple semantics. "
+                "https://docs.composio.dev/docs/changelog/2026/04/24",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         return ConnectionRequest(
             id=response.id,
             status=response.connection_data.val.status,
@@ -456,6 +560,7 @@ class ConnectedAccounts:
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
         allow_multiple: bool = False,
+        experimental: t.Optional[link_create_params.Experimental] = None,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -472,6 +577,10 @@ class ConnectedAccounts:
             ``ComposioMultipleConnectedAccountsError`` if the user already has an
             ``ACTIVE`` connection on this auth config. Pair with ``alias`` and a
             session-level ``multi_account`` config to disambiguate at execution time.
+        :param experimental: Experimental options for this connection. Pass an
+            ``Experimental`` dict with ``account_type`` and/or
+            ``acl_config_for_shared`` to create a SHARED connection with a
+            per-user ACL. Experimental — shape may change in future releases.
         :return: Connection request object.
 
         Example:
@@ -495,6 +604,19 @@ class ConnectedAccounts:
 
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+
+        Example creating a SHARED connection with an ACL (experimental):
+            connection_request = composio.connected_accounts.link(
+                'user_creator',
+                'auth_config_123',
+                experimental={
+                    'account_type': 'SHARED',
+                    'acl_config_for_shared': {
+                        'allow_all_users': True,
+                        'not_allowed_user_ids': ['user_bob'],
+                    },
+                },
+            )
         """
         # Mirror ``initiate()``: guard against silently creating extra
         # connections on the same auth config.
@@ -513,12 +635,22 @@ class ConnectedAccounts:
                 auth_config_id,
             )
 
-        response = self._client.link.create(
-            auth_config_id=auth_config_id,
-            user_id=user_id,
-            callback_url=callback_url if callback_url is not None else omit,
-            alias=alias if alias is not None else omit,
-        )
+        try:
+            response = self._client.link.create(
+                auth_config_id=auth_config_id,
+                user_id=user_id,
+                callback_url=callback_url if callback_url is not None else omit,
+                alias=alias if alias is not None else omit,
+                experimental=experimental if experimental is not None else omit,
+            )
+        except BadRequestError as error:
+            # The server rejects ACL on PRIVATE connections — surface that
+            # as a typed error so callers can ``except`` instead of grepping
+            # messages.
+            message = str(error)
+            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
+                raise exceptions.ComposioAclOnlyForSharedError(message) from error
+            raise
 
         return ConnectionRequest(
             id=response.connected_account_id,

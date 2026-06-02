@@ -4,7 +4,11 @@ export { OpenAIProvider } from './provider/OpenAIProvider';
 export { ComposioProvider } from './provider/ComposioProvider';
 export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProvider';
 export type { BaseComposioProvider } from './provider/BaseProvider';
-export { jsonSchemaToZodSchema, removeNonRequiredProperties } from './utils/jsonSchema';
+export {
+  dereferenceJsonSchema,
+  jsonSchemaToZodSchema,
+  removeNonRequiredProperties,
+} from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
@@ -33,6 +37,13 @@ export { default as logger } from './utils/logger';
 // Experimental custom tools — exported with experimental_ prefix for top-level import
 export { createCustomTool as experimental_createTool } from './models/CustomTool';
 export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
+
+// Experimental shared connected accounts — shape may change in future releases.
+// `updateAcl` is mounted as a method on `composio.experimental.updateAcl(...)`
+// because it takes a client and performs I/O. The `Experimental` class
+// itself is re-exported so callers can type their own composio handles
+// (e.g. in test helpers).
+export { Experimental } from './models/Experimental';
 
 // Error handling exports
 export * from './errors';

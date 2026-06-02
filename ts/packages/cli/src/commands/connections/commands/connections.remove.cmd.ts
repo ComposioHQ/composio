@@ -1,11 +1,9 @@
 import { Args, Command } from '@effect/cli';
-import { Effect, Schema } from 'effect';
+import { Effect } from 'effect';
+import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import {
-  ComposioClientSingleton,
-  ConnectedAccountListResponse,
-} from 'src/services/composio-clients';
+import { ComposioClientSingleton } from 'src/services/composio-clients';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -109,7 +107,7 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
         })
       )
     );
-    const result = yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult);
+    const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const resolved = resolveAccount({ accounts: result.items, selector: account });
 
     if ('error' in resolved) {

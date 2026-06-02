@@ -14,6 +14,25 @@ const mockFetchResponse = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+const setTtyState = (state: { stdin: boolean; stdout: boolean; stderr: boolean }) => {
+  const descriptors = {
+    stdin: Object.getOwnPropertyDescriptor(process.stdin, 'isTTY'),
+    stdout: Object.getOwnPropertyDescriptor(process.stdout, 'isTTY'),
+    stderr: Object.getOwnPropertyDescriptor(process.stderr, 'isTTY'),
+  };
+  Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: state.stdin });
+  Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: state.stdout });
+  Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: state.stderr });
+  return () => {
+    if (descriptors.stdin) Object.defineProperty(process.stdin, 'isTTY', descriptors.stdin);
+    else delete (process.stdin as { isTTY?: boolean }).isTTY;
+    if (descriptors.stdout) Object.defineProperty(process.stdout, 'isTTY', descriptors.stdout);
+    else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    if (descriptors.stderr) Object.defineProperty(process.stderr, 'isTTY', descriptors.stderr);
+    else delete (process.stderr as { isTTY?: boolean }).isTTY;
+  };
+};
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('CLI: composio login', () => {
@@ -30,6 +49,7 @@ describe('CLI: composio login', () => {
           const output = lines.join('\n');
           expect(output).toContain('--no-browser');
           expect(output).toContain('--no-wait');
+          expect(output).toContain('--poll');
           expect(output).toContain('--key');
           expect(output).toContain('--user-api-key');
           expect(output).toContain('--org');
@@ -39,6 +59,47 @@ describe('CLI: composio login', () => {
         })
       );
     });
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
+      Effect.gen(function* () {
+        const restoreTty = setTtyState({ stdin: false, stdout: true, stderr: true });
+        try {
+          yield* cli(['login']);
+        } finally {
+          restoreTty();
+        }
+
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('Open this URL in your browser to log in:');
+        expect(output).toContain(
+          'https://dashboard.composio.dev/?cliKey=te00st11-d0c4-4efa-8117-c638886063e0'
+        );
+        expect(output).toContain('Then run this command to complete login:');
+        expect(output).toContain('composio login --poll');
+        expect(output).toContain('hint: For agents:');
+        expect(output).toContain('cached login key');
+        expect(output).toContain('polls for up to 10 minutes');
+        expect(output).not.toContain('Expires at:');
+        expect(output).toContain('Do not ask the user whether to poll');
+
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const pendingLoginRaw = yield* fs.readFileString(
+          path.join(cacheDir, 'pending-login-session.json'),
+          'utf8'
+        );
+        const pendingLogin = JSON.parse(pendingLoginRaw) as Record<string, unknown>;
+        expect(pendingLogin.key).toBe('te00st11-d0c4-4efa-8117-c638886063e0');
+
+        expect(output).not.toContain('-- composio login --');
+        expect(output).not.toContain('Please login using the following URL');
+        expect(output).not.toContain('Login URL');
+        expect(output).not.toContain('Login instructions');
+        expect(output).not.toContain('Installed composio-cli skill');
+      })
+    );
   });
 
   layer(TestLive())(it => {
@@ -63,7 +124,7 @@ describe('CLI: composio login', () => {
                   email: 'project@example.com',
                   created_at: '2026-01-01T00:00:00.000Z',
                   updated_at: '2026-01-01T00:00:00.000Z',
-                  org: { id: 'org_default', name: 'Default Org', plan: 'enterprise' },
+                  org: { id: 'org_default', name: 'Example Org', plan: 'enterprise' },
                 },
                 org_member: {
                   id: 'member_123',
@@ -80,7 +141,7 @@ describe('CLI: composio login', () => {
               expect(new Headers(init?.headers).get('x-user-api-key')).toBe('uak_direct_key');
               return mockFetchResponse({
                 organizations: [
-                  { id: 'org_default', name: 'Default Org' },
+                  { id: 'org_default', name: 'Example Org' },
                   { id: 'org_selected', name: 'Selected Org' },
                 ],
               });

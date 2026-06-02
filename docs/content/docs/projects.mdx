@@ -25,13 +25,15 @@ Common reasons to use multiple projects:
 
 ## Managing projects
 
-You can manage projects from the [dashboard](https://platform.composio.dev?next_page=/settings) or via the API using an **organization API key** (`x-org-api-key`).
+You can manage projects from the [dashboard](https://dashboard.composio.dev/~/org/) or via the API using an **organization API key** (`x-org-api-key`).
 
 <Callout type="info">
 Project management endpoints use the `x-org-api-key` header, not the regular `x-api-key`. You can find your org API key in the dashboard under **Settings > Organization**.
 </Callout>
 
 ### Create a project
+
+There is no limit on the number of projects per organization. Project names must be unique within the organization.
 
 ```bash
 curl -X POST https://backend.composio.dev/api/v3.1/org/owner/project/new \
@@ -88,12 +90,12 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
 Notable security setting:
 - `require_mcp_api_key`: when `true`, MCP server requests must include a valid `x-api-key` header. This defaults to `true` for organizations created on or after March 5, 2026.
 
-You can also view and update these from **Settings > Project Settings** in the [dashboard](https://platform.composio.dev?next_page=/settings). See the [Projects API reference](/reference/api-reference/projects) for all available settings.
+You can also view and update these from **Settings > Project Settings** in the [dashboard](https://dashboard.composio.dev/~/project/settings/general). See the [Projects API reference](/reference/api-reference/projects) for all available settings.
 
 ## What to read next
 
 <Cards>
   <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Auth configs are scoped to projects — learn how Composio manages auth" />
-  <Card icon={<Database />} title="Users & Sessions" href="/docs/users-and-sessions" description="Connected accounts and sessions live within a project" />
+  <Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="Connected accounts and sessions live within a project" />
   <Card icon={<Zap />} title="Triggers" href="/docs/triggers" description="Webhook configurations are project-scoped" />
 </Cards>

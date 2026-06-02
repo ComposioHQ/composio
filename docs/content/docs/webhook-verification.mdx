@@ -11,7 +11,7 @@ Composio signs every webhook request. Always verify signatures in production to 
 The SDK handles signature verification, payload parsing, and version detection (V1, V2, V3).
 
 <Callout>
-Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/postWebhookSubscriptions) or [rotate the secret](/reference/api-reference/webhooks/postWebhookSubscriptionsByIdRotateSecret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
+Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`. You can fetch it from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) at any time or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) if it leaks.
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -61,7 +61,7 @@ An optional `tolerance` parameter (default: `300` seconds) controls how old a we
 If you are not using the Composio SDK and want to verify signatures manually.
 
 <Callout>
-Your webhook secret is returned **only once**: when you [create a webhook subscription](/reference/api-reference/webhooks/postWebhookSubscriptions) or [rotate the secret](/reference/api-reference/webhooks/postWebhookSubscriptionsByIdRotateSecret). If you didn't copy it at creation time, rotate it to get a new one. Store it securely as `COMPOSIO_WEBHOOK_SECRET`.
+Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`. You can fetch it from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) at any time or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) if it leaks.
 </Callout>
 
 Every webhook request includes three headers: `webhook-signature`, `webhook-id`, and `webhook-timestamp`. Use these along with the raw request body to verify the signature:
@@ -196,8 +196,9 @@ Metadata fields are mixed into the `data` object alongside event data.
 ## What to read next
 
 <Cards>
-  <Card icon={<Zap />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up webhooks and SDK subscriptions to receive trigger events" />
+  <Card icon={<Plug />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up webhooks and SDK subscriptions to receive trigger events" />
+  <Card icon={<RouteIcon />} title="Creating triggers" href="/docs/setting-up-triggers/creating-triggers" description="Configure the webhook endpoint when needed and create trigger instances" />
   <Card icon={<Zap />} title="Triggers overview" href="/docs/triggers" description="How Composio delivers event data from connected apps" />
-  <Card icon={<Zap />} title="Connection expiry events" href="/docs/subscribing-to-connection-expiry-events" description="Detect when OAuth connections expire and prompt re-authentication" />
+  <Card icon={<Key />} title="Connection expiry events" href="/docs/subscribing-to-connection-expiry-events" description="Detect when OAuth connections expire and prompt re-authentication" />
 </Cards>
 

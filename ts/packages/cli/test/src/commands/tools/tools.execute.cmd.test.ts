@@ -67,6 +67,71 @@ describe('CLI: composio execute', () => {
 
   layer(
     TestLive({
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          successful: true,
+          data: { ok: true, echoed: 'local' },
+          error: null,
+          logId: '',
+        },
+      },
+    })
+  )('[Given] a local tool slug without auth [Then] it executes locally', it => {
+    it.scoped('does not require login or Tool Router context', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'LOCAL_BEEPER_IMESSAGE_VERSION', '-d', '{ value: 1 }']);
+
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+        expect(output).toMatchObject({
+          successful: true,
+          data: { ok: true, echoed: 'local' },
+          error: null,
+        });
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          successful: true,
+          data: { ok: true },
+          error: null,
+          logId: 'log_approval_status',
+          permissionApproval: 'approved_once',
+        },
+      },
+    })
+  )('[Given] an approval status [Then] execute includes it in the success line', it => {
+    it.scoped('prints approval status before the log id', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const text = lines.join('\n');
+        const output = parseLastJson(lines) as ReturnType<typeof parseLastJson> & {
+          readonly permissionApproval?: string;
+        };
+
+        expect(text).toContain('Execution successful (approved once, logId: log_approval_status)');
+        expect(output.permissionApproval).toBe('approved_once');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
@@ -82,8 +147,10 @@ describe('CLI: composio execute', () => {
           '{"recipient":"a"}',
         ]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const outputText = lines.join('\n');
         const output = parseLastJson(lines);
 
+        expect(outputText).not.toContain('Response\n{');
         // Response flows through real ToolsExecutorLive → mock session.execute
         expect(output.successful).toBe(true);
         expect(output.data.tool_slug).toBe('GMAIL_SEND_EMAIL');
@@ -188,7 +255,12 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_gmail_default_session',
-            config: { user_id: params.user_id, preload: { tools: [] } },
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+            },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
@@ -271,7 +343,12 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_gmail_explicit_session',
-            config: { user_id: params.user_id, preload: { tools: [] } },
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+            },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
@@ -335,7 +412,12 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_posthog_test_session',
-            config: { user_id: params.user_id, preload: { tools: [] } },
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+            },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
@@ -387,7 +469,12 @@ describe('CLI: composio execute', () => {
           recordedSessionCreateParams.push(params as unknown as Record<string, unknown>);
           return {
             session_id: 'trs_posthog_cached_session',
-            config: { user_id: params.user_id, preload: { tools: [] } },
+            config: {
+              user_id: params.user_id,
+              execute: {},
+              search: {},
+              preload: { tools: [] },
+            },
             config_version: 1,
             mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
             tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],

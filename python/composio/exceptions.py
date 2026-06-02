@@ -315,6 +315,66 @@ class ComposioMultipleConnectedAccountsError(ConnectedAccountError):
     pass
 
 
+class ComposioLegacyConnectedAccountsEndpointRetiredError(ConnectedAccountError):
+    """Raised by ``composio.connected_accounts.initiate()`` when the legacy
+    ``POST /api/v3/connected_accounts`` endpoint rejects a Composio-managed
+    OAuth (OAuth1, OAuth2, DCR_OAUTH) auth-config request.
+
+    Cutover dates: 2026-05-08 (new orgs), 2026-07-03 (all remaining orgs).
+    Migrate to ``composio.connected_accounts.link()`` — same return shape,
+    works for every redirectable scheme regardless of whether the auth
+    config is Composio-managed or custom.
+
+    See: https://docs.composio.dev/docs/changelog/2026/04/24
+    """
+
+    pass
+
+
+class ComposioAclOnlyForSharedError(ConnectedAccountError):
+    """Raised when ACL fields (``allow_all_users``, ``allowed_user_ids``,
+    ``not_allowed_user_ids``) are sent on a ``PRIVATE`` connection. ACL
+    is only meaningful for ``SHARED`` connections.
+
+    Fix: use ``account_type='SHARED'``, or omit the ACL fields when
+    creating/updating a PRIVATE connection.
+    """
+
+    pass
+
+
+class ComposioSharedAccessDeniedError(ConnectedAccountError):
+    """Raised when a tool execution attempts to use a SHARED connected
+    account but the requesting ``user_id`` is not allowed by the
+    connection's ACL.
+
+    Surfaces when a SHARED connection is reached directly (e.g. via
+    ``composio.tools.execute(slug, connected_account_id=...)``) without
+    going through a tool-router session.
+
+    Fix: ask the connection's creator to grant access via
+    ``composio.experimental.update_acl()`` — set ``allow_all_users``,
+    add the ``user_id`` to ``allowed_user_ids``, or remove it from
+    ``not_allowed_user_ids``.
+    """
+
+    pass
+
+
+class ComposioSharedConnectionNotAccessibleError(ConnectedAccountError):
+    """Raised by ``tool_router.session.create()`` / ``session.patch()``
+    when the session's ``user_id`` cannot use a pinned SHARED connection.
+    Raised at session-create time so the session never enters a state
+    that fails mid-execution.
+
+    Fix: grant the session user access via
+    ``composio.experimental.update_acl()`` on the pinned connection,
+    or pin a different connection the user can use.
+    """
+
+    pass
+
+
 class ErrorProcessingToolExecutionRequest(PluginError):
     pass
 

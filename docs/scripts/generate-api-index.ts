@@ -6,7 +6,7 @@
  * Run: bun scripts/generate-api-index.ts
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 
 interface OpenAPIOperation {
@@ -89,9 +89,23 @@ function generateIndexPages() {
   for (const tagName of allTags) {
     const ops31 = v31Ops[tagName] || [];
     const ops3 = v3Ops[tagName] || [];
-    if (ops31.length === 0 && ops3.length === 0) continue;
-
     const tagSlug = slugify(tagName);
+
+    // Tag declared in spec.tags but no operations reference it — clean up any stale index.mdx from a prior run.
+    if (ops31.length === 0 && ops3.length === 0) {
+      for (const baseDir of [
+        join(process.cwd(), 'content/reference/api-reference'),
+        join(process.cwd(), 'content/reference/v3/api-reference'),
+      ]) {
+        const stale = join(baseDir, tagSlug, 'index.mdx');
+        if (existsSync(stale)) {
+          rmSync(stale);
+          console.log(`Removed stale: ${stale}`);
+        }
+      }
+      continue;
+    }
+
     const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
 
     // Only generate v3.1 index page if the tag has v3.1 operations

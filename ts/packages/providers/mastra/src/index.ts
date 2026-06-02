@@ -11,6 +11,7 @@ import {
   Tool,
   ExecuteToolFn,
   McpUrlResponse,
+  dereferenceJsonSchema,
   removeNonRequiredProperties,
 } from '@composio/core';
 import { applyCompatLayer } from '@mastra/schema-compat';
@@ -90,14 +91,20 @@ export class MastraProvider extends BaseAgenticProvider<
           )
         : inputParams;
 
+    // Inline internal $ref pointers before handing the schema to
+    // @mastra/schema-compat. AJV (bundled inside schema-compat) refuses to
+    // compile a schema with unresolved $ref, and the upstream JSON-Schema →
+    // Zod converter silently degrades $ref-typed properties to a permissive
+    // anyOf — losing the type info from $defs. See [PLEN-2244] and
+    // mastra-ai/mastra#15341.
     const inputSchema = applyCompatLayer({
-      schema: parameters ?? {},
+      schema: dereferenceJsonSchema(parameters ?? {}),
       compatLayers: [],
       mode: 'jsonSchema',
     });
 
     const outputSchema = applyCompatLayer({
-      schema: tool.outputParameters ?? {},
+      schema: dereferenceJsonSchema(tool.outputParameters ?? {}),
       compatLayers: [],
       mode: 'jsonSchema',
     });

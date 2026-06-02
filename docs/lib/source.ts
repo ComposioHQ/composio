@@ -213,8 +213,6 @@ export function mdxToCleanMarkdown(content: string): string {
     (_, name, content) => `### ${name}\n\n${content.trim()}`
   );
 
-  result = result.replace(/<PromptBanner[\s\S]*?<\/PromptBanner>/g, '');
-
   result = result.replace(
     /<AIToolsBanner\s*\/>/g,
     '### For AI tools\n\n' +
