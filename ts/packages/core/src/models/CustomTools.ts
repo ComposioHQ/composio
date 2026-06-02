@@ -320,19 +320,21 @@ export class CustomTools {
       }));
 
       // execute the tool
-      const proxyBody = {
+      type ProxyParams = Parameters<ComposioClient['tools']['proxy']>[0];
+      const proxyBody: ProxyParams = {
         endpoint: data.endpoint,
         method: data.method,
         parameters: parameters,
         body: data.body,
         connected_account_id: connectedAccountId,
         /**
-         * @deprecated `custom_connection_data` — kept for back-compat;
-         * upstream client typing has narrowed but the wire shape still
-         * accepts our older union, so we widen via cast.
+         * `custom_connection_data` — kept for back-compat; upstream client
+         * typing has narrowed but the wire shape still accepts our older
+         * union, so we widen only this field (every other field stays
+         * structurally checked).
          */
-        custom_connection_data: data.customConnectionData,
-      } as Parameters<typeof this.client.tools.proxy>[0];
+        custom_connection_data: data.customConnectionData as ProxyParams['custom_connection_data'],
+      };
       const response = await withCancellation(
         () => this.client.tools.proxy(proxyBody, requestOptions),
         requestOptions?.signal
@@ -361,15 +363,18 @@ export class CustomTools {
     }
 
     try {
-      // Cast needed: TS can't narrow the execute union with 4 args
-      const exec = execute as (
-        input: unknown,
-        connectionConfig: ConnectionData | null,
-        executeToolRequestFn: (data: ToolProxyParams) => Promise<ToolExecuteResponse>,
-        ctx?: { signal?: AbortSignal }
-      ) => Promise<ToolExecuteResponse>;
+      // Every custom tool is invoked with the toolkit-based 4-arg form so the
+      // cooperative-cancellation ctx reaches standalone tools too. The union's
+      // standalone member only declares `(input)`, so we widen `execute` to the
+      // toolkit-based member's signature — derived from the source union via
+      // Extract, not hand-written, so it can't silently drift.
+      type ToolkitExecute = Extract<
+        CustomToolOptions<CustomToolInputParameter>,
+        { toolkitSlug: string }
+      >['execute'];
+      const exec = execute as ToolkitExecute;
       return await exec(parsedInput.data, connectionConfig, executeToolRequest, {
-        signal: requestOptions?.signal ?? undefined,
+        signal: requestOptions?.signal,
       });
     } catch (err) {
       // Only reclassify AbortError as cancellation when the caller's signal actually fired
