@@ -1,3 +1,5 @@
+import type ComposioClient from '@composio/client';
+
 /**
  * Per-request transport options for cancelling an SDK call.
  *
@@ -35,3 +37,26 @@ export type ComposioRequestOptions = {
    */
   signal?: AbortSignal;
 };
+
+/**
+ * The `@composio/client` per-request transport options, reached via a public
+ * method whose only parameter is that type (`tools.retrieveEnum`). The
+ * `internal/*` subpath that declares `RequestOptions` is not in the package's
+ * `exports`, so we derive it structurally instead of deep-importing it.
+ * @internal
+ */
+type ClientRequestOptions = NonNullable<Parameters<ComposioClient['tools']['retrieveEnum']>[0]>;
+
+/**
+ * Compile-time guards: {@link ComposioRequestOptions} is forwarded verbatim to
+ * every `@composio/client` call, so it MUST stay a structural subset of the
+ * client's request options. These constraints fail the build (TS2344) if a
+ * field here is typed incompatibly with the client's same-named field, or if a
+ * key is added that the client doesn't have — forcing the divergence to be
+ * reconciled rather than discovered at runtime.
+ * @internal
+ */
+type AssertValuesAssignable<_T extends ClientRequestOptions> = void;
+type AssertKeysSubset<_K extends keyof ClientRequestOptions> = void;
+type _RequestOptionsValuesStayCompatible = AssertValuesAssignable<ComposioRequestOptions>;
+type _RequestOptionsKeysStaySubset = AssertKeysSubset<keyof ComposioRequestOptions>;
