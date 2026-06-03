@@ -715,59 +715,6 @@ class TestToolExecution:
             assert call_args.kwargs["user_id"] == "user-123"
             assert call_args.kwargs["text"] == "Additional context"
 
-    def test_execute_custom_tool(self):
-        """Test that execute works with custom tools."""
-        # Mock client and provider
-        mock_client = Mock()
-        mock_provider = Mock()
-        mock_provider.name = "test_provider"
-
-        # Create Tools instance
-        tools = Tools(
-            client=mock_client,
-            provider=mock_provider,
-            toolkit_versions={"custom": "20251201_01"},
-        )
-
-        # Create a mock custom tool with proper structure
-        custom_tool_info = self.create_mock_tool("CUSTOM_TOOL", "custom")
-        custom_tool_info.input_parameters = {"type": "object", "properties": {}}
-
-        # Mock the custom tool registry
-        mock_custom_tool = Mock()
-        mock_custom_tool.info = custom_tool_info
-        tools._custom_tools.custom_tools_registry = {"CUSTOM_TOOL": mock_custom_tool}
-
-        # Mock the get method to return the tool
-        def mock_get(slug):
-            return mock_custom_tool if slug == "CUSTOM_TOOL" else None
-
-        tools._custom_tools.get = Mock(side_effect=mock_get)
-
-        # Mock the execute method of custom tool
-        def mock_execute(slug, request, user_id):
-            return {"custom_result": "success"}
-
-        tools._custom_tools.execute = Mock(side_effect=mock_execute)
-
-        # Execute the custom tool
-        result = tools.execute(
-            slug="CUSTOM_TOOL",
-            arguments={"param": "value"},
-            user_id="user-123",
-        )
-
-        # Verify execution succeeded
-        assert result["successful"] is True
-        assert result["data"]["custom_result"] == "success"
-
-        # Verify custom tool execute was called
-        tools._custom_tools.execute.assert_called_once_with(
-            slug="CUSTOM_TOOL",
-            request={"param": "value"},
-            user_id="user-123",
-        )
-
     def test_execute_with_modifiers_before_execute(self):
         """Test that execute applies before_execute modifiers correctly."""
         from composio.core.models._modifiers import before_execute

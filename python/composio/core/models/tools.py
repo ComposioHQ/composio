@@ -18,7 +18,6 @@ from composio.client.types import (
 from composio.core.models._files import FileHelper
 from composio.core.models.base import Resource
 from composio.core.models.custom_tool_types import InlineCustomToolsWirePayload
-from composio.core.models.custom_tools import CustomTools
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
 )
@@ -28,7 +27,7 @@ from composio.core.provider.base import ExecuteToolFn
 from composio.core.provider.base import BaseProvider
 from composio.core.provider.none_agentic import NonAgenticProvider
 from composio.core.types import ToolkitVersionParam
-from composio.exceptions import InvalidParams, NotFoundError, ToolVersionRequiredError
+from composio.exceptions import InvalidParams, ToolVersionRequiredError
 from composio.utils.pydantic import none_to_omit
 from composio.utils.toolkit_version import get_toolkit_version
 from composio.utils.upload_dir_allowlist import resolve_effective_upload_allowlist
@@ -144,7 +143,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         )
 
         self._client = client
-        self._custom_tools = CustomTools(client)
         self._tool_schemas: t.Dict[str, Tool] = {}
         self._file_helper = FileHelper(
             client=self._client,
@@ -155,7 +153,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         )
         self._toolkit_versions = toolkit_versions
 
-        self.custom_tool = self._custom_tools.register
         self.provider = provider
 
         self.provider.set_execute_tool_fn(
@@ -169,33 +166,17 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             ),
         )
 
-    def _filter_custom_tools(
-        self, tools: t.List[str]
-    ) -> t.Tuple[t.List[str], t.List[Tool]]:
-        """Filter out custom tools from the list of tools."""
-        _tools = []
-        _custom_tools = []
-        for tool in tools:
-            try:
-                _custom_tools.append(self._custom_tools[tool].info)
-            except KeyError:
-                _tools.append(tool)
-        return _tools, _custom_tools
-
     def get_raw_composio_tool_by_slug(self, slug: str) -> Tool:
         """
         Returns schema for the given tool slug.
         """
-        try:
-            return t.cast(Tool, self._custom_tools[slug])
-        except KeyError:
-            return t.cast(
-                Tool,
-                self._client.tools.retrieve(
-                    tool_slug=slug,
-                    toolkit_versions=none_to_omit(self._toolkit_versions),
-                ),
-            )
+        return t.cast(
+            Tool,
+            self._client.tools.retrieve(
+                tool_slug=slug,
+                toolkit_versions=none_to_omit(self._toolkit_versions),
+            ),
+        )
 
     def get_raw_composio_tools(
         self,
@@ -215,8 +196,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         tools_list = []
         if tools is not None:
-            tools, custom_tools = self._filter_custom_tools(tools=tools)
-            tools_list.extend(custom_tools)
             if len(tools):
                 tools_list.extend(
                     self._client.tools.list(
@@ -488,11 +467,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             :return: Tool execution response
             """
             tool = self._tool_schemas.get(slug)
-            if tool is None:
-                custom_tool = self._custom_tools.get(slug=slug)
-                if custom_tool is not None:
-                    tool = custom_tool.info
-                    self._tool_schemas[slug] = tool
 
             if tool is None:
                 tool = t.cast(
@@ -572,31 +546,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         return t.cast(AgenticProviderExecuteFn, execute_tool_fn)
 
-    def _execute_custom_tool(
-        self,
-        slug: str,
-        arguments: t.Dict,
-        user_id: t.Optional[str] = None,
-    ) -> ToolExecutionResponse:
-        """Execute a custom tool"""
-        # TODO: Better error handling, pydantic validation eg...
-        try:
-            return {
-                "data": self._custom_tools.execute(
-                    slug=slug,
-                    request=arguments,
-                    user_id=user_id,
-                ),
-                "error": None,
-                "successful": True,
-            }
-        except NotFoundError:
-            return {
-                "data": {},
-                "error": f"Tool with slug {slug} not found",
-                "successful": False,
-            }
-
     def _execute_tool(
         self,
         slug: str,
@@ -669,9 +618,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         """
         Execute a tool with the provided parameters.
 
-        This method calls the Composio API or a custom tool handler to execute
-        the tool and returns the response. It automatically determines whether
-        to use a custom tool or a Composio API tool based on the slug.
+        This method calls the Composio API to execute the tool and returns the response.
 
         :param slug: The slug of the tool to execute.
         :param arguments: The arguments to pass to the tool.
@@ -687,11 +634,6 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         """
 
         tool = self._tool_schemas.get(slug)
-        if tool is None:
-            custom_tool = self._custom_tools.get(slug=slug)
-            if custom_tool is not None:
-                tool = custom_tool.info
-                self._tool_schemas[slug] = tool
 
         if tool is None:
             tool = t.cast(
@@ -760,24 +702,16 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             dangerously_skip_version_check = processed_params.get(
                 "dangerously_skip_version_check", dangerously_skip_version_check
             )
-        response = (
-            self._execute_custom_tool(
-                slug=slug,
-                arguments=arguments,
-                user_id=user_id,
-            )
-            if self._custom_tools.get(slug) is not None
-            else self._execute_tool(
-                slug=slug,
-                arguments=arguments,
-                connected_account_id=connected_account_id,
-                custom_auth_params=custom_auth_params,
-                custom_connection_data=custom_connection_data,
-                user_id=user_id,
-                text=text,
-                version=version,
-                dangerously_skip_version_check=dangerously_skip_version_check,
-            )
+        response = self._execute_tool(
+            slug=slug,
+            arguments=arguments,
+            connected_account_id=connected_account_id,
+            custom_auth_params=custom_auth_params,
+            custom_connection_data=custom_connection_data,
+            user_id=user_id,
+            text=text,
+            version=version,
+            dangerously_skip_version_check=dangerously_skip_version_check,
         )
         if self._auto_upload_download_files:
             response = self._file_helper.substitute_file_downloads(

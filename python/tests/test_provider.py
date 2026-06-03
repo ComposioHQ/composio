@@ -836,43 +836,6 @@ class TestLangchainReservedKeywords:
 class TestProviderEdgeCases:
     """Test edge cases and error handling for providers."""
 
-    def test_execute_tool_with_custom_tool(self):
-        """Test that execute_tool works with custom tools."""
-        mock_client = Mock()
-        from composio.core.provider._openai import OpenAIProvider
-
-        provider = OpenAIProvider()
-
-        tools = Tools(
-            client=mock_client,
-            provider=provider,
-            toolkit_versions={"custom": "12012025_00"},
-        )
-
-        custom_tool = create_mock_tool("CUSTOM_TOOL", "custom", "12012025_00")
-
-        mock_custom_tool = Mock()
-        mock_custom_tool.info = custom_tool
-
-        def mock_get(slug):
-            return mock_custom_tool if slug == "CUSTOM_TOOL" else None
-
-        tools._custom_tools.get = Mock(side_effect=mock_get)
-
-        def mock_execute(slug, request, user_id):
-            return {"custom_result": "success", "slug": slug}
-
-        tools._custom_tools.execute = Mock(side_effect=mock_execute)
-
-        result = provider.execute_tool(
-            slug="CUSTOM_TOOL",
-            arguments={"param": "value"},
-            user_id="test-user",
-        )
-
-        assert result["successful"] is True
-        assert result["data"]["custom_result"] == "success"
-
     def test_execute_tool_with_none_parameters(self):
         """Test that execute_tool works when optional parameters are None."""
         mock_client = Mock()
