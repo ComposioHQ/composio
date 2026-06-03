@@ -321,7 +321,7 @@ curl --location 'https://backend.composio.dev/api/v3.1/tools/execute/proxy' \
 ```
 
 <Callout type="warn">
-`binary_body` posts the file as the request body with a single `Content-Type` header. It does **not** build a `multipart/form-data` payload, so APIs that require multipart uploads (for example, Twitter / X media upload, Slack `files.upload`, some Google upload endpoints) are not supported today. For those, wrap the call in a [custom tool](/docs/tools-direct/custom-tools) that constructs the multipart body yourself.
+`binary_body` posts the file as the request body with a single `Content-Type` header. It does **not** build a `multipart/form-data` payload, so APIs that require multipart uploads (for example, Twitter / X media upload, Slack `files.upload`, some Google upload endpoints) are not supported today. For those, wrap the call in a [session custom tool](/docs/toolkits/custom-tools-and-toolkits) that constructs the multipart body yourself.
 </Callout>
 
 See the [binary data changelog entry](/docs/changelog/2025/12/30) for the full upload and download flow.
