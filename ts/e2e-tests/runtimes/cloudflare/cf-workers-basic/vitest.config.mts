@@ -7,8 +7,8 @@ config();
 export default defineConfig({
 	plugins: [
 		cloudflareTest({
+			wrangler: { configPath: './wrangler.jsonc' },
 			miniflare: {
-				wrangler: { configPath: './wrangler.jsonc' },
 				bindings: {
 					COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY ?? 'test-key',
 				},
