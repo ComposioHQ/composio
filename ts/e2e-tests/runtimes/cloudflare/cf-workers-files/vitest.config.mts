@@ -1,19 +1,18 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
+import { defineConfig } from 'vitest/config';
+import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import { config } from 'dotenv';
 
 config();
 
-export default defineWorkersConfig({
-  test: {
-    poolOptions: {
-      workers: {
-        wrangler: { configPath: './wrangler.jsonc' },
-        miniflare: {
-          bindings: {
-            COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY ?? 'test-key',
-          },
-        },
-      },
-    },
-  },
+export default defineConfig({
+	plugins: [
+		cloudflareTest({
+			miniflare: {
+				wrangler: { configPath: './wrangler.jsonc' },
+				bindings: {
+					COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY ?? 'test-key',
+				},
+			},
+		}),
+	],
 });
