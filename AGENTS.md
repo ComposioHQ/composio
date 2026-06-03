@@ -147,22 +147,27 @@ const wrappedTools = provider.wrapTools(tools);
 
 ### Custom Tool Creation
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio();
+
+// Custom tools are session-scoped: define a local tool, then attach it when
+// creating a Tool Router session. Use `extendsToolkit` + `ctx.proxyExecute`
+// to inherit a toolkit's managed auth and call its API.
+const myTool = experimental_createTool('MY_TOOL', {
   name: 'My Tool',
   description: 'Tool description',
-  slug: 'MY_TOOL',
   inputParams: z.object({
     param: z.string().describe('Parameter description')
   }),
-  execute: async (input) => {
-    return {
-      data: { result: input.param },
-      error: null,
-      successful: true
-    };
+  execute: async input => {
+    return { result: input.param };
   }
+});
+
+const session = await composio.create('user-id', {
+  experimental: { customTools: [myTool] }
 });
 ```
 
