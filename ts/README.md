@@ -6,7 +6,7 @@ The Composio SDK is a powerful toolkit that enables you to integrate third-party
 
 - Execute tools from various services (GitHub, Gmail, Slack, etc.)
 - Manage user connections to external services
-- Create custom tools with your own logic
+- Create session-scoped custom tools with your own logic
 - Integrate with AI providers like OpenAI
 - Powerful middleware and modifier support
 - Extensive error handling
@@ -23,11 +23,11 @@ The SDK is thoroughly documented in the [docs](./docs) directory:
 ### API Reference
 
 - [Composio Class](./docs/api/composio.md) - Main SDK class
-- [Tools](./docs/api/tools.md) - Using and creating tools
+- [Tools](./docs/api/tools.md) - Listing, fetching, and executing tools
+- [Tool Router](./docs/api/tool-router.md) - Sessions, search, and custom tools
 - [Toolkits](./docs/api/toolkits.md) - Working with tool collections
 - [Connected Accounts](./docs/api/connected-accounts.md) - User authentication
 - [Auth Configs](./docs/api/auth-configs.md) - Authentication configuration
-- [Custom Tools](./docs/api/custom-tools.md) - Creating your own tools
 - [Providers](./docs/api/providers.md) - AI integration options
 
 ### Provider Documentation
@@ -142,41 +142,31 @@ if (completion.choices[0].message.tool_calls) {
 ## Creating Custom Tools
 
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-// Create a custom tool
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+const weatherForecast = experimental_createTool('WEATHER_FORECAST', {
   name: 'Weather Forecast',
   description: 'Get the weather forecast for a location',
-  slug: 'WEATHER_FORECAST',
   inputParams: z.object({
     location: z.string().describe('The location to get the forecast for'),
-    days: z.number().optional().default(3).describe('Number of days for the forecast')
+    days: z.number().optional().default(3).describe('Number of days for the forecast'),
   }),
   execute: async (input) => {
-    try {
-      const { location, days = 3 } = input;
-
-      // Your implementation here
-      const forecast = [
-        { date: '2025-05-21', temperature: 72, conditions: 'Sunny' },
-        { date: '2025-05-22', temperature: 68, conditions: 'Partly Cloudy' },
-        { date: '2025-05-23', temperature: 65, conditions: 'Rainy' },
-      ];
-
-      return {
-        data: { forecast },
-        successful: true,
-        error: null,
-      };
-    } catch (error) {
-      return {
-        data: {},
-        successful: false,
-        error: error.message,
-      };
-    }
+    const { location, days = 3 } = input;
+    const forecast = await getWeatherForecast(location, days);
+    return { forecast };
   },
+});
+
+const session = await composio.create('default', {
+  experimental: { customTools: [weatherForecast] },
+});
+
+const result = await session.execute('WEATHER_FORECAST', {
+  location: 'San Francisco, CA',
 });
 ```
 

@@ -402,29 +402,32 @@ Use direct execution when:
 
 ## Custom Tools
 
-Custom Tools allow you to extend Composio's functionality by creating your own tools. You define the input and output parameters and provide a handler function that implements the tool's behavior.
+Custom Tools allow you to attach your own local tools to Tool Router sessions. Define them with `experimental_createTool`, then pass them to `composio.create()` under `experimental.customTools`.
 
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-// Example: Create a custom tool
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+const customTool = experimental_createTool('MY_CUSTOM_TOOL', {
   name: 'My Custom Tool',
   description: 'A custom tool that does something specific',
-  slug: 'MY_CUSTOM_TOOL',
   inputParams: z.object({
     param1: z.string().describe('First parameter'),
-    param2: z.number().optional().describe('Optional parameter')
+    param2: z.number().optional().describe('Optional parameter'),
   }),
   execute: async (input) => {
-    // Custom logic here
-    console.log('Received input:', input.param1, input.param2);
-    return { 
-      data: { result: 'Success!' },
-      error: null,
-      successful: true
-    };
+    return { result: `Received ${input.param1}` };
   },
+});
+
+const session = await composio.create('default', {
+  experimental: { customTools: [customTool] },
+});
+
+const result = await session.execute('MY_CUSTOM_TOOL', {
+  param1: 'hello',
 });
 ```
 
