@@ -606,6 +606,7 @@ const getIssueInfo = experimental_createTool("GET_ISSUE_INFO", {
   }),
   execute: async (input, ctx) => {
     const result = await ctx.proxyExecute({
+      toolkit: "github",
       endpoint: `/repos/composiohq/composio/issues/${input.issueNumber}`,
       method: "GET",
     });
