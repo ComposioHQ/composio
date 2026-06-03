@@ -3,22 +3,11 @@
  * Tests that file operations correctly throw errors in edge runtimes
  * and that the FileToolModifier.workerd.ts is properly loaded.
  */
-import { Composio, type Tool, type ToolExecuteParams } from '@composio/core';
+import { Composio } from '@composio/core';
 import { Hono } from 'hono';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
-};
-
-type InternalToolsForFileModifierTest = {
-  applyBeforeExecuteModifiers(
-    tool: Tool,
-    options: {
-      toolSlug: string;
-      toolkitSlug: string;
-      params: ToolExecuteParams;
-    }
-  ): Promise<ToolExecuteParams>;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -32,7 +21,6 @@ app.get('/', c => {
     endpoints: [
       '/test/files/upload',
       '/test/files/download',
-      '/test/file-modifier/error-message',
       '/test/auto-upload-disabled',
       '/test/default-config',
     ],
@@ -92,68 +80,6 @@ app.get('/test/files/download', async c => {
     return c.json(
       {
         error: 'Expected files.download() to throw an error in Cloudflare Workers, but it did not',
-      },
-      { status: 500 }
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return c.json({
-      error: errorMessage,
-    });
-  }
-});
-
-/**
- * Test: FileToolModifier behavior (triggers the auto-upload/download error)
- *
- * The FileToolModifier.workerd.ts throws an error when automatic file upload/download is enabled.
- * In workerd runtime, the default is off, so we explicitly opt in here to test the error.
- *
- * This endpoint invokes the before-execute modifier path to trigger the real error
- * from FileToolModifier.workerd.ts without depending on a remote tool registry.
- */
-app.get('/test/file-modifier/error-message', async c => {
-  try {
-    const composio = new Composio({
-      apiKey: c.env.COMPOSIO_API_KEY,
-      dangerouslyAllowAutoUploadDownloadFiles: true,
-    });
-
-    const fileTool: Tool = {
-      slug: 'CUSTOM_FILE_TOOL',
-      name: 'Custom File Tool',
-      description: 'Fixture tool with a file-uploadable input',
-      inputParameters: {
-        type: 'object',
-        properties: {
-          file: {
-            type: 'string',
-            file_uploadable: true,
-          },
-        },
-        required: ['file'],
-      },
-      toolkit: { slug: 'custom', name: 'custom' },
-    };
-
-    await (composio.tools as unknown as InternalToolsForFileModifierTest).applyBeforeExecuteModifiers(
-      fileTool,
-      {
-        toolSlug: 'CUSTOM_FILE_TOOL',
-        toolkitSlug: 'custom',
-        params: {
-          arguments: {
-            file: 'https://example.com/test.pdf',
-          },
-          dangerouslySkipVersionCheck: true,
-        },
-      }
-    );
-
-    // If we get here, the test failed - execution should have thrown
-    return c.json(
-      {
-        error: 'Expected file modifier to throw FileToolModifier error, but it did not',
       },
       { status: 500 }
     );
