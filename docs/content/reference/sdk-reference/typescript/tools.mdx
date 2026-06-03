@@ -14,72 +14,11 @@ const result = await composio.tools.list();
 
 ## Methods
 
-### createCustomTool()
-
-Creates a custom tool that can be used within the Composio SDK.
-
-Custom tools allow you to extend the functionality of Composio with your own implementations
-while keeping a consistent interface for both built-in and custom tools.
-
-```typescript
-async createCustomTool(body: CustomToolOptions<T>): Promise<...>
-```
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `body` | `CustomToolOptions<T>` | The configuration for the custom tool |
-
-**Returns**
-
-`Promise<...>` — The created custom tool
-
-**Example**
-
-```typescript
-// creating a custom tool with a toolkit
-await composio.tools.createCustomTool({
-  name: 'My Custom Tool',
-  description: 'A custom tool that does something specific',
-  slug: 'MY_CUSTOM_TOOL',
-  userId: 'default',
-  connectedAccountId: '123',
-  toolkitSlug: 'github',
-  inputParameters: z.object({
-    param1: z.string().describe('First parameter'),
-  }),
-  execute: async (input, connectionConfig, executeToolRequest) => {
-    // Custom logic here
-    return { data: { result: 'Success!' } };
-  }
-});
-```
-
-```typescript
-// creating a custom tool without a toolkit
-await composio.tools.createCustomTool({
-  name: 'My Custom Tool',
-  description: 'A custom tool that does something specific',
-  slug: 'MY_CUSTOM_TOOL',
-  inputParameters: z.object({
-    param1: z.string().describe('First parameter'),
-  }),
-  execute: async (input) => {
-    // Custom logic here
-    return { data: { result: 'Success!' } };
-  }
-});
-```
-
----
-
 ### execute()
 
 Executes a given tool with the provided parameters.
 
-This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
-It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
+This method calls the Composio API to execute the tool and returns the response.
 
 **Version Control:**
 By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
@@ -339,7 +278,7 @@ console.log({
 
 ### getRawComposioTools()
 
-Lists all tools available in the Composio SDK including custom tools.
+Lists all tools available from the Composio API.
 
 This method fetches tools from the Composio API in raw format and combines them with
 any registered custom tools. The response can be filtered and modified as needed.

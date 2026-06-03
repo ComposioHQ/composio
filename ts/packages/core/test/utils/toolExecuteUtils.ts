@@ -29,21 +29,12 @@ export const setupTest = (context: TestContext) => {
   });
 };
 
-export const mockToolExecution = async (
-  tools: TestTools,
-  { customToolExists = false, connectedAccountId = 'test-connected-account-id' } = {}
-) => {
+export const mockToolExecution = async (tools: TestTools) => {
   // Mock client responses
   mockClient.tools.retrieve.mockResolvedValueOnce(toolMocks.rawTool);
   mockClient.toolkits.retrieve.mockResolvedValueOnce(toolkitMocks.rawToolkit);
   mockClient.connectedAccounts.list.mockResolvedValueOnce(
     connectedAccountMocks.rawConnectedAccountsResponse
-  );
-
-  // Mock custom tool check
-  const getCustomToolBySlugSpy = vi.spyOn(tools['customTools'], 'getCustomToolBySlug');
-  getCustomToolBySlugSpy.mockResolvedValueOnce(
-    customToolExists ? (toolMocks.customTool as unknown as Tool) : undefined
   );
 
   // Mock composio tool retrieval
@@ -54,7 +45,6 @@ export const mockToolExecution = async (
   mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
 
   return {
-    getCustomToolBySlugSpy,
     getRawComposioToolBySlugSpy,
   };
 };

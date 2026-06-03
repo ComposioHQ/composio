@@ -3,12 +3,22 @@
  * Tests that file operations correctly throw errors in edge runtimes
  * and that the FileToolModifier.workerd.ts is properly loaded.
  */
-import { Composio } from '@composio/core';
-import { z } from 'zod/v3';
+import { Composio, type Tool, type ToolExecuteParams } from '@composio/core';
 import { Hono } from 'hono';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
+};
+
+type InternalToolsForFileModifierTest = {
+  applyBeforeExecuteModifiers(
+    tool: Tool,
+    options: {
+      toolSlug: string;
+      toolkitSlug: string;
+      params: ToolExecuteParams;
+    }
+  ): Promise<ToolExecuteParams>;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -99,7 +109,8 @@ app.get('/test/files/download', async c => {
  * The FileToolModifier.workerd.ts throws an error when automatic file upload/download is enabled.
  * In workerd runtime, the default is off, so we explicitly opt in here to test the error.
  *
- * This endpoint actually executes a tool to trigger the real error from FileToolModifier.workerd.ts.
+ * This endpoint invokes the before-execute modifier path to trigger the real error
+ * from FileToolModifier.workerd.ts without depending on a remote tool registry.
  */
 app.get('/test/file-modifier/error-message', async c => {
   try {
@@ -108,35 +119,41 @@ app.get('/test/file-modifier/error-message', async c => {
       dangerouslyAllowAutoUploadDownloadFiles: true,
     });
 
-    // Use a local custom tool to avoid depending on remote Composio tool registry.
-    // Any execute() with automatic file handling enabled will trigger FileToolModifier
-    // in the workerd runtime.
-    await composio.tools.createCustomTool({
+    const fileTool: Tool = {
       slug: 'CUSTOM_FILE_TOOL',
       name: 'Custom File Tool',
-      inputParams: z.object({
-        file: z.string(),
-      }),
-      execute: async () => ({
-        data: {},
-        error: null,
-        successful: true,
-        logId: undefined,
-        sessionInfo: undefined,
-      }),
-    });
-
-    await composio.tools.execute('CUSTOM_FILE_TOOL', {
-      arguments: {
-        file: 'https://example.com/test.pdf',
+      description: 'Fixture tool with a file-uploadable input',
+      inputParameters: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            file_uploadable: true,
+          },
+        },
+        required: ['file'],
       },
-      dangerouslySkipVersionCheck: true,
-    });
+      toolkit: { slug: 'custom', name: 'custom' },
+    };
+
+    await (composio.tools as unknown as InternalToolsForFileModifierTest).applyBeforeExecuteModifiers(
+      fileTool,
+      {
+        toolSlug: 'CUSTOM_FILE_TOOL',
+        toolkitSlug: 'custom',
+        params: {
+          arguments: {
+            file: 'https://example.com/test.pdf',
+          },
+          dangerouslySkipVersionCheck: true,
+        },
+      }
+    );
 
     // If we get here, the test failed - execution should have thrown
     return c.json(
       {
-        error: 'Expected tool execution to throw FileToolModifier error, but it did not',
+        error: 'Expected file modifier to throw FileToolModifier error, but it did not',
       },
       { status: 500 }
     );
