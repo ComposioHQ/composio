@@ -331,10 +331,12 @@ export class Tools<
   }
 
   /**
-   * Lists all tools available in the Composio SDK.
+   * Lists Composio API tools available to the SDK.
    *
-   * This method fetches tools from the Composio API in raw format. The response can be
-   * filtered and modified as needed.
+   * This method fetches remote Composio tools from the API in raw format. The response can be
+   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * them when creating or reusing a Tool Router session, then use `session.tools()`,
+   * `session.customTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -542,6 +544,9 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
+   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
    * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval

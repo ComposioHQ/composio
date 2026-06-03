@@ -24,6 +24,8 @@ const REDIRECTS = [
   { from: "/tools", to: "/toolkits" },
   { from: "/docs/fetching-tools", to: "/docs/tools-direct/fetching-tools" },
   { from: "/docs/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
   { from: "/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
   { from: "/docs/how-tools-work", to: "/docs/tools-and-toolkits" },
   { from: "/authentication", to: "/docs/authentication" },

@@ -358,6 +358,16 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/tools-direct/custom-tools',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-direct/custom-tools/:path*',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
         source: '/docs/toolkit-versioning',
         destination: '/docs/tools-direct/toolkit-versioning',
         permanent: true,
