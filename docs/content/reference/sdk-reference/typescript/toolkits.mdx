@@ -9,7 +9,7 @@ Access this class through the `composio.toolkits` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.toolkits.list();
+const github = await composio.toolkits.get('github');
 ```
 
 ## Methods
@@ -50,7 +50,7 @@ Retrieves a specific toolkit by its slug identifier.
 **Overload 1**
 
 ```typescript
-async get(slug: string): Promise<...>
+async get(slug: string): Promise<ToolkitRetrieveResponse>
 ```
 
 **Parameters**
@@ -61,23 +61,23 @@ async get(slug: string): Promise<...>
 
 **Returns**
 
-`Promise<...>` — The toolkit object with detailed information
+`Promise<ToolkitRetrieveResponse>` — The toolkit object with detailed information
 
 **Overload 2**
 
 ```typescript
-async get(query?: object): Promise<...>
+async get(query?: ToolkitListParams): Promise<ToolKitListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `object` | The query parameters to filter toolkits |
+| `query?` | `ToolkitListParams` | The query parameters to filter toolkits |
 
 **Returns**
 
-`Promise<...>` — A paginated list of toolkits matching the query criteria
+`Promise<ToolKitListResponse>` — A paginated list of toolkits matching the query criteria
 
 **Example**
 
@@ -95,7 +95,7 @@ console.log(githubToolkit.authConfigDetails); // Authentication configuration de
 Retrieves the fields required for creating an auth config for a toolkit.
 
 ```typescript
-async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<...>
+async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -104,11 +104,11 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 |------|------|-------------|
 | `toolkitSlug` | `string` | The slug of the toolkit to retrieve the fields for |
 | `authScheme` | `AuthSchemeType` | The auth scheme to retrieve the fields for |
-| `options` | `object` |  |
+| `options` | `\{ requiredOnly?: boolean \}` |  |
 
 **Returns**
 
-`Promise<...>` — The fields required for creating an auth config
+`Promise<ToolkitAuthFieldsResponse>` — The fields required for creating an auth config
 
 ---
 
@@ -117,7 +117,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 Retrieves the fields required for initiating a connected account for a toolkit.
 
 ```typescript
-async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<...>
+async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
 **Parameters**
@@ -126,11 +126,11 @@ async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthS
 |------|------|-------------|
 | `toolkitSlug` | `string` | The slug of the toolkit to retrieve the fields for |
 | `authScheme` | `AuthSchemeType` | The auth scheme to retrieve the fields for |
-| `options` | `object` |  |
+| `options` | `\{ requiredOnly?: boolean \}` |  |
 
 **Returns**
 
-`Promise<...>` — The fields required for initiating a connected account
+`Promise<ToolkitAuthFieldsResponse>` — The fields required for initiating a connected account
 
 ---
 
@@ -142,12 +142,12 @@ This method fetches the complete list of categories from the Composio API
 and transforms the response to use camelCase property naming.
 
 ```typescript
-async listCategories(): Promise<...>
+async listCategories(): Promise<ToolkitRetrieveCategoriesResponse>
 ```
 
 **Returns**
 
-`Promise<...>` — The list of toolkit categories
+`Promise<ToolkitRetrieveCategoriesResponse>` — The list of toolkit categories
 
 **Example**
 

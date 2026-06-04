@@ -9,7 +9,7 @@ Access this class through the `composio.connectedAccounts` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.connectedAccounts.list();
+const accounts = await composio.connectedAccounts.list();
 ```
 
 ## Methods
@@ -114,7 +114,7 @@ This method fetches detailed information about a single connected account
 and transforms the response to the SDK's standardized format.
 
 ```typescript
-async get(nanoid: string): Promise<...>
+async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse>
 ```
 
 **Parameters**
@@ -125,7 +125,7 @@ async get(nanoid: string): Promise<...>
 
 **Returns**
 
-`Promise<...>` — The connected account details
+`Promise<ConnectedAccountRetrieveResponse>` — The connected account details
 
 **Example**
 
@@ -161,7 +161,7 @@ bearer token, basic auth) are unaffected and continue to work on
 `initiate()`. See https://docs.composio.dev/docs/changelog/2026/04/24
 
 ```typescript
-async initiate(userId: string, authConfigId: string, options?: object): Promise<ConnectionRequest>
+async initiate(userId: string, authConfigId: string, options?: CreateConnectedAccountOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -170,7 +170,7 @@ async initiate(userId: string, authConfigId: string, options?: object): Promise<
 |------|------|-------------|
 | `userId` | `string` | User ID of the connected account |
 | `authConfigId` | `string` | Auth config ID of the connected account |
-| `options?` | `object` | Options for creating a new connected account |
+| `options?` | `CreateConnectedAccountOptions` | Options for creating a new connected account |
 
 **Returns**
 
@@ -221,16 +221,16 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 ### link()
 
 ```typescript
-async link(userId: string, authConfigId: string, options?: object): Promise<ConnectionRequest>
+async link(userId: string, authConfigId: string, options?: CreateConnectedAccountLinkOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `userId` | `string` | \{string\} - The external user ID to create the connected account for. |
-| `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. |
-| `options?` | `object` | \{CreateConnectedAccountOptions\} - Options for creating a new connected account. |
+| `userId` | `string` | - The external user ID to create the connected account for. |
+| `authConfigId` | `string` | - The auth config ID to create the connected account for. |
+| `options?` | `CreateConnectedAccountLinkOptions` | - Options for creating a new connected account. |
 
 **Returns**
 
@@ -269,18 +269,18 @@ Lists all connected accounts based on provided filter criteria.
 This method retrieves connected accounts from the Composio API with optional filtering.
 
 ```typescript
-async list(query?: object): Promise<...>
+async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `object` | Optional query parameters for filtering connected accounts |
+| `query?` | `ConnectedAccountListParams` | Optional query parameters for filtering connected accounts |
 
 **Returns**
 
-`Promise<...>` — A paginated list of connected accounts
+`Promise<ConnectedAccountListResponse>` — A paginated list of connected accounts
 
 **Example**
 
@@ -309,7 +309,7 @@ This method attempts to refresh OAuth tokens or other credentials associated wit
 the connected account. This is useful when a token has expired or is about to expire.
 
 ```typescript
-async refresh(nanoid: string, options?: { redirectUrl?: string; validateCredentials?: boolean }): Promise<ConnectedAccountRefreshResponse>
+async refresh(nanoid: string, options?: ConnectedAccountRefreshOptions): Promise<ConnectedAccountRefreshResponse>
 ```
 
 **Parameters**
@@ -317,7 +317,7 @@ async refresh(nanoid: string, options?: { redirectUrl?: string; validateCredenti
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account to refresh |
-| `options?` | `object` |  |
+| `options?` | `ConnectedAccountRefreshOptions` |  |
 
 **Returns**
 
@@ -340,7 +340,7 @@ For ACL writes on SHARED connections, see
 `composio.experimental.updateAcl()`.
 
 ```typescript
-async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promise<ConnectedAccountUpdateStatusResponse>
+async update(nanoid: string, params: UpdateConnectedAccountParams): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
 **Parameters**
@@ -348,7 +348,7 @@ async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promis
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the connected account |
-| `params` | `ConnectedAccountUpdateStatusParams` | The update parameters |
+| `params` | `UpdateConnectedAccountParams` | The update parameters |
 
 **Returns**
 
@@ -407,7 +407,7 @@ This method continuously polls the Composio API to check the status of a connect
 until it either becomes active, enters a terminal error state, or times out.
 
 ```typescript
-async waitForConnection(connectedAccountId: string, timeout?: number): Promise<...>
+async waitForConnection(connectedAccountId: string, timeout?: number): Promise<ConnectedAccountRetrieveResponse>
 ```
 
 **Parameters**
@@ -419,7 +419,7 @@ async waitForConnection(connectedAccountId: string, timeout?: number): Promise<.
 
 **Returns**
 
-`Promise<...>` — The finalized connected account data
+`Promise<ConnectedAccountRetrieveResponse>` — The finalized connected account data
 
 **Example**
 

@@ -16,6 +16,8 @@ import {
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
   ToolRouterSessionWarning,
+  ToolRouterAuthorizeOptions,
+  ToolkitConnectionsDetails,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
 } from '../types/toolRouter.types';
@@ -29,8 +31,6 @@ import { createConnectionRequest } from './ConnectionRequest';
 import {
   ConnectedAccountExperimentalSchema,
   ConnectedAccountStatuses,
-  ConnectedAccountType,
-  ConnectedAccountAclConfig,
 } from '../types/connectedAccounts.types';
 import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from './Experimental';
 import { z } from 'zod/v3';
@@ -93,6 +93,7 @@ export class ToolRouterSession<
 > {
   public readonly sessionId: string;
   public readonly mcp: ToolRouterMCPServerConfig;
+  /** Experimental session features, including assistive prompt metadata and session file mounts. */
   public readonly experimental: SessionExperimental;
   public preload: ToolRouterSessionPreloadConfig;
   public configVersion?: number;
@@ -339,14 +340,7 @@ export class ToolRouterSession<
    */
   async authorize(
     toolkit: string,
-    options?: {
-      callbackUrl?: string;
-      alias?: string;
-      experimental?: {
-        accountType?: ConnectedAccountType;
-        aclConfigForShared?: ConnectedAccountAclConfig;
-      };
-    }
+    options?: ToolRouterAuthorizeOptions
   ): Promise<ConnectionRequest> {
     const requestOptions = AuthorizeOptionsSchema.safeParse(options ?? {});
     if (!requestOptions.success) {
@@ -393,7 +387,7 @@ export class ToolRouterSession<
    * Query the connection state of toolkits in the session.
    * Supports pagination and filtering by toolkit slugs.
    */
-  async toolkits(options?: ToolRouterToolkitsOptions) {
+  async toolkits(options?: ToolRouterToolkitsOptions): Promise<ToolkitConnectionsDetails> {
     const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
     if (!toolkitOptions.success) {
       throw new ValidationError('Failed to parse toolkits options', {

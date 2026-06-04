@@ -5,11 +5,11 @@ description: Represents a file stored in a tool router session's file mount. Pro
 
 ## Usage
 
-Access this class through the `composio.remoteFile` property:
+Instances are returned by `session.experimental.files.download()`, or can be constructed from parsed remote file data:
 
 ```typescript
-const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.remoteFile.list();
+const remoteFile = await session.experimental.files.download('/output/report.pdf');
+const text = await remoteFile.text();
 ```
 
 ## Properties

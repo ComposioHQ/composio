@@ -1,7 +1,7 @@
 /**
  * ToolRouter class for managing tool router sessions.
  *
- * @description Allows you to create an isolated toolRouter MCP session for a user
+ * @description Allows you to create an isolated tool router MCP session for a user.
  * @example
  * ```typescript
  * import { Composio } from '@composio/core';
@@ -9,7 +9,7 @@
  * const composio = new Composio();
  * const userId = 'user_123';
  *
- * const session = await composio.experimental.create(userId, {
+ * const session = await composio.toolRouter.create(userId, {
  *   toolkits: ['gmail'],
  *   manageConnections: true
  * });
@@ -145,8 +145,8 @@ export class ToolRouter<
    * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
    * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
-   * @param userId {string} The user id to create the session for
-   * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
+   * @param userId The user id to create the session for
+   * @param config The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example
@@ -265,7 +265,8 @@ export class ToolRouter<
 
   /**
    * Use an existing session
-   * @param id {string} The id of the session to use
+   * @param id The id of the session to use
+   * @param options Optional inline custom tools/toolkits to attach to the session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example

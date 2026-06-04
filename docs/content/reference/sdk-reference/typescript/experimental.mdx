@@ -9,7 +9,7 @@ Access this class through the `composio.experimental` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.experimental.list();
+await composio.experimental.updateAcl('ca_abc', { allowAllUsers: true });
 ```
 
 ## Methods
@@ -33,8 +33,17 @@ Resolution rule (deny wins):
  3. requesting `userId` in `allowedUserIds` → ALLOW
  4. otherwise → DENY
 
+**Empty-array semantics — read carefully.** Passing `[]` for either
+list **replaces** the list, it does not extend it:
+
+- `allowedUserIds: []` → revoke all previously-granted user IDs (state
+ reverts to deny-by-default unless `allowAllUsers` is true).
+- `notAllowedUserIds: []` → **clears the deny list**, which silently
+ re-grants access to users you previously blocked. Always pair an
+ empty deny list with a deliberate audit of the allow side.
+
 ```typescript
-async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
+async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -42,7 +51,7 @@ async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserId
 | Name | Type |
 |------|------|
 | `nanoid` | `string` |
-| `params` | `object` |
+| `params` | `UpdateConnectedAccountAclParams` |
 
 **Returns**
 
@@ -74,16 +83,6 @@ await composio.experimental.updateAcl('ca_abc', {
 
 // Revoke a previously-granted allow list (back to deny-by-default)
 await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
-```
-
-**Empty-array semantics — read carefully.** Passing `[]` for either
-list **replaces** the list, it does not extend it:
-
-- `allowedUserIds: []` → revoke all previously-granted user IDs (state
-  reverts to deny-by-default unless `allowAllUsers` is true).
-- `notAllowedUserIds: []` → **clears the deny list**, which silently
-  re-grants access to users you previously blocked. Always pair an
-  empty deny list with a deliberate audit of the allow side.
 ```
 
 ---

@@ -119,6 +119,15 @@ export class Experimental {
    *   3. requesting `userId` in `allowedUserIds`    → ALLOW
    *   4. otherwise                                  → DENY
    *
+   * **Empty-array semantics — read carefully.** Passing `[]` for either
+   * list **replaces** the list, it does not extend it:
+   *
+   * - `allowedUserIds: []` → revoke all previously-granted user IDs (state
+   *   reverts to deny-by-default unless `allowAllUsers` is true).
+   * - `notAllowedUserIds: []` → **clears the deny list**, which silently
+   *   re-grants access to users you previously blocked. Always pair an
+   *   empty deny list with a deliberate audit of the allow side.
+   *
    * @example
    * ```typescript
    * import { Composio } from '@composio/core';
@@ -142,15 +151,6 @@ export class Experimental {
    * // Revoke a previously-granted allow list (back to deny-by-default)
    * await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
    * ```
-   *
-   * **Empty-array semantics — read carefully.** Passing `[]` for either
-   * list **replaces** the list, it does not extend it:
-   *
-   * - `allowedUserIds: []` → revoke all previously-granted user IDs (state
-   *   reverts to deny-by-default unless `allowAllUsers` is true).
-   * - `notAllowedUserIds: []` → **clears the deny list**, which silently
-   *   re-grants access to users you previously blocked. Always pair an
-   *   empty deny list with a deliberate audit of the allow side.
    *
    * @returns The PATCH response (`{ id, status, success }`). To read
    *   the updated ACL block, call

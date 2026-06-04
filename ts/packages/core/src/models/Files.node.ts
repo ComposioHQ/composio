@@ -70,7 +70,10 @@ export class Files {
 
   /**
    * Download a file from S3 and return the file data.
-   * @param s3key - The S3 key of the file to download.
+   * @param params - The download parameters.
+   * @param params.s3Url - The S3 URL of the file to download.
+   * @param params.toolSlug - The slug of the tool that returned the file.
+   * @param params.mimeType - The MIME type of the file.
    * @returns The file data.
    */
   async download({

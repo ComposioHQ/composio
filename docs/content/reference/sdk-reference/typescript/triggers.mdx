@@ -9,7 +9,7 @@ Access this class through the `composio.triggers` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.triggers.list();
+const triggerTypes = await composio.triggers.listTypes();
 ```
 
 ## Methods
@@ -20,7 +20,7 @@ Create a new trigger instance for a user
 If the connected account id is not provided, the first connected account for the user and toolkit will be used
 
 ```typescript
-async create(userId: string, slug: string, body?: { connectedAccountId?: string; triggerConfig?: Record<string, unknown> }): Promise<{ triggerId: string }>
+async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams): Promise<TriggerInstanceUpsertResponse>
 ```
 
 **Parameters**
@@ -29,11 +29,11 @@ async create(userId: string, slug: string, body?: { connectedAccountId?: string;
 |------|------|-------------|
 | `userId` | `string` | The user id of the trigger instance |
 | `slug` | `string` | The slug of the trigger instance |
-| `body?` | `object` | The parameters to create the trigger instance |
+| `body?` | `TriggerInstanceUpsertParams` | The parameters to create the trigger instance |
 
 **Returns**
 
-`Promise<...>` — The created trigger instance
+`Promise<TriggerInstanceUpsertResponse>` — The created trigger instance
 
 ---
 
@@ -42,7 +42,7 @@ async create(userId: string, slug: string, body?: { connectedAccountId?: string;
 Delete a trigger instance
 
 ```typescript
-async delete(triggerId: string): Promise<{ triggerId: string }>
+async delete(triggerId: string): Promise<TriggerInstanceManageDeleteResponse>
 ```
 
 **Parameters**
@@ -53,7 +53,7 @@ async delete(triggerId: string): Promise<{ triggerId: string }>
 
 **Returns**
 
-`Promise<...>`
+`Promise<TriggerInstanceManageDeleteResponse>`
 
 ---
 
@@ -103,7 +103,7 @@ Retrieve a trigger type by its slug for the provided version of the app
 Use the global toolkit versions param when initializing composio to pass a toolkitversion
 
 ```typescript
-async getType(slug: string): Promise<...>
+async getType(slug: string): Promise<TriggersTypeRetrieveResponse>
 ```
 
 **Parameters**
@@ -114,7 +114,7 @@ async getType(slug: string): Promise<...>
 
 **Returns**
 
-`Promise<...>` — The trigger type object
+`Promise<TriggersTypeRetrieveResponse>` — The trigger type object
 
 ---
 
@@ -123,18 +123,18 @@ async getType(slug: string): Promise<...>
 Fetch list of all the active triggers
 
 ```typescript
-async listActive(query?: object): Promise<...>
+async listActive(query?: TriggerInstanceListActiveParams): Promise<TriggerInstanceListActiveResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `object` | The query parameters to filter the trigger instances |
+| `query?` | `TriggerInstanceListActiveParams` | The query parameters to filter the trigger instances |
 
 **Returns**
 
-`Promise<...>` — List of trigger instances
+`Promise<TriggerInstanceListActiveResponse>` — List of trigger instances
 
 **Example**
 
@@ -168,18 +168,18 @@ async listEnum(): Promise<TriggersTypeRetrieveEnumResponse>
 List all the trigger types
 
 ```typescript
-async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: string[] | null }): Promise<...>
+async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `object` | The query parameters to filter the trigger types |
+| `query?` | `TriggersTypeListParams` | The query parameters to filter the trigger types |
 
 **Returns**
 
-`Promise<...>` — The list of trigger types
+`Promise<TriggersTypeListResponse>` — The list of trigger types
 
 ---
 
@@ -188,15 +188,15 @@ async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: str
 Subscribe to all the triggers
 
 ```typescript
-async subscribe(fn: object, filters: object): Promise<void>
+async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters: TriggerSubscribeParams): Promise<void>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `fn` | `object` | The function to call when a trigger is received |
-| `filters` | `object` | The filters to apply to the triggers |
+| `fn` | `(_data: IncomingTriggerPayload) => void` | The function to call when a trigger is received |
+| `filters` | `TriggerSubscribeParams` | The filters to apply to the triggers |
 
 **Returns**
 
@@ -241,7 +241,7 @@ await triggers.unsubscribe();
 Update an existing trigger instance
 
 ```typescript
-async update(triggerId: string, body: { status: 'enable' | 'disable' }): Promise<{ status: 'success' }>
+async update(triggerId: string, body: TriggerInstanceManageUpdateParams): Promise<TriggerInstanceManageUpdateResponse>
 ```
 
 **Parameters**
@@ -249,11 +249,11 @@ async update(triggerId: string, body: { status: 'enable' | 'disable' }): Promise
 | Name | Type | Description |
 |------|------|-------------|
 | `triggerId` | `string` | The Id of the trigger instance |
-| `body` | `object` | The parameters to update the trigger instance |
+| `body` | `TriggerInstanceManageUpdateParams` | The parameters to update the trigger instance |
 
 **Returns**
 
-`Promise<...>` — The updated trigger instance response
+`Promise<TriggerInstanceManageUpdateResponse>` — The updated trigger instance response
 
 ---
 
@@ -269,14 +269,14 @@ The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${pa
 and is expected in the format: `v1,base64EncodedSignature`
 
 ```typescript
-async verifyWebhook(params: object): Promise<VerifyWebhookResult>
+async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `params` | `object` | The verification parameters |
+| `params` | `VerifyWebhookParams` | The verification parameters |
 
 **Returns**
 

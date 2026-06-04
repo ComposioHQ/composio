@@ -4,6 +4,7 @@ import { SessionMetaToolOptions } from './modifiers.types';
 import { ConnectionRequest } from './connectionRequest.types';
 import type { ToolRouterSessionFilesMount } from '../models/ToolRouterSessionFileMount';
 import type { SessionCreateResponse } from '@composio/client/resources/tool-router/session/session.mjs';
+import type { ConnectedAccountExperimental } from './connectedAccounts.types';
 import type {
   CustomTool,
   CustomToolkit,
@@ -415,9 +416,15 @@ export type ToolRouterToolsFn<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > = (modifiers?: SessionMetaToolOptions) => Promise<ReturnType<TProvider['wrapTools']>>;
 
+export type ToolRouterAuthorizeOptions = {
+  callbackUrl?: string;
+  alias?: string;
+  experimental?: ConnectedAccountExperimental;
+};
+
 export type ToolRouterAuthorizeFn = (
   toolkit: string,
-  options?: { callbackUrl?: string; alias?: string }
+  options?: ToolRouterAuthorizeOptions
 ) => Promise<ConnectionRequest>;
 
 export const ToolRouterToolkitsOptionsSchema = z.object({
@@ -627,7 +634,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     authConfigs: z.record(z.string(), z.string()).optional(),
     connectedAccounts: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
-      .transform((rec) => {
+      .transform(rec => {
         const out: Record<string, string[]> = {};
         for (const [k, v] of Object.entries(rec)) {
           out[k] = typeof v === 'string' ? [v] : v;

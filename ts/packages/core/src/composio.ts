@@ -215,8 +215,8 @@ export class Composio<
    * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
    * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
-   * @param userId {string} The user id to create the session for
-   * @param config {ToolRouterConfig} The config for the tool router session
+   * @param userId The user id to create the session for
+   * @param routerConfig The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    *
    * @example
@@ -227,12 +227,12 @@ export class Composio<
    * const userId = 'user_123';
    *
    * const session = await composio.create(userId, {
-   *  manageConnections: true,
+   *   manageConnections: true,
    * });
    *
    * console.log(session.sessionId);
-   * console.log(session.url);
-   * console.log(session.tools());
+   * console.log(session.mcp.url);
+   * console.log(await session.tools());
    * ```
    */
   create: (
@@ -243,7 +243,8 @@ export class Composio<
   /**
    * Use an existing tool router session
    *
-   * @param id {string} The id of the session to use
+   * @param id The id of the session to use
+   * @param options Optional inline custom tools/toolkits to attach to the session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
   use: (
@@ -418,8 +419,7 @@ export class Composio<
    *
    * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
    *
-   * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
-   *                                          This follows the Fetch API RequestInit interface with additional options.
+   * @param options Custom request options to be used for all API calls in this session.
    * @returns {Composio<TProvider>} A new Composio instance with the custom request options applied.
    *
    * @example
@@ -439,7 +439,7 @@ export class Composio<
    * });
    *
    * // Use the session for making API calls with the custom headers
-   * await composioWithCustomHeaders.tools.list();
+   * await composioWithCustomHeaders.tools.get('user_123', { toolkits: ['github'] });
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
