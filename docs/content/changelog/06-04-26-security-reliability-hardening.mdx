@@ -1,0 +1,35 @@
+---
+title: "Security and reliability hardening: what changed and what to do"
+description: "Post-incident changes across authentication, API keys (scoping and IP allowlists), connected-account token redaction, webhooks, retired endpoints, and the Dashboard."
+date: "2026-06-04"
+---
+
+Following the [May 2026 security incident](https://composio.dev/blog/composio-may-2026-security-incident), we shipped a wave of security and reliability changes across authentication, API keys, connected accounts, and webhooks. This is a short summary of changes so far, and we are continuing to ship more.
+
+### Authentication and API keys
+
+- MCP requests now require an API key or `Authorization: Bearer` token. SSE is no longer supported; use the HTTP transport.
+- Cookie and session auth on `/api/v3.1/*` is removed. Use `x-api-key` or `x-user-api-key`.
+- API keys are non-recoverable, so copy them at creation.
+- API keys are now scoped. Capabilities such as Proxy Execute are enabled per key when you create it in the Dashboard, and are off by default.
+- Based on recent traffic, we automatically added IP allowlists to some API keys. You can edit the allowlist on a key, or rotate the key, in the API Keys dashboard.
+- You can now enable multi-factor authentication (MFA) for Dashboard sign-in. It is not enabled by default.
+
+### Connections
+
+- Composio-managed OAuth connections are moving from `initiate` to `link`. The cutover for remaining organizations is July 3, 2026.
+- Connected-account tokens are redacted in API responses, for both Composio-managed and custom auth configs. When you need to act on the provider, use [Proxy Execute](https://docs.composio.dev/docs/proxy-execute).
+
+### Webhooks
+
+- Webhook URLs must be publicly reachable, and deliveries are now signed; verify the `webhook-signature` header. Manage subscriptions with the [Webhook Subscriptions API](https://docs.composio.dev/reference/api-reference/webhook-subscriptions).
+
+### Endpoints
+
+- The legacy `/api/rerouted/v1` and `/v2` paths are retired and return `410`. Move to v3.1.
+
+### Dashboard
+
+- The previous dashboard at `https://platform.composio.dev` is deprecated and now redirects to the new dashboard at `https://dashboard.composio.dev`.
+- We are still restoring some parts of the Dashboard. While we finish, you may see occasional `401 Unauthorized` responses. Please don't worry, we will help you fix those quickly, and the API and SDK remain fully functional throughout.
+- The MCP configurations view has been removed from the Dashboard. You can manage MCP configs through the [MCP API](https://docs.composio.dev/reference/api-reference/mcp), and if you use these we highly recommend moving to [Composio sessions](https://docs.composio.dev/docs/how-composio-works).
