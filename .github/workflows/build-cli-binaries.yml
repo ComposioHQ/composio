@@ -19,8 +19,11 @@ on:
         description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
         required: false
 
+# Least privilege by default: only the release job creates/edits releases and uploads assets.
+# `prepare` reads releases (gh release list) and `build` uploads workflow artifacts — both work
+# with read access. The release job opts up to `contents: write` for itself.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   prepare:
@@ -166,18 +169,17 @@ jobs:
           stable_tag="@composio/cli@${stable_version}"
           export stable_tag
 
-          stable_status=$(curl -sS -o /tmp/stable-release.json -w "%{http_code}" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPOSITORY}/releases/tags/$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["stable_tag"], safe=""))')")
-          if [[ "$stable_status" == "200" ]]; then
-            echo "Stable release ${stable_tag} already exists"
-            exit 1
-          fi
-          if [[ "$stable_status" != "404" ]]; then
-            echo "Unexpected response while checking stable release ${stable_tag}: HTTP ${stable_status}"
-            cat /tmp/stable-release.json
-            exit 1
+          # Refuse to re-promote an already-PUBLISHED stable release, but allow resuming an
+          # existing DRAFT (a prior promote run that built assets but did not publish). The
+          # REST `/releases/tags/{tag}` endpoint returns 404 for drafts, so use `gh release view`
+          # — it resolves drafts by name and exposes `isDraft`.
+          if gh release view "$stable_tag" --json isDraft --jq '.isDraft' >/tmp/stable-isdraft 2>/dev/null; then
+            if [[ "$(cat /tmp/stable-isdraft)" == "true" ]]; then
+              echo "Stable release ${stable_tag} exists as a draft — resuming (assets will be re-uploaded)."
+            else
+              echo "Stable release ${stable_tag} is already published"
+              exit 1
+            fi
           fi
 
           target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
@@ -201,6 +203,11 @@ jobs:
     if: needs.prepare.result == 'success'
     runs-on: ${{ matrix.runner }}
     strategy:
+      # Never publish a partial platform set: with fail-fast disabled, the build job's
+      # result is `success` only when EVERY matrix leg passes, so a single failure makes
+      # `needs.build.result != 'success'` and the release job is skipped. It also surfaces
+      # all platform failures at once instead of cancelling siblings on the first error.
+      fail-fast: false
       matrix:
         include:
           - target: bun-linux-x64
@@ -301,10 +308,28 @@ jobs:
           retention-days: 7
 
   release:
-    name: Create Release
+    name: Release (draft → verify → publish)
     needs: [prepare, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create/edit the GitHub Release and upload assets
+    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built,
+    # so a partial set can never reach the release path.
     if: needs.build.result == 'success'
+    # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
+    # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
+    # unrelated beta builds are not serialized behind each other. Job-level concurrency may
+    # read `needs.*` outputs (workflow-level cannot).
+    concurrency:
+      group: cli-release-${{ needs.prepare.outputs.release_tag }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+      RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
+      PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
+      CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
 
     steps:
       - name: Checkout
@@ -345,33 +370,88 @@ jobs:
           pnpm run build:skills -- --channel "$channel" --output-dir ./dist/skills
           cd dist/skills && zip -r ../binaries/composio-skill.zip composio-cli/
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-          RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
-          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
-          MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
-          CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
+      # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
+      # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
+      # Homebrew, the redirect) can ever observe a release before its assets are attached and
+      # verified. The release is only flipped to published as the final step below.
+      - name: Create draft release with all assets
         run: |
           set -euo pipefail
 
           flags=(
+            --draft
             --title "$RELEASE_NAME"
             --target "$CHECKOUT_REF"
             --generate-notes
           )
-
+          # Preserve prerelease status on the draft so betas stay prereleases once published.
           if [[ "$PRERELEASE" == "true" ]]; then
             flags+=(--prerelease)
-            flags+=(--latest=false)
-          else
-            flags+=(--latest)
           fi
 
-          gh release create "$RELEASE_TAG" "${flags[@]}" \
-            ts/packages/cli/dist/binaries/*.zip \
-            ts/packages/cli/dist/binaries/checksums.txt
+          # Idempotent for re-runs of a not-yet-published release: reuse an existing draft and
+          # clobber its assets. Refuse to mutate a tag that is already published.
+          if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
+            echo "Draft $RELEASE_TAG already exists — re-uploading assets with --clobber"
+            gh release upload "$RELEASE_TAG" \
+              ts/packages/cli/dist/binaries/*.zip \
+              ts/packages/cli/dist/binaries/checksums.txt --clobber
+          elif gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Release $RELEASE_TAG is already published — refusing to mutate it. Investigate the publish path."
+            exit 1
+          else
+            gh release create "$RELEASE_TAG" "${flags[@]}" \
+              ts/packages/cli/dist/binaries/*.zip \
+              ts/packages/cli/dist/binaries/checksums.txt
+          fi
+
+      # Loud failure gate: assert the full canonical asset set is attached AND fully uploaded.
+      # An asset can appear in the list while still processing (`state != "uploaded"`), which is
+      # exactly how a release ends up serving 404s, so we require state == "uploaded".
+      - name: Verify all release assets are present and uploaded
+        run: |
+          set -euo pipefail
+
+          # Keep this list in lock-step with the build matrix above (4 platforms) plus the skill
+          # bundle and checksums. Adding a platform to the matrix must extend this list too.
+          expected=(
+            composio-linux-x64.zip
+            composio-linux-aarch64.zip
+            composio-darwin-x64.zip
+            composio-darwin-aarch64.zip
+            composio-skill.zip
+            checksums.txt
+          )
+
+          for attempt in $(seq 1 10); do
+            # Single snapshot per attempt — querying names and state separately would open a
+            # time-of-check/time-of-use gap in the very gate meant to close one.
+            payload=$(gh release view "$RELEASE_TAG" --json assets)
+            mapfile -t uploaded < <(jq -r '.assets[] | select(.state == "uploaded") | .name' <<<"$payload" | sort)
+
+            missing=()
+            for want in "${expected[@]}"; do
+              printf '%s\n' "${uploaded[@]}" | grep -qxF "$want" || missing+=("$want")
+            done
+
+            if [[ ${#missing[@]} -eq 0 ]]; then
+              echo "✅ All ${#expected[@]} expected assets present and uploaded."
+              break
+            fi
+
+            echo "Attempt ${attempt}/10 — missing or not-yet-uploaded: ${missing[*]}"
+            if [[ "$attempt" -eq 10 ]]; then
+              echo "::error::Release $RELEASE_TAG is incomplete — missing or not uploaded: ${missing[*]}"
+              exit 1
+            fi
+            sleep 15
+          done
+
+      # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
+      # GitHub PATCH race drops body changes made in the same call as the draft flip, and the
+      # notes were already generated at draft creation. Prerelease status was set on the draft.
+      - name: Publish release (flip draft → published)
+        run: gh release edit "$RELEASE_TAG" --draft=false --latest="$MAKE_LATEST"
 
   test-installation:
     name: Test Installation

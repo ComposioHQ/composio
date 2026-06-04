@@ -10,18 +10,42 @@ jobs:
     name: Test CLI Installation
     runs-on: ubuntu-latest
     steps:
-      - name: Run install script
+      # Resolve the newest published stable version. npm's `latest` dist-tag is the source of
+      # truth that `composio upgrade` and `npm i -g` compare against, and it is bumped by the
+      # release pipeline in lock-step with the GitHub release.
+      - name: Resolve newest stable version
+        id: resolve
         run: |
           set -euo pipefail
-          curl -fsSL https://composio.dev/install | bash
+          version=$(npm view @composio/cli version)
+          echo "tag=@composio/cli@${version}" >> "$GITHUB_OUTPUT"
+          echo "Newest stable: @composio/cli@${version}"
+
+      # Install the PINNED newest tag. This is the path that 404s when a release ships without
+      # assets. The no-arg `curl | bash` below is asset-aware and silently falls back to the
+      # previous good release, so it would stay green even when the newest release is broken —
+      # which is exactly why the previous canary never caught the recurring outage.
+      - name: Install newest stable (pinned — fails on a release with missing assets)
+        run: |
+          set -euo pipefail
+          curl -fsSL https://composio.dev/install | bash -s -- "${{ steps.resolve.outputs.tag }}"
           echo "$HOME/.composio" >> "$GITHUB_PATH"
 
-      - name: Verify installation
+      - name: Verify pinned installation
         run: |
           set -euo pipefail
           ls -la "$HOME/.composio" || true
           which composio
           composio --version
+
+      # Secondary: the default no-arg flow most users run. Asset-aware and self-healing, so it
+      # is a coverage net rather than the primary signal.
+      - name: Install via default no-arg flow
+        run: |
+          set -euo pipefail
+          rm -rf "$HOME/.composio"
+          curl -fsSL https://composio.dev/install | bash
+          "$HOME/.composio/composio" --version
 
       - name: Send Slack Notification (Failure)
         if: failure()
