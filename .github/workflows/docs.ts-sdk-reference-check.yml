@@ -1,0 +1,37 @@
+name: Docs - TypeScript SDK Reference Sync
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/docs.ts-sdk-reference-check.yml'
+      - 'docs/content/reference/sdk-reference/typescript/**'
+      - 'pnpm-lock.yaml'
+      - 'ts/packages/core/package.json'
+      - 'ts/packages/core/scripts/generate-docs.ts'
+      - 'ts/packages/core/src/**'
+  workflow_dispatch:
+
+jobs:
+  check-generated-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate TypeScript SDK reference
+        run: pnpm --filter @composio/core generate:docs
+
+      - name: Verify generated reference is committed
+        run: |
+          if ! git diff --exit-code -- docs/content/reference/sdk-reference/typescript; then
+            echo "::error::TypeScript SDK reference docs are stale. Run 'pnpm --filter @composio/core generate:docs' and commit the result."
+            exit 1
+          fi
