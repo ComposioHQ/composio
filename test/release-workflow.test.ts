@@ -20,6 +20,12 @@ const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
 );
+const resolveTargetScriptUrl = new URL(
+  '../.github/scripts/cli-release/resolve-release-target.sh',
+  import.meta.url
+);
+const resolveTargetScriptPath = resolveTargetScriptUrl.pathname;
+const resolveTargetScript = readFileSync(resolveTargetScriptUrl, 'utf8');
 
 if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
@@ -73,6 +79,18 @@ if (!buildCliWorkflow.includes('flags+=(--prerelease)')) {
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.
 if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.release_tag }}')) {
   throw new Error('build-cli-binaries.yml release job must use per-tag concurrency keyed on the release tag');
+}
+
+// Release-target resolution lives in a standalone, unit-tested script (see executable tests
+// below) rather than inline YAML bash, so the branching logic is reviewable and testable.
+if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release-target.sh')) {
+  throw new Error('build-cli-binaries.yml prepare job must delegate to resolve-release-target.sh');
+}
+
+// The "latest stable" lookup must sort by numeric semver, not lexically: a lexical sort ranks
+// @composio/cli@0.2.9 above 0.2.10 and would regress beta versioning once a patch hits 2 digits.
+if (!resolveTargetScript.includes('map(tonumber)')) {
+  throw new Error('resolve-release-target.sh must sort releases by numeric semver (map(tonumber)), not lexically');
 }
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
@@ -160,6 +178,185 @@ esac
   }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
+}
+
+// --- resolve-release-target.sh: executable tests for the release-target branching ---
+//
+// The script shells out to `gh` and `curl`; we stub both on PATH and feed fixtures, so these
+// exercise the real branching/version logic (not just substring presence). `jq`/`python3` stay
+// real because the script's correctness depends on them.
+
+const FAKE_GH = `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" == "release" && "\${2:-}" == "list" ]]; then
+  shift 2
+  jqexpr=""
+  while [[ \$# -gt 0 ]]; do
+    if [[ "\$1" == "--jq" ]]; then jqexpr="\$2"; shift 2; continue; fi
+    shift
+  done
+  jq -r "\$jqexpr" "\$GH_RELEASES_FIXTURE"
+  exit 0
+fi
+if [[ "\${1:-}" == "release" && "\${2:-}" == "view" ]]; then
+  # An existing release: echo its isDraft flag. Unset fixture ⇒ exit non-zero (release absent).
+  if [[ -n "\${GH_VIEW_ISDRAFT:-}" ]]; then
+    echo "\$GH_VIEW_ISDRAFT"
+    exit 0
+  fi
+  exit 1
+fi
+echo "unexpected gh invocation: \$*" >&2
+exit 1
+`;
+
+const FAKE_CURL = `#!/usr/bin/env bash
+set -euo pipefail
+cat "\$CURL_FIXTURE"
+`;
+
+function parseOutputs(text) {
+  const outputs = {};
+  for (const line of text.split('\n')) {
+    const idx = line.indexOf('=');
+    if (idx === -1) continue;
+    outputs[line.slice(0, idx)] = line.slice(idx + 1);
+  }
+  return outputs;
+}
+
+function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
+  const fakeBin = mkdtempSync(join(tmpdir(), 'composio-fakebin-'));
+  const workdir = mkdtempSync(join(tmpdir(), 'composio-resolver-'));
+  try {
+    for (const [name, body] of [['gh', FAKE_GH], ['curl', FAKE_CURL]]) {
+      const p = join(fakeBin, name);
+      writeFileSync(p, body);
+      chmodSync(p, 0o755);
+    }
+
+    const outputPath = join(workdir, 'github_output');
+    writeFileSync(outputPath, '');
+
+    const fixtures = {};
+    if (releasesFixture !== undefined) {
+      const fixturePath = join(workdir, 'releases.json');
+      writeFileSync(fixturePath, JSON.stringify(releasesFixture));
+      fixtures.GH_RELEASES_FIXTURE = fixturePath;
+    }
+    if (curlFixture !== undefined) {
+      const fixturePath = join(workdir, 'curl.json');
+      writeFileSync(fixturePath, JSON.stringify(curlFixture));
+      fixtures.CURL_FIXTURE = fixturePath;
+    }
+    if (ghViewIsDraft !== undefined) fixtures.GH_VIEW_ISDRAFT = ghViewIsDraft;
+
+    const result = spawnSync('bash', [resolveTargetScriptPath], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${fakeBin}:${process.env.PATH}`,
+        GITHUB_OUTPUT: outputPath,
+        ...fixtures,
+        ...env,
+      },
+    });
+
+    const output = readFileSync(outputPath, 'utf8');
+    return { ...result, output, outputs: parseOutputs(output) };
+  } finally {
+    rmSync(fakeBin, { recursive: true, force: true });
+    rmSync(workdir, { recursive: true, force: true });
+  }
+}
+
+// build-beta bumps off the NUMERIC-latest stable release. The fixture deliberately interleaves
+// 0.2.10 and 0.2.9: a lexical sort would pick 0.2.9 and resolve 0.2.10 here — regression lock.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'build-beta',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '42',
+      COMMIT_SHA: 'deadbeef',
+    },
+    releasesFixture: [
+      { tagName: '@composio/cli@0.2.2', isPrerelease: false },
+      { tagName: '@composio/cli@0.2.10', isPrerelease: false },
+      { tagName: '@composio/cli@0.2.9', isPrerelease: false },
+      { tagName: '@composio/cli@0.3.0-beta.1', isPrerelease: true },
+    ],
+  });
+  if (r.status !== 0) {
+    throw new Error(`resolve-release-target.sh build-beta failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_version !== '0.2.11') {
+    throw new Error(
+      `build-beta must bump off the numeric-latest stable (0.2.10 → 0.2.11), got release_version=${r.outputs.release_version}. A lexical sort would regress.`
+    );
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.2.11-beta.42') {
+    throw new Error(`build-beta release_tag wrong: ${r.outputs.release_tag}`);
+  }
+  if (r.outputs.prerelease !== 'true' || r.outputs.make_latest !== 'false') {
+    throw new Error('build-beta must emit prerelease=true and make_latest=false');
+  }
+}
+
+// promote-stable must REFUSE a tag that is already published (isDraft=false) and emit nothing.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'unused',
+    },
+    curlFixture: { prerelease: true, target_commitish: 'abc123' },
+    ghViewIsDraft: 'false',
+  });
+  if (r.status === 0) {
+    throw new Error('promote-stable must refuse an already-published stable tag');
+  }
+  if (!r.stderr.includes('already published')) {
+    throw new Error(`promote-stable refusal must explain itself\nstderr:\n${r.stderr}`);
+  }
+  if (r.output.trim() !== '') {
+    throw new Error('a refused promotion must not emit release outputs');
+  }
+}
+
+// promote-stable happy path: no existing release ⇒ emit a stable target off the beta's commitish.
+{
+  const r = runResolver({
+    env: {
+      EVENT_NAME: 'workflow_dispatch',
+      ACTION_INPUT: 'promote-stable',
+      BETA_TAG_INPUT: '@composio/cli@0.3.0-beta.5',
+      GITHUB_TOKEN: 'fake-token',
+      REPOSITORY: 'ComposioHQ/composio',
+      RUN_NUMBER: '1',
+      COMMIT_SHA: 'unused',
+    },
+    curlFixture: { prerelease: true, target_commitish: 'abc123' },
+    // ghViewIsDraft unset ⇒ `gh release view` exits non-zero ⇒ no existing release to refuse.
+  });
+  if (r.status !== 0) {
+    throw new Error(`resolve-release-target.sh promote-stable failed\nstderr:\n${r.stderr}`);
+  }
+  if (r.outputs.release_tag !== '@composio/cli@0.3.0' || r.outputs.release_version !== '0.3.0') {
+    throw new Error(`promote-stable must strip the -beta suffix, got ${r.outputs.release_tag}`);
+  }
+  if (r.outputs.prerelease !== 'false' || r.outputs.make_latest !== 'true') {
+    throw new Error('promote-stable must emit prerelease=false and make_latest=true');
+  }
+  if (r.outputs.checkout_ref !== 'abc123') {
+    throw new Error(`promote-stable must check out the beta's target_commitish, got ${r.outputs.checkout_ref}`);
+  }
 }
 
 console.log('release workflow test passed');
