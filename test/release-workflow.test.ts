@@ -78,13 +78,20 @@ if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.rel
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
 
 // The bare no-arg `curl | bash` is asset-aware and self-heals to the previous good release, so
-// the canary must additionally install the newest stable PINNED tag to actually catch a release
-// shipped with missing assets.
-if (!installHealthCheck.includes('npm view @composio/cli version')) {
-  throw new Error('cli.install-health-check.yml must resolve the newest stable version to pin-install');
+// the canary must additionally install the newest PUBLISHED release PINNED to actually catch a
+// release shipped with missing assets.
+//
+// It must resolve the newest *published* GitHub release (drafts excluded), NOT `npm view`: npm's
+// latest is bumped minutes before the binary workflow publishes the GitHub release, so pinning to
+// it would 404 during the healthy publish gap and false-page.
+if (installHealthCheck.includes('$(npm view')) {
+  throw new Error('cli.install-health-check.yml must not pin to npm (races ahead of the GitHub release)');
+}
+if (!installHealthCheck.includes('gh release list --exclude-drafts --exclude-pre-releases')) {
+  throw new Error('cli.install-health-check.yml must resolve the newest published release (drafts excluded)');
 }
 if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
-  throw new Error('cli.install-health-check.yml must install the newest stable tag via the pinned path');
+  throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');
 }
 
 const fakeBin = mkdtempSync(join(tmpdir(), 'composio-release-test-'));

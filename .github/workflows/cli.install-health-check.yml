@@ -5,21 +5,36 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read # gh release list reads the published releases
+
 jobs:
   health-check:
     name: Test CLI Installation
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      # Resolve the newest published stable version. npm's `latest` dist-tag is the source of
-      # truth that `composio upgrade` and `npm i -g` compare against, and it is bumped by the
-      # release pipeline in lock-step with the GitHub release.
-      - name: Resolve newest stable version
+      # Resolve the newest PUBLISHED stable @composio/cli release — exactly what install.sh and
+      # the /releases/latest redirect (Homebrew, humans) resolve and download from.
+      #
+      # Deliberately NOT `npm view @composio/cli version`: npm's latest dist-tag is bumped by
+      # changesets minutes before the binary workflow finishes the draft build and publishes the
+      # GitHub release. Pinning to the npm version would 404 during that healthy publish gap and
+      # false-page hourly. Drafts are excluded here, so this only ever resolves a fully-published
+      # release — the in-flight one stays invisible until its assets are verified and attached.
+      - name: Resolve newest published release
         id: resolve
         run: |
           set -euo pipefail
-          version=$(npm view @composio/cli version)
-          echo "tag=@composio/cli@${version}" >> "$GITHUB_OUTPUT"
-          echo "Newest stable: @composio/cli@${version}"
+          tag=$(gh release list --exclude-drafts --exclude-pre-releases --json tagName \
+            --jq '[.[] | select(.tagName | startswith("@composio/cli@"))] | .[0].tagName')
+          if [[ -z "$tag" ]]; then
+            echo "::error::No published @composio/cli release found"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Latest published release: ${tag}"
 
       # Install the PINNED newest tag. This is the path that 404s when a release ships without
       # assets. The no-arg `curl | bash` below is asset-aware and silently falls back to the
