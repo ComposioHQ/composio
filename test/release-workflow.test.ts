@@ -26,6 +26,14 @@ const resolveTargetScriptUrl = new URL(
 );
 const resolveTargetScriptPath = resolveTargetScriptUrl.pathname;
 const resolveTargetScript = readFileSync(resolveTargetScriptUrl, 'utf8');
+const createDraftScript = readFileSync(
+  new URL('../.github/scripts/cli-release/create-or-resume-draft.sh', import.meta.url),
+  'utf8'
+);
+const verifyAssetsScript = readFileSync(
+  new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url),
+  'utf8'
+);
 
 if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
@@ -52,28 +60,50 @@ if (!buildCliWorkflow.includes('fail-fast: false')) {
 }
 
 // The release must be built as a draft and only flipped to published after verification, so no
-// anonymous consumer can observe a release before its assets are attached.
-const draftCreateIdx = buildCliWorkflow.indexOf('--draft');
-const verifyIdx = buildCliWorkflow.indexOf('select(.state == "uploaded")');
+// anonymous consumer can observe a release before its assets are attached. The draft and verify
+// logic live in standalone scripts; the workflow must invoke them in draft → verify → publish
+// order.
+const draftStepIdx = buildCliWorkflow.indexOf('bash .github/scripts/cli-release/create-or-resume-draft.sh');
+const verifyStepIdx = buildCliWorkflow.indexOf('bash .github/scripts/cli-release/verify-assets.sh');
 const publishIdx = buildCliWorkflow.indexOf('gh release edit "$RELEASE_TAG" --draft=false');
 
-if (draftCreateIdx === -1) {
-  throw new Error('build-cli-binaries.yml must create the release as a draft (--draft)');
+if (draftStepIdx === -1) {
+  throw new Error('build-cli-binaries.yml must create the draft via create-or-resume-draft.sh');
 }
-if (verifyIdx === -1) {
-  throw new Error('build-cli-binaries.yml must verify assets are fully uploaded (state == "uploaded")');
+if (verifyStepIdx === -1) {
+  throw new Error('build-cli-binaries.yml must verify assets via verify-assets.sh');
 }
 if (publishIdx === -1) {
   throw new Error('build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)');
 }
-if (!(draftCreateIdx < verifyIdx && verifyIdx < publishIdx)) {
+if (!(draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)) {
   throw new Error('build-cli-binaries.yml must order steps draft → verify → publish');
+}
+
+// The draft script must actually create a draft, and the verify gate must require fully-uploaded
+// assets (not merely present) — that distinction is what stops a release serving 404s.
+if (!createDraftScript.includes('--draft')) {
+  throw new Error('create-or-resume-draft.sh must create the release as a draft (--draft)');
+}
+if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
+  throw new Error('verify-assets.sh must require assets be fully uploaded (state == "uploaded")');
 }
 
 // Beta status must survive the draft→publish flip (regression: the old single create set
 // --prerelease at creation; the new flow must set it on the draft).
-if (!buildCliWorkflow.includes('flags+=(--prerelease)')) {
-  throw new Error('build-cli-binaries.yml must preserve --prerelease on the draft for beta releases');
+if (!createDraftScript.includes('flags+=(--prerelease)')) {
+  throw new Error('create-or-resume-draft.sh must preserve --prerelease on the draft for beta releases');
+}
+
+// Skills must be packaged BEFORE checksums are generated, so composio-skill.zip is hashed into
+// checksums.txt rather than shipping unverifiable.
+const packageSkillsIdx = buildCliWorkflow.indexOf('name: Package skill files');
+const generateChecksumsIdx = buildCliWorkflow.indexOf('name: Generate checksums');
+if (packageSkillsIdx === -1 || generateChecksumsIdx === -1) {
+  throw new Error('build-cli-binaries.yml must package skills and generate checksums');
+}
+if (!(packageSkillsIdx < generateChecksumsIdx)) {
+  throw new Error('build-cli-binaries.yml must package skills before generating checksums so the skill zip is checksummed');
 }
 
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.

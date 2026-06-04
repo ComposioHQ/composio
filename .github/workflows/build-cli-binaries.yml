@@ -207,13 +207,9 @@ jobs:
           path: ts/packages/cli/dist/binaries
           merge-multiple: true
 
-      - name: Generate checksums
-        working-directory: ts/packages/cli
-        run: bun run ./scripts/generate-checksums.ts
-
-      - name: Display checksums
-        run: cat ts/packages/cli/dist/binaries/checksums.txt
-
+      # Package skills BEFORE generating checksums so composio-skill.zip is included in
+      # checksums.txt alongside the platform binaries (generate-checksums hashes every .zip
+      # in dist/binaries).
       - name: Package skill files
         working-directory: ts/packages/cli
         env:
@@ -228,82 +224,25 @@ jobs:
           pnpm run build:skills -- --channel "$channel" --output-dir ./dist/skills
           cd dist/skills && zip -r ../binaries/composio-skill.zip composio-cli/
 
+      - name: Generate checksums
+        working-directory: ts/packages/cli
+        run: bun run ./scripts/generate-checksums.ts
+
+      - name: Display checksums
+        run: cat ts/packages/cli/dist/binaries/checksums.txt
+
       # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
       # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
       # Homebrew, the redirect) can ever observe a release before its assets are attached and
       # verified. The release is only flipped to published as the final step below.
       - name: Create draft release with all assets
-        run: |
-          set -euo pipefail
-
-          flags=(
-            --draft
-            --title "$RELEASE_NAME"
-            --target "$CHECKOUT_REF"
-            --generate-notes
-          )
-          # Preserve prerelease status on the draft so betas stay prereleases once published.
-          if [[ "$PRERELEASE" == "true" ]]; then
-            flags+=(--prerelease)
-          fi
-
-          # Idempotent for re-runs of a not-yet-published release: reuse an existing draft and
-          # clobber its assets. Refuse to mutate a tag that is already published.
-          if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
-            echo "Draft $RELEASE_TAG already exists — re-uploading assets with --clobber"
-            gh release upload "$RELEASE_TAG" \
-              ts/packages/cli/dist/binaries/*.zip \
-              ts/packages/cli/dist/binaries/checksums.txt --clobber
-          elif gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "::error::Release $RELEASE_TAG is already published — refusing to mutate it. Investigate the publish path."
-            exit 1
-          else
-            gh release create "$RELEASE_TAG" "${flags[@]}" \
-              ts/packages/cli/dist/binaries/*.zip \
-              ts/packages/cli/dist/binaries/checksums.txt
-          fi
+        run: bash .github/scripts/cli-release/create-or-resume-draft.sh
 
       # Loud failure gate: assert the full canonical asset set is attached AND fully uploaded.
       # An asset can appear in the list while still processing (`state != "uploaded"`), which is
       # exactly how a release ends up serving 404s, so we require state == "uploaded".
       - name: Verify all release assets are present and uploaded
-        run: |
-          set -euo pipefail
-
-          # Keep this list in lock-step with the build matrix above (4 platforms) plus the skill
-          # bundle and checksums. Adding a platform to the matrix must extend this list too.
-          expected=(
-            composio-linux-x64.zip
-            composio-linux-aarch64.zip
-            composio-darwin-x64.zip
-            composio-darwin-aarch64.zip
-            composio-skill.zip
-            checksums.txt
-          )
-
-          for attempt in $(seq 1 10); do
-            # Single snapshot per attempt — querying names and state separately would open a
-            # time-of-check/time-of-use gap in the very gate meant to close one.
-            payload=$(gh release view "$RELEASE_TAG" --json assets)
-            mapfile -t uploaded < <(jq -r '.assets[] | select(.state == "uploaded") | .name' <<<"$payload" | sort)
-
-            missing=()
-            for want in "${expected[@]}"; do
-              printf '%s\n' "${uploaded[@]}" | grep -qxF "$want" || missing+=("$want")
-            done
-
-            if [[ ${#missing[@]} -eq 0 ]]; then
-              echo "✅ All ${#expected[@]} expected assets present and uploaded."
-              break
-            fi
-
-            echo "Attempt ${attempt}/10 — missing or not-yet-uploaded: ${missing[*]}"
-            if [[ "$attempt" -eq 10 ]]; then
-              echo "::error::Release $RELEASE_TAG is incomplete — missing or not uploaded: ${missing[*]}"
-              exit 1
-            fi
-            sleep 15
-          done
+        run: bash .github/scripts/cli-release/verify-assets.sh
 
       # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
       # GitHub PATCH race drops body changes made in the same call as the draft flip, and the
