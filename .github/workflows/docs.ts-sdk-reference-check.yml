@@ -7,6 +7,7 @@ on:
       - 'docs/content/reference/sdk-reference/typescript/**'
       - 'pnpm-lock.yaml'
       - 'ts/packages/core/package.json'
+      - 'ts/packages/core/scripts/check-generated-docs.ts'
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/src/**'
   workflow_dispatch:
