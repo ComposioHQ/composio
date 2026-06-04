@@ -21,6 +21,7 @@ from openai.types.shared_params.function_parameters import FunctionParameters
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.shared import normalize_tool_arguments
 
 OpenAITool: t.TypeAlias = ChatCompletionToolParam
 OpenAIToolCollection: t.TypeAlias = t.List[OpenAITool]
@@ -57,9 +58,11 @@ class OpenAIProvider(
         :param user_id: User ID to use for executing the function call.
         :return: Object containing output data from the tool call.
         """
+        # OpenAI always serializes tool arguments as a JSON string; normalize
+        # tolerates empty / object-shaped payloads too (issue #2406).
         return self.execute_tool(
             slug=tool_call.function.name,
-            arguments=json.loads(tool_call.function.arguments),
+            arguments=normalize_tool_arguments(tool_call.function.arguments),
             modifiers=modifiers,
             user_id=user_id,
         )

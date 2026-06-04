@@ -21,6 +21,7 @@ from claude_agent_sdk import (
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
+from composio.utils.shared import normalize_tool_arguments
 
 
 class ClaudeAgentSDKProvider(
@@ -104,7 +105,8 @@ class ClaudeAgentSDKProvider(
                 result = await asyncio.to_thread(
                     execute_tool,
                     tool.slug,
-                    args,
+                    # Models occasionally emit tool input as a JSON string (issue #2406).
+                    normalize_tool_arguments(args),
                 )
                 # Format the result for Claude Agent SDK
                 result_text = result if isinstance(result, str) else json.dumps(result)

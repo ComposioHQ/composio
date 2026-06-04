@@ -10,6 +10,7 @@ from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
+    normalize_tool_arguments,
     reinstate_reserved_python_keywords,
     substitute_reserved_python_keywords,
 )
@@ -40,7 +41,10 @@ class LlamaIndexProvider(
             kwargs = reinstate_reserved_python_keywords(
                 request=kwargs, keywords=keywords
             )
-            return execute_tool(slug=tool.slug, arguments=kwargs)
+            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+            return execute_tool(
+                slug=tool.slug, arguments=normalize_tool_arguments(kwargs)
+            )
 
         action_func = types.FunctionType(
             function.__code__,

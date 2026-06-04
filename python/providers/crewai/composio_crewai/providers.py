@@ -6,7 +6,7 @@ from crewai.tools import BaseTool
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from composio.utils.pydantic import parse_pydantic_error
-from composio.utils.shared import json_schema_to_model
+from composio.utils.shared import json_schema_to_model, normalize_tool_arguments
 
 
 class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
@@ -24,7 +24,10 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
         class Wrapper(BaseTool):
             def _run(self, **kwargs):
                 try:
-                    return execute_tool(slug=tool.slug, arguments=kwargs)
+                    # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+                    return execute_tool(
+                        slug=tool.slug, arguments=normalize_tool_arguments(kwargs)
+                    )
                 except pydantic.ValidationError as e:
                     return {
                         "successful": False,

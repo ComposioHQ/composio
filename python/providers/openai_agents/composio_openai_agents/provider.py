@@ -9,6 +9,7 @@ from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
 from composio.utils.pydantic import parse_pydantic_error
+from composio.utils.shared import normalize_tool_arguments
 
 
 # Recursively remove 'examples' keys from the schema properties
@@ -86,7 +87,8 @@ class OpenAIAgentsProvider(
                         await asyncio.to_thread(  # Running a thread since `execute_tool` is not async
                             execute_tool,
                             slug=tool.slug,
-                            arguments=json.loads(payload) if payload else {},
+                            # Models occasionally emit arguments as a JSON string (issue #2406).
+                            arguments=normalize_tool_arguments(payload),
                         )
                     )
                 )

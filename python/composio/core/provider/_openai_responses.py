@@ -4,7 +4,6 @@ OpenAI Responses API provider implementation.
 
 from __future__ import annotations
 
-import json
 import typing as t
 
 from openai.types.responses.response import Response
@@ -12,6 +11,7 @@ from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.shared import normalize_tool_arguments
 
 # Responses API uses a flattened tool structure
 ResponsesTool = t.Dict[str, t.Any]
@@ -49,8 +49,10 @@ class OpenAIResponsesProvider(
         :param modifiers: Optional modifiers for tool execution.
         :return: Object containing output data from the tool call.
         """
+        # OpenAI always serializes tool arguments as a JSON string; normalize
+        # tolerates empty / object-shaped payloads too (issue #2406).
         slug = tool_call.name
-        arguments = json.loads(tool_call.arguments)
+        arguments = normalize_tool_arguments(tool_call.arguments)
 
         return self.execute_tool(
             slug=slug,

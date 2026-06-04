@@ -7,6 +7,7 @@ from anthropic.types.tool_use_block import ToolUseBlock
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.shared import normalize_tool_arguments
 
 
 class AnthropicProvider(
@@ -41,9 +42,10 @@ class AnthropicProvider(
         :param modifiers: Modifiers to use for executing function calls.
         :return: Object containing output data from the tool call.
         """
+        # Models occasionally emit tool input as a JSON string rather than a dict (issue #2406).
         return self.execute_tool(
             slug=tool_call.name,
-            arguments=t.cast(t.Dict, tool_call.input),
+            arguments=normalize_tool_arguments(tool_call.input),
             modifiers=modifiers,
             user_id=user_id,
         )
