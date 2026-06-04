@@ -11,7 +11,6 @@ A summary of recent security, API, and platform changes you may need to act on. 
 - MCP requests now require an API key or `Authorization: Bearer` token. SSE is no longer supported; use the HTTP transport.
 - API keys are now scoped. Capabilities such as Proxy Execute are enabled per key when you create it in the Dashboard, and are off by default.
 - API keys now support IP allowlisting, and we have tightened what we block and deny. Based on recent traffic we automatically added IP allowlists to some keys, so if a request is unexpectedly rejected, edit the key's allowlist or rotate the key. The API and SDK remain fully functional, and if something is blocked that should not be, let us know.
-- You can now enable multi-factor authentication (MFA) for Dashboard sign-in. It is not enabled by default.
 
 ### Connections
 
