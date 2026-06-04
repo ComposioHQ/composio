@@ -179,7 +179,7 @@ describe('CLI: composio dev connected-accounts list', () => {
       it.scoped('warns user to login', () =>
         Effect.gen(function* () {
           const error = yield* Effect.flip(cli(['dev', 'connected-accounts', 'list']));
-          expect(String(error)).toContain('No default org configured');
+          expect(String(error)).toContain('No current org configured');
         })
       );
     }

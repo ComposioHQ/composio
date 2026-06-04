@@ -27,34 +27,34 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Group / Command           | Purpose                                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `version`                 | Display CLI version                                                                                    |
-| `whoami`                  | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)            |
-| `login`                   | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
-| `logout`                  | Clear stored API key                                                                                   |
-| `signup`                  | Create a Composio account                                                                              |
-| `upgrade`                 | Self-update binary from GitHub releases                                                                |
-| `init`                    | Bootstrap a Composio project in the current directory                                                  |
-| `install`                 | Install local-tool integrations                                                                        |
-| `generate {ts|py}`        | Generate type stubs (auto-detects project language if no subcommand)                                   |
-| `agent`                   | Manage AI agent presets                                                                                |
-| `toolkits`                | List / inspect / version toolkits                                                                      |
-| `tools`                   | List / inspect / `execute` tools                                                                       |
-| `triggers`                | List / manage trigger types                                                                            |
-| `auth-configs`            | Manage auth-config resources (`ac_*`)                                                                  |
-| `connected-accounts`      | Manage connected accounts (`ca_*`)                                                                     |
-| `connections`             | Alias / helper for connected-account flows                                                             |
-| `orgs`                    | Manage organizations                                                                                   |
-| `projects`                | Manage projects                                                                                        |
-| `local-tools`             | Manage local toolkits (via `@composio/cli-local-tools`)                                                |
-| `logs`                    | View tool-execution logs (`logs-cmd/`)                                                                 |
-| `config`                  | Read/write CLI config                                                                                  |
-| `listen`                  | Listen for events                                                                                      |
-| `proxy`                   | Proxy authenticated API requests                                                                       |
-| `run`                     | Run a saved script / preset                                                                            |
-| `dev`                     | Developer-only utilities                                                                               |
-| `artifacts`               | Manage generated artifacts                                                                             |
+| Group / Command      | Purpose                                                                                                              |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `version`            | Display CLI version                                                                                                  |
+| `whoami`             | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)                          |
+| `login`              | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout`             | Clear stored API key                                                                                                 |
+| `signup`             | Create a Composio account                                                                                            |
+| `upgrade`            | Self-update binary from GitHub releases                                                                              |
+| `init`               | Bootstrap a Composio project in the current directory                                                                |
+| `install`            | Install local-tool integrations                                                                                      |
+| `generate {ts        | py}`                                                                                                                 | Generate type stubs (auto-detects project language if no subcommand) |
+| `agent`              | Manage AI agent presets                                                                                              |
+| `toolkits`           | List / inspect / version toolkits                                                                                    |
+| `tools`              | List / inspect / `execute` tools                                                                                     |
+| `triggers`           | List / manage trigger types                                                                                          |
+| `auth-configs`       | Manage auth-config resources (`ac_*`)                                                                                |
+| `connected-accounts` | Manage connected accounts (`ca_*`)                                                                                   |
+| `connections`        | Alias / helper for connected-account flows                                                                           |
+| `orgs`               | Manage organizations                                                                                                 |
+| `projects`           | Manage projects                                                                                                      |
+| `local-tools`        | Manage local toolkits (via `@composio/cli-local-tools`)                                                              |
+| `logs`               | View tool-execution logs (`logs-cmd/`)                                                                               |
+| `config`             | Read/write CLI config                                                                                                |
+| `listen`             | Listen for events                                                                                                    |
+| `proxy`              | Proxy authenticated API requests                                                                                     |
+| `run`                | Run a saved script / preset                                                                                          |
+| `dev`                | Developer-only utilities                                                                                             |
+| `artifacts`          | Manage generated artifacts                                                                                           |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
@@ -128,7 +128,7 @@ Generator-based syntax throughout:
 ```typescript
 Effect.gen(function* () {
   const service = yield* ServiceName; // resolve dependency
-  const result = yield* someEffect;   // await computation
+  const result = yield* someEffect; // await computation
   yield* Effect.log('message');
   return result;
 });

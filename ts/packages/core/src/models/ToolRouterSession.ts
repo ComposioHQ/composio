@@ -27,12 +27,12 @@ import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
 import {
-  ConnectedAccountAclConfigSchema,
+  ConnectedAccountExperimentalSchema,
   ConnectedAccountStatuses,
   ConnectedAccountType,
-  ConnectedAccountTypeSchema,
   ConnectedAccountAclConfig,
 } from '../types/connectedAccounts.types';
+import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from './Experimental';
 import { z } from 'zod/v3';
 import { transform } from '../utils/transform';
 import { ToolkitConnectionStateSchema } from '../types/toolRouter.types';
@@ -83,8 +83,7 @@ export const DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX =
 const AuthorizeOptionsSchema = z.object({
   callbackUrl: z.string().optional(),
   alias: z.string().optional(),
-  accountType: ConnectedAccountTypeSchema.optional(),
-  aclConfigForShared: ConnectedAccountAclConfigSchema.optional(),
+  experimental: ConnectedAccountExperimentalSchema.optional(),
 });
 
 export class ToolRouterSession<
@@ -327,9 +326,11 @@ export class ToolRouterSession<
    * Initiate an authorization flow for a toolkit.
    * Returns a ConnectionRequest with a redirect URL for the user.
    *
-   * Use `accountType` and `aclConfigForShared` to create a SHARED connection
-   * with a per-user ACL in one flow. Default behaviour (omit both) creates
-   * a PRIVATE connection.
+   * Pass `experimental: { accountType: 'SHARED', aclConfigForShared }` to
+   * create a SHARED connection with a per-user ACL in one flow. Default
+   * behaviour (omit the block) creates a PRIVATE connection.
+   *
+   * Experimental — shape may change in future releases.
    *
    * `aclConfigForShared` is validated against the same caps as
    * `composio.connectedAccounts.link()` (≤1000 entries per list, each
@@ -341,8 +342,10 @@ export class ToolRouterSession<
     options?: {
       callbackUrl?: string;
       alias?: string;
-      accountType?: ConnectedAccountType;
-      aclConfigForShared?: ConnectedAccountAclConfig;
+      experimental?: {
+        accountType?: ConnectedAccountType;
+        aclConfigForShared?: ConnectedAccountAclConfig;
+      };
     }
   ): Promise<ConnectionRequest> {
     const requestOptions = AuthorizeOptionsSchema.safeParse(options ?? {});
@@ -352,26 +355,14 @@ export class ToolRouterSession<
       });
     }
     const opts = requestOptions.data;
-    const aclWire: SessionLinkParams.ACLConfigForShared | undefined =
-      opts.aclConfigForShared === undefined
-        ? undefined
-        : {
-            ...(opts.aclConfigForShared.allowAllUsers !== undefined && {
-              allow_all_users: opts.aclConfigForShared.allowAllUsers,
-            }),
-            ...(opts.aclConfigForShared.allowedUserIds !== undefined && {
-              allowed_user_ids: opts.aclConfigForShared.allowedUserIds,
-            }),
-            ...(opts.aclConfigForShared.notAllowedUserIds !== undefined && {
-              not_allowed_user_ids: opts.aclConfigForShared.notAllowedUserIds,
-            }),
-          };
+    const experimentalWire = serializeExperimentalForWire(opts.experimental);
     const body: SessionLinkParams = {
       toolkit,
       ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
       ...(opts.alias !== undefined && { alias: opts.alias }),
-      ...(opts.accountType !== undefined && { account_type: opts.accountType }),
-      ...(aclWire !== undefined && { acl_config_for_shared: aclWire }),
+      ...(experimentalWire !== undefined && {
+        experimental: experimentalWire as SessionLinkParams.Experimental,
+      }),
     };
 
     let response;
@@ -383,7 +374,7 @@ export class ToolRouterSession<
       if (
         error instanceof BadRequestError &&
         typeof error.message === 'string' &&
-        error.message.includes('acl_config_for_shared is only valid on SHARED')
+        error.message.includes(ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT)
       ) {
         throw new ComposioAclOnlyForSharedError(error.message, { cause: error });
       }

@@ -7,10 +7,10 @@ import typing as t
 import warnings
 
 import typing_extensions as te
+from composio_client import BadRequestError, omit
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio_client import BadRequestError, omit
 from composio.client.types import (
     connected_account_create_params,
     connected_account_patch_params,
@@ -21,6 +21,7 @@ from composio.client.types import (
 )
 
 from .base import Resource
+from .experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 
 logger = logging.getLogger(__name__)
 
@@ -559,8 +560,7 @@ class ConnectedAccounts:
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
         allow_multiple: bool = False,
-        account_type: t.Optional[t.Literal["PRIVATE", "SHARED"]] = None,
-        acl_config_for_shared: t.Optional[link_create_params.ACLConfigForShared] = None,
+        experimental: t.Optional[link_create_params.Experimental] = None,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -577,17 +577,10 @@ class ConnectedAccounts:
             ``ComposioMultipleConnectedAccountsError`` if the user already has an
             ``ACTIVE`` connection on this auth config. Pair with ``alias`` and a
             session-level ``multi_account`` config to disambiguate at execution time.
-        :param account_type: Sharing model for the new connection. ``PRIVATE``
-            (default) is usable only by the owning ``user_id``. ``SHARED`` can
-            be used by other ``user_id``s — but only when the connection is
-            explicitly pinned in a tool-router session's config and only when
-            the requesting ``user_id`` passes the connection's ACL.
-        :param acl_config_for_shared: Per-user ACL for SHARED connections.
-            Only valid when ``account_type == 'SHARED'``; raises
-            ``ComposioAclOnlyForSharedError`` on a PRIVATE connection. Pass
-            an ``ACLConfigForShared`` dict with any combination of
-            ``allow_all_users``, ``allowed_user_ids``, ``not_allowed_user_ids``.
-            Omit to keep deny-by-default (only the creator can use).
+        :param experimental: Experimental options for this connection. Pass an
+            ``Experimental`` dict with ``account_type`` and/or
+            ``acl_config_for_shared`` to create a SHARED connection with a
+            per-user ACL. Experimental — shape may change in future releases.
         :return: Connection request object.
 
         Example:
@@ -612,14 +605,16 @@ class ConnectedAccounts:
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
 
-        Example creating a SHARED connection with an ACL:
+        Example creating a SHARED connection with an ACL (experimental):
             connection_request = composio.connected_accounts.link(
                 'user_creator',
                 'auth_config_123',
-                account_type='SHARED',
-                acl_config_for_shared={
-                    'allow_all_users': True,
-                    'not_allowed_user_ids': ['user_bob'],
+                experimental={
+                    'account_type': 'SHARED',
+                    'acl_config_for_shared': {
+                        'allow_all_users': True,
+                        'not_allowed_user_ids': ['user_bob'],
+                    },
                 },
             )
         """
@@ -646,17 +641,14 @@ class ConnectedAccounts:
                 user_id=user_id,
                 callback_url=callback_url if callback_url is not None else omit,
                 alias=alias if alias is not None else omit,
-                account_type=account_type if account_type is not None else omit,
-                acl_config_for_shared=(
-                    acl_config_for_shared if acl_config_for_shared is not None else omit
-                ),
+                experimental=experimental if experimental is not None else omit,
             )
         except BadRequestError as error:
             # The server rejects ACL on PRIVATE connections — surface that
             # as a typed error so callers can ``except`` instead of grepping
             # messages.
             message = str(error)
-            if "acl_config_for_shared is only valid on SHARED" in message:
+            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
                 raise exceptions.ComposioAclOnlyForSharedError(message) from error
             raise
 
@@ -666,70 +658,6 @@ class ConnectedAccounts:
             redirect_url=getattr(response, "redirect_url", None),
             client=self._client,
         )
-
-    def update_acl(
-        self,
-        nanoid: str,
-        *,
-        allow_all_users: t.Optional[bool] = None,
-        allowed_user_ids: t.Optional[t.List[str]] = None,
-        not_allowed_user_ids: t.Optional[t.List[str]] = None,
-    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
-        """
-        Update the per-user ACL on a SHARED connected account.
-
-        Only valid on SHARED connections; raises
-        ``ComposioAclOnlyForSharedError`` on a PRIVATE connection. Omit a
-        parameter to leave it unchanged; pass an empty list to clear an
-        allow/deny list. At least one parameter must be provided.
-
-        :param nanoid: The connected account ID (``ca_xxx``).
-        :param allow_all_users: When True, any ``user_id`` may use this
-            SHARED connection (subject to the deny list).
-        :param allowed_user_ids: Explicit list of allowed ``user_id`` strings.
-            Pass ``[]`` to clear.
-        :param not_allowed_user_ids: Explicit deny list (wins over allow on
-            conflict). Pass ``[]`` to clear — note that clearing the deny
-            list silently re-grants access to previously-blocked users.
-        :return: Response with ``id``, ``status``, and ``success``.
-
-        Example:
-            composio.connected_accounts.update_acl(
-                'ca_abc',
-                allow_all_users=True,
-                not_allowed_user_ids=['user_bob'],
-            )
-        """
-        if (
-            allow_all_users is None
-            and allowed_user_ids is None
-            and not_allowed_user_ids is None
-        ):
-            raise exceptions.ValidationError(
-                "update_acl requires at least one of allow_all_users, "
-                "allowed_user_ids, or not_allowed_user_ids"
-            )
-
-        acl: t.Dict[str, t.Any] = {}
-        if allow_all_users is not None:
-            acl["allow_all_users"] = allow_all_users
-        if allowed_user_ids is not None:
-            acl["allowed_user_ids"] = allowed_user_ids
-        if not_allowed_user_ids is not None:
-            acl["not_allowed_user_ids"] = not_allowed_user_ids
-
-        try:
-            return self._client.connected_accounts.patch(
-                nanoid,
-                acl_config_for_shared=t.cast(
-                    connected_account_patch_params.ACLConfigForShared, acl
-                ),
-            )
-        except BadRequestError as error:
-            message = str(error)
-            if "acl_config_for_shared is only valid on SHARED" in message:
-                raise exceptions.ComposioAclOnlyForSharedError(message) from error
-            raise
 
     def wait_for_connection(
         self,

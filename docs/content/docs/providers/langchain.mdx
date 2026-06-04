@@ -1,10 +1,19 @@
 ---
 title: LangChain
-description: Build an agent with LangChain and enable it to use 1000+ tools with Composio.
-keywords: [langchain]
+description: Build an agent with LangChain or LangGraph and enable it to use 1000+ tools with Composio.
+keywords: [langchain, langgraph]
 ---
 
-The LangChain provider transforms Composio tools into LangChain's [StructuredTool](https://python.langchain.com/docs/how_to/custom_tools/) format with built-in execution.
+Composio integrates with [LangChain](https://python.langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/). Pick the tab that matches your integration.
+
+<IntegrationTabs tabs={[
+  { value: "langchain", label: "LangChain" },
+  { value: "langgraph", label: "LangGraph" },
+]}>
+
+<IntegrationContent value="langchain">
+
+The LangChain provider transforms Composio tools into LangChain's StructuredTool format with built-in execution.
 
 <Steps>
 <Step>
@@ -28,7 +37,7 @@ npm install @composio/core @composio/langchain @langchain/openai @langchain/lang
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://platform.composio.dev/?next_page=/settings) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
 ```txt title=".env"
@@ -116,3 +125,59 @@ console.log(finalState.messages[finalState.messages.length - 1].content);
 </Tabs>
 </Step>
 </Steps>
+
+</IntegrationContent>
+
+<IntegrationContent value="langgraph">
+
+The LangGraph provider transforms Composio tools into LangChain StructuredTool format for use with LangGraph agents. LangGraph integration is Python-only.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+pip install composio composio_langgraph langgraph langchain_openai
+```
+</Step>
+
+<Step>
+**Configure API Keys**
+
+<Callout type="info">
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+</Callout>
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+OPENAI_API_KEY=xxxxxxxxx
+```
+</Step>
+
+<Step>
+**Create session and run**
+
+```python
+from composio import Composio
+from composio_langgraph import LanggraphProvider
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+composio = Composio(provider=LanggraphProvider())
+llm = ChatOpenAI(model="gpt-5.2")
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+agent = create_agent(tools=tools, model=llm)
+result = agent.invoke({"messages": [("user", "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")]})
+
+print(result["messages"][-1].content)
+```
+</Step>
+</Steps>
+
+</IntegrationContent>
+
+</IntegrationTabs>

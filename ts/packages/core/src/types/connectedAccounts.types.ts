@@ -77,17 +77,23 @@ export const ConnectedAccountAclConfigSchema = z.object({
   allowAllUsers: z
     .boolean()
     .optional()
-    .describe('When true, any `userId` may use this SHARED connection (subject to the deny list). Default false.'),
+    .describe(
+      'When true, any `userId` may use this SHARED connection (subject to the deny list). Default false.'
+    ),
   allowedUserIds: z
     .array(aclUserIdString)
     .max(ACL_LIST_MAX_LENGTH)
     .optional()
-    .describe('Explicit list of `userId` strings allowed to use this SHARED connection. Default [].'),
+    .describe(
+      'Explicit list of `userId` strings allowed to use this SHARED connection. Default [].'
+    ),
   notAllowedUserIds: z
     .array(aclUserIdString)
     .max(ACL_LIST_MAX_LENGTH)
     .optional()
-    .describe('Explicit list of `userId` strings denied access. Wins over allow on conflict. Default [].'),
+    .describe(
+      'Explicit list of `userId` strings denied access. Wins over allow on conflict. Default [].'
+    ),
 });
 export type ConnectedAccountAclConfig = z.infer<typeof ConnectedAccountAclConfigSchema>;
 
@@ -103,6 +109,32 @@ export const ConnectedAccountAclConfigResponseSchema = z.object({
 });
 export type ConnectedAccountAclConfigResponse = z.infer<
   typeof ConnectedAccountAclConfigResponseSchema
+>;
+
+/**
+ * Experimental options for SHARED connections, passed at create / link time.
+ *
+ * **Experimental — shape may change in future releases.** Wrapped under a
+ * dedicated `experimental` block on every input and response so the
+ * experimental status is visible at every call site.
+ */
+export const ConnectedAccountExperimentalSchema = z.object({
+  accountType: ConnectedAccountTypeSchema.optional(),
+  aclConfigForShared: ConnectedAccountAclConfigSchema.optional(),
+});
+export type ConnectedAccountExperimental = z.infer<typeof ConnectedAccountExperimentalSchema>;
+
+/**
+ * Resolved experimental block on retrieve / list responses. `accountType`
+ * is always present when the block is; `aclConfigForShared` is only
+ * present when the caller is authorised to see the ACL.
+ */
+export const ConnectedAccountExperimentalResponseSchema = z.object({
+  accountType: ConnectedAccountTypeSchema.optional(),
+  aclConfigForShared: ConnectedAccountAclConfigResponseSchema.optional(),
+});
+export type ConnectedAccountExperimentalResponse = z.infer<
+  typeof ConnectedAccountExperimentalResponseSchema
 >;
 
 export const CreateConnectedAccountParamsSchema = z.object({
@@ -186,8 +218,7 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   isDisabled: boolean;
   createdAt: string;
   updatedAt: string;
-  accountType?: ConnectedAccountType;
-  aclConfigForShared?: ConnectedAccountAclConfigResponse;
+  experimental?: ConnectedAccountExperimentalResponse;
 }> = z.object({
   id: z.string(),
   authConfig: ConnectedAccountAuthConfigSchema,
@@ -211,13 +242,10 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   isDisabled: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  accountType: ConnectedAccountTypeSchema.optional(),
-  // `aclConfigForShared` is only present on the response when the caller
-  // is authorised to see the ACL — otherwise the block is absent and the
-  // field is `undefined`. Callers can distinguish "I can't see the ACL"
-  // from "ACL is the default deny-by-default state" by checking for the
-  // presence of the field.
-  aclConfigForShared: ConnectedAccountAclConfigResponseSchema.optional(),
+  // Experimental — shape may change in future releases. `aclConfigForShared`
+  // inside this block is only populated when the caller is authorised to
+  // see the ACL.
+  experimental: ConnectedAccountExperimentalResponseSchema.optional(),
 });
 
 export type ConnectedAccountRetrieveResponse = z.infer<
@@ -256,6 +284,13 @@ export const ConnectedAccountListParamsSchema = z.object({
     .nullable()
     .optional()
     .describe('The user ids of the connected accounts'),
+  /**
+   * Experimental — shape may change in future releases. Filter by sharing
+   * model. Default (omitted) returns PRIVATE only. Pass `'SHARED'` for only
+   * shared accounts, or `'ALL'` for `PRIVATE` + `SHARED`. Kept flat because
+   * the wire is a query string and can't carry nested objects.
+   */
+  accountType: z.enum(['PRIVATE', 'SHARED', 'ALL']).optional(),
 });
 export type ConnectedAccountListParams = z.infer<typeof ConnectedAccountListParamsSchema>;
 
@@ -273,8 +308,8 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
   /**
    * The url to redirect the user to post connecting their account.
    *
-   * For sucessfull connections, you will get a query param called status=success
-   * And for failed connections you will get a query param called satus=failed
+   * For successful connections, you will get a query param called status=success
+   * And for failed connections you will get a query param called status=failed
    *
    * @example https://your-app.com/callback
    *
@@ -293,24 +328,20 @@ export const CreateConnectedAccountLinkOptionsSchema = z.object({
    */
   allowMultiple: z.boolean().optional(),
   /**
-   * Sharing model for the new connection. `PRIVATE` (default) is usable only
-   * by the owning `userId`. `SHARED` can be used by other `userId`s — but
-   * only when the connection is explicitly pinned in a tool-router session's
-   * config and only when the requesting `userId` passes the connection's
-   * ACL.
-   */
-  accountType: ConnectedAccountTypeSchema.optional(),
-  /**
-   * Per-user ACL for SHARED connections. Only valid when
-   * `accountType === 'SHARED'`; raises `ComposioAclOnlyForSharedError`
-   * on a PRIVATE connection.
+   * Experimental options for SHARED connections. Pass `accountType: 'SHARED'`
+   * (and optionally `aclConfigForShared`) to create a connection that can
+   * be reached by other `userId`s when pinned in a session.
    *
-   * Omit the block (or pass `{}`) to keep the deny-by-default state: only the
-   * creator can use the connection. Grant access by setting
+   * Experimental — shape may change in future releases.
+   *
+   * `aclConfigForShared` is only valid when `accountType === 'SHARED'`;
+   * raises `ComposioAclOnlyForSharedError` on a PRIVATE connection. Omit
+   * the inner block (or pass `{}`) to keep the deny-by-default state: only
+   * the creator can use the connection. Grant access by setting
    * `allowAllUsers: true` or listing user IDs in `allowedUserIds`.
    * `notAllowedUserIds` always wins over allow.
    */
-  aclConfigForShared: ConnectedAccountAclConfigSchema.optional(),
+  experimental: ConnectedAccountExperimentalSchema.optional(),
 });
 export type CreateConnectedAccountLinkOptions = z.infer<
   typeof CreateConnectedAccountLinkOptionsSchema
@@ -358,8 +389,7 @@ export const UpdateConnectedAccountAclParamsSchema = ConnectedAccountAclConfigSc
     acl.allowedUserIds !== undefined ||
     acl.notAllowedUserIds !== undefined,
   {
-    message:
-      'At least one of allowAllUsers, allowedUserIds, or notAllowedUserIds must be provided',
+    message: 'At least one of allowAllUsers, allowedUserIds, or notAllowedUserIds must be provided',
   }
 );
 export type UpdateConnectedAccountAclParams = z.infer<typeof UpdateConnectedAccountAclParamsSchema>;

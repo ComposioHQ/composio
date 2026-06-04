@@ -22,9 +22,61 @@ import {
 import {
   isPlainObject,
   transformProperties,
-  schemaHasFileUploadable,
-  schemaHasFileDownloadable,
+  schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
+
+const getSchemaVariants = (schema: JSONSchemaProperty | undefined): JSONSchemaProperty[] => [
+  ...(schema?.anyOf ?? []),
+  ...(schema?.oneOf ?? []),
+  ...(schema?.allOf ?? []),
+];
+
+const jsonSchemaTypeMatchesValue = (schema: JSONSchemaProperty, value: unknown): boolean => {
+  const schemaType = schema.type;
+
+  if (Array.isArray(schemaType)) {
+    return schemaType.some(type => jsonSchemaTypeMatchesValue({ ...schema, type }, value));
+  }
+
+  if (schemaType === undefined) {
+    if (schema.properties) return isPlainObject(value);
+    if (schema.items) return Array.isArray(value);
+    return false;
+  }
+
+  switch (schemaType) {
+    case 'array':
+      return Array.isArray(value);
+    case 'object':
+      return isPlainObject(value);
+    case 'string':
+      return typeof value === 'string';
+    case 'integer':
+      return Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number';
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'null':
+      return value === null;
+    default:
+      return false;
+  }
+};
+
+const findSchemaVariantWithFileProperty = (
+  schema: JSONSchemaProperty | undefined,
+  property: 'file_uploadable' | 'file_downloadable',
+  value: unknown
+): JSONSchemaProperty | undefined => {
+  const candidates = getSchemaVariants(schema).filter(variant =>
+    schemaHasFileProperty(variant, property)
+  );
+
+  return (
+    candidates.find(candidate => jsonSchemaTypeMatchesValue(candidate, value)) ?? candidates[0]
+  );
+};
 
 /**
  * Recursively walks a runtime value and its matching JSON-Schema node,
@@ -128,27 +180,18 @@ const hydrateFiles = async (
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Handle anyOf/oneOf/allOf — pick the first variant that contains a
-  // file_uploadable property and hydrate against it.
+  // 2. Handle anyOf/oneOf/allOf — pick the file-bearing variant whose
+  // JSON Schema shape matches the runtime value, then hydrate against it.
   //
   // We deliberately do NOT loop over every uploadable variant. With `oneOf`,
   // exactly one variant should apply at runtime, and applying multiple would
   // upload the same file once per variant — two presigned-URL round-trips and
-  // two S3 PUTs for a two-variant `oneOf`. Matching the Python SDK
-  // (`_find_uploadable_schema_variant`), we short-circuit on the first match.
+  // two S3 PUTs for a two-variant `oneOf`. If no runtime shape matches, fall
+  // back to the first file-bearing variant to preserve historical behavior.
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
-
-  if (schemaVariants.length > 0) {
-    const firstUploadableVariant = schemaVariants.find(schemaHasFileUploadable);
-    if (firstUploadableVariant) {
-      return hydrateFiles(value, firstUploadableVariant, ctx);
-    }
-    // If no uploadable variants found, fall through to check base properties
+  const uploadableVariant = findSchemaVariantWithFileProperty(schema, 'file_uploadable', value);
+  if (uploadableVariant) {
+    return hydrateFiles(value, uploadableVariant, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -257,28 +300,20 @@ const hydrateDownloads = async (
   // ──────────────────────────────────────────────────────────────────────────
   // 3. Handle anyOf/oneOf/allOf - try each variant that may contain file_downloadable
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
+  const schemaVariants = getSchemaVariants(schema);
 
   if (schemaVariants.length > 0) {
-    // Find variants that have file_downloadable properties
-    const downloadableVariants = schemaVariants.filter(schemaHasFileDownloadable);
-
-    // Process with each downloadable variant
-    let result = value;
-    for (const variant of downloadableVariants) {
-      result = await hydrateDownloads(result, variant, ctx);
+    const downloadableVariant = findSchemaVariantWithFileProperty(
+      schema,
+      'file_downloadable',
+      value
+    );
+    if (downloadableVariant) {
+      return hydrateDownloads(value, downloadableVariant, ctx);
     }
 
     // If no downloadable variants found, still traverse the value for s3url objects
-    if (downloadableVariants.length === 0) {
-      return hydrateDownloads(value, undefined, ctx);
-    }
-
-    return result;
+    return hydrateDownloads(value, undefined, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────

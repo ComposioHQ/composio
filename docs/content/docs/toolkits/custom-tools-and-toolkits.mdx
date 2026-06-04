@@ -398,7 +398,7 @@ import { z } from "zod/v3";
 // ---cut---
 
 const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
-  name: "User management",
+  name: "User scoping",
   description: "Manage user roles and permissions",
   tools: [
     experimental_createTool("ASSIGN_ROLE", {
@@ -424,7 +424,7 @@ composio = Composio(api_key="your_api_key")
 
 user_management = composio.experimental.Toolkit(
     slug="USER_MANAGEMENT",
-    name="User management",
+    name="User scoping",
     description="Manage user roles and permissions",
 )
 
@@ -638,7 +638,7 @@ custom_toolkits = session.custom_toolkits()
 
 ## Reusing a session with custom tools
 
-When [reusing a session](/docs/users-and-sessions#reusing-a-session) via `composio.use()`, you can attach custom tools at the same time:
+When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach custom tools at the same time:
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">

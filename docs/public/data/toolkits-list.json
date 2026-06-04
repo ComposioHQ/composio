@@ -44,7 +44,7 @@
     "name": "Google Sheets",
     "logo": "https://logos.composio.dev/api/googlesheets",
     "category": "spreadsheets",
-    "toolCount": 50,
+    "toolCount": 52,
     "triggerCount": 16
   },
   {
@@ -764,7 +764,7 @@
     "name": "Google Super",
     "logo": "https://logos.composio.dev/api/googlesuper",
     "category": "file management & storage",
-    "toolCount": 440,
+    "toolCount": 442,
     "triggerCount": 20
   },
   {
@@ -2029,6 +2029,14 @@
     "logo": "https://logos.composio.dev/api/all_images_ai",
     "category": "artificial intelligence",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "alpaca",
+    "name": "Alpaca",
+    "logo": "https://logos.composio.dev/api/alpaca",
+    "category": "commerce",
+    "toolCount": 100,
     "triggerCount": 0
   },
   {
@@ -4637,6 +4645,14 @@
     "logo": "https://logos.composio.dev/api/hookdeck",
     "category": "developer tools",
     "toolCount": 105,
+    "triggerCount": 0
+  },
+  {
+    "slug": "hostinger",
+    "name": "Hostinger",
+    "logo": "https://logos.composio.dev/api/hostinger",
+    "category": "developer tools",
+    "toolCount": 24,
     "triggerCount": 0
   },
   {
@@ -7981,22 +7997,6 @@
     "logo": "https://logos.composio.dev/api/vapi",
     "category": "artificial intelligence",
     "toolCount": 38,
-    "triggerCount": 0
-  },
-  {
-    "slug": "vectorshift",
-    "name": "Vectorshift",
-    "logo": "https://logos.composio.dev/api/vectorshift",
-    "category": "developer tools",
-    "toolCount": 11,
-    "triggerCount": 0
-  },
-  {
-    "slug": "veo",
-    "name": "Veo",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gemini.svg",
-    "category": "artificial intelligence",
-    "toolCount": 5,
     "triggerCount": 0
   }
 ]

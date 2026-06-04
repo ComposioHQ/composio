@@ -1,6 +1,7 @@
 import process from 'node:process';
 import * as p from '@clack/prompts';
 import { Context, Effect, Exit, Layer } from 'effect';
+import { canRenderTerminalDecoration, isInteractiveTerminal } from 'src/utils/stdio';
 
 // ---------------------------------------------------------------------------
 // SpinnerHandle — returned by `useMakeSpinner` for manual control
@@ -30,10 +31,7 @@ export interface TerminalUI {
    *
    * Use this for values that scripts should capture (API keys, version strings, etc.).
    */
-  readonly output: (
-    data: string,
-    options?: { readonly force?: boolean }
-  ) => Effect.Effect<void>;
+  readonly output: (data: string, options?: { readonly force?: boolean }) => Effect.Effect<void>;
 
   /** Display a session start marker (e.g., `┌  title`). Writes to stderr. */
   readonly intro: (title: string) => Effect.Effect<void>;
@@ -114,15 +112,22 @@ export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
 // ---------------------------------------------------------------------------
 
 /**
- * Whether the CLI is running interactively (stdout is a TTY).
- * When piped (stdout is NOT a TTY), all decoration is suppressed and only
- * `output()` writes raw data to stdout for machine consumption.
+ * Whether the CLI can prompt for human input. Human-only prompts are shown only
+ * when stdin/stdout/stderr are all TTYs; agent and shell pipelines get
+ * non-interactive behavior.
  */
-const isInteractive = !!process.stdout.isTTY;
+const canPrompt = isInteractiveTerminal();
 
-/** Run a decoration side-effect only in interactive mode. */
+/**
+ * Whether the CLI can render auxiliary UI. Logs, notes, and spinners only need
+ * stderr, so they can still be shown when stdin is redirected from /dev/null or
+ * stdout is reserved for machine-readable JSON/data.
+ */
+const canDecorate = canRenderTerminalDecoration();
+
+/** Run a decoration side-effect only when stderr is a terminal. */
 function decorate(fn: () => void): void {
-  if (isInteractive) fn();
+  if (canDecorate) fn();
 }
 
 function createClackSpinnerHandle(
@@ -158,7 +163,7 @@ const silentSpinnerHandle: SpinnerHandle = {
 const makeLive: TerminalUI = {
   output: (data, options) =>
     Effect.sync(() => {
-      if (options?.force || !isInteractive) {
+      if (options?.force || !canPrompt) {
         process.stdout.write(`${data}\n`);
       }
     }),
@@ -190,7 +195,7 @@ const makeLive: TerminalUI = {
     message: string,
     options: ReadonlyArray<{ value: unknown; label: string; hint?: string }>
   ) =>
-    isInteractive
+    canPrompt
       ? Effect.promise(async () => {
           const result = await p.select({
             message,
@@ -205,7 +210,7 @@ const makeLive: TerminalUI = {
       : Effect.succeed(options[0].value)) as TerminalUI['select'],
 
   confirm: (message, options) =>
-    isInteractive
+    canPrompt
       ? Effect.promise(async () => {
           const result = await p.confirm({
             message,
@@ -218,7 +223,7 @@ const makeLive: TerminalUI = {
       : Effect.succeed(options?.defaultValue ?? true),
 
   withSpinner: (message, effect, options) =>
-    isInteractive
+    canDecorate
       ? Effect.acquireUseRelease(
           Effect.sync(() => {
             const s = p.spinner({ output: process.stderr });
@@ -242,7 +247,7 @@ const makeLive: TerminalUI = {
       : effect,
 
   useMakeSpinner: (message, use) =>
-    isInteractive
+    canDecorate
       ? Effect.acquireUseRelease(
           Effect.sync(() => {
             const s = p.spinner({ output: process.stderr });

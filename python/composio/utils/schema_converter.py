@@ -272,7 +272,7 @@ def _build_union_from_options(options: t.List[t.Dict[str, t.Any]]) -> t.Type:
         pydantic_types.append(ptype)
 
     if len(pydantic_types) == 0:
-        return t.Optional[t.Any] if has_null else str
+        return t.Optional[t.Any] if has_null else str  # type: ignore
 
     if len(pydantic_types) == 1:
         base_type = pydantic_types[0]

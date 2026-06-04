@@ -21,11 +21,6 @@ const targets = [
     swiftArch: 'arm64',
     buildPath: 'Apps/CLI/.build/arm64-apple-macosx/release/peekaboo',
   },
-  {
-    platform: 'darwin-x64',
-    swiftArch: 'x86_64',
-    buildPath: 'Apps/CLI/.build/x86_64-apple-macosx/release/peekaboo',
-  },
 ] as const;
 
 type Target = (typeof targets)[number];
@@ -206,8 +201,8 @@ These \`peekaboo\` binaries are built from the upstream Peekaboo repository.
 - Upstream version: \`${params.version}\`
 - Upstream submodule commit: \`${params.commit}\`
 - License: MIT (\`LICENSE\` in the upstream repository)
-- Build command: \`pnpm --filter @composio/cli-local-tools build:peekaboo -- --target <darwin-arm64|darwin-x64>\`
-- Underlying Swift build command: \`swift build --arch <arm64|x86_64> -c release -Xswiftc -Osize -Xswiftc -wmo -Xlinker -dead_strip\` from \`Apps/CLI\`
+- Build command: \`pnpm --filter @composio/cli-local-tools build:peekaboo -- --target <darwin-arm64>\`
+- Underlying Swift build command: \`swift build --arch arm64 -c release -Xswiftc -Osize -Xswiftc -wmo -Xlinker -dead_strip\` from \`Apps/CLI\`
 
 The binaries are release builds for macOS. Peekaboo requires macOS 15+, Screen Recording permission for capture/read tools, and Accessibility/Automation permissions for GUI control tools.
 `;

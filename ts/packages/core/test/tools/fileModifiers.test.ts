@@ -790,6 +790,178 @@ describe('FileToolModifier', () => {
       expect(result.arguments?.fileInput).toEqual(mockFileData);
     });
 
+    it('should upload each file when anyOf accepts a single file or an array of files', async () => {
+      const mockFileData1 = {
+        name: 'file1.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file1.txt',
+      };
+      const mockFileData2 = {
+        name: 'file2.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file2.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3)
+        .mockResolvedValueOnce(mockFileData1)
+        .mockResolvedValueOnce(mockFileData2);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                { type: 'string', file_uploadable: true },
+                {
+                  type: 'array',
+                  items: { type: 'string', file_uploadable: true },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithSingleOrArrayFile, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachment: ['/path/to/file1.txt', '/path/to/file2.txt'],
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(2);
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenNthCalledWith(
+        1,
+        '/path/to/file1.txt',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenNthCalledWith(
+        2,
+        '/path/to/file2.txt',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(result.arguments?.attachment).toEqual([mockFileData1, mockFileData2]);
+    });
+
+    it('should keep single-file behavior when anyOf also accepts an array of files', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                { type: 'string', file_uploadable: true },
+                {
+                  type: 'array',
+                  items: { type: 'string', file_uploadable: true },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithSingleOrArrayFile, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachment: '/path/to/file.txt',
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(1);
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/file.txt', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.attachment).toEqual(mockFileData);
+    });
+
+    it('should upload file array items whose item schema is an anyOf file branch', async () => {
+      const mockFileData1 = {
+        name: 'file1.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file1.txt',
+      };
+      const mockFileData2 = {
+        name: 'file2.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file2.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3)
+        .mockResolvedValueOnce(mockFileData1)
+        .mockResolvedValueOnce(mockFileData2);
+
+      const toolWithArrayItemAnyOf: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachments: {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string', file_uploadable: true }, { type: 'null' }],
+              },
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithArrayItemAnyOf, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachments: ['/path/to/file1.txt', null, '/path/to/file2.txt'],
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(2);
+      expect(result.arguments?.attachments).toEqual([mockFileData1, null, mockFileData2]);
+    });
+
     it('should not upload when value is null for anyOf with null variant', async () => {
       const toolWithAnyOf: Tool = {
         slug: 'test-tool',
@@ -1396,6 +1568,101 @@ describe('FileToolModifier', () => {
         s3url: 'https://s3.example.com/file1.txt',
         mimeType: 'text/plain',
       });
+    });
+
+    it('should download each file when anyOf accepts a single file or an array of files', async () => {
+      const mockDownloadResult1 = {
+        name: 'file1.txt',
+        mimeType: 'text/plain',
+        s3Url: 'downloads/file1.txt',
+        filePath: '/downloaded/file1.txt',
+      };
+      const mockDownloadResult2 = {
+        name: 'file2.txt',
+        mimeType: 'text/plain',
+        s3Url: 'downloads/file2.txt',
+        filePath: '/downloaded/file2.txt',
+      };
+      vi.mocked(fileUtils.downloadFileFromS3)
+        .mockResolvedValueOnce(mockDownloadResult1)
+        .mockResolvedValueOnce(mockDownloadResult2);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        outputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                {
+                  type: 'object',
+                  file_downloadable: true,
+                  properties: {
+                    s3url: { type: 'string' },
+                    mimetype: { type: 'string' },
+                  },
+                },
+                {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    file_downloadable: true,
+                    properties: {
+                      s3url: { type: 'string' },
+                      mimetype: { type: 'string' },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const modifiedResult = await fileToolModifier.fileDownloadModifier(
+        toolWithSingleOrArrayFile,
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          result: {
+            data: {
+              attachment: [
+                {
+                  s3url: 'https://s3.example.com/file1.txt',
+                  mimetype: 'text/plain',
+                },
+                {
+                  s3url: 'https://s3.example.com/file2.txt',
+                  mimetype: 'text/plain',
+                },
+              ],
+            },
+            error: null,
+            successful: true,
+          },
+        }
+      );
+
+      expect(fileUtils.downloadFileFromS3).toHaveBeenCalledTimes(2);
+      expect(modifiedResult.data.attachment).toEqual([
+        {
+          uri: '/downloaded/file1.txt',
+          file_downloaded: true,
+          s3url: 'https://s3.example.com/file1.txt',
+          mimeType: 'text/plain',
+        },
+        {
+          uri: '/downloaded/file2.txt',
+          file_downloaded: true,
+          s3url: 'https://s3.example.com/file2.txt',
+          mimeType: 'text/plain',
+        },
+      ]);
     });
 
     it('should not download when value is null for anyOf with null variant', async () => {

@@ -5,6 +5,7 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/cli/**'
+      - 'ts/packages/cli-local-tools/**'
   workflow_dispatch:
     inputs:
       action:
@@ -213,7 +214,7 @@ jobs:
           - target: bun-darwin-x64
             artifact: composio-darwin-x64
             runner: macos-15-intel
-            local_tools_target: darwin-x64
+            local_tools_target: ''
           - target: bun-darwin-arm64
             artifact: composio-darwin-aarch64
             runner: macos-15
@@ -253,6 +254,7 @@ jobs:
         run: |
           test -x ts/packages/cli-local-tools/local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli
           test -x ts/packages/cli-local-tools/local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo
+          test -x ts/packages/cli-local-tools/local-tools-binaries/composio-native-ui/${{ matrix.local_tools_target }}/composio-native-ui
 
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
@@ -289,6 +291,7 @@ jobs:
         run: |
           unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/beeper-imessage/${{ matrix.local_tools_target }}/imessage-cli"
           unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/peekaboo/${{ matrix.local_tools_target }}/peekaboo"
+          unzip -Z1 dist/binaries/${{ matrix.artifact }}.zip | grep -F "local-tools-binaries/composio-native-ui/${{ matrix.local_tools_target }}/composio-native-ui"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6

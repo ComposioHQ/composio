@@ -74,7 +74,7 @@ export class ComposioSharedAccessDeniedError extends ComposioError {
       code: ConnectedAccountErrorCodes.SHARED_ACCESS_DENIED,
       statusCode: 403,
       possibleFixes: options.possibleFixes || [
-        "Ask the connection's creator to grant access via composio.connectedAccounts.updateAcl() — set allowAllUsers, add the userId to allowedUserIds, or remove it from notAllowedUserIds.",
+        "Ask the connection's creator to grant access via composio.experimental.updateAcl() — set allowAllUsers, add the userId to allowedUserIds, or remove it from notAllowedUserIds.",
       ],
     });
     this.name = 'ComposioSharedAccessDeniedError';
@@ -119,7 +119,7 @@ export class ComposioSharedConnectionNotAccessibleError extends ComposioError {
       code: ConnectedAccountErrorCodes.SHARED_CONNECTION_NOT_ACCESSIBLE,
       statusCode: 400,
       possibleFixes: options.possibleFixes || [
-        "Grant the session user access via composio.connectedAccounts.updateAcl() on the pinned connection, or pin a different connection the user can use.",
+        'Grant the session user access via composio.experimental.updateAcl() on the pinned connection, or pin a different connection the user can use.',
       ],
     });
     this.name = 'ComposioSharedConnectionNotAccessibleError';

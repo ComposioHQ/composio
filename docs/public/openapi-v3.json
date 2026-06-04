@@ -349,6 +349,44 @@
             "required": [
               "state"
             ]
+          },
+          "experimental": {
+            "type": "object",
+            "properties": {
+              "acl_config_for_shared": {
+                "type": "object",
+                "properties": {
+                  "allow_all_users": {
+                    "type": "boolean",
+                    "description": "Wildcard \"any user_id in the project\" allow toggle. Only valid on SHARED connections."
+                  },
+                  "allowed_user_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "maxItems": 1000,
+                    "description": "Explicit allow list of user_ids who can use this SHARED connection."
+                  },
+                  "not_allowed_user_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "maxItems": 1000,
+                    "description": "Explicit deny list. Wins on conflict with allow_all_users and allowed_user_ids."
+                  }
+                },
+                "description": "Access control for SHARED connections. Resolution rule (only fires when caller != creator): user in not_allowed_user_ids → DENY; allow_all_users=true → ALLOW; user in allowed_user_ids → ALLOW; else DENY. Default state (omitted or {}) is deny-by-default — only the creator can use.",
+                "x-experimental": true
+              }
+            },
+            "description": "Experimental features - not stable, may be modified or removed in future versions.",
+            "x-experimental": true
           }
         }
       },
@@ -1085,6 +1123,10 @@
                             "seen_flow_cli": {
                               "type": "boolean",
                               "description": "True once the user has completed the CLI onboarding flow."
+                            },
+                            "seen_connect_announcement": {
+                              "type": "boolean",
+                              "description": "True once the user has dismissed the Composio For You announcement modal in the developer dashboard."
                             }
                           },
                           "additionalProperties": {
@@ -2869,10 +2911,11 @@
                 "SHARED",
                 "ALL"
               ],
-              "description": "Filter by sharing model. Default (omitted) returns PRIVATE only — shared accounts must be requested explicitly. Pass SHARED for only shared accounts, or ALL for PRIVATE + SHARED."
+              "description": "[Experimental] Filter by sharing model. Default (omitted) returns PRIVATE only — shared accounts must be requested explicitly. Pass SHARED for only shared accounts, or ALL for PRIVATE + SHARED.",
+              "x-experimental": true
             },
             "required": false,
-            "description": "Filter by sharing model. Default (omitted) returns PRIVATE only — shared accounts must be requested explicitly. Pass SHARED for only shared accounts, or ALL for PRIVATE + SHARED.",
+            "description": "[Experimental] Filter by sharing model. Default (omitted) returns PRIVATE only — shared accounts must be requested explicitly. Pass SHARED for only shared accounts, or ALL for PRIVATE + SHARED.",
             "name": "account_type",
             "in": "query"
           }
@@ -2994,13 +3037,51 @@
                             ],
                             "description": "The status of the connection"
                           },
-                          "account_type": {
-                            "type": "string",
-                            "enum": [
-                              "PRIVATE",
-                              "SHARED"
+                          "experimental": {
+                            "type": "object",
+                            "properties": {
+                              "account_type": {
+                                "type": "string",
+                                "enum": [
+                                  "PRIVATE",
+                                  "SHARED"
+                                ],
+                                "description": "Sharing model for this connected account. PRIVATE is usable only by the owning user_id. SHARED is reachable from a tool-router session only when explicitly pinned in the session config.",
+                                "x-experimental": true
+                              },
+                              "acl_config_for_shared": {
+                                "type": "object",
+                                "properties": {
+                                  "allow_all_users": {
+                                    "type": "boolean"
+                                  },
+                                  "allowed_user_ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "not_allowed_user_ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "allow_all_users",
+                                  "allowed_user_ids",
+                                  "not_allowed_user_ids"
+                                ],
+                                "description": "Access control for SHARED connections. Visible only to the connection creator and project/org API key callers; non-creator cookie callers receive the response without this block.",
+                                "x-experimental": true
+                              }
+                            },
+                            "required": [
+                              "account_type"
                             ],
-                            "description": "Sharing model. PRIVATE accounts are usable only by their owning user_id. SHARED accounts are reachable from a tool-router session only when explicitly pinned in the session config (at most one SHARED per toolkit per session); they are never used implicitly."
+                            "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                            "x-experimental": true
                           },
                           "created_at": {
                             "type": "string",
@@ -3209,7 +3290,6 @@
                           "alias",
                           "user_id",
                           "status",
-                          "account_type",
                           "created_at",
                           "updated_at",
                           "state",
@@ -3514,13 +3594,52 @@
                         "description": "DEPRECATED: This parameter will be removed in a future version.",
                         "deprecated": true
                       },
-                      "account_type": {
-                        "type": "string",
-                        "enum": [
-                          "PRIVATE",
-                          "SHARED"
-                        ],
-                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Set at creation time only — cannot be changed later."
+                      "experimental": {
+                        "type": "object",
+                        "properties": {
+                          "account_type": {
+                            "type": "string",
+                            "enum": [
+                              "PRIVATE",
+                              "SHARED"
+                            ],
+                            "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                            "x-experimental": true
+                          },
+                          "acl_config_for_shared": {
+                            "type": "object",
+                            "properties": {
+                              "allow_all_users": {
+                                "type": "boolean",
+                                "description": "Wildcard \"any user_id in the project\" allow toggle. Only valid on SHARED connections."
+                              },
+                              "allowed_user_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "maxItems": 1000,
+                                "description": "Explicit allow list of user_ids who can use this SHARED connection."
+                              },
+                              "not_allowed_user_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 256
+                                },
+                                "maxItems": 1000,
+                                "description": "Explicit deny list. Wins on conflict with allow_all_users and allowed_user_ids."
+                              }
+                            },
+                            "description": "Access control for SHARED connections. Resolution rule (only fires when caller != creator): user in not_allowed_user_ids → DENY; allow_all_users=true → ALLOW; user in allowed_user_ids → ALLOW; else DENY. Default state (omitted or {}) is deny-by-default — only the creator can use.",
+                            "x-experimental": true
+                          }
+                        },
+                        "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                        "x-experimental": true
                       }
                     }
                   },
@@ -3748,13 +3867,51 @@
                       "description": "DEPRECATED: This field will be removed in a future version. Please use id and auth_config.id instead.",
                       "deprecated": true
                     },
-                    "account_type": {
-                      "type": "string",
-                      "enum": [
-                        "PRIVATE",
-                        "SHARED"
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "account_type": {
+                          "type": "string",
+                          "enum": [
+                            "PRIVATE",
+                            "SHARED"
+                          ],
+                          "description": "Sharing model for this connected account. PRIVATE is usable only by the owning user_id. SHARED is reachable from a tool-router session only when explicitly pinned in the session config.",
+                          "x-experimental": true
+                        },
+                        "acl_config_for_shared": {
+                          "type": "object",
+                          "properties": {
+                            "allow_all_users": {
+                              "type": "boolean"
+                            },
+                            "allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "not_allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "allow_all_users",
+                            "allowed_user_ids",
+                            "not_allowed_user_ids"
+                          ],
+                          "description": "Access control for SHARED connections. Visible only to the connection creator and project/org API key callers; non-creator cookie callers receive the response without this block.",
+                          "x-experimental": true
+                        }
+                      },
+                      "required": [
+                        "account_type"
                       ],
-                      "description": "The persisted sharing model for this connected account (PRIVATE | SHARED). Echoes back the value supplied at creation time so callers can confirm what landed without a follow-up GET."
+                      "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                      "x-experimental": true
                     }
                   },
                   "required": [
@@ -3763,8 +3920,7 @@
                     "status",
                     "redirect_url",
                     "redirect_uri",
-                    "deprecated",
-                    "account_type"
+                    "deprecated"
                   ]
                 }
               }
@@ -3965,13 +4121,51 @@
                       ],
                       "description": "The status of the connection"
                     },
-                    "account_type": {
-                      "type": "string",
-                      "enum": [
-                        "PRIVATE",
-                        "SHARED"
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "account_type": {
+                          "type": "string",
+                          "enum": [
+                            "PRIVATE",
+                            "SHARED"
+                          ],
+                          "description": "Sharing model for this connected account. PRIVATE is usable only by the owning user_id. SHARED is reachable from a tool-router session only when explicitly pinned in the session config.",
+                          "x-experimental": true
+                        },
+                        "acl_config_for_shared": {
+                          "type": "object",
+                          "properties": {
+                            "allow_all_users": {
+                              "type": "boolean"
+                            },
+                            "allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "not_allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "allow_all_users",
+                            "allowed_user_ids",
+                            "not_allowed_user_ids"
+                          ],
+                          "description": "Access control for SHARED connections. Visible only to the connection creator and project/org API key callers; non-creator cookie callers receive the response without this block.",
+                          "x-experimental": true
+                        }
+                      },
+                      "required": [
+                        "account_type"
                       ],
-                      "description": "Sharing model. PRIVATE accounts are usable only by their owning user_id. SHARED accounts are reachable from a tool-router session only when explicitly pinned in the session config (at most one SHARED per toolkit per session); they are never used implicitly."
+                      "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                      "x-experimental": true
                     },
                     "created_at": {
                       "type": "string",
@@ -4186,7 +4380,6 @@
                     "alias",
                     "user_id",
                     "status",
-                    "account_type",
                     "created_at",
                     "updated_at",
                     "state",
@@ -5041,6 +5234,10 @@
                         },
                         "description": "for slack user scopes"
                       },
+                      "extra_token_data": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
                       "revoked_at": {
                         "type": "string"
                       },
@@ -5106,13 +5303,52 @@
                     },
                     "additionalProperties": true
                   },
-                  "account_type": {
-                    "type": "string",
-                    "enum": [
-                      "PRIVATE",
-                      "SHARED"
-                    ],
-                    "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Set at creation time only — cannot be changed later."
+                  "experimental": {
+                    "type": "object",
+                    "properties": {
+                      "account_type": {
+                        "type": "string",
+                        "enum": [
+                          "PRIVATE",
+                          "SHARED"
+                        ],
+                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                        "x-experimental": true
+                      },
+                      "acl_config_for_shared": {
+                        "type": "object",
+                        "properties": {
+                          "allow_all_users": {
+                            "type": "boolean",
+                            "description": "Wildcard \"any user_id in the project\" allow toggle. Only valid on SHARED connections."
+                          },
+                          "allowed_user_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "maxItems": 1000,
+                            "description": "Explicit allow list of user_ids who can use this SHARED connection."
+                          },
+                          "not_allowed_user_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "maxItems": 1000,
+                            "description": "Explicit deny list. Wins on conflict with allow_all_users and allowed_user_ids."
+                          }
+                        },
+                        "description": "Access control for SHARED connections. Resolution rule (only fires when caller != creator): user in not_allowed_user_ids → DENY; allow_all_users=true → ALLOW; user in allowed_user_ids → ALLOW; else DENY. Default state (omitted or {}) is deny-by-default — only the creator can use.",
+                        "x-experimental": true
+                      }
+                    },
+                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                    "x-experimental": true
                   }
                 },
                 "required": [
@@ -5148,21 +5384,58 @@
                       "format": "connectedAccountId",
                       "description": "The connected account ID that was created"
                     },
-                    "account_type": {
-                      "type": "string",
-                      "enum": [
-                        "PRIVATE",
-                        "SHARED"
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "account_type": {
+                          "type": "string",
+                          "enum": [
+                            "PRIVATE",
+                            "SHARED"
+                          ],
+                          "description": "Sharing model for this connected account. PRIVATE is usable only by the owning user_id. SHARED is reachable from a tool-router session only when explicitly pinned in the session config.",
+                          "x-experimental": true
+                        },
+                        "acl_config_for_shared": {
+                          "type": "object",
+                          "properties": {
+                            "allow_all_users": {
+                              "type": "boolean"
+                            },
+                            "allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "not_allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "allow_all_users",
+                            "allowed_user_ids",
+                            "not_allowed_user_ids"
+                          ],
+                          "description": "Access control for SHARED connections. Visible only to the connection creator and project/org API key callers; non-creator cookie callers receive the response without this block.",
+                          "x-experimental": true
+                        }
+                      },
+                      "required": [
+                        "account_type"
                       ],
-                      "description": "The persisted sharing model for this connected account (PRIVATE | SHARED). Echoes back the value supplied at creation time so callers can confirm what landed without a follow-up GET."
+                      "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                      "x-experimental": true
                     }
                   },
                   "required": [
                     "link_token",
                     "redirect_url",
                     "expires_at",
-                    "connected_account_id",
-                    "account_type"
+                    "connected_account_id"
                   ]
                 }
               }
@@ -5615,7 +5888,7 @@
                       "type": "string",
                       "nullable": true,
                       "description": "API key for the project",
-                      "example": "ak_abc123xyz456"
+                      "example": "ak_a1b2c3d4e5f6g7h8i9j0"
                     }
                   },
                   "required": [
@@ -8426,8 +8699,14 @@
                                         "required": {
                                           "type": "boolean"
                                         },
+                                        "is_secret": {
+                                          "type": "boolean"
+                                        },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "advanced": {
+                                          "type": "boolean"
                                         }
                                       },
                                       "required": [
@@ -8463,8 +8742,14 @@
                                         "required": {
                                           "type": "boolean"
                                         },
+                                        "is_secret": {
+                                          "type": "boolean"
+                                        },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "advanced": {
+                                          "type": "boolean"
                                         }
                                       },
                                       "required": [
@@ -8510,8 +8795,14 @@
                                         "required": {
                                           "type": "boolean"
                                         },
+                                        "is_secret": {
+                                          "type": "boolean"
+                                        },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "advanced": {
+                                          "type": "boolean"
                                         }
                                       },
                                       "required": [
@@ -8547,8 +8838,14 @@
                                         "required": {
                                           "type": "boolean"
                                         },
+                                        "is_secret": {
+                                          "type": "boolean"
+                                        },
                                         "legacy_template_name": {
                                           "type": "string"
+                                        },
+                                        "advanced": {
+                                          "type": "boolean"
                                         }
                                       },
                                       "required": [
@@ -9885,6 +10182,10 @@
                             },
                             "description": "for slack user scopes"
                           },
+                          "extra_token_data": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
                           "client_id": {
                             "type": "string",
                             "description": "Dynamically registered client ID"
@@ -10638,6 +10939,10 @@
                               }
                             },
                             "description": "for slack user scopes"
+                          },
+                          "extra_token_data": {
+                            "type": "object",
+                            "additionalProperties": {}
                           },
                           "client_id": {
                             "type": "string",
@@ -19040,13 +19345,52 @@
                     "description": "URL where users will be redirected after completing auth",
                     "example": "https://myapp.com/callback"
                   },
-                  "account_type": {
-                    "type": "string",
-                    "enum": [
-                      "PRIVATE",
-                      "SHARED"
-                    ],
-                    "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly. Set at creation time only — cannot be changed later."
+                  "experimental": {
+                    "type": "object",
+                    "properties": {
+                      "account_type": {
+                        "type": "string",
+                        "enum": [
+                          "PRIVATE",
+                          "SHARED"
+                        ],
+                        "description": "Sharing model for this connected account. PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned in the session config — at most one SHARED connection per toolkit per session. Sessions never use a SHARED connection implicitly.",
+                        "x-experimental": true
+                      },
+                      "acl_config_for_shared": {
+                        "type": "object",
+                        "properties": {
+                          "allow_all_users": {
+                            "type": "boolean",
+                            "description": "Wildcard \"any user_id in the project\" allow toggle. Only valid on SHARED connections."
+                          },
+                          "allowed_user_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "maxItems": 1000,
+                            "description": "Explicit allow list of user_ids who can use this SHARED connection."
+                          },
+                          "not_allowed_user_ids": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256
+                            },
+                            "maxItems": 1000,
+                            "description": "Explicit deny list. Wins on conflict with allow_all_users and allowed_user_ids."
+                          }
+                        },
+                        "description": "Access control for SHARED connections. Resolution rule (only fires when caller != creator): user in not_allowed_user_ids → DENY; allow_all_users=true → ALLOW; user in allowed_user_ids → ALLOW; else DENY. Default state (omitted or {}) is deny-by-default — only the creator can use.",
+                        "x-experimental": true
+                      }
+                    },
+                    "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                    "x-experimental": true
                   }
                 },
                 "required": [
@@ -19081,21 +19425,57 @@
                       "description": "The unique identifier for the connected account",
                       "example": "ca_abc123xyz"
                     },
-                    "account_type": {
-                      "type": "string",
-                      "enum": [
-                        "PRIVATE",
-                        "SHARED"
+                    "experimental": {
+                      "type": "object",
+                      "properties": {
+                        "account_type": {
+                          "type": "string",
+                          "enum": [
+                            "PRIVATE",
+                            "SHARED"
+                          ],
+                          "description": "Sharing model for this connected account. PRIVATE is usable only by the owning user_id. SHARED is reachable from a tool-router session only when explicitly pinned in the session config.",
+                          "x-experimental": true
+                        },
+                        "acl_config_for_shared": {
+                          "type": "object",
+                          "properties": {
+                            "allow_all_users": {
+                              "type": "boolean"
+                            },
+                            "allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "not_allowed_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "allow_all_users",
+                            "allowed_user_ids",
+                            "not_allowed_user_ids"
+                          ],
+                          "description": "Access control for SHARED connections. Visible only to the connection creator and project/org API key callers; non-creator cookie callers receive the response without this block.",
+                          "x-experimental": true
+                        }
+                      },
+                      "required": [
+                        "account_type"
                       ],
-                      "description": "PRIVATE (default) is usable only by the owning user_id. SHARED is reachable from a tool-router session ONLY when explicitly pinned, with at most one SHARED per toolkit per session.",
-                      "example": "PRIVATE"
+                      "description": "Experimental features - not stable, may be modified or removed in future versions.",
+                      "x-experimental": true
                     }
                   },
                   "required": [
                     "link_token",
                     "redirect_url",
-                    "connected_account_id",
-                    "account_type"
+                    "connected_account_id"
                   ]
                 }
               }
@@ -19468,6 +19848,10 @@
                               }
                             },
                             "description": "for slack user scopes"
+                          },
+                          "extra_token_data": {
+                            "type": "object",
+                            "additionalProperties": {}
                           },
                           "client_id": {
                             "type": "string",
@@ -20245,6 +20629,14 @@
                             "additionalProperties": {},
                             "description": "Information about the currently connected user (email, name, etc.)"
                           },
+                          "account_type": {
+                            "type": "string",
+                            "enum": [
+                              "PRIVATE",
+                              "SHARED"
+                            ],
+                            "description": "Sharing model for the connected account when has_active_connection is true. PRIVATE is owner-only; SHARED is reachable only when explicitly pinned to the session."
+                          },
                           "accounts": {
                             "type": "array",
                             "items": {
@@ -20274,6 +20666,14 @@
                                 "is_default": {
                                   "type": "boolean",
                                   "description": "Whether this is the default account for the toolkit"
+                                },
+                                "account_type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "PRIVATE",
+                                    "SHARED"
+                                  ],
+                                  "description": "Sharing model for this connected account. PRIVATE is owner-only; SHARED is reachable from a tool-router session only when explicitly pinned."
                                 }
                               },
                               "required": [

@@ -42,15 +42,15 @@ export function AIToolsBanner() {
       {/* Shader gradient blobs — same as PromptBanner */}
       <div
         className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(242,139,60,0.15) 0%, rgba(242,139,60,0) 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(0,7,205,0.12) 0%, rgba(0,7,205,0) 70%)' }}
       />
       <div
         className="pointer-events-none absolute right-10 -bottom-20 h-56 w-56 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(242,139,60,0.1) 0%, rgba(242,139,60,0) 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(0,7,205,0.08) 0%, rgba(0,7,205,0) 70%)' }}
       />
       <div
         className="pointer-events-none absolute right-32 -top-16 h-44 w-44 rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, rgba(251,191,36,0) 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(0,7,205,0.06) 0%, rgba(0,7,205,0) 70%)' }}
       />
       <div className="relative flex flex-col gap-3 p-4 sm:px-5 sm:py-4">
         {/* Header */}

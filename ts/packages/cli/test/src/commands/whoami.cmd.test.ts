@@ -24,9 +24,8 @@ describe('CLI: composio whoami', () => {
         expect(output).not.toContain(`api_key_from_test_config_provider`);
         expect(output).not.toContain(`global_user_api_key`);
         expect(output).toContain(`"email":null`);
-        expect(output).toContain(`"default_org_name":null`);
-        expect(output).toContain(`"default_org_id":null`);
-        expect(output).toContain(`"test_user_id":null`);
+        expect(output).toContain(`"current_org_name":null`);
+        expect(output).not.toContain(`"test_user_id"`);
       })
     );
   });
@@ -42,9 +41,8 @@ describe('CLI: composio whoami', () => {
         expect(output).not.toContain(`api_key_from_test_fixture`);
         expect(output).not.toContain(`global_user_api_key`);
         expect(output).toContain(`"email":null`);
-        expect(output).toContain(`"default_org_name":null`);
-        expect(output).toContain(`"default_org_id":null`);
-        expect(output).toContain(`"test_user_id":null`);
+        expect(output).toContain(`"current_org_name":null`);
+        expect(output).not.toContain(`"test_user_id"`);
       })
     );
   });
@@ -90,7 +88,10 @@ describe('CLI: composio whoami', () => {
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
         expect(output).toContain(`"email":"person@example.com"`);
-        expect(output).toContain(`"default_org_name":"Acme Org"`);
+        expect(output).toContain(`"current_org_name":"Acme Org"`);
+        expect(output).toContain('Current Org: Acme Org');
+        expect(output).not.toContain('Default Org');
+        expect(output).not.toContain('Test User ID');
       })
     );
   });

@@ -1849,28 +1849,42 @@ describe('ToolRouter', () => {
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
 
-    // authorize() validates aclConfigForShared at the SDK boundary, same
-    // caps as link() — 1000-entry list, 256-char user_id.
-    it('forwards accountType + nested acl_config_for_shared on the wire', async () => {
+    // authorize() validates experimental.aclConfigForShared at the SDK
+    // boundary — same caps as link() (1000-entry list, 256-char user_id).
+    it('forwards the experimental block to the wire', async () => {
       mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
 
       const session = await toolRouter.create(userId);
       await session.authorize(toolkit, {
-        accountType: 'SHARED',
-        aclConfigForShared: {
-          allowAllUsers: true,
-          notAllowedUserIds: ['user_bob'],
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: {
+            allowAllUsers: true,
+            notAllowedUserIds: ['user_bob'],
+          },
         },
       });
 
       expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
         toolkit,
-        account_type: 'SHARED',
-        acl_config_for_shared: {
-          allow_all_users: true,
-          not_allowed_user_ids: ['user_bob'],
+        experimental: {
+          account_type: 'SHARED',
+          acl_config_for_shared: {
+            allow_all_users: true,
+            not_allowed_user_ids: ['user_bob'],
+          },
         },
       });
+    });
+
+    it('omits the experimental block entirely when not provided', async () => {
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.authorize(toolkit);
+
+      const body = mockClient.toolRouter.session.link.mock.calls[0][1];
+      expect('experimental' in body).toBe(false);
     });
 
     it('throws ValidationError when allowedUserIds exceeds the 1000-entry cap', async () => {
@@ -1879,8 +1893,10 @@ describe('ToolRouter', () => {
 
       await expect(
         session.authorize(toolkit, {
-          accountType: 'SHARED',
-          aclConfigForShared: { allowedUserIds: oversizedList },
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: oversizedList },
+          },
         })
       ).rejects.toMatchObject({ name: 'ValidationError' });
 
@@ -1893,8 +1909,10 @@ describe('ToolRouter', () => {
 
       await expect(
         session.authorize(toolkit, {
-          accountType: 'SHARED',
-          aclConfigForShared: { allowedUserIds: [tooLongUserId] },
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: [tooLongUserId] },
+          },
         })
       ).rejects.toMatchObject({ name: 'ValidationError' });
 
@@ -1906,8 +1924,10 @@ describe('ToolRouter', () => {
 
       await expect(
         session.authorize(toolkit, {
-          accountType: 'SHARED',
-          aclConfigForShared: { notAllowedUserIds: [''] },
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { notAllowedUserIds: [''] },
+          },
         })
       ).rejects.toMatchObject({ name: 'ValidationError' });
 

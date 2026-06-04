@@ -79,7 +79,13 @@ function PortaledTabsHeader({ tabs }: { tabs: TabConfig[] }) {
 
   const header = (
     <div className="mt-4 border-t border-fd-border pt-4">
-      <p className="mb-3 text-sm font-medium text-fd-muted-foreground">Choose your integration type · <Link href="/docs/native-tools-vs-mcp" className="text-fd-muted-foreground hover:text-fd-foreground transition-colors underline underline-offset-2">Use this guide to decide</Link></p>
+      <p className="mb-3 max-w-2xl text-sm text-fd-muted-foreground">
+        If your framework has good native tool-calling support, we recommend native tools. The remote MCP URL is always available too.{' '}
+        <Link href="/docs/native-tools-vs-mcp" className="text-fd-muted-foreground hover:text-fd-foreground transition-colors underline underline-offset-2">
+          Learn the differences
+        </Link>
+        .
+      </p>
       <TabsHeader tabs={tabs} />
     </div>
   );

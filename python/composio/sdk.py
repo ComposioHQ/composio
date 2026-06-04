@@ -179,10 +179,11 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
         self.connected_accounts = ConnectedAccounts(client=self._client)
         self.mcp = MCP(client=self._client)
 
-        # experimental API — decorators for custom tools and toolkits
-        from composio.core.models.custom_tool import ExperimentalAPI
+        # experimental API — decorators for custom tools and toolkits,
+        # plus experimental SDK methods (e.g. update_acl)
+        from composio.core.models.experimental import ExperimentalAPI
 
-        self.experimental = ExperimentalAPI()
+        self.experimental = ExperimentalAPI(client=self._client)
 
         # initialize tool router methods
         self.tool_router = ToolRouter(

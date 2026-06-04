@@ -6,8 +6,7 @@ import pytest
 from composio_client import omit
 from pydantic import BaseModel, Field
 
-from composio.exceptions import ValidationError
-from composio.core.models.custom_tool import ExperimentalAPI
+from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -24,6 +23,7 @@ from composio.core.models.tool_router import (
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
 )
+from composio.exceptions import ValidationError
 
 experimental_api = ExperimentalAPI()
 
@@ -1181,6 +1181,30 @@ class TestToolRouter:
         # Verify link was called with callback_url
         call_args = mock_client.tool_router.session.link.call_args
         assert call_args.kwargs.get("callback_url") == "https://myapp.com/callback"
+
+    def test_authorize_forwards_experimental_block(self, tool_router, mock_client):
+        """authorize() should pass the experimental options through verbatim."""
+        session = tool_router.create(user_id="user_123")
+
+        session.authorize(
+            "github",
+            experimental={
+                "account_type": "SHARED",
+                "acl_config_for_shared": {
+                    "allow_all_users": True,
+                    "not_allowed_user_ids": ["user_bob"],
+                },
+            },
+        )
+
+        call_kwargs = mock_client.tool_router.session.link.call_args.kwargs
+        assert call_kwargs["experimental"] == {
+            "account_type": "SHARED",
+            "acl_config_for_shared": {
+                "allow_all_users": True,
+                "not_allowed_user_ids": ["user_bob"],
+            },
+        }
 
     def test_toolkits_function(self, tool_router, mock_client):
         """Test the toolkits function returned by session."""

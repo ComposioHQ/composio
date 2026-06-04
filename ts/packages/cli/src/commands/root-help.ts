@@ -165,7 +165,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
-  tagged({ name: 'orgs', description: 'Manage default organization context (list, switch)' }),
+  tagged({ name: 'orgs', description: 'Manage current organization context (list, switch)' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
   tagged({ name: 'config', description: 'View and manage CLI configuration' }),
@@ -829,13 +829,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   login: {
     usage:
-      'composio login [--no-browser] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
+      'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
     description:
       'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
-        description: 'Complete login using session key from composio login --no-wait',
+        description: 'Poll and complete login using the session key from composio login',
       },
       {
         name: '--user-api-key <text>',
@@ -843,13 +843,17 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       },
       {
         name: '--org <text>',
-        description: 'Default organization ID or name to store for CLI commands',
+        description: 'Current organization ID or name to store for CLI commands',
       },
     ],
     flags: [
       { name: '--no-browser', description: 'Login without browser interaction' },
+      {
+        name: '--poll',
+        description: 'Poll the cached pending login key for up to 10 minutes',
+      },
       { name: '--no-wait', description: 'Print login URL and session info, then exit' },
-      { name: '-y, --yes', description: 'Skip org picker; use session default org' },
+      { name: '-y, --yes', description: 'Skip org picker; use current org' },
       {
         name: '--no-skill-install',
         description: 'Skip installing the composio-cli skill for Claude Code',
@@ -1015,7 +1019,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description: 'Initialize this directory with a developer project.',
     flags: [
       { name: '--no-browser', description: 'Login without browser interaction' },
-      { name: '-y, --yes', description: 'Auto-select the default org project' },
+      { name: '-y, --yes', description: 'Auto-select the current org project' },
     ],
   },
   'dev playground-execute': {

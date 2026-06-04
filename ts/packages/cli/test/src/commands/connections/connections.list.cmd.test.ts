@@ -12,7 +12,7 @@ const parseJsonFromLines = (lines: ReadonlyArray<string>) => {
     const line = lines[i];
     if (!line) continue;
     try {
-      return JSON.parse(line) as Record<string, Array<Record<string, string>>>;
+      return JSON.parse(line) as Record<string, Array<Record<string, unknown>>>;
     } catch {
       // continue
     }
@@ -134,10 +134,10 @@ describe('CLI: composio connections list', () => {
         const parsed = parseJsonFromLines(lines);
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE' }],
+          gmail: [{ status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
           ],
         });
       })
@@ -161,10 +161,10 @@ describe('CLI: composio connections list', () => {
         const parsed = parseJsonFromLines(lines);
 
         expect(parsed).toEqual({
-          gmail: [{ status: 'ACTIVE' }],
+          gmail: [{ status: 'ACTIVE', permission_group: null }],
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
           ],
         });
       })
@@ -183,8 +183,8 @@ describe('CLI: composio connections list', () => {
 
         expect(parsed).toEqual({
           github: [
-            { status: 'ACTIVE', alias: 'work', word_id: 'castle' },
-            { status: 'FAILED', alias: 'personal', word_id: 'forest' },
+            { status: 'ACTIVE', alias: 'work', word_id: 'castle', permission_group: null },
+            { status: 'FAILED', alias: 'personal', word_id: 'forest', permission_group: null },
           ],
         });
       })

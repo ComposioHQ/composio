@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
+import { Experimental } from '../../src/models/Experimental';
 import ComposioClient from '@composio/client';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
 import {
@@ -1521,7 +1522,7 @@ describe('ConnectedAccounts', () => {
     });
   });
 
-  describe('link with accountType + ACL', () => {
+  describe('link with experimental block (SHARED + ACL)', () => {
     beforeEach(() => {
       extendedMockClient.connectedAccounts.list.mockResolvedValue({
         items: [],
@@ -1534,61 +1535,82 @@ describe('ConnectedAccounts', () => {
       });
     });
 
-    it('forwards accountType=SHARED + nested aclConfigForShared to client.link.create', async () => {
+    it('forwards experimental block with accountType + aclConfigForShared to client.link.create', async () => {
       await connectedAccounts.link('user_123', 'auth_config_123', {
-        accountType: 'SHARED',
-        aclConfigForShared: {
-          allowAllUsers: true,
-          notAllowedUserIds: ['user_bob'],
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: {
+            allowAllUsers: true,
+            notAllowedUserIds: ['user_bob'],
+          },
         },
       });
 
       expect(extendedMockClient.link.create).toHaveBeenCalledWith({
         auth_config_id: 'auth_config_123',
         user_id: 'user_123',
-        account_type: 'SHARED',
-        acl_config_for_shared: {
-          allow_all_users: true,
-          not_allowed_user_ids: ['user_bob'],
+        experimental: {
+          account_type: 'SHARED',
+          acl_config_for_shared: {
+            allow_all_users: true,
+            not_allowed_user_ids: ['user_bob'],
+          },
         },
       });
     });
 
-    it('omits acl_config_for_shared when aclConfigForShared is undefined', async () => {
-      await connectedAccounts.link('user_123', 'auth_config_123', { accountType: 'SHARED' });
+    it('omits the inner acl block when aclConfigForShared is undefined', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123', {
+        experimental: { accountType: 'SHARED' },
+      });
 
       const body = extendedMockClient.link.create.mock.calls[0][0];
-      expect(body.account_type).toBe('SHARED');
-      expect('acl_config_for_shared' in body).toBe(false);
+      expect(body.experimental).toEqual({ account_type: 'SHARED' });
+      expect('acl_config_for_shared' in body.experimental).toBe(false);
     });
 
-    it('serializes only the fields the caller provided (PATCH-style on inner block)', async () => {
+    it('omits the experimental block entirely when not provided', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123');
+
+      const body = extendedMockClient.link.create.mock.calls[0][0];
+      expect('experimental' in body).toBe(false);
+    });
+
+    it('serializes only the inner ACL fields the caller provided', async () => {
       await connectedAccounts.link('user_123', 'auth_config_123', {
-        accountType: 'SHARED',
-        aclConfigForShared: { allowedUserIds: ['user_alice'] },
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: { allowedUserIds: ['user_alice'] },
+        },
       });
 
       expect(extendedMockClient.link.create).toHaveBeenCalledWith({
         auth_config_id: 'auth_config_123',
         user_id: 'user_123',
-        account_type: 'SHARED',
-        acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+        experimental: {
+          account_type: 'SHARED',
+          acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+        },
       });
     });
 
     it('preserves explicit empty arrays in the serialized body', async () => {
       await connectedAccounts.link('user_123', 'auth_config_123', {
-        accountType: 'SHARED',
-        aclConfigForShared: { allowedUserIds: [], notAllowedUserIds: [] },
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: { allowedUserIds: [], notAllowedUserIds: [] },
+        },
       });
 
       expect(extendedMockClient.link.create).toHaveBeenCalledWith({
         auth_config_id: 'auth_config_123',
         user_id: 'user_123',
-        account_type: 'SHARED',
-        acl_config_for_shared: {
-          allowed_user_ids: [],
-          not_allowed_user_ids: [],
+        experimental: {
+          account_type: 'SHARED',
+          acl_config_for_shared: {
+            allowed_user_ids: [],
+            not_allowed_user_ids: [],
+          },
         },
       });
     });
@@ -1596,13 +1618,23 @@ describe('ConnectedAccounts', () => {
     it('maps 400 AclOnlyForShared to ComposioAclOnlyForSharedError', async () => {
       extendedMockClient.link.create.mockReset();
       extendedMockClient.link.create.mockRejectedValueOnce(
-        Object.assign(new BadRequestError(400, undefined, 'acl_config_for_shared is only valid on SHARED connections.', {}), {})
+        Object.assign(
+          new BadRequestError(
+            400,
+            undefined,
+            'acl_config_for_shared is only valid on SHARED connections.',
+            {}
+          ),
+          {}
+        )
       );
 
       await expect(
         connectedAccounts.link('user_123', 'auth_config_123', {
-          accountType: 'PRIVATE',
-          aclConfigForShared: { allowAllUsers: true },
+          experimental: {
+            accountType: 'PRIVATE',
+            aclConfigForShared: { allowAllUsers: true },
+          },
         })
       ).rejects.toBeInstanceOf(ComposioAclOnlyForSharedError);
     });
@@ -1617,23 +1649,60 @@ describe('ConnectedAccounts', () => {
     });
   });
 
-  describe('updateAcl', () => {
-    it('serializes PATCH body with nested acl_config_for_shared', async () => {
+  describe('list with accountType filter', () => {
+    it('forwards accountType to the wire as a flat query param', async () => {
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+
+      await connectedAccounts.list({ accountType: 'SHARED', userIds: ['user_creator'] });
+
+      const callArg = extendedMockClient.connectedAccounts.list.mock.calls[0][0];
+      expect(callArg.account_type).toBe('SHARED');
+      expect(callArg.user_ids).toEqual(['user_creator']);
+    });
+
+    it('omits account_type when accountType is not provided', async () => {
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+
+      await connectedAccounts.list({ userIds: ['user_creator'] });
+
+      const callArg = extendedMockClient.connectedAccounts.list.mock.calls[0][0];
+      expect('account_type' in callArg).toBe(false);
+    });
+  });
+
+  describe('composio.experimental.updateAcl', () => {
+    let experimental: Experimental;
+
+    beforeEach(() => {
+      experimental = new Experimental(extendedMockClient as unknown as ComposioClient);
+    });
+
+    it('serializes PATCH body under experimental.acl_config_for_shared', async () => {
       extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
         id: 'ca_abc',
         status: 'ACTIVE',
         success: true,
       });
 
-      const result = await connectedAccounts.updateAcl('ca_abc', {
+      const result = await experimental.updateAcl('ca_abc', {
         allowAllUsers: true,
         notAllowedUserIds: ['user_bob'],
       });
 
       expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
-        acl_config_for_shared: {
-          allow_all_users: true,
-          not_allowed_user_ids: ['user_bob'],
+        experimental: {
+          acl_config_for_shared: {
+            allow_all_users: true,
+            not_allowed_user_ids: ['user_bob'],
+          },
         },
       });
       expect(result).toEqual({ id: 'ca_abc', status: 'ACTIVE', success: true });
@@ -1646,10 +1715,12 @@ describe('ConnectedAccounts', () => {
         success: true,
       });
 
-      await connectedAccounts.updateAcl('ca_abc', { allowedUserIds: ['user_alice'] });
+      await experimental.updateAcl('ca_abc', { allowedUserIds: ['user_alice'] });
 
       expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
-        acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+        experimental: {
+          acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+        },
       });
     });
 
@@ -1660,15 +1731,15 @@ describe('ConnectedAccounts', () => {
         success: true,
       });
 
-      await connectedAccounts.updateAcl('ca_abc', { allowedUserIds: [] });
+      await experimental.updateAcl('ca_abc', { allowedUserIds: [] });
 
       expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
-        acl_config_for_shared: { allowed_user_ids: [] },
+        experimental: { acl_config_for_shared: { allowed_user_ids: [] } },
       });
     });
 
     it('rejects an empty params object via the refine', async () => {
-      await expect(connectedAccounts.updateAcl('ca_abc', {})).rejects.toMatchObject({
+      await expect(experimental.updateAcl('ca_abc', {})).rejects.toMatchObject({
         name: 'ValidationError',
       });
       expect(extendedMockClient.connectedAccounts.patch).not.toHaveBeenCalled();
@@ -1676,11 +1747,16 @@ describe('ConnectedAccounts', () => {
 
     it('maps 400 AclOnlyForShared to ComposioAclOnlyForSharedError', async () => {
       extendedMockClient.connectedAccounts.patch.mockRejectedValueOnce(
-        new BadRequestError(400, undefined, 'acl_config_for_shared is only valid on SHARED connections.', {})
+        new BadRequestError(
+          400,
+          undefined,
+          'acl_config_for_shared is only valid on SHARED connections.',
+          {}
+        )
       );
 
       await expect(
-        connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true })
+        experimental.updateAcl('ca_abc', { allowAllUsers: true })
       ).rejects.toBeInstanceOf(ComposioAclOnlyForSharedError);
     });
 
@@ -1688,9 +1764,9 @@ describe('ConnectedAccounts', () => {
       const otherError = new Error('connection lost');
       extendedMockClient.connectedAccounts.patch.mockRejectedValueOnce(otherError);
 
-      await expect(
-        connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true })
-      ).rejects.toBe(otherError);
+      await expect(experimental.updateAcl('ca_abc', { allowAllUsers: true })).rejects.toBe(
+        otherError
+      );
     });
   });
 });

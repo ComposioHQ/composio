@@ -26,7 +26,7 @@ export const agentCmd$Whoami = Command.make('whoami', {}).pipe(
             `Status: ${summary.status}`,
             `Email: ${summary.email ?? 'unknown'}`,
             `Slug: ${summary.slug ?? 'unknown'}`,
-            `Default Org ID: ${summary.org_id ?? 'pending'}`,
+            `Current Org ID: ${summary.org_id ?? 'pending'}`,
             `Project ID: ${summary.project_id ?? 'pending'}`,
             `Claimed By: ${summary.claimed_by ?? 'not claimed'}`,
           ].join('\n'),

@@ -4,6 +4,7 @@ import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
 import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
@@ -209,11 +210,14 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     return (
       <div>
         <a href="/toolkits" className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline">← All Toolkits</a>
-        <h1 className="mt-2 text-3xl font-bold text-fd-foreground">{page.data.title}</h1>
-        <PageActions path={page.url} />
-        <article className="prose prose-fd max-w-none">
+        <div className="mt-2 flex items-start justify-between gap-4">
+          <h1 className="text-3xl font-bold text-fd-foreground">{page.data.title}</h1>
+          <PageActions path={page.url} variant="inline" />
+        </div>
+        <article className="prose prose-fd mt-6 max-w-none">
           <MDXContent components={getMDXComponents()} />
         </article>
+        <EditOnGitHub path={`docs/content/toolkits/${page.path}`} />
       </div>
     );
   }

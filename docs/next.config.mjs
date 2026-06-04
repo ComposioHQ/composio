@@ -59,6 +59,26 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/changelog',
+        destination: '/reference/changelog',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:year/:month/:day',
+        destination: '/reference/changelog#:year-:month-:day',
+        permanent: true,
+      },
+      {
+        source: '/reference/changelog/:year/:month/:day',
+        destination: '/reference/changelog#:year-:month-:day',
+        permanent: true,
+      },
+      {
+        source: '/docs/changelog/:path*',
+        destination: '/reference/changelog',
+        permanent: true,
+      },
+      {
         source: '/getting-started/welcome',
         destination: '/docs',
         permanent: true,
@@ -86,7 +106,7 @@ const config = {
       // Core concepts moved from tool-router to docs
       {
         source: '/tool-router/users-and-sessions',
-        destination: '/docs/users-and-sessions',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -122,12 +142,12 @@ const config = {
       },
       {
         source: '/tool-router/using-custom-auth-configs',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {
         source: '/docs/authenticating-users/using-custom-auth-configs',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {
@@ -157,6 +177,16 @@ const config = {
         permanent: true,
       },
       {
+        source: '/providers/google-adk',
+        destination: '/docs/providers/google',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/google-adk',
+        destination: '/docs/providers/google',
+        permanent: true,
+      },
+      {
         source: '/providers/langchain',
         destination: '/docs/providers/langchain',
         permanent: true,
@@ -178,7 +208,32 @@ const config = {
       },
       {
         source: '/providers/openai-agents',
-        destination: '/docs/providers/openai-agents',
+        destination: '/docs/providers/openai',
+        permanent: true,
+      },
+      {
+        source: '/providers/claude-agent-sdk',
+        destination: '/docs/providers/anthropic',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/openai-agents',
+        destination: '/docs/providers/openai',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/claude-agent-sdk',
+        destination: '/docs/providers/anthropic',
+        permanent: true,
+      },
+      {
+        source: '/providers/langgraph',
+        destination: '/docs/providers/langchain',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/langgraph',
+        destination: '/docs/providers/langchain',
         permanent: true,
       },
       {
@@ -222,8 +277,13 @@ const config = {
       },
       // Features section redirects
       {
+        source: '/docs/users-and-sessions',
+        destination: '/docs/how-composio-works',
+        permanent: true,
+      },
+      {
         source: '/docs/user-management',
-        destination: '/docs/users-and-sessions#users',
+        destination: '/docs/how-composio-works#users',
         permanent: true,
       },
             {
@@ -692,8 +752,13 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
+        permanent: true,
+      },
+      {
         source: '/docs/guides/using-custom-auth-configuration',
-        destination: '/docs/using-custom-auth-configuration',
+        destination: '/docs/custom-app-vs-managed-app',
         permanent: true,
       },
       {

@@ -9,6 +9,7 @@ import type {
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
+import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -32,6 +33,7 @@ export interface ToolExecuteParams {
   readonly connectedAccounts?: Record<string, string>;
   readonly cacheScope?: {
     readonly orgId: string;
+    readonly projectId: string;
     readonly consumerUserId: string;
   };
 }
@@ -44,6 +46,7 @@ export interface ToolExecuteResponse {
   readonly data: Record<string, unknown>;
   readonly error: string | null;
   readonly logId: string;
+  readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
 }
 
 export interface ToolsExecutor {
@@ -92,12 +95,16 @@ const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] 
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse
+  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
   successful: raw.error === null,
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
+  ...(permissionGateResult?.approvalStatus
+    ? { permissionApproval: permissionGateResult.approvalStatus }
+    : {}),
 });
 
 /**
@@ -171,15 +178,26 @@ export const ToolsExecutorLive = Layer.effect(
           const client = yield* clientSingleton.get();
           const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.
-          const { sessionId, localExperimentalPayload } = yield* createToolRouterSessionContext(
-            resolvedClient,
-            params.userId,
-            {
-              manageConnections: true,
-              connectedAccounts: params.connectedAccounts,
-              cacheScope: params.cacheScope,
-            }
-          );
+          const {
+            sessionId,
+            localExperimentalPayload,
+            permissionSnapshot,
+            connectedAccounts,
+            connectedAccountWordIds,
+          } = yield* createToolRouterSessionContext(resolvedClient, params.userId, {
+            manageConnections: true,
+            connectedAccounts: params.connectedAccounts,
+            cacheScope: params.cacheScope,
+          });
+          const toolkitSlug = slug.split('_')[0]?.toLowerCase();
+          const permissionGateResult = yield* gateToolExecution({
+            toolSlug: slug,
+            connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
+            connectedAccountWordId: toolkitSlug
+              ? connectedAccountWordIds?.[toolkitSlug]
+              : undefined,
+            snapshot: permissionSnapshot,
+          });
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(
@@ -217,7 +235,7 @@ export const ToolsExecutorLive = Layer.effect(
             }
           );
 
-          return normalizeResponse(raw);
+          return normalizeResponse(raw, permissionGateResult);
         }).pipe(
           Effect.catchAll((error): Effect.Effect<never, unknown> => {
             const mapped = mapComposioError({ error, toolSlug: slug });

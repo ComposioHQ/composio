@@ -59,7 +59,7 @@ function CopySlugButton({ slug }: { slug: string }) {
     <button
       onClick={handleCopy}
       aria-label={`Copy ${slug.toUpperCase()} to clipboard`}
-      className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+      className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
       <span className="max-w-[120px] truncate sm:max-w-none">{slug.toUpperCase()}</span>
       {copied ? <Check className="h-3 w-3 text-green-500" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
@@ -154,11 +154,11 @@ export function ToolkitsLanding() {
           <p className="mt-1.5 text-sm text-fd-muted-foreground sm:mt-2 sm:text-base">
             Browse {toolkits.length} toolkits supported by Composio
           </p>
-          <PageActions path="/toolkits" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <PageActions path="/toolkits" variant="inline" />
           <a
-            href="https://platform.composio.dev/auth?next_page=%2Ftool-router"
+            href="https://dashboard.composio.dev/~/project/playground"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
@@ -170,7 +170,7 @@ export function ToolkitsLanding() {
             href="https://request.composio.dev/boards/tool-requests"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
+            className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
           >
             <Grip className="h-3.5 w-3.5" />
             Request Tools
@@ -196,7 +196,7 @@ export function ToolkitsLanding() {
           autoComplete="off"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
+          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
         />
       </div>
 

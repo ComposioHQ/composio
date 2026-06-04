@@ -353,7 +353,7 @@ class ComposioSharedAccessDeniedError(ConnectedAccountError):
     going through a tool-router session.
 
     Fix: ask the connection's creator to grant access via
-    ``composio.connected_accounts.update_acl()`` — set ``allow_all_users``,
+    ``composio.experimental.update_acl()`` — set ``allow_all_users``,
     add the ``user_id`` to ``allowed_user_ids``, or remove it from
     ``not_allowed_user_ids``.
     """
@@ -368,7 +368,7 @@ class ComposioSharedConnectionNotAccessibleError(ConnectedAccountError):
     that fails mid-execution.
 
     Fix: grant the session user access via
-    ``composio.connected_accounts.update_acl()`` on the pinned connection,
+    ``composio.experimental.update_acl()`` on the pinned connection,
     or pin a different connection the user can use.
     """
 
