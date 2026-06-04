@@ -135,7 +135,8 @@
     "test": "vitest run",
     "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
-    "generate:docs": "tsx scripts/generate-docs.ts"
+    "generate:docs": "tsx scripts/generate-docs.ts",
+    "check:docs:generated": "tsx scripts/check-generated-docs.ts"
   },
   "keywords": [],
   "author": "",

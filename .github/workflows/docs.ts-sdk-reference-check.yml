@@ -29,6 +29,9 @@ jobs:
       - name: Regenerate TypeScript SDK reference
         run: pnpm --filter @composio/core generate:docs
 
+      - name: Check TypeScript SDK reference invariants
+        run: pnpm --filter @composio/core check:docs:generated
+
       - name: Verify generated reference is committed
         run: |
           if ! git diff --exit-code -- docs/content/reference/sdk-reference/typescript; then
