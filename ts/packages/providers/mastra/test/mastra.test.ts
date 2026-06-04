@@ -120,6 +120,24 @@ describe('MastraProvider', () => {
       expect(wrapped._isMockedMastraTool).toBe(true);
     });
 
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
+      const params = { input: 'test-value' };
+
+      await wrapped.execute(params, {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+
+      vi.clearAllMocks();
+      await wrapped.execute(JSON.stringify(params), {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
+
+      await expect(wrapped.execute('{"input":', {})).rejects.toThrow(/not valid JSON/);
+    });
+
     it('should handle tools without input parameters', () => {
       const toolWithoutInputParams: Tool = {
         ...mockTool,
@@ -255,10 +273,11 @@ describe('MastraProvider', () => {
       // Extract the execute function from the call to createTool()
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
-      // Test the execute function without any parameters
+      // Test the execute function without any parameters: a missing payload is
+      // normalized to an empty object rather than forwarded as undefined (issue #2406).
       const result = await executeFunction(undefined);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,

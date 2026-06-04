@@ -15,6 +15,7 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   jsonSchemaToZodSchema,
+  normalizeToolArguments,
 } from '@composio/core';
 import {
   tool as sdkTool,
@@ -114,7 +115,11 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
       inputZodShape,
       async args => {
         try {
-          const result = await executeTool(composioTool.slug, args);
+          // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+          const result = await executeTool(
+            composioTool.slug,
+            normalizeToolArguments(args, composioTool.slug)
+          );
           return {
             content: [
               {

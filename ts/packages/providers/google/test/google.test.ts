@@ -157,6 +157,27 @@ describe('GoogleProvider', () => {
       );
     });
 
+    it('should normalize a stringified-JSON args into an object before executing (issue #2406)', async () => {
+      const args = { input: 'test-value' };
+      const toolCall = { name: 'test-tool', args: JSON.stringify(args) as unknown as object };
+
+      await provider.executeToolCall('test-user', toolCall);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ arguments: args }),
+        undefined
+      );
+    });
+
+    it('should throw a typed error for malformed-JSON args (issue #2406)', async () => {
+      const toolCall = { name: 'test-tool', args: 'not json' as unknown as object };
+
+      await expect(provider.executeToolCall('test-user', toolCall)).rejects.toThrow(
+        /not valid JSON/
+      );
+    });
+
     it('should pass options to executeTool', async () => {
       const userId = 'test-user';
       const toolCall = {

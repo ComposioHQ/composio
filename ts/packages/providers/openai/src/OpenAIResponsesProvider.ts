@@ -18,6 +18,7 @@ import {
   ExecuteToolFnOptions,
   removeNonRequiredProperties,
   McpUrlResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
@@ -221,7 +222,9 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: JSON.parse(tool.arguments),
+      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+      // empty / object-shaped payloads too (issue #2406).
+      arguments: normalizeToolArguments(tool.arguments, tool.name),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

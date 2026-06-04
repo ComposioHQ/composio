@@ -18,6 +18,7 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -230,7 +231,8 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: typeof tool.arguments === 'string' ? JSON.parse(tool.arguments) : tool.arguments,
+      // Models occasionally emit tool arguments as a JSON string rather than an object (issue #2406).
+      arguments: normalizeToolArguments(tool.arguments, tool.name),
       connectedAccountId: options.connectedAccountId,
       customAuthParams: options.customAuthParams,
       customConnectionData: options.customConnectionData,

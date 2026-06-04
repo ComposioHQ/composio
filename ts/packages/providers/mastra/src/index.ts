@@ -16,6 +16,7 @@ import {
   removeNonRequiredProperties,
   telemetry,
   type UnresolvedRefReason,
+  normalizeToolArguments,
 } from '@composio/core';
 import { applyCompatLayer } from '@mastra/schema-compat';
 import { createTool } from '@mastra/core/tools';
@@ -141,7 +142,8 @@ export class MastraProvider extends BaseAgenticProvider<
       // @ts-ignore
       outputSchema,
       execute: async (inputData, _context) => {
-        const result = await executeTool(tool.slug, inputData as Record<string, unknown>);
+        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        const result = await executeTool(tool.slug, normalizeToolArguments(inputData, tool.slug));
         return result;
       },
     });

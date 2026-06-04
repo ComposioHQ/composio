@@ -112,6 +112,30 @@ describe('OpenAIAgentsProvider', () => {
 
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
     });
+
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(
+        mockTool,
+        mockExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+      const params = { input: 'test-value' };
+
+      await wrapped.execute(params);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+
+      vi.clearAllMocks();
+      await wrapped.execute(JSON.stringify(params));
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(
+        mockTool,
+        mockExecuteToolFn
+      ) as unknown as MockedOpenAIAgentTool;
+
+      await expect(wrapped.execute('{"input":')).rejects.toThrow(/not valid JSON/);
+    });
   });
 
   describe('wrapTools', () => {

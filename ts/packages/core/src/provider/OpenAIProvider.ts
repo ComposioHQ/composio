@@ -15,6 +15,7 @@ import logger from '../utils/logger';
 import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
+import { normalizeToolArguments } from '../utils/toolArguments';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -184,7 +185,9 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: JSON.parse(tool.function.arguments),
+      // OpenAI always serializes tool arguments as a JSON string; normalize tolerates
+      // empty / object-shaped payloads too (issue #2406).
+      arguments: normalizeToolArguments(tool.function.arguments, tool.function.name),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
