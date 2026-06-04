@@ -9,7 +9,7 @@ A summary of recent security, API, and platform changes you may need to act on. 
 ### MCP and API authentication
 
 - MCP requests now require an API key or `Authorization: Bearer` token. SSE is no longer supported; use the HTTP transport.
-- API keys now support IP allowlisting, and we have tightened what we block and deny. Based on recent traffic we automatically added IP allowlists to some keys, so if a request is unexpectedly rejected, edit the key's allowlist or rotate the key. The API and SDK remain fully functional, and if something is blocked that should not be, let us know.
+- API keys now support IP allowlisting, and we have tightened what we block and deny. Based on recent traffic we automatically added IP allowlists to some keys, so if a request is unexpectedly rejected, edit the key's allowlist or rotate the key. The API and SDK remain fully functional.
 
 ### Proxy Execute
 
@@ -33,7 +33,7 @@ A summary of recent security, API, and platform changes you may need to act on. 
 
 ### Rate limits
 
-- Per-IP rate limits now apply. If you see `429` responses, tell us your throughput and we will help.
+- Per-IP rate limits now apply; requests that exceed them receive `429` responses.
 
 ### Endpoints
 
