@@ -611,15 +611,47 @@ class FileHelper(WithLogger):
             list(file_upload_allowlist) if file_upload_allowlist is not None else None
         )
 
+    @staticmethod
+    def _resolve_ref(root_schema: t.Dict, ref: str) -> t.Optional[t.Dict]:
+        """Resolve a JSON-Schema ``$ref`` pointer against *root_schema*.
+
+        Only supports ``#/$defs/<name>`` and ``#/definitions/<name>`` refs,
+        which are the patterns emitted by the Composio API for reusable types
+        like ``FileDownloadable``.  Returns the resolved sub-schema, or
+        ``None`` if resolution fails.
+        """
+        parts = ref.lstrip("#/").split("/")
+        node: t.Any = root_schema
+        for part in parts:
+            if isinstance(node, dict) and part in node:
+                node = node[part]
+            else:
+                return None
+        return node if isinstance(node, dict) else None
+
     def _has_file_property(
-        self, schema: t.Dict, property_name: str = "file_uploadable"
+        self,
+        schema: t.Dict,
+        property_name: str = "file_uploadable",
+        *,
+        _root: t.Optional[t.Dict] = None,
     ) -> bool:
         """Check if a schema (or any of its variants) contains a file property.
 
         Recursively checks anyOf, oneOf, allOf, nested properties, and array items.
+        Resolves ``$ref``/``$defs`` indirection so that schemas like
+        ``{"$ref": "#/$defs/FileDownloadable"}`` are followed correctly.
         """
         if not isinstance(schema, dict):
             return False
+
+        root = _root if _root is not None else schema
+
+        # Resolve $ref indirection
+        if "$ref" in schema:
+            resolved = self._resolve_ref(root, schema["$ref"])
+            if resolved is not None:
+                return self._has_file_property(resolved, property_name, _root=root)
 
         # Direct property check
         if schema.get(property_name, False):
@@ -628,25 +660,25 @@ class FileHelper(WithLogger):
         # Check anyOf variants
         if "anyOf" in schema:
             for variant in schema["anyOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, _root=root):
                     return True
 
         # Check oneOf variants
         if "oneOf" in schema:
             for variant in schema["oneOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, _root=root):
                     return True
 
         # Check allOf variants
         if "allOf" in schema:
             for variant in schema["allOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, _root=root):
                     return True
 
         # Check nested properties
         if "properties" in schema:
             for prop in schema["properties"].values():
-                if self._has_file_property(prop, property_name):
+                if self._has_file_property(prop, property_name, _root=root):
                     return True
 
         # Check array items
@@ -654,10 +686,10 @@ class FileHelper(WithLogger):
             items = schema["items"]
             if isinstance(items, list):
                 for item in items:
-                    if self._has_file_property(item, property_name):
+                    if self._has_file_property(item, property_name, _root=root):
                         return True
             elif isinstance(items, dict):
-                if self._has_file_property(items, property_name):
+                if self._has_file_property(items, property_name, _root=root):
                     return True
 
         return False
@@ -675,13 +707,24 @@ class FileHelper(WithLogger):
             "file_uploadable": True,
         }
 
-    def _transform_schema_for_file_upload(self, schema: t.Dict) -> t.Dict:
+    def _transform_schema_for_file_upload(
+        self, schema: t.Dict, *, _root: t.Optional[t.Dict] = None
+    ) -> t.Dict:
         """Recursively transform a schema, converting file_uploadable fields to path format.
 
         Handles anyOf, oneOf, allOf, nested properties, and array items.
+        Resolves ``$ref``/``$defs`` indirection.
         """
         if not isinstance(schema, dict):
             return schema
+
+        root = _root if _root is not None else schema
+
+        # Resolve $ref indirection
+        if "$ref" in schema:
+            resolved = self._resolve_ref(root, schema["$ref"])
+            if resolved is not None:
+                return self._transform_schema_for_file_upload(resolved, _root=root)
 
         # Direct file_uploadable - transform it
         if schema.get("file_uploadable", False):
@@ -693,28 +736,28 @@ class FileHelper(WithLogger):
         # Transform anyOf variants
         if "anyOf" in schema:
             new_schema["anyOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, _root=root)
                 for variant in schema["anyOf"]
             ]
 
         # Transform oneOf variants
         if "oneOf" in schema:
             new_schema["oneOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, _root=root)
                 for variant in schema["oneOf"]
             ]
 
         # Transform allOf variants
         if "allOf" in schema:
             new_schema["allOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, _root=root)
                 for variant in schema["allOf"]
             ]
 
         # Transform nested properties
         if "properties" in schema:
             new_schema["properties"] = {
-                key: self._transform_schema_for_file_upload(prop)
+                key: self._transform_schema_for_file_upload(prop, _root=root)
                 for key, prop in schema["properties"].items()
             }
 
@@ -723,10 +766,10 @@ class FileHelper(WithLogger):
             items = schema["items"]
             if isinstance(items, list):
                 new_schema["items"] = [
-                    self._transform_schema_for_file_upload(item) for item in items
+                    self._transform_schema_for_file_upload(item, _root=root) for item in items
                 ]
             elif isinstance(items, dict):
-                new_schema["items"] = self._transform_schema_for_file_upload(items)
+                new_schema["items"] = self._transform_schema_for_file_upload(items, _root=root)
 
         return new_schema
 
@@ -1031,10 +1074,22 @@ class FileHelper(WithLogger):
         value: t.Any,
         schema: t.Optional[t.Dict],
         tool: Tool,
+        *,
+        _root: t.Optional[t.Dict] = None,
     ) -> t.Any:
         """Return ``value`` with file-downloadable leaves saved locally."""
         if not isinstance(schema, dict):
             return value
+
+        root = _root if _root is not None else schema
+
+        # Resolve $ref indirection
+        if "$ref" in schema:
+            resolved = self._resolve_ref(root, schema["$ref"])
+            if resolved is not None:
+                return self._substitute_file_download_value(
+                    value=value, schema=resolved, tool=tool, _root=root
+                )
 
         if schema.get("file_downloadable", False):
             return self._download_file_value(value=value, tool=tool)
@@ -1048,6 +1103,7 @@ class FileHelper(WithLogger):
                 value=value,
                 schema=downloadable_variant,
                 tool=tool,
+                _root=root,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -1057,6 +1113,7 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=properties.get(key),
                     tool=tool,
+                    _root=root,
                 )
                 for key, item in value.items()
             }
@@ -1070,6 +1127,7 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=items_schema,
                     tool=tool,
+                    _root=root,
                 )
                 for item in value
             ]
