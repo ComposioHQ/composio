@@ -35,7 +35,7 @@ catalog:
   '@modelcontextprotocol/sdk': ^1.25.2
   '@typescript/native-preview': 7.0.0-dev.20260403.1
   ai: ^6.0.27
-  effect: ^3.19.15
+  effect: ^3.21.0
   hono: ^4.11.4
   openai: ^6.16.0
   pnpm: ^10.28.0
