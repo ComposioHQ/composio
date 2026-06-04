@@ -87,8 +87,26 @@ if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.rel
 if (installHealthCheck.includes('$(npm view')) {
   throw new Error('cli.install-health-check.yml must not pin to npm (races ahead of the GitHub release)');
 }
-if (!installHealthCheck.includes('gh release list --exclude-drafts --exclude-pre-releases')) {
+if (!installHealthCheck.includes('gh release list')) {
   throw new Error('cli.install-health-check.yml must resolve the newest published release (drafts excluded)');
+}
+if (!installHealthCheck.includes('--repo "${{ github.repository }}"')) {
+  throw new Error('cli.install-health-check.yml must pass repository context to gh release list');
+}
+if (!installHealthCheck.includes('--limit 1000')) {
+  throw new Error('cli.install-health-check.yml must look beyond the gh release list default limit');
+}
+if (
+  !installHealthCheck.includes('--exclude-drafts') ||
+  !installHealthCheck.includes('--exclude-pre-releases')
+) {
+  throw new Error('cli.install-health-check.yml must resolve the newest published release (drafts excluded)');
+}
+if (installHealthCheck.includes('.[0].tagName')) {
+  throw new Error('cli.install-health-check.yml must not let jq null bypass the empty tag guard');
+}
+if (!installHealthCheck.includes("| sed -n '1p'")) {
+  throw new Error('cli.install-health-check.yml must convert no matching release into empty output');
 }
 if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
   throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');

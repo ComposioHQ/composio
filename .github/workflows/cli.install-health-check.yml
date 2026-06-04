@@ -27,8 +27,9 @@ jobs:
         id: resolve
         run: |
           set -euo pipefail
-          tag=$(gh release list --repo "${{ github.repository }}" --exclude-drafts --exclude-pre-releases --json tagName \
-            --jq '[.[] | select(.tagName | startswith("@composio/cli@"))] | .[0].tagName')
+          tag=$(gh release list --repo "${{ github.repository }}" --limit 1000 --exclude-drafts --exclude-pre-releases --json tagName \
+            --jq '.[] | select(.tagName | startswith("@composio/cli@")) | .tagName' \
+            | sed -n '1p')
           if [[ -z "$tag" ]]; then
             echo "::error::No published @composio/cli release found"
             exit 1
