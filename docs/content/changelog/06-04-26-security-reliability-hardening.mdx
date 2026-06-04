@@ -1,25 +1,39 @@
 ---
 title: "Security, API, and platform updates"
-description: "Recent changes across MCP and API authentication, scoped API keys and IP allowlists, connected-account token handling, webhooks, and retired legacy endpoints."
+description: "Recent changes across MCP and API authentication, Proxy Execute, connected accounts and triggers, token redaction, webhooks, rate limits, and retired legacy endpoints."
 date: "2026-06-04"
 ---
 
-A summary of recent security, API, and platform changes you may need to act on. We are continuing to ship more.
+A summary of recent security, API, and platform changes you may need to act on. Most won't apply to you, so skim for the ones that do. We are continuing to ship more.
 
-### Authentication and API keys
+### MCP and API authentication
 
 - MCP requests now require an API key or `Authorization: Bearer` token. SSE is no longer supported; use the HTTP transport.
-- API keys are now scoped. Capabilities such as Proxy Execute are enabled per key when you create it in the Dashboard, and are off by default.
 - API keys now support IP allowlisting, and we have tightened what we block and deny. Based on recent traffic we automatically added IP allowlists to some keys, so if a request is unexpectedly rejected, edit the key's allowlist or rotate the key. The API and SDK remain fully functional, and if something is blocked that should not be, let us know.
 
-### Connections
+### Proxy Execute
+
+- Proxy Execute is now an opt-in capability on an API key. Enable "Allow proxy execute" when you create the key in the Dashboard (it is off by default and cannot be changed after creation), then use that key when you need to act on a provider directly (for example, a request our predefined tools do not cover).
+- Proxy Execute requests have a 250MB payload cap.
+
+### Connections and triggers
 
 - Composio-managed OAuth connections are moving from `initiate` to `link`. The cutover for remaining organizations is July 3, 2026.
-- Connected-account tokens are redacted in API responses, for both Composio-managed and custom auth configs. If you need to act on the provider directly (for example, a request our predefined tools do not cover), use [Proxy Execute](https://docs.composio.dev/docs/proxy-execute) with a scoped API key that has proxy execute enabled.
+- Code execution through the remote workbench (`COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`) now runs only inside a Composio session. If your code execution stopped working, run it within a Composio session.
+
+### Token redaction
+
+- Connected-account tokens are redacted in API responses, for both Composio-managed and custom auth configs.
+- Tokens are also redacted in tool responses and trigger payloads. If you previously parsed raw URLs or tokens out of those, use [Proxy Execute](https://docs.composio.dev/docs/proxy-execute) instead.
 
 ### Webhooks
 
-- Webhook URLs must be publicly reachable, and deliveries are now signed; verify the `webhook-signature` header. Manage subscriptions with the [Webhook Subscriptions API](https://docs.composio.dev/reference/api-reference/webhook-subscriptions).
+- Webhook URLs must be publicly reachable; internal and loopback targets are now rejected.
+- Deliveries are now signed (verify the `webhook-signature` header), and there is a new `composio.trigger.disabled` event. Manage subscriptions with the [Webhook Subscriptions API](https://docs.composio.dev/reference/api-reference/webhook-subscriptions).
+
+### Rate limits
+
+- Per-IP rate limits now apply. If you see `429` responses, tell us your throughput and we will help.
 
 ### Endpoints
 
