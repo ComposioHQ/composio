@@ -32,6 +32,10 @@ if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null | g
     "$binaries_dir"/*.zip \
     "$binaries_dir/checksums.txt" --clobber
 elif gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+  # A red ❌ here is EXPECTED, not a bug, when two runs target the same tag (e.g. two quick CLI
+  # version bumps): per-tag `concurrency` serializes them, the first publishes, and the second —
+  # finding the tag already published — fails loudly here rather than silently clobbering a live
+  # release. If you hit this, confirm the tag is genuinely published before re-running.
   echo "::error::Release $RELEASE_TAG is already published — refusing to mutate it. Investigate the publish path."
   exit 1
 else

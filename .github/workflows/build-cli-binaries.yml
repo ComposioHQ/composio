@@ -177,7 +177,8 @@ jobs:
     # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
     # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
     # unrelated beta builds are not serialized behind each other. Job-level concurrency may
-    # read `needs.*` outputs (workflow-level cannot).
+    # read `needs.*` outputs (workflow-level cannot). The serialized loser fails loudly at the
+    # "already published" guard in create-or-resume-draft.sh — that red ❌ is by design.
     concurrency:
       group: cli-release-${{ needs.prepare.outputs.release_tag }}
       cancel-in-progress: false
