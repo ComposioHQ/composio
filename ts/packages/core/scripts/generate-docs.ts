@@ -941,10 +941,14 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('## Usage');
     lines.push('');
 
-    lines.push(
-      CLASS_USAGE[classDoc.name] ??
-        'This class is returned by other SDK methods. See its method examples below.'
-    );
+    const classUsage = CLASS_USAGE[classDoc.name];
+    if (!classUsage) {
+      throw new Error(
+        `Missing generated docs usage example for ${classDoc.name}. Add it to CLASS_USAGE or mark the class internal.`
+      );
+    }
+
+    lines.push(classUsage);
     lines.push('');
   }
 
