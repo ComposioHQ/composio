@@ -71,6 +71,11 @@ const requiredTexts: RequiredText[] = [
     text: 'async getRawToolRouterSessionTools(sessionId: string, options?: SchemaModifierOptions): Promise<ToolList>',
     description: 'Tools.getRawToolRouterSessionTools() is documented',
   },
+  {
+    file: 'connected-accounts.mdx',
+    text: 'The legacy `POST /api/v3/connected_accounts` endpoint that this method',
+    description: 'ConnectedAccounts.initiate() preserves the inline legacy endpoint notice',
+  },
 ];
 
 const forbiddenTexts: ForbiddenText[] = [
@@ -117,6 +122,12 @@ const forbiddenTexts: ForbiddenText[] = [
   {
     text: '{ ... }',
     description: 'placeholder object type leaked into docs',
+  },
+  {
+    file: 'connected-accounts.mdx',
+    text: 'The legacy `POST endpoint',
+    description:
+      'API path stripping must not break the ConnectedAccounts.initiate() deprecation notice',
   },
 ];
 

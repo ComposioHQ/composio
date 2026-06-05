@@ -514,8 +514,15 @@ function extractDescription(comment?: TypeDocReflection['comment']): string {
   if (!comment) return '';
   let desc = extractText(comment.summary);
 
-  // Clean up API paths that shouldn't be in user-facing docs
-  desc = desc.replace(/\/?api\/v\d+\/[^\s]*/g, '').trim();
+  // Clean up bare API paths that shouldn't be in user-facing docs, while
+  // preserving intentional route references inside inline code spans.
+  desc = desc
+    .split(/(`[^`]*`)/g)
+    .map(segment =>
+      segment.startsWith('`') ? segment : segment.replace(/\/?api\/v\d+\/[^\s`),.;]*/g, '')
+    )
+    .join('')
+    .trim();
 
   // TypeDoc strips JSDoc param type tags most of the time, but a few legacy
   // comments still surface as a literal "{Type}" prefix in descriptions.
