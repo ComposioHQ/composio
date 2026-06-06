@@ -1,0 +1,19 @@
+{
+  "name": "agent-trust",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "latest",
+    "@composio/core": "latest",
+    "@composio/vercel": "latest",
+    "@modelcontextprotocol/sdk": "latest",
+    "ai": "latest",
+    "dotenv": "latest",
+    "tsx": "latest"
+  }
+}
