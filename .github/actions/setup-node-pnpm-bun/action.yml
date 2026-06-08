@@ -22,6 +22,9 @@ outputs:
   bun-version:
     description: 'The installed Bun version'
     value: ${{ steps.versions.outputs.bun }}
+  pnpm-version:
+    description: 'The installed pnpm version'
+    value: ${{ steps.versions.outputs.pnpm }}
 
 runs:
   using: 'composite'
@@ -62,9 +65,9 @@ runs:
       with:
         bun-version: ${{ inputs.bun-version }}
 
-    - name: Enable corepack
+    - name: Install mise-managed pnpm
       shell: bash
-      run: corepack enable
+      run: mise install npm:pnpm
 
     - name: Resolve pnpm store path
       if: inputs.enable-caching == 'true'
@@ -87,3 +90,4 @@ runs:
       run: |
         echo "node=$(node --version | sed 's/^v//')" >> "$GITHUB_OUTPUT"
         echo "bun=$(bun --version)" >> "$GITHUB_OUTPUT"
+        echo "pnpm=$(pnpm --version)" >> "$GITHUB_OUTPUT"

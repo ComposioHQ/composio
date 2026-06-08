@@ -27,6 +27,10 @@ backend = "core:node"
 "platforms.macos-arm64" = { checksum = "sha256:466e05f3477c20dfb723054dfebffe55bc74660ee77f612166fca121dacb65b6", url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-darwin-arm64.tar.gz"}
 "platforms.macos-x64" = { checksum = "sha256:8be6f5e4bb128c82774f8a0b8d7a1cc1365a7977d9657cece0ca647b3fe04e61", url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-darwin-x64.tar.gz"}
 
+[[tools."npm:pnpm"]]
+version = "10.28.2"
+backend = "npm:pnpm"
+
 [[tools.python]]
 version = "3.12.13"
 backend = "core:python"
