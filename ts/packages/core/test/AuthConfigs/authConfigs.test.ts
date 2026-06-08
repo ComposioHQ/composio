@@ -16,18 +16,11 @@ const mockComposioAuthConfigResponse: ComposioAuthConfigRetrieveResponse = {
   name: 'Test Auth Config',
   no_of_connections: 5,
   status: 'ENABLED',
-  deprecated_params: {
-    default_connector_id: null,
-    expected_input_fields: [],
-    member_uuid: 'member_123',
-    toolkit_id: 'toolkit_123',
-  },
   type: 'custom',
   toolkit: {
     logo: 'https://example.com/logo.png',
     slug: 'github',
   },
-  uuid: 'uuid-12345',
   auth_scheme: 'OAUTH2',
   credentials: {
     client_id: 'test_client_id',
@@ -55,7 +48,6 @@ const mockTransformedAuthConfigResponse = {
     logo: 'https://example.com/logo.png',
     slug: 'github',
   },
-  uuid: 'uuid-12345',
   authScheme: 'OAUTH2',
   credentials: {
     client_id: 'test_client_id',
@@ -132,15 +124,11 @@ describe('AuthConfigs', () => {
         name: 'Test Auth Config',
         no_of_connections: 5,
         status: 'ENABLED',
-        deprecated_params: {
-          default_connector_id: null,
-        },
         type: 'default',
         toolkit: {
           logo: 'https://example.com/logo.png',
           slug: 'github',
         },
-        uuid: 'uuid-12345',
         // Optional fields omitted
       } as ComposioAuthConfigRetrieveResponse;
 
@@ -154,7 +142,6 @@ describe('AuthConfigs', () => {
           logo: 'https://example.com/logo.png',
           slug: 'github',
         },
-        uuid: 'uuid-12345',
       });
     });
   });
@@ -707,15 +694,11 @@ describe('AuthConfigs', () => {
         name: 'Minimal Config',
         no_of_connections: 0,
         status: 'DISABLED',
-        deprecated_params: {
-          default_connector_id: null,
-        },
         type: 'default',
         toolkit: {
           logo: '',
           slug: 'minimal-toolkit',
         },
-        uuid: 'uuid-minimal',
       } as ComposioAuthConfigRetrieveResponse;
 
       const result = transformAuthConfigRetrieveResponse(minimalResponse);
@@ -729,7 +712,6 @@ describe('AuthConfigs', () => {
           logo: '',
           slug: 'minimal-toolkit',
         },
-        uuid: 'uuid-minimal',
       });
     });
 

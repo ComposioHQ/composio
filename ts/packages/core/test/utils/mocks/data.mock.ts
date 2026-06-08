@@ -205,9 +205,6 @@ export const connectedAccountMocks = {
           auth_scheme: 'OAUTH2',
           is_composio_managed: true,
           is_disabled: false,
-          deprecated: {
-            uuid: 'test-deprecated-uuid',
-          },
         },
         id: 'test-connected-account-id',
         user_id: 'default',
@@ -225,10 +222,6 @@ export const connectedAccountMocks = {
         is_disabled: false,
         status_reason: null,
         uuid: 'test-uuid',
-        deprecated: {
-          labels: [],
-          uuid: 'test-deprecated-uuid',
-        },
       },
     ],
   },
