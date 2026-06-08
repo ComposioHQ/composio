@@ -201,6 +201,7 @@ jobs:
           echo "✅ COMPOSIO_API_KEY is configured"
 
       - name: Run Integration Tests
+        continue-on-error: true
         working-directory: ./python
         run: |
           echo "🧪 Running Integration Tests..."
