@@ -14,13 +14,21 @@ import { dirname, join } from 'node:path';
 const OPENAPI_V3_URL = process.env.OPENAPI_SPEC_URL || 'https://backend.composio.dev/api/v3/openapi.json';
 const OPENAPI_V31_URL = process.env.OPENAPI_V31_SPEC_URL || 'https://backend.composio.dev/api/v3.1/openapi.json';
 
-// Tags to ignore (internal/admin)
+// Tags to ignore (internal/admin). Operations tagged ONLY with these are dropped;
+// operations that also carry a valid tag are kept under that valid tag.
 const IGNORED_TAGS = [
   'CLI',
   'Admin',
   'Profiling',
   'User',
   'x-internal',
+];
+
+// Tags whose operations are removed entirely from the docs, even when the
+// operation also carries a valid secondary tag (e.g. Consumer endpoints are
+// also tagged Connected Accounts / Tool Router but should not be documented).
+const EXCLUDED_TAGS = [
+  'Consumer',
 ];
 
 async function fetchSpec(url) {
@@ -44,6 +52,14 @@ function filterPaths(paths) {
 
     for (const [method, operation] of Object.entries(methods)) {
       const tags = operation.tags || [];
+
+      // Hard-exclude: drop the operation if it carries any excluded tag,
+      // regardless of whatever other (valid) tags it also has.
+      if (tags.some(tag => EXCLUDED_TAGS.includes(tag))) {
+        removedCount++;
+        continue;
+      }
+
       const hasValidTag = tags.some(tag => !IGNORED_TAGS.includes(tag));
 
       if (!hasValidTag && tags.length > 0) {
@@ -91,7 +107,9 @@ function cleanOperationIds(paths) {
 function postProcessSpec(spec) {
   // Filter tags list
   if (spec.tags) {
-    spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.includes(tag.name));
+    spec.tags = spec.tags.filter(
+      tag => !IGNORED_TAGS.includes(tag.name) && !EXCLUDED_TAGS.includes(tag.name)
+    );
   }
 
   // Remove CookieAuth from security schemes
