@@ -561,7 +561,12 @@ class TriggerSubscription(Resource):
         """Filter events and call the callback function."""
         data = self._parse_payload(event=event)
         if data is None:
-            self.logger.error(f"Error parsing trigger payload: {event}")
+            # Do not log the raw event: webhook payloads can carry
+            # access_token / oauth_token / other secrets (issue #2963).
+            self.logger.error(
+                f"Error parsing trigger payload (len={len(event)}); "
+                "payload omitted to avoid leaking secrets"
+            )
             return
 
         self.logger.debug(

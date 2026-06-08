@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import time
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
@@ -12,7 +13,11 @@ import pytest
 from composio_client import omit
 
 from composio import exceptions
-from composio.core.models.triggers import Triggers, WebhookVersion
+from composio.core.models.triggers import (
+    TriggerSubscription,
+    Triggers,
+    WebhookVersion,
+)
 
 
 class TestTriggers:
@@ -1122,3 +1127,37 @@ class TestVerifyWebhook:
         """Test that WebhookPayloadError inherits from TriggerError."""
         error = exceptions.WebhookPayloadError("test")
         assert isinstance(error, exceptions.TriggerError)
+
+
+class TestHandleEventLogging:
+    """Test cases for TriggerSubscription._handle_event log hygiene (issue #2963)."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_handle_event_does_not_log_raw_payload_on_parse_failure(
+        self, subscription, caplog
+    ):
+        """A parse failure must NOT leak the raw webhook payload into logs.
+
+        Regression test for #2963: provider webhook payloads can carry
+        `access_token` / `oauth_token` / other secrets, so logging the raw
+        event string on a parse error leaks credentials into log files.
+        """
+        sentinel = "access_token=SUPER_SECRET_TOKEN_2963"
+        # An unparseable event (invalid JSON) so _parse_payload returns None.
+        bad_event = f'{{"not": "valid", "leak": "{sentinel}"'
+
+        with caplog.at_level(logging.ERROR, logger="composio"):
+            subscription._handle_event(event=bad_event)
+
+        # An error must still be logged so the failure is observable.
+        assert any(
+            "Error parsing trigger payload" in record.getMessage()
+            for record in caplog.records
+        )
+        # But the raw payload / secret must NOT appear anywhere in the logs.
+        assert sentinel not in caplog.text
+        assert bad_event not in caplog.text
