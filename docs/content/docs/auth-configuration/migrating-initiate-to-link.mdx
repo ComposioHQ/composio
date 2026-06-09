@@ -77,7 +77,7 @@ const connectedAccount = await connectionRequest.waitForConnection();
 </Tab>
 </Tabs>
 
-`callback_url` / `callbackUrl` and `alias` work the same way on both methods.
+`callback_url` / `callbackUrl` works the same way on both methods.
 
 ## What changes between the two methods
 
@@ -86,7 +86,6 @@ const connectedAccount = await connectionRequest.waitForConnection();
 | Underlying endpoint | `POST /api/v3/connected_accounts` | `POST /api/v3/connected_accounts/link` |
 | Return shape | `ConnectionRequest` with `id`, `redirect_url`, `wait_for_connection()` | Same |
 | `callback_url` / `callbackUrl` | ✓ | ✓ |
-| `alias` | ✓ | ✓ |
 | Pre-filled connection state (`config`) | ✓ — for non-OAuth schemes | Not needed — OAuth uses redirect; non-OAuth users keep `initiate()` |
 | `allow_multiple` / `allowMultiple` | ✓ — guards against duplicates | ✓ — same default (`False`), same exception ([since 2026-04-28](/docs/changelog/2026/04/28)) |
 | Affected by the 2026-05-08 / 2026-07-03 retirement (Composio-managed OAuth) | Yes | No |
