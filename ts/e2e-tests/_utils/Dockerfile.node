@@ -21,7 +21,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install corepack (for pnpm)
-RUN npm i -g corepack@latest && \
+RUN npm i -g corepack@latest --force && \
     corepack enable
 
 # Install Bun
