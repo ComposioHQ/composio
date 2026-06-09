@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -56,7 +56,7 @@ jobs:
 
       - name: Post audit comment to PR
         if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           file-path: audit-comment.txt
           comment-tag: pnpm-audit-security-warning
