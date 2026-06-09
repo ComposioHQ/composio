@@ -17,9 +17,12 @@ Thank you for your interest in contributing to Composio SDK! This document provi
 
 ### Prerequisites
 
-- Node.js (Latest LTS version recommended)
-- [pnpm](https://pnpm.io/) (v10.8.0 or later)
-- [bun](https://bun.sh) for productivity (optional)
+- **Node.js** v20.20.2 (pinned in `.nvmrc`; install via [nvm](https://github.com/nvm-sh/nvm) or [mise](https://mise.jdx.dev))
+- **pnpm** v10.28.2 — managed via [corepack](https://nodejs.org/api/corepack.html) (the version comes from `packageManager` in `package.json`; run `corepack enable` once)
+- **Bun** v1.3.10 (pinned in `.bun-version`; required for certain build steps)
+- **Python** 3.12 and **uv** v0.8.19 (for the Python SDK under `python/`)
+- **Deno** v2.6.7 (for Deno e2e tests)
+- [mise](https://mise.jdx.dev) is the recommended way to install and pin all of the above in one step: `mise install`
 
 ### Getting Started
 
@@ -76,13 +79,36 @@ pnpm update:peer-deps
 
 ```
 composio/
-├── packages/                  # Main packages directory
-│   ├── core/                 # Core SDK package
-│   └── providers/            # Provider implementations
-├── examples/                 # Example implementations
-├── docs/                     # Documentation
-├── scripts/                  # Development and build scripts
-└── .github/                  # GitHub configuration
+├── ts/                        # TypeScript SDK (pnpm workspace)
+│   ├── packages/
+│   │   ├── core/              # Core SDK package (@composio/core)
+│   │   ├── cli/               # CLI binary (@composio/cli)
+│   │   ├── cli-keyring/       # Keyring helper for the CLI
+│   │   ├── cli-local-tools/   # Local tools support for the CLI
+│   │   ├── providers/         # AI-framework provider adapters
+│   │   │   ├── openai/
+│   │   │   ├── anthropic/
+│   │   │   ├── langchain/
+│   │   │   ├── llamaindex/
+│   │   │   ├── mastra/
+│   │   │   ├── vercel/
+│   │   │   ├── cloudflare/
+│   │   │   ├── google/
+│   │   │   ├── openai-agents/
+│   │   │   └── claude-agent-sdk/
+│   │   ├── json-schema-to-zod/ # Internal schema-conversion utility
+│   │   └── ts-builders/        # Internal TypeScript build helpers
+│   ├── e2e-tests/             # End-to-end test suites (Node, Deno, CLI, Cloudflare)
+│   ├── examples/              # Example implementations
+│   └── scripts/               # TypeScript build/dev scripts
+├── python/                    # Python SDK
+│   ├── composio/              # Main Python package source
+│   ├── providers/             # Python AI-framework provider adapters
+│   ├── tests/                 # pytest test suite
+│   └── scripts/               # Python dev scripts
+├── docs/                      # Documentation
+├── test/                      # Root-level install-script tests
+└── .github/                   # GitHub configuration
 ```
 
 ## Coding Standards
@@ -281,15 +307,43 @@ Provider packages must additionally include:
 
 ## Testing Guidelines
 
+### TypeScript SDK
+
+Run the full TypeScript test suite (unit + integration via Turbo + vitest, plus install-script and example validation):
+
+```bash
+pnpm test
+```
+
+Run end-to-end tests (all runtimes):
+
+```bash
+pnpm test:e2e
+```
+
+Run e2e tests for a specific runtime:
+
+```bash
+pnpm test:e2e:node        # Node.js runtimes
+pnpm test:e2e:deno        # Deno runtimes
+pnpm test:e2e:cli         # CLI e2e
+pnpm test:e2e:cloudflare  # Cloudflare Workers
+```
+
+Open the interactive Vitest UI:
+
+```bash
+pnpm test:ui
+```
+
+Best practices:
 1. Write unit tests for all new code
 2. Include integration tests for providers
-3. Test error cases
-4. Test edge cases
-5. Use mocks appropriately
-6. Test streaming functionality
-7. Test with different Node.js versions
+3. Test error cases and edge cases
+4. Use mocks appropriately
+5. Test streaming functionality
 
-Example test:
+Example TypeScript test (vitest):
 
 ```typescript
 describe('ToolExecution', () => {
@@ -312,41 +366,62 @@ describe('ToolExecution', () => {
 });
 ```
 
+### Python SDK
+
+The Python SDK lives in `python/`. Tests use [pytest](https://pytest.org) and the project uses [uv](https://github.com/astral-sh/uv) for environment management.
+
+Set up the Python environment:
+
+```bash
+cd python
+uv sync
+```
+
+Run the Python test suite:
+
+```bash
+cd python
+uv run pytest
+```
+
+Or, to run a specific test file:
+
+```bash
+cd python
+uv run pytest tests/test_sdk.py -v
+```
+
+Tests are configured in `python/pytest.ini`; the test root is `python/tests/`.
+
 ## Release Process
 
-1. Create a release branch:
+Releases are managed with [Changesets](https://github.com/changesets/changesets). Only maintainers publish releases; contributors just need to add a changeset for any code change that affects a published package.
+
+### Adding a changeset (contributors)
+
+After making a change that affects a published package, create a changeset describing it:
+
+```bash
+pnpm changeset
+```
+
+This creates a versioned markdown file under `.changeset/` that you commit alongside your code changes. **Root-level documentation-only changes (such as edits to `CONTRIBUTING.md`) do not require a changeset**, since no package version is bumped.
+
+### Versioning and publishing (maintainers only)
+
+1. Bump versions across affected packages:
 
    ```bash
-   git checkout -b release/v1.2.3
+   pnpm changeset:version   # alias for `changeset version`
    ```
 
-2. Update version numbers:
+2. Build all packages and publish to npm:
 
    ```bash
-   pnpm changeset version
+   pnpm changeset:release   # builds ts/packages/** then runs `changeset publish`
    ```
 
-3. Update CHANGELOG.md
-
-4. Create a release commit:
-
-   ```bash
-   git commit -am "Release v1.2.3"
-   ```
-
-5. Create a pull request for the release
-
-6. After approval, merge and tag:
-
-   ```bash
-   git tag v1.2.3
-   git push origin v1.2.3
-   ```
-
-7. Publish to npm:
-   ```bash
-   pnpm changeset publish
-   ```
+3. Tag and push the release commit as normal.
 
 ## Questions and Support
 
