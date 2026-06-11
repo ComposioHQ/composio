@@ -23,6 +23,10 @@ import {
   McpRetrieveResponse as McpRetrieveResponseRaw,
 } from '@composio/client/resources/mcp';
 
+function normalizeConnectedAccountUrl(url: string): string {
+  return url.replace(/([?&])connected_account_ids=/g, '$1connected_account_id=');
+}
+
 /**
  * Transform MCP create response from snake_case to camelCase
  */
@@ -149,7 +153,7 @@ export function transformMcpGenerateUrlResponse(
   response: GenerateURLResponseRaw
 ): GenerateURLResponse {
   const result = GenerateURLResponseSchema.safeParse({
-    connectedAccountUrls: response.connected_account_urls,
+    connectedAccountUrls: response.connected_account_urls?.map(normalizeConnectedAccountUrl),
     userIdsUrl: response.user_ids_url,
     mcpUrl: response.mcp_url,
   });

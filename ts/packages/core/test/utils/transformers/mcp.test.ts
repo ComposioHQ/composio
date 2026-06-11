@@ -330,6 +330,21 @@ describe('MCP Transformers', () => {
       });
     });
 
+    it('should normalize connected account URL params for MCP transport', () => {
+      const response = {
+        connected_account_urls: [
+          'https://mcp.example.com/server?include_composio_helper_actions=true&connected_account_ids=ca_123&user_id=user_123',
+        ],
+        mcp_url: 'https://mcp.example.com/server',
+      };
+
+      const result = transformMcpGenerateUrlResponse(response);
+
+      expect(result.connectedAccountUrls).toEqual([
+        'https://mcp.example.com/server?include_composio_helper_actions=true&connected_account_id=ca_123&user_id=user_123',
+      ]);
+    });
+
     it('should throw ValidationError for missing required mcp_url', () => {
       const invalidResponse = {
         connected_account_urls: ['https://mcp.example.com/account1'],
