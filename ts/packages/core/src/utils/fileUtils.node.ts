@@ -209,12 +209,16 @@ const uploadFileToS3 = async (
   const uploadBuffer = new Uint8Array(contentBytes.byteLength);
   uploadBuffer.set(contentBytes);
 
+  // Note: do not set `Content-Length` manually. Node.js's built-in fetch (undici)
+  // computes it from `body` and rejects any user-supplied value with
+  // `InvalidArgumentError: invalid content-length header`, which surfaces as
+  // `TypeError: fetch failed` and breaks every `file_uploadable` connector tool
+  // on Node 22+.
   const uploadResponse = await fetch(signedURL, {
     method: 'PUT',
     body: uploadBuffer,
     headers: {
       'Content-Type': mimeType,
-      'Content-Length': contentBytes.length.toString(),
     },
   });
 
