@@ -611,15 +611,61 @@ class FileHelper(WithLogger):
             list(file_upload_allowlist) if file_upload_allowlist is not None else None
         )
 
+    def _resolve_schema_ref(
+        self,
+        schema: t.Dict,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
+    ) -> t.Dict:
+        """Resolve local JSON-Schema refs against the root schema."""
+        if not isinstance(schema, dict):
+            return schema
+
+        ref = schema.get("$ref")
+        if not isinstance(ref, str) or not ref.startswith("#/"):
+            return schema
+
+        if seen_refs is None:
+            seen_refs = set()
+        if ref in seen_refs:
+            return schema
+        seen_refs.add(ref)
+
+        root = root_schema if isinstance(root_schema, dict) else schema
+        target: t.Any = root
+        for raw_part in ref[2:].split("/"):
+            part = raw_part.replace("~1", "/").replace("~0", "~")
+            if not isinstance(target, dict) or part not in target:
+                return schema
+            target = target[part]
+
+        if not isinstance(target, dict):
+            return schema
+
+        resolved = self._resolve_schema_ref(
+            target, root_schema=root, seen_refs=seen_refs
+        )
+        return {
+            **resolved,
+            **{key: value for key, value in schema.items() if key != "$ref"},
+        }
+
     def _has_file_property(
-        self, schema: t.Dict, property_name: str = "file_uploadable"
+        self,
+        schema: t.Dict,
+        property_name: str = "file_uploadable",
+        root_schema: t.Optional[t.Dict] = None,
     ) -> bool:
         """Check if a schema (or any of its variants) contains a file property.
 
-        Recursively checks anyOf, oneOf, allOf, nested properties, and array items.
+        Recursively checks refs, anyOf, oneOf, allOf, nested properties, and array
+        items.
         """
         if not isinstance(schema, dict):
             return False
+
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
 
         # Direct property check
         if schema.get(property_name, False):
@@ -628,25 +674,25 @@ class FileHelper(WithLogger):
         # Check anyOf variants
         if "anyOf" in schema:
             for variant in schema["anyOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, root_schema):
                     return True
 
         # Check oneOf variants
         if "oneOf" in schema:
             for variant in schema["oneOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, root_schema):
                     return True
 
         # Check allOf variants
         if "allOf" in schema:
             for variant in schema["allOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(variant, property_name, root_schema):
                     return True
 
         # Check nested properties
         if "properties" in schema:
             for prop in schema["properties"].values():
-                if self._has_file_property(prop, property_name):
+                if self._has_file_property(prop, property_name, root_schema):
                     return True
 
         # Check array items
@@ -654,10 +700,10 @@ class FileHelper(WithLogger):
             items = schema["items"]
             if isinstance(items, list):
                 for item in items:
-                    if self._has_file_property(item, property_name):
+                    if self._has_file_property(item, property_name, root_schema):
                         return True
             elif isinstance(items, dict):
-                if self._has_file_property(items, property_name):
+                if self._has_file_property(items, property_name, root_schema):
                     return True
 
         return False
@@ -675,13 +721,18 @@ class FileHelper(WithLogger):
             "file_uploadable": True,
         }
 
-    def _transform_schema_for_file_upload(self, schema: t.Dict) -> t.Dict:
+    def _transform_schema_for_file_upload(
+        self, schema: t.Dict, root_schema: t.Optional[t.Dict] = None
+    ) -> t.Dict:
         """Recursively transform a schema, converting file_uploadable fields to path format.
 
         Handles anyOf, oneOf, allOf, nested properties, and array items.
         """
         if not isinstance(schema, dict):
             return schema
+
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
 
         # Direct file_uploadable - transform it
         if schema.get("file_uploadable", False):
@@ -693,28 +744,28 @@ class FileHelper(WithLogger):
         # Transform anyOf variants
         if "anyOf" in schema:
             new_schema["anyOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, root_schema)
                 for variant in schema["anyOf"]
             ]
 
         # Transform oneOf variants
         if "oneOf" in schema:
             new_schema["oneOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, root_schema)
                 for variant in schema["oneOf"]
             ]
 
         # Transform allOf variants
         if "allOf" in schema:
             new_schema["allOf"] = [
-                self._transform_schema_for_file_upload(variant)
+                self._transform_schema_for_file_upload(variant, root_schema)
                 for variant in schema["allOf"]
             ]
 
         # Transform nested properties
         if "properties" in schema:
             new_schema["properties"] = {
-                key: self._transform_schema_for_file_upload(prop)
+                key: self._transform_schema_for_file_upload(prop, root_schema)
                 for key, prop in schema["properties"].items()
             }
 
@@ -723,10 +774,13 @@ class FileHelper(WithLogger):
             items = schema["items"]
             if isinstance(items, list):
                 new_schema["items"] = [
-                    self._transform_schema_for_file_upload(item) for item in items
+                    self._transform_schema_for_file_upload(item, root_schema)
+                    for item in items
                 ]
             elif isinstance(items, dict):
-                new_schema["items"] = self._transform_schema_for_file_upload(items)
+                new_schema["items"] = self._transform_schema_for_file_upload(
+                    items, root_schema
+                )
 
         return new_schema
 
@@ -774,7 +828,7 @@ class FileHelper(WithLogger):
             return schema
 
         schema["properties"] = {
-            key: self._transform_schema_for_file_upload(prop)
+            key: self._transform_schema_for_file_upload(prop, schema)
             for key, prop in schema["properties"].items()
         }
         return schema
@@ -789,22 +843,39 @@ class FileHelper(WithLogger):
         self.enhance_schema_descriptions(schema)
         return schema
 
-    def _schema_variants(self, schema: t.Dict) -> t.List[t.Dict]:
+    def _schema_variants(
+        self, schema: t.Dict, root_schema: t.Optional[t.Dict] = None
+    ) -> t.List[t.Dict]:
         """Return composed schema variants in the SDK's historical order."""
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
         variants: t.List[t.Dict] = []
         for key in ("anyOf", "oneOf", "allOf"):
             schema_variants = schema.get(key)
             if not isinstance(schema_variants, list):
                 continue
-            variants.extend(v for v in schema_variants if isinstance(v, dict))
+            variants.extend(
+                self._resolve_schema_ref(v, root_schema=root_schema)
+                for v in schema_variants
+                if isinstance(v, dict)
+            )
         return variants
 
-    def _json_schema_type_matches_value(self, schema: t.Dict, value: t.Any) -> bool:
+    def _json_schema_type_matches_value(
+        self,
+        schema: t.Dict,
+        value: t.Any,
+        root_schema: t.Optional[t.Dict] = None,
+    ) -> bool:
         """Best-effort runtime shape match for selecting composed schemas."""
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
         schema_type = schema.get("type")
         if isinstance(schema_type, list):
             return any(
-                self._json_schema_type_matches_value({**schema, "type": tpe}, value)
+                self._json_schema_type_matches_value(
+                    {**schema, "type": tpe}, value, root_schema
+                )
                 for tpe in schema_type
             )
 
@@ -837,6 +908,7 @@ class FileHelper(WithLogger):
         schema: t.Dict,
         property_name: str,
         value: t.Any = None,
+        root_schema: t.Optional[t.Dict] = None,
     ) -> t.Optional[t.Dict]:
         """Find the composed schema variant that should process a file value.
 
@@ -845,29 +917,35 @@ class FileHelper(WithLogger):
         available, prefer the file-bearing variant with the matching JSON Schema
         shape; otherwise keep the historical first-match behavior.
         """
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
         candidates = [
             variant
-            for variant in self._schema_variants(schema)
-            if self._has_file_property(variant, property_name)
+            for variant in self._schema_variants(schema, root_schema)
+            if self._has_file_property(variant, property_name, root_schema)
         ]
         if not candidates:
             return None
 
         if value is not None:
             for candidate in candidates:
-                if self._json_schema_type_matches_value(candidate, value):
+                if self._json_schema_type_matches_value(candidate, value, root_schema):
                     return candidate
 
         return candidates[0]
 
     def _find_uploadable_schema_variant(
-        self, schema: t.Dict, value: t.Any = None
+        self,
+        schema: t.Dict,
+        value: t.Any = None,
+        root_schema: t.Optional[t.Dict] = None,
     ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_uploadable properties."""
         return self._find_schema_variant_with_file_property(
             schema=schema,
             property_name="file_uploadable",
             value=value,
+            root_schema=root_schema,
         )
 
     def _upload_file_value(
@@ -897,10 +975,14 @@ class FileHelper(WithLogger):
         tool: Tool,
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
+        root_schema: t.Optional[t.Dict] = None,
     ) -> t.Any:
         """Return ``value`` with file-uploadable leaves staged for execution."""
         if not isinstance(schema, dict):
             return value
+
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
 
         if schema.get("file_uploadable", False):
             return self._upload_file_value(
@@ -912,6 +994,7 @@ class FileHelper(WithLogger):
         uploadable_variant = self._find_uploadable_schema_variant(
             schema=schema,
             value=value,
+            root_schema=root_schema,
         )
         if uploadable_variant is not None:
             return self._substitute_file_upload_value(
@@ -919,6 +1002,7 @@ class FileHelper(WithLogger):
                 schema=uploadable_variant,
                 tool=tool,
                 before_file_upload=before_file_upload,
+                root_schema=root_schema,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -931,6 +1015,7 @@ class FileHelper(WithLogger):
                     schema=item_schema,
                     tool=tool,
                     before_file_upload=before_file_upload,
+                    root_schema=root_schema,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed[key] = processed_item
@@ -948,6 +1033,7 @@ class FileHelper(WithLogger):
                     schema=items_schema,
                     tool=tool,
                     before_file_upload=before_file_upload,
+                    root_schema=root_schema,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed_items.append(processed_item)
@@ -968,6 +1054,7 @@ class FileHelper(WithLogger):
             schema=schema,
             tool=tool,
             before_file_upload=before_file_upload,
+            root_schema=schema,
         )
         if processed is request:
             return request
@@ -1008,13 +1095,17 @@ class FileHelper(WithLogger):
         return self._has_file_property(schema, "file_downloadable")
 
     def _find_downloadable_schema_variant(
-        self, schema: t.Dict, value: t.Any = None
+        self,
+        schema: t.Dict,
+        value: t.Any = None,
+        root_schema: t.Optional[t.Dict] = None,
     ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_downloadable properties."""
         return self._find_schema_variant_with_file_property(
             schema=schema,
             property_name="file_downloadable",
             value=value,
+            root_schema=root_schema,
         )
 
     def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
@@ -1031,10 +1122,14 @@ class FileHelper(WithLogger):
         value: t.Any,
         schema: t.Optional[t.Dict],
         tool: Tool,
+        root_schema: t.Optional[t.Dict] = None,
     ) -> t.Any:
         """Return ``value`` with file-downloadable leaves saved locally."""
         if not isinstance(schema, dict):
             return value
+
+        root_schema = root_schema or schema
+        schema = self._resolve_schema_ref(schema, root_schema=root_schema)
 
         if schema.get("file_downloadable", False):
             return self._download_file_value(value=value, tool=tool)
@@ -1042,12 +1137,14 @@ class FileHelper(WithLogger):
         downloadable_variant = self._find_downloadable_schema_variant(
             schema=schema,
             value=value,
+            root_schema=root_schema,
         )
         if downloadable_variant is not None:
             return self._substitute_file_download_value(
                 value=value,
                 schema=downloadable_variant,
                 tool=tool,
+                root_schema=root_schema,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -1057,6 +1154,7 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=properties.get(key),
                     tool=tool,
+                    root_schema=root_schema,
                 )
                 for key, item in value.items()
             }
@@ -1070,6 +1168,7 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=items_schema,
                     tool=tool,
+                    root_schema=root_schema,
                 )
                 for item in value
             ]
@@ -1086,6 +1185,7 @@ class FileHelper(WithLogger):
             value=request,
             schema=schema,
             tool=tool,
+            root_schema=schema,
         )
         if processed is request:
             return request

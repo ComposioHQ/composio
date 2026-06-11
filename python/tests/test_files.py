@@ -256,6 +256,134 @@ class TestFileHelperSchemaHandling:
         )
         assert result == {"data": {"field": "value"}}
 
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_substitute_file_downloads_resolves_ref_defs(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """Test that $ref/$defs schemas expose nested file_downloadable outputs."""
+        mock_download.return_value = "/tmp/invoice.pdf"
+        schema_with_ref_defs = {
+            "type": "object",
+            "$defs": {
+                "FileDownloadable": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "mimetype": {"type": "string"},
+                        "s3url": {"type": "string"},
+                    },
+                    "required": ["name", "mimetype", "s3url"],
+                    "file_downloadable": True,
+                },
+                "GetAttachmentResponse": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"$ref": "#/$defs/FileDownloadable"},
+                        "display_url": {"type": "string"},
+                    },
+                    "required": ["file"],
+                },
+            },
+            "properties": {
+                "data": {"$ref": "#/$defs/GetAttachmentResponse"},
+                "successful": {"type": "boolean"},
+            },
+            "required": ["data", "successful"],
+        }
+        response = {
+            "data": {
+                "file": {
+                    "name": "invoice.pdf",
+                    "mimetype": "application/pdf",
+                    "s3url": "https://s3.example.com/invoice.pdf",
+                },
+                "display_url": "https://mail.google.com/...",
+            },
+            "successful": True,
+        }
+
+        assert (
+            file_helper._has_file_property(
+                schema_with_ref_defs,
+                "file_downloadable",
+            )
+            is True
+        )
+
+        result = file_helper._substitute_file_downloads_recursively(
+            tool=mock_tool,
+            schema=schema_with_ref_defs,
+            request=response.copy(),
+        )
+
+        assert result["data"]["file"] == "/tmp/invoice.pdf"
+        assert result["data"]["display_url"] == "https://mail.google.com/..."
+        assert result["successful"] is True
+        mock_download.assert_called_once()
+
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_substitute_file_uploads_resolves_ref_defs(
+        self, mock_from_path, file_helper, mock_tool
+    ):
+        """Test that $ref/$defs schemas expose nested file_uploadable inputs."""
+        upload = MagicMock()
+        upload.model_dump.return_value = {
+            "name": "invoice.pdf",
+            "mimetype": "application/pdf",
+            "s3key": "uploads/invoice.pdf",
+        }
+        mock_from_path.return_value = upload
+        schema_with_ref_defs = {
+            "type": "object",
+            "$defs": {
+                "FileUploadable": {
+                    "type": "string",
+                    "file_uploadable": True,
+                },
+                "AttachmentInput": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"$ref": "#/$defs/FileUploadable"},
+                        "name": {"type": "string"},
+                    },
+                    "required": ["file"],
+                },
+            },
+            "properties": {
+                "attachment": {"$ref": "#/$defs/AttachmentInput"},
+            },
+            "required": ["attachment"],
+        }
+        request = {
+            "attachment": {
+                "file": "/tmp/invoice.pdf",
+                "name": "invoice.pdf",
+            }
+        }
+
+        assert (
+            file_helper._has_file_property(
+                schema_with_ref_defs,
+                "file_uploadable",
+            )
+            is True
+        )
+
+        result = file_helper._substitute_file_uploads_recursively(
+            tool=mock_tool,
+            schema=schema_with_ref_defs,
+            request=request.copy(),
+        )
+
+        assert result["attachment"]["file"] == {
+            "name": "invoice.pdf",
+            "mimetype": "application/pdf",
+            "s3key": "uploads/invoice.pdf",
+        }
+        assert result["attachment"]["name"] == "invoice.pdf"
+        mock_from_path.assert_called_once()
+        assert mock_from_path.call_args.kwargs["file"] == "/tmp/invoice.pdf"
+
     def test_substitute_file_uploads_with_normal_type_still_works(
         self, file_helper, mock_tool
     ):
