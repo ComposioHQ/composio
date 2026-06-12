@@ -123,7 +123,9 @@ curl -X POST "https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_CHAN
 
 <Callout type="warn">
 **Sharing one Slack OAuth app across multiple Composio projects?** On V2 each OAuth app is tied to a
-single project. Pick the project that should own it, or register separate Slack apps per project.
+single project — that's what gives every project its own event isolation and rate limits, so one
+project's webhook volume can't affect another. Pick the project that should own the app, or register
+a separate Slack app per project.
 </Callout>
 
 ## Get started
