@@ -153,6 +153,8 @@ session = composio.create(
 ```typescript
 import { Composio, SessionPreset } from '@composio/core';
 
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+// ---cut---
 const session = await composio.create("user-123", {
   toolkits: ["gmail"],
   authConfigs: { gmail: "ac_xyz123" },
@@ -169,39 +171,68 @@ span many toolkits without bloating context.
 </Step>
 </Steps>
 
+## Beyond the MCP URL
+
+A session isn't only an MCP endpoint — it's also a normal SDK object, which is handy for non-agent
+code paths.
+
+### Native tools for your framework
+
+`session.tools()` returns provider-wrapped native tools for OpenAI, Anthropic, LangChain, the Vercel
+AI SDK, and others, so you skip manual schema wiring. With the direct-tools preset it returns your
+exact fixed tool set; by default it returns the meta-tools that drive runtime discovery.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const session = await composio.create("user-123");
+// ---cut---
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+### Execute a tool without an LLM
+
+For a deterministic, non-agent path, call a tool directly on the session.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GITHUB_CREATE_ISSUE",
+    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const session = await composio.create("user-123");
+// ---cut---
+const result = await session.execute("GITHUB_CREATE_ISSUE", {
+  owner: "my-org",
+  repo: "my-repo",
+  title: "Fix login bug",
+});
+```
+</Tab>
+</Tabs>
+
 ## Things to know
 
 - **Multiple toolkits on one endpoint** — where you ran several single-toolkit servers, one session
   spans them all (`toolkits=["gmail", "slack", "github"]`). Fewer moving parts.
 - **Reuse one session — don't create one per request** — sessions persist and are reusable. Create a
   session once and keep using it across calls; see [Configuring Sessions](/docs/configuring-sessions).
-- **Use the session's tools natively in your framework** — `session.tools()` returns
-  provider-wrapped native tools for OpenAI, Anthropic, LangChain, the Vercel AI SDK, and others, so
-  you skip manual schema wiring. With the direct-tools preset it returns your exact fixed tool set;
-  by default it returns the meta-tools that drive runtime discovery.
-- **Execute a tool without an LLM** — for a deterministic, non-agent path, call a tool directly on
-  the session:
-
-  <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-  ```python
-  result = session.execute(
-      "GITHUB_CREATE_ISSUE",
-      arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
-  )
-  ```
-  </Tab>
-  <Tab value="TypeScript">
-  ```typescript
-  const result = await session.execute("GITHUB_CREATE_ISSUE", {
-    owner: "my-org",
-    repo: "my-repo",
-    title: "Fix login bug",
-  });
-  ```
-  </Tab>
-  </Tabs>
-
 - **Sharing one account across users** — sessions support **shared connections**
   (`account_type:"SHARED"` + an allow/deny ACL), pinned per session. See
   [Shared connections](/docs/authenticating-users/shared-connections).
