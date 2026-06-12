@@ -47,63 +47,25 @@ Each deprecated slug maps to a V2 equivalent. The `_RECEIVE_*_MESSAGE` family co
 
 ## How to migrate
 
-V2 triggers run on a per-OAuth-app webhook endpoint. One-time setup, then switch your trigger slugs.
+Two steps: set up a V2 webhook endpoint (one-time, per Slack app), then switch your trigger slugs.
 
 <Steps>
 <Step>
-<StepTitle>Create a webhook endpoint for your Slack app</StepTitle>
+<StepTitle>Set up a V2 webhook endpoint</StepTitle>
 
-```bash
-curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "toolkit_slug": "slack", "client_id": "YOUR_SLACK_CLIENT_ID" }'
-```
+On **Composio-managed OAuth** this is already provisioned — skip to step 2. If you **bring your own
+Slack app**, follow
+[Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint):
+discover the schema, create the endpoint, store your signing secret and app-level token, and point
+your Slack app's **Event Subscriptions → Request URL** at the returned `webhook_url`.
 
-The response returns an `id` (`we_…`) and a `webhook_url` — keep both.
-</Step>
-
-<Step>
-<StepTitle>Store your Slack signing secret</StepTitle>
-
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "webhook_signing_secret": "YOUR_SIGNING_SECRET" } }'
-```
-
-Find it in your Slack app dashboard → **Basic Information → Signing Secret**. Store it *before*
-switching the callback URL, or Slack requests will fail.
-</Step>
-
-<Step>
-<StepTitle>Add an app-level token (for DMs and private channels)</StepTitle>
-
-Needed for `SLACK_DIRECT_MESSAGE_RECEIVED` (always) and for `SLACK_CHANNEL_MESSAGE_RECEIVED` on
-private channels / multi-person DMs. Public-channel messages don't need it.
-
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "app_token": "xapp-..." } }'
-```
-
-Generate it in Slack app → **Basic Information → App-Level Tokens** with the `authorizations:read` scope.
-</Step>
-
-<Step>
-<StepTitle>Point your Slack app at the V2 URL</StepTitle>
-
-Set **Event Subscriptions → Request URL** in your Slack app to the `webhook_url` from step 1. Composio
-verifies it with Slack automatically.
+Some toolkits have provider-specific setup (e.g. Notion's verification flow) — see the toolkit's FAQ.
 </Step>
 
 <Step>
 <StepTitle>Switch to the V2 trigger slugs</StepTitle>
 
-Recreate your trigger instances on the V2 slugs from the mapping table above. Example:
+Recreate your trigger instances on the V2 slugs from the mapping table above:
 
 ```bash
 curl -X POST "https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_CHANNEL_MESSAGE_RECEIVED/upsert" \
@@ -124,6 +86,6 @@ a separate Slack app per project.
 ## Get started
 
 <Cards>
+  <Card title="Configuring the webhook endpoint" href="/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint" description="The full V2 endpoint setup — schema, create, store secret, point URL" />
   <Card title="Webhook Triggers V2 (changelog)" href="/reference/changelog#2026-04-27" description="The original V2 announcement and full API reference" />
-  <Card title="Setting up triggers" href="/docs/setting-up-triggers/creating-triggers" description="How triggers work in Composio" />
 </Cards>
