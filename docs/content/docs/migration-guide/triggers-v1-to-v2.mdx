@@ -44,13 +44,6 @@ Each deprecated slug maps to a V2 equivalent. The `_RECEIVE_*_MESSAGE` family co
 | `SLACK_RECEIVE_BOT_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` |
 | `SLACK_RECEIVE_DIRECT_MESSAGE` / `SLACKBOT_RECEIVE_DIRECT_MESSAGE` | `SLACK_DIRECT_MESSAGE_RECEIVED` / `SLACKBOT_DIRECT_MESSAGE_RECEIVED` |
 | `SLACK_REACTION_ADDED` / `SLACKBOT_REACTION_ADDED` | `SLACK_MESSAGE_REACTION_ADDED` / `SLACKBOT_MESSAGE_REACTION_ADDED` |
-| `SLACK_REACTION_REMOVED` / `SLACKBOT_REACTION_REMOVED` | **No V2 equivalent yet** — see below |
-
-<Callout type="info">
-**Using `SLACK_REACTION_REMOVED`?** There isn't a V2 reaction-removed trigger yet. If you have a
-genuine use case for it, tell us — reply to your migration email or reach out — and we'll add it to V2.
-Until then, your existing trigger keeps working.
-</Callout>
 
 ## How to migrate
 
