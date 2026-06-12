@@ -1,0 +1,134 @@
+---
+title: Migrating triggers from V1 to V2
+description: Move from the deprecated V1 trigger slugs to their V2 equivalents
+keywords: [migrate, triggers, webhook, v1, v2, slack, slackbot, deprecation]
+---
+
+This guide covers migrating from Composio's older **V1 trigger slugs** (e.g. `SLACK_RECEIVE_MESSAGE`)
+to the **V2 triggers**, which are a real step up on the security front. Your existing connected
+accounts carry over — this is a slug + endpoint change, not a re-auth.
+
+<Callout type="info">
+**Available today for Slack and Slackbot.** V2 is rolling out toolkit by toolkit — Slack and Slackbot
+are live now, and more will follow. If your V1 triggers are on a toolkit not yet listed here, there's
+nothing to do until V2 lands for it.
+</Callout>
+
+<Callout type="info">
+Already on the V2 slugs (`SLACK_CHANNEL_MESSAGE_RECEIVED`, `SLACK_DIRECT_MESSAGE_RECEIVED`,
+`SLACK_MESSAGE_REACTION_ADDED`)? You're done — nothing to do.
+</Callout>
+
+## Why V2
+
+V2 triggers run on a dedicated, per-app webhook endpoint with security advancements built in:
+
+- **Signature verification at ingress** — every request is cryptographically verified (HMAC-SHA256)
+  against your signing secret, so third parties can't spoof events onto your triggers.
+- **Replay protection** — requests with a stale Slack timestamp (outside a 5-minute window) are rejected.
+- **Per-user authorization** — for private channels and DMs, only the users actually authorized for an
+  event have their triggers fire.
+- **Automatic handshakes** — Composio answers Slack's `url_verification` challenge for you.
+
+## Slug mapping
+
+Each deprecated slug maps to a V2 equivalent. The `_RECEIVE_*_MESSAGE` family consolidates into one
+`*_CHANNEL_MESSAGE_RECEIVED` trigger that you narrow with a `channel_type` filter.
+
+| Deprecated (Slack / Slackbot) | V2 replacement |
+|---|---|
+| `SLACK_RECEIVE_MESSAGE` / `SLACKBOT_RECEIVE_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` / `SLACKBOT_CHANNEL_MESSAGE_RECEIVED` |
+| `SLACK_RECEIVE_GROUP_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` (filter `channel_type`) |
+| `SLACK_RECEIVE_MPIM_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` (filter `channel_type`) |
+| `SLACK_RECEIVE_THREAD_REPLY` | `SLACK_CHANNEL_MESSAGE_RECEIVED` |
+| `SLACK_RECEIVE_BOT_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` |
+| `SLACK_RECEIVE_DIRECT_MESSAGE` / `SLACKBOT_RECEIVE_DIRECT_MESSAGE` | `SLACK_DIRECT_MESSAGE_RECEIVED` / `SLACKBOT_DIRECT_MESSAGE_RECEIVED` |
+| `SLACK_REACTION_ADDED` / `SLACKBOT_REACTION_ADDED` | `SLACK_MESSAGE_REACTION_ADDED` / `SLACKBOT_MESSAGE_REACTION_ADDED` |
+| `SLACK_REACTION_REMOVED` / `SLACKBOT_REACTION_REMOVED` | **No V2 equivalent yet** — see below |
+
+<Callout type="info">
+**Using `SLACK_REACTION_REMOVED`?** There isn't a V2 reaction-removed trigger yet. If you have a
+genuine use case for it, tell us — reply to your migration email or reach out — and we'll add it to V2.
+Until then, your existing trigger keeps working.
+</Callout>
+
+## How to migrate
+
+V2 triggers run on a per-OAuth-app webhook endpoint. One-time setup, then switch your trigger slugs.
+
+<Steps>
+<Step>
+<StepTitle>Create a webhook endpoint for your Slack app</StepTitle>
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "toolkit_slug": "slack", "client_id": "YOUR_SLACK_CLIENT_ID" }'
+```
+
+The response returns an `id` (`we_…`) and a `webhook_url` — keep both.
+</Step>
+
+<Step>
+<StepTitle>Store your Slack signing secret</StepTitle>
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "webhook_signing_secret": "YOUR_SIGNING_SECRET" } }'
+```
+
+Find it in your Slack app dashboard → **Basic Information → Signing Secret**. Store it *before*
+switching the callback URL, or Slack requests will fail.
+</Step>
+
+<Step>
+<StepTitle>Add an app-level token (for DMs and private channels)</StepTitle>
+
+Needed for `SLACK_DIRECT_MESSAGE_RECEIVED` (always) and for `SLACK_CHANNEL_MESSAGE_RECEIVED` on
+private channels / multi-person DMs. Public-channel messages don't need it.
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "app_token": "xapp-..." } }'
+```
+
+Generate it in Slack app → **Basic Information → App-Level Tokens** with the `authorizations:read` scope.
+</Step>
+
+<Step>
+<StepTitle>Point your Slack app at the V2 URL</StepTitle>
+
+Set **Event Subscriptions → Request URL** in your Slack app to the `webhook_url` from step 1. Composio
+verifies it with Slack automatically.
+</Step>
+
+<Step>
+<StepTitle>Switch to the V2 trigger slugs</StepTitle>
+
+Recreate your trigger instances on the V2 slugs from the mapping table above. Example:
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_CHANNEL_MESSAGE_RECEIVED/upsert" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "connected_account_id": "CONNECTED_ACCOUNT_ID", "trigger_config": {} }'
+```
+</Step>
+</Steps>
+
+<Callout type="warn">
+**Sharing one Slack OAuth app across multiple Composio projects?** On V2 each OAuth app is tied to a
+single project. Pick the project that should own it, or register separate Slack apps per project.
+</Callout>
+
+## Get started
+
+<Cards>
+  <Card title="Webhook Triggers V2 (changelog)" href="/reference/changelog#2026-04-27" description="The original V2 announcement and full API reference" />
+  <Card title="Setting up triggers" href="/docs/setting-up-triggers/creating-triggers" description="How triggers work in Composio" />
+</Cards>

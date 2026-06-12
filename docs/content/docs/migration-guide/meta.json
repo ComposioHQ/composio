@@ -3,6 +3,7 @@
   "pages": [
     "direct-to-sessions",
     "mcp-servers-to-sessions",
+    "triggers-v1-to-v2",
     "tool-router-beta",
     "toolkit-versioning",
     "new-sdk"
