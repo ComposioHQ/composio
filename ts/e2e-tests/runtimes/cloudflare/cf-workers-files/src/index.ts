@@ -4,7 +4,6 @@
  * and that the FileToolModifier.workerd.ts is properly loaded.
  */
 import { Composio } from '@composio/core';
-import { z } from 'zod/v3';
 import { Hono } from 'hono';
 
 type Bindings = {
@@ -22,7 +21,6 @@ app.get('/', c => {
     endpoints: [
       '/test/files/upload',
       '/test/files/download',
-      '/test/file-modifier/error-message',
       '/test/auto-upload-disabled',
       '/test/default-config',
     ],
@@ -82,61 +80,6 @@ app.get('/test/files/download', async c => {
     return c.json(
       {
         error: 'Expected files.download() to throw an error in Cloudflare Workers, but it did not',
-      },
-      { status: 500 }
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return c.json({
-      error: errorMessage,
-    });
-  }
-});
-
-/**
- * Test: FileToolModifier behavior (triggers the auto-upload/download error)
- *
- * The FileToolModifier.workerd.ts throws an error when automatic file upload/download is enabled.
- * In workerd runtime, the default is off, so we explicitly opt in here to test the error.
- *
- * This endpoint actually executes a tool to trigger the real error from FileToolModifier.workerd.ts.
- */
-app.get('/test/file-modifier/error-message', async c => {
-  try {
-    const composio = new Composio({
-      apiKey: c.env.COMPOSIO_API_KEY,
-      dangerouslyAllowAutoUploadDownloadFiles: true,
-    });
-
-    // Use a local custom tool to avoid depending on remote Composio tool registry.
-    // Any execute() with automatic file handling enabled will trigger FileToolModifier
-    // in the workerd runtime.
-    await composio.tools.createCustomTool({
-      slug: 'CUSTOM_FILE_TOOL',
-      name: 'Custom File Tool',
-      inputParams: z.object({
-        file: z.string(),
-      }),
-      execute: async () => ({
-        data: {},
-        error: null,
-        successful: true,
-        logId: undefined,
-        sessionInfo: undefined,
-      }),
-    });
-
-    await composio.tools.execute('CUSTOM_FILE_TOOL', {
-      arguments: {
-        file: 'https://example.com/test.pdf',
-      },
-      dangerouslySkipVersionCheck: true,
-    });
-
-    // If we get here, the test failed - execution should have thrown
-    return c.json(
-      {
-        error: 'Expected tool execution to throw FileToolModifier error, but it did not',
       },
       { status: 500 }
     );

@@ -4,6 +4,7 @@
     "composio",
     "auth-configs",
     "connected-accounts",
+    "experimental",
     "mcp",
     "remote-file",
     "session-context-impl",

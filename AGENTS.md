@@ -26,6 +26,8 @@ pnpm test               # Run tests
 
 ### Package Management
 ```bash
+mise install            # Install Node, Bun, Deno, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
+corepack enable         # Activate pnpm from package.json#packageManager
 pnpm install            # Install dependencies
 pnpm check:peer-deps    # Check peer dependencies
 pnpm update:peer-deps   # Update peer dependencies
@@ -147,22 +149,27 @@ const wrappedTools = provider.wrapTools(tools);
 
 ### Custom Tool Creation
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio();
+
+// Custom tools are session-scoped: define a local tool, then attach it when
+// creating a Tool Router session. Use `extendsToolkit` + `ctx.proxyExecute`
+// to inherit a toolkit's managed auth and call its API.
+const myTool = experimental_createTool('MY_TOOL', {
   name: 'My Tool',
   description: 'Tool description',
-  slug: 'MY_TOOL',
   inputParams: z.object({
     param: z.string().describe('Parameter description')
   }),
-  execute: async (input) => {
-    return {
-      data: { result: input.param },
-      error: null,
-      successful: true
-    };
+  execute: async input => {
+    return { result: input.param };
   }
+});
+
+const session = await composio.create('user-id', {
+  experimental: { customTools: [myTool] }
 });
 ```
 
@@ -195,10 +202,15 @@ make build     # Build packages
 
 ### When Updating GitHub Actions
 
-Update the "Prerequisites" section in `ts/docs/internal/release.md` with current tool versions:
+Toolchain versions are coalesced in `mise.toml`. To check the current values:
 
-- **Node.js**: `cat .nvmrc`
-- **Bun**: `cat .bun-version`
-- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
+- **Node.js**: `mise current node`
+- **Bun**: `mise current bun`
+- **Deno**: `mise current deno`
+- **Python**: `mise current python`
+- **uv**: `mise current uv`
+- **pnpm**: `node -p "require('./package.json').packageManager"`
+
+To bump, edit `mise.toml` (or `package.json#packageManager` for pnpm). The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
 
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.

@@ -62,3 +62,6 @@ test/e2e/*/node_modules
 
 # Agent memory
 .agent_cache
+
+# mise (per-dev overrides)
+.mise.local.toml

@@ -1,6 +1,5 @@
 from composio.client.types import Tool
 from composio.core.models.connected_accounts import auth_scheme
-from composio.core.models.custom_tools import ExecuteRequestFn
 from composio.core.models.tools import (
     Modifiers,
     ToolExecuteParams,
@@ -22,7 +21,6 @@ __all__ = [
     "TToolCollection",
     "ToolExecuteParams",
     "ToolExecutionResponse",
-    "ExecuteRequestFn",
     "TriggerEvent",
     "Modifiers",
     "auth_scheme",

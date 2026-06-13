@@ -79,9 +79,9 @@ The manual release process is available for cases where direct control over the 
 
 ### Prerequisites
 
-- Node.js (version: `20.19.0`)
-- Bun (version: `1.3.6`)
-- pnpm (version: `10.28.0`)
+- Node.js (version: `20.20.2`)
+- Bun (version: `1.3.10`)
+- pnpm (version: `10.28.2`)
 - Access to npm registry
 - Write access to the repository
 

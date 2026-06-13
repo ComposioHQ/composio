@@ -21,7 +21,6 @@ const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
 
 // Internal classes that should NOT be documented (accessed via other APIs)
 const INTERNAL_CLASSES = new Set([
-  'CustomTools', // Internal - accessed via composio.tools.createCustomTool()
   'AuthScheme', // Utility class
   'ConnectionRequest', // Utility
   'Files', // Not yet stable API

@@ -279,4 +279,208 @@ describe('dereferenceJsonSchema', () => {
 
     expect((out as { properties: { v: { type: string } } }).properties.v.type).toBe('string');
   });
+
+  describe("with onUnresolved: 'sentinel' lenient mode", () => {
+    // Sentinel injected for an unresolvable $ref carries an LLM-visible hint
+    // describing the degradation. The hint is overwritten by a caller-provided
+    // `description` sibling when present (Draft 2020-12 sibling-keyword merge).
+    const PERMISSIVE = {
+      type: 'object',
+      additionalProperties: true,
+      description: expect.stringContaining('Schema shape unresolved at the source'),
+    };
+
+    it('replaces a dangling internal $ref (no $defs block at all) with the cycle-break sentinel', () => {
+      // Mirrors GMAIL_FETCH_EMAILS.outputParameters: a $ref into #/$defs/...
+      // without any $defs declared on the root.
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: {
+            data: { $ref: '#/$defs/FetchEmailsResponse' },
+            error: { type: 'string' },
+            successful: { type: 'boolean' },
+          },
+          required: ['data', 'successful'],
+          title: 'FetchEmailsResponseWrapper',
+        },
+        { onUnresolved: 'sentinel' }
+      ) as {
+        type: string;
+        properties: { data: unknown; error: unknown; successful: unknown };
+        required: string[];
+      };
+
+      expect(out.properties.data).toEqual(PERMISSIVE);
+      // Siblings of the replaced node are untouched.
+      expect(out.properties.error).toEqual({ type: 'string' });
+      expect(out.properties.successful).toEqual({ type: 'boolean' });
+      expect(out.required).toEqual(['data', 'successful']);
+      expect(containsRef(out)).toBe(false);
+    });
+
+    it('replaces a $ref that points into an empty $defs (missing key) with the sentinel', () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: { v: { $ref: '#/$defs/Missing' } },
+          $defs: {},
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { v: unknown } };
+
+      expect(out.properties.v).toEqual(PERMISSIVE);
+      expect(containsRef(out)).toBe(false);
+    });
+
+    it("invokes onReplace once per replacement with the original ref and reason 'missing-target'", () => {
+      const calls: Array<[string, string]> = [];
+      dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: {
+            a: { $ref: '#/$defs/Missing' },
+            b: { $ref: '#/$defs/Missing' },
+            c: { $ref: '#/$defs/AlsoMissing' },
+          },
+        },
+        {
+          onUnresolved: 'sentinel',
+          onReplace: (ref, reason) => calls.push([ref, reason]),
+        }
+      );
+
+      expect(calls).toEqual([
+        ['#/$defs/Missing', 'missing-target'],
+        ['#/$defs/Missing', 'missing-target'],
+        ['#/$defs/AlsoMissing', 'missing-target'],
+      ]);
+    });
+
+    it("invokes onReplace with reason 'malformed-pointer' for a non '/' internal pointer", () => {
+      const calls: Array<[string, string]> = [];
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: { v: { $ref: '#bar' } },
+        },
+        {
+          onUnresolved: 'sentinel',
+          onReplace: (ref, reason) => calls.push([ref, reason]),
+        }
+      ) as { properties: { v: unknown } };
+
+      expect(calls).toEqual([['#bar', 'malformed-pointer']]);
+      expect(out.properties.v).toEqual(PERMISSIVE);
+    });
+
+    it('still throws JsonSchemaRefResolutionError when chain depth exceeds the cap (safety cap is not lenient)', () => {
+      const $defs: Record<string, unknown> = {};
+      for (let i = 0; i < 200; i++) {
+        $defs[`A${i}`] = { $ref: i + 1 < 200 ? `#/$defs/A${i + 1}` : '#/$defs/A0' };
+      }
+      expect(() =>
+        dereferenceJsonSchema(
+          {
+            type: 'object',
+            properties: { v: { $ref: '#/$defs/A0' } },
+            $defs,
+          },
+          { onUnresolved: 'sentinel' }
+        )
+      ).toThrow(JsonSchemaRefResolutionError);
+    });
+
+    it('still throws JsonSchemaRefResolutionError when node depth exceeds the cap (safety cap is not lenient)', () => {
+      type Nested = { type: 'object'; properties: { x: Nested | { type: 'string' } } };
+      let leaf: Nested | { type: 'string' } = { type: 'string' };
+      for (let i = 0; i < 1000; i++) {
+        leaf = { type: 'object', properties: { x: leaf } } as Nested;
+      }
+      expect(() => dereferenceJsonSchema(leaf, { onUnresolved: 'sentinel' })).toThrow(
+        JsonSchemaRefResolutionError
+      );
+    });
+
+    it("explicit onUnresolved: 'throw' matches default behavior", () => {
+      expect(() =>
+        dereferenceJsonSchema(
+          {
+            type: 'object',
+            properties: { v: { $ref: '#/$defs/Missing' } },
+            $defs: {},
+          },
+          { onUnresolved: 'throw' }
+        )
+      ).toThrow(JsonSchemaRefResolutionError);
+    });
+
+    it('does not call onReplace in strict mode (regression guard)', () => {
+      const onReplace = vi.fn();
+      expect(() =>
+        dereferenceJsonSchema(
+          {
+            type: 'object',
+            properties: { v: { $ref: '#/$defs/Missing' } },
+            $defs: {},
+          },
+          { onUnresolved: 'throw', onReplace }
+        )
+      ).toThrow(JsonSchemaRefResolutionError);
+      expect(onReplace).not.toHaveBeenCalled();
+    });
+
+    it("injects a default LLM-visible 'description' on the sentinel when the source $ref node has none", () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: { v: { $ref: '#/$defs/Missing' } },
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { v: { description: string } } };
+
+      expect(out.properties.v.description).toMatch(/Schema shape unresolved at the source/);
+      expect(out.properties.v.description).toContain(
+        'https://github.com/ComposioHQ/composio/issues/3307'
+      );
+    });
+
+    it("preserves a caller-provided 'description' sibling instead of overwriting with the default", () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: {
+            v: {
+              $ref: '#/$defs/Missing',
+              description: 'caller-supplied prose context',
+            },
+          },
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { v: { description: string; type: string } } };
+
+      // Sibling-merge wins over the default — caller context survives.
+      expect(out.properties.v.description).toBe('caller-supplied prose context');
+      expect(out.properties.v.type).toBe('object');
+    });
+
+    it('preserves resolvable $defs while replacing only the dangling branch (mixed schema)', () => {
+      const out = dereferenceJsonSchema(
+        {
+          type: 'object',
+          properties: {
+            resolved: { $ref: '#/$defs/Real' },
+            dangling: { $ref: '#/$defs/Ghost' },
+          },
+          $defs: {
+            Real: { type: 'integer' },
+          },
+        },
+        { onUnresolved: 'sentinel' }
+      ) as { properties: { resolved: { type: string }; dangling: unknown } };
+
+      expect(out.properties.resolved).toEqual({ type: 'integer' });
+      expect(out.properties.dangling).toEqual(PERMISSIVE);
+    });
+  });
 });

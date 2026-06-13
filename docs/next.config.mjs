@@ -354,7 +354,17 @@ const config = {
       },
       {
         source: '/docs/custom-tools',
-        destination: '/docs/tools-direct/custom-tools',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-direct/custom-tools',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-direct/custom-tools/:path*',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
         permanent: true,
       },
       {
@@ -428,7 +438,7 @@ const config = {
       },
       {
         source: '/custom-tools/:path*',
-        destination: '/docs/tools-direct/custom-tools',
+        destination: '/docs/toolkits/custom-tools-and-toolkits',
         permanent: true,
       },
       // Error handling redirect (old fern URL)

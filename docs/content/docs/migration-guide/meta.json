@@ -2,6 +2,7 @@
   "title": "Migration Guide",
   "pages": [
     "direct-to-sessions",
+    "mcp-servers-to-sessions",
     "tool-router-beta",
     "toolkit-versioning",
     "new-sdk"

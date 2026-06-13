@@ -7,7 +7,7 @@ This package tests `@composio/core` file operations in Cloudflare Workers enviro
 Verifies that:
 1. `composio.files.upload()` throws the expected "not supported in Cloudflare Workers" error
 2. `composio.files.download()` throws the expected "not supported in Cloudflare Workers" error
-3. The `FileToolModifier.workerd.ts` is correctly loaded and provides the expected error message when `dangerouslyAllowAutoUploadDownloadFiles` is explicitly enabled
+3. The `FileToolModifier.workerd.ts` is correctly loaded and surfaces the expected error from `composio.tools.execute()` when `dangerouslyAllowAutoUploadDownloadFiles` is explicitly enabled (covered directly in `test/files.spec.ts`, not via an endpoint)
 4. Composio initializes correctly with the default configuration (`dangerouslyAllowAutoUploadDownloadFiles: false` in workerd runtime)
 5. Composio can be explicitly initialized with `dangerouslyAllowAutoUploadDownloadFiles: false`
 
@@ -18,7 +18,6 @@ Verifies that:
 | `GET /` | Lists all available test endpoints |
 | `GET /test/files/upload` | Tests that `files.upload()` throws the expected error |
 | `GET /test/files/download` | Tests that `files.download()` throws the expected error |
-| `GET /test/file-modifier/error-message` | Tests the error when `dangerouslyAllowAutoUploadDownloadFiles: true` is explicitly set |
 | `GET /test/auto-upload-disabled` | Tests Composio initialization with explicit `dangerouslyAllowAutoUploadDownloadFiles: false` |
 | `GET /test/default-config` | Tests Composio initialization with default configuration (no explicit setting) |
 
