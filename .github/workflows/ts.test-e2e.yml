@@ -53,6 +53,7 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -65,6 +66,7 @@ jobs:
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
@@ -105,6 +107,7 @@ jobs:
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -117,6 +120,7 @@ jobs:
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Deno
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
@@ -145,6 +149,7 @@ jobs:
       CI: 1
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
@@ -155,6 +160,7 @@ jobs:
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
@@ -190,6 +196,7 @@ jobs:
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
@@ -201,6 +208,7 @@ jobs:
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -231,4 +239,5 @@ jobs:
         env:
           COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
