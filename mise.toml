@@ -10,7 +10,7 @@
 min_version = "2026.1.0"
 
 [tools]
-node    = "20.20.2"
+node    = "22.12.0"
 bun     = "1.3.10"
 deno    = "2.6.7"
 python  = "3.12"
