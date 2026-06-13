@@ -140,6 +140,14 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ComposioHQ/composio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio#readme",
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
@@ -166,3 +174,4 @@
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064"
 }
+
