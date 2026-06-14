@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from composio.core.models.tool_router_session_files import (
     RemoteFile,
@@ -101,8 +102,24 @@ class TestToolRouterSessionFilesMount:
 
             assert isinstance(result, RemoteFile)
             assert result.mount_relative_path == "output/test.txt"
+            mock_put.assert_called_once_with(
+                "https://s3.example.com/upload",
+                data=b"hello world",
+                headers={"Content-Type": "text/plain"},
+                timeout=(5, 60),
+            )
             mock_client.tool_router.session.files.create_upload_url.assert_called_once()
             mock_client.tool_router.session.files.create_download_url.assert_called_once()
+
+    def test_upload_raises_validation_error_on_timeout(self, files_mount):
+        """Test upload converts request timeouts to ValidationError."""
+        with patch("requests.put", side_effect=requests.exceptions.Timeout("timeout")):
+            with pytest.raises(ValidationError, match="Failed to upload file"):
+                files_mount.upload(
+                    b"hello world",
+                    remote_path="data.txt",
+                    mimetype="text/plain",
+                )
 
     def test_upload_from_local_file(self, files_mount, mock_client, tmp_path):
         """Test upload from local file path."""
@@ -174,6 +191,10 @@ class TestRemoteFile:
 
             result = rf.buffer()
             assert result == b"file content"
+            mock_get.assert_called_once_with(
+                "https://example.com/file",
+                timeout=(5, 60),
+            )
 
     def test_buffer_failure_raises_remote_file_download_error(self):
         """Test buffer() raises RemoteFileDownloadError on HTTP error."""
@@ -193,6 +214,21 @@ class TestRemoteFile:
 
             assert exc_info.value.status_code == 404
             assert exc_info.value.filename == "test.txt"
+
+    def test_buffer_timeout_raises_remote_file_download_error(self):
+        """Test buffer() converts request timeouts to RemoteFileDownloadError."""
+        rf = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path="test.txt",
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        with patch("requests.get", side_effect=requests.exceptions.Timeout("timeout")):
+            with pytest.raises(RemoteFileDownloadError) as exc_info:
+                rf.buffer()
+
+            assert exc_info.value.filename == "test.txt"
+            assert exc_info.value.download_url == "https://example.com/file"
 
     def test_text(self):
         """Test text() decodes UTF-8."""

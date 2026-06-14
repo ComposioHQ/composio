@@ -7,6 +7,7 @@ that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
+import requests
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models._files import (
@@ -23,7 +24,11 @@ from composio.core.models._files import (
     _MAX_FILENAME_LENGTH,
 )
 from composio.core.models.base import allow_tracking
-from composio.exceptions import ErrorUploadingFile, ResponseTooLargeError
+from composio.exceptions import (
+    ErrorDownloadingFile,
+    ErrorUploadingFile,
+    ResponseTooLargeError,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -1518,7 +1523,12 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        mock_put.assert_called_once()
+        mock_put.assert_called_once_with(
+            url="https://s3.example.com/upload",
+            data=b"file content",
+            headers={"Content-Type": "image/jpeg"},
+            timeout=(5, 60),
+        )
 
     @patch("composio.core.models._files.requests.put")
     def test_upload_bytes_to_s3_failure(self, mock_put):
@@ -1544,6 +1554,29 @@ class TestUploadBytesToS3:
             )
 
         assert "Failed to upload to S3" in str(exc_info.value)
+
+    @patch("composio.core.models._files.requests.put")
+    def test_upload_bytes_to_s3_timeout(self, mock_put):
+        """Test request timeouts are reported as upload errors."""
+        mock_client = MagicMock()
+        mock_s3_response = MagicMock()
+        mock_s3_response.key = "s3-key-123"
+        mock_s3_response.new_presigned_url = "https://s3.example.com/upload?token=abc"
+        mock_client.post.return_value = mock_s3_response
+        mock_put.side_effect = requests.exceptions.Timeout("timeout")
+
+        with pytest.raises(ErrorUploadingFile) as exc_info:
+            _upload_bytes_to_s3(
+                client=mock_client,
+                filename="test.jpg",
+                content=b"file content",
+                mimetype="image/jpeg",
+                tool="TEST_TOOL",
+                toolkit="test_toolkit",
+            )
+
+        assert "Failed to upload to S3" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
 
 
 class TestFileUploadableFromUrl:
@@ -2285,6 +2318,7 @@ class TestFileDownloadablePathTraversal:
         response = MagicMock()
         response.status_code = 200
         response.iter_content = lambda chunk_size: [content]
+        response.close = MagicMock()
         return response
 
     def test_relative_traversal_is_neutralized(self, tmp_path):
@@ -2359,6 +2393,64 @@ class TestFileDownloadablePathTraversal:
 
         assert written == outdir / "report.pdf"
         assert written.read_bytes() == b"%PDF-1.4"
+
+    def test_download_uses_timeout(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"%PDF-1.4"),
+        ) as mock_get:
+            f.download(outdir)
+
+        mock_get.assert_called_once_with(
+            url="https://example.com/file",
+            stream=True,
+            timeout=(5, 60),
+        )
+
+    def test_download_timeout_raises_error(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            side_effect=requests.exceptions.Timeout("timeout"),
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
+        assert "Error downloading file" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
+
+    def test_download_stream_timeout_raises_error(self, tmp_path):
+        outdir = tmp_path / "safe"
+        response = self._mock_response()
+        response.iter_content = MagicMock(
+            side_effect=requests.exceptions.ReadTimeout("timeout")
+        )
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=response,
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
+        assert "Error downloading file" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
+        response.close.assert_called_once()
 
     def test_basename_collapse_through_subdir_is_rejected(self, tmp_path):
         """`Path('foo/..').name == '..'` — the basename strip of a name that
