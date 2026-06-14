@@ -233,11 +233,13 @@ The following table shows which AI frameworks and platforms are supported in eac
 
 _if you are looking for the older sdk, you can find them [here](https://github.com/ComposioHQ/composio/tree/master)_
 
-## Rube
+## MCP Server (Tool Router)
 
-[Rube](https://rube.app) is a Model Context Protocol (MCP) server built with Composio. It connects your AI tools to 500+ apps like Gmail, Slack, GitHub, and Notion. Simply install it in your AI client, authenticate once with your apps, and start asking your AI to perform real actions like "Send an email" or "Create a task." 
+> **Note:** [Rube](https://rube.app), Composio's standalone universal MCP server, was discontinued on May 16, 2026. Its functionality now lives in Composio's [Tool Router](https://composio.dev), available through MCP and CLI.
 
-It integrates with major AI clients like Cursor, Claude Desktop, VS Code, Claude Code and any custom MCP‑compatible client. You can switch between these clients and your integrations follow you.
+Composio's Tool Router is a Model Context Protocol (MCP) server that connects your AI tools to 500+ apps like Gmail, Slack, GitHub, and Notion. Authenticate once with your apps, and start asking your AI to perform real actions like "Send an email" or "Create a task."
+
+It works with any MCP‑compatible client — including Cursor, Claude Desktop, VS Code, and Claude Code — with multi‑account support, so your integrations follow you as you switch between clients.
 
 
 ## Contributing
