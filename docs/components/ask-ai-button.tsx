@@ -5,18 +5,19 @@ import { Search, MessageSquare } from 'lucide-react';
 import { useSearchContext } from '@fumadocs/ui/contexts/search';
 import { useI18n } from '@fumadocs/ui/contexts/i18n';
 
-import { getDecimal, loadDecimalWidget } from './decimal-widget';
-
-function isWidgetVisible(): boolean {
-  const sidebar = document.querySelector('.decimal-widget-sidebar');
-  return sidebar?.classList.contains('open') ?? false;
-}
+import {
+  closeDecimalWidget,
+  getDecimal,
+  isDecimalWidgetVisible,
+  loadDecimalWidget,
+  openDecimalWidget,
+} from './decimal-widget';
 
 export async function toggleDecimalWidget() {
   const decimal = getDecimal() ?? (await loadDecimalWidget());
   if (!decimal) return;
 
-  isWidgetVisible() ? decimal.hide() : decimal.show();
+  isDecimalWidgetVisible() ? closeDecimalWidget() : openDecimalWidget(decimal);
 }
 
 export function detectMac(): boolean {
