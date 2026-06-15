@@ -611,15 +611,74 @@ class FileHelper(WithLogger):
             list(file_upload_allowlist) if file_upload_allowlist is not None else None
         )
 
+    def _resolve_local_schema_ref(
+        self,
+        root_schema: t.Dict,
+        ref: str,
+    ) -> t.Optional[t.Dict]:
+        """Resolve local JSON Pointer refs such as ``#/$defs/File``."""
+        if not ref.startswith("#/"):
+            return None
+
+        current: t.Any = root_schema
+        for raw_part in ref[2:].split("/"):
+            part = raw_part.replace("~1", "/").replace("~0", "~")
+            if isinstance(current, dict):
+                current = current.get(part)
+            elif isinstance(current, list) and part.isdigit():
+                index = int(part)
+                current = current[index] if index < len(current) else None
+            else:
+                return None
+
+            if current is None:
+                return None
+
+        return current if isinstance(current, dict) else None
+
+    def _resolve_schema_refs(
+        self,
+        schema: t.Dict,
+        root_schema: t.Optional[t.Dict],
+        seen_refs: t.Optional[t.Set[str]],
+    ) -> t.Optional[t.Tuple[t.Dict, t.Dict, t.Set[str]]]:
+        """Resolve local $ref chains for the current schema branch."""
+        root_schema = root_schema or schema
+        seen_refs = seen_refs or set()
+
+        while isinstance(schema.get("$ref"), str):
+            ref = schema["$ref"]
+            if ref in seen_refs:
+                return None
+
+            resolved_schema = self._resolve_local_schema_ref(root_schema, ref)
+            if resolved_schema is None:
+                return None
+
+            schema = resolved_schema
+            seen_refs = seen_refs | {ref}
+
+        return schema, root_schema, seen_refs
+
     def _has_file_property(
-        self, schema: t.Dict, property_name: str = "file_uploadable"
+        self,
+        schema: t.Dict,
+        property_name: str = "file_uploadable",
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> bool:
         """Check if a schema (or any of its variants) contains a file property.
 
-        Recursively checks anyOf, oneOf, allOf, nested properties, and array items.
+        Recursively checks local $ref, anyOf, oneOf, allOf, nested properties,
+        and array items.
         """
         if not isinstance(schema, dict):
             return False
+        resolved = self._resolve_schema_refs(schema, root_schema, seen_refs)
+        if resolved is None:
+            return False
+        schema, root_schema, seen_refs = resolved
 
         # Direct property check
         if schema.get(property_name, False):
@@ -628,25 +687,45 @@ class FileHelper(WithLogger):
         # Check anyOf variants
         if "anyOf" in schema:
             for variant in schema["anyOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(
+                    variant,
+                    property_name,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return True
 
         # Check oneOf variants
         if "oneOf" in schema:
             for variant in schema["oneOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(
+                    variant,
+                    property_name,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return True
 
         # Check allOf variants
         if "allOf" in schema:
             for variant in schema["allOf"]:
-                if self._has_file_property(variant, property_name):
+                if self._has_file_property(
+                    variant,
+                    property_name,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return True
 
         # Check nested properties
         if "properties" in schema:
             for prop in schema["properties"].values():
-                if self._has_file_property(prop, property_name):
+                if self._has_file_property(
+                    prop,
+                    property_name,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return True
 
         # Check array items
@@ -654,10 +733,20 @@ class FileHelper(WithLogger):
             items = schema["items"]
             if isinstance(items, list):
                 for item in items:
-                    if self._has_file_property(item, property_name):
+                    if self._has_file_property(
+                        item,
+                        property_name,
+                        root_schema=root_schema,
+                        seen_refs=seen_refs,
+                    ):
                         return True
             elif isinstance(items, dict):
-                if self._has_file_property(items, property_name):
+                if self._has_file_property(
+                    items,
+                    property_name,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return True
 
         return False
@@ -799,12 +888,29 @@ class FileHelper(WithLogger):
             variants.extend(v for v in schema_variants if isinstance(v, dict))
         return variants
 
-    def _json_schema_type_matches_value(self, schema: t.Dict, value: t.Any) -> bool:
+    def _json_schema_type_matches_value(
+        self,
+        schema: t.Dict,
+        value: t.Any,
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
+    ) -> bool:
         """Best-effort runtime shape match for selecting composed schemas."""
+        resolved = self._resolve_schema_refs(schema, root_schema, seen_refs)
+        if resolved is None:
+            return False
+        schema, root_schema, seen_refs = resolved
+
         schema_type = schema.get("type")
         if isinstance(schema_type, list):
             return any(
-                self._json_schema_type_matches_value({**schema, "type": tpe}, value)
+                self._json_schema_type_matches_value(
+                    {**schema, "type": tpe},
+                    value,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                )
                 for tpe in schema_type
             )
 
@@ -837,6 +943,9 @@ class FileHelper(WithLogger):
         schema: t.Dict,
         property_name: str,
         value: t.Any = None,
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> t.Optional[t.Dict]:
         """Find the composed schema variant that should process a file value.
 
@@ -845,29 +954,51 @@ class FileHelper(WithLogger):
         available, prefer the file-bearing variant with the matching JSON Schema
         shape; otherwise keep the historical first-match behavior.
         """
+        resolved = self._resolve_schema_refs(schema, root_schema, seen_refs)
+        if resolved is None:
+            return None
+        schema, root_schema, seen_refs = resolved
+
         candidates = [
             variant
             for variant in self._schema_variants(schema)
-            if self._has_file_property(variant, property_name)
+            if self._has_file_property(
+                variant,
+                property_name,
+                root_schema=root_schema,
+                seen_refs=seen_refs,
+            )
         ]
         if not candidates:
             return None
 
         if value is not None:
             for candidate in candidates:
-                if self._json_schema_type_matches_value(candidate, value):
+                if self._json_schema_type_matches_value(
+                    candidate,
+                    value,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
+                ):
                     return candidate
 
         return candidates[0]
 
     def _find_uploadable_schema_variant(
-        self, schema: t.Dict, value: t.Any = None
+        self,
+        schema: t.Dict,
+        value: t.Any = None,
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_uploadable properties."""
         return self._find_schema_variant_with_file_property(
             schema=schema,
             property_name="file_uploadable",
             value=value,
+            root_schema=root_schema,
+            seen_refs=seen_refs,
         )
 
     def _upload_file_value(
@@ -897,10 +1028,16 @@ class FileHelper(WithLogger):
         tool: Tool,
         *,
         before_file_upload: t.Optional[BeforeFileUpload] = None,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> t.Any:
         """Return ``value`` with file-uploadable leaves staged for execution."""
         if not isinstance(schema, dict):
             return value
+        resolved = self._resolve_schema_refs(schema, root_schema, seen_refs)
+        if resolved is None:
+            return value
+        schema, root_schema, seen_refs = resolved
 
         if schema.get("file_uploadable", False):
             return self._upload_file_value(
@@ -912,6 +1049,8 @@ class FileHelper(WithLogger):
         uploadable_variant = self._find_uploadable_schema_variant(
             schema=schema,
             value=value,
+            root_schema=root_schema,
+            seen_refs=seen_refs,
         )
         if uploadable_variant is not None:
             return self._substitute_file_upload_value(
@@ -919,6 +1058,8 @@ class FileHelper(WithLogger):
                 schema=uploadable_variant,
                 tool=tool,
                 before_file_upload=before_file_upload,
+                root_schema=root_schema,
+                seen_refs=seen_refs,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -931,6 +1072,8 @@ class FileHelper(WithLogger):
                     schema=item_schema,
                     tool=tool,
                     before_file_upload=before_file_upload,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed[key] = processed_item
@@ -948,6 +1091,8 @@ class FileHelper(WithLogger):
                     schema=items_schema,
                     tool=tool,
                     before_file_upload=before_file_upload,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
                 )
                 if processed_item is not _DELETE_VALUE:
                     processed_items.append(processed_item)
@@ -968,6 +1113,7 @@ class FileHelper(WithLogger):
             schema=schema,
             tool=tool,
             before_file_upload=before_file_upload,
+            root_schema=schema,
         )
         if processed is request:
             return request
@@ -1008,13 +1154,20 @@ class FileHelper(WithLogger):
         return self._has_file_property(schema, "file_downloadable")
 
     def _find_downloadable_schema_variant(
-        self, schema: t.Dict, value: t.Any = None
+        self,
+        schema: t.Dict,
+        value: t.Any = None,
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> t.Optional[t.Dict]:
         """Find a schema variant that contains file_downloadable properties."""
         return self._find_schema_variant_with_file_property(
             schema=schema,
             property_name="file_downloadable",
             value=value,
+            root_schema=root_schema,
+            seen_refs=seen_refs,
         )
 
     def _download_file_value(self, value: t.Any, tool: Tool) -> t.Any:
@@ -1031,10 +1184,17 @@ class FileHelper(WithLogger):
         value: t.Any,
         schema: t.Optional[t.Dict],
         tool: Tool,
+        *,
+        root_schema: t.Optional[t.Dict] = None,
+        seen_refs: t.Optional[t.Set[str]] = None,
     ) -> t.Any:
         """Return ``value`` with file-downloadable leaves saved locally."""
         if not isinstance(schema, dict):
             return value
+        resolved = self._resolve_schema_refs(schema, root_schema, seen_refs)
+        if resolved is None:
+            return value
+        schema, root_schema, seen_refs = resolved
 
         if schema.get("file_downloadable", False):
             return self._download_file_value(value=value, tool=tool)
@@ -1042,12 +1202,16 @@ class FileHelper(WithLogger):
         downloadable_variant = self._find_downloadable_schema_variant(
             schema=schema,
             value=value,
+            root_schema=root_schema,
+            seen_refs=seen_refs,
         )
         if downloadable_variant is not None:
             return self._substitute_file_download_value(
                 value=value,
                 schema=downloadable_variant,
                 tool=tool,
+                root_schema=root_schema,
+                seen_refs=seen_refs,
             )
 
         if isinstance(value, dict) and "properties" in schema:
@@ -1057,6 +1221,8 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=properties.get(key),
                     tool=tool,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
                 )
                 for key, item in value.items()
             }
@@ -1070,6 +1236,8 @@ class FileHelper(WithLogger):
                     value=item,
                     schema=items_schema,
                     tool=tool,
+                    root_schema=root_schema,
+                    seen_refs=seen_refs,
                 )
                 for item in value
             ]
@@ -1086,6 +1254,7 @@ class FileHelper(WithLogger):
             value=request,
             schema=schema,
             tool=tool,
+            root_schema=schema,
         )
         if processed is request:
             return request

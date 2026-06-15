@@ -1036,6 +1036,55 @@ class TestFileDownloadSubstitutionWithUnionTypes:
         assert result["attachments"] == ["/tmp/a.txt", None, "/tmp/b.txt"]
         assert mock_download.call_count == 2
 
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_substitute_download_resolves_local_ref_defs_file_downloadable(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """Local $ref/$defs schemas should still trigger file downloads."""
+        mock_tool.output_parameters = {
+            "type": "object",
+            "properties": {
+                "data": {"$ref": "#/$defs/GetAttachmentResponse"},
+            },
+            "$defs": {
+                "GetAttachmentResponse": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"$ref": "#/$defs/FileDownloadable"},
+                    },
+                },
+                "FileDownloadable": {
+                    "type": "object",
+                    "file_downloadable": True,
+                    "properties": {
+                        "s3url": {"type": "string"},
+                        "s3key": {"type": "string"},
+                        "mimetype": {"type": "string"},
+                        "name": {"type": "string"},
+                    },
+                },
+            },
+        }
+        mock_download.return_value = "/tmp/invoice.pdf"
+
+        result = file_helper._substitute_file_downloads_recursively(
+            tool=mock_tool,
+            schema=mock_tool.output_parameters,
+            request={
+                "data": {
+                    "file": {
+                        "s3url": "https://s3.example.com/invoice.pdf",
+                        "s3key": "attachments/invoice.pdf",
+                        "mimetype": "application/pdf",
+                        "name": "invoice.pdf",
+                    },
+                },
+            },
+        )
+
+        assert result["data"]["file"] == "/tmp/invoice.pdf"
+        mock_download.assert_called_once()
+
 
 class TestFileHelperFindVariantMethods:
     """Test cases for _find_uploadable_schema_variant and _find_downloadable_schema_variant."""
