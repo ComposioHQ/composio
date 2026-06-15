@@ -218,7 +218,9 @@ describe('Triggers', () => {
     } as unknown as { subscribe: Mock; unsubscribe: Mock };
 
     // Mock PusherService constructor
-    (PusherService as unknown as Mock).mockImplementation(() => mockPusherService);
+    (PusherService as unknown as Mock).mockImplementation(function () {
+      return mockPusherService;
+    });
 
     triggers = new Triggers(mockClient as unknown as ComposioClient);
   });
