@@ -1,12 +1,14 @@
 # Reusable Dockerfile for Deno e2e tests
-# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 -t test-name .
+# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 --build-arg NODE_MAJOR=20 --build-arg BUN_VERSION=1.3.10 -t test-name .
 #
 # Uses official denoland/deno images. For multi-version testing, run the build/run
 # multiple times with different DENO_VERSION values from the shell script.
 
-ARG DENO_VERSION=2.6.7
+ARG DENO_VERSION
 
 FROM denoland/deno:${DENO_VERSION}
+ARG NODE_MAJOR
+ARG BUN_VERSION
 
 ENV PNPM_HOME="/pnpm"
 ENV BUN_INSTALL="/usr/local"
@@ -23,7 +25,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (needed for pnpm and building packages)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
@@ -31,9 +33,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 RUN npm i -g corepack@latest && \
     corepack enable
 
-# Install bun (version from .bun-version)
-COPY .bun-version ./
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v$(cat .bun-version)" && \
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v${BUN_VERSION}" && \
     bun --version
 
 # Copy lockfile first for optimal layer caching
@@ -45,6 +46,7 @@ COPY package.json \
      .pnpmfile.cjs \
      tsconfig.base.json \
      tsdown.config.base.ts \
+     toolchain-versions.json \
      ./
 
 # Copy pre-install scripts (rarely change)
@@ -57,7 +59,7 @@ COPY ts/packages/ ./ts/packages/
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN pnpm install --frozen-lockfile
+RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
 
 # Copy e2e tests last (changes frequently)
 COPY ts/e2e-tests/ ./ts/e2e-tests/

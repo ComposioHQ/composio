@@ -31,7 +31,7 @@ composio/
 ```bash
 mise install                # Installs Node, Bun, Deno, Python, uv from mise.toml (one-time per machine)
 corepack enable             # Activates pnpm pinned in package.json#packageManager
-pnpm install                # First-time setup. Use BYPASS_BUN_VERSION_CHECK=1 if .bun-version mismatch
+pnpm install                # First-time setup
 pnpm build                  # Build all packages (Turbo)
 pnpm build:packages         # TS packages only
 pnpm lint / lint:fix
@@ -47,7 +47,7 @@ pnpm create:provider <name> [--agentic]
 pnpm create:example <name>
 ```
 
-Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, Python, uv) and `package.json#packageManager` (pnpm via corepack). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. Legacy `.nvmrc` / `.bun-version` / `.python-version` are still read during the transition. CI sets `BYPASS_BUN_VERSION_CHECK=1`; local sandboxes often need it too.
+Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, Python, uv) and `package.json#packageManager` (pnpm via corepack). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. CI can set `BYPASS_TOOLCHAIN_CHECK=1` only when using prebuilt toolchain images.
 
 ## Python Commands
 
@@ -77,7 +77,7 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 
 - **Default branch is `next`**, not `main`/`master`. Branch from `next` and target `next` for PRs.
 - **Docs PRs also target `next`** (see `docs/CLAUDE.md` rule).
-- `pnpm install` hard-fails on Bun version mismatch — use `BYPASS_BUN_VERSION_CHECK=1`.
+- `pnpm install` checks Bun against `mise.toml`; run `mise install` when it fails.
 - `ts/vendor/effect/` and `ts/vendor/clack/` are **read-only reference submodules** — npm provides the actual deps.
 - The CLI is **Effect.ts + Bun**, not plain Node — see `ts/packages/cli/AGENTS.md` (CLI's `CLAUDE.md` is a symlink to it).
 - E2E tests run in **Docker** and require Docker daemon access; skip them in restricted sandboxes.
@@ -89,7 +89,7 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - Core Composio class: `ts/packages/core/src/composio.ts`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
 - Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-- Toolchain pins: `mise.toml` (Node, Bun, Deno, Python, uv), `package.json#packageManager` (pnpm), `.dvmrc` (Deno; mirrors mise.toml for `denoland/setup-deno` and `_utils/src/config.ts`)
+- Toolchain pins: `mise.toml` (Node, Bun, Deno, Python, uv), `mise.lock`, `toolchain-versions.json` (test matrices), `package.json#packageManager` (pnpm)
 - CI release docs to update when bumping toolchain: `ts/docs/internal/release.md`
 - Python config: `python/Makefile`, `python/noxfile.py`, `python/config/{pytest.ini,ruff.toml}`
 

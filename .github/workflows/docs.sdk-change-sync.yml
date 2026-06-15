@@ -47,18 +47,19 @@ jobs:
             python/composio/ > /tmp/sdk-diff.patch
 
           if [ ! -s /tmp/sdk-diff.patch ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "$(wc -l < /tmp/sdk-diff.patch) lines of SDK changes"
           fi
 
       - name: Check docs for staleness
         if: steps.diff.outputs.has_changes == 'true'
-        uses: anthropics/claude-code-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
+        uses: anthropics/claude-code-action/base-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Read,Write,Edit,Glob,Grep"
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep"
           prompt: |
             SDK source code was just updated. Check if any documentation needs to change.
 

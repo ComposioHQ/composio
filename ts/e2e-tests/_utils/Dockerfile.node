@@ -1,12 +1,13 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=20.19.0 -t test-name .
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 -t test-name .
 #
 # Uses official node:slim images. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
 
-ARG NODE_VERSION=20.19.0
+ARG NODE_VERSION
 
 FROM node:${NODE_VERSION}-slim
+ARG BUN_VERSION
 
 ENV PNPM_HOME="/pnpm"
 ENV BUN_INSTALL="/usr/local"
@@ -20,12 +21,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install corepack (for pnpm)
-RUN npm i -g corepack@latest && \
+RUN npm i -g corepack@latest --force && \
     corepack enable
 
-# Install bun (version from .bun-version)
-COPY .bun-version ./
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v$(cat .bun-version)" && \
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v${BUN_VERSION}" && \
     bun --version
 
 # Copy lockfile first for optimal layer caching
@@ -37,6 +37,7 @@ COPY package.json \
      .pnpmfile.cjs \
      tsconfig.base.json \
      tsdown.config.base.ts \
+     toolchain-versions.json \
      ./
 
 # Copy pre-install scripts (rarely change)
@@ -49,7 +50,7 @@ COPY ts/packages/ ./ts/packages/
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN pnpm install --frozen-lockfile
+RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
 
 # Build and install composio CLI binary
 # This is a simplified version of ts/packages/cli/scripts/build-binary.ts + install-binary.ts

@@ -2,9 +2,9 @@
 
 set -eo pipefail
 
-# Allow bypassing the entire Bun check (useful for CI workflows using pre-built images)
-if [ -n "$BYPASS_BUN_VERSION_CHECK" ]; then
-  echo "Bypassing Bun version check (BYPASS_BUN_VERSION_CHECK is set)"
+# Allow bypassing the local toolchain check (useful for CI workflows using prebuilt images)
+if [ -n "$BYPASS_TOOLCHAIN_CHECK" ]; then
+  echo "Bypassing toolchain check (BYPASS_TOOLCHAIN_CHECK is set)"
   exit 0
 fi
 
@@ -17,5 +17,5 @@ if ! command -v bun &> /dev/null; then
 fi
 
 echo "Bun is installed."
-echo "Checking if Bun version matches .bun-version file..."
-bun run "$SCRIPT_DIR/pre-install/check-bun-version.ts"
+echo "Checking if Bun version matches mise.toml..."
+bun run "$SCRIPT_DIR/pre-install/check-toolchain.ts"

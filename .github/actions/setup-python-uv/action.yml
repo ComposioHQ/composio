@@ -1,41 +1,66 @@
-name: 'Setup Python with UV'
-description: 'Sets up Python and UV package manager, using .python-version for version'
+name: 'Setup Python with uv via mise'
+description: 'Sets up Python and uv from mise.toml unless explicit matrix overrides are provided'
 
 inputs:
   python-version:
-    description: 'Python version to use. Defaults to .python-version file'
+    description: 'Python version to use. Defaults to mise.toml'
     required: false
     default: ''
-  python-version-file:
-    description: 'Path to .python-version or similar file'
-    required: false
-    default: '.python-version'
   uv-version:
-    description: 'UV version to install'
+    description: 'uv version to install. Defaults to mise.toml'
     required: false
-    default: 'latest'
+    default: ''
   enable-caching:
-    description: 'Enable UV caching'
+    description: 'Enable uv/tool cache'
     required: false
     default: 'true'
 
 outputs:
   python-version:
     description: 'The installed Python version (e.g., 3.12.0)'
-    value: ${{ steps.setup-python.outputs.python-version }}
+    value: ${{ steps.versions.outputs.python }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Setup Python
-      id: setup-python
+    - name: Setup mise
+      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        version: 2026.5.18
+        install: false
+        cache: ${{ inputs.enable-caching }}
+
+    - name: Install mise-managed Python and uv
+      shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+        UV_VERSION: ${{ inputs.uv-version }}
+      run: |
+        tools=()
+        if [ -z "$PYTHON_VERSION" ]; then
+          tools+=(python)
+        fi
+        if [ -z "$UV_VERSION" ]; then
+          tools+=(uv)
+        fi
+        if [ "${#tools[@]}" -gt 0 ]; then
+          mise install "${tools[@]}"
+        fi
+
+    - name: Setup Python override
+      if: inputs.python-version != ''
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ inputs.python-version }}
-        python-version-file: ${{ inputs.python-version == '' && inputs.python-version-file || '' }}
 
-    - name: Install UV
+    - name: Setup uv override
+      if: inputs.uv-version != ''
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         version: ${{ inputs.uv-version }}
         enable-cache: ${{ inputs.enable-caching }}
+
+    - name: Report versions
+      id: versions
+      shell: bash
+      run: echo "python=$(python --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"

@@ -37,7 +37,7 @@ Tests use `bun:test` assertions to verify schema conversion and parsing behavior
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+**Docker** with Node.js versions: current (as specified in `mise.toml`).
 
 ## Running
 
