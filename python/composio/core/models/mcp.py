@@ -370,7 +370,11 @@ class MCP(Resource):
                 update_params["auth_config_ids"] = auth_config_ids
 
             if allowed_tools is not None:
-                update_params["custom_tools"] = allowed_tools
+                # Use "allowed_tools" to match what _client.mcp.update() expects.
+                # Note: create() uses "custom_tools" because it calls a different
+                # endpoint (mcp.custom.create). The update endpoint expects
+                # "allowed_tools". See https://github.com/ComposioHQ/composio/issues/2161
+                update_params["allowed_tools"] = allowed_tools
 
             if manually_manage_connections is not None:
                 update_params[
