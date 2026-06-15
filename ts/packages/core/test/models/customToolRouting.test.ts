@@ -15,18 +15,20 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 // Mock Tools class
 vi.mock('../../src/models/Tools', () => ({
-  Tools: vi.fn().mockImplementation(() => ({
-    getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
-      { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
-      { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
-    ]),
-    wrapToolsForToolRouter: vi.fn().mockReturnValue('wrapped-tools'),
-    executeSessionTool: vi.fn().mockResolvedValue({
-      data: { remote: true },
-      error: null,
-      successful: true,
-    }),
-  })),
+  Tools: vi.fn().mockImplementation(function () {
+    return {
+      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
+        { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
+        { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
+      ]),
+      wrapToolsForToolRouter: vi.fn().mockReturnValue('wrapped-tools'),
+      executeSessionTool: vi.fn().mockResolvedValue({
+        data: { remote: true },
+        error: null,
+        successful: true,
+      }),
+    };
+  }),
 }));
 
 // ── Fixtures ─────────────────────────────────────────────────────
