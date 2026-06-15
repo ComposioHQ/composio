@@ -275,7 +275,7 @@ export default function CustomSearchDialog({
             className="inline-flex items-center gap-1.5 text-xs text-[var(--composio-orange)] hover:text-[var(--composio-orange)]/80 transition-colors"
             onClick={() => {
               props.onOpenChange(false);
-              toggleDecimalWidget();
+              void toggleDecimalWidget();
             }}
           >
             <BotMessageSquare className="size-3.5" />
