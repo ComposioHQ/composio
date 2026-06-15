@@ -18,6 +18,7 @@ import {
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+import { sanitizeSchemaPropertyKeys, restoreOriginalKeys, KeyMapping } from './sanitize-keys';
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -58,6 +59,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
+
+  /**
+   * Per-tool `sanitized -> original` property-key mappings, populated by
+   * {@link wrapTool} whenever a tool's schema contains keys that violate
+   * Anthropic's `^[a-zA-Z0-9_.-]{1,64}$` constraint. Used by
+   * {@link executeToolCall} to restore the original parameter names before the
+   * call reaches the Composio backend.
+   */
+  private toolKeyMappings: Map<string, KeyMapping> = new Map();
 
   /**
    * Creates a new instance of the AnthropicProvider.
@@ -118,14 +128,29 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
+    const rawSchema = (tool.inputParameters || {
+      type: 'object',
+      properties: {},
+      required: [],
+    }) as InputSchema;
+
+    // Anthropic rejects the whole `tools` array if any property key falls outside
+    // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
+    // over-long flattened keys). Rewrite offending keys and remember how to undo it.
+    const { schema, mapping } = sanitizeSchemaPropertyKeys(
+      rawSchema as unknown as Record<string, unknown>
+    );
+
+    if (Object.keys(mapping).length > 0) {
+      this.toolKeyMappings.set(tool.slug, mapping);
+    } else {
+      this.toolKeyMappings.delete(tool.slug);
+    }
+
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: (tool.inputParameters || {
-        type: 'object',
-        properties: {},
-        required: [],
-      }) as InputSchema,
+      input_schema: schema as unknown as InputSchema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
@@ -210,8 +235,15 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Undo any key sanitization applied in `wrapTool` so the backend receives the
+    // tool's original parameter names (e.g. `dollar_top` -> `$top`).
+    const mapping = this.toolKeyMappings.get(toolUse.name);
+    const toolArguments = mapping
+      ? (restoreOriginalKeys(toolUse.input, mapping) as Record<string, unknown>)
+      : toolUse.input;
+
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      arguments: toolArguments,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,
