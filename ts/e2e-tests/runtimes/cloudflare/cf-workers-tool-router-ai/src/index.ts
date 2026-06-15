@@ -13,6 +13,7 @@ import { z } from 'zod/v4';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
+  COMPOSIO_BASE_URL: string;
   OPENAI_API_KEY: string;
 };
 
@@ -38,6 +39,7 @@ app.get('/', c => {
 app.get('/test/mcp-client', async c => {
   const composio = new Composio({
     apiKey: c.env.COMPOSIO_API_KEY,
+    baseURL: c.env.COMPOSIO_BASE_URL,
     provider: new VercelProvider(),
   });
 
@@ -78,6 +80,7 @@ app.get('/test/mcp-client', async c => {
 app.get('/test/agent', async c => {
   const composio = new Composio({
     apiKey: c.env.COMPOSIO_API_KEY,
+    baseURL: c.env.COMPOSIO_BASE_URL,
     provider: new VercelProvider(),
   });
 
