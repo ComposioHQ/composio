@@ -12,7 +12,11 @@ import pytest
 from composio_client import omit
 
 from composio import exceptions
-from composio.core.models.triggers import Triggers, WebhookVersion
+from composio.core.models.triggers import (
+    Triggers,
+    TriggerSubscription,
+    WebhookVersion,
+)
 
 
 class TestTriggers:
@@ -1122,3 +1126,90 @@ class TestVerifyWebhook:
         """Test that WebhookPayloadError inherits from TriggerError."""
         error = exceptions.WebhookPayloadError("test")
         assert isinstance(error, exceptions.TriggerError)
+
+
+class TestTriggerSubscriptionParsing:
+    """Tests for realtime (Pusher) payload parsing in TriggerSubscription."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_parse_payload_v3_realtime_envelope(self, subscription):
+        """A V3 realtime envelope is parsed (no KeyError: 'nanoId')."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    "log_id": "log-1",
+                    "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": "user-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["id"] == "ti_abc"
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["toolkit_slug"] == "GMAIL"
+        assert result["user_id"] == "user-1"
+        assert result["payload"] == {"subject": "hello"}
+        assert result["metadata"]["connected_account"]["id"] == "ca_abc"
+        assert result["metadata"]["connected_account"]["auth_config_id"] == "ac_abc"
+
+    def test_parse_payload_legacy_envelope(self, subscription):
+        """A legacy (V1/V2) realtime envelope still parses correctly."""
+        event = json.dumps(
+            {
+                "appName": "gmail",
+                "payload": {"subject": "hello"},
+                "originalPayload": {"raw": 1},
+                "metadata": {
+                    "id": "uuid-1",
+                    "nanoId": "ti_abc",
+                    "triggerName": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "triggerData": "",
+                    "triggerConfig": {},
+                    "connection": {
+                        "id": "conn-uuid",
+                        "connectedAccountNanoId": "ca_abc",
+                        "authConfigNanoId": "ac_abc",
+                        "integrationId": "int-uuid",
+                        "clientUniqueUserId": "user-1",
+                        "status": "ACTIVE",
+                    },
+                },
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["id"] == "ti_abc"
+        assert result["toolkit_slug"] == "gmail"
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["metadata"]["connected_account"]["id"] == "ca_abc"
+        assert result["original_payload"] == {"raw": 1}
+
+    def test_parse_payload_malformed_returns_none(self, subscription):
+        """Unknown or malformed frames are skipped, not raised."""
+        assert subscription._parse_payload("not-json") is None
+        assert subscription._parse_payload(json.dumps({"unexpected": True})) is None
+        # A V3-looking envelope missing trigger metadata must not raise either.
+        partial_v3 = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {},
+                "data": {},
+            }
+        )
+        assert subscription._parse_payload(partial_v3) is not None
