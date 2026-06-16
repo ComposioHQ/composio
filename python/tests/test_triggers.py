@@ -13,9 +13,11 @@ from composio_client import omit
 
 from composio import exceptions
 from composio.core.models.triggers import (
+    _MAX_LOGGED_FRAME_CHARS,
     Triggers,
     TriggerSubscription,
     WebhookVersion,
+    _truncate_frame,
 )
 
 
@@ -1358,3 +1360,14 @@ class TestTriggerSubscriptionParsing:
         """A synthesized empty identity field must not match a "" filter."""
         event = self._make_event(user_id="")
         assert subscription._filters_match(event, {"user_id": ""}, "cb") is False
+
+    def test_truncate_frame_bounds_long_frames(self):
+        """A long raw frame is truncated so PII-bearing frames aren't dumped."""
+        short = "x" * 10
+        assert _truncate_frame(short) == short
+
+        long = "y" * (_MAX_LOGGED_FRAME_CHARS + 100)
+        truncated = _truncate_frame(long)
+        assert len(truncated) < len(long)
+        assert truncated.startswith("y" * _MAX_LOGGED_FRAME_CHARS)
+        assert str(len(long)) in truncated

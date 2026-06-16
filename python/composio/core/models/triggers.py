@@ -431,6 +431,18 @@ class TriggerEventFilters(te.TypedDict):
 TriggerCallback = t.Callable[[TriggerEvent], None]
 
 
+# Realtime trigger frames can carry message bodies / PII, so the raw frame is
+# never logged in full — only a bounded preview when it fails to parse.
+_MAX_LOGGED_FRAME_CHARS = 512
+
+
+def _truncate_frame(event: str) -> str:
+    """Return a bounded preview of a raw frame for safe logging."""
+    if len(event) <= _MAX_LOGGED_FRAME_CHARS:
+        return event
+    return f"{event[:_MAX_LOGGED_FRAME_CHARS]}… ({len(event)} chars total)"
+
+
 def _coerce_str(value: t.Any) -> str:
     """Coerce a possibly-missing or non-string field to ``str``.
 
@@ -708,7 +720,12 @@ class TriggerSubscription(Resource):
         """Filter events and call the callback function."""
         data = self._parse_payload(event=event)
         if data is None:
-            self.logger.error(f"Error parsing trigger payload: {event}")
+            # _parse_payload already logged the specific reason; here we only
+            # note that the frame was skipped, with a bounded preview so a
+            # PII-bearing frame isn't dumped in full.
+            self.logger.error(
+                f"Skipping unparseable trigger frame: {_truncate_frame(event)}"
+            )
             return
 
         self.logger.debug(
