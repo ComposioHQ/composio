@@ -7,6 +7,7 @@ on:
       - 'ts/packages/cli/**'
       - 'ts/packages/cli-local-tools/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
       - 'mise.toml'
       - 'mise.lock'
@@ -193,6 +194,7 @@ jobs:
       PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
       MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
       CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
+      RELEASE_HELPERS_DIR: ${{ github.workspace }}/.release-workflow/.github/scripts/cli-release
 
     steps:
       - name: Checkout
@@ -236,18 +238,27 @@ jobs:
       - name: Display checksums
         run: cat ts/packages/cli/dist/binaries/checksums.txt
 
+      - name: Checkout workflow release helpers
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-workflow
+          sparse-checkout: |
+            .github/scripts/cli-release
+          sparse-checkout-cone-mode: false
+
       # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
       # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
       # Homebrew, the redirect) can ever observe a release before its assets are attached and
       # verified. The release is only flipped to published as the final step below.
       - name: Create draft release with all assets
-        run: bash .github/scripts/cli-release/create-or-resume-draft.sh
+        run: bash "$RELEASE_HELPERS_DIR/create-or-resume-draft.sh"
 
       # Loud failure gate: assert the full canonical asset set is attached AND fully uploaded.
       # An asset can appear in the list while still processing (`state != "uploaded"`), which is
       # exactly how a release ends up serving 404s, so we require state == "uploaded".
       - name: Verify all release assets are present and uploaded
-        run: bash .github/scripts/cli-release/verify-assets.sh
+        run: bash "$RELEASE_HELPERS_DIR/verify-assets.sh"
 
       # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
       # GitHub PATCH race drops body changes made in the same call as the draft flip, and the

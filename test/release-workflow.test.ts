@@ -61,12 +61,24 @@ if (!buildCliWorkflow.includes('fail-fast: false')) {
 
 // The release must be built as a draft and only flipped to published after verification, so no
 // anonymous consumer can observe a release before its assets are attached. The draft and verify
-// logic live in standalone scripts; the workflow must invoke them in draft → verify → publish
-// order.
-const draftStepIdx = buildCliWorkflow.indexOf('bash .github/scripts/cli-release/create-or-resume-draft.sh');
-const verifyStepIdx = buildCliWorkflow.indexOf('bash .github/scripts/cli-release/verify-assets.sh');
+// logic live in standalone scripts checked out from the workflow revision; the workflow must
+// invoke them in helper checkout → draft → verify → publish order.
+const helperCheckoutIdx = buildCliWorkflow.indexOf('name: Checkout workflow release helpers');
+const draftStepIdx = buildCliWorkflow.indexOf(
+  'bash "$RELEASE_HELPERS_DIR/create-or-resume-draft.sh"'
+);
+const verifyStepIdx = buildCliWorkflow.indexOf('bash "$RELEASE_HELPERS_DIR/verify-assets.sh"');
 const publishIdx = buildCliWorkflow.indexOf('gh release edit "$RELEASE_TAG" --draft=false');
 
+if (!buildCliWorkflow.includes("- '.github/scripts/cli-release/**'")) {
+  throw new Error('build-cli-binaries.yml must trigger when CLI release helper scripts change');
+}
+if (helperCheckoutIdx === -1) {
+  throw new Error('build-cli-binaries.yml must checkout workflow release helpers before publishing');
+}
+if (!buildCliWorkflow.includes('ref: ${{ github.workflow_sha }}')) {
+  throw new Error('build-cli-binaries.yml must checkout release helpers from the workflow revision');
+}
 if (draftStepIdx === -1) {
   throw new Error('build-cli-binaries.yml must create the draft via create-or-resume-draft.sh');
 }
@@ -76,8 +88,8 @@ if (verifyStepIdx === -1) {
 if (publishIdx === -1) {
   throw new Error('build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)');
 }
-if (!(draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)) {
-  throw new Error('build-cli-binaries.yml must order steps draft → verify → publish');
+if (!(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)) {
+  throw new Error('build-cli-binaries.yml must order steps helper checkout → draft → verify → publish');
 }
 
 // The draft script must actually create a draft, and the verify gate must require fully-uploaded
