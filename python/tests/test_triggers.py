@@ -1200,11 +1200,31 @@ class TestTriggerSubscriptionParsing:
         assert result["original_payload"] == {"raw": 1}
 
     def test_parse_payload_malformed_returns_none(self, subscription):
-        """Unknown or malformed frames are skipped, not raised."""
+        """Truly undecodable or unrecognized frames are skipped, not raised."""
         assert subscription._parse_payload("not-json") is None
         assert subscription._parse_payload(json.dumps({"unexpected": True})) is None
-        # A V3-looking envelope missing trigger metadata must not raise either.
-        partial_v3 = json.dumps(
+
+    def test_parse_payload_non_trigger_v3_event(self, subscription):
+        """A non-trigger composio.* event is normalized as a COMPOSIO event."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.connected_account.expired",
+                "metadata": {"project_id": "pr_1"},
+                "data": {"status": "EXPIRED"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["toolkit_slug"] == "COMPOSIO"
+        assert result["trigger_slug"] == "composio.connected_account.expired"
+        assert result["original_payload"] == json.loads(event)
+
+    def test_parse_payload_trigger_empty_metadata_does_not_raise(self, subscription):
+        """A trigger frame with empty metadata is delivered with empty identity."""
+        event = json.dumps(
             {
                 "id": "evt-1",
                 "type": "composio.trigger.message",
@@ -1212,7 +1232,42 @@ class TestTriggerSubscriptionParsing:
                 "data": {},
             }
         )
-        assert subscription._parse_payload(partial_v3) is not None
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == ""
+        assert result["toolkit_slug"] == "UNKNOWN"
+
+    def test_parse_payload_legacy_missing_optional_fields(self, subscription):
+        """A legacy frame missing optional fields is delivered, not dropped."""
+        event = json.dumps(
+            {
+                "appName": "gmail",
+                "payload": {"subject": "hello"},
+                # originalPayload + triggerData intentionally omitted
+                "metadata": {
+                    "id": "uuid-1",
+                    "nanoId": "ti_abc",
+                    "triggerName": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "triggerConfig": {},
+                    "connection": {
+                        "id": "conn-uuid",
+                        "connectedAccountNanoId": "ca_abc",
+                        "authConfigNanoId": "ac_abc",
+                        "integrationId": "int-uuid",
+                        "clientUniqueUserId": "user-1",
+                        "status": "ACTIVE",
+                    },
+                },
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["original_payload"] is None
+        assert result["metadata"]["trigger_data"] is None
 
     def test_parse_payload_trigger_keyed_off_type_not_all_metadata(self, subscription):
         """A trigger frame missing one metadata field is still a trigger event.

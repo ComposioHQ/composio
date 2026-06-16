@@ -607,7 +607,7 @@ class TriggerSubscription(Resource):
                         "uuid": legacy["metadata"]["id"],
                         "toolkit_slug": legacy["appName"],
                         "trigger_slug": legacy["metadata"]["triggerName"],
-                        "trigger_data": legacy["metadata"]["triggerData"],
+                        "trigger_data": legacy["metadata"].get("triggerData"),
                         "trigger_config": legacy["metadata"]["triggerConfig"],
                         "connected_account": {
                             "id": legacy["metadata"]["connection"][
@@ -626,11 +626,15 @@ class TriggerSubscription(Resource):
                             "status": legacy["metadata"]["connection"]["status"],
                         },
                     },
-                    "payload": legacy["payload"],
-                    "original_payload": legacy["originalPayload"],
+                    "payload": legacy.get("payload"),
+                    "original_payload": legacy.get("originalPayload"),
                 },
             )
-        except (KeyError, TypeError) as e:
+        except Exception as e:
+            # A single malformed frame must never propagate into pysher's
+            # dispatch loop (which calls callbacks with no try/except) and tear
+            # down the subscription, so catch broadly — AttributeError and
+            # others, not just KeyError/TypeError — and skip the frame.
             self.logger.warning(f"Error parsing trigger payload: {e}")
             return None
 
