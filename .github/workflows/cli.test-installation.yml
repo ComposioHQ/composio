@@ -20,6 +20,19 @@ on:
         type: string
 
 jobs:
+  toolchain-versions:
+    name: Read toolchain test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      node_install_compat: ${{ steps.versions.outputs.node_install_compat }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read versions
+        id: versions
+        run: echo "node_install_compat=$(jq -c '.node_install_compat' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
+
   install-script-unit-tests:
     name: Install Script Unit Tests
     runs-on: ubuntu-latest
@@ -419,12 +432,13 @@ jobs:
 
   test-npm-fallback:
     name: Test npm Installation Fallback
+    needs: toolchain-versions
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-15]
-        node-version: [18, 20, 22]
+        node-version: ${{ fromJSON(needs.toolchain-versions.outputs.node_install_compat) }}
 
     steps:
       - name: Checkout
@@ -558,7 +572,14 @@ jobs:
 
   summary:
     name: Installation Test Summary
-    needs: [install-script-unit-tests, test-install-script, test-npm-fallback, test-architecture-detection, test-prerequisites]
+    needs:
+      [
+        install-script-unit-tests,
+        test-install-script,
+        test-npm-fallback,
+        test-architecture-detection,
+        test-prerequisites,
+      ]
     runs-on: ubuntu-latest
     if: always()
 

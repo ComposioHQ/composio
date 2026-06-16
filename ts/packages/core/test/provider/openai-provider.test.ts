@@ -108,6 +108,22 @@ describe('OpenAIProvider', () => {
       expect(result).toBe(JSON.stringify({ result: 'success' }));
     });
 
+    it('should coerce empty-string arguments to an empty object (issue #2406)', async () => {
+      const toolCall = {
+        id: 'call-123',
+        type: 'function',
+        function: { name: 'test-tool', arguments: '' },
+      } as OpenAI.ChatCompletionMessageFunctionToolCall;
+
+      await provider.executeToolCall('test-user', toolCall);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ arguments: {} }),
+        undefined
+      );
+    });
+
     it('should pass options to executeTool', async () => {
       const userId = 'test-user';
       const toolCall = {

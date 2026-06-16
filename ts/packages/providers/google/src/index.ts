@@ -15,6 +15,7 @@ import {
   ExecuteToolFnOptions,
   McpUrlResponse,
   McpServerGetResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 import { FunctionDeclaration, Schema } from '@google/genai';
 
@@ -242,7 +243,8 @@ export class GoogleProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: tool.args,
+      // Models occasionally emit tool args as a JSON string rather than an object (issue #2406).
+      arguments: normalizeToolArguments(tool.args, tool.name),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

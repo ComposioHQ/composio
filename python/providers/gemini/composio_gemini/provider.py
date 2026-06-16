@@ -14,6 +14,7 @@ from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.shared import (
     get_pydantic_signature_format_from_schema_params,
+    normalize_tool_arguments,
     reinstate_reserved_python_keywords,
     substitute_reserved_python_keywords,
 )
@@ -109,7 +110,8 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             kwargs = reinstate_reserved_python_keywords(
                 request=kwargs, keywords=keywords
             )
-            result = execute_tool(tool.slug, kwargs)
+            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+            result = execute_tool(tool.slug, normalize_tool_arguments(kwargs))
             return _process_execution_result(result)
 
         # Create a real function object (passes inspect.isfunction)
@@ -188,7 +190,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if fc.name not in self._executors:
                 continue
 
-            result = self._executors[fc.name](slug=fc.name, arguments=dict(fc.args))
+            result = self._executors[fc.name](
+                slug=fc.name, arguments=normalize_tool_arguments(dict(fc.args))
+            )
             processed = _process_execution_result(result)
 
             function_responses.append(

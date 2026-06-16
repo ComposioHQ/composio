@@ -53,7 +53,7 @@
     "@mastra/core": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^3.1.4",
+    "vitest": "catalog:",
     "zod": "catalog:"
   },
   "dependencies": {

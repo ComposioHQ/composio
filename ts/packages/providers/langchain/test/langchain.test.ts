@@ -154,5 +154,25 @@ describe('LangchainProvider', () => {
       expect(typeof result).toBe('string');
       expect(() => JSON.parse(result as string)).not.toThrow();
     });
+
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      const result = await wrappedTool.func(
+        JSON.stringify({ query: 'test query' }) as unknown as Record<string, unknown>
+      );
+
+      // The mock echoes back the params it received; confirm it saw a parsed object.
+      expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, { query: 'test query' });
+      expect(JSON.parse(result as string).data.params).toEqual({ query: 'test query' });
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      await expect(
+        wrappedTool.func('{"query":' as unknown as Record<string, unknown>)
+      ).rejects.toThrow(/not valid JSON/);
+    });
   });
 });
