@@ -322,6 +322,7 @@ describe('Triggers', () => {
         connected_account_id: body.connectedAccountId,
         trigger_config: body.triggerConfig,
         toolkit_versions: 'latest',
+        user_id: userId,
       });
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
     });
@@ -340,6 +341,7 @@ describe('Triggers', () => {
         connected_account_id: 'conn-456',
         trigger_config: bodyWithoutConnectedAccount.triggerConfig,
         toolkit_versions: 'latest',
+        user_id: userId,
       });
       expect(logger.warn).toHaveBeenCalledWith(
         `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`

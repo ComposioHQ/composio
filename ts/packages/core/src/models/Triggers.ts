@@ -1,5 +1,8 @@
 import ComposioClient, { APIError } from '@composio/client';
-import { TriggersTypeRetrieveEnumResponse } from '@composio/client/resources/index';
+import {
+  TriggersTypeRetrieveEnumResponse,
+  type TriggerInstanceUpsertParams as ClientTriggerInstanceUpsertParams,
+} from '@composio/client/resources/index';
 import {
   TriggerInstanceUpsertResponse,
   TriggerInstanceUpsertParamsSchema,
@@ -227,11 +230,20 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       throw error;
     }
 
-    const result = await this.client.triggerInstances.upsert(slug, {
+    // Forward user_id so 2FA-enabled projects can verify the pinned connected
+    // account is owned by this user (backends without 2FA ignore it). The
+    // `& { user_id }` bridges until @composio/client regenerates from the
+    // updated OpenAPI spec; drop it once the field lands on the generated type.
+    const upsertParams: ClientTriggerInstanceUpsertParams & {
+      user_id?: string;
+    } = {
       connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
       toolkit_versions: this.toolkitVersions,
-    });
+      user_id: userId,
+    };
+
+    const result = await this.client.triggerInstances.upsert(slug, upsertParams);
 
     return {
       triggerId: result.trigger_id,

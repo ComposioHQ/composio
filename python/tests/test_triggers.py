@@ -248,6 +248,8 @@ class TestTriggers:
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
         assert call_kwargs["connected_account_id"] == "conn-456"
         assert call_kwargs["toolkit_versions"] is None
+        # user_id forwarded for trigger 2FA ownership verification
+        assert call_kwargs["extra_body"] == {"user_id": "user-123"}
         assert result == mock_response
 
     def test_create_with_custom_toolkit_versions(
