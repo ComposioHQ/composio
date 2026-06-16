@@ -237,13 +237,19 @@ if [[ "\${1:-}" == "release" && "\${2:-}" == "list" ]]; then
   shift 2
   jqexpr=""
   exclude_drafts=false
+  limit=""
   while [[ \$# -gt 0 ]]; do
     if [[ "\$1" == "--exclude-drafts" ]]; then exclude_drafts=true; shift; continue; fi
+    if [[ "\$1" == "--limit" ]]; then limit="\$2"; shift 2; continue; fi
     if [[ "\$1" == "--jq" ]]; then jqexpr="\$2"; shift 2; continue; fi
     shift
   done
   if [[ "\$exclude_drafts" != "true" ]]; then
     echo "release list must pass --exclude-drafts" >&2
+    exit 1
+  fi
+  if [[ "\$limit" != "1000" ]]; then
+    echo "release list must pass --limit 1000" >&2
     exit 1
   fi
   jq -r '[.[] | select(.isDraft != true)] | '"\$jqexpr" "\$GH_RELEASES_FIXTURE"
