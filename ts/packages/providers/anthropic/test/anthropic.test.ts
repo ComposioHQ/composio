@@ -172,6 +172,37 @@ describe('AnthropicProvider', () => {
       expect(result).toBe(JSON.stringify({ result: 'success' }));
     });
 
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const params = { input: 'test-value' };
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_123',
+        name: 'test-tool',
+        input: JSON.stringify(params) as unknown as Record<string, unknown>,
+      };
+
+      await provider.executeToolCall('test-user', toolUse);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ arguments: params }),
+        undefined
+      );
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const toolUse: AnthropicToolUseBlock = {
+        type: 'tool_use',
+        id: 'tu_123',
+        name: 'test-tool',
+        input: '{"input":' as unknown as Record<string, unknown>,
+      };
+
+      await expect(provider.executeToolCall('test-user', toolUse)).rejects.toThrow(
+        /not valid JSON/
+      );
+    });
+
     it('should pass options to executeTool', async () => {
       const userId = 'test-user';
       const toolUse: AnthropicToolUseBlock = {

@@ -14,6 +14,7 @@ Skills that evolve for your Agents
 [![PyPI Downloads](https://img.shields.io/pypi/dm/composio?label=PyPI%20Downloads)](https://pypi.org/project/composio/)
 [![NPM Downloads](https://img.shields.io/npm/dt/@composio/core?label=NPM%20Downloads)](https://www.npmjs.com/package/@composio/core)
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/composio)
+[![HVTrust](https://hvtracker.net/badge/composio.svg)](https://hvtracker.net/agents/composio/)
 </div>
 
 This repository contains the official Software Development Kits (SDKs) for Composio, providing seamless integration capabilities for Python and Typescript Agentic Frameworks and Libraries.

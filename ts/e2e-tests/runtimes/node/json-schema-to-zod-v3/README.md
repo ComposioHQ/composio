@@ -13,14 +13,14 @@ The `@composio/json-schema-to-zod` package must support both Zod v3 and v4. This
 
 ## What It Tests
 
-| Test                  | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| Basic string schema   | Converts `{ type: 'string' }` and validates                      |
-| Object schema         | Required fields, nested properties, validation constraints       |
-| Array schema          | Typed array items with validation                                |
-| Email format          | Format validation for email strings                              |
-| Nested schemas        | Complex nested objects and arrays                                |
-| anyOf schemas         | Union type conversion                                            |
+| Test                  | Description                                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| Basic string schema   | Converts `{ type: 'string' }` and validates                        |
+| Object schema         | Required fields, nested properties, validation constraints         |
+| Array schema          | Typed array items with validation                                  |
+| Email format          | Format validation for email strings                                |
+| Nested schemas        | Complex nested objects and arrays                                  |
+| anyOf schemas         | Union type conversion                                              |
 | Round-trip conversion | JSON Schema -> Zod -> JSON Schema preserves `additionalProperties` |
 
 ## Test Setup
@@ -36,7 +36,7 @@ Tests use `bun:test` assertions to verify schema conversion and round-trip behav
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: current (as specified in `.nvmrc`).
+**Docker** with Node.js versions: current (as specified in `mise.toml`).
 
 ## Running
 

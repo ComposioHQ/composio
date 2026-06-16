@@ -842,6 +842,11 @@ class Triggers(Resource):
                 "please provide valid `connected_account` or `user_id`"
             )
 
+        # Forward user_id so 2FA-enabled projects can verify the pinned connected
+        # account belongs to this user (backends without 2FA ignore it). Sent via
+        # extra_body until composio-client regenerates with the field.
+        extra_body = {"user_id": user_id} if user_id is not None else {}
+
         return self._client.trigger_instances.upsert(
             slug=slug,
             connected_account_id=connected_account_id,
@@ -849,6 +854,7 @@ class Triggers(Resource):
             body_trigger_config_1=(
                 trigger_config if trigger_config is not None else omit
             ),
+            extra_body=extra_body,
         )
 
     def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
