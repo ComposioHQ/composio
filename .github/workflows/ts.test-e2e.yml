@@ -5,40 +5,71 @@ on:
     branches: [master, next]
     paths:
       - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.test-e2e.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'toolchain-versions.json'
   pull_request:
     paths:
       - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.test-e2e.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'toolchain-versions.json'
   workflow_dispatch:
 
 jobs:
+  toolchain-versions:
+    name: Read toolchain test matrix
+    runs-on: ubuntu-24.04
+    permissions: read-all
+    outputs:
+      node: ${{ steps.versions.outputs.node }}
+      deno: ${{ steps.versions.outputs.deno }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read versions
+        id: versions
+        run: |
+          echo "node=$(jq -c '.node' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
+          echo "deno=$(jq -c '.deno' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
+
   # Node.js E2E tests, running in Docker to isolate environment
   # Each test suite defines its own nodeVersions in e2e.test.ts
   # Tests that don't support the matrix version are automatically skipped
   test-e2e-node-docker:
     name: E2E Test Node.js ${{ matrix.node-version }}
+    needs: toolchain-versions
     runs-on: ubuntu-24.04
     permissions: read-all
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['20.18.0', '20.19.0', '22.12.0']
+        node-version: ${{ fromJSON(needs.toolchain-versions.outputs.node) }}
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Normalize Composio API keys
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
+        id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install Dependencies
@@ -51,6 +82,7 @@ jobs:
         run: |
           docker build -f ts/e2e-tests/_utils/Dockerfile.node \
             --build-arg NODE_VERSION=${{ matrix.node-version }} \
+            --build-arg BUN_VERSION=${{ steps.setup-toolchain.outputs.bun-version }} \
             --label composio.e2e=true \
             --label composio.runtime=node \
             --label "composio.node_version=${{ matrix.node-version }}" \
@@ -65,34 +97,38 @@ jobs:
   # Tests that don't support the matrix version are automatically skipped
   test-e2e-deno-docker:
     name: E2E Test Deno ${{ matrix.deno-version }}
+    needs: toolchain-versions
     runs-on: ubuntu-24.04
     permissions: read-all
     strategy:
       fail-fast: false
       matrix:
-        deno-version: ['2.6.7']
+        deno-version: ${{ fromJSON(needs.toolchain-versions.outputs.deno) }}
     env:
       CI: 1
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_DENO_VERSION: ${{ matrix.deno-version }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Normalize Composio API keys
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v2
+        uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
         with:
           deno-version: ${{ matrix.deno-version }}
 
       - name: Setup Node.js, pnpm, Bun
+        id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install Dependencies
@@ -113,18 +149,21 @@ jobs:
       CI: 1
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Normalize Composio API keys
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
+        id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install Dependencies
@@ -139,6 +178,8 @@ jobs:
           echo "COMPOSIO_E2E_CLI_VERSION=${CLI_VERSION}" >> "$GITHUB_ENV"
           docker build -f ts/e2e-tests/_utils/Dockerfile.cli \
             --build-arg CLI_VERSION="${CLI_VERSION}" \
+            --build-arg NODE_VERSION="${{ steps.setup-toolchain.outputs.node-version }}" \
+            --build-arg BUN_VERSION="${{ steps.setup-toolchain.outputs.bun-version }}" \
             --label composio.e2e=true \
             --label composio.runtime=cli \
             --label "composio.cli_version=${CLI_VERSION}" \
@@ -155,22 +196,24 @@ jobs:
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Normalize Composio API keys
         run: |
           echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
           echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
+          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
-          node-version: '22.12.0'
+          node-version: '22.22.3'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -196,4 +239,5 @@ jobs:
         env:
           COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
           COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

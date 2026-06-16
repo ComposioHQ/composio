@@ -4,13 +4,13 @@ Shared infrastructure for running `@composio/core` and CLI end-to-end tests in i
 
 ## What's Here
 
-| File/Directory    | Purpose                                                |
-| ----------------- | ------------------------------------------------------ |
-| `src/`            | TypeScript utilities (e2e runner, config, types)       |
-| `scripts/`        | Docker build and cleanup scripts                       |
-| `Dockerfile.node` | Multi-stage Dockerfile for Node.js test environments   |
-| `Dockerfile.deno` | Dockerfile for Deno test environments                  |
-| `Dockerfile.cli`  | Scratch Dockerfile for CLI test environments           |
+| File/Directory    | Purpose                                              |
+| ----------------- | ---------------------------------------------------- |
+| `src/`            | TypeScript utilities (e2e runner, config, types)     |
+| `scripts/`        | Docker build and cleanup scripts                     |
+| `Dockerfile.node` | Multi-stage Dockerfile for Node.js test environments |
+| `Dockerfile.deno` | Dockerfile for Deno test environments                |
+| `Dockerfile.cli`  | Scratch Dockerfile for CLI test environments         |
 
 ## API
 
@@ -25,11 +25,11 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['20.18.0', '20.19.0', '22.12.0'], // optional, defaults to .nvmrc
-    deno: ['2.6.7'],                          // optional, defaults to .dvmrc
-    cli: ['current'],                         // optional, defaults to CLI package.json version
+    node: ['22.22.3', '24.16.0', '25.9.0'], // optional, defaults to mise.toml
+    deno: ['2.6.7'], // optional, defaults to mise.toml
+    cli: ['current'], // optional, defaults to CLI package.json version
   },
-  env: { MY_VAR: 'value' },                   // optional env vars
+  env: { MY_VAR: 'value' }, // optional env vars
   defineTests: ({ runtime, runCmd, runFixture }) => {
     let result: E2ETestResult;
 
@@ -50,39 +50,39 @@ e2e(import.meta.url, {
 
 Configuration object passed to `e2e()`:
 
-| Property       | Type                                  | Description                                                      |
-| -------------- | ------------------------------------- | ---------------------------------------------------------------- |
-| `versions`     | `RuntimeVersions`                     | Runtime versions to test. See RuntimeVersions below              |
-| `env`          | `Record<string, string \| undefined>` | Environment variables for Docker. Validated at startup           |
-| `usesFixtures` | `boolean`                             | When true, sets cwd to `{testDir}/fixtures`. Default: `false`    |
-| `defineTests`  | `(ctx: DefineTestsContext) => void`   | Callback to define tests using bun:test primitives               |
+| Property       | Type                                  | Description                                                   |
+| -------------- | ------------------------------------- | ------------------------------------------------------------- |
+| `versions`     | `RuntimeVersions`                     | Runtime versions to test. See RuntimeVersions below           |
+| `env`          | `Record<string, string \| undefined>` | Environment variables for Docker. Validated at startup        |
+| `usesFixtures` | `boolean`                             | When true, sets cwd to `{testDir}/fixtures`. Default: `false` |
+| `defineTests`  | `(ctx: DefineTestsContext) => void`   | Callback to define tests using bun:test primitives            |
 
 ### `RuntimeVersions`
 
-| Property | Type                             | Description                                      |
-| -------- | -------------------------------- | ------------------------------------------------ |
-| `node`   | `readonly NodeVersionFromUser[]` | Node.js versions. Defaults to `.nvmrc`           |
-| `deno`   | `readonly DenoVersionFromUser[]` | Deno versions. Defaults to `.dvmrc`              |
-| `cli`    | `readonly CliVersionFromUser[]`  | CLI versions. Defaults to CLI package.json       |
+| Property | Type                             | Description                                |
+| -------- | -------------------------------- | ------------------------------------------ |
+| `node`   | `readonly NodeVersionFromUser[]` | Node.js versions. Defaults to `mise.toml`  |
+| `deno`   | `readonly DenoVersionFromUser[]` | Deno versions. Defaults to `mise.toml`     |
+| `cli`    | `readonly CliVersionFromUser[]`  | CLI versions. Defaults to CLI package.json |
 
 ### `DefineTestsContext`
 
 The context passed to the `defineTests` callback:
 
-| Property     | Type/Signature                                                   | Description                                    |
-| ------------ | ---------------------------------------------------------------- | ---------------------------------------------- |
-| `runtime`    | `'node' \| 'deno' \| 'cli'`                                      | Current runtime being tested                   |
-| `runCmd`     | `(command: string) => Promise<E2ETestResult>`                    | Run arbitrary command in Docker container      |
-| `runFixture` | `(options: RunFixtureOptions) => Promise<E2ETestResult \| E2ETestResultWithSetup>` | Run fixture with optional setup phase |
+| Property     | Type/Signature                                                                     | Description                               |
+| ------------ | ---------------------------------------------------------------------------------- | ----------------------------------------- |
+| `runtime`    | `'node' \| 'deno' \| 'cli'`                                                        | Current runtime being tested              |
+| `runCmd`     | `(command: string) => Promise<E2ETestResult>`                                      | Run arbitrary command in Docker container |
+| `runFixture` | `(options: RunFixtureOptions) => Promise<E2ETestResult \| E2ETestResultWithSetup>` | Run fixture with optional setup phase     |
 
 ### `RunFixtureOptions`
 
 Options for `runFixture()`:
 
-| Property   | Type     | Description                                                           |
-| ---------- | -------- | --------------------------------------------------------------------- |
-| `filename` | `string` | Fixture file path relative to cwd (e.g., `'index.mjs'`)               |
-| `setup`    | `string` | Optional setup command (e.g., `'npm install'`). Enables volume mode   |
+| Property   | Type     | Description                                                         |
+| ---------- | -------- | ------------------------------------------------------------------- |
+| `filename` | `string` | Fixture file path relative to cwd (e.g., `'index.mjs'`)             |
+| `setup`    | `string` | Optional setup command (e.g., `'npm install'`). Enables volume mode |
 
 **Behavior:**
 
@@ -98,8 +98,8 @@ const result = await runFixture({
   filename: 'index.mjs',
   setup: 'npm install --legacy-peer-deps',
 });
-expect(result.setup.exitCode).toBe(0);  // Check setup phase
-expect(result.exitCode).toBe(0);        // Check fixture phase
+expect(result.setup.exitCode).toBe(0); // Check setup phase
+expect(result.exitCode).toBe(0); // Check fixture phase
 ```
 
 ### `E2ETestResult`
@@ -108,9 +108,9 @@ Result returned by `runCmd` and `runFixture`:
 
 ```typescript
 interface E2ETestResult {
-  exitCode: number;  // Exit code from the command (0 = success)
-  stdout: string;    // Captured stdout
-  stderr: string;    // Captured stderr
+  exitCode: number; // Exit code from the command (0 = success)
+  stdout: string; // Captured stdout
+  stderr: string; // Captured stderr
 }
 ```
 
@@ -162,9 +162,13 @@ Predefined timeout constants for tests (in milliseconds):
 ```typescript
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 
-it('calls LLM', async () => {
-  // test code
-}, { timeout: TIMEOUTS.LLM_SHORT });
+it(
+  'calls LLM',
+  async () => {
+    // test code
+  },
+  { timeout: TIMEOUTS.LLM_SHORT }
+);
 ```
 
 | Constant    | Value     | Use Case                                   |
@@ -182,16 +186,16 @@ Node.js versions to test are resolved in this order:
 
 1. **`COMPOSIO_E2E_NODE_VERSION` env var** (highest priority): Use `[env_value]`
 2. **`config.versions.node`**: Use the provided array
-3. **Default**: Use version from `.nvmrc` file
+3. **Default**: Use version from `mise.toml` file
 
 ### Well-Known Node Versions
 
 The following versions are pre-defined in `const.ts`:
 
-- `20.18.0`
-- `20.19.0`
-- `22.12.0`
-- `current` (resolves to `.nvmrc` version)
+- `22.22.3`
+- `24.16.0`
+- `25.9.0`
+- `current` (resolves to `mise.toml` version)
 
 ### Deno Version Resolution
 
@@ -199,14 +203,14 @@ Deno versions to test are resolved in this order:
 
 1. **`COMPOSIO_E2E_DENO_VERSION` env var** (highest priority): Use `[env_value]`
 2. **`config.versions.deno`**: Use the provided array
-3. **Default**: Use version from `.dvmrc` file
+3. **Default**: Use version from `mise.toml` file
 
 ### Well-Known Deno Versions
 
 The following versions are pre-defined in `const.ts`:
 
 - `2.6.7`
-- `current` (resolves to `.dvmrc` version)
+- `current` (resolves to `mise.toml` version)
 
 ### CLI Version Resolution
 
@@ -250,8 +254,8 @@ e2e(import.meta.url, {
     beforeAll(async () => {
       // Both commands run in fixtures/ directory
       result = await runFixture({
-        filename: 'index.mjs',           // Resolves to fixtures/index.mjs
-        setup: 'npm install',             // Runs in fixtures/
+        filename: 'index.mjs', // Resolves to fixtures/index.mjs
+        setup: 'npm install', // Runs in fixtures/
       });
     }, TIMEOUTS.FIXTURE);
   },
@@ -277,16 +281,16 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Node versions: 20.19.0, 22.12.0
+Runtime versions: Node.js 22.22.3, Node.js 24.16.0, Node.js 25.9.0
 ================================================================================
 
 ################################################################################
-### Node.js 20.19.0
+### Node.js 22.22.3
 ################################################################################
-Image: composio-e2e-node:20.19.0
+Image: composio-e2e-node:22.22.3
 
 --- Phase 1/2: setup ---
-Container: e2e-openai-zod4-compat-20-19-0-1769775520382-setup
+Container: e2e-openai-zod4-compat-22-22-3-1769775520382-setup
 Command: npm install --legacy-peer-deps
 Duration: 2.55s
 Exit Code: 0 (success)
@@ -298,7 +302,7 @@ added 3 packages, and audited 5 packages in 2s
 (empty)
 
 --- Phase 2/2: fixture ---
-Container: e2e-openai-zod4-compat-20-19-0-1769775520382-fixture
+Container: e2e-openai-zod4-compat-22-22-3-1769775520382-fixture
 Command: node index.mjs
 Duration: 0.56s
 Exit Code: 0 (success)
@@ -311,16 +315,12 @@ All packages work together!
 [stderr]
 (empty)
 
-################################################################################
-### Node.js 22.12.0 (SKIPPED)
-################################################################################
-Reason: Not selected via COMPOSIO_E2E_NODE_VERSION
-
 ================================================================================
 Summary
 ================================================================================
-Node.js 20.19.0: PASS (2 phases, 3.11s total)
-Node.js 22.12.0: SKIPPED
+Node.js 22.22.3: PASS (2 phases, 3.11s total)
+Node.js 24.16.0: PASS (2 phases, 3.09s total)
+Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
 Total duration: 4.50s

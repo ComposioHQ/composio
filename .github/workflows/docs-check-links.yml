@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/docs-check-links.yml'
+      - 'mise.toml'
+      - 'mise.lock'
 
 jobs:
   check-links:
@@ -14,12 +18,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: '.bun-version'
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
 
       - name: Install dependencies
         run: bun install

@@ -21,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Load issue context for dispatch runs
         if: github.event_name == 'workflow_dispatch'
         id: issue-context
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           ISSUE_NUMBER: ${{ inputs.issue_number }}
         with:
@@ -180,7 +180,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Apply labels, assignees, and tool-request handling
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           STRUCTURED_OUTPUT: ${{ steps.classify.outputs.structured_output }}
           PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}

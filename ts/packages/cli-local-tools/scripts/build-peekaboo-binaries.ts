@@ -4,6 +4,7 @@ import { $ } from 'bun';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { patchSwiftSystemAtResolveBeneathGuard } from './swift-system-patches';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(scriptDir, '..');
@@ -172,9 +173,26 @@ const patchSwiftConfigurationForCurrentToolchain = async () => {
   }
 };
 
+const patchSwiftSystemForCurrentSdk = async () => {
+  const checkoutRoot = path.join(cliPackagePath, '.build/checkouts/swift-system');
+  if (!(await exists(checkoutRoot))) {
+    throw new Error(
+      'Swift package resolution completed but the swift-system checkout was not found.'
+    );
+  }
+
+  const replacementCount = await patchSwiftSystemAtResolveBeneathGuard(checkoutRoot, exists);
+  if (replacementCount > 0) {
+    console.log(
+      `Patched ${replacementCount} swift-system AT_RESOLVE_BENEATH guards for the current macOS SDK.`
+    );
+  }
+};
+
 const buildTarget = async (target: Target) => {
   console.log(`Building peekaboo for ${target.platform} (${target.swiftArch})...`);
   await patchSwiftConfigurationForCurrentToolchain();
+  await patchSwiftSystemForCurrentSdk();
   await $`swift build --arch ${target.swiftArch} -c release -Xswiftc -Osize -Xswiftc -wmo -Xlinker -dead_strip`.cwd(
     cliPackagePath
   );
