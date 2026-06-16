@@ -640,9 +640,9 @@ class FileHelper(WithLogger):
         if not isinstance(root, dict):
             return schema
 
-        # Walk the path segments, skipping the leading empty string from
-        # splitting "#/$defs/Foo" -> ["", "$defs", "Foo"].
-        parts = [p for p in ref.split("/") if p]
+        # Walk the path segments after the leading "#/" prefix.
+        # ref is already validated to start with "#/" above.
+        parts = ref[2:].split("/")
         resolved: t.Any = root
         for part in parts:
             if isinstance(resolved, dict) and part in resolved:
