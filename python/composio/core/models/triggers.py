@@ -1233,24 +1233,13 @@ class Triggers(Resource):
                 f"Failed to parse webhook payload as JSON: {e}"
             ) from e
 
-        # Try V3 first (has 'type' starting with 'composio.' and 'metadata' as dict)
-        # Metadata shape varies by event type (trigger vs connection events),
-        # so we only check that it's a dict here.
-        v3_metadata = data.get("metadata") if isinstance(data, dict) else None
-        v3_metadata_valid = isinstance(v3_metadata, dict)
-        v3_type = data.get("type", "") if isinstance(data, dict) else ""
-        if (
-            isinstance(data, dict)
-            and isinstance(v3_type, str)
-            and v3_type.startswith("composio.")
-            and v3_metadata_valid
-            and "id" in data
-            and "data" in data
-        ):
+        # Try V3 first — same envelope the realtime channel uses, so reuse the
+        # shared detector/normalizer to keep the two paths from drifting.
+        if _is_v3_envelope(data):
             return (
                 WebhookVersion.V3,
                 t.cast(WebhookPayloadV3, data),
-                self._normalize_v3_payload(t.cast(WebhookPayloadV3, data)),
+                _build_trigger_event_from_v3(t.cast(WebhookPayloadV3, data)),
             )
 
         # Try V2 (has 'type', 'timestamp', 'data' with nested fields)
@@ -1360,49 +1349,5 @@ class Triggers(Resource):
                     )
                 },
                 "original_payload": None,
-            },
-        )
-
-    def _normalize_v3_payload(self, data: WebhookPayloadV3) -> TriggerEvent:
-        """Normalize V3 payload to TriggerEvent format."""
-        return _build_trigger_event_from_v3(data)
-
-    def _transform_trigger_data(self, data: _TriggerData) -> TriggerEvent:
-        """
-        Transform raw trigger data to TriggerEvent format.
-
-        :param data: The raw trigger data
-        :return: The transformed TriggerEvent
-        """
-        return t.cast(
-            TriggerEvent,
-            {
-                "id": data["metadata"]["nanoId"],
-                "uuid": data["metadata"]["id"],
-                "user_id": data["metadata"]["connection"]["clientUniqueUserId"],
-                "toolkit_slug": data["appName"],
-                "trigger_slug": data["metadata"]["triggerName"],
-                "metadata": {
-                    "id": data["metadata"]["nanoId"],
-                    "uuid": data["metadata"]["id"],
-                    "toolkit_slug": data["appName"],
-                    "trigger_slug": data["metadata"]["triggerName"],
-                    "trigger_data": data["metadata"].get("triggerData"),
-                    "trigger_config": data["metadata"]["triggerConfig"],
-                    "connected_account": {
-                        "id": data["metadata"]["connection"]["connectedAccountNanoId"],
-                        "uuid": data["metadata"]["connection"]["id"],
-                        "auth_config_id": data["metadata"]["connection"][
-                            "authConfigNanoId"
-                        ],
-                        "auth_config_uuid": data["metadata"]["connection"][
-                            "integrationId"
-                        ],
-                        "user_id": data["metadata"]["connection"]["clientUniqueUserId"],
-                        "status": data["metadata"]["connection"]["status"],
-                    },
-                },
-                "payload": data.get("payload"),
-                "original_payload": data.get("originalPayload"),
             },
         )
