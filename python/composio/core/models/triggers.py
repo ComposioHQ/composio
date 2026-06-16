@@ -431,6 +431,16 @@ class TriggerEventFilters(te.TypedDict):
 TriggerCallback = t.Callable[[TriggerEvent], None]
 
 
+def _coerce_str(value: t.Any) -> str:
+    """Coerce a possibly-missing or non-string field to ``str``.
+
+    Mirrors the TS SDK's ``toStringOrDefault`` so realtime/webhook frames that
+    carry ``None`` or a non-string identity field don't later raise
+    ``AttributeError`` on ``.lower()`` / ``.split()``. ``None`` maps to "".
+    """
+    return "" if value is None else str(value)
+
+
 def _is_v3_envelope(data: t.Any) -> bool:
     """Return ``True`` if ``data`` is a modern V3 envelope.
 
@@ -452,73 +462,69 @@ def _is_v3_envelope(data: t.Any) -> bool:
 
 
 def _build_trigger_event_from_v3(data: WebhookPayloadV3) -> TriggerEvent:
-    """Normalize a V3 envelope (webhook or realtime) into a ``TriggerEvent``."""
-    metadata = data["metadata"]
+    """Normalize a V3 envelope (webhook or realtime) into a ``TriggerEvent``.
 
-    # Check if this is a trigger event (has trigger-specific metadata fields)
-    is_trigger_event = all(
-        k in metadata
-        for k in (
-            "trigger_id",
-            "trigger_slug",
-            "user_id",
-            "connected_account_id",
-            "auth_config_id",
-            "log_id",
+    Trigger frames are identified by their envelope ``type``
+    (``composio.trigger.message``), not by the presence of every metadata
+    field. The trigger-specific metadata fields are then read best-effort and
+    coerced to ``str`` so a frame that omits or mistypes one of them is still
+    delivered rather than silently demoted to a non-trigger event or raising
+    ``AttributeError`` on the toolkit-slug split.
+    """
+    metadata = data.get("metadata") or {}
+    event_type = data.get("type", "")
+
+    if event_type == "composio.trigger.message":
+        trigger_id = _coerce_str(metadata.get("trigger_id"))
+        trigger_slug = _coerce_str(metadata.get("trigger_slug"))
+        user_id = _coerce_str(metadata.get("user_id"))
+        connected_account_id = _coerce_str(metadata.get("connected_account_id"))
+        auth_config_id = _coerce_str(metadata.get("auth_config_id"))
+        toolkit_slug = (
+            trigger_slug.split("_")[0].upper() if "_" in trigger_slug else "UNKNOWN"
         )
-    )
-
-    if is_trigger_event:
-        trigger_data = t.cast(WebhookTriggerPayloadV3, data)
-        trigger_metadata = trigger_data["metadata"]
         return t.cast(
             TriggerEvent,
             {
-                "id": trigger_metadata["trigger_id"],
-                "uuid": trigger_metadata["trigger_id"],
-                "user_id": trigger_metadata["user_id"],
-                "toolkit_slug": trigger_metadata["trigger_slug"].split("_")[0].upper()
-                if "_" in trigger_metadata["trigger_slug"]
-                else "UNKNOWN",
-                "trigger_slug": trigger_metadata["trigger_slug"],
+                "id": trigger_id,
+                "uuid": trigger_id,
+                "user_id": user_id,
+                "toolkit_slug": toolkit_slug,
+                "trigger_slug": trigger_slug,
                 "metadata": {
-                    "id": trigger_metadata["trigger_id"],
-                    "uuid": trigger_metadata["trigger_id"],
-                    "toolkit_slug": trigger_metadata["trigger_slug"]
-                    .split("_")[0]
-                    .upper()
-                    if "_" in trigger_metadata["trigger_slug"]
-                    else "UNKNOWN",
-                    "trigger_slug": trigger_metadata["trigger_slug"],
+                    "id": trigger_id,
+                    "uuid": trigger_id,
+                    "toolkit_slug": toolkit_slug,
+                    "trigger_slug": trigger_slug,
                     "trigger_data": None,
                     "trigger_config": {},
                     "connected_account": {
-                        "id": trigger_metadata["connected_account_id"],
-                        "uuid": trigger_metadata["connected_account_id"],
-                        "auth_config_id": trigger_metadata["auth_config_id"],
-                        "auth_config_uuid": trigger_metadata["auth_config_id"],
-                        "user_id": trigger_metadata["user_id"],
+                        "id": connected_account_id,
+                        "uuid": connected_account_id,
+                        "auth_config_id": auth_config_id,
+                        "auth_config_uuid": auth_config_id,
+                        "user_id": user_id,
                         "status": "ACTIVE",
                     },
                 },
-                "payload": trigger_data["data"],
+                "payload": data.get("data", {}),
                 "original_payload": None,
             },
         )
 
     # Non-trigger V3 event (e.g., connection expired)
-    event_type = data.get("type", "")
+    event_id = _coerce_str(data.get("id"))
     return t.cast(
         TriggerEvent,
         {
-            "id": data.get("id", ""),
-            "uuid": data.get("id", ""),
+            "id": event_id,
+            "uuid": event_id,
             "user_id": "",
             "toolkit_slug": "COMPOSIO",
             "trigger_slug": event_type,
             "metadata": {
-                "id": data.get("id", ""),
-                "uuid": data.get("id", ""),
+                "id": event_id,
+                "uuid": event_id,
                 "toolkit_slug": "COMPOSIO",
                 "trigger_slug": event_type,
                 "trigger_data": None,

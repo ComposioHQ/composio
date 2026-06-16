@@ -1214,6 +1214,61 @@ class TestTriggerSubscriptionParsing:
         )
         assert subscription._parse_payload(partial_v3) is not None
 
+    def test_parse_payload_trigger_keyed_off_type_not_all_metadata(self, subscription):
+        """A trigger frame missing one metadata field is still a trigger event.
+
+        Detection keys off ``type == "composio.trigger.message"`` rather than
+        requiring all six metadata fields, so the event is delivered (not
+        silently demoted to a non-trigger COMPOSIO event).
+        """
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    # ``log_id`` intentionally omitted
+                    "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": "user-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["toolkit_slug"] == "GMAIL"
+        assert result["user_id"] == "user-1"
+
+    def test_parse_payload_non_string_trigger_slug_does_not_raise(self, subscription):
+        """A null/non-string trigger_slug must not raise AttributeError (Vector A)."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    "trigger_slug": None,
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": 123,
+                    "log_id": "log-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == ""
+        assert result["toolkit_slug"] == "UNKNOWN"
+        assert result["user_id"] == "123"
+
     @staticmethod
     def _make_event(**overrides):
         """Build a minimal TriggerEvent dict for filter-matching tests."""
