@@ -656,7 +656,16 @@ class TriggerSubscription(Resource):
         )
         for name, check in checks:
             value = filters.get(name)
-            if value is None or str(value).lower() == check.lower():
+            if value is None:
+                # No filter set for this field — nothing to match against.
+                continue
+
+            # ``check`` is str()-wrapped because realtime frames may carry
+            # non-string identity fields; an empty event-side value is treated
+            # as a non-match so synthesized "" fields don't fail open into a
+            # filter that happens to be "".
+            check_str = str(check)
+            if check_str and str(value).lower() == check_str.lower():
                 continue
 
             self.logger.debug(

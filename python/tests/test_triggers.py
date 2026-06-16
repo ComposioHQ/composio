@@ -1213,3 +1213,38 @@ class TestTriggerSubscriptionParsing:
             }
         )
         assert subscription._parse_payload(partial_v3) is not None
+
+    @staticmethod
+    def _make_event(**overrides):
+        """Build a minimal TriggerEvent dict for filter-matching tests."""
+        event = {
+            "id": "ti_1",
+            "uuid": "ti_1",
+            "user_id": "user-1",
+            "toolkit_slug": "GMAIL",
+            "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+            "metadata": {
+                "id": "ti_1",
+                "connected_account": {
+                    "id": "ca_1",
+                    "auth_config_id": "ac_1",
+                },
+            },
+        }
+        event.update(overrides)
+        return event
+
+    def test_filters_match_no_filters_matches(self, subscription):
+        """An empty filterset matches any event."""
+        assert subscription._filters_match(self._make_event(), {}, "cb") is True
+
+    def test_filters_match_does_not_crash_on_non_string_event_value(self, subscription):
+        """A non-string identity field must not raise AttributeError (Vector B)."""
+        event = self._make_event(user_id=123)
+        assert subscription._filters_match(event, {"user_id": "123"}, "cb") is True
+        assert subscription._filters_match(event, {"user_id": "999"}, "cb") is False
+
+    def test_filters_match_empty_event_value_does_not_fail_open(self, subscription):
+        """A synthesized empty identity field must not match a "" filter."""
+        event = self._make_event(user_id="")
+        assert subscription._filters_match(event, {"user_id": ""}, "cb") is False
