@@ -1,5 +1,14 @@
 #!/usr/bin/env node
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+  readFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -10,6 +19,12 @@ const changesetConfig = JSON.parse(
 );
 const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
+  'utf8'
+);
+const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
+const pythonChangelog = readFileSync(new URL('../python/CHANGELOG.md', import.meta.url), 'utf8');
+const pythonRuntimeVersionModule = readFileSync(
+  new URL('../python/composio/__version__.py', import.meta.url),
   'utf8'
 );
 const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
@@ -39,6 +54,22 @@ const verifyAssetsScript = readFileSync(
   'utf8'
 );
 
+function requireMatch(text, pattern, label) {
+  const match = text.match(pattern);
+  if (!match?.[1]) {
+    throw new Error(`Could not read ${label}`);
+  }
+  return match[1];
+}
+
+function readPyprojectVersion(text, label) {
+  return requireMatch(text, /^\s*version\s*=\s*"([^"]+)"\s*$/m, label);
+}
+
+function readChangelogVersions(text) {
+  return [...text.matchAll(/^## \[([^\]]+)\]/gm)].map(match => match[1]);
+}
+
 if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
   throw new Error('ts.release.yml must use the repository-controlled changeset:release script');
 }
@@ -58,6 +89,63 @@ if (
   throw new Error(
     'changesets must only major-bump peer dependents when the new dependency version leaves their declared peer range'
   );
+}
+
+// --- Python release metadata: package version, runtime version, and changelog must agree ---
+
+{
+  const pythonVersion = readPyprojectVersion(pythonPyproject, 'python/pyproject.toml version');
+  const runtimeVersion = requireMatch(
+    pythonRuntimeVersionModule,
+    /^\s*__version__\s*=\s*"([^"]+)"\s*$/m,
+    'python/composio/__version__.py version'
+  );
+
+  if (runtimeVersion !== pythonVersion) {
+    throw new Error(
+      `python/composio/__version__.py must match python/pyproject.toml (${runtimeVersion} !== ${pythonVersion})`
+    );
+  }
+
+  const changelogVersions = readChangelogVersions(pythonChangelog);
+  if (changelogVersions[0] !== pythonVersion) {
+    throw new Error(
+      `python/CHANGELOG.md must start with the current Python package version (${changelogVersions[0] ?? 'none'} !== ${pythonVersion})`
+    );
+  }
+
+  const providerDir = new URL('../python/providers/', import.meta.url);
+  for (const entry of readdirSync(providerDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
+    const pyprojectPath = new URL(
+      `../python/providers/${entry.name}/pyproject.toml`,
+      import.meta.url
+    );
+    const setupPath = new URL(`../python/providers/${entry.name}/setup.py`, import.meta.url);
+    if (!existsSync(pyprojectPath) || !existsSync(setupPath)) continue;
+
+    const providerPyprojectVersion = readPyprojectVersion(
+      readFileSync(pyprojectPath, 'utf8'),
+      `python/providers/${entry.name}/pyproject.toml version`
+    );
+    const providerSetupVersion = requireMatch(
+      readFileSync(setupPath, 'utf8'),
+      /version\s*=\s*"([^"]+)"/,
+      `python/providers/${entry.name}/setup.py version`
+    );
+
+    if (providerPyprojectVersion !== pythonVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/pyproject.toml must match python/pyproject.toml (${providerPyprojectVersion} !== ${pythonVersion})`
+      );
+    }
+    if (providerSetupVersion !== pythonVersion) {
+      throw new Error(
+        `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
+      );
+    }
+  }
 }
 
 if (!releaseScript.includes('pnpm changeset publish')) {
