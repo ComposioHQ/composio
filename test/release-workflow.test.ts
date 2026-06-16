@@ -122,6 +122,9 @@ if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release
 if (!resolveTargetScript.includes('map(tonumber)')) {
   throw new Error('resolve-release-target.sh must sort releases by numeric semver (map(tonumber)), not lexically');
 }
+if (!resolveTargetScript.includes('--exclude-drafts')) {
+  throw new Error('resolve-release-target.sh must exclude draft stable releases from beta base selection');
+}
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
 
@@ -221,11 +224,17 @@ set -euo pipefail
 if [[ "\${1:-}" == "release" && "\${2:-}" == "list" ]]; then
   shift 2
   jqexpr=""
+  exclude_drafts=false
   while [[ \$# -gt 0 ]]; do
+    if [[ "\$1" == "--exclude-drafts" ]]; then exclude_drafts=true; shift; continue; fi
     if [[ "\$1" == "--jq" ]]; then jqexpr="\$2"; shift 2; continue; fi
     shift
   done
-  jq -r "\$jqexpr" "\$GH_RELEASES_FIXTURE"
+  if [[ "\$exclude_drafts" != "true" ]]; then
+    echo "release list must pass --exclude-drafts" >&2
+    exit 1
+  fi
+  jq -r '[.[] | select(.isDraft != true)] | '"\$jqexpr" "\$GH_RELEASES_FIXTURE"
   exit 0
 fi
 if [[ "\${1:-}" == "release" && "\${2:-}" == "view" ]]; then
@@ -315,6 +324,8 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
       { tagName: '@composio/cli@0.2.2', isPrerelease: false },
       { tagName: '@composio/cli@0.2.10', isPrerelease: false },
       { tagName: '@composio/cli@0.2.9', isPrerelease: false },
+      // Draft stables must not become the base for rolling betas.
+      { tagName: '@composio/cli@0.2.11', isPrerelease: false, isDraft: true },
       { tagName: '@composio/cli@0.3.0-beta.1', isPrerelease: true },
     ],
   });

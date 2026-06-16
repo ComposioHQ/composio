@@ -20,6 +20,7 @@ set -euo pipefail
 latest_stable_tag() {
   gh release list \
     --repo "$REPOSITORY" \
+    --exclude-drafts \
     --json tagName,isPrerelease \
     --jq '[.[]
             | select(.tagName | startswith("@composio/cli@"))
