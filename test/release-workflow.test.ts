@@ -1,14 +1,18 @@
 #!/usr/bin/env node
-import { chmodSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+const changesetConfig = JSON.parse(
+  readFileSync(new URL('../.changeset/config.json', import.meta.url), 'utf8')
+);
 const tsReleaseWorkflow = readFileSync(
   new URL('../.github/workflows/ts.release.yml', import.meta.url),
   'utf8'
 );
+const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
 const releaseScript = readFileSync(releaseScriptUrl, 'utf8');
@@ -43,12 +47,27 @@ if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-re
   throw new Error('changeset:release must use the CLI-release filtering script');
 }
 
+if (changesetConfig.baseBranch !== 'next') {
+  throw new Error('changesets must compare against next, the active release branch');
+}
+
+if (
+  changesetConfig.___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH
+    ?.onlyUpdatePeerDependentsWhenOutOfRange !== true
+) {
+  throw new Error(
+    'changesets must only major-bump peer dependents when the new dependency version leaves their declared peer range'
+  );
+}
+
 if (!releaseScript.includes('pnpm changeset publish')) {
   throw new Error('release script must still publish non-CLI changeset packages');
 }
 
 if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
-  throw new Error('release script must filter @composio/cli tag output before changesets/action creates GitHub releases');
+  throw new Error(
+    'release script must filter @composio/cli tag output before changesets/action creates GitHub releases'
+  );
 }
 
 // --- build-cli-binaries.yml: the CLI binary workflow is the sole, hardened release writer ---
@@ -74,10 +93,14 @@ if (!buildCliWorkflow.includes("- '.github/scripts/cli-release/**'")) {
   throw new Error('build-cli-binaries.yml must trigger when CLI release helper scripts change');
 }
 if (helperCheckoutIdx === -1) {
-  throw new Error('build-cli-binaries.yml must checkout workflow release helpers before publishing');
+  throw new Error(
+    'build-cli-binaries.yml must checkout workflow release helpers before publishing'
+  );
 }
 if (!buildCliWorkflow.includes('ref: ${{ github.workflow_sha }}')) {
-  throw new Error('build-cli-binaries.yml must checkout release helpers from the workflow revision');
+  throw new Error(
+    'build-cli-binaries.yml must checkout release helpers from the workflow revision'
+  );
 }
 if (draftStepIdx === -1) {
   throw new Error('build-cli-binaries.yml must create the draft via create-or-resume-draft.sh');
@@ -86,10 +109,16 @@ if (verifyStepIdx === -1) {
   throw new Error('build-cli-binaries.yml must verify assets via verify-assets.sh');
 }
 if (publishIdx === -1) {
-  throw new Error('build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)');
+  throw new Error(
+    'build-cli-binaries.yml must publish by flipping the draft (gh release edit --draft=false)'
+  );
 }
-if (!(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)) {
-  throw new Error('build-cli-binaries.yml must order steps helper checkout → draft → verify → publish');
+if (
+  !(helperCheckoutIdx < draftStepIdx && draftStepIdx < verifyStepIdx && verifyStepIdx < publishIdx)
+) {
+  throw new Error(
+    'build-cli-binaries.yml must order steps helper checkout → draft → verify → publish'
+  );
 }
 
 // The draft script must actually create a draft, and the verify gate must require fully-uploaded
@@ -104,7 +133,9 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
 // Beta status must survive the draft→publish flip (regression: the old single create set
 // --prerelease at creation; the new flow must set it on the draft).
 if (!createDraftScript.includes('flags+=(--prerelease)')) {
-  throw new Error('create-or-resume-draft.sh must preserve --prerelease on the draft for beta releases');
+  throw new Error(
+    'create-or-resume-draft.sh must preserve --prerelease on the draft for beta releases'
+  );
 }
 
 // Skills must be packaged BEFORE checksums are generated, so composio-skill.zip is hashed into
@@ -115,12 +146,16 @@ if (packageSkillsIdx === -1 || generateChecksumsIdx === -1) {
   throw new Error('build-cli-binaries.yml must package skills and generate checksums');
 }
 if (!(packageSkillsIdx < generateChecksumsIdx)) {
-  throw new Error('build-cli-binaries.yml must package skills before generating checksums so the skill zip is checksummed');
+  throw new Error(
+    'build-cli-binaries.yml must package skills before generating checksums so the skill zip is checksummed'
+  );
 }
 
 // Per-tag concurrency prevents two runs clobbering the same release without serializing betas.
 if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.release_tag }}')) {
-  throw new Error('build-cli-binaries.yml release job must use per-tag concurrency keyed on the release tag');
+  throw new Error(
+    'build-cli-binaries.yml release job must use per-tag concurrency keyed on the release tag'
+  );
 }
 
 // Release-target resolution lives in a standalone, unit-tested script (see executable tests
@@ -132,10 +167,14 @@ if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release
 // The "latest stable" lookup must sort by numeric semver, not lexically: a lexical sort ranks
 // @composio/cli@0.2.9 above 0.2.10 and would regress beta versioning once a patch hits 2 digits.
 if (!resolveTargetScript.includes('map(tonumber)')) {
-  throw new Error('resolve-release-target.sh must sort releases by numeric semver (map(tonumber)), not lexically');
+  throw new Error(
+    'resolve-release-target.sh must sort releases by numeric semver (map(tonumber)), not lexically'
+  );
 }
 if (!resolveTargetScript.includes('--exclude-drafts')) {
-  throw new Error('resolve-release-target.sh must exclude draft stable releases from beta base selection');
+  throw new Error(
+    'resolve-release-target.sh must exclude draft stable releases from beta base selection'
+  );
 }
 
 // --- cli.install-health-check.yml: canary must exercise the failure-prone pinned path ---
@@ -148,28 +187,38 @@ if (!resolveTargetScript.includes('--exclude-drafts')) {
 // latest is bumped minutes before the binary workflow publishes the GitHub release, so pinning to
 // it would 404 during the healthy publish gap and false-page.
 if (installHealthCheck.includes('$(npm view')) {
-  throw new Error('cli.install-health-check.yml must not pin to npm (races ahead of the GitHub release)');
+  throw new Error(
+    'cli.install-health-check.yml must not pin to npm (races ahead of the GitHub release)'
+  );
 }
 if (!installHealthCheck.includes('gh release list')) {
-  throw new Error('cli.install-health-check.yml must resolve the newest published release (drafts excluded)');
+  throw new Error(
+    'cli.install-health-check.yml must resolve the newest published release (drafts excluded)'
+  );
 }
 if (!installHealthCheck.includes('--repo "${{ github.repository }}"')) {
   throw new Error('cli.install-health-check.yml must pass repository context to gh release list');
 }
 if (!installHealthCheck.includes('--limit 1000')) {
-  throw new Error('cli.install-health-check.yml must look beyond the gh release list default limit');
+  throw new Error(
+    'cli.install-health-check.yml must look beyond the gh release list default limit'
+  );
 }
 if (
   !installHealthCheck.includes('--exclude-drafts') ||
   !installHealthCheck.includes('--exclude-pre-releases')
 ) {
-  throw new Error('cli.install-health-check.yml must resolve the newest published release (drafts excluded)');
+  throw new Error(
+    'cli.install-health-check.yml must resolve the newest published release (drafts excluded)'
+  );
 }
 if (installHealthCheck.includes('.[0].tagName')) {
   throw new Error('cli.install-health-check.yml must not let jq null bypass the empty tag guard');
 }
 if (!installHealthCheck.includes("| sed -n '1p'")) {
-  throw new Error('cli.install-health-check.yml must convert no matching release into empty output');
+  throw new Error(
+    'cli.install-health-check.yml must convert no matching release into empty output'
+  );
 }
 if (!installHealthCheck.includes('bash -s -- "${{ steps.resolve.outputs.tag }}"')) {
   throw new Error('cli.install-health-check.yml must install the resolved tag via the pinned path');
@@ -207,7 +256,9 @@ esac
   });
 
   if (result.status !== 0) {
-    throw new Error(`release script failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    throw new Error(
+      `release script failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
   }
 
   if (!result.stdout.includes('New tag: @composio/core@1.2.3')) {
@@ -223,6 +274,128 @@ esac
   }
 } finally {
   rmSync(fakeBin, { recursive: true, force: true });
+}
+
+// A core minor release must not force every provider package to 1.0.0 while the
+// provider peer range still accepts the new core version. This protects the
+// @composio/core 0.10.0 → 0.11.0 release train from accidentally promoting
+// provider packages from 0.9.x to 1.0.0.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-peer-'));
+  try {
+    mkdirSync(join(fixtureDir, '.changeset'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/core'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'packages/openai'), { recursive: true });
+
+    writeFileSync(
+      join(fixtureDir, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'changeset-peer-fixture',
+          private: true,
+          packageManager: packageJson.packageManager,
+          workspaces: ['packages/*'],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/config.json'),
+      JSON.stringify(
+        {
+          changelog: false,
+          commit: false,
+          fixed: [],
+          linked: [],
+          access: 'restricted',
+          baseBranch: 'next',
+          updateInternalDependencies: 'patch',
+          ___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH: {
+            onlyUpdatePeerDependentsWhenOutOfRange: true,
+          },
+          ignore: [],
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, '.changeset/core-minor-provider-patch.md'),
+      [
+        '---',
+        '"@composio/core": minor',
+        '"@composio/openai": patch',
+        '---',
+        '',
+        'Release a core minor and a provider patch without forcing a provider major.',
+        '',
+      ].join('\n')
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/core/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/core',
+          version: '0.10.0',
+        },
+        null,
+        2
+      )
+    );
+    writeFileSync(
+      join(fixtureDir, 'packages/openai/package.json'),
+      JSON.stringify(
+        {
+          name: '@composio/openai',
+          version: '0.9.2',
+          peerDependencies: {
+            '@composio/core': '>=0.10.0 <1.0.0',
+          },
+          devDependencies: {
+            '@composio/core': 'workspace:*',
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    const result = spawnSync(changesetBinPath, ['version'], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: process.env,
+    });
+
+    if (result.status !== 0) {
+      throw new Error(
+        `changeset peer-dependent fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+      );
+    }
+
+    const coreFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/core/package.json'), 'utf8')
+    );
+    const providerFixturePackage = JSON.parse(
+      readFileSync(join(fixtureDir, 'packages/openai/package.json'), 'utf8')
+    );
+
+    if (coreFixturePackage.version !== '0.11.0') {
+      throw new Error(`fixture core version should be 0.11.0, got ${coreFixturePackage.version}`);
+    }
+    if (providerFixturePackage.version !== '0.9.3') {
+      throw new Error(
+        `fixture provider version should remain on the 0.9.x train as 0.9.3, got ${providerFixturePackage.version}`
+      );
+    }
+    if (providerFixturePackage.peerDependencies['@composio/core'] !== '>=0.10.0 <1.0.0') {
+      throw new Error(
+        `fixture provider peer range should still accept core 0.11.0 without widening, got ${providerFixturePackage.peerDependencies['@composio/core']}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
 }
 
 // --- resolve-release-target.sh: executable tests for the release-target branching ---
@@ -286,7 +459,10 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   const fakeBin = mkdtempSync(join(tmpdir(), 'composio-fakebin-'));
   const workdir = mkdtempSync(join(tmpdir(), 'composio-resolver-'));
   try {
-    for (const [name, body] of [['gh', FAKE_GH], ['curl', FAKE_CURL]]) {
+    for (const [name, body] of [
+      ['gh', FAKE_GH],
+      ['curl', FAKE_CURL],
+    ]) {
       const p = join(fakeBin, name);
       writeFileSync(p, body);
       chmodSync(p, 0o755);
@@ -414,7 +590,9 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
     throw new Error('promote-stable must emit prerelease=false and make_latest=true');
   }
   if (r.outputs.checkout_ref !== 'abc123') {
-    throw new Error(`promote-stable must check out the beta's target_commitish, got ${r.outputs.checkout_ref}`);
+    throw new Error(
+      `promote-stable must check out the beta's target_commitish, got ${r.outputs.checkout_ref}`
+    );
   }
 }
 
