@@ -1206,6 +1206,15 @@ class TestTriggerSubscriptionParsing:
         assert subscription._parse_payload("not-json") is None
         assert subscription._parse_payload(json.dumps({"unexpected": True})) is None
 
+    def test_parse_payload_legacy_non_dict_metadata_does_not_raise(self, subscription):
+        """A legacy frame with a non-dict metadata is skipped, not raised.
+
+        Guards the broadened `except Exception` in _parse_payload: such a frame
+        must return None rather than propagate into pysher's dispatch loop.
+        """
+        event = json.dumps({"appName": "gmail", "metadata": "not-a-dict"})
+        assert subscription._parse_payload(event) is None
+
     def test_parse_payload_non_trigger_v3_event(self, subscription):
         """A non-trigger composio.* event is normalized as a COMPOSIO event."""
         event = json.dumps(
