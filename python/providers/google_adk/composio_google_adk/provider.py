@@ -27,14 +27,22 @@ class GoogleAdkProvider(
     ) -> FunctionTool:
         """Wraps composio tool as Google Genai SDK compatible function calling object."""
 
-        input_parameters = tool.input_parameters or {
-            "type": "object",
-            "properties": {},
-            "required": [],
-        }
+        input_parameters = t.cast(
+            t.Dict[str, t.Any],
+            tool.input_parameters
+            or {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        )
+        properties = t.cast(
+            t.Dict[str, t.Dict[str, t.Any]],
+            input_parameters.get("properties", {}),
+        )
         docstring = tool.description or f"Execute {tool.slug}"
         docstring += "\nArgs:"
-        for _param, _schema in input_parameters.get("properties", {}).items():
+        for _param, _schema in properties.items():
             docstring += "\n    "
             docstring += _param + ": " + _schema.get("description", _param.title())
 
