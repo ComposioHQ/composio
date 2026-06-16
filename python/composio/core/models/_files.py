@@ -610,6 +610,56 @@ class FileHelper(WithLogger):
         self._file_upload_allowlist: t.Optional[t.Sequence[Path]] = (
             list(file_upload_allowlist) if file_upload_allowlist is not None else None
         )
+        # Root schema used to resolve JSON Schema "$ref" pointers during
+        # file-download/upload walking. Set at the start of
+        # substitute_file_downloads / substitute_file_uploads.
+        self._current_root_schema: t.Optional[t.Dict] = None
+
+    def _resolve_ref(
+        self, schema: t.Dict, root_schema: t.Optional[t.Dict] = None
+    ) -> t.Dict:
+        """Resolve a JSON Schema ``$ref`` pointer against *root_schema*.
+
+        Handles local refs of the form ``"#/$defs/Name"`` or
+        ``"#/definitions/Name"`` by walking the ``$defs`` / ``definitions``
+        mapping on *root_schema*. Any sibling keys present on the original
+        ``$ref`` node (e.g. ``description``) are merged into the resolved
+        schema, with the resolved definition taking precedence for
+        conflicting keys.
+
+        Returns *schema* unchanged when:
+        - *schema* has no ``$ref`` key
+        - the ref is not a local pointer (does not start with ``"#/"``)
+        - *root_schema* is ``None`` or the referenced path cannot be found
+        """
+        ref = schema.get("$ref")
+        if not isinstance(ref, str) or not ref.startswith("#/"):
+            return schema
+
+        root = root_schema if root_schema is not None else self._current_root_schema
+        if not isinstance(root, dict):
+            return schema
+
+        # Walk the path segments, skipping the leading empty string from
+        # splitting "#/$defs/Foo" -> ["", "$defs", "Foo"].
+        parts = [p for p in ref.split("/") if p]
+        resolved: t.Any = root
+        for part in parts:
+            if isinstance(resolved, dict) and part in resolved:
+                resolved = resolved[part]
+            else:
+                return schema  # unresolvable — return as-is
+
+        if not isinstance(resolved, dict):
+            return schema
+
+        # Merge sibling keys from the $ref node (excluding "$ref" itself)
+        # into the resolved definition. The resolved definition wins on
+        # conflicts so that the canonical shape always takes precedence.
+        siblings = {k: v for k, v in schema.items() if k != "$ref"}
+        if siblings:
+            return {**siblings, **resolved}
+        return resolved
 
     def _has_file_property(
         self, schema: t.Dict, property_name: str = "file_uploadable"
@@ -617,9 +667,13 @@ class FileHelper(WithLogger):
         """Check if a schema (or any of its variants) contains a file property.
 
         Recursively checks anyOf, oneOf, allOf, nested properties, and array items.
+        Resolves JSON Schema ``$ref`` pointers before checking.
         """
         if not isinstance(schema, dict):
             return False
+
+        # Resolve $ref indirection so file_* flags inside $defs are visible.
+        schema = self._resolve_ref(schema)
 
         # Direct property check
         if schema.get(property_name, False):
@@ -679,9 +733,13 @@ class FileHelper(WithLogger):
         """Recursively transform a schema, converting file_uploadable fields to path format.
 
         Handles anyOf, oneOf, allOf, nested properties, and array items.
+        Resolves JSON Schema ``$ref`` pointers before checking.
         """
         if not isinstance(schema, dict):
             return schema
+
+        # Resolve $ref indirection so file_uploadable inside $defs is visible.
+        schema = self._resolve_ref(schema)
 
         # Direct file_uploadable - transform it
         if schema.get("file_uploadable", False):
@@ -773,6 +831,7 @@ class FileHelper(WithLogger):
         if "properties" not in schema:
             return schema
 
+        self._current_root_schema = schema
         schema["properties"] = {
             key: self._transform_schema_for_file_upload(prop)
             for key, prop in schema["properties"].items()
@@ -902,6 +961,9 @@ class FileHelper(WithLogger):
         if not isinstance(schema, dict):
             return value
 
+        # Resolve $ref indirection so file_uploadable inside $defs is visible.
+        schema = self._resolve_ref(schema)
+
         if schema.get("file_uploadable", False):
             return self._upload_file_value(
                 value=value,
@@ -996,6 +1058,7 @@ class FileHelper(WithLogger):
         rather than mutated, so callers should not retain references to
         nested values across this call.
         """
+        self._current_root_schema = tool.input_parameters
         return self._substitute_file_uploads_recursively(
             tool=tool,
             schema=tool.input_parameters,
@@ -1035,6 +1098,9 @@ class FileHelper(WithLogger):
         """Return ``value`` with file-downloadable leaves saved locally."""
         if not isinstance(schema, dict):
             return value
+
+        # Resolve $ref indirection so file_downloadable inside $defs is visible.
+        schema = self._resolve_ref(schema)
 
         if schema.get("file_downloadable", False):
             return self._download_file_value(value=value, tool=tool)
@@ -1112,6 +1178,7 @@ class FileHelper(WithLogger):
         fresh dicts rather than mutated, so callers should not retain
         references to nested values across this call.
         """
+        self._current_root_schema = tool.output_parameters
         return t.cast(
             "ToolExecutionResponse",
             self._substitute_file_downloads_recursively(
