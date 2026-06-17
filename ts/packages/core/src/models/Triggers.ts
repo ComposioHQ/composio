@@ -231,12 +231,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     }
 
     // Forward user_id so 2FA-enabled projects can verify the pinned connected
-    // account is owned by this user (backends without 2FA ignore it). The
-    // `& { user_id }` bridges until @composio/client regenerates from the
-    // updated OpenAPI spec; drop it once the field lands on the generated type.
-    const upsertParams: ClientTriggerInstanceUpsertParams & {
-      user_id?: string;
-    } = {
+    // account is owned by this user (ignored by non-2FA backends).
+    const upsertParams: ClientTriggerInstanceUpsertParams = {
       connected_account_id: connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
       toolkit_versions: this.toolkitVersions,
