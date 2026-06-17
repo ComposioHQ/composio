@@ -7,12 +7,15 @@ that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
+import requests
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models._files import (
     FileDownloadable,
     FileHelper,
     FileUploadable,
+    _CONNECT_TIMEOUT,
+    _READ_TIMEOUT,
     _is_url,
     _get_extension_from_mimetype,
     _generate_timestamped_filename,
@@ -23,7 +26,11 @@ from composio.core.models._files import (
     _MAX_FILENAME_LENGTH,
 )
 from composio.core.models.base import allow_tracking
-from composio.exceptions import ErrorUploadingFile, ResponseTooLargeError
+from composio.exceptions import (
+    ErrorDownloadingFile,
+    ErrorUploadingFile,
+    ResponseTooLargeError,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -1518,7 +1525,12 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        mock_put.assert_called_once()
+        mock_put.assert_called_once_with(
+            url="https://s3.example.com/upload",
+            data=b"file content",
+            headers={"Content-Type": "image/jpeg"},
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
 
     @patch("composio.core.models._files.requests.put")
     def test_upload_bytes_to_s3_failure(self, mock_put):
@@ -1544,6 +1556,26 @@ class TestUploadBytesToS3:
             )
 
         assert "Failed to upload to S3" in str(exc_info.value)
+
+    @patch("composio.core.models._files.requests.put")
+    def test_upload_bytes_to_s3_request_error(self, mock_put):
+        """Test request errors are reported as file upload failures."""
+        mock_client = MagicMock()
+        mock_s3_response = MagicMock()
+        mock_s3_response.key = "s3-key-123"
+        mock_s3_response.new_presigned_url = "https://s3.example.com/upload"
+        mock_client.post.return_value = mock_s3_response
+        mock_put.side_effect = requests.exceptions.Timeout("timed out")
+
+        with pytest.raises(ErrorUploadingFile, match="Failed to upload to S3"):
+            _upload_bytes_to_s3(
+                client=mock_client,
+                filename="test.jpg",
+                content=b"file content",
+                mimetype="image/jpeg",
+                tool="TEST_TOOL",
+                toolkit="test_toolkit",
+            )
 
 
 class TestFileUploadableFromUrl:
@@ -2360,6 +2392,37 @@ class TestFileDownloadablePathTraversal:
         assert written == outdir / "report.pdf"
         assert written.read_bytes() == b"%PDF-1.4"
 
+    def test_download_uses_request_timeout(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"%PDF-1.4"),
+        ) as mock_get:
+            f.download(outdir)
+
+        assert mock_get.call_args.kwargs["timeout"] == (
+            _CONNECT_TIMEOUT,
+            _READ_TIMEOUT,
+        )
+
+    def test_download_request_error_raises_error_downloading_file(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file",
+        )
+        with patch("composio.core.models._files.requests.get") as mock_get:
+            mock_get.side_effect = requests.exceptions.Timeout("timed out")
+
+            with pytest.raises(ErrorDownloadingFile, match="Error downloading file"):
+                f.download(outdir)
+
     def test_basename_collapse_through_subdir_is_rejected(self, tmp_path):
         """`Path('foo/..').name == '..'` — the basename strip of a name that
         traverses *through* a subdir collapses to `..`, then the
@@ -2400,7 +2463,7 @@ class TestFileDownloadablePathTraversal:
             "composio.core.models._files.requests.get",
             return_value=self._mock_response(b"x"),
         ):
-            with pytest.raises(IsADirectoryError):
+            with pytest.raises(OSError):
                 f.download(outdir)
         # outdir got created (mkdir runs after the check, which passed),
         # but no file was written inside it.

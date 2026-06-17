@@ -145,7 +145,11 @@ def upload(url: str, file: Path) -> bool:
         True if upload succeeded (HTTP 200), False otherwise
     """
     with file.open("rb") as data:
-        response = requests.put(url=url, data=data)
+        response = requests.put(
+            url=url,
+            data=data,
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
         return response.status_code == 200
 
 
@@ -378,11 +382,15 @@ def _upload_bytes_to_s3(
     )
 
     # Upload the content directly to S3
-    upload_response = requests.put(
-        url=s3meta.new_presigned_url,
-        data=content,
-        headers={"Content-Type": mimetype},
-    )
+    try:
+        upload_response = requests.put(
+            url=s3meta.new_presigned_url,
+            data=content,
+            headers={"Content-Type": mimetype},
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(f"Failed to upload to S3: {e}") from e
 
     if upload_response.status_code != 200:
         raise ErrorUploadingFile(
@@ -567,13 +575,24 @@ class FileDownloadable(BaseModel):
                 "outside the intended output directory."
             )
         outdir.mkdir(exist_ok=True, parents=True)
-        response = requests.get(url=self.s3url, stream=True)
-        if response.status_code != 200:
-            raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
+        try:
+            response = requests.get(
+                url=self.s3url,
+                stream=True,
+                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+            )
+        except requests.exceptions.RequestException as e:
+            raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}") from e
 
-        with outfile.open("wb") as fd:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                fd.write(chunk)
+        try:
+            if response.status_code != 200:
+                raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
+
+            with outfile.open("wb") as fd:
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    fd.write(chunk)
+        finally:
+            response.close()
         return outfile
 
 
