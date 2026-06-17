@@ -1,0 +1,88 @@
+---
+title: Deprecation & versioning policy
+description: How Composio versions its API and retires features, and what to expect when something is deprecated
+keywords: [deprecation, versioning, sunset, breaking change, lifecycle, api version]
+---
+
+We treat our API as infrastructure you build on. When something has to change, you get
+predictable timelines, machine-readable signals, and a successor to move to. This page explains how
+we version the API and how we retire things.
+
+## Lifecycle states
+
+Every change that affects you moves through clearly dated states. We announce all the dates up front.
+
+| State | Meaning | Still works? | Gets fixes? |
+|---|---|---|---|
+| **Deprecated** | Don't adopt — a successor exists | Yes | Security fixes only |
+| **End-of-support** | Still available, but we've stopped investing in it | Yes | None |
+| **Removed (sunset)** | Turned off; the endpoint returns `HTTP 410 Gone` | No | None |
+
+"End-of-support" and "Removed" are two separate, pre-announced dates — never a surprise.
+
+## How long you have
+
+The standard window for a breaking change is **90 days**: 30 days of full support, then 60 more days
+where the feature stays available before it's removed.
+
+| Change | Support | End-of-support | Removed |
+|---|---|---|---|
+| Non-breaking change | — | — | Never (ships continuously) |
+| Beta / preview feature | 15 days | +15 days | ~Day 30 |
+| Breaking change (GA API, field, or toolkit) | 30 days | +60 days | Day 90 |
+| Product or major toolkit sunset | 30 days | +60 days | Day 90 |
+| Security or legal fix | Immediate | — | As fast as required |
+
+Enterprise and self-hosted customers can arrange a longer window in their contract.
+
+<Callout type="warn">
+**Security and legal changes override these timelines.** When keeping old behavior alive is itself
+the risk, we ship the secure version as the default and retire the insecure one on an accelerated
+schedule. We always frame and document the replacement so you know exactly what to move to.
+</Callout>
+
+## How we signal a deprecation
+
+A changelog post alone is not notice. When we deprecate something, on day one we mark it everywhere
+that's machine-readable, so you can detect it in code as well as read about it:
+
+- `deprecated: true` in the OpenAPI spec
+- `Deprecation` and `Sunset` response headers ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745.html) / [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594.html)) carrying the dates
+- A badge in the dashboard
+- Docs (this guide links each migration path), plus email to affected accounts
+
+```http
+Deprecation: true
+Sunset: Sat, 31 Oct 2026 23:59:59 GMT
+Link: <https://docs.composio.dev/docs/migration-guide>; rel="successor-version"
+```
+
+When a feature is removed, the endpoint returns `HTTP 410 Gone` with a link to its replacement.
+
+## Versioning
+
+- **One version for the whole API.** All APIs move to a new version together — you don't track a
+  patchwork of per-endpoint versions. The version lives in the path (`/v3/`).
+- **We version deliberately, and only when it earns it.** A single field is removed in place on its
+  sunset date (after we confirm it's unused). A batch of breaking changes gets a point bump, with the
+  old version supported during the overlap. A major bump is reserved for genuinely large migrations.
+- **SDKs ride their API version.** An SDK is a client for an API version, so it follows that version's
+  clock — it keeps working until that API version is removed. We don't unpublish SDKs from npm or
+  PyPI (that would break your builds); we mark them deprecated and warn at runtime when one is out of date.
+
+## Upgrade vs. retire
+
+The first question on any change is whether we're offering you a *better* option or *retiring* one:
+
+- **Upgrade** (a better or safer option exists) — you opt in on your own schedule via a version bump,
+  and we support the old behavior during the overlap.
+- **Retire** (no successor) — it gets a dated sunset: deprecated → end-of-support → removed.
+
+Either way, we ship the replacement and its migration guide **before** we deprecate the old path.
+
+## Related
+
+<Cards>
+  <Card title="Migration guides" href="/docs/migration-guide" description="Step-by-step guides for each deprecation" />
+  <Card title="Changelog" href="/reference/changelog" description="Everything we ship, including deprecations" />
+</Cards>
