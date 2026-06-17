@@ -39,6 +39,32 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
 
+      - name: Configure staging API endpoints
+        env:
+          COMPOSIO_BASE_URL_STAGING: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+        run: |
+          staging_v3_base="${COMPOSIO_BASE_URL_STAGING%/}"
+
+          if [ -z "$staging_v3_base" ]; then
+            echo "::error::COMPOSIO_BASE_URL_STAGING is not set"
+            exit 1
+          fi
+
+          if [[ "$staging_v3_base" != */api/v3 ]]; then
+            echo "::error::COMPOSIO_BASE_URL_STAGING must include the /api/v3 path"
+            exit 1
+          fi
+
+          staging_v31_base="${staging_v3_base%/api/v3}/api/v3.1"
+
+          {
+            echo "COMPOSIO_API_BASE=$staging_v3_base"
+            echo "OPENAPI_SPEC_URL=$staging_v3_base/openapi.json"
+            echo "OPENAPI_V31_SPEC_URL=$staging_v31_base/openapi.json"
+          } >> "$GITHUB_ENV"
+
+          echo "Configured staging API endpoints"
+
       - name: Install dependencies
         run: bun install
 
@@ -60,10 +86,10 @@ jobs:
           cd ..
           git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
           if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
             git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
           fi
@@ -81,7 +107,7 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from production
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from staging
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
             - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/reference/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
