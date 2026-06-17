@@ -5,6 +5,7 @@
     "---Getting Started---",
     "templates",
     "chat-app",
+    "aimlapi-tools",
     "app-connections-dashboard",
     "fast-api",
     "hono",
