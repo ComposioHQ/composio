@@ -55,16 +55,10 @@ jobs:
             exit 1
           fi
 
-          if [[ "$staging_base" == */api/v3 ]]; then
-            staging_v3_base="$staging_base"
-            staging_v31_base="${staging_base%/api/v3}/api/v3.1"
-          elif [[ "$staging_base" == */api/v3.1 ]]; then
-            staging_v3_base="${staging_base%/api/v3.1}/api/v3"
-            staging_v31_base="$staging_base"
-          else
-            staging_v3_base="$staging_base/api/v3"
-            staging_v31_base="$staging_base/api/v3.1"
-          fi
+          staging_origin="${staging_base%/api/v3.1}"
+          staging_origin="${staging_origin%/api/v3}"
+          staging_v3_base="$staging_origin/api/v3"
+          staging_v31_base="$staging_origin/api/v3.1"
 
           {
             echo "COMPOSIO_API_BASE=$staging_v3_base"
@@ -108,6 +102,7 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          token: ${{ secrets.CI_BOT_TOKEN }}
           commit-message: 'docs: update toolkits and API data'
           title: 'docs: update toolkits, API spec, and meta tools data'
           body: |
@@ -133,7 +128,7 @@ jobs:
         if: steps.create-pr.outputs.pull-request-number
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
           AUTHOR: ${{ github.actor }}
         run: |
