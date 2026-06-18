@@ -15,6 +15,7 @@
     "gmail-labeler",
     "slack-summariser",
     "supabase-sql-agent",
+    "sequenzy-lifecycle-email-agent",
     "---Developer Tools---",
     "pr-review-agent",
     "---Behind the Curtain---",

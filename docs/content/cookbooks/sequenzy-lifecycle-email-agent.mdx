@@ -1,0 +1,132 @@
+---
+title: Customer Lifecycle Email Agent with Sequenzy MCP
+description: Connect Composio tools with Sequenzy's MCP server to manage lifecycle, campaign, and transactional email workflows from an agent.
+---
+
+Sequenzy is an email platform for agentic lifecycle, campaign, and transactional email. It exposes a remote MCP server that agents can use to inspect contacts, manage campaigns, work with templates, and review conversations.
+
+This cookbook shows how to run Sequenzy's MCP server alongside Composio Connect in the same AI client. Use this pattern when your agent needs Composio's broad app access plus a dedicated email automation workspace.
+
+## What you will build
+
+An agent setup that can:
+
+- Use Composio Connect for general app actions such as Gmail, Slack, GitHub, Notion, and CRMs.
+- Use Sequenzy's MCP server for email lifecycle and campaign operations.
+- Keep Composio and Sequenzy credentials separate while exposing both toolsets to the same agent.
+
+## Prerequisites
+
+- A Composio account and API key from the [Composio dashboard](https://dashboard.composio.dev).
+- A Sequenzy account with access to the MCP endpoint.
+- An MCP-capable client such as Claude Code, Cursor, Codex, Claude Desktop, or OpenClaw.
+
+## MCP endpoints
+
+```text
+Composio Connect: https://connect.composio.dev/mcp
+Sequenzy MCP:     https://api.sequenzy.com/v1/mcp
+```
+
+Composio Connect uses your Composio API key in the `x-consumer-api-key` header. Sequenzy's MCP server uses Sequenzy authentication. Check your Sequenzy workspace settings or API documentation for the header required by your workspace.
+
+## Claude Code setup
+
+Add Composio Connect:
+
+```bash
+claude mcp add --scope user --transport http composio \
+  https://connect.composio.dev/mcp \
+  --header "x-consumer-api-key: YOUR_COMPOSIO_API_KEY"
+```
+
+Add Sequenzy:
+
+```bash
+claude mcp add --scope user --transport http sequenzy \
+  https://api.sequenzy.com/v1/mcp \
+  --header "Authorization: Bearer <sequenzy-token>"
+```
+
+Verify both servers:
+
+```bash
+claude mcp list
+```
+
+## Cursor setup
+
+Add both servers to `.cursor/mcp.json` in your project root, or to `~/.cursor/mcp.json` for a global setup.
+
+```json title=".cursor/mcp.json"
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "YOUR_COMPOSIO_API_KEY"
+      }
+    },
+    "sequenzy": {
+      "url": "https://api.sequenzy.com/v1/mcp",
+      "headers": {
+        "Authorization": "Bearer <sequenzy-token>"
+      }
+    }
+  }
+}
+```
+
+Restart Cursor after saving the file.
+
+## Codex setup
+
+Add both servers to `~/.codex/config.toml`.
+
+```toml title="~/.codex/config.toml"
+[mcp_servers.composio]
+url = "https://connect.composio.dev/mcp"
+http_headers = { "x-consumer-api-key" = "YOUR_COMPOSIO_API_KEY" }
+
+[mcp_servers.sequenzy]
+url = "https://api.sequenzy.com/v1/mcp"
+http_headers = { "Authorization" = "Bearer <sequenzy-token>" }
+```
+
+Verify the servers:
+
+```bash
+codex mcp list
+```
+
+## Example agent prompt
+
+Once both MCP servers are connected, ask your agent to coordinate across them:
+
+```text
+Use Composio to check recent HubSpot or Stripe customer activity.
+Then use Sequenzy to identify the right lifecycle email sequence,
+prepare the campaign draft, and show me the contacts and message preview
+before making any changes.
+```
+
+For production agents, keep the approval boundary explicit:
+
+```text
+Do not send or schedule emails without showing me the final recipient list,
+subject line, body, and campaign settings first.
+```
+
+## Troubleshooting
+
+- If Composio tools do not appear, confirm your `x-consumer-api-key` value in the Composio dashboard.
+- If Sequenzy tools do not appear, confirm that your Sequenzy account has MCP access and that the authorization header matches your workspace settings.
+- If your client only supports one MCP server, run Composio in one client profile and Sequenzy in another, or use a client that supports multiple named MCP servers.
+- Keep API keys out of committed project files. Use user-level MCP config or environment-variable interpolation when your client supports it.
+
+## Related docs
+
+- [Composio Connect](/docs/composio-connect)
+- [Single Toolkit MCP](/docs/single-toolkit-mcp)
+- [Tools and toolkits](/docs/tools-and-toolkits)
+- [Sequenzy](https://sequenzy.com)
