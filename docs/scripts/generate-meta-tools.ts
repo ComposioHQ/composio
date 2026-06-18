@@ -18,6 +18,7 @@
 
 import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
+import { fetchWithRetry } from './fetch-with-retry';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -33,7 +34,7 @@ const CONTENT_DIR = join(process.cwd(), 'content/reference/meta-tools');
 async function createSession(): Promise<string> {
   console.log('Creating session...');
 
-  const response = await fetch(`${API_BASE}/tool_router/session`, {
+  const response = await fetchWithRetry(`${API_BASE}/tool_router/session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ async function createSession(): Promise<string> {
 async function fetchMetaTools(sessionId: string): Promise<any[]> {
   console.log('Fetching meta tools with schemas...');
 
-  const response = await fetch(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
+  const response = await fetchWithRetry(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
     headers: {
       'x-api-key': API_KEY!,
     },

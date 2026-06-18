@@ -1,5 +1,19 @@
 # OpenAPI Scripts
 
+## fetch-with-retry.ts
+
+Shared `fetchWithRetry` helper used by the data-generation scripts
+(`generate-toolkits.ts`, `generate-meta-tools.ts`). It wraps the global `fetch`
+with rate-limit-aware retry/backoff: it retries `429` and transient 5xx
+responses, honors the `Retry-After` header when present, otherwise falls back to
+exponential backoff with jitter, and caps attempts so CI still fails fast when
+the backend is genuinely down.
+
+This matters because `generate-toolkits.ts` issues ~3000 requests per run
+(2 + 3 per toolkit), which exceeds the staging limit of 2000 requests/minute.
+Before this helper, runs failed with `429`, and `generate-meta-tools.ts` — which
+runs immediately after — inherited the exhausted rate-limit window.
+
 ## fetch-openapi.mjs
 
 Fetches the Composio OpenAPI spec and filters it for use in Fumadocs API reference documentation.
