@@ -1,5 +1,6 @@
 import * as ts from '@composio/ts-builders';
 import path from 'node:path';
+import { safeOutputPath } from 'src/generation/safe-output-path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptToolkitSources } from './generate-toolkit-sources';
 import { generateIndexSource } from './generate-index-source';
@@ -28,7 +29,8 @@ export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParam
       if (!params.emitSingleFile) {
         return [
           ...toolkitSources.map(
-            ([filename, content]) => [path.join(params.outputDir, filename), content] as const
+            ([filename, content]) =>
+              [safeOutputPath(params.outputDir, filename), content] as const
           ),
           [indexFilename, indexSource] as const,
         ] as const;
