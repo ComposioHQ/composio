@@ -13,6 +13,7 @@ import {
   McpServerGetResponse,
   McpUrlResponse,
   jsonSchemaToZodSchema,
+  normalizeToolArguments,
 } from '@composio/core';
 import { tool as createLlamaindexTool, JSONValue } from 'llamaindex';
 
@@ -39,7 +40,8 @@ export class LlamaindexProvider extends BaseAgenticProvider<
       description: tool.description ?? tool.name ?? '',
       parameters: inputParametersSchema,
       execute: async input => {
-        const result = await executeTool(tool.slug, input as Record<string, unknown>);
+        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        const result = await executeTool(tool.slug, normalizeToolArguments(input, tool.slug));
         return JSON.stringify(result);
       },
     });

@@ -20,7 +20,7 @@ catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@clack/core': '^1.0.1'
   '@clack/prompts': '^1.0.1'
-  '@cloudflare/vitest-pool-workers': ^0.9.2
+  '@cloudflare/vitest-pool-workers': 0.16.12
   '@cloudflare/workers-types': ^4.20250917.0
   '@composio/client': 0.1.0-alpha.72
   '@effect/cli': ^0.73.2
@@ -44,7 +44,8 @@ catalog:
   tsx: ^4.20.5
   typescript: ^5.9.2
   uuid: ^13.0.0
-  vitest: ^3.2.4
+  '@vitest/ui': ^4.1.0
+  vitest: ^4.1.0
   wrangler: ^4.78.0
   zod: ^4.1.0
   zod-to-json-schema: ^3.25.1

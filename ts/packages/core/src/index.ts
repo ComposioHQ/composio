@@ -15,6 +15,7 @@ export type {
   UnresolvedRefStrategy,
 } from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
+export { normalizeToolArguments } from './utils/toolArguments';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
 export { RemoteFile } from './models/RemoteFile';

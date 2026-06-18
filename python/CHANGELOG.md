@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
+## [0.15.0] - 2026-06-16
+
+### Fixed
+- Forwarded `user_id` from `triggers.create(..., user_id=...)` into the trigger upsert request via `extra_body`, so 2FA-enabled trigger projects can verify the pinned connected account belongs to the caller.
+
+### Changed
+- Bumped the Python SDK and provider packages from `0.14.0` to `0.15.0`.
+
+## [0.14.0] - 2026-06-05
+
+### Removed
+- Removed the legacy `composio.tools.custom_tool` registry path, including `core.models.custom_tools`, `ExecuteRequestFn`, the old fallback execution wiring, the old security tests, and the legacy custom-tools example.
+
+### Changed
+- Kept custom tools on the 2026 tool-router surface: `composio.experimental.tool()`, `composio.experimental.Toolkit`, inline execution, preload/attach/use flows, and `session.custom_tools()`.
+- Bumped the Python SDK and provider packages from `0.13.1` to `0.14.0`.
+
 ## [0.13.1] - 2026-05-13
 
 ### Added

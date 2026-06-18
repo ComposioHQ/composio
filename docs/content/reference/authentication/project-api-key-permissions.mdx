@@ -1,5 +1,5 @@
 ---
-title: Scoped project API keys
+title: Scoped Project API Key
 description: Choose which project resources a scoped API key can access.
 keywords: [project api keys, scoped api keys, permissions, access levels]
 ---
@@ -98,6 +98,8 @@ Execute predefined Composio tools.
 | Write | `POST` | `/api/v3/tools/execute/{tool_slug}` |
 | Write | `POST` | `/api/v3.1/tools/execute/{tool_slug}` |
 | Write | `POST` | `/api/v3/files/upload/request` |
+| Write | `POST` | `/api/v3/files/upload/response` |
+| Write | `GET` | `/api/v3/files/list` |
 
 ## Proxy execute
 
@@ -124,7 +126,7 @@ View and install toolkits.
 
 ## Triggers
 
-View trigger types and manage trigger instances.
+View trigger types, manage trigger instances, and subscribe to trigger events. The realtime routes are called by the SDK (`triggers.subscribe()`) and the CLI to receive trigger events.
 
 | Access | Method | Endpoint |
 |---|---|---|
@@ -132,6 +134,10 @@ View trigger types and manage trigger instances.
 | Read | `GET` | `/api/v3/triggers_types/{slug}` |
 | Read | `GET` | `/api/v3/triggers_types/list/enum` |
 | Read | `GET` | `/api/v3/trigger_instances/active` |
+| Read | `GET` | `/api/v3/cli/realtime/credentials` |
+| Read | `POST` | `/api/v3/cli/realtime/auth` |
+| Read | `GET` | `/api/v3/internal/sdk/realtime/credentials` |
+| Read | `POST` | `/api/v3/internal/sdk/realtime/auth` |
 | Write | `POST` | `/api/v3/trigger_instances/{slug}/upsert` |
 | Write | `PATCH` | `/api/v3/trigger_instances/manage/{triggerId}` |
 | Write | `DELETE` | `/api/v3/trigger_instances/manage/{triggerId}` |
@@ -170,10 +176,15 @@ View execution logs and project usage summaries.
 
 ## Sessions
 
-Create and operate sessions.
+Create and operate sessions and MCP servers. This permission area covers MCP server management, the MCP runtime transport, and the tool router MCP transport.
 
 | Access | Method | Endpoint |
 |---|---|---|
+| Read | `GET` | `/api/v3/mcp/servers` |
+| Read | `GET` | `/api/v3/mcp/{id}` |
+| Read | `GET` | `/api/v3/mcp/app/{app_key}` |
+| Read | `GET` | `/api/v3/mcp/servers/{server_id}/instances` |
+| Read | `GET` | `/tool_router/{session_id}/mcp` |
 | Read | `GET` | `/api/v3/tool_router/session/{session_id}` |
 | Read | `GET` | `/api/v3/tool_router/session/{session_id}/toolkits` |
 | Read | `GET` | `/api/v3/tool_router/session/{session_id}/tools` |
@@ -181,6 +192,17 @@ Create and operate sessions.
 | Read | `GET` | `/api/v3.1/tool_router/session/{session_id}` |
 | Read | `GET` | `/api/v3.1/tool_router/session/{session_id}/config_history` |
 | Read | `GET` | `/api/v3.1/tool_router/session/{session_id}/tools` |
+| Write | `POST` | `/api/v3/mcp/servers` |
+| Write | `POST` | `/api/v3/mcp/servers/generate` |
+| Write | `POST` | `/api/v3/mcp/servers/custom` |
+| Write | `PATCH` | `/api/v3/mcp/{id}` |
+| Write | `DELETE` | `/api/v3/mcp/{id}` |
+| Write | `POST` | `/api/v3/mcp/servers/{server_id}/instances` |
+| Write | `DELETE` | `/api/v3/mcp/servers/{server_id}/instances/{instance_id}` |
+| Write | `POST` | `/api/v3/mcp/{server_id}/{transport}` |
+| Write | `DELETE` | `/api/v3/mcp/{server_id}/{transport}` |
+| Write | `POST` | `/tool_router/{session_id}/mcp` |
+| Write | `DELETE` | `/tool_router/{session_id}/mcp` |
 | Write | `POST` | `/api/v3/tool_router/session` |
 | Write | `POST` | `/api/v3/tool_router/session/{session_id}/execute` |
 | Write | `POST` | `/api/v3/tool_router/session/{session_id}/execute_meta` |

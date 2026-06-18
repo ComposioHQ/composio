@@ -7,6 +7,7 @@ export const ToolErrorCodes = {
   TOOL_NOT_FOUND: 'TOOL_NOT_FOUND',
   INVALID_MODIFIER: 'INVALID_MODIFIER',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
+  INVALID_TOOL_ARGUMENTS: 'INVALID_TOOL_ARGUMENTS',
   INVALID_EXECUTE_FUNCTION: 'INVALID_EXECUTE_FUNCTION',
   GLOBAL_EXECUTE_TOOL_FN_NOT_SET: 'GLOBAL_EXECUTE_TOOL_FN_NOT_SET',
   TOOL_VERSION_REQUIRED: 'TOOL_VERSION_REQUIRED',
@@ -73,6 +74,23 @@ export class ComposioToolExecutionError extends ComposioError {
     });
 
     this.name = 'ComposioToolExecutionError';
+  }
+}
+
+export class ComposioInvalidToolArgumentsError extends ComposioError {
+  constructor(
+    message: string = 'Invalid tool arguments',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ToolErrorCodes.INVALID_TOOL_ARGUMENTS,
+      possibleFixes: options.possibleFixes || [
+        'Tool arguments must be a JSON object (or a string that parses to one)',
+        'If a model emitted the arguments as a string, ensure it is valid JSON',
+      ],
+    });
+    this.name = 'ComposioInvalidToolArgumentsError';
   }
 }
 
