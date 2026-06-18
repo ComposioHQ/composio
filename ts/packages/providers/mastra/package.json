@@ -1,6 +1,6 @@
 {
   "name": "@composio/mastra",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Agentic Provider for mastra in Composio SDK",
   "main": "src/index.ts",
   "publishConfig": {
