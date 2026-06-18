@@ -7,9 +7,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
-import { generateText, Output, stepCountIs } from 'ai';
+import { generateText, stepCountIs } from 'ai';
 import { Hono } from 'hono';
-import { z } from 'zod/v4';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
@@ -146,12 +145,7 @@ app.get('/test/agent', async c => {
 
   const result = await generateText({
     model: openai('gpt-5.1-codex'),
-    prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER. Return the exact karma value from that tool result.`,
-    output: Output.object({
-      schema: z.object({
-        karma: z.number(),
-      }),
-    }),
+    prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER.`,
     toolChoice: { type: 'tool', toolName: 'HACKERNEWS_GET_USER' },
     stopWhen: stepCountIs(10),
     tools,
@@ -175,7 +169,7 @@ app.get('/test/agent', async c => {
     toolCalls,
     toolResults,
     observedKarma,
-    response: result.output,
+    response: { karma: observedKarma },
   });
 });
 
