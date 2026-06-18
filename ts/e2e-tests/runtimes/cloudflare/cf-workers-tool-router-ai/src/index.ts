@@ -17,43 +17,6 @@ type Bindings = {
   OPENAI_API_KEY: string;
 };
 
-const findNumberProperty = (value: unknown, propertyName: string): number | undefined => {
-  if (typeof value === 'string') {
-    try {
-      return findNumberProperty(JSON.parse(value), propertyName);
-    } catch {
-      return undefined;
-    }
-  }
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const nestedValue = findNumberProperty(item, propertyName);
-      if (nestedValue !== undefined) {
-        return nestedValue;
-      }
-    }
-  }
-
-  if (typeof value !== 'object' || value === null) {
-    return undefined;
-  }
-
-  const record = value as Record<string, unknown>;
-  if (typeof record[propertyName] === 'number') {
-    return record[propertyName];
-  }
-
-  for (const nestedValue of Object.values(record)) {
-    const result = findNumberProperty(nestedValue, propertyName);
-    if (result !== undefined) {
-      return result;
-    }
-  }
-
-  return undefined;
-};
-
 const app = new Hono<{ Bindings: Bindings }>();
 
 /**
@@ -152,17 +115,7 @@ app.get('/test/agent', async c => {
         karma: z.number(),
       }),
     }),
-    prepareStep: ({ stepNumber }) =>
-      stepNumber === 0
-        ? {
-            activeTools: ['HACKERNEWS_GET_USER'],
-            toolChoice: { type: 'tool', toolName: 'HACKERNEWS_GET_USER' },
-          }
-        : {
-            activeTools: [],
-            toolChoice: 'none',
-          },
-    stopWhen: stepCountIs(2),
+    stopWhen: stepCountIs(10),
     tools,
   });
 
@@ -175,7 +128,6 @@ app.get('/test/agent', async c => {
       output: toolResult.output,
     }))
   );
-  const observedKarma = findNumberProperty(toolResults, 'karma');
 
   return c.json({
     message: 'Agent executed successfully',
@@ -183,7 +135,6 @@ app.get('/test/agent', async c => {
     toolCount: Object.keys(tools).length,
     toolCalls,
     toolResults,
-    observedKarma,
     response: result.output,
   });
 });
