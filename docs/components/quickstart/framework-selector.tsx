@@ -56,7 +56,7 @@ function FrameworkCard({ framework, selected, onSelect }: FrameworkCardProps) {
       onClick={onSelect}
       className={`
         flex flex-col items-start gap-4 rounded-xl border-2 p-5 text-left transition-all
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
         ${selected
           ? 'border-[var(--composio-orange)] bg-fd-card'
           : 'border-fd-border bg-fd-card hover:bg-fd-accent/50'

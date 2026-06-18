@@ -234,3 +234,23 @@ class TestRemoteFile:
         expected = tmp_path / ".composio" / "files" / "report.pdf"
         assert Path(out_path) == expected
         assert expected.read_bytes() == b"pdf content"
+
+    def test_save_default_location_rejects_dotdot_filename(self, tmp_path):
+        """SEC-316 defense-in-depth: a server-controlled ``mount_relative_path``
+        whose basename is ``..`` (e.g. ``"foo/.."``) must be rejected before
+        any bytes touch the disk, not silently fail with ``IsADirectoryError``."""
+        rf = RemoteFile(
+            expires_at="2026-01-01",
+            mount_relative_path="foo/..",
+            sandbox_mount_prefix="/mnt/files",
+            download_url="https://example.com/file",
+        )
+        assert rf.filename == ".."  # `Path("foo/..").name == ".."`
+
+        with patch.object(rf, "buffer", return_value=b"should not be written"):
+            with patch("pathlib.Path.home", return_value=tmp_path):
+                with pytest.raises(ValidationError, match="Path traversal detected"):
+                    rf.save()
+
+        # The check raises before mkdir/write, so nothing was written under tmp_path.
+        assert not (tmp_path / ".composio").exists()

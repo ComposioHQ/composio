@@ -25,7 +25,7 @@ An **Auth Config** is a blueprint that defines how authentication works for a to
 <Step>
 <StepTitle>Selecting a toolkit</StepTitle>
 
-Navigate to [Auth Configs](https://platform.composio.dev?next_page=%2Fauth-configs) tab in your dashboard and click "**Create Auth Config**". Find and select the toolkit you want to integrate (e.g., **Gmail**, **Slack**, **GitHub**).
+Navigate to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) tab in your dashboard and click "**Create Auth Config**". Find and select the toolkit you want to integrate (e.g., **Gmail**, **Slack**, **GitHub**).
 </Step>
 
 <Step>
@@ -94,7 +94,7 @@ With an auth config created, you're ready to authenticate your users!
 You can either use [**Connect Link**](#hosted-authentication-connect-link) for a hosted authentication flow, or use [**Direct SDK Setup**](#direct-sdk-setup).
 
 <Callout>
-User authentication requires a User ID - a unique identifier that groups connected accounts together. Learn more about [User Management](/docs/users-and-sessions) to understand how to structure User IDs for your application.
+User authentication requires a User ID - a unique identifier that groups connected accounts together. Learn more about [User scoping](/docs/how-composio-works) to understand how to structure User IDs for your application.
 </Callout>
 
 **Choose the section below that matches your toolkit's authentication method:**
@@ -182,6 +182,12 @@ https://your-app.com/callback?user_id=user_123&status=success&connected_account_
 **Choose the section below that matches your toolkit's authentication method:**
 
 #### OAuth Connections
+
+<Callout type="warn">
+**`initiate()` is being retired for Composio-managed OAuth.** If your auth config is Composio-managed (the default — you didn't bring your own OAuth client credentials), `initiate()` will start returning `400 BadRequest` on **2026-05-08** for new organizations and **2026-07-03** for all remaining organizations. Use [Hosted Authentication (Connect Link)](#hosted-authentication-connect-link) above with `composio.connectedAccounts.link()` (TS) / `composio.connected_accounts.link()` (Python) instead — same return shape, same `redirectUrl` / `redirect_url` field, and it works for every redirectable scheme.
+
+Custom auth configs (your own OAuth app) and non-OAuth schemes (API key, bearer token, basic) continue to work on `initiate()` unchanged. See the [migration guide](/docs/auth-configuration/migrating-initiate-to-link) and the [changelog entry](/docs/changelog/2026/04/24).
+</Callout>
 
 For OAuth flows, you'll redirect users to complete authorization. You can specify a callback URL to control where users return after authentication:
 

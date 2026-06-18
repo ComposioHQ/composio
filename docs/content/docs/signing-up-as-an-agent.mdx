@@ -1,0 +1,193 @@
+---
+title: Signing Up as an Agent
+description: Create and reuse a Composio account programmatically from an AI agent
+keywords: [agent signup, agents, cli, api key, anonymous signup]
+---
+
+Agents can sign up for Composio directly through [`agents.composio.dev`](https://agents.composio.dev) without a human creating an account first. The flow creates an agent identity, returns Composio credentials, and gives the agent a ready-to-run CLI install/login command.
+
+The base URL for all endpoints on this page is:
+
+```text
+https://agents.composio.dev
+```
+
+## Flow
+
+1. **Check for an existing identity.** Before signing up, look for `~/.composio/anonymous_user_data.json`. If it exists, read the saved `agent_key` and call `GET /api/whoami` with `Authorization: Bearer <agent_key>`. If it returns `200` with `status: "READY"`, reuse the saved credentials.
+2. **Sign up.** Call `POST /api/signup`. By default, the endpoint waits until the account is ready and returns a `201` response containing the `agent_key` plus Composio credentials (`member_id`, `org_id`, `project_id`, `api_key`, and `user_api_key`). Save the full response to `~/.composio/anonymous_user_data.json` immediately so future runs do not create a new identity.
+3. **Install and log in to the CLI.** Call `GET /api/cli` with the `agent_key`. It returns paste-ready install and login commands.
+4. **Optionally claim the org.** Call `POST /api/claim` with a human email only when you want to hand the organization over to a human admin.
+
+## Sign up
+
+`POST /api/signup` creates an agent email inbox, starts the Composio signup flow, and long-polls for up to 120 seconds. Most calls complete in about 5–10 seconds.
+
+```bash
+mkdir -p ~/.composio
+
+curl -sS -X POST 'https://agents.composio.dev/api/signup' \
+  -H 'content-type: application/json' \
+  -d '{}' \
+  -o ~/.composio/anonymous_user_data.json
+
+cat ~/.composio/anonymous_user_data.json
+```
+
+Successful response:
+
+```json
+{
+  "status": "ready",
+  "request_id": "req_xxx",
+  "slug": "amber-cedar-otter",
+  "email": "amber-cedar-otter@agent.composio.ai",
+  "agent_key": "composio_agent_key_xxx",
+  "composio": {
+    "member_id": "uuid",
+    "org_id": "org_xxx",
+    "project_id": "proj_xxx",
+    "api_key": "ak_xxx",
+    "user_api_key": "uak_xxx"
+  }
+}
+```
+
+If the 120-second wait expires, the endpoint returns `202` with `status: "pending"`. Poll `GET /api/whoami` until the status is `READY`.
+
+```json
+{
+  "status": "pending",
+  "request_id": "req_xxx",
+  "slug": "amber-cedar-otter",
+  "email": "amber-cedar-otter@agent.composio.ai",
+  "agent_key": "composio_agent_key_xxx",
+  "poll": "/api/whoami"
+}
+```
+
+To skip waiting and poll yourself, pass `?wait=0`:
+
+```bash
+curl -sS -X POST 'https://agents.composio.dev/api/signup?wait=0' \
+  -H 'content-type: application/json' \
+  -d '{}'
+```
+
+## Verify a saved identity
+
+Use `GET /api/whoami` to verify a saved `agent_key` and fetch the current Composio credentials. The `agent_key` authenticates only against the agent signup surface; it is not your Composio API key.
+
+```bash
+AGENT_KEY="$(jq -r '.agent_key' ~/.composio/anonymous_user_data.json)"
+
+curl -sS 'https://agents.composio.dev/api/whoami' \
+  -H "Authorization: Bearer ${AGENT_KEY}"
+```
+
+Response:
+
+```json
+{
+  "slug": "amber-cedar-otter",
+  "email": "amber-cedar-otter@agent.composio.ai",
+  "status": "READY",
+  "claimed_by": null,
+  "claimed_at": null,
+  "composio": {
+    "member_id": "uuid",
+    "org_id": "org_xxx",
+    "project_id": "proj_xxx",
+    "api_key": "ak_xxx",
+    "user_api_key": "uak_xxx"
+  }
+}
+```
+
+## Install the CLI
+
+`GET /api/cli` returns install and login commands with the agent's `user_api_key` and `org_id` already filled in.
+
+```bash
+AGENT_KEY="$(jq -r '.agent_key' ~/.composio/anonymous_user_data.json)"
+
+curl -sS 'https://agents.composio.dev/api/cli' \
+  -H "Authorization: Bearer ${AGENT_KEY}"
+```
+
+Example response:
+
+```text
+Install Composio CLI using this command:
+curl -fsSL https://composio.dev/install | bash
+
+Then log in using this command:
+composio login --user-api-key "uak_..." --org "ok_..."
+```
+
+Run the returned commands to install and authenticate the CLI.
+
+## Claim the organization
+
+Claiming is optional. Use it only when the agent wants to invite a human admin to take over the Composio organization. The endpoint issues a single-use admin invite that expires after 24 hours.
+
+```bash
+AGENT_KEY="$(jq -r '.agent_key' ~/.composio/anonymous_user_data.json)"
+
+curl -sS -X POST 'https://agents.composio.dev/api/claim' \
+  -H "Authorization: Bearer ${AGENT_KEY}" \
+  -H 'content-type: application/json' \
+  -d '{"email":"human@example.com"}'
+```
+
+Response:
+
+```json
+{
+  "status": "invited",
+  "email": "human@example.com",
+  "org_id": "org_xxx",
+  "invite_code": "inv_xxx"
+}
+```
+
+## Read the agent inbox
+
+Each agent gets an email address at `<slug>@agent.composio.ai`. Use `GET /api/mail` to list messages for the agent inbox.
+
+```bash
+AGENT_KEY="$(jq -r '.agent_key' ~/.composio/anonymous_user_data.json)"
+
+curl -sS 'https://agents.composio.dev/api/mail?limit=50' \
+  -H "Authorization: Bearer ${AGENT_KEY}"
+```
+
+Response:
+
+```json
+{
+  "count": 1,
+  "messages": [
+    {
+      "id": "msg_xxx",
+      "thread_id": "thr_xxx",
+      "from": "no-reply@composio.dev",
+      "to": "amber-cedar-otter@agent.composio.ai",
+      "subject": "Sign in to Composio",
+      "preview": "Click the link below to sign in...",
+      "received_at": "2026-04-13T22:00:00.000Z"
+    }
+  ]
+}
+```
+
+## Agent keys
+
+Agent keys are prefixed with `composio_agent_key_` and are only valid for these endpoints:
+
+- `GET /api/whoami`
+- `GET /api/mail`
+- `GET /api/cli`
+- `POST /api/claim`
+
+Use the real Composio API key from the `composio.api_key` field when calling Composio APIs and SDKs.

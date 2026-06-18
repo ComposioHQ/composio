@@ -570,6 +570,34 @@ describe('SessionContextImpl', () => {
     });
   });
 
+  it('should pass inline custom tools when delegating execute() to backend', async () => {
+    mockClient.toolRouter.session.execute.mockResolvedValue({
+      data: { result: 'ok' },
+      error: null,
+      log_id: 'log_1',
+    });
+
+    const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1', undefined, {
+      custom_tools: [
+        {
+          slug: 'GREP',
+          name: 'Grep',
+          description: 'Search local text',
+          input_schema: { type: 'object', properties: {} },
+        },
+      ],
+    });
+    await ctx.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' });
+
+    expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_1', {
+      tool_slug: 'GMAIL_SEND_EMAIL',
+      arguments: { to: 'test@test.com' },
+      experimental: {
+        custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+      },
+    });
+  });
+
   it('should preserve logId and error when execute() returns an error', async () => {
     mockClient.toolRouter.session.execute.mockResolvedValue({
       data: {},

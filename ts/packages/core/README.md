@@ -122,7 +122,7 @@ interface ComposioConfig {
   apiKey?: string | null; // Your Composio API key
   baseURL?: string | null; // Custom API base URL (optional)
   allowTracking?: boolean; // Enable/disable telemetry (default: true)
-  autoUploadDownloadFiles?: boolean; // Whether to automatically upload and download files during tool execution (default: true)
+  dangerouslyAllowAutoUploadDownloadFiles?: boolean; // Opt-in for automatic file upload/download during tool execution (default: false)
   provider?: TProvider; // Custom provider (default: OpenAIProvider)
   host?: string; // Name of the host service which is using the SDK, this is for telemetry
   defaultHeaders?: ComposioRequestHeaders; // Request headers to be passed to the Composio API client

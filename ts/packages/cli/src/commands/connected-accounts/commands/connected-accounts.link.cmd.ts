@@ -215,12 +215,14 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string) =>
 
 const getConsumerCacheScope = (resolvedProject: {
   readonly orgId: string;
+  readonly projectId: string;
   readonly projectType: 'CONSUMER' | 'DEVELOPER';
   readonly consumerUserId?: string;
 }) =>
   resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
     ? {
         orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
         consumerUserId: resolvedProject.consumerUserId,
       }
     : undefined;

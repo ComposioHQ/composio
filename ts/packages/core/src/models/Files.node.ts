@@ -11,7 +11,21 @@ import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../utils/file
 import { telemetry } from '../telemetry/Telemetry';
 
 export class Files {
-  constructor(private readonly client: ComposioClient) {
+  private readonly fileOptions: {
+    sensitiveFileUploadProtection?: boolean;
+    fileUploadPathDenySegments?: string[];
+    fileDownloadDir?: string;
+  };
+
+  constructor(
+    private readonly client: ComposioClient,
+    fileOptions: {
+      sensitiveFileUploadProtection?: boolean;
+      fileUploadPathDenySegments?: string[];
+      fileDownloadDir?: string;
+    } = {}
+  ) {
+    this.fileOptions = fileOptions;
     telemetry.instrument(this, 'Files');
   }
 
@@ -41,10 +55,15 @@ export class Files {
     toolSlug: string;
     toolkitSlug: string;
   }): Promise<FileUploadData> {
+    // Note: manual `composio.files.upload()` intentionally skips the
+    // `fileUploadDirs` allowlist. The allowlist only gates *automatic* upload
+    // during tool execution (see FileToolModifier).
     const fileData = await getFileDataAfterUploadingToS3(file, {
       toolSlug,
       toolkitSlug,
       client: this.client,
+      sensitiveFileUploadProtection: this.fileOptions.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: this.fileOptions.fileUploadPathDenySegments,
     });
     return fileData;
   }
@@ -63,7 +82,12 @@ export class Files {
     toolSlug: string;
     mimeType: string;
   }): Promise<FileDownloadData> {
-    const fileDownloadData = await downloadFileFromS3({ toolSlug, s3Url, mimeType });
+    const fileDownloadData = await downloadFileFromS3({
+      toolSlug,
+      s3Url,
+      mimeType,
+      fileDownloadDir: this.fileOptions.fileDownloadDir,
+    });
     return fileDownloadData;
   }
 }

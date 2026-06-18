@@ -11,6 +11,7 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { ApiPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { VersionBadge, extractVersionFromPath } from '@/components/version-badge';
 
 interface OpenAPIPageData {
@@ -37,17 +38,20 @@ export default async function Page({
       : null;
     return (
       <DocsPage full footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
-        <h1 className="text-2xl font-semibold mb-4">
-          {pageData.title}
-          {detectedVersion && (
-            <span className="ml-2 align-middle">
-              <VersionBadge version={detectedVersion} />
-            </span>
-          )}
-        </h1>
-        <PageActions path={page.url} />
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-semibold">
+            {pageData.title}
+            {detectedVersion && (
+              <span className="ml-2 align-middle">
+                <VersionBadge version={detectedVersion} />
+              </span>
+            )}
+          </h1>
+          <PageActions path={page.url} variant="inline" />
+        </div>
         <DocsBody>
           <APIPage {...apiProps} />
+          <EditOnGitHub path={`docs/content/reference/${page.path}`} />
         </DocsBody>
       </DocsPage>
     );
@@ -68,6 +72,7 @@ export default async function Page({
             a: createRelativeLink(referenceSource as any, page),
           })}
         />
+        <EditOnGitHub path={`docs/content/reference/${page.path}`} />
       </DocsBody>
     </DocsPage>
   );

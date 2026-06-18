@@ -142,13 +142,22 @@ class RemoteFile:
         If path is omitted, saves to ~/.composio/files/ using the filename.
         """
         content = self.buffer()
-        home = Path.home()
         save_path: Path
 
         if path is not None:
             save_path = Path(path)
         else:
-            save_path = home / COMPOSIO_DIR / TEMP_FILES_DIRECTORY_NAME / self.filename
+            # SEC-316 defense-in-depth: `self.filename` is `Path(mount_relative_path).name`,
+            # so directory components are already stripped — but verify the resolved
+            # default-location path stays inside the cache dir to reject residual `..`
+            # cases (e.g. ``mount_relative_path == ".."`` keeps ``filename == ".."``).
+            default_dir = Path.home() / COMPOSIO_DIR / TEMP_FILES_DIRECTORY_NAME
+            save_path = default_dir / self.filename
+            if not save_path.resolve().is_relative_to(default_dir.resolve()):
+                raise ValidationError(
+                    f"Path traversal detected: filename {self.filename!r} resolves "
+                    "outside the intended output directory."
+                )
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
         save_path.write_bytes(content)

@@ -1,0 +1,5 @@
+# Local tool binaries are generated during CLI binary builds/release jobs.
+# Keep notices/licenses in git, but never commit generated executables.
+/beeper-imessage/darwin-*/imessage-cli
+/peekaboo/darwin-*/peekaboo
+/composio-native-ui/darwin-*/composio-native-ui

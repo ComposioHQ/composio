@@ -173,6 +173,29 @@ describe('ClaudeAgentSDKProvider', () => {
       });
     });
 
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+      const handler = (tool as any).mock.calls[0][3];
+
+      const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
+      await handler(JSON.stringify(params));
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
+    it('should surface a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      provider.wrapTool(mockTool, mockExecuteToolFn);
+      const handler = (tool as any).mock.calls[0][3];
+
+      const result = await handler('{"to":');
+
+      expect(mockExecuteToolFn).not.toHaveBeenCalled();
+      expect(JSON.parse(result.content[0].text)).toMatchObject({
+        successful: false,
+        error: expect.stringContaining('not valid JSON'),
+      });
+    });
+
     it('should handle string results from tool execution', async () => {
       mockExecuteToolFn.mockResolvedValueOnce('Simple string result');
       provider.wrapTool(mockTool, mockExecuteToolFn);

@@ -2,8 +2,13 @@
  * @fileoverview Standalone functions for custom tool lookup and execution.
  * Extracted from ToolRouterSession for reuse in SessionContextImpl (sibling routing).
  */
-import type { CustomToolsMap, CustomToolsMapEntry, SessionContext } from '../types/customTool.types';
+import type {
+  CustomToolsMap,
+  CustomToolsMapEntry,
+  SessionContext,
+} from '../types/customTool.types';
 import type { ToolExecuteResponse } from '../types/tool.types';
+import { ValidationError } from '../errors';
 
 /**
  * Find a custom tool entry by slug.
@@ -15,7 +20,36 @@ export function findCustomTool(
 ): CustomToolsMapEntry | undefined {
   if (!map) return undefined;
   const upper = slug.toUpperCase();
-  return map.byFinalSlug.get(upper) ?? map.byOriginalSlug.get(upper);
+  const finalSlugMatch = map.byFinalSlug.get(upper);
+  if (finalSlugMatch) return finalSlugMatch;
+  if (map.ambiguousOriginalSlugs?.has(upper)) return undefined;
+  return map.byOriginalSlug.get(upper);
+}
+
+/**
+ * Reject ambiguous bare original slugs before falling through to backend execution.
+ * Agents receive final slugs (LOCAL_<TOOLKIT>_<TOOL>) from schemas, while bare original
+ * slugs are only a convenience for manual session.execute() calls when unique.
+ */
+export function assertUnambiguousCustomToolSlug(
+  map: CustomToolsMap | undefined,
+  slug: string
+): void {
+  if (!map) return;
+  const upper = slug.toUpperCase();
+  if (!map.ambiguousOriginalSlugs?.has(upper)) return;
+
+  const finalSlugs = [...map.byFinalSlug.values()]
+    .filter(entry => entry.handle.slug.toUpperCase() === upper)
+    .map(entry => entry.finalSlug)
+    .sort();
+  const hint = finalSlugs.length ? ` Use one of: ${finalSlugs.join(', ')}.` : '';
+
+  throw new ValidationError(
+    `Ambiguous custom tool slug "${slug}". Multiple custom toolkit tools share this original slug; ` +
+      `manual session.execute() by original slug is only supported when the original slug is unique.` +
+      hint
+  );
 }
 
 /**

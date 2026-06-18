@@ -5,12 +5,7 @@
  * supports deterministic `--query` filtering, and respects `--limit`.
  */
 
-import {
-  e2e,
-  sanitizeOutput,
-  parseJsonStdout,
-  type E2ETestResult,
-} from '@e2e-tests/utils';
+import { e2e, sanitizeOutput, parseJsonStdout, type E2ETestResult } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import {
@@ -39,7 +34,9 @@ e2e(import.meta.url, {
 
       exactResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmail --limit 1`);
       prefixResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmai --limit 1`);
-      noFuzzyResult = await runCmd(`${envPrefix} composio dev toolkits list --query gmal --limit 1`);
+      noFuzzyResult = await runCmd(
+        `${envPrefix} composio dev toolkits list --query gmal --limit 1`
+      );
     }, TIMEOUTS.FIXTURE);
 
     afterAll(async () => {
@@ -117,9 +114,9 @@ e2e(import.meta.url, {
 
     describe('mock API usage', () => {
       it('requests the toolkit catalog for each search term', () => {
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmai&limit=1');
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmal&limit=1');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits?search=gmai&limit=1');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits?search=gmal&limit=1');
       });
     });
   },

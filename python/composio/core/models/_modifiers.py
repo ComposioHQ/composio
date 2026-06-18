@@ -65,10 +65,104 @@ class SchemaModifier(t.Protocol):
     ) -> "Tool": ...
 
 
+class BeforeFileUploadCallable(t.Protocol):
+    """Legacy positional form of the ``before_file_upload`` hook.
+
+    ``(path, tool, toolkit) -> str | bool``. Still supported for back-compat,
+    but new code should use :class:`BeforeFileUploadContextCallable` so it can
+    discriminate local paths from URLs via ``context["source"]``.
+    """
+
+    def __call__(
+        self,
+        path: str,
+        tool: str,
+        toolkit: str,
+    ) -> t.Union[str, bool]: ...
+
+
+class BeforeFileUploadContext(te.TypedDict):
+    """Context passed to the new-form ``before_file_upload`` hook.
+
+    - ``path``: the local filesystem path for ``source="path"``, or the URL
+      string for ``source="url"``.
+    - ``source``: discriminator — ``"path"`` for local paths, ``"url"`` for
+      ``http(s)://...`` inputs. Mirrors the TypeScript SDK's ``source`` field
+      (TS additionally emits ``"file"`` for ``File`` objects; Python has no
+      equivalent runtime type).
+    - ``tool`` / ``toolkit``: slugs of the tool being executed.
+    """
+
+    path: str
+    source: te.Literal["path", "url"]
+    tool: str
+    toolkit: str
+
+
+class BeforeFileUploadContextCallable(t.Protocol):
+    """Preferred form of the ``before_file_upload`` hook.
+
+    Takes a single :class:`BeforeFileUploadContext` argument and returns either
+    a new path/URL string, or ``False`` to abort the upload.
+    """
+
+    def __call__(
+        self,
+        context: BeforeFileUploadContext,
+    ) -> t.Union[str, bool]: ...
+
+
+BeforeFileUploadLike = t.Union[
+    BeforeFileUploadCallable,
+    BeforeFileUploadContextCallable,
+]
+"""Either form of ``before_file_upload``. Adapted internally."""
+
+
+def _count_positional_params(fn: t.Callable) -> int:
+    """Return the number of positional (or positional-or-keyword) params, or
+    -1 if the signature can't be introspected (e.g. builtins)."""
+    import inspect
+
+    try:
+        sig = inspect.signature(fn)
+    except (TypeError, ValueError):
+        return -1
+    return sum(
+        1
+        for p in sig.parameters.values()
+        if p.kind
+        in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        )
+    )
+
+
+def _adapt_before_file_upload(
+    hook: BeforeFileUploadLike,
+) -> BeforeFileUploadContextCallable:
+    """Normalise a user-supplied hook to the context-object form.
+
+    A hook declared with exactly 3 positional parameters is treated as the
+    legacy ``(path, tool, toolkit)`` form; anything else (typically a single
+    positional ``context`` parameter) is treated as the new form.
+    """
+    if _count_positional_params(hook) == 3:
+        legacy = t.cast(BeforeFileUploadCallable, hook)
+
+        def wrap(context: BeforeFileUploadContext) -> t.Union[str, bool]:
+            return legacy(context["path"], context["tool"], context["toolkit"])
+
+        return wrap
+    return t.cast(BeforeFileUploadContextCallable, hook)
+
+
 ModifierSlug: t.TypeAlias = str
 AfterExecuteModifierL: t.TypeAlias = t.Literal["after_execute"]
 BeforeExecuteModifierL: t.TypeAlias = t.Literal["before_execute"]
 SchemaModifierL: t.TypeAlias = t.Literal["schema"]
+BeforeFileUploadModifierL: t.TypeAlias = t.Literal["before_file_upload"]
 
 
 class Modifier:
@@ -80,6 +174,8 @@ class Modifier:
             | SchemaModifier
             | BeforeExecuteMeta
             | AfterExecuteMeta
+            | BeforeFileUploadCallable
+            | BeforeFileUploadContextCallable
         ],
         type_: (
             AfterExecuteModifierL
@@ -87,6 +183,7 @@ class Modifier:
             | SchemaModifierL
             | AfterExecuteMetaModifierL
             | BeforeExecuteMetaModifierL
+            | BeforeFileUploadModifierL
         ),
         tools: t.List[str],
         toolkits: t.List[str],
@@ -199,6 +296,64 @@ def before_execute(
             t.Callable[[BeforeExecute], Modifier],
             functools.partial(
                 before_execute,
+                tools=tools or [],
+                toolkits=toolkits or [],
+            ),
+        )
+
+    raise ValueError("Either tools or toolkits must be provided")
+
+
+@t.overload
+def before_file_upload(modifier: t.Optional[BeforeFileUploadLike]) -> Modifier: ...
+
+
+@t.overload
+def before_file_upload(
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> t.Callable[[BeforeFileUploadLike], Modifier]: ...
+
+
+def before_file_upload(
+    modifier: t.Optional[BeforeFileUploadLike] = None,
+    *,
+    tools: t.Optional[t.List[str]] = None,
+    toolkits: t.Optional[t.List[str]] = None,
+) -> Modifier | t.Callable[[BeforeFileUploadLike], Modifier]:
+    """
+    Build a ``Modifier`` for the file-upload hook (same scoping pattern as
+    :func:`before_execute`).
+
+    Your callable may take **either**:
+
+    - a single ``context`` argument (:class:`BeforeFileUploadContext`) — the
+      preferred form, exposes ``context["source"]`` (``"path"`` or ``"url"``),
+      or
+    - three positional arguments ``(path, tool, toolkit)`` — legacy form, kept
+      for back-compat.
+
+    Return a new path/URL string to substitute, or ``False`` to abort the
+    upload (raises :class:`~composio.exceptions.FileUploadAbortedError`).
+
+    Pass the returned ``Modifier`` in ``modifiers=[...]`` on
+    :meth:`composio.core.models.tools.Tools.execute` or ``tools.get``. Multiple
+    such modifiers are composed in list order.
+    """
+    if modifier is not None:
+        return Modifier(
+            modifier=modifier,
+            type_="before_file_upload",
+            tools=tools or [],
+            toolkits=toolkits or [],
+        )
+
+    if tools is not None or toolkits is not None:
+        return t.cast(
+            t.Callable[[BeforeFileUploadLike], Modifier],
+            functools.partial(
+                before_file_upload,
                 tools=tools or [],
                 toolkits=toolkits or [],
             ),
@@ -325,6 +480,61 @@ def after_execute_meta(
 
 
 Modifiers = t.List[Modifier]
+
+
+def merge_before_file_upload(
+    modifiers: t.Optional[Modifiers],
+    tool: str,
+    toolkit: str,
+) -> t.Optional[BeforeFileUploadContextCallable]:
+    """Compose ``before_file_upload``-type :class:`Modifier`\\ s for this *tool* / *toolkit*.
+
+    Scoping matches :class:`Modifier` (empty ``tools`` and ``toolkits`` = all tools).
+
+    Each user-supplied hook is adapted to the context form by
+    :func:`_adapt_before_file_upload`, so legacy 3-arg callables keep working
+    while new-form callables receive the full :class:`BeforeFileUploadContext`
+    (including ``source``).
+    """
+    to_chain = [
+        m
+        for m in (modifiers or [])
+        if m.type == "before_file_upload" and m.modifier is not None
+    ]
+    if not to_chain:
+        return None
+
+    def _applies(m: Modifier) -> bool:
+        if len(m.tools) == 0 and len(m.toolkits) == 0:
+            return True
+        return tool in m.tools or toolkit in m.toolkits
+
+    adapted_chain = [
+        (m, _adapt_before_file_upload(t.cast(BeforeFileUploadLike, m.modifier)))
+        for m in to_chain
+    ]
+
+    def combined(context: BeforeFileUploadContext) -> t.Union[str, bool]:
+        p: str = context["path"]
+        for m, hook in adapted_chain:
+            if not _applies(m):
+                continue
+            # Preserve source/tool/toolkit while forwarding the (possibly
+            # rewritten) path to the next hook.
+            next_ctx: BeforeFileUploadContext = {
+                "path": p,
+                "source": context["source"],
+                "tool": context["tool"],
+                "toolkit": context["toolkit"],
+            }
+            out = hook(next_ctx)
+            if out is False:
+                return False
+            if isinstance(out, str):
+                p = out
+        return p
+
+    return combined
 
 
 @t.overload

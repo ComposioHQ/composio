@@ -7,6 +7,8 @@
   "scripts": {
     "start": "bun src/index.ts",
     "dev": "bun --watch src/index.ts",
+    "preload": "bun src/preload.ts",
+    "direct-tools": "bun src/direct-tools-preset.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

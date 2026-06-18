@@ -36,6 +36,7 @@ GITHUB_BASE = "https://github.com/composiohq/composio/blob/next/python"
 DECORATORS_TO_DOCUMENT = [
     ("before_execute", "composio.core.models._modifiers"),
     ("after_execute", "composio.core.models._modifiers"),
+    ("before_file_upload", "composio.core.models._modifiers"),
     ("schema_modifier", "composio.core.models._modifiers"),
 ]
 
@@ -78,9 +79,7 @@ def to_kebab_case(name: str) -> str:
 
 def escape_yaml_string(s: str) -> str:
     """Escape a string for YAML frontmatter."""
-    if any(c in s for c in [":", '"', "'", "\n", "#", "{", "}"]):
-        return f'"{s.replace(chr(34), chr(92) + chr(34))}"'
-    return s
+    return json.dumps(s)
 
 
 def get_source_link(obj: griffe.Object) -> str | None:
@@ -265,7 +264,7 @@ def generate_class_mdx(
         desc = desc[:147] + "..."
 
     lines.append("---")
-    lines.append(f"title: {info['name']}")
+    lines.append(f"title: {escape_yaml_string(info['name'])}")
     lines.append(f"description: {escape_yaml_string(desc)}")
     lines.append("---")
     lines.append("")
@@ -431,8 +430,8 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
         dec_section = "\n".join(dec_lines)
 
     return f"""---
-title: Python SDK Reference
-description: API reference for the Composio Python SDK
+title: {escape_yaml_string("Python SDK Reference")}
+description: {escape_yaml_string("API reference for the Composio Python SDK")}
 ---
 
 # Python SDK Reference

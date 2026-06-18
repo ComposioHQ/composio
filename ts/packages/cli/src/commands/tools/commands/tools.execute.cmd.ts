@@ -1,5 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import type { Composio } from '@composio/client';
+import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
@@ -298,6 +299,32 @@ type StoredExecuteOutputSummary = {
 const serializeExecuteOutput = (result: unknown): string =>
   JSON.stringify(result, ciRedactReplacer, 2);
 
+const permissionApprovalLabel = (approval?: string): string | undefined => {
+  switch (approval) {
+    case 'always_approved':
+      return 'always approved';
+    case 'cached_approved':
+      return 'cached approved';
+    case 'approved_once':
+      return 'approved once';
+    case 'approved_for_session':
+      return 'approved for session';
+    default:
+      return undefined;
+  }
+};
+
+const executionSuccessSuffix = (result: {
+  readonly logId?: string;
+  readonly permissionApproval?: string;
+}) => {
+  const metadata = [
+    permissionApprovalLabel(result.permissionApproval),
+    result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
+  ].filter((value): value is string => Boolean(value));
+  return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
+};
+
 const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
   Effect.gen(function* () {
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -556,6 +583,8 @@ const emitExecuteFailureTelemetry = (params: {
     }
   });
 
+const writeExecuteStdout = (ui: TerminalUI, data: string) => ui.output(data, { force: true });
+
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
@@ -594,7 +623,8 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 
     yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
     yield* ui.log.step(`Run:\n> composio execute "${tool.slug}" -d '{"key":"value"}'`);
-    yield* ui.output(
+    yield* writeExecuteStdout(
+      ui,
       JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
     );
   });
@@ -905,7 +935,8 @@ const emitCachedSchema = (
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
-    yield* ui.output(
+    yield* writeExecuteStdout(
+      ui,
       JSON.stringify(
         {
           slug,
@@ -972,19 +1003,55 @@ const resolveExplicitConnectedAccount = (params: {
 
 const resolveExecuteContext = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    const executor = yield* ToolsExecutor;
+    const input = (yield* resolveInput(params.data)) ?? '{}';
+    const parsedArgs = yield* parseArguments(input);
+    const cliConfig = yield* ComposioCliUserConfig;
+
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
+
+    if (isLocalToolSlug(params.slug)) {
+      if (Option.isSome(params.file)) {
+        return yield* Effect.fail(new Error('--file is not supported for local tools yet.'));
+      }
+      return {
+        ui,
+        executor,
+        resolvedProject: {
+          orgId: 'local',
+          projectId: 'local',
+          projectType: 'DEVELOPER',
+        },
+        args: parsedArgs,
+        resolvedUserId: 'local',
+        selectedConnectedAccountId: undefined,
+        executeOutputDir: process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() || undefined,
+        executeParams: {
+          userId: 'local',
+          arguments: parsedArgs,
+        },
+      } satisfies ResolvedExecuteContext;
+    }
+
     const resolvedProject = yield* resolveCommandProject({
       mode: params.projectMode,
       projectName:
         params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
-    const ui = yield* TerminalUI;
-    const executor = yield* ToolsExecutor;
     const clientSingleton = yield* ComposioClientSingleton;
     const userContext = yield* ComposioUserContext;
     const projectContext = yield* ProjectContext;
 
-    const input = (yield* resolveInput(params.data)) ?? '{}';
-    const parsedArgs = yield* parseArguments(input);
     const localProjectContext = yield* projectContext.resolve.pipe(
       Effect.catchAll(() => Effect.succeed(Option.none()))
     );
@@ -1011,13 +1078,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const cliConfig = yield* ComposioCliUserConfig;
     const accountSelector = cliConfig.isExperimentalFeatureEnabled(
       CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
     )
       ? params.account
       : Option.none<string>();
-    const toolkitSlug = toolkitFromToolSlug(params.slug);
+    const toolkitSlug = isLocalToolSlug(params.slug) ? undefined : toolkitFromToolSlug(params.slug);
     const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
       client,
       toolkitSlug,
@@ -1071,6 +1137,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
             ? {
                 orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
                 consumerUserId: resolvedProject.consumerUserId,
               }
             : undefined,
@@ -1111,6 +1178,7 @@ const runConnectedToolkitFailFast = (params: {
       return;
     }
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
+    if (isLocalToolSlug(params.slug)) return;
 
     perfDebugLog('execute.connected_toolkits.refresh_start', {
       slug: params.slug,
@@ -1175,7 +1243,8 @@ const runConnectedToolkitFailFast = (params: {
       const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
       yield* params.ui.log.error(message);
       yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
-      yield* params.ui.output(
+      yield* writeExecuteStdout(
+        params.ui,
         JSON.stringify(
           {
             successful: false,
@@ -1207,7 +1276,8 @@ const runExecuteWithSpinner = (params: {
   readonly skipChecks: boolean;
 }) =>
   Effect.gen(function* () {
-    const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
+    const verificationDisabled =
+      params.skipChecks || params.skipToolParamsCheck || isLocalToolSlug(params.slug);
     const cachedDefinition = verificationDisabled
       ? null
       : yield* getCachedToolInputDefinition(params.slug);
@@ -1287,7 +1357,7 @@ const runExecuteWithSpinner = (params: {
               ? 'No tool was executed. Local validation was skipped.'
               : 'No tool was executed. Arguments were validated locally only.'
           );
-          yield* params.ui.output(JSON.stringify(summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
             orgId:
               params.resolvedProject.projectType === 'CONSUMER'
@@ -1333,7 +1403,8 @@ const runExecuteWithSpinner = (params: {
             projectMode: params.projectMode,
             stage: 'execution',
           });
-          yield* params.ui.output(
+          yield* writeExecuteStdout(
+            params.ui,
             JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
           );
           yield* appendCliSessionHistory({
@@ -1383,14 +1454,11 @@ const runExecuteWithSpinner = (params: {
             stage: 'execution',
             logId: result.logId,
           });
-          yield* params.ui.output(JSON.stringify(result, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
         }
 
-        const logId = result.logId
-          ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-          : '';
-        yield* spinner.stop(`Execution successful${logId}`);
+        yield* spinner.stop(`Execution successful${executionSuccessSuffix(result)}`);
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
@@ -1402,7 +1470,7 @@ const runExecuteWithSpinner = (params: {
           yield* params.ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
           );
-          yield* params.ui.output(JSON.stringify(output.summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
             orgId:
               params.resolvedProject.projectType === 'CONSUMER'
@@ -1426,8 +1494,7 @@ const runExecuteWithSpinner = (params: {
           return;
         }
 
-        yield* params.ui.log.message(`Response\n${output.json}`);
-        yield* params.ui.output(output.json);
+        yield* writeExecuteStdout(params.ui, output.json);
         yield* appendCliSessionHistory({
           orgId:
             params.resolvedProject.projectType === 'CONSUMER'
@@ -1452,7 +1519,19 @@ const runExecuteWithSpinner = (params: {
 
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
-    if (!(yield* requireAuth)) return;
+    if (!isLocalToolSlug(params.slug) && !(yield* requireAuth)) return;
+
+    const cliConfig = yield* ComposioCliUserConfig;
+    if (
+      isLocalToolSlug(params.slug) &&
+      !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${params.slug}.`
+        )
+      );
+    }
 
     if (params.getSchema) {
       const context = yield* resolveSchemaContext(params);
@@ -1697,6 +1776,7 @@ const checkConnectedToolkitOrFail = (params: {
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) return;
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
+    if (isLocalToolSlug(params.slug)) return;
 
     yield* refreshConsumerConnectedToolkitsCache({
       orgId: params.resolvedProject.orgId,
@@ -1792,7 +1872,8 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* ui.output(
+      yield* writeExecuteStdout(
+        ui,
         JSON.stringify(
           {
             successful,
@@ -1952,11 +2033,9 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           continue;
         }
 
-        const logId =
-          'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-            : '';
-        yield* ui.log.step(`[${result.slug}] Execution successful${logId}`);
+        yield* ui.log.step(
+          `[${result.slug}] Execution successful${executionSuccessSuffix(result)}`
+        );
         if ('data' in result) {
           yield* ui.note(serializeExecuteOutput(result), `Response: ${result.slug}`);
         }
@@ -1968,7 +2047,8 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* ui.output(
+      yield* writeExecuteStdout(
+        ui,
         JSON.stringify(
           {
             successful,

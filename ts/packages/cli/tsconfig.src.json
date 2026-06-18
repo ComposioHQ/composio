@@ -11,7 +11,8 @@
     "rootDir": ".",
     "paths": {
       "src/*": ["./src/*"],
-      "effect-errors/*": ["./src/effect-errors/*"]
+      "effect-errors/*": ["./src/effect-errors/*"],
+      "@composio/cli-local-tools": ["../cli-local-tools/src/index.ts"]
     },
     "types": ["@types/bun"]
   },

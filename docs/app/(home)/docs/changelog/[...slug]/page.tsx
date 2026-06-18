@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 
 const mdxComponents = getMDXComponents();
 
@@ -66,6 +67,9 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
             );
           })}
         </div>
+        {matchingEntries[0] && (
+          <EditOnGitHub path={`docs/content/changelog/${matchingEntries[0].info.path}`} />
+        )}
       </DocsBody>
     </DocsPage>
   );

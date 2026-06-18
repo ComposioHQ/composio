@@ -139,6 +139,9 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
   tools: [setUserRole, updateUserStatus],
 });
 
+const customTools = [getUserDetails, listUserKeys, formatGmailEmail];
+const customToolkits = [userManagement];
+
 // ────────────────────────────────────────────────────────────────
 // Run tests
 // ────────────────────────────────────────────────────────────────
@@ -146,7 +149,7 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
 const composio = new Composio({ apiKey, baseURL: baseURL ?? undefined });
 
 async function main() {
-  const userId = `e2e-custom-${Date.now()}`;
+  const userId = "custom-tools-e2e-user";
   console.log(`\nCreating session for user: ${userId}`);
   console.log(`Base URL: ${baseURL ?? "(default)"}\n`);
 
@@ -157,8 +160,8 @@ async function main() {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
-        customTools: [getUserDetails, listUserKeys, formatGmailEmail],
-        customToolkits: [userManagement],
+        customTools,
+        customToolkits,
       },
     });
     ok(`Session created: ${session.sessionId}`);
@@ -166,6 +169,16 @@ async function main() {
     fail("Session creation", err);
     console.error("\nCannot continue without a session.");
     process.exit(1);
+  }
+
+  // ── Existing session reuse with local custom definitions ──
+  try {
+    const reusedSession = await composio.use(session.sessionId, { customTools, customToolkits });
+    const result = await reusedSession.execute("GET_USER_DETAILS", { user_id: "user-1" });
+    if (result.data?.name !== "Alice Johnson") throw new Error(`Unexpected: ${JSON.stringify(result.data)}`);
+    ok("Use: existing session binds custom tools for local execution");
+  } catch (err) {
+    fail("Use: existing session with custom tools", err);
   }
 
   // ════════════════════════════════════════════════════════════════

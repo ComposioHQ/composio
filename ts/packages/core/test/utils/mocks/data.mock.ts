@@ -90,6 +90,47 @@ export const toolMocks = {
       additionalProperties: false,
     },
   },
+  // Fixture for the MCP-shaped metadata regression tests (see
+  // normalizeRawToolParameters in models/Tools.ts).
+  mcpRawTool: {
+    slug: 'GRANOLA_MCP_LIST_MEETINGS',
+    name: 'List Meetings',
+    description: 'Lists Granola meetings via MCP',
+    input_parameters: {
+      type: 'object',
+      properties: {
+        time_range: {
+          type: 'string',
+          description: 'Window to query',
+        },
+      },
+      additionalProperties: false,
+    },
+    output_parameters: {},
+    toolkit: {
+      logo: 'https://example.com/granola.png',
+      slug: 'granola_mcp',
+      name: 'Granola MCP',
+    },
+    version: '20260206_00',
+  },
+
+  // Both inputs and outputs empty — pins the both-empty branch of
+  // normalizeRawToolParameters.
+  mcpRawToolBothEmpty: {
+    slug: 'SOME_MCP_PING',
+    name: 'Ping',
+    description: 'Trivial MCP tool with no inputs and no outputs',
+    input_parameters: {},
+    output_parameters: {},
+    toolkit: {
+      logo: 'https://example.com/x.png',
+      slug: 'some_mcp',
+      name: 'Some MCP',
+    },
+    version: '20260206_00',
+  },
+
   // transformed response from the sdk
   toolExecuteResponse: {
     data: {

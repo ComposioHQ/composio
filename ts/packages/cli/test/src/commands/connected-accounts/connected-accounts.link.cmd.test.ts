@@ -82,7 +82,13 @@ const RecordingTerminalUI = TerminalUI.of({
 describe('CLI: composio dev connected-accounts link', () => {
   const toolRouterCreateSpy = vi.fn(async () => ({
     session_id: 'trs_test_session',
-    config: { user_id: 'consumer-user-org_test' },
+    config: {
+      user_id: 'consumer-user-org_test',
+      execute: {},
+      search: {},
+      preload: { tools: [] },
+    },
+    config_version: 1,
     mcp: { type: 'http' as const, url: 'https://mcp.test.composio.dev' },
     tool_router_tools: ['COMPOSIO_SEARCH_TOOLS', 'COMPOSIO_MANAGE_CONNECTIONS'],
   }));
@@ -90,6 +96,7 @@ describe('CLI: composio dev connected-accounts link', () => {
     connected_account_id: 'con_test_link',
     link_token: 'lt_test_token',
     redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+    account_type: 'PRIVATE' as const,
   }));
 
   afterEach(() => {
@@ -282,6 +289,7 @@ describe('CLI: composio dev connected-accounts link', () => {
           connected_account_id: '',
           link_token: 'lt_test_token',
           redirect_url: '',
+          account_type: 'PRIVATE' as const,
         }),
       },
     })
@@ -368,6 +376,7 @@ describe('CLI: composio dev connected-accounts link', () => {
           connected_account_id: 'con_second_link',
           link_token: 'lt_test_token',
           redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+          account_type: 'PRIVATE' as const,
         }),
       },
       fixture: 'global-test-user-id',

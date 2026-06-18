@@ -1,0 +1,197 @@
+---
+title: "Webhook Triggers V2"
+description: "Dedicated webhook endpoint per OAuth app, ingress-level signature verification, per-user authorization for private channels and DMs, and config-level event filters. Opt-in; V1 is unchanged."
+date: "2026-04-27"
+---
+
+Webhook Triggers V2 introduces a first-class `webhook_endpoints` resource with a dedicated ingress URL per OAuth app. V2 is **opt-in** and scoped to new trigger slugs — existing V1 triggers, URLs, and payload formats are unchanged.
+
+## Summary
+
+| Change | Action required |
+|---|---|
+| New `webhook_endpoints` API | None (opt-in) |
+| New ingress path `/api/v3.1/webhook_ingress/{toolkit}/{we_*}/trigger_event` | None (opt-in) |
+| Ingress-level signature verification | Automatic for V2 endpoints |
+| New Slack V2 slugs (`SLACK_CHANNEL_MESSAGE_RECEIVED`, `SLACK_DIRECT_MESSAGE_RECEIVED`, `SLACK_MESSAGE_REACTION_ADDED`) | Opt-in |
+| V1 ingress path and all legacy trigger slugs | None — unchanged |
+
+## What's in V2
+
+**Dedicated endpoint per OAuth app.** Each `webhook_endpoint` is keyed by `(toolkit_slug, project_id, client_id)` and exposes its own URL containing a random `we_*` identifier:
+
+```
+https://backend.composio.dev/api/v3.1/webhook_ingress/{toolkit}/{we_xxx}/trigger_event
+```
+
+This replaces V1's shared `/handle` URL per toolkit. Events arriving on a V2 URL are fanned out only to trigger instances on that endpoint's project.
+
+**Signature verification at ingress.** Composio cryptographically verifies every V2 request against the signing secret stored on the endpoint, using HMAC-SHA256, Ed25519, or shared-token matching depending on the toolkit. Unsigned or tampered payloads are rejected, so third parties cannot spoof events onto your triggers. For providers that sign a request timestamp (e.g. Slack), replay protection additionally rejects requests whose timestamp falls outside the allowed skew window.
+
+**Per-user authorization for app-level events.** On toolkits with per-user visibility — Slack being the first — V2 uses an app-level token (for Slack, an `xapp-…` token with `authorizations:read`) to resolve which connected users are authorized for a given event, so only those users' triggers fire. This underpins a new class of triggers for private channels, direct messages, and other per-recipient events, each routed only to the user the event was intended for.
+
+**Automatic handshakes and cleanup.** Composio responds to provider verification challenges — Slack `url_verification`, Asana `X-Hook-Secret`, Outlook validation tokens, and so on — so callback URLs verify without any custom code. User-level webhooks are also deregistered on the provider side when the trigger is deleted.
+
+## API reference
+
+All endpoints require a project API key (`x-api-key`).
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v3.1/webhook_endpoints/schema?toolkit_slug={slug}` | List required setup fields for a toolkit |
+| `POST` | `/api/v3.1/webhook_endpoints` | Create an endpoint (idempotent per `toolkit_slug + client_id` within a project) |
+| `GET` | `/api/v3.1/webhook_endpoints` | List endpoints in the current project |
+| `GET` | `/api/v3.1/webhook_endpoints/{id}` | Get a single endpoint, including `verified_at` |
+| `POST` | `/api/v3.1/webhook_endpoints/{id}` | Replace `setup_data` |
+| `PATCH` | `/api/v3.1/webhook_endpoints/{id}` | Update one or more fields in `setup_data` |
+
+Provider events are posted to:
+
+| Method | Path |
+|---|---|
+| `POST` | `/api/v3.1/webhook_ingress/{toolkit_slug}/{webhook_endpoint_nano_id}/trigger_event` |
+
+## Migration walkthrough (Slack)
+
+Slack is the first toolkit on V2. The same flow applies to every toolkit added later.
+
+### 1. Discover required fields
+
+```bash
+curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/schema?toolkit_slug=slack" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+Sample response:
+
+```json
+{
+  "toolkit_slug": "slack",
+  "setup_fields": {
+    "webhook_signing_secret": {
+      "display_name": "Signing Secret",
+      "description": "Webhook request signing secret from your Slack app dashboard",
+      "is_required": true,
+      "is_secret": true
+    },
+    "app_token": {
+      "display_name": "App-Level Token",
+      "description": "Slack xapp- token with authorizations:read scope for event authorization",
+      "is_required": true,
+      "is_secret": true
+    }
+  }
+}
+```
+
+### 2. Create the endpoint
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "toolkit_slug": "slack", "client_id": "YOUR_SLACK_CLIENT_ID" }'
+```
+
+Sample response:
+
+```json
+{
+  "id": "we_abc123",
+  "toolkit_slug": "slack",
+  "client_id": "YOUR_SLACK_CLIENT_ID",
+  "webhook_url": "https://backend.composio.dev/api/v3.1/webhook_ingress/slack/we_abc123/trigger_event",
+  "data": null,
+  "created_at": "2026-04-24T10:00:00.000Z"
+}
+```
+
+Hold on to two values from the response: `id` (used as `ENDPOINT_ID` in the next steps) and `webhook_url` (the URL you'll paste into your Slack app dashboard in step 5). The call is idempotent — calling it again with the same `toolkit_slug` and `client_id` returns the existing endpoint.
+
+### 3. Store the signing secret
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "webhook_signing_secret": "YOUR_SIGNING_SECRET" } }'
+```
+
+<Callout type="warn">
+Store the signing secret before switching the provider's callback URL. If Slack posts to a V2 URL without a secret available, every request fails with `400` and Slack may auto-disable the endpoint after ~36 hours of failures.
+</Callout>
+
+### 4. Add an app-level token for private-scope events
+
+The app-level token is what lets Composio resolve per-user authorization for Slack's private-scope events.
+
+- `SLACK_DIRECT_MESSAGE_RECEIVED` always requires it.
+- `SLACK_CHANNEL_MESSAGE_RECEIVED` requires it for events from **private channels** and **multi-person DMs**; public-channel messages are delivered without it.
+
+Skip this step if you only need public-channel messages today — you can add the token later.
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/ENDPOINT_ID" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "app_token": "xapp-..." } }'
+```
+
+Generate the token from **Slack app → Basic Information → App-Level Tokens** with scope `authorizations:read`.
+
+### 5. Point your Slack app at the V2 URL
+
+Set **Event Subscriptions → Request URL** in your Slack app to the `webhook_url` returned in step 2. Composio verifies the endpoint with Slack automatically — no extra action needed on your side.
+
+### 6. Create V2 trigger instances
+
+Three new Slack triggers go live on V2 today, with more to follow on V2 — both for Slack and for other toolkits. The table below maps your existing V1 slugs to the new V2 equivalents:
+
+| V1 slug (still supported) | V2 replacement | `app_token` required? |
+|---|---|---|
+| `SLACK_RECEIVE_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | Only for private channels and multi-person DMs; public channels work without it |
+| `SLACK_RECEIVE_DIRECT_MESSAGE` | `SLACK_DIRECT_MESSAGE_RECEIVED` | Always |
+| `SLACK_REACTION_ADDED` | `SLACK_MESSAGE_REACTION_ADDED` | Always (reactions don't carry channel type, so per-user authz runs unconditionally) |
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_CHANNEL_MESSAGE_RECEIVED/upsert" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "connected_account_id": "CONNECTED_ACCOUNT_ID",
+    "trigger_config": {}
+  }'
+```
+
+## Heads up: OAuth apps are project-scoped on V2
+
+<Callout type="warn">
+**Action required if you share a single OAuth app across multiple Composio projects or organizations today.** V2 ties each OAuth app (`client_id`) to exactly one project. Before moving such an app to V2, either consolidate to a single project or register separate OAuth apps per project.
+</Callout>
+
+The provider dashboard accepts only one callback URL per OAuth app, and each V2 URL resolves to exactly one project — so a single OAuth app cannot feed multiple projects on V2.
+
+The signing secret also lives on the endpoint, so the reverse holds too: two different OAuth apps cannot share one V2 endpoint — Composio only verifies signatures against the secret stored on that endpoint, so requests signed by a different OAuth app would be rejected.
+
+In return, every project graduates to a first-class webhook tenant on V2 — with its own:
+
+- Ingress rate-limit and backpressure budget
+- Clean fan-out — events reach only that project's trigger instances
+- Signing secret and app-level token, scoped to this project alone
+- Per-project metering and billing
+
+Your V1 endpoints are unaffected. Any OAuth app you leave on V1 continues to work across projects exactly as it does today.
+
+## Backward compatibility
+
+**Everything you have today keeps working — same URLs, same trigger slugs, same payload shapes, no data migration.**
+
+- The V1 ingress URL (`/api/v3/trigger_instances/{toolkit}/{project_id}/handle`) is not deprecated.
+- Every existing trigger slug — `SLACK_RECEIVE_*`, `SLACKBOT_*`, and the equivalent legacy slugs on other toolkits — continues to route through V1.
+
+You only need to set up a V2 webhook endpoint in two cases:
+
+1. **You want to use one of the new V2 trigger slugs** (e.g. `SLACK_CHANNEL_MESSAGE_RECEIVED`, `SLACK_DIRECT_MESSAGE_RECEIVED`). A V2 endpoint is required at setup; without one, the upsert returns `400`.
+2. **You want to move an OAuth app that's currently shared across multiple projects or organizations onto V2.** Pick the project that should own it on V2 and set up an endpoint there, or register separate OAuth apps per project (see [Heads up: OAuth apps are project-scoped on V2](#heads-up-oauth-apps-are-project-scoped-on-v2)).
+
+Even outside these two cases, we recommend moving your OAuth apps to V2 at your own pace. Every endpoint you migrate inherits the signature verification, ingress isolation, and per-user authorization called out above.

@@ -29,6 +29,7 @@ See the [importing connections guide](/docs/importing-existing-connections) for 
 New `PATCH /api/v3/connected_accounts/{nanoid}` endpoint and SDK method — update credentials and alias on existing connections without recreating them.
 
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 // ---cut---

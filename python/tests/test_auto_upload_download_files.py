@@ -75,7 +75,7 @@ class TestAutoUploadDownloadFilesEnabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -119,7 +119,7 @@ class TestAutoUploadDownloadFilesEnabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -173,12 +173,77 @@ class TestAutoUploadDownloadFilesEnabled:
 
                 mock_upload.assert_called_once()
 
+    def test_execute_runs_substitute_before_before_execute(
+        self, mock_client, mock_provider
+    ):
+        """File substitution runs before before_execute modifiers (same order as TypeScript)."""
+        from composio.core.models._modifiers import Modifier
+
+        tools = Tools(
+            client=mock_client,
+            provider=mock_provider,
+            dangerously_allow_auto_upload_download_files=True,
+            toolkit_versions={"test_toolkit": "20251201_01"},
+        )
+
+        mock_tool = create_mock_tool(
+            slug="TEST_TOOL",
+            toolkit_slug="test_toolkit",
+            input_parameters={
+                "type": "object",
+                "properties": {
+                    "file": {"type": "string", "file_uploadable": True},
+                },
+            },
+            output_parameters={"type": "object", "properties": {}},
+        )
+        tools._tool_schemas["TEST_TOOL"] = mock_tool
+
+        seen_in_modifier: list = []
+
+        def before_modifier(tool: str, toolkit: str, params):  # type: ignore[no-untyped-def]
+            seen_in_modifier.append(dict(params["arguments"]))
+            return params
+
+        modifiers = [
+            Modifier(
+                modifier=before_modifier, type_="before_execute", tools=[], toolkits=[]
+            ),
+        ]
+
+        with patch.object(
+            tools._file_helper,
+            "substitute_file_uploads",
+            return_value={"file": "after_substitute"},
+        ) as mock_sub:
+            mock_execute_response = Mock()
+            mock_execute_response.model_dump.return_value = {
+                "data": {},
+                "error": None,
+                "successful": True,
+            }
+            mock_client.tools.execute.return_value = mock_execute_response
+
+            with patch.object(
+                tools, "get_raw_composio_tool_by_slug", return_value=mock_tool
+            ):
+                tools.execute(
+                    slug="TEST_TOOL",
+                    arguments={"file": "/tmp/x"},
+                    modifiers=modifiers,
+                    dangerously_skip_version_check=True,
+                )
+
+        mock_sub.assert_called_once()
+        assert len(seen_in_modifier) == 1
+        assert seen_in_modifier[0] == {"file": "after_substitute"}
+
     def test_execute_calls_substitute_file_downloads(self, mock_client, mock_provider):
         """Test that execute calls substitute_file_downloads when enabled."""
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=True,
+            dangerously_allow_auto_upload_download_files=True,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -249,7 +314,6 @@ class TestAutoUploadDownloadFilesDisabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=False,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -298,7 +362,6 @@ class TestAutoUploadDownloadFilesDisabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=False,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -354,7 +417,6 @@ class TestAutoUploadDownloadFilesDisabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=False,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -399,7 +461,6 @@ class TestAutoUploadDownloadFilesDisabled:
         tools = Tools(
             client=mock_client,
             provider=mock_provider,
-            auto_upload_download_files=False,
             toolkit_versions={"test_toolkit": "20251201_01"},
         )
 
@@ -453,28 +514,8 @@ class TestAutoUploadDownloadFilesDisabled:
 class TestAutoUploadDownloadFilesWithSDK:
     """Test cases for auto_upload_download_files with SDK initialization."""
 
-    def test_sdk_passes_auto_upload_download_files_to_tools(self):
-        """Test that Composio SDK passes auto_upload_download_files to Tools."""
-        from composio.sdk import Composio
-
-        with patch("composio.sdk.HttpClient"):
-            # Test with default (True)
-            with patch.object(Tools, "__init__", return_value=None) as mock_init:
-                mock_provider = Mock()
-                mock_provider.name = "test"
-
-                Composio(
-                    provider=mock_provider,
-                    api_key="test-key",
-                )
-
-                # Should have passed auto_upload_download_files=True (default)
-                mock_init.assert_called()
-                call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("auto_upload_download_files", True) is True
-
-    def test_sdk_passes_false_to_tools(self):
-        """Test that Composio SDK correctly passes auto_upload_download_files=False."""
+    def test_sdk_passes_auto_upload_download_off_to_tools_by_default(self):
+        """Test that Composio SDK disables automatic file upload/download by default."""
         from composio.sdk import Composio
 
         with patch("composio.sdk.HttpClient"):
@@ -485,9 +526,33 @@ class TestAutoUploadDownloadFilesWithSDK:
                 Composio(
                     provider=mock_provider,
                     api_key="test-key",
-                    auto_upload_download_files=False,
                 )
 
                 mock_init.assert_called()
                 call_kwargs = mock_init.call_args[1]
-                assert call_kwargs.get("auto_upload_download_files") is False
+                assert (
+                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
+                    is False
+                )
+
+    def test_sdk_passes_true_when_dangerously_enabled(self):
+        """Test that Composio SDK passes through dangerously_allow_auto_upload_download_files."""
+        from composio.sdk import Composio
+
+        with patch("composio.sdk.HttpClient"):
+            with patch.object(Tools, "__init__", return_value=None) as mock_init:
+                mock_provider = Mock()
+                mock_provider.name = "test"
+
+                Composio(
+                    provider=mock_provider,
+                    api_key="test-key",
+                    dangerously_allow_auto_upload_download_files=True,
+                )
+
+                mock_init.assert_called()
+                call_kwargs = mock_init.call_args[1]
+                assert (
+                    call_kwargs.get("dangerously_allow_auto_upload_download_files")
+                    is True
+                )

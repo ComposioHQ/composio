@@ -9,6 +9,8 @@ bun install          # Install dependencies
 bun run dev          # Dev server (http://localhost:3000)
 bun run build        # Production build (validates TS code blocks)
 bun run types:check  # Type check
+bun run sync:search  # Build and sync Algolia docs search index (requires Algolia env vars)
+bun run test:search  # Test live Algolia search relevance from the terminal
 ```
 
 ## Project Structure
@@ -77,9 +79,17 @@ Detailed documentation for Claude is organized in `.claude/`:
    - Dynamic toolkit pages are validated against slugs from `public/data/toolkits.json`
    - Non-Fumadocs `.md` files (like FAQ snippets) are picked up via `content/**/*.md` glob
 
+10. **Internal links use relative paths, never absolute** - Write `/docs/<section>/<page>`, `/reference/api-reference/<resource>/<operationId>`, `/reference/sdk-reference/<lang>/<page>`, `/docs/changelog/YYYY/MM/DD`, `/assets/images/<file>`. Never `https://docs.composio.dev/...`. The link checker (rule 9) only validates relative links; absolute URLs silently bypass it and rot over time. API-reference operation IDs are **camelCase** (`getConnectedAccountsByNanoid`, `postAuthConfigs`) — do not guess them; copy the exact `href` from `<ApiEndpointsTable>` in `content/reference/api-reference/<resource>/index.mdx`. Previous changelog entries use zero-padded month/day (`/docs/changelog/2026/04/21`, not `2026/4/21`).
+
 ## Glossary
 
 `content/docs/glossary.mdx` defines key Composio terms (auth config, session, toolkit, etc.) using `<Glossary>` and `<GlossaryTerm name="...">` components (`components/glossary.tsx`). The component renders a filterable two-column table. The markdown converter in `lib/source.ts` converts `<GlossaryTerm>` tags to `### Term` headings for LLM-friendly output. When adding new Composio concepts, add a `<GlossaryTerm>` entry and update the `keywords` frontmatter array.
+
+## Search
+
+The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is configured. `NEXT_PUBLIC_ALGOLIA_APP_ID` defaults to `62HI9PQZ1L`, and `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `docs_composio_dev_62hi9pqz1l_pages`. Without a search API key it falls back to `/api/search` for local development and tests. Algolia searches request `clickAnalytics`, and the client sends search result view/click events with `search-insights`.
+
+Run `ALGOLIA_APP_ID=62HI9PQZ1L ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search` from `docs/` to rebuild the Algolia index. The sync script does not use Algolia Crawler: it creates section-sized records from MDX/OpenAPI/toolkit data, configures searchable attributes, `customRanking`, and `attributeForDistinct`, then replaces the index objects. Use `bun run sync:search --dry-run --samples` to inspect generated records and `ALGOLIA_SEARCH_API_KEY=... bun run test:search "oauth auth config"` to test live relevance.
 
 ## API Versioning
 

@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../tsdown.config.base';
+import { baseConfig } from '../../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...baseConfig,
@@ -12,9 +12,10 @@ export default defineConfig({
   ],
   format: ['esm'],
   tsconfig: './tsconfig.src.json',
-  external: undefined,
+  external: [/^bun:/],
   noExternal: [
     '@composio/core',
+    '@composio/cli-local-tools',
     /^zod(?:\/.*)?$/,
     /^@agentclientprotocol\/sdk(?:\/.*)?$/,
     /^@modelcontextprotocol\/sdk(?:\/.*)?$/,

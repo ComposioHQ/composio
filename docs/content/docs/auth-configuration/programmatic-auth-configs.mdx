@@ -76,7 +76,7 @@ auth_config = composio.auth_configs.create(
         "credentials": {
             "client_id": "1234567890",
             "client_secret": "1234567890",
-            "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v3.1/toolkits/auth/callback",
         },
     },
 )
@@ -94,7 +94,7 @@ const authConfig = await composio.authConfigs.create("NOTION", {
     credentials: {
         client_id: "1234567890",
         client_secret: "1234567890",
-        oauth_redirect_uri: "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+        oauth_redirect_uri: "https://backend.composio.dev/api/v3.1/toolkits/auth/callback",
     },
     authScheme: "OAUTH2",
 });
@@ -119,7 +119,7 @@ The **authorized redirect URI** is the URI that captures the OAuth code that is 
 While doing so, you must ensure to set the **authorized redirect URI** in the OAuth configuration to:
 
 ```
-https://backend.composio.dev/api/v3/toolkits/auth/callback
+https://backend.composio.dev/api/v3.1/toolkits/auth/callback
 ```
 
 <Tabs items={['GitHub', 'Google']}>

@@ -13,7 +13,7 @@ This error occurs when MCP cannot find a valid connected account for authenticat
   - Account status is `ACTIVE` (not deleted)
   - Account belongs to the same auth config used to create the MCP server. MCP servers only resolve connected accounts through their bound auth configs, so connections under a different auth config will not be found.
 
-To fix a mismatched auth config, update the MCP server's `auth_config_ids` using the [`PATCH /api/v3/mcp/{id}`](/reference/api-reference/mcp/patchMcpById) endpoint.
+To fix a mismatched auth config, update the MCP server's `auth_config_ids` using the [`PATCH /api/v3.1/mcp/{id}`](/reference/api-reference/mcp/patchMcpById) endpoint.
 
 Learn more: [Single Toolkit MCP](/docs/single-toolkit-mcp)
 

@@ -192,7 +192,7 @@ INACTIVE accounts cannot execute tools. Tool execution will fail until the statu
 
 ## Delete accounts
 
-Permanently remove a connected account and revoke all credentials:
+Permanently remove a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -216,7 +216,7 @@ console.log('Account deleted successfully');
 </Tabs>
 
 <Callout type="warn">
-Deletion is permanent. Users must re-authenticate to reconnect.
+Deletion is permanent and cannot be undone.
 </Callout>
 
 ## Credential masking
@@ -259,8 +259,10 @@ Disabling masking exposes full credentials in API responses. Only disable this i
 
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
 
-<Callout type="info">
-Use `link()` for creating accounts, as it provides hosted authentication and allows multiple accounts by default. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link).
+<Callout type="warn">
+**For Composio-managed OAuth, prefer `link()`.** The `initiate()` examples below will stop working for Composio-managed OAuth auth configs starting **2026-05-08** (new orgs) / **2026-07-03** (all orgs). `link()` provides hosted authentication, allows multiple accounts by default, and is unaffected by the rollout. See [Connect Link authentication](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link), the [migration guide](/docs/auth-configuration/migrating-initiate-to-link), or the [changelog entry](/docs/changelog/2026/04/24).
+
+The `initiate()` examples remain accurate for **custom auth configs** (your own OAuth app) and **non-OAuth schemes** (API key, bearer, basic) — those are unaffected.
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>

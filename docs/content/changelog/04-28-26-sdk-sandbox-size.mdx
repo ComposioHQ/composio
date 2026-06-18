@@ -1,0 +1,64 @@
+---
+title: 'SDKs add sandbox compute tier for Tool Router workbench'
+description: 'TypeScript and Python SDKs gain `workbench.sandboxSize` / `workbench.sandbox_size` to pick the workbench sandbox tier (standard, medium, large, xlarge). Patch releases.'
+date: '2026-04-28'
+---
+
+The Composio SDKs now let you pick the compute tier of the [workbench](/docs/workbench) sandbox when creating a Tool Router session. Heavier code execution and larger in-memory data benefit from a bigger sandbox.
+
+| Tier       | vCPU | RAM   |
+| ---------- | ---- | ----- |
+| `standard` | 1    | 1 GB  |
+| `medium`   | 2    | 2 GB  |
+| `large`    | 4    | 4 GB  |
+| `xlarge`   | 8    | 8 GB  |
+
+The field is optional and defaults to `standard` server-side when omitted, so existing code keeps working unchanged.
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload — but expect future pricing to track actual usage.
+</Callout>
+
+### SDK versions (patch releases)
+
+| Package | Previous | This release |
+| ------- | -------- | ------------ |
+| TypeScript `@composio/core` | v0.8.0 | **v0.8.1** |
+| Python `composio` | v0.12.0 | **v0.12.1** |
+
+### Usage
+
+**TypeScript** (camelCase on the SDK surface):
+
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY! });
+
+const session = await composio.create('user_123', {
+  workbench: {
+    enable: true,
+    sandboxSize: 'large',
+  },
+});
+```
+
+The `SandboxSize` literal type and `SandboxSizeSchema` zod enum are exported from `@composio/core`.
+
+**Python** (snake_case throughout):
+
+```python
+session = composio.create(
+    user_id="user_123",
+    workbench={
+        "sandbox_size": "large",
+    },
+)
+```
+
+The `SandboxSize` literal alias is available at `composio.core.models.tool_router.SandboxSize`.
+
+### Updating an existing session
+
+Calling `session.update()` (or the equivalent `PATCH /api/v3/tool_router/sessions/{id}`) with a different `sandbox_size` recreates the sandbox on next access. The sandbox's in-memory filesystem state is lost, but the persistent `/mnt/files/` mount survives the restart.
+
+See [Configuring Sessions → Sandbox compute tier](/docs/configuring-sessions#sandbox-compute-tier) for the full reference.

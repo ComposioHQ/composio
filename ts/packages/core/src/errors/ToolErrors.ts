@@ -6,8 +6,8 @@ export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
   TOOL_NOT_FOUND: 'TOOL_NOT_FOUND',
   INVALID_MODIFIER: 'INVALID_MODIFIER',
-  CUSTOM_TOOLS_NOT_INITIALIZED: 'CUSTOM_TOOLS_NOT_INITIALIZED',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
+  INVALID_TOOL_ARGUMENTS: 'INVALID_TOOL_ARGUMENTS',
   INVALID_EXECUTE_FUNCTION: 'INVALID_EXECUTE_FUNCTION',
   GLOBAL_EXECUTE_TOOL_FN_NOT_SET: 'GLOBAL_EXECUTE_TOOL_FN_NOT_SET',
   TOOL_VERSION_REQUIRED: 'TOOL_VERSION_REQUIRED',
@@ -61,22 +61,6 @@ export class ComposioInvalidModifierError extends ComposioError {
   }
 }
 
-export class ComposioCustomToolsNotInitializedError extends ComposioError {
-  constructor(
-    message: string = 'Custom tools not initialized',
-    options: Omit<ComposioErrorOptions, 'code'> = {}
-  ) {
-    super(message, {
-      ...options,
-      code: ToolErrorCodes.CUSTOM_TOOLS_NOT_INITIALIZED,
-      possibleFixes: options.possibleFixes || [
-        'Ensure the custom tools class is initialized in the Tools instance',
-      ],
-    });
-    this.name = 'ComposioCustomToolsNotInitializedError';
-  }
-}
-
 export class ComposioToolExecutionError extends ComposioError {
   constructor(message: string = 'Tool execution error', options: ComposioErrorOptions = {}) {
     super(message, {
@@ -90,6 +74,23 @@ export class ComposioToolExecutionError extends ComposioError {
     });
 
     this.name = 'ComposioToolExecutionError';
+  }
+}
+
+export class ComposioInvalidToolArgumentsError extends ComposioError {
+  constructor(
+    message: string = 'Invalid tool arguments',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ToolErrorCodes.INVALID_TOOL_ARGUMENTS,
+      possibleFixes: options.possibleFixes || [
+        'Tool arguments must be a JSON object (or a string that parses to one)',
+        'If a model emitted the arguments as a string, ensure it is valid JSON',
+      ],
+    });
+    this.name = 'ComposioInvalidToolArgumentsError';
   }
 }
 

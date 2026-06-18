@@ -1,6 +1,7 @@
 import { Data, Effect, Config, Option } from 'effect';
 import { HttpClient, FileSystem } from '@effect/platform';
 import * as path from 'node:path';
+import { cp as copyPath, rm as removePath } from 'node:fs/promises';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -28,6 +29,7 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
  * CLI binary name constant
  */
 export const CLI_BINARY_NAME = 'composio';
+const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
 
 const getBinaryAssetName = (platformArch: PlatformArch) =>
   `${CLI_BINARY_NAME}-${platformArch.platform}-${platformArch.arch}.zip`;
@@ -101,11 +103,13 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       platformArch: PlatformArch,
       options: {
         prerelease?: boolean;
+        tag?: string;
       } = {}
     ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const prerelease = options.prerelease ?? false;
-        const release = yield* githubConfig.TAG.pipe(
+        const explicitTag = options.tag ? Option.some(options.tag) : githubConfig.TAG;
+        const release = yield* explicitTag.pipe(
           Option.match({
             onNone: Effect.fn(function* () {
               yield* Effect.logDebug(
@@ -494,6 +498,28 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             );
         }
 
+        const localToolsAssetSource = path.join(sourceDirectory, LOCAL_TOOLS_BINARY_ASSET_DIRNAME);
+        const localToolsAssetExists = yield* fs
+          .exists(localToolsAssetSource)
+          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+        if (localToolsAssetExists) {
+          const localToolsAssetTarget = path.join(
+            targetDirectory,
+            LOCAL_TOOLS_BINARY_ASSET_DIRNAME
+          );
+          yield* Effect.tryPromise({
+            try: async () => {
+              await removePath(localToolsAssetTarget, { recursive: true, force: true });
+              await copyPath(localToolsAssetSource, localToolsAssetTarget, { recursive: true });
+            },
+            catch: error =>
+              new UpgradeBinaryError({
+                cause: error as Error,
+                message: 'Failed to replace local-tool binary assets',
+              }),
+          });
+        }
+
         if (options.releaseTag) {
           yield* Effect.try({
             try: () => writeInstalledReleaseTag(targetDirectory, options.releaseTag!),
@@ -512,6 +538,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     const upgrade = (
       options: {
         prerelease?: boolean;
+        tag?: string;
       } = {}
     ) =>
       Effect.gen(function* () {
@@ -519,6 +546,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
         const currentPath = yield* getCurrentExecutablePath();
         const prerelease = options.prerelease ?? false;
+        const explicitTag = options.tag;
         const currentReleaseIdentifier = resolveCurrentReleaseIdentifier(currentPath);
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
         yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);
@@ -536,15 +564,26 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
           Effect.gen(function* () {
             const platformArch = yield* detectPlatform;
-            const release = yield* fetchLatestRelease(platformArch, { prerelease });
-            const updateAvailable = yield* isUpdateAvailable(release, currentReleaseIdentifier);
-            if (!updateAvailable) {
-              yield* spinner.stop('You are already running the latest version!');
-              return false;
+            const release = yield* fetchLatestRelease(platformArch, {
+              prerelease,
+              tag: explicitTag,
+            });
+            if (!explicitTag) {
+              const updateAvailable = yield* isUpdateAvailable(release, currentReleaseIdentifier);
+              if (!updateAvailable) {
+                yield* spinner.stop('You are already running the latest version!');
+                return false;
+              }
+            } else if (release.tag_name === currentReleaseIdentifier) {
+              yield* Effect.logDebug(
+                `Already running ${release.tag_name}; re-installing as requested`
+              );
             }
 
             yield* spinner.message(
-              `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
+              explicitTag
+                ? `Installing ${release.tag_name} (current: ${currentReleaseIdentifier})...`
+                : `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
             );
 
             const { name, data } = yield* downloadBinary(release, platformArch);

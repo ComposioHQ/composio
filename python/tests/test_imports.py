@@ -38,7 +38,6 @@ def test_import_all_public_exports():
 def test_import_types():
     """Test importing types from different modules."""
     from composio.types import (
-        ExecuteRequestFn,
         Modifiers,
         Tool,
         ToolExecuteParams,
@@ -58,7 +57,6 @@ def test_import_types():
     assert TToolCollection is not None
     assert ToolExecuteParams is not None
     assert ToolExecutionResponse is not None
-    assert ExecuteRequestFn is not None
     assert TriggerEvent is not None
     assert Modifiers is not None
     assert auth_scheme is not None

@@ -26,6 +26,18 @@ export const platform: Platform = {
       .join('/');
   },
 
+  resolvePath(...paths: string[]): string {
+    // No working directory in edge runtimes. Best-effort: join the segments
+    // and return the result. Callers that need a real `path.resolve` should
+    // gate on `supportsFileSystem`.
+    return this.joinPath(...paths);
+  },
+
+  isAbsolutePath(filePath: string): boolean {
+    // POSIX-only check; edge runtimes don't have Windows-style drive letters.
+    return filePath.startsWith('/');
+  },
+
   basename(filePath: string): string {
     // Simple basename extraction without Node.js path module
     const segments = filePath.replace(/\/+$/, '').split('/');

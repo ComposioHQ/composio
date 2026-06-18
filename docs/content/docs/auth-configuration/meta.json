@@ -6,6 +6,7 @@
     "white-labeling",
     "programmatic-auth-configs",
     "custom-auth-params",
-    "connected-accounts"
+    "connected-accounts",
+    "migrating-initiate-to-link"
   ]
 }

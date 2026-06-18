@@ -32,4 +32,23 @@ Gmail triggers poll roughly every minute by default. If you need lower latency, 
 
 Google enforces per-minute and daily request quotas. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
 
+## How do I send an email with an attachment?
+
+When using the Composio SDK, pass a local file path or a public URL directly as a string to the `attachment` field. The SDK's auto-upload feature (enabled by default) handles uploading the file and converting it to the required format. You do not need to construct the `{ s3key, name, mimetype }` object manually.
+
+```python
+result = composio.tools.execute(
+    slug="GMAIL_SEND_EMAIL",
+    user_id="user-123",
+    arguments={
+        "recipient_email": "recipient@example.com",
+        "subject": "Report attached",
+        "body": "See attached.",
+        "attachment": "https://example.com/report.pdf",
+    },
+)
+```
+
+This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
+
 ---

@@ -53,7 +53,13 @@ const composio = new Composio({
 |------|------|-------------|
 | `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
 | `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
-| `create` | `object` | Creates a new tool router session for a user. |
+| `create` | `object` | Creates a new tool router session for a user.
+Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+should be exposed directly; see `ToolRouterCreateSessionConfig`. |
+| `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
+Houses stateful operations like Experimental.updateAcl that
+take a client and perform I/O. Stateless experimental factories
+(e.g. `experimental_createTool`) stay at the top level. |
 | `files` | `Files` | Upload and download files |
 | `mcp` | `MCP` | Model Context Protocol server management |
 | `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
@@ -61,7 +67,7 @@ const composio = new Composio({
 | `toolRouter` | `ToolRouter` | Experimental feature, use with caution |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
-| `use` | `(id: string) => Promise<Session>` | Use an existing tool router session |
+| `use` | `object` | Use an existing tool router session |
 
 ## Methods
 
@@ -166,14 +172,22 @@ getClient(): Composio
 
 ### getConfig()
 
-Get the configuration SDK is initialized with
+Get the configuration SDK is initialized with.
+
+Returns a frozen shallow clone — the SDK has already snapshotted
+configuration values such as `dangerouslyAllowAutoUploadDownloadFiles`,
+`fileUploadDirs`, and `fileDownloadDir` into its internal models, so
+mutating the live config object would silently no-op. Freezing makes
+that contract visible at the call site instead of letting the mutation
+appear successful.
 
 ```typescript
-getConfig(): ComposioConfig
+getConfig(): Readonly<ComposioConfig>
 ```
 
 **Returns**
 
-`ComposioConfig` — The configuration SDK is initialized with
+`Readonly<ComposioConfig>` — The frozen configuration
+  the SDK is initialized with.
 
 ---

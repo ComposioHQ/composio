@@ -26,7 +26,7 @@ The Connect Link is the hosted page your users see when connecting their account
 
 To replace it with your own branding:
 
-1. Go to **Project Settings** → [**Auth Screen**](https://platform.composio.dev?next_page=/settings/auth-screen)
+1. Go to **Project Settings** → [**Auth Screen**](https://dashboard.composio.dev/~/project/settings/auth-screen)
 2. Upload your **Logo** and set your **App Title**
 
 This applies to all Connect Link flows across all toolkits. Each project has one logo and app title, so if you need different branding per product, use separate projects.
@@ -56,7 +56,7 @@ Only white-label toolkits where users see a consent screen (Google, GitHub, Slac
 Register a new OAuth app with the toolkit. Set the callback URL to:
 
 ```
-https://backend.composio.dev/api/v3/toolkits/auth/callback
+https://backend.composio.dev/api/v3.1/toolkits/auth/callback
 ```
 
 You'll get a **Client ID** and **Client Secret**.
@@ -67,7 +67,7 @@ Step-by-step guides: [Google](https://composio.dev/auth/googleapps) | [Slack](ht
 <Step>
 <StepTitle>Create an auth config in Composio</StepTitle>
 
-In the [Composio dashboard](https://platform.composio.dev):
+In the [Composio dashboard](https://dashboard.composio.dev):
 
 1. Go to **Authentication management** → **Create Auth Config**
 2. Select the toolkit (e.g., GitHub)
@@ -214,7 +214,7 @@ app = FastAPI()
 
 @app.get("/api/composio-redirect")
 def composio_redirect(request: Request):
-    composio_url = "https://backend.composio.dev/api/v3/toolkits/auth/callback"
+    composio_url = "https://backend.composio.dev/api/v3.1/toolkits/auth/callback"
     return RedirectResponse(url=f"{composio_url}?{request.url.query}")
 ```
 </Tab>
@@ -224,7 +224,7 @@ def composio_redirect(request: Request):
 import type { NextApiRequest, NextApiResponse } from "next";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const composioUrl = "https://backend.composio.dev/api/v3/toolkits/auth/callback";
+  const composioUrl = "https://backend.composio.dev/api/v3.1/toolkits/auth/callback";
   const params = new URLSearchParams(req.query as Record<string, string>);
   res.redirect(302, `${composioUrl}?${params.toString()}`);
 }

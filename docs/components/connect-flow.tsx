@@ -58,7 +58,7 @@ function PopularTab({
       onClick={onSelect}
       className={`
         flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-all whitespace-nowrap
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
         ${selected
           ? 'bg-fd-background text-fd-foreground shadow-sm dark:bg-fd-accent/60 dark:shadow-none'
           : 'text-fd-muted-foreground hover:text-fd-foreground'
@@ -154,7 +154,7 @@ export function ConnectFlow({ children }: ConnectFlowProps) {
                   onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
                   className={`
                     flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                     ${selectedIsOther
                       ? 'border-[var(--composio-orange)] bg-fd-accent/30 text-fd-foreground'
                       : 'border-fd-border bg-fd-card text-fd-muted-foreground hover:text-fd-foreground hover:bg-fd-accent/50'

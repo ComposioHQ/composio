@@ -384,14 +384,20 @@ const account = await composio.connectedAccounts.initiate({
 
 ### 3. Custom Tools
 ```typescript
-// Create custom tools
-const customTool = await composio.tools.createCustomTool({
+import { experimental_createTool } from '@composio/core';
+import { z } from 'zod';
+
+// Custom tools are session-scoped: define a local tool, then attach it
+// when creating a Tool Router session.
+const myTool = experimental_createTool('MY_TOOL', {
   name: 'My Tool',
   description: 'Tool description',
-  execute: async (input) => {
-    // Implementation
-    return { data: 'result' };
-  },
+  inputParams: z.object({ param: z.string() }),
+  execute: async input => ({ result: input.param }),
+});
+
+const session = await composio.create('user-id', {
+  experimental: { customTools: [myTool] },
 });
 ```
 

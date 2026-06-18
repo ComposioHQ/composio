@@ -14,6 +14,7 @@ This is the Composio SDK v3 repository containing both TypeScript and Python SDK
 ## Common Development Commands
 
 ### Build and Development
+
 ```bash
 pnpm build              # Build all packages
 pnpm build:packages     # Build only TypeScript packages
@@ -25,19 +26,24 @@ pnpm test               # Run tests
 ```
 
 ### Package Management
+
 ```bash
+mise install            # Install Node, Bun, Deno, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
+corepack enable         # Activate pnpm from package.json#packageManager
 pnpm install            # Install dependencies
 pnpm check:peer-deps    # Check peer dependencies
 pnpm update:peer-deps   # Update peer dependencies
 ```
 
 ### Creating New Components
+
 ```bash
 pnpm create:provider <provider-name> [--agentic]
 pnpm create:example <example-name>
 ```
 
 ### Release Management
+
 ```bash
 pnpm changeset            # Create changeset for releases
 pnpm changeset:version    # Version packages
@@ -47,6 +53,7 @@ pnpm changeset:release    # Publish packages
 ## Project Architecture
 
 ### Repository Structure
+
 ```
 composio/
 ├── ts/                      # TypeScript SDK (main development)
@@ -66,6 +73,7 @@ composio/
 ### Core Packages
 
 **@composio/core** — Main SDK functionality:
+
 - `src/composio.ts` — Main Composio class
 - `src/models/` — Core models (Tools, Toolkits, ConnectedAccounts, etc.)
 - `src/provider/` — Base provider implementations
@@ -74,6 +82,7 @@ composio/
 - `src/utils/` — Utility functions and helpers
 
 **Provider Packages** — AI integrations:
+
 - `@composio/openai`, `@composio/anthropic`, `@composio/google`
 - `@composio/langchain`, `@composio/vercel`, `@composio/mastra`
 
@@ -90,17 +99,20 @@ composio/
 ## Development Workflow
 
 ### Testing
+
 - Unit tests use **Vitest** — run with `pnpm test`
 - Tests are in `test/` directories within each package
 - Mock implementations in `test/utils/mocks/`
 
 ### Code Quality
+
 - **ESLint** — config in `eslint.config.mjs`
 - **Prettier** — for code formatting
 - **TypeScript** — strict mode enabled
 - **Husky** — pre-commit hooks for quality checks
 
 ### TypeScript E2E Tests
+
 ```bash
 pnpm test:e2e              # All (Node.js + Deno + Cloudflare)
 pnpm test:e2e:node         # Node.js CJS/ESM compatibility (Docker)
@@ -129,15 +141,19 @@ COMPOSIO_DISABLE_TELEMETRY  # Optional: Set to "true" to disable telemetry
 ## Common Patterns
 
 ### Tool Execution
+
 ```typescript
 const composio = new Composio({ apiKey: 'your-key' });
 const result = await composio.tools.execute('TOOL_NAME', {
   userId: 'user-id',
-  arguments: { /* tool args */ }
+  arguments: {
+    /* tool args */
+  },
 });
 ```
 
 ### Provider Integration
+
 ```typescript
 import { OpenAIProvider } from '@composio/openai';
 const provider = new OpenAIProvider({ apiKey: 'openai-key' });
@@ -146,29 +162,36 @@ const wrappedTools = provider.wrapTools(tools);
 ```
 
 ### Custom Tool Creation
+
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio();
+
+// Custom tools are session-scoped: define a local tool, then attach it when
+// creating a Tool Router session. Use `extendsToolkit` + `ctx.proxyExecute`
+// to inherit a toolkit's managed auth and call its API.
+const myTool = experimental_createTool('MY_TOOL', {
   name: 'My Tool',
   description: 'Tool description',
-  slug: 'MY_TOOL',
   inputParams: z.object({
-    param: z.string().describe('Parameter description')
+    param: z.string().describe('Parameter description'),
   }),
-  execute: async (input) => {
-    return {
-      data: { result: input.param },
-      error: null,
-      successful: true
-    };
-  }
+  execute: async input => {
+    return { result: input.param };
+  },
+});
+
+const session = await composio.create('user-id', {
+  experimental: { customTools: [myTool] }
 });
 ```
 
 ## Python SDK Development
 
 ### Setup
+
 ```bash
 cd python
 make env                 # Create virtual env with all dependencies
@@ -176,6 +199,7 @@ source .venv/bin/activate
 ```
 
 ### Commands
+
 ```bash
 make fmt       # Format code (ruff)
 make chk       # Check linting and type issues
@@ -185,6 +209,7 @@ make build     # Build packages
 ```
 
 ### Code Quality
+
 - **Formatter**: Ruff (Black-compatible, 88 char line length)
 - **Linter**: Ruff
 - **Type Checker**: mypy with strict optional typing
@@ -195,10 +220,21 @@ make build     # Build packages
 
 ### When Updating GitHub Actions
 
-Update the "Prerequisites" section in `ts/docs/internal/release.md` with current tool versions:
+Toolchain versions are coalesced in `mise.toml`. To check the current values:
 
-- **Node.js**: `cat .nvmrc`
-- **Bun**: `cat .bun-version`
-- **pnpm**: `cat package.json | jq -r .packageManager | cut -d'@' -f2`
+- **Node.js**: `mise current node`
+- **Bun**: `mise current bun`
+- **Deno**: `mise current deno`
+- **Python**: `mise current python`
+- **uv**: `mise current uv`
+- **pnpm**: `node -p "require('./package.json').packageManager"`
+
+To bump, edit `mise.toml` (or `package.json#packageManager` for pnpm), then run:
+
+```bash
+mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
+```
+
+Commit `mise.lock` with the version bump. The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
 
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.

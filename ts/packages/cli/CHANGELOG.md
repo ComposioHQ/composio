@@ -1,5 +1,77 @@
 # @composio/cli
 
+## 0.2.31
+
+### Patch Changes
+
+- `composio upgrade` now accepts an optional `<version>` argument so you can install a specific stable release or beta (e.g. `composio upgrade 0.13.1`, `composio upgrade 0.13.1-beta.42`, or the full tag `@composio/cli@0.13.1`). When omitted, the command continues to install the latest release on the chosen channel (`--beta` for prereleases).
+- CLI now sends its per-cwd session id as the `x-cli-session-id` header on every request. The backend uses this to tag tool execution logs with `session_info.cli_session_id`, so all tool executions from a single CLI session (one cwd, one user) can be grouped together in the logs UI.
+- Refresh the browser fallback approval prompt with the Composio CLI landing page visual style and serve it from the local loopback callback server while continuing to prefer the native macOS sidecar when available.
+- Make CLI output more LLM-friendly by gating human-only notices/prompts on interactive TTYs and keeping logs on stderr.
+- Route fish shell completions to `~/.config/fish/completions/composio.fish` (instead of the rc file) and sanitize completion lines that could break parsing.
+- Permission "allow" decisions now expire after 1 hour — the prompt action is relabeled "Allow for 1 hr" and cached decisions are pruned on expiry.
+
+## 0.2.30
+
+### Patch Changes
+
+- Updated dependencies [42ebff3]
+  - @composio/core@0.10.0
+  - @composio/cli-local-tools@0.0.4
+
+## 0.2.29
+
+### Patch Changes
+
+- Updated dependencies [84a3a07]
+- Updated dependencies [c358ffa]
+  - @composio/core@0.9.1
+  - @composio/cli-local-tools@0.0.3
+
+## 0.2.28
+
+### Patch Changes
+
+- 79ac220: Scaffold the CLI local-tools foundation package, wire it into Tool Router search/execute sessions, and expose `composio local-tools list|doctor|configure|meta` for discovery, readiness checks, setup hints, and local metadata state. Concrete app integrations are added in follow-up stack PRs.
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [79ac220]
+- Updated dependencies [c9b6525]
+- Updated dependencies [cc673b6]
+- Updated dependencies [79ac220]
+- Updated dependencies [9f14971]
+- Updated dependencies [81f8027]
+- Updated dependencies [711a703]
+- Updated dependencies [bccd32b]
+- Updated dependencies [bccd32b]
+- Updated dependencies [07c9bab]
+- Updated dependencies [3ece424]
+  - @composio/cli-local-tools@0.0.2
+  - @composio/core@0.9.0
+
+## 0.2.27
+
+### Patch Changes
+
+- Updated dependencies [6b986cd]
+- Updated dependencies [1c3276b]
+  - @composio/core@0.8.1
+
+## 0.2.26
+
+### Patch Changes
+
+- Updated dependencies [ebc9778]
+- Updated dependencies
+  - @composio/core@0.8.0
+
+## 0.2.25
+
+### Patch Changes
+
+- Updated dependencies [27ed0c9]
+  - @composio/core@0.6.11
+
 ## 0.2.24
 
 Manual version bump to realign with the GitHub release tag. The 0.2.23 release workflow misclassified the version-bump merge as a beta due to a shallow-checkout bug in `.github/workflows/build-cli-binaries.yml`, so binaries built from that commit landed on `@composio/cli@0.2.24-beta.209` and, after `promote-stable`, on the GitHub tag `@composio/cli@0.2.24`. npm was left at 0.2.23. This release bumps npm to 0.2.24 so the published package and the GitHub release match. Fix for the underlying workflow bug: #3212.

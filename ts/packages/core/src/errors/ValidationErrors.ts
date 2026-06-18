@@ -9,6 +9,7 @@ import { ComposioError, ComposioErrorOptions } from './ComposioError';
 export const ValidationErrorCodes = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   JSON_SCHEMA_TO_ZOD_ERROR: 'JSON_SCHEMA_TO_ZOD_ERROR',
+  JSON_SCHEMA_REF_RESOLUTION_ERROR: 'JSON_SCHEMA_REF_RESOLUTION_ERROR',
 } as const;
 
 export class ValidationError extends ComposioError {
@@ -76,6 +77,23 @@ export class JsonSchemaToZodError extends ComposioError {
     super(message, {
       ...options,
       code: options.code || ValidationErrorCodes.JSON_SCHEMA_TO_ZOD_ERROR,
+    });
+  }
+}
+
+/**
+ * Thrown when a JSON Schema `$ref` pointer cannot be resolved against the
+ * document. Used by `dereferenceJsonSchema` to surface malformed pointers,
+ * missing `$defs`/`definitions` targets, or chains exceeding the depth cap.
+ */
+export class JsonSchemaRefResolutionError extends ComposioError {
+  constructor(
+    message: string = 'Failed to resolve JSON Schema $ref',
+    options: ComposioErrorOptions = {}
+  ) {
+    super(message, {
+      ...options,
+      code: options.code || ValidationErrorCodes.JSON_SCHEMA_REF_RESOLUTION_ERROR,
     });
   }
 }

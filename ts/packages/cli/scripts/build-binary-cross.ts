@@ -18,7 +18,7 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, teardown } from './_shared';
+import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
 
 /**
  * Maps Bun cross-compilation targets to Composio artifact names.
@@ -108,6 +108,7 @@ export function buildBinaryCross() {
 
     const companionOutputDir = './dist/binaries/companions';
     yield* buildCompanionModules(companionOutputDir);
+    yield* copyLocalToolBinaryAssets('./dist/binaries');
 
     yield* Console.log(`Binary cross-compiled: ${outfile}`);
   });

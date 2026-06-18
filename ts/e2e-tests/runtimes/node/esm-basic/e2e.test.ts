@@ -10,13 +10,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: [
-      // may throw ERR_REQUIRE_ESM
-      '20.18.0',
-      // supports ESM by default
-      '20.19.0',
-      '22.12.0',
-    ],
+    node: ['22.22.3', '24.16.0', '25.9.0'],
   },
   usesFixtures: true,
   defineTests: ({ runFixture }) => {

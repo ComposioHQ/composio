@@ -2,7 +2,7 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, teardown } from './_shared';
+import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
 
 /**
  * Usage: `bun scripts/build-binary.ts`
@@ -79,6 +79,11 @@ export function buildBinary() {
     yield* buildCompanionModules('./dist');
 
     yield* Effect.logDebug('', 'Companion modules built successfully');
+
+    // Copy local-tool executable/library assets next to the standalone CLI so
+    // command and FFI local tools can resolve platform-specific bundled binaries
+    // at runtime.
+    yield* copyLocalToolBinaryAssets('./dist');
   });
 }
 

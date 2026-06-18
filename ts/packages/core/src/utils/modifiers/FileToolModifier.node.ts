@@ -6,14 +6,77 @@ import {
 } from '../../types/tool.types';
 import ComposioClient from '@composio/client';
 import logger from '../logger';
-import { ComposioFileUploadError } from '../../errors/FileModifierErrors';
-import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from '../fileUtils.node';
+import {
+  ComposioFileNotFoundError,
+  ComposioFileUploadAbortedError,
+  ComposioFileUploadError,
+  ComposioFileUploadPathNotAllowedError,
+  ComposioSensitiveFilePathBlockedError,
+} from '../../errors/FileModifierErrors';
+import type { beforeFileUploadModifier } from '../../types/modifiers.types';
+import {
+  downloadFileFromS3,
+  getFileDataAfterUploadingToS3,
+  type GetFileDataAfterUploadingToS3Options,
+} from '../fileUtils.node';
 import {
   isPlainObject,
   transformProperties,
-  schemaHasFileUploadable,
-  schemaHasFileDownloadable,
+  schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
+
+const getSchemaVariants = (schema: JSONSchemaProperty | undefined): JSONSchemaProperty[] => [
+  ...(schema?.anyOf ?? []),
+  ...(schema?.oneOf ?? []),
+  ...(schema?.allOf ?? []),
+];
+
+const jsonSchemaTypeMatchesValue = (schema: JSONSchemaProperty, value: unknown): boolean => {
+  const schemaType = schema.type;
+
+  if (Array.isArray(schemaType)) {
+    return schemaType.some(type => jsonSchemaTypeMatchesValue({ ...schema, type }, value));
+  }
+
+  if (schemaType === undefined) {
+    if (schema.properties) return isPlainObject(value);
+    if (schema.items) return Array.isArray(value);
+    return false;
+  }
+
+  switch (schemaType) {
+    case 'array':
+      return Array.isArray(value);
+    case 'object':
+      return isPlainObject(value);
+    case 'string':
+      return typeof value === 'string';
+    case 'integer':
+      return Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number';
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'null':
+      return value === null;
+    default:
+      return false;
+  }
+};
+
+const findSchemaVariantWithFileProperty = (
+  schema: JSONSchemaProperty | undefined,
+  property: 'file_uploadable' | 'file_downloadable',
+  value: unknown
+): JSONSchemaProperty | undefined => {
+  const candidates = getSchemaVariants(schema).filter(variant =>
+    schemaHasFileProperty(variant, property)
+  );
+
+  return (
+    candidates.find(candidate => jsonSchemaTypeMatchesValue(candidate, value)) ?? candidates[0]
+  );
+};
 
 /**
  * Recursively walks a runtime value and its matching JSON-Schema node,
@@ -28,7 +91,12 @@ const hydrateFiles = async (
     toolSlug: string;
     toolkitSlug: string;
     client: ComposioClient;
-  }
+  } & Pick<
+    GetFileDataAfterUploadingToS3Options,
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
+  > & {
+      beforeFileUpload?: beforeFileUploadModifier;
+    }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct file upload
@@ -37,36 +105,93 @@ const hydrateFiles = async (
     // Upload only if the runtime value is a string (i.e., a local path) or blob
     if (typeof value !== 'string' && !(value instanceof File)) return value;
 
-    logger.debug(`Uploading file "${value}"`);
+    const runBeforeFileUpload = async (
+      path: string,
+      source: 'path' | 'url' | 'file'
+    ): Promise<string> => {
+      if (!ctx.beforeFileUpload) {
+        return path;
+      }
+      const out = await ctx.beforeFileUpload({
+        path,
+        source,
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+      });
+      if (out === false) {
+        throw new ComposioFileUploadAbortedError(
+          'File upload was aborted because beforeFileUpload returned false.'
+        );
+      }
+      return out;
+    };
+
+    if (typeof value === 'string') {
+      // Match the URL/local-path split used downstream in
+      // getFileDataAfterUploadingToS3 so the hook sees the same categorisation.
+      const source = value.startsWith('http') ? 'url' : 'path';
+      const pathOrUrl = await runBeforeFileUpload(value, source);
+      logger.debug(`Uploading file "${pathOrUrl}"`);
+      return getFileDataAfterUploadingToS3(pathOrUrl, {
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+        client: ctx.client,
+        sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+        fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+        fileUploadAllowlist: ctx.fileUploadAllowlist,
+      });
+    }
+
+    // File — `path` is the filename only; a string return replaces it with a
+    // local-path upload.
+    if (ctx.beforeFileUpload) {
+      const out = await ctx.beforeFileUpload({
+        path: value.name,
+        source: 'file',
+        toolSlug: ctx.toolSlug,
+        toolkitSlug: ctx.toolkitSlug,
+      });
+      if (out === false) {
+        throw new ComposioFileUploadAbortedError(
+          'File upload was aborted because beforeFileUpload returned false.'
+        );
+      }
+      if (typeof out === 'string' && out !== value.name) {
+        logger.debug(`Uploading file from path "${out}" (replaced File: ${value.name})`);
+        return getFileDataAfterUploadingToS3(out, {
+          toolSlug: ctx.toolSlug,
+          toolkitSlug: ctx.toolkitSlug,
+          client: ctx.client,
+          sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+          fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+          fileUploadAllowlist: ctx.fileUploadAllowlist,
+        });
+      }
+    }
+    logger.debug(`Uploading file "${value.name}"`);
+    // File/Blob values are not subject to the upload-dir allowlist.
     return getFileDataAfterUploadingToS3(value, {
       toolSlug: ctx.toolSlug,
       toolkitSlug: ctx.toolkitSlug,
       client: ctx.client,
+      sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
+      fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
     });
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Handle anyOf/oneOf/allOf - try each variant that may contain file_uploadable
+  // 2. Handle anyOf/oneOf/allOf — pick the file-bearing variant whose
+  // JSON Schema shape matches the runtime value, then hydrate against it.
+  //
+  // We deliberately do NOT loop over every uploadable variant. With `oneOf`,
+  // exactly one variant should apply at runtime, and applying multiple would
+  // upload the same file once per variant — two presigned-URL round-trips and
+  // two S3 PUTs for a two-variant `oneOf`. If no runtime shape matches, fall
+  // back to the first file-bearing variant to preserve historical behavior.
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
-
-  if (schemaVariants.length > 0) {
-    // Find variants that have file_uploadable properties
-    const uploadableVariants = schemaVariants.filter(schemaHasFileUploadable);
-
-    if (uploadableVariants.length > 0) {
-      // Process with each uploadable variant - we try all since we can't know which one matches at runtime
-      let result = value;
-      for (const variant of uploadableVariants) {
-        result = await hydrateFiles(result, variant, ctx);
-      }
-      return result;
-    }
-    // If no uploadable variants found, fall through to check base properties
+  const uploadableVariant = findSchemaVariantWithFileProperty(schema, 'file_uploadable', value);
+  if (uploadableVariant) {
+    return hydrateFiles(value, uploadableVariant, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -104,7 +229,7 @@ const hydrateFiles = async (
  */
 const downloadS3File = async (
   value: Record<string, unknown>,
-  ctx: { toolSlug: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string }
 ): Promise<unknown> => {
   const { s3url, mimetype } = value as {
     s3url: string;
@@ -118,6 +243,7 @@ const downloadS3File = async (
       toolSlug: ctx.toolSlug,
       s3Url: s3url,
       mimeType: mimetype ?? 'application/octet-stream',
+      fileDownloadDir: ctx.fileDownloadDir,
     });
 
     logger.debug(`Downloaded → ${dl.filePath}`);
@@ -155,7 +281,7 @@ const downloadS3File = async (
 const hydrateDownloads = async (
   value: unknown,
   schema: JSONSchemaProperty | undefined,
-  ctx: { toolSlug: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct S3 reference (data-driven detection)
@@ -174,28 +300,20 @@ const hydrateDownloads = async (
   // ──────────────────────────────────────────────────────────────────────────
   // 3. Handle anyOf/oneOf/allOf - try each variant that may contain file_downloadable
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
+  const schemaVariants = getSchemaVariants(schema);
 
   if (schemaVariants.length > 0) {
-    // Find variants that have file_downloadable properties
-    const downloadableVariants = schemaVariants.filter(schemaHasFileDownloadable);
-
-    // Process with each downloadable variant
-    let result = value;
-    for (const variant of downloadableVariants) {
-      result = await hydrateDownloads(result, variant, ctx);
+    const downloadableVariant = findSchemaVariantWithFileProperty(
+      schema,
+      'file_downloadable',
+      value
+    );
+    if (downloadableVariant) {
+      return hydrateDownloads(value, downloadableVariant, ctx);
     }
 
     // If no downloadable variants found, still traverse the value for s3url objects
-    if (downloadableVariants.length === 0) {
-      return hydrateDownloads(value, undefined, ctx);
-    }
-
-    return result;
+    return hydrateDownloads(value, undefined, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -234,12 +352,20 @@ const hydrateDownloads = async (
 
 export class FileToolModifier {
   private client: ComposioClient;
+  private fileUploadPathOptions: Pick<
+    GetFileDataAfterUploadingToS3Options,
+    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
+  > & { beforeFileUpload?: beforeFileUploadModifier; fileDownloadDir?: string };
 
-  constructor(client: ComposioClient) {
+  constructor(
+    client: ComposioClient,
+    fileUploadPathOptions: FileToolModifier['fileUploadPathOptions'] = {}
+  ) {
     this.client = client;
+    this.fileUploadPathOptions = fileUploadPathOptions;
   }
 
-  async modifyToolSchema(toolSlug: string, toolkitSlug: string, schema: Tool): Promise<Tool> {
+  async modifyToolSchema(schema: Tool): Promise<Tool> {
     if (!schema.inputParameters?.properties) {
       return schema;
     }
@@ -274,9 +400,18 @@ export class FileToolModifier {
         toolSlug,
         toolkitSlug,
         client: this.client,
+        ...this.fileUploadPathOptions,
       });
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
+      if (
+        error instanceof ComposioSensitiveFilePathBlockedError ||
+        error instanceof ComposioFileUploadAbortedError ||
+        error instanceof ComposioFileUploadPathNotAllowedError ||
+        error instanceof ComposioFileNotFoundError
+      ) {
+        throw error;
+      }
       throw new ComposioFileUploadError('Failed to upload file', {
         cause: error,
       });
@@ -296,6 +431,7 @@ export class FileToolModifier {
     // Walk result.data without mutating the original, using output schema for guidance
     const dataWithDownloads = await hydrateDownloads(result.data, tool.outputParameters, {
       toolSlug,
+      fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
     });
 
     return { ...result, data: dataWithDownloads as typeof result.data };

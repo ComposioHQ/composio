@@ -23,6 +23,7 @@ Custom tools support three patterns — standalone tools for internal logic, ext
 <Tab value="TypeScript">
 
 ```typescript
+// @noErrors
 import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -62,7 +63,7 @@ const sendPromoEmail = experimental_createTool("SEND_PROMO_EMAIL", {
 
 // Custom toolkit — groups related tools under a namespace
 const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
-  name: "User management",
+  name: "User scoping",
   description: "Manage user roles and permissions",
   tools: [
     experimental_createTool("ASSIGN_ROLE", {
@@ -143,7 +144,7 @@ def send_promo_email(input: PromoEmailInput, ctx):
 
 user_management = composio.experimental.Toolkit(
     slug="USER_MANAGEMENT",
-    name="User management",
+    name="User scoping",
     description="Manage user roles and permissions",
 )
 

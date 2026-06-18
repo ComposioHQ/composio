@@ -13,10 +13,23 @@ import 'dotenv/config';
 import path from 'path';
 
 /**
- * Initialize Composio
+ * Initialize Composio.
+ *
+ * `dangerouslyAllowAutoUploadDownloadFiles: true` enables the SDK to read local
+ * files from disk during tool execution. When that flag is on, local paths are
+ * restricted to the directories listed in `fileUploadDirs`. Passing a value
+ * REPLACES the default `[~/.composio/temp]` — include it if you want staged
+ * uploads to keep working. Pass `false` (or `[]`) to reject every local path
+ * while still allowing URLs and `File`/`Blob` objects.
+ *
+ * `fileDownloadDir` controls where files in tool responses (`s3url` fields) are
+ * written. Defaults to `~/.composio/files`.
  */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
+  dangerouslyAllowAutoUploadDownloadFiles: true,
+  fileUploadDirs: [path.join(__dirname, '..'), '~/.composio/temp'],
+  fileDownloadDir: path.join(__dirname, '..', '.composio-downloads'),
 });
 
 /**

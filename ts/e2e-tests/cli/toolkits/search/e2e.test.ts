@@ -144,10 +144,10 @@ e2e(import.meta.url, {
 
     describe('mock API usage', () => {
       it('requests the toolkit catalog for each search scenario', () => {
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=10');
-        expect(server.requests).toContain('GET /api/v3/toolkits?search=gmail&limit=1');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits?search=gmail&limit=10');
+        expect(server.requests).toContain('GET /api/v3.1/toolkits?search=gmail&limit=1');
         expect(server.requests).toContain(
-          'GET /api/v3/toolkits?search=xyznonexistent_abc_12345&limit=10'
+          'GET /api/v3.1/toolkits?search=xyznonexistent_abc_12345&limit=10'
         );
       });
     });

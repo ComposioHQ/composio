@@ -13,10 +13,10 @@ export function CapabilityCard({ icon, title, description, href }: CapabilityCar
     <Link
       href={href}
       data-card
-      className="block p-6 rounded-xl border border-fd-border bg-fd-card hover:border-orange-500 hover:bg-fd-accent/50 transition-all [text-decoration:none] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+      className="block p-6 rounded-xl border border-fd-border bg-fd-card hover:border-blue-500 hover:bg-fd-accent/50 transition-all [text-decoration:none] group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
-      <div className="text-orange-500 mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold text-orange-500 mb-2">{title}</h3>
+      <div className="text-blue-500 mb-3">{icon}</div>
+      <h3 className="text-lg font-semibold text-blue-500 mb-2">{title}</h3>
       <p className="text-fd-muted-foreground text-sm leading-relaxed">{description}</p>
     </Link>
   );

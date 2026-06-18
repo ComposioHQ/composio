@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { withHttpServer } from 'test/__utils__/http-server';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { UpgradeBinary, UpgradeBinaryError } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
+import { collectExpectedRunCompanionAssetRelativePaths } from 'src/services/run-companion-modules';
 
 const TerminalUINoop = Layer.succeed(
   TerminalUI,
@@ -342,6 +343,54 @@ describe('UpgradeBinary', () => {
           expect(String(error.cause)).toContain('beta-3.zip');
         }
       );
+    } finally {
+      execPathSpy.mockRestore();
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
+  it('copies local-tool bundled binary assets during local-target upgrades', async () => {
+    const installDir = mkdtempSync(path.join(tmpdir(), 'composio-local-tool-upgrade-target-'));
+    const sourceDir = mkdtempSync(path.join(tmpdir(), 'composio-local-tool-upgrade-source-'));
+    const fakeExecPath = path.join(installDir, 'composio');
+    const sourceBinaryPath = path.join(sourceDir, 'composio');
+    const sourceLocalToolPath = path.join(
+      sourceDir,
+      'local-tools-binaries',
+      'beeper-imessage',
+      'darwin-arm64',
+      'imessage-cli'
+    );
+    const installedLocalToolPath = path.join(
+      installDir,
+      'local-tools-binaries',
+      'beeper-imessage',
+      'darwin-arm64',
+      'imessage-cli'
+    );
+
+    writeFileSync(fakeExecPath, 'old-binary');
+    writeFileSync(sourceBinaryPath, 'new-binary');
+    mkdirSync(path.dirname(sourceLocalToolPath), { recursive: true });
+    writeFileSync(sourceLocalToolPath, 'imessage-sidecar');
+
+    for (const relativePath of collectExpectedRunCompanionAssetRelativePaths(sourceDir)) {
+      const companionPath = path.join(sourceDir, relativePath);
+      mkdirSync(path.dirname(companionPath), { recursive: true });
+      writeFileSync(companionPath, 'support-file');
+    }
+
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+    const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+
+    try {
+      const result = await runUpgradeSuccess([['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]]);
+
+      expect(result).toBeUndefined();
+      expect(readFileSync(fakeExecPath, 'utf8')).toBe('new-binary');
+      expect(existsSync(installedLocalToolPath)).toBe(true);
+      expect(readFileSync(installedLocalToolPath, 'utf8')).toBe('imessage-sidecar');
     } finally {
       execPathSpy.mockRestore();
       vi.unstubAllGlobals();
