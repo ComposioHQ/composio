@@ -14,6 +14,16 @@ No. Notion controls access by granting integrations access to specific pages and
 
 It depends on the integration type. OAuth apps (public) let users select which pages to share during authorization. Internal integrations (API key) have page access managed in the integration settings.
 
+## Why am I seeing Notion connections expire for my users?
+
+This can happen when the same Notion user connects the same workspace more than once through the same Notion OAuth app.
+
+For example, if your product creates a separate Notion connection for each agent, project, or workflow, a newer connection can invalidate the older connection's refresh token. The older connection may keep working for a short time because its access token is still valid, but it expires once Composio can no longer refresh it.
+
+Reuse one active Notion connection for each Notion user, workspace, and OAuth app instead of asking the same user to connect Notion repeatedly.
+
+Using your own Notion OAuth app can isolate your product from Composio-managed app usage across other products, but it does not let the same Notion user keep multiple active connections for the same workspace and OAuth app.
+
 ## How do I set up the Notion webhook ingress endpoint?
 
 With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned — just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
