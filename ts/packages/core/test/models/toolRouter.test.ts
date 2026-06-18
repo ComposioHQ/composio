@@ -23,11 +23,15 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 vi.mock('../../src/models/Tools', () => {
   return {
-    Tools: vi.fn().mockImplementation(() => ({
-      getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-      wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-    })),
+    Tools: vi.fn().mockImplementation(function () {
+      return {
+        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        getRawToolRouterSessionTools: vi
+          .fn()
+          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+      };
+    }),
   };
 });
 
@@ -2469,13 +2473,15 @@ describe('ToolRouter', () => {
     beforeEach(() => {
       // Reset the Tools mock before each test
       vi.clearAllMocks();
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
     });
 
     it('should fetch and wrap tools without modifiers', async () => {
@@ -2535,16 +2541,18 @@ describe('ToolRouter', () => {
         },
       });
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId, {
         toolkits: ['gmail'],
@@ -2635,15 +2643,17 @@ describe('ToolRouter', () => {
         error: null,
         successful: true,
       });
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2694,12 +2704,14 @@ describe('ToolRouter', () => {
         successful: true,
       });
       const multiExecuteTool = { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' };
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2810,11 +2822,15 @@ describe('ToolRouter', () => {
     it('should handle tools fetching errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        getRawToolRouterSessionTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockRejectedValue(new Error('Failed to fetch tools')),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId);
 

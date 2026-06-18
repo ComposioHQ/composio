@@ -16,6 +16,7 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 
@@ -128,7 +129,8 @@ export class LangchainProvider extends BaseAgenticProvider<
       throw new Error('App name is not defined');
     }
     const func = async (...args: unknown[]): Promise<unknown> => {
-      const result = await executeTool(toolName, args[0] as Record<string, unknown>);
+      // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+      const result = await executeTool(toolName, normalizeToolArguments(args[0], toolName));
       return JSON.stringify(result);
     };
     if (!tool.inputParameters) {

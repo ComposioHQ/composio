@@ -7,6 +7,7 @@ on:
       - 'ts/packages/cli/**'
       - 'ts/packages/cli-local-tools/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
       - 'mise.toml'
       - 'mise.lock'
@@ -23,8 +24,11 @@ on:
         description: 'Existing beta release tag to promote (only for promote-stable, e.g. @composio/cli@0.2.20-beta.42)'
         required: false
 
+# Least privilege by default: only the release job creates/edits releases and uploads assets.
+# `prepare` reads releases (gh release list) and `build` uploads workflow artifacts — both work
+# with read access. The release job opts up to `contents: write` for itself.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   prepare:
@@ -54,150 +58,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           RUN_NUMBER: ${{ github.run_number }}
           COMMIT_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          # ── Push to next ──
-          if [[ "$EVENT_NAME" == "push" ]]; then
-            # Check if ts/packages/cli/package.json version changed → stable release
-            current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            previous_version=$(git show HEAD^:ts/packages/cli/package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
-
-            if [[ -n "$previous_version" && "$current_version" != "$previous_version" ]]; then
-              release_tag="@composio/cli@${current_version}"
-              release_name="CLI ${release_tag}"
-              {
-                echo "checkout_ref=${COMMIT_SHA}"
-                echo "release_name=${release_name}"
-                echo "release_tag=${release_tag}"
-                echo "release_version=${current_version}"
-                echo "prerelease=false"
-                echo "make_latest=true"
-              } >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-
-            # Otherwise → beta release
-            # Find the latest stable CLI release to determine next version
-            latest_stable_tag=$(gh release list \
-              --repo "$REPOSITORY" \
-              --json tagName,isPrerelease \
-              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
-
-            if [[ -z "$latest_stable_tag" ]]; then
-              echo "No stable @composio/cli release found, falling back to package.json"
-              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            else
-              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
-            fi
-
-            # Bump patch version for the beta
-            IFS='.' read -r major minor patch <<< "$current_version"
-            next_version="${major}.${minor}.$((patch + 1))"
-
-            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
-            release_name="CLI Beta ${release_tag}"
-            {
-              echo "checkout_ref=${COMMIT_SHA}"
-              echo "release_name=${release_name}"
-              echo "release_tag=${release_tag}"
-              echo "release_version=${next_version}"
-              echo "prerelease=true"
-              echo "make_latest=false"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # ── workflow_dispatch: build-beta ──
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]] && [[ "$ACTION_INPUT" == "build-beta" ]]; then
-            latest_stable_tag=$(gh release list \
-              --repo "$REPOSITORY" \
-              --json tagName,isPrerelease \
-              --jq '[.[] | select(.tagName | startswith("@composio/cli@")) | select(.isPrerelease == false)] | sort_by(.tagName) | last | .tagName // empty')
-
-            if [[ -z "$latest_stable_tag" ]]; then
-              current_version=$(node -p "require('./ts/packages/cli/package.json').version")
-            else
-              current_version=$(echo "$latest_stable_tag" | sed 's/@composio\/cli@//')
-            fi
-
-            IFS='.' read -r major minor patch <<< "$current_version"
-            next_version="${major}.${minor}.$((patch + 1))"
-
-            release_tag="@composio/cli@${next_version}-beta.${RUN_NUMBER}"
-            release_name="CLI Beta ${release_tag}"
-            {
-              echo "checkout_ref=${COMMIT_SHA}"
-              echo "release_name=${release_name}"
-              echo "release_tag=${release_tag}"
-              echo "release_version=${next_version}"
-              echo "prerelease=true"
-              echo "make_latest=false"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # ── Promote stable (workflow_dispatch with promote-stable) ──
-          if [[ "$ACTION_INPUT" != "promote-stable" ]]; then
-            echo "Unknown action: $ACTION_INPUT"
-            exit 1
-          fi
-
-          if [[ -z "$BETA_TAG_INPUT" ]]; then
-            echo "beta_tag input is required for promote-stable"
-            exit 1
-          fi
-
-          encoded_beta_tag=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["BETA_TAG_INPUT"], safe=""))')
-
-          release_json=$(curl -fsSL \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPOSITORY}/releases/tags/${encoded_beta_tag}")
-
-          is_prerelease=$(jq -r '.prerelease' <<<"$release_json")
-          if [[ "$is_prerelease" != "true" ]]; then
-            echo "Release ${BETA_TAG_INPUT} is not a beta prerelease"
-            exit 1
-          fi
-
-          if [[ ! "$BETA_TAG_INPUT" =~ ^@composio/cli@([0-9]+\.[0-9]+\.[0-9]+)-beta\.[0-9]+$ ]]; then
-            echo "Beta tag must match @composio/cli@<version>-beta.<number>"
-            exit 1
-          fi
-
-          stable_version="${BASH_REMATCH[1]}"
-          stable_tag="@composio/cli@${stable_version}"
-          export stable_tag
-
-          stable_status=$(curl -sS -o /tmp/stable-release.json -w "%{http_code}" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPOSITORY}/releases/tags/$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["stable_tag"], safe=""))')")
-          if [[ "$stable_status" == "200" ]]; then
-            echo "Stable release ${stable_tag} already exists"
-            exit 1
-          fi
-          if [[ "$stable_status" != "404" ]]; then
-            echo "Unexpected response while checking stable release ${stable_tag}: HTTP ${stable_status}"
-            cat /tmp/stable-release.json
-            exit 1
-          fi
-
-          target_commitish=$(jq -r '.target_commitish' <<<"$release_json")
-          if [[ -z "$target_commitish" || "$target_commitish" == "null" ]]; then
-            echo "Beta release ${BETA_TAG_INPUT} does not expose target_commitish"
-            exit 1
-          fi
-
-          {
-            echo "checkout_ref=${target_commitish}"
-            echo "release_name=CLI ${stable_tag}"
-            echo "release_tag=${stable_tag}"
-            echo "release_version=${stable_version}"
-            echo "prerelease=false"
-            echo "make_latest=true"
-          } >> "$GITHUB_OUTPUT"
+        run: bash .github/scripts/cli-release/resolve-release-target.sh
 
   build:
     name: Build ${{ matrix.artifact }}
@@ -205,6 +66,11 @@ jobs:
     if: needs.prepare.result == 'success'
     runs-on: ${{ matrix.runner }}
     strategy:
+      # Never publish a partial platform set: with fail-fast disabled, the build job's
+      # result is `success` only when EVERY matrix leg passes, so a single failure makes
+      # `needs.build.result != 'success'` and the release job is skipped. It also surfaces
+      # all platform failures at once instead of cancelling siblings on the first error.
+      fail-fast: false
       matrix:
         include:
           - target: bun-linux-x64
@@ -305,10 +171,30 @@ jobs:
           retention-days: 7
 
   release:
-    name: Create Release
+    name: Release (draft → verify → publish)
     needs: [prepare, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create/edit the GitHub Release and upload assets
+    # fail-fast: false on the build matrix ⇒ this is `success` only if ALL platforms built,
+    # so a partial set can never reach the release path.
     if: needs.build.result == 'success'
+    # Serialize runs that target the SAME release tag (e.g. two quick pushes, or a re-run
+    # racing the original) so they cannot interleave uploads. Keyed on the resolved tag so
+    # unrelated beta builds are not serialized behind each other. Job-level concurrency may
+    # read `needs.*` outputs (workflow-level cannot). The serialized loser fails loudly at the
+    # "already published" guard in create-or-resume-draft.sh — that red ❌ is by design.
+    concurrency:
+      group: cli-release-${{ needs.prepare.outputs.release_tag }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+      RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
+      PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+      MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
+      CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
+      RELEASE_HELPERS_DIR: ${{ github.workspace }}/.release-workflow/.github/scripts/cli-release
 
     steps:
       - name: Checkout
@@ -328,13 +214,9 @@ jobs:
           path: ts/packages/cli/dist/binaries
           merge-multiple: true
 
-      - name: Generate checksums
-        working-directory: ts/packages/cli
-        run: bun run ./scripts/generate-checksums.ts
-
-      - name: Display checksums
-        run: cat ts/packages/cli/dist/binaries/checksums.txt
-
+      # Package skills BEFORE generating checksums so composio-skill.zip is included in
+      # checksums.txt alongside the platform binaries (generate-checksums hashes every .zip
+      # in dist/binaries).
       - name: Package skill files
         working-directory: ts/packages/cli
         env:
@@ -349,33 +231,40 @@ jobs:
           pnpm run build:skills -- --channel "$channel" --output-dir ./dist/skills
           cd dist/skills && zip -r ../binaries/composio-skill.zip composio-cli/
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-          RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
-          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
-          MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
-          CHECKOUT_REF: ${{ needs.prepare.outputs.checkout_ref }}
-        run: |
-          set -euo pipefail
+      - name: Generate checksums
+        working-directory: ts/packages/cli
+        run: bun run ./scripts/generate-checksums.ts
 
-          flags=(
-            --title "$RELEASE_NAME"
-            --target "$CHECKOUT_REF"
-            --generate-notes
-          )
+      - name: Display checksums
+        run: cat ts/packages/cli/dist/binaries/checksums.txt
 
-          if [[ "$PRERELEASE" == "true" ]]; then
-            flags+=(--prerelease)
-            flags+=(--latest=false)
-          else
-            flags+=(--latest)
-          fi
+      - name: Checkout workflow release helpers
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-workflow
+          sparse-checkout: |
+            .github/scripts/cli-release
+          sparse-checkout-cone-mode: false
 
-          gh release create "$RELEASE_TAG" "${flags[@]}" \
-            ts/packages/cli/dist/binaries/*.zip \
-            ts/packages/cli/dist/binaries/checksums.txt
+      # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
+      # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
+      # Homebrew, the redirect) can ever observe a release before its assets are attached and
+      # verified. The release is only flipped to published as the final step below.
+      - name: Create draft release with all assets
+        run: bash "$RELEASE_HELPERS_DIR/create-or-resume-draft.sh"
+
+      # Loud failure gate: assert the full canonical asset set is attached AND fully uploaded.
+      # An asset can appear in the list while still processing (`state != "uploaded"`), which is
+      # exactly how a release ends up serving 404s, so we require state == "uploaded".
+      - name: Verify all release assets are present and uploaded
+        run: bash "$RELEASE_HELPERS_DIR/verify-assets.sh"
+
+      # Publishing is the ONLY step that exposes the release. Do not edit the body here: a known
+      # GitHub PATCH race drops body changes made in the same call as the draft flip, and the
+      # notes were already generated at draft creation. Prerelease status was set on the draft.
+      - name: Publish release (flip draft → published)
+        run: gh release edit "$RELEASE_TAG" --draft=false --latest="$MAKE_LATEST"
 
   test-installation:
     name: Test Installation

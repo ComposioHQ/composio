@@ -13,6 +13,7 @@ from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
+    normalize_tool_arguments,
     reinstate_reserved_python_keywords,
     substitute_reserved_python_keywords,
 )
@@ -47,7 +48,8 @@ class LanggraphProvider(
             kwargs = reinstate_reserved_python_keywords(
                 request=kwargs, keywords=keywords
             )
-            return execute_tool(tool, kwargs)
+            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+            return execute_tool(tool, normalize_tool_arguments(kwargs))
 
         action_func = types.FunctionType(
             function.__code__,
