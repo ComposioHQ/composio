@@ -4,6 +4,11 @@ import app from '../src/index';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
+type HackerNewsUserOutput = {
+  username?: string;
+  karma: number;
+};
+
 describe('Tool Router AI - Cloudflare Workers compatibility', () => {
   it('should list the available endpoints', async () => {
     const request = new IncomingRequest('http://localhost/');
@@ -58,7 +63,7 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
       sessionId?: string;
       toolCount?: number;
       toolCalls?: Array<{ toolName: string }>;
-      toolResults?: Array<{ toolName: string; output: unknown }>;
+      toolResults?: Array<{ toolName: string; output: HackerNewsUserOutput }>;
       response: {
         karma: number;
       };
@@ -72,7 +77,15 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
     expect(body.response).toBeDefined();
     expect(body.response.karma).toBeDefined();
     expect(typeof body.response.karma).toEqual('number');
-    expect(body.toolResults).toBeDefined();
     expect(body.response.karma).toBeGreaterThan(150_000);
+
+    expect(body.toolCalls).toContainEqual({ toolName: 'HACKERNEWS_GET_USER' });
+
+    const hackerNewsToolResult = body.toolResults?.find(
+      toolResult => toolResult.toolName === 'HACKERNEWS_GET_USER'
+    );
+
+    expect(hackerNewsToolResult).toBeDefined();
+    expect(hackerNewsToolResult?.output.karma).toBe(body.response.karma);
   });
 });

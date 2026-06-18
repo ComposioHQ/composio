@@ -19,6 +19,21 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+const hackerNewsUserOutputSchema = z
+  .union([
+    z.object({
+      username: z.string().optional(),
+      karma: z.number(),
+    }),
+    z.object({
+      data: z.object({
+        username: z.string().optional(),
+        karma: z.number(),
+      }),
+    }),
+  ])
+  .transform(output => ('data' in output ? output.data : output));
+
 /**
  * Default route - lists available test endpoints
  */
@@ -104,7 +119,16 @@ app.get('/test/agent', async c => {
   // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
   // aborts the pending stream and Vitest reports it as an unhandled rejection.
 
-  const tools = await mcpClient.tools();
+  const tools = await mcpClient.tools({
+    schemas: {
+      HACKERNEWS_GET_USER: {
+        inputSchema: z.object({
+          username: z.string(),
+        }),
+        outputSchema: hackerNewsUserOutputSchema,
+      },
+    },
+  });
   const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
 
   const result = await generateText({
