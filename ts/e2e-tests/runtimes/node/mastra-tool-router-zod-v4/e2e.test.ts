@@ -57,7 +57,7 @@ e2e(import.meta.url, {
 
           // Create a client with an HTTP server (tries Streamable HTTP, falls back to SSE)
           const mcpClient = new MCPClient({
-            timeout: TIMEOUTS.LLM_SHORT,
+            timeout: TIMEOUTS.LLM_LONG,
             servers: {
               myHttpClient: {
                 url: new URL(mcp.url),
@@ -104,7 +104,7 @@ e2e(import.meta.url, {
           await mcpClient.disconnect();
         },
         {
-          timeout: TIMEOUTS.LLM_SHORT,
+          timeout: TIMEOUTS.LLM_LONG,
         }
       );
     });
