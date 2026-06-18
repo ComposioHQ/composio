@@ -147,7 +147,7 @@ app.get('/test/agent', async c => {
     model: openai('gpt-5.1-codex'),
     prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER.`,
     toolChoice: { type: 'tool', toolName: 'HACKERNEWS_GET_USER' },
-    stopWhen: stepCountIs(10),
+    stopWhen: stepCountIs(1),
     tools,
   });
 
