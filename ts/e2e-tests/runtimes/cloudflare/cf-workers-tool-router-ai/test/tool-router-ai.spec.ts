@@ -58,6 +58,8 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
       sessionId?: string;
       toolCount?: number;
       toolCalls?: Array<{ toolName: string }>;
+      toolResults?: Array<{ toolName: string; output: unknown }>;
+      observedKarma?: number;
       response: {
         karma: number;
       };
@@ -71,7 +73,8 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
     expect(body.response).toBeDefined();
     expect(body.response.karma).toBeDefined();
     expect(typeof body.response.karma).toEqual('number');
-    expect(body.response.karma).toBeGreaterThan(150_000);
+    expect(body.toolResults).toBeDefined();
+    expect(body.observedKarma).toBeGreaterThan(150_000);
 
     expect(body.toolCalls).toContainEqual({ toolName: 'COMPOSIO_SEARCH_TOOLS' });
   });

@@ -17,6 +17,43 @@ type Bindings = {
   OPENAI_API_KEY: string;
 };
 
+const findNumberProperty = (value: unknown, propertyName: string): number | undefined => {
+  if (typeof value === 'string') {
+    try {
+      return findNumberProperty(JSON.parse(value), propertyName);
+    } catch {
+      return undefined;
+    }
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nestedValue = findNumberProperty(item, propertyName);
+      if (nestedValue !== undefined) {
+        return nestedValue;
+      }
+    }
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return undefined;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record[propertyName] === 'number') {
+    return record[propertyName];
+  }
+
+  for (const nestedValue of Object.values(record)) {
+    const result = findNumberProperty(nestedValue, propertyName);
+    if (result !== undefined) {
+      return result;
+    }
+  }
+
+  return undefined;
+};
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 /**
@@ -25,10 +62,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.get('/', c => {
   return c.json({
     message: 'Tool Router AI E2E Test Worker',
-    endpoints: [
-      '/test/mcp-client',
-      '/test/agent',
-    ],
+    endpoints: ['/test/mcp-client', '/test/agent'],
   });
 });
 
@@ -55,15 +89,15 @@ app.get('/test/mcp-client', async c => {
 
   const { mcp } = session;
 
-  const mcpClient = await createMCPClient({
+  await createMCPClient({
     transport: {
       type: 'http',
       url: mcp.url,
       headers: mcp.headers,
     },
   });
-
-  c.executionCtx.waitUntil(mcpClient.close());
+  // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
+  // aborts the pending stream and Vitest reports it as an unhandled rejection.
 
   return c.json({
     message: 'MCP client connected successfully',
@@ -74,7 +108,7 @@ app.get('/test/mcp-client', async c => {
 /**
  * Test: Agent Execution
  * Tests the full workflow: create session, get tools, run agent with generateText.
- * 
+ *
  * Note: this takes ~40s locally.
  */
 app.get('/test/agent', async c => {
@@ -103,37 +137,44 @@ app.get('/test/agent', async c => {
       headers: mcp.headers,
     },
   });
+  // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
+  // aborts the pending stream and Vitest reports it as an unhandled rejection.
 
-  try {
-    const tools = await mcpClient.tools();
-    const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
-  
-    const result = await generateText({
-      model: openai('gpt-5.1-codex'),
-      prompt: `Look up the HackerNews user "pg", and tell me their karma score.`,
-      output: Output.object({
-        schema: z.object({
-          karma: z.number(),
-        }),
+  const tools = await mcpClient.tools();
+  const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
+
+  const result = await generateText({
+    model: openai('gpt-5.1-codex'),
+    prompt: `Use the available tools to look up the HackerNews user "pg". Return the exact karma value from the HackerNews tool result.`,
+    output: Output.object({
+      schema: z.object({
+        karma: z.number(),
       }),
-      stopWhen: stepCountIs(10),
-      tools,
-    });
-  
-    const toolCalls = result.steps.flatMap(step =>
-      step.toolCalls.map(tc => ({ toolName: tc.toolName }))
-    );
+    }),
+    stopWhen: stepCountIs(10),
+    tools,
+  });
 
-    return c.json({
-      message: 'Agent executed successfully',
-      sessionId,
-      toolCount: Object.keys(tools).length,
-      toolCalls,
-      response: result.output,
-    });
-  } finally {
-    c.executionCtx.waitUntil(mcpClient.close());
-  }
+  const toolCalls = result.steps.flatMap(step =>
+    step.toolCalls.map(toolCall => ({ toolName: toolCall.toolName }))
+  );
+  const toolResults = result.steps.flatMap(step =>
+    step.toolResults.map(toolResult => ({
+      toolName: toolResult.toolName,
+      output: toolResult.output,
+    }))
+  );
+  const observedKarma = findNumberProperty(toolResults, 'karma');
+
+  return c.json({
+    message: 'Agent executed successfully',
+    sessionId,
+    toolCount: Object.keys(tools).length,
+    toolCalls,
+    toolResults,
+    observedKarma,
+    response: result.output,
+  });
 });
 
 export default app;
