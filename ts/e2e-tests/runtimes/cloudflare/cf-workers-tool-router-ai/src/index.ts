@@ -121,6 +121,7 @@ app.get('/test/agent', async c => {
   const session = await composio.create('default', {
     toolkits: ['hackernews'],
     manageConnections: true,
+    preload: { tools: ['HACKERNEWS_GET_USER'] },
     tools: {
       hackernews: {
         enable: ['HACKERNEWS_GET_USER'],
@@ -145,12 +146,13 @@ app.get('/test/agent', async c => {
 
   const result = await generateText({
     model: openai('gpt-5.1-codex'),
-    prompt: `Use the available tools to look up the HackerNews user "pg". Return the exact karma value from the HackerNews tool result.`,
+    prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER. Return the exact karma value from that tool result.`,
     output: Output.object({
       schema: z.object({
         karma: z.number(),
       }),
     }),
+    toolChoice: { type: 'tool', toolName: 'HACKERNEWS_GET_USER' },
     stopWhen: stepCountIs(10),
     tools,
   });

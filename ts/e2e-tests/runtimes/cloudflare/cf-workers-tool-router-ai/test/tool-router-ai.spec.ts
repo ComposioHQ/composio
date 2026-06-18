@@ -76,6 +76,6 @@ describe('Tool Router AI - Cloudflare Workers compatibility', () => {
     expect(body.toolResults).toBeDefined();
     expect(body.observedKarma).toBeGreaterThan(150_000);
 
-    expect(body.toolCalls).toContainEqual({ toolName: 'COMPOSIO_SEARCH_TOOLS' });
+    expect(body.toolCalls).toContainEqual({ toolName: 'HACKERNEWS_GET_USER' });
   });
 });
