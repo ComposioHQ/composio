@@ -17,6 +17,11 @@
  * exceeds the staging limit of 2000 requests/minute. Without backoff the run
  * fails with `429`, and `generate-meta-tools.ts` (which runs next) inherits the
  * exhausted window. See docs/scripts/README.md.
+ *
+ * Deliberately hand-rolled rather than using Effect's `Schedule` (which would be
+ * the idiomatic fit elsewhere): the docs package has no Effect dependency and
+ * these are plain bun scripts. Effect is reserved for `ts/packages/cli`. Keep
+ * this helper dependency-free.
  */
 
 const DEFAULT_RETRY_STATUSES = [429, 500, 502, 503, 504];
