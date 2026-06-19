@@ -237,4 +237,22 @@ mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
 
 Commit `mise.lock` with the version bump. The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
 
+### When Bumping the Generated SDK Client (`@composio/client` / `composio-client`)
+
+The Stainless-generated clients are published from separate repos (`ComposioHQ/composio-base-ts` → `@composio/client` on npm; `ComposioHQ/composio-base-py` → `composio-client` on PyPI). **Nothing auto-bumps them here** — there is no Stainless→consumer bot, and Dependabot does not touch the pnpm `catalog:` pin (TS) or the exact `composio-client==` pin (Python). Bumping is manual, and the pin lives in **multiple files that must move together**:
+
+1. **Confirm the version is actually published first.** Check `npm view @composio/client version` / `pip index versions composio-client`. The Python PyPI publish in `composio-base-py` can fail silently (e.g. `403 Forbidden` from a stale `PYPI_TOKEN`) even when the GitHub release/tag exists — verify the package resolves before bumping.
+
+2. **TypeScript** — edit the catalog pin, refresh the lockfile, add a changeset:
+   ```bash
+   # edit pnpm-workspace.yaml -> catalog: '@composio/client'
+   pnpm install --lockfile-only          # updates pnpm-lock.yaml
+   # add a patch changeset for @composio/core and @composio/cli (both consume it)
+   ```
+
+3. **Python** — the pin lives in **three** places; update all of them or `uv sync` / published metadata will be inconsistent:
+   - `python/pyproject.toml` (`dependencies`)
+   - `python/setup.py` (`install_requires`) — easy to miss; setuptools fallback metadata
+   - root `uv.lock` — regenerate from the workspace root: `uv lock --upgrade-package composio-client`
+
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
