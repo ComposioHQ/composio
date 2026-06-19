@@ -333,6 +333,28 @@ importers:
         specifier: workspace:*
         version: link:../../../_utils
 
+  ts/e2e-tests/runtimes/node/claude-agent-sdk:
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.1.9
+        version: 0.1.77(zod@3.25.76)
+      '@composio/claude-agent-sdk':
+        specifier: workspace:*
+        version: link:../../../../packages/providers/claude-agent-sdk
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../../../packages/core
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@e2e-tests/utils':
+        specifier: workspace:*
+        version: link:../../../_utils
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   ts/e2e-tests/runtimes/node/custom-tools:
     dependencies:
       '@composio/core':

@@ -56,6 +56,7 @@ jobs:
       COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
       COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}
       COMPOSIO_E2E_NODE_VERSION: ${{ matrix.node-version }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:

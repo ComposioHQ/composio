@@ -27,6 +27,7 @@ ts/e2e-tests/
 ├── runtimes/
     ├── node/                                # Node.js runtime tests
     │   ├── cjs-basic/                       # Node.js 22 require(esm) interop tests
+    │   ├── claude-agent-sdk/                # @composio/claude-agent-sdk + Claude Agent SDK MCP tests
     │   ├── custom-tools/                    # Custom local tools execution (session.execute, proxyExecute, Zod validation)
     │   ├── esm-basic/                       # ESM compatibility tests
     │   ├── json-schema-to-zod-v3/           # @composio/json-schema-to-zod + Zod v3 tests
