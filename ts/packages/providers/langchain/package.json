@@ -3,6 +3,15 @@
   "version": "0.9.3",
   "description": "",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/providers/langchain"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/langchain#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",

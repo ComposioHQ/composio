@@ -167,7 +167,7 @@
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ComposioHQ/composio.git",
+    "url": "https://github.com/ComposioHQ/composio.git",
     "directory": "ts/packages/core"
   },
   "bugs": {
