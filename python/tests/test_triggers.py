@@ -12,7 +12,13 @@ import pytest
 from composio_client import omit
 
 from composio import exceptions
-from composio.core.models.triggers import Triggers, WebhookVersion
+from composio.core.models.triggers import (
+    _MAX_LOGGED_FRAME_CHARS,
+    Triggers,
+    TriggerSubscription,
+    WebhookVersion,
+    _truncate_frame,
+)
 
 
 class TestTriggers:
@@ -248,6 +254,8 @@ class TestTriggers:
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
         assert call_kwargs["connected_account_id"] == "conn-456"
         assert call_kwargs["toolkit_versions"] is None
+        # user_id forwarded for trigger 2FA ownership verification
+        assert call_kwargs["extra_body"] == {"user_id": "user-123"}
         assert result == mock_response
 
     def test_create_with_custom_toolkit_versions(
@@ -1122,3 +1130,255 @@ class TestVerifyWebhook:
         """Test that WebhookPayloadError inherits from TriggerError."""
         error = exceptions.WebhookPayloadError("test")
         assert isinstance(error, exceptions.TriggerError)
+
+
+class TestTriggerSubscriptionParsing:
+    """Tests for realtime (Pusher) payload parsing in TriggerSubscription."""
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_parse_payload_v3_realtime_envelope(self, subscription):
+        """A V3 realtime envelope is parsed (no KeyError: 'nanoId')."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    "log_id": "log-1",
+                    "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": "user-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["id"] == "ti_abc"
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["toolkit_slug"] == "GMAIL"
+        assert result["user_id"] == "user-1"
+        assert result["payload"] == {"subject": "hello"}
+        assert result["metadata"]["connected_account"]["id"] == "ca_abc"
+        assert result["metadata"]["connected_account"]["auth_config_id"] == "ac_abc"
+
+    def test_parse_payload_legacy_envelope(self, subscription):
+        """A legacy (V1/V2) realtime envelope still parses correctly."""
+        event = json.dumps(
+            {
+                "appName": "gmail",
+                "payload": {"subject": "hello"},
+                "originalPayload": {"raw": 1},
+                "metadata": {
+                    "id": "uuid-1",
+                    "nanoId": "ti_abc",
+                    "triggerName": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "triggerData": "",
+                    "triggerConfig": {},
+                    "connection": {
+                        "id": "conn-uuid",
+                        "connectedAccountNanoId": "ca_abc",
+                        "authConfigNanoId": "ac_abc",
+                        "integrationId": "int-uuid",
+                        "clientUniqueUserId": "user-1",
+                        "status": "ACTIVE",
+                    },
+                },
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["id"] == "ti_abc"
+        assert result["toolkit_slug"] == "gmail"
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["metadata"]["connected_account"]["id"] == "ca_abc"
+        assert result["original_payload"] == {"raw": 1}
+
+    def test_parse_payload_malformed_returns_none(self, subscription):
+        """Truly undecodable or unrecognized frames are skipped, not raised."""
+        assert subscription._parse_payload("not-json") is None
+        assert subscription._parse_payload(json.dumps({"unexpected": True})) is None
+
+    def test_parse_payload_legacy_non_dict_metadata_does_not_raise(self, subscription):
+        """A legacy frame with a non-dict metadata is skipped, not raised.
+
+        Guards the broadened `except Exception` in _parse_payload: such a frame
+        must return None rather than propagate into pysher's dispatch loop.
+        """
+        event = json.dumps({"appName": "gmail", "metadata": "not-a-dict"})
+        assert subscription._parse_payload(event) is None
+
+    def test_parse_payload_non_trigger_v3_event(self, subscription):
+        """A non-trigger composio.* event is normalized as a COMPOSIO event."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.connected_account.expired",
+                "metadata": {"project_id": "pr_1"},
+                "data": {"status": "EXPIRED"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["toolkit_slug"] == "COMPOSIO"
+        assert result["trigger_slug"] == "composio.connected_account.expired"
+        assert result["original_payload"] == json.loads(event)
+
+    def test_parse_payload_trigger_empty_metadata_does_not_raise(self, subscription):
+        """A trigger frame with empty metadata is delivered with empty identity."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {},
+                "data": {},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == ""
+        assert result["toolkit_slug"] == "UNKNOWN"
+
+    def test_parse_payload_legacy_missing_optional_fields(self, subscription):
+        """A legacy frame missing optional fields is delivered, not dropped."""
+        event = json.dumps(
+            {
+                "appName": "gmail",
+                "payload": {"subject": "hello"},
+                # originalPayload + triggerData intentionally omitted
+                "metadata": {
+                    "id": "uuid-1",
+                    "nanoId": "ti_abc",
+                    "triggerName": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "triggerConfig": {},
+                    "connection": {
+                        "id": "conn-uuid",
+                        "connectedAccountNanoId": "ca_abc",
+                        "authConfigNanoId": "ac_abc",
+                        "integrationId": "int-uuid",
+                        "clientUniqueUserId": "user-1",
+                        "status": "ACTIVE",
+                    },
+                },
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["original_payload"] is None
+        assert result["metadata"]["trigger_data"] is None
+
+    def test_parse_payload_trigger_keyed_off_type_not_all_metadata(self, subscription):
+        """A trigger frame missing one metadata field is still a trigger event.
+
+        Detection keys off ``type == "composio.trigger.message"`` rather than
+        requiring all six metadata fields, so the event is delivered (not
+        silently demoted to a non-trigger COMPOSIO event).
+        """
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    # ``log_id`` intentionally omitted
+                    "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": "user-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == "GMAIL_NEW_GMAIL_MESSAGE"
+        assert result["toolkit_slug"] == "GMAIL"
+        assert result["user_id"] == "user-1"
+
+    def test_parse_payload_non_string_trigger_slug_does_not_raise(self, subscription):
+        """A null/non-string trigger_slug must not raise AttributeError (Vector A)."""
+        event = json.dumps(
+            {
+                "id": "evt-1",
+                "type": "composio.trigger.message",
+                "metadata": {
+                    "trigger_slug": None,
+                    "trigger_id": "ti_abc",
+                    "connected_account_id": "ca_abc",
+                    "auth_config_id": "ac_abc",
+                    "user_id": 123,
+                    "log_id": "log-1",
+                },
+                "data": {"subject": "hello"},
+            }
+        )
+
+        result = subscription._parse_payload(event)
+
+        assert result is not None
+        assert result["trigger_slug"] == ""
+        assert result["toolkit_slug"] == "UNKNOWN"
+        assert result["user_id"] == "123"
+
+    @staticmethod
+    def _make_event(**overrides):
+        """Build a minimal TriggerEvent dict for filter-matching tests."""
+        event = {
+            "id": "ti_1",
+            "uuid": "ti_1",
+            "user_id": "user-1",
+            "toolkit_slug": "GMAIL",
+            "trigger_slug": "GMAIL_NEW_GMAIL_MESSAGE",
+            "metadata": {
+                "id": "ti_1",
+                "connected_account": {
+                    "id": "ca_1",
+                    "auth_config_id": "ac_1",
+                },
+            },
+        }
+        event.update(overrides)
+        return event
+
+    def test_filters_match_no_filters_matches(self, subscription):
+        """An empty filterset matches any event."""
+        assert subscription._filters_match(self._make_event(), {}, "cb") is True
+
+    def test_filters_match_does_not_crash_on_non_string_event_value(self, subscription):
+        """A non-string identity field must not raise AttributeError (Vector B)."""
+        event = self._make_event(user_id=123)
+        assert subscription._filters_match(event, {"user_id": "123"}, "cb") is True
+        assert subscription._filters_match(event, {"user_id": "999"}, "cb") is False
+
+    def test_filters_match_empty_event_value_does_not_fail_open(self, subscription):
+        """A synthesized empty identity field must not match a "" filter."""
+        event = self._make_event(user_id="")
+        assert subscription._filters_match(event, {"user_id": ""}, "cb") is False
+
+    def test_truncate_frame_bounds_long_frames(self):
+        """A long raw frame is truncated so PII-bearing frames aren't dumped."""
+        short = "x" * 10
+        assert _truncate_frame(short) == short
+
+        long = "y" * (_MAX_LOGGED_FRAME_CHARS + 100)
+        truncated = _truncate_frame(long)
+        assert len(truncated) < len(long)
+        assert truncated.startswith("y" * _MAX_LOGGED_FRAME_CHARS)
+        assert str(len(long)) in truncated

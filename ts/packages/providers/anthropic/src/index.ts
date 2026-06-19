@@ -15,6 +15,7 @@ import {
   ToolExecuteParams,
   logger,
   McpUrlResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -211,7 +212,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
     const payload: ToolExecuteParams = {
-      arguments: toolUse.input,
+      // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+      arguments: normalizeToolArguments(toolUse.input, toolUse.name),
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
+  COMPOSIO_BASE_URL: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -35,6 +36,7 @@ app.get('/test/files/upload', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     // Attempt to call files.upload - should throw an error
@@ -67,6 +69,7 @@ app.get('/test/files/download', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     // Attempt to call files.download - should throw an error
@@ -103,6 +106,7 @@ app.get('/test/auto-upload-disabled', async c => {
     // Explicitly keep automatic file handling off (default everywhere)
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
       dangerouslyAllowAutoUploadDownloadFiles: false,
     });
 
@@ -141,6 +145,7 @@ app.get('/test/default-config', async c => {
     // Should use the workerd default (false)
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     return c.json({

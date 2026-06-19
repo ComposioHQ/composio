@@ -17,6 +17,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { stepCountIs } from 'ai';
 import { z } from 'zod';
 
+const MCP_CONNECT_TIMEOUT_MS = 15_000;
+
 declare module 'bun' {
   interface Env {
     COMPOSIO_API_KEY: string;
@@ -31,7 +33,7 @@ e2e(import.meta.url, {
     OPENAI_API_KEY: Bun.env.OPENAI_API_KEY,
   },
   defineTests: () => {
-    describe('@composio/mastra + openai + zod 4', () => {
+    describe('@composio/mastra + openai + zod 3', () => {
       const composio = new Composio({
         apiKey: Bun.env.COMPOSIO_API_KEY,
         provider: new MastraProvider(),
@@ -55,9 +57,11 @@ e2e(import.meta.url, {
 
           // Create a client with an HTTP server (tries Streamable HTTP, falls back to SSE)
           const mcpClient = new MCPClient({
+            timeout: TIMEOUTS.LLM_LONG,
             servers: {
               myHttpClient: {
                 url: new URL(mcp.url),
+                connectTimeout: MCP_CONNECT_TIMEOUT_MS,
                 requestInit: {
                   headers: mcp.headers,
                 },
@@ -100,7 +104,7 @@ e2e(import.meta.url, {
           await mcpClient.disconnect();
         },
         {
-          timeout: TIMEOUTS.LLM_SHORT,
+          timeout: TIMEOUTS.LLM_LONG,
         }
       );
     });

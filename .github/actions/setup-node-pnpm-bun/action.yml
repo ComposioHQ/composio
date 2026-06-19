@@ -69,20 +69,22 @@ runs:
       shell: bash
       run: mise install npm:pnpm
 
-    - name: Resolve pnpm store path
+    - name: Resolve pnpm store path and Node version
       if: inputs.enable-caching == 'true'
       id: pnpm-store
       shell: bash
-      run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+        echo "NODE_VERSION=$(node --version | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
     - name: Cache pnpm store
       if: inputs.enable-caching == 'true'
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-pnpm-store-
+          ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
 
     - name: Report versions
       id: versions
