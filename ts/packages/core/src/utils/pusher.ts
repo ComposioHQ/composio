@@ -21,12 +21,6 @@ type PusherClient = {
   };
 };
 
-type AuthOptions = {
-  endpoint: string;
-  headers: Record<string, string>;
-  params?: Record<string, string>;
-};
-
 type TChunkedTriggerData = {
   id: string;
   index: number;
@@ -71,28 +65,32 @@ export class PusherUtils {
               'x-api-key': apiKey,
             },
             transport: 'ajax',
-            customHandler: async (authOptions: AuthOptions) => {
-              try {
-                const response = await fetch(authOptions.endpoint, {
-                  method: 'POST',
-                  headers: {
-                    ...authOptions.headers,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(authOptions.params),
+            customHandler: (params, callback) => {
+              fetch(`${baseURL}/api/v3/internal/sdk/realtime/auth`, {
+                method: 'POST',
+                headers: {
+                  'x-api-key': apiKey,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  socket_id: params.socketId,
+                  channel_name: params.channelName,
+                }),
+              })
+                .then(async response => {
+                  const data = await response.text();
+                  logger.debug('Pusher auth response:', data);
+                  try {
+                    callback(null, JSON.parse(data));
+                  } catch (e) {
+                    logger.error('Failed to parse auth response:', e);
+                    callback(new Error('Invalid auth response format'), null);
+                  }
+                })
+                .catch((error: unknown) => {
+                  logger.error('Pusher auth request failed:', error);
+                  callback(error instanceof Error ? error : new Error(String(error)), null);
                 });
-                const data = await response.text();
-                logger.debug('Pusher auth response:', data);
-                try {
-                  return JSON.parse(data);
-                } catch (e) {
-                  logger.error('Failed to parse auth response:', e);
-                  throw new Error('Invalid auth response format');
-                }
-              } catch (error) {
-                logger.error('Pusher auth request failed:', error);
-                throw error;
-              }
             },
           },
         });
