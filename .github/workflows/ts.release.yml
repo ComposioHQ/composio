@@ -34,9 +34,9 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
-          # TODO: Once https://github.com/ComposioHQ/composio/pull/3494 lands,
-          # centralize this trusted-publishing runtime in mise.toml and drop
-          # the release-only override.
+          # Pin Node.js 24 for the release job only: the npm it bundles supports
+          # OIDC trusted publishing, which the toolchain's Node 22 (mise.toml)
+          # does not. Intentionally a release-only override, not centralized.
           node-version: '24.17.0'
 
       - name: Install Dependencies
