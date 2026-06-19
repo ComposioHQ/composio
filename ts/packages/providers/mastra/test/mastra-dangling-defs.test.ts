@@ -16,7 +16,7 @@
  * AJV-backed compat layer.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   logger,
   telemetry,
@@ -131,6 +131,10 @@ describe('MastraProvider: dangling $ref tolerance', () => {
     provider._setExecuteToolFn(exec);
     warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
     telemetrySpy = vi.spyOn(telemetry, 'sendMetric').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('does not throw when outputParameters has a $ref with no $defs declared (GMAIL_FETCH_EMAILS shape)', () => {

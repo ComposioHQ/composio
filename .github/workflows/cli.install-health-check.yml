@@ -5,23 +5,63 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read # gh release list reads the published releases
+
 jobs:
   health-check:
     name: Test CLI Installation
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Run install script
+      # Resolve the newest PUBLISHED stable @composio/cli release — exactly what install.sh and
+      # the /releases/latest redirect (Homebrew, humans) resolve and download from.
+      #
+      # Deliberately NOT `npm view @composio/cli version`: npm's latest dist-tag is bumped by
+      # changesets minutes before the binary workflow finishes the draft build and publishes the
+      # GitHub release. Pinning to the npm version would 404 during that healthy publish gap and
+      # false-page hourly. Drafts are excluded here, so this only ever resolves a fully-published
+      # release — the in-flight one stays invisible until its assets are verified and attached.
+      - name: Resolve newest published release
+        id: resolve
         run: |
           set -euo pipefail
-          curl -fsSL https://composio.dev/install | bash
+          tag=$(gh release list --repo "${{ github.repository }}" --limit 1000 --exclude-drafts --exclude-pre-releases --json tagName \
+            --jq '.[] | select(.tagName | startswith("@composio/cli@")) | .tagName' \
+            | sed -n '1p')
+          if [[ -z "$tag" ]]; then
+            echo "::error::No published @composio/cli release found"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Latest published release: ${tag}"
+
+      # Install the PINNED newest tag. This is the path that 404s when a release ships without
+      # assets. The no-arg `curl | bash` below is asset-aware and silently falls back to the
+      # previous good release, so it would stay green even when the newest release is broken —
+      # which is exactly why the previous canary never caught the recurring outage.
+      - name: Install newest stable (pinned — fails on a release with missing assets)
+        run: |
+          set -euo pipefail
+          curl -fsSL https://composio.dev/install | bash -s -- "${{ steps.resolve.outputs.tag }}"
           echo "$HOME/.composio" >> "$GITHUB_PATH"
 
-      - name: Verify installation
+      - name: Verify pinned installation
         run: |
           set -euo pipefail
           ls -la "$HOME/.composio" || true
           which composio
           composio --version
+
+      # Secondary: the default no-arg flow most users run. Asset-aware and self-healing, so it
+      # is a coverage net rather than the primary signal.
+      - name: Install via default no-arg flow
+        run: |
+          set -euo pipefail
+          rm -rf "$HOME/.composio"
+          curl -fsSL https://composio.dev/install | bash
+          "$HOME/.composio/composio" --version
 
       - name: Send Slack Notification (Failure)
         if: failure()

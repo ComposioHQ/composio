@@ -243,6 +243,10 @@ function extractTag(comment: TypeDocReflection['comment'] | undefined, tagName: 
   return comment.blockTags.filter(t => t.tag === tagName).map(t => extractText(t.content));
 }
 
+function formatYamlFrontmatterString(value: string): string {
+  return JSON.stringify(value);
+}
+
 function formatType(type?: TypeDocType, depth = 0): string {
   if (!type) return 'unknown';
   if (depth > 5) return '...'; // Prevent infinite recursion
@@ -524,8 +528,8 @@ function generateClassMdx(classDoc: ClassDoc): string {
 
   // Frontmatter - fumadocs renders title and description automatically
   lines.push('---');
-  lines.push(`title: ${classDoc.name}`);
-  lines.push(`description: ${fullDescription}`);
+  lines.push(`title: ${formatYamlFrontmatterString(classDoc.name)}`);
+  lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
 
@@ -807,8 +811,8 @@ async function main() {
     .join('\n');
 
   const indexContent = `---
-title: TypeScript SDK Reference
-description: Complete API reference for the Composio TypeScript SDK (@composio/core).
+title: ${formatYamlFrontmatterString('TypeScript SDK Reference')}
+description: ${formatYamlFrontmatterString('Complete API reference for the Composio TypeScript SDK (@composio/core).')}
 ---
 
 ## Installation

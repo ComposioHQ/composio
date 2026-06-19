@@ -68,7 +68,7 @@ jobs:
           } > audit-comment.txt
 
       - name: Post audit comment to PR
-        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
+        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           file-path: audit-comment.txt

@@ -5,7 +5,6 @@ import './global.css';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
-import { DecimalWidget } from '@/components/decimal-widget';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
 import { source } from '@/lib/source';
@@ -129,7 +128,6 @@ export default function Layout({ children }: LayoutProps<'/'>) {
             {children}
           </RootProvider>
         </PostHogProvider>
-        <DecimalWidget />
       </body>
     </html>
   );

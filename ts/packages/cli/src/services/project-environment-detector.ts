@@ -144,7 +144,7 @@ const pickBestWeak = (candidate: DirEvidence, depth: number) => {
   } as const;
 };
 
-/** Known system paths that must not be treated as project roots for weak detection. */
+/** Known system paths that must not be treated as project roots. */
 const SYSTEM_ROOTS = new Set([
   '/',
   '/tmp',
@@ -155,7 +155,7 @@ const SYSTEM_ROOTS = new Set([
   '/private/var',
 ]);
 
-/** Reject system roots (/, /tmp, /var, /private/tmp, etc.) as project roots for weak detection. */
+/** Reject system roots (/, /tmp, /var, /private/tmp, etc.) as project roots. */
 const isSystemRoot = (dir: string): boolean => {
   const resolved = path.resolve(dir);
   if (SYSTEM_ROOTS.has(resolved)) return true;
@@ -410,9 +410,10 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
 
     for (const [depth, dir] of dirs.entries()) {
       const evidence = yield* analyzeDirectory(fs, dir);
+      const systemRoot = isSystemRoot(dir);
 
       if (evidence.strongJs && evidence.strongPy) {
-        if (depth === 0) {
+        if (depth === 0 && !systemRoot) {
           return yield* Effect.fail(
             new ProjectEnvironmentDetectorError({
               cause: new Error('Ambiguous project language'),
@@ -422,19 +423,20 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
             })
           );
         }
-        if (!ambiguous) ambiguous = { dir, details: `Indicators: ${evidence.evidence.join(', ')}` };
+        if (!systemRoot && !ambiguous)
+          ambiguous = { dir, details: `Indicators: ${evidence.evidence.join(', ')}` };
         continue;
       }
 
-      if (evidence.strongJs)
+      if (!systemRoot && evidence.strongJs)
         return { language: chooseJsLanguage(evidence), rootDir: dir, evidence } as const;
-      if (evidence.strongPy)
+      if (!systemRoot && evidence.strongPy)
         return { language: 'python' as const, rootDir: dir, evidence } as const;
 
       // Only allow weak detection at the requested cwd. Walking weak signals up
       // arbitrary ancestor directories causes false positives in temp dirs and
       // other shared parent paths outside the actual project.
-      const weakCandidate = depth === 0 ? pickBestWeak(evidence, depth) : null;
+      const weakCandidate = depth === 0 && !systemRoot ? pickBestWeak(evidence, depth) : null;
       if (weakCandidate && (!bestWeak || weakCandidate.score > bestWeak.score))
         bestWeak = weakCandidate;
     }

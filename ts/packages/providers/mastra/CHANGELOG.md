@@ -1,5 +1,30 @@
 # @composio/mastra
 
+## 0.9.3
+
+### Patch Changes
+
+- b69cef1: Tolerate dangling `$ref` pointers in tool schemas the Composio API ships without a matching `$defs` entry. Some toolkits (e.g. `GMAIL_FETCH_EMAILS`) emit `outputParameters` with `"$ref": "#/$defs/FetchEmailsResponse"` while never declaring a top-level `$defs` block. After the strict resolver shipped with the previous Mastra fix, this caused `composio.tools.get(...)` to throw `JsonSchemaRefResolutionError` upfront, making every Gmail / Slack / Google-Calendar tool unusable through `MastraProvider`. The SDK now degrades the unresolvable branch to a permissive object schema and surfaces a single observability warning per `(toolSlug, ref)` pair instead of crashing.
+  - `dereferenceJsonSchema` accepts a new optional second argument `{ onUnresolved?: 'throw' | 'sentinel'; onReplace?: (ref, reason) => void }`. Default behavior is unchanged (`'throw'`) — first-party / custom-tool schemas with a typo'd `$ref` still surface as a hard error. Pass `'sentinel'` to replace unresolved branches with the cycle-break sentinel (`{ type: 'object', additionalProperties: true }`) that the resolver already uses for `$ref` cycles. The replaced sentinel carries a default `description` hint so LLMs consuming the wrapped tool's schema get an in-band signal that the branch is opaque; a caller-provided `description` sibling overrides the default (Draft 2020-12 sibling-keyword merge). Safety caps (`MAX_REF_CHAIN_DEPTH`, `MAX_NODE_DEPTH`) keep throwing in both modes. New `UnresolvedRefStrategy`, `UnresolvedRefReason`, and `DereferenceJsonSchemaOptions` type exports.
+  - `MastraProvider.wrapTool` opts both `inputParameters` and `outputParameters` into `'sentinel'` mode and emits one `logger.warn` per `(toolSlug, ref)` pair via the provider-scoped dedup `Set`. User-controlled segments in the warning (`tool.slug`, `toolkit.slug`, `ref`) are `JSON.stringify`d to neutralize embedded newlines / ANSI escapes / control bytes that could otherwise forge log lines (CWE-117). A matching one-shot telemetry event (`composio.mastra.wrapTool.danglingRef`) fires next to the warn so the Composio team has aggregate visibility into which toolkits are affected; the event respects `COMPOSIO_DISABLE_TELEMETRY=true`.
+  - The `telemetry` instance from `@composio/core` is now publicly re-exported alongside `logger`, so providers can emit aggregate signals without reaching into the package's internals.
+  - Resolvable `$defs` / `definitions` continue to be inlined exactly as before — no regression in the type-info preservation contract introduced by the previous Mastra fix.
+
+- ce4b213: fix(providers): normalize string tool-call arguments across all providers
+
+  Models occasionally emit tool-call arguments as a JSON string instead of an
+  object (most visibly with `COMPOSIO_MULTI_EXECUTE_TOOL` on the Vercel AI SDK),
+  which broke downstream validation with errors like
+  `tool_use.input: Input should be a valid dictionary`.
+
+  `@composio/core` now exposes a single `normalizeToolArguments` helper, and every
+  provider routes model-supplied arguments through it. Object payloads pass
+  through unchanged, JSON strings are parsed, empty/`null` payloads become `{}`,
+  and anything that cannot resolve to an object throws a typed
+  `ComposioInvalidToolArgumentsError` instead of a raw `SyntaxError` or a silently
+  forwarded malformed string. This replaces the inconsistent per-provider guards
+  that previously existed only in vercel, cloudflare and openai-agents.
+
 ## 0.9.2
 
 ### Patch Changes
