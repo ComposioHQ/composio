@@ -9,6 +9,9 @@ jobs:
   release:
     name: Release Typescript SDK
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       # Mint a short-lived GitHub App installation token instead of a long-lived
       # PAT. App tokens don't expire out from under us (the old CI_BOT_TOKEN PAT
@@ -30,6 +33,11 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          # TODO: Once https://github.com/ComposioHQ/composio/pull/3494 lands,
+          # centralize this trusted-publishing runtime in mise.toml and drop
+          # the release-only override.
+          node-version: '24.17.0'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -40,8 +48,6 @@ jobs:
       - name: Run Build
         run: pnpm run build:packages
 
-      - name: Set up .npmrc
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
