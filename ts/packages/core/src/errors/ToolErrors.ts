@@ -6,7 +6,6 @@ export const ToolErrorCodes = {
   TOOLSET_NOT_DEFINED: 'TOOLSET_NOT_DEFINED',
   TOOL_NOT_FOUND: 'TOOL_NOT_FOUND',
   INVALID_MODIFIER: 'INVALID_MODIFIER',
-  CUSTOM_TOOLS_NOT_INITIALIZED: 'CUSTOM_TOOLS_NOT_INITIALIZED',
   TOOL_EXECUTION_ERROR: 'TOOL_EXECUTION_ERROR',
   INVALID_EXECUTE_FUNCTION: 'INVALID_EXECUTE_FUNCTION',
   GLOBAL_EXECUTE_TOOL_FN_NOT_SET: 'GLOBAL_EXECUTE_TOOL_FN_NOT_SET',
@@ -58,22 +57,6 @@ export class ComposioInvalidModifierError extends ComposioError {
       ],
     });
     this.name = 'ComposioInvalidModifierError';
-  }
-}
-
-export class ComposioCustomToolsNotInitializedError extends ComposioError {
-  constructor(
-    message: string = 'Custom tools not initialized',
-    options: Omit<ComposioErrorOptions, 'code'> = {}
-  ) {
-    super(message, {
-      ...options,
-      code: ToolErrorCodes.CUSTOM_TOOLS_NOT_INITIALIZED,
-      possibleFixes: options.possibleFixes || [
-        'Ensure the custom tools class is initialized in the Tools instance',
-      ],
-    });
-    this.name = 'ComposioCustomToolsNotInitializedError';
   }
 }
 

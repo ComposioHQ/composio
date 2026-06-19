@@ -30,8 +30,6 @@ import {
   ToolListParams as ComposioToolListParams,
   ToolExecuteParams as ComposioToolExecuteParams,
 } from '@composio/client/resources/tools';
-import { CustomTools } from './CustomTools';
-import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
 import {
   afterExecuteModifier,
   ExecuteToolModifiers,
@@ -43,7 +41,6 @@ import { BaseComposioProvider } from '../provider/BaseProvider';
 import logger from '../utils/logger';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
-  ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
@@ -98,7 +95,6 @@ export class Tools<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   private client: ComposioClient;
-  private readonly customTools: CustomTools;
   private provider: TProvider;
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
@@ -124,7 +120,6 @@ export class Tools<
     }
 
     this.client = client;
-    this.customTools = new CustomTools(client);
     this.provider = config.provider;
     this.autoUploadDownloadFiles = config?.dangerouslyAllowAutoUploadDownloadFiles === true;
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
@@ -142,7 +137,6 @@ export class Tools<
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
     this.provider._setExecuteToolFn(this.createExecuteFnForProviders());
-    // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
 
@@ -337,10 +331,12 @@ export class Tools<
   }
 
   /**
-   * Lists all tools available in the Composio SDK including custom tools.
+   * Lists Composio API tools available to the SDK.
    *
-   * This method fetches tools from the Composio API in raw format and combines them with
-   * any registered custom tools. The response can be filtered and modified as needed.
+   * This method fetches remote Composio tools from the API in raw format. The response can be
+   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * them when creating or reusing a Tool Router session, then use `session.tools()`,
+   * `session.customTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -467,14 +463,7 @@ export class Tools<
     }
     const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
 
-    const customTools = await this.customTools.getCustomTools({
-      toolSlugs: 'tools' in queryParams.data ? queryParams.data.tools : undefined,
-    });
-
-    let modifiedTools = await this.applyDefaultSchemaModifiers([
-      ...caseTransformedTools,
-      ...customTools,
-    ]);
+    let modifiedTools = await this.applyDefaultSchemaModifiers(caseTransformedTools);
 
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
@@ -555,6 +544,9 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
+   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
    * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval
@@ -584,9 +576,6 @@ export class Tools<
    *   }
    * );
    *
-   * // Get a custom tool (will check custom tools first)
-   * const customTool = await composio.tools.getRawComposioToolBySlug('MY_CUSTOM_TOOL');
-   *
    * // Access tool properties
    * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
    * console.log({
@@ -600,15 +589,6 @@ export class Tools<
    * ```
    */
   async getRawComposioToolBySlug(slug: string, options?: ToolRetrievalOptions): Promise<Tool> {
-    // check if the tool is a custom tool
-    const customTool = await this.customTools.getCustomToolBySlug(slug);
-    if (customTool) {
-      logger.debug(`Found ${slug} to be a custom tool`, JSON.stringify(customTool, null, 2));
-      return customTool;
-    } else {
-      logger.debug(`Tool ${slug} is not a custom tool. Fetching from Composio API`);
-    }
-    // if not, fetch the tool from the Composio API
     let tool: ToolRetrieveResponse;
     try {
       // Build API call parameters based on version source
@@ -915,8 +895,7 @@ export class Tools<
   /**
    * Executes a given tool with the provided parameters.
    *
-   * This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
-   * It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
+   * This method calls the Composio API to execute the tool and returns the response.
    *
    * **Version Control:**
    * By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
@@ -933,7 +912,6 @@ export class Tools<
    * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    *
-   * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
    * @throws {ComposioConnectedAccountNotFoundError} If the connected account is not found
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
    * @throws {ComposioToolVersionRequiredError} If version resolves to "latest" and dangerouslySkipVersionCheck is not true
@@ -990,24 +968,14 @@ export class Tools<
     body: ToolExecuteParams,
     modifiers?: ExecuteToolModifiers
   ): Promise<ToolExecuteResponse> {
-    if (!this.customTools) {
-      throw new ComposioCustomToolsNotInitializedError(
-        'CustomTools not initialized. Make sure Tools class is properly constructed.'
-      );
-    }
-
     const executeParams = ToolExecuteParamsSchema.safeParse(body);
     if (!executeParams.success) {
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
-    // Determine if it's a custom tool or composio tool
-    const customTool = await this.customTools.getCustomToolBySlug(slug);
-    const tool =
-      customTool ??
-      (await this.getRawComposioToolBySlug(slug, {
-        version: body.version,
-      }));
+    const tool = await this.getRawComposioToolBySlug(slug, {
+      version: body.version,
+    });
     const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
 
     // Apply before execute modifiers
@@ -1021,10 +989,7 @@ export class Tools<
       modifiers
     );
 
-    // Execute the tool (custom or composio)
-    let result = customTool
-      ? await this.customTools.executeCustomTool(customTool.slug, params)
-      : await this.executeComposioTool(tool, params);
+    let result = await this.executeComposioTool(tool, params);
 
     // Apply after execute modifiers
     result = await this.applyAfterExecuteModifiers(
@@ -1213,56 +1178,5 @@ export class Tools<
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
     });
-  }
-
-  /**
-   * Creates a custom tool that can be used within the Composio SDK.
-   *
-   * Custom tools allow you to extend the functionality of Composio with your own implementations
-   * while keeping a consistent interface for both built-in and custom tools.
-   *
-   * @param {CustomToolOptions} body - The configuration for the custom tool
-   * @returns {Promise<Tool>} The created custom tool
-   *
-   * @example
-   * ```typescript
-   * // creating a custom tool with a toolkit
-   * await composio.tools.createCustomTool({
-   *   name: 'My Custom Tool',
-   *   description: 'A custom tool that does something specific',
-   *   slug: 'MY_CUSTOM_TOOL',
-   *   userId: 'default',
-   *   connectedAccountId: '123',
-   *   toolkitSlug: 'github',
-   *   inputParameters: z.object({
-   *     param1: z.string().describe('First parameter'),
-   *   }),
-   *   execute: async (input, connectionConfig, executeToolRequest) => {
-   *     // Custom logic here
-   *     return { data: { result: 'Success!' } };
-   *   }
-   * });
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // creating a custom tool without a toolkit
-   * await composio.tools.createCustomTool({
-   *   name: 'My Custom Tool',
-   *   description: 'A custom tool that does something specific',
-   *   slug: 'MY_CUSTOM_TOOL',
-   *   inputParameters: z.object({
-   *     param1: z.string().describe('First parameter'),
-   *   }),
-   *   execute: async (input) => {
-   *     // Custom logic here
-   *     return { data: { result: 'Success!' } };
-   *   }
-   * });
-   */
-  async createCustomTool<T extends CustomToolInputParameter>(
-    body: CustomToolOptions<T>
-  ): Promise<Tool> {
-    return this.customTools.createTool(body);
   }
 }

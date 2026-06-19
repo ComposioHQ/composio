@@ -20,7 +20,7 @@ Composio SDK allows you to:
 
 - Execute tools from various services (like GitHub, Gmail, Slack, etc.)
 - Manage user connections to external services
-- Create custom tools
+- Create session-scoped custom tools
 - Implement triggers and event handlers
 - Integrate with AI providers like OpenAI
 
@@ -42,7 +42,7 @@ The Composio SDK is built around several key concepts:
 - **Connected Accounts**: User connections to external services
 - **Auth Configs**: Authentication configurations for external services
 - **Providers**: Adapters for AI services that can use tools (e.g., OpenAI)
-- **Custom Tools**: Tools you can create and define yourself
+- **Custom Tools**: Session-scoped local tools created with `experimental_createTool`
 - **MCP**: Create and manage MCP Servers and clients
 
 Check out the [Core Concepts](./core-concepts.md) documentation for more detailed information.
@@ -88,7 +88,6 @@ The complete API reference documentation is available here:
 - [Connected Accounts](./api/connected-accounts.md)
 - [Auth Configs](./api/auth-configs.md)
 - [Providers](./api/providers.md)
-- [Custom Tools](./api/custom-tools.md)
 - [MCP](./api/mcp.md)
 - [ToolRouter](./api/tool-router.md)
 - [Tool Router Session Files](./api/tool-router-files.md)

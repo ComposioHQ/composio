@@ -562,7 +562,7 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  ts/examples/custom-tools:
+  ts/examples/cjs:
     dependencies:
       '@composio/core':
         specifier: workspace:*
@@ -570,9 +570,6 @@ importers:
       dotenv:
         specifier: ^16.4.1
         version: 16.6.1
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.6
     devDependencies:
       '@types/bun':
         specifier: ^1.2.9

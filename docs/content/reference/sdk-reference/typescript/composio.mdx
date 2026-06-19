@@ -53,7 +53,13 @@ const composio = new Composio({
 |------|------|-------------|
 | `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
 | `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
-| `create` | `object` | Creates a new tool router session for a user. |
+| `create` | `object` | Creates a new tool router session for a user.
+Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+should be exposed directly; see `ToolRouterCreateSessionConfig`. |
+| `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
+Houses stateful operations like Experimental.updateAcl that
+take a client and perform I/O. Stateless experimental factories
+(e.g. `experimental_createTool`) stay at the top level. |
 | `files` | `Files` | Upload and download files |
 | `mcp` | `MCP` | Model Context Protocol server management |
 | `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
@@ -61,7 +67,7 @@ const composio = new Composio({
 | `toolRouter` | `ToolRouter` | Experimental feature, use with caution |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
-| `use` | `(id: string) => Promise<Session>` | Use an existing tool router session |
+| `use` | `object` | Use an existing tool router session |
 
 ## Methods
 
@@ -166,53 +172,22 @@ getClient(): Composio
 
 ### getConfig()
 
-Get the configuration SDK is initialized with
+Get the configuration SDK is initialized with.
+
+Returns a frozen shallow clone — the SDK has already snapshotted
+configuration values such as `dangerouslyAllowAutoUploadDownloadFiles`,
+`fileUploadDirs`, and `fileDownloadDir` into its internal models, so
+mutating the live config object would silently no-op. Freezing makes
+that contract visible at the call site instead of letting the mutation
+appear successful.
 
 ```typescript
-getConfig(): ComposioConfig
+getConfig(): Readonly<ComposioConfig>
 ```
 
 **Returns**
 
-`ComposioConfig` — The configuration SDK is initialized with
-
----
-
-## File upload security
-
-When `dangerouslyAllowAutoUploadDownloadFiles` is true, the SDK can read local file paths and upload them before tool execution (this behavior is **off** by default). The constructor accepts options that work together with the optional `beforeFileUpload` modifier on `tools.execute` (see [Executing tools: security](/docs/tools-direct/executing-tools#security-for-local-file-paths)).
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `sensitiveFileUploadProtection` | `boolean` | `true` | When true, local path strings for auto-upload and `files.upload` are checked against a built-in denylist of path segments (for example `.ssh`, `.aws`) and credential-like file names. Set to `false` only if you accept the security tradeoff. |
-| `fileUploadPathDenySegments` | `string[]` | `undefined` | Additional single path *components* (directory or file names) merged with the built-in list; matched anywhere in the resolved path. |
-| `fileUploadDirs` | `string[] \| false` | `[~/.composio/temp]` | Allowlist of directories the SDK may read during **automatic** upload (when `dangerouslyAllowAutoUploadDownloadFiles: true`). Pass `false` (or `[]`) to reject every local path; URLs and `File`/`Blob` objects still work. Providing a list **replaces** the default — include `~/.composio/temp` explicitly if you want the default staging dir to keep working. Does **not** affect manual `composio.files.upload()` calls. |
-| `fileDownloadDir` | `string` | `~/.composio/files` | Directory where files from tool responses marked `file_downloadable` are streamed. |
-
-Pass **`beforeFileUpload`** on the **third argument** to `composio.tools.execute` (with `beforeExecute` / `afterExecute`), not on the constructor. The hook runs for each `file_uploadable` value before read/upload: return a path string, `false` to abort, or throw. The hook's context includes a `source` field (`'path' | 'url' | 'file'`) so it can scope its logic to local paths vs URLs vs `File` objects.
-
-**Related errors:** `ComposioSensitiveFilePathBlockedError`, `ComposioFileUploadAbortedError`, `ComposioFileUploadPathNotAllowedError`, `ComposioFileNotFoundError` (from `@composio/core`).
-
-### Restricting automatic uploads to specific directories
-
-When `dangerouslyAllowAutoUploadDownloadFiles: true`, the SDK only reads local
-files from directories in `fileUploadDirs`. This stacks with (it does NOT
-replace) the sensitive-path denylist.
-
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY!,
-  dangerouslyAllowAutoUploadDownloadFiles: true,
-  // Replaces the default `[~/.composio/temp]`. List every directory you want
-  // the SDK to read from during tool execution.
-  fileUploadDirs: ['/srv/agent/uploads', '~/.composio/temp'],
-});
-```
-
-Pass `fileUploadDirs: false` (or `[]`) to reject every filesystem path; URLs
-and in-memory `File`/`Blob` objects still upload normally.
+`Readonly<ComposioConfig>` — The frozen configuration
+  the SDK is initialized with.
 
 ---

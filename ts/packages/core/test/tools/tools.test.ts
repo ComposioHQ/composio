@@ -285,21 +285,6 @@ describe('Tools', () => {
       expect(result[0].outputParameters).toEqual(toolMocks.transformedTool.outputParameters);
     });
 
-    it('should include custom tools in the results', async () => {
-      mockClient.tools.list.mockResolvedValueOnce({
-        items: [toolMocks.rawTool],
-        totalPages: 1,
-      });
-
-      const getCustomToolsSpy = vi.spyOn(context.tools['customTools'], 'getCustomTools');
-      getCustomToolsSpy.mockResolvedValueOnce([toolMocks.customTool as unknown as Tool]);
-
-      const result = await context.tools.getRawComposioTools({ tools: ['TEST_TOOL'] });
-
-      expect(result).toHaveLength(2);
-      expect(result[1].slug).toEqual(toolMocks.customTool.slug);
-    });
-
     it('should apply schema modifiers when provided', async () => {
       const schemaModifier = createSchemaModifier({
         description: 'Modified description',
@@ -392,24 +377,9 @@ describe('Tools', () => {
       expect(result.slug).toEqual(toolMocks.transformedTool.slug);
     });
 
-    it('should check for custom tools first', async () => {
-      const slug = 'CUSTOM_TOOL';
-
-      const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
-      getCustomToolBySlugSpy.mockResolvedValueOnce(toolMocks.customTool as unknown as Tool);
-
-      const result = await context.tools.getRawComposioToolBySlug(slug);
-
-      expect(getCustomToolBySlugSpy).toHaveBeenCalledWith(slug);
-      expect(mockClient.tools.retrieve).not.toHaveBeenCalled();
-      expect(result.slug).toEqual(toolMocks.customTool.slug);
-    });
-
     it('should throw an error if tool is not found', async () => {
       const slug = 'NONEXISTENT_TOOL';
 
-      const getCustomToolBySlugSpy = vi.spyOn(context.tools['customTools'], 'getCustomToolBySlug');
-      getCustomToolBySlugSpy.mockResolvedValueOnce(undefined);
       mockClient.tools.retrieve.mockRejectedValue(null);
 
       await expect(context.tools.getRawComposioToolBySlug(slug)).rejects.toThrow(
@@ -664,24 +634,6 @@ describe('Tools', () => {
   });
 
   describe('execute', () => {
-    it('should execute a custom tool', async () => {
-      const slug = 'CUSTOM_TOOL';
-      const body = { userId: 'test-user', arguments: { query: 'test' } };
-
-      const { getCustomToolBySlugSpy } = await mockToolExecution(context.tools, {
-        customToolExists: true,
-      });
-
-      const executeCustomToolSpy = vi.spyOn(context.tools['customTools'], 'executeCustomTool');
-      executeCustomToolSpy.mockResolvedValueOnce(toolMocks.toolExecuteResponse);
-
-      const result = await context.tools.execute(slug, body);
-
-      expect(getCustomToolBySlugSpy).toHaveBeenCalledWith(slug);
-      expect(executeCustomToolSpy).toHaveBeenCalledWith(slug, body);
-      expect(result).toEqual(toolMocks.toolExecuteResponse);
-    });
-
     it('should execute a composio tool', async () => {
       const slug = 'COMPOSIO_TOOL';
       const body = {

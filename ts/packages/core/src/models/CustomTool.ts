@@ -34,7 +34,6 @@ import {
   type CustomToolsMapEntry,
   type CustomToolWireDefinition,
   type CustomToolkitWireDefinition,
-  type InputParamsSchema,
 } from '../types/customTool.types';
 import type {
   SessionCreateResponse,
@@ -48,6 +47,16 @@ export const LOCAL_TOOL_PREFIX = 'LOCAL_';
 
 /** Maximum allowed length for the final prefixed slug. */
 const MAX_SLUG_LENGTH = 60;
+
+type InputParamsSchema = {
+  definitions: {
+    input: {
+      type: string;
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+};
 
 /**
  * Compute the final slug length for a tool given its context.
