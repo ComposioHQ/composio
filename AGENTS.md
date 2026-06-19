@@ -255,4 +255,6 @@ The Stainless-generated clients are published from separate repos (`ComposioHQ/c
    - `python/setup.py` (`install_requires`) — easy to miss; setuptools fallback metadata
    - root `uv.lock` — regenerate from the workspace root: `uv lock --upgrade-package composio-client`
 
+4. **A version bump is not enough across a breaking regen.** The generated client can remove or restructure modules between releases (e.g. `composio-client` 1.41.0 deleted `types.tool_router_create_session_params`), which surfaces as an *import-time* `ModuleNotFoundError` that reds every job importing the SDK. After bumping, actually import/typecheck the consuming code (`uv run --package composio python -c "import composio"`, `pnpm typecheck`) and migrate any references the new client dropped. Prefer decoupling from churny generated types — define small local TypedDicts instead of importing internal client submodules.
+
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
