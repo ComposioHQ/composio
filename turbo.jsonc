@@ -1,5 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  // pnpm is pinned solely by mise (`npm:pnpm` in mise.toml). We intentionally
+  // omit the root `packageManager` field rather than duplicate that version, so
+  // mise stays the single source of truth. Turbo then infers pnpm from
+  // pnpm-lock.yaml for workspace resolution.
+  "dangerouslyDisablePackageManagerCheck": true,
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

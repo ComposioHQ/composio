@@ -52,7 +52,6 @@
     "clean": "git clean -xdf .turbo node_modules ts/packages/**/.turbo ts/packages/**/node_modules ts/packages/**/dist",
     "clean:workspace": "pnpm turbo clean"
   },
-  "packageManager": "pnpm@10.28.2",
   "devEngines": {
     "runtime": {
       "name": "node",
