@@ -57,16 +57,16 @@ export class PusherUtils {
     try {
       if (!PusherUtils.pusherClient) {
         const { default: PusherClient } = await import('pusher-js');
+        const authEndpoint = `${baseURL}/api/v3/internal/sdk/realtime/auth`;
         PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
           cluster: PUSHER_CLUSTER,
           channelAuthorization: {
-            endpoint: `${baseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: {
-              'x-api-key': apiKey,
-            },
+            // `transport` and `endpoint` are required by pusher-js's types but are
+            // unused at runtime: `customHandler` fully owns the auth request below.
             transport: 'ajax',
+            endpoint: authEndpoint,
             customHandler: (params, callback) => {
-              fetch(`${baseURL}/api/v3/internal/sdk/realtime/auth`, {
+              fetch(authEndpoint, {
                 method: 'POST',
                 headers: {
                   'x-api-key': apiKey,
