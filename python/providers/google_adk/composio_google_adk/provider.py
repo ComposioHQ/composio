@@ -8,7 +8,11 @@ from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.openapi import function_signature_from_jsonschema
-from composio.utils.shared import normalize_tool_arguments
+from composio.utils.shared import (
+    normalize_tool_arguments,
+    reinstate_reserved_python_keywords,
+    substitute_reserved_python_keywords,
+)
 
 
 class GoogleAdkProvider(
@@ -36,6 +40,12 @@ class GoogleAdkProvider(
                 "required": [],
             },
         )
+        # Reserved Python keywords (e.g. a ``from`` property) are not valid
+        # parameter names; substitute them before building the signature and
+        # restore them at execution time, mirroring the other agentic providers.
+        schema_params, reserved_keywords = substitute_reserved_python_keywords(
+            schema=input_parameters
+        )
         properties = t.cast(
             t.Dict[str, t.Dict[str, t.Any]],
             input_parameters.get("properties", {}),
@@ -50,6 +60,10 @@ class GoogleAdkProvider(
         docstring += "\n    A dictionary containing response from the action"
 
         def _execute(**kwargs: t.Any) -> t.Dict:
+            # Restore any reserved-keyword parameter names before execution.
+            kwargs = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=reserved_keywords
+            )
             # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
             return execute_tool(
                 slug=tool.slug, arguments=normalize_tool_arguments(kwargs)
@@ -62,7 +76,7 @@ class GoogleAdkProvider(
             closure=_execute.__closure__,
         )
         parameters = function_signature_from_jsonschema(
-            schema=input_parameters,
+            schema=schema_params,
             skip_default=self.skip_default,
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
