@@ -90,10 +90,10 @@
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
-    "@types/semver": "^7.7.0",
+    "@types/semver": "^7.7.1",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "typedoc": "^0.28.5",
+    "typedoc": "^0.28.19",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
@@ -107,8 +107,8 @@
     "@types/json-schema": "^7.0.15",
     "openai": "catalog:",
     "picocolors": "catalog:",
-    "pusher-js": "^8.4.0",
-    "semver": "^7.7.2",
+    "pusher-js": "^8.5.0",
+    "semver": "^7.8.4",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

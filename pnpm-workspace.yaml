@@ -16,11 +16,11 @@ packages:
   - ts/packages/wrappers/*
 
 catalog:
-  '@ai-sdk/openai': ^3.0.19
-  '@arethetypeswrong/cli': ^0.18.2
-  '@clack/core': '^1.0.1'
-  '@clack/prompts': '^1.0.1'
-  '@cloudflare/vitest-pool-workers': 0.16.12
+  '@ai-sdk/openai': ^3.0.71
+  '@arethetypeswrong/cli': ^0.18.3
+  '@clack/core': '^1.4.1'
+  '@clack/prompts': '^1.5.1'
+  '@cloudflare/vitest-pool-workers': 0.16.15
   '@cloudflare/workers-types': ^4.20260616.1
   '@composio/client': 0.1.0-alpha.74
   '@effect/cli': ^0.75.2
@@ -31,26 +31,26 @@ catalog:
   '@effect/platform-node': ^0.107.0
   '@effect/platform-node-shared': ^0.60.0
   '@effect/vitest': ^0.29.0
-  '@mastra/core': ^1.0.4
-  '@modelcontextprotocol/sdk': ^1.25.2
+  '@mastra/core': ^1.42.0
+  '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
-  '@typescript/native-preview': 7.0.0-dev.20260403.1
-  ai: ^6.0.27
+  '@typescript/native-preview': 7.0.0-dev.20260615.1
+  ai: ^6.0.206
   dotenv: ^17.4.2
   effect: ^3.21.3
   hono: ^4.12.25
-  openai: ^6.16.0
+  openai: ^6.42.0
   picocolors: ^1.1.1
   pnpm: ^10.28.0
   publint: ^0.3.21
   tsdown: ^0.22.3
-  tsx: ^4.20.5
+  tsx: ^4.22.4
   typescript: ^6.0.3
   '@vitest/ui': ^4.1.9
   vitest: ^4.1.9
   wrangler: ^4.101.0
-  zod: ^4.1.0
-  zod-to-json-schema: ^3.25.1
+  zod: ^4.4.3
+  zod-to-json-schema: ^3.25.2
 
 minimumReleaseAge: 4320
 
