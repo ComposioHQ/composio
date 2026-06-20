@@ -3,7 +3,7 @@ name = "composio-openai"
 version = "0.15.0"
 description = "Use Composio to get an array of tools with your OpenAI Function Call."
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.10,<4"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]

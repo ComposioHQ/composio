@@ -3,7 +3,7 @@ name = "composio-openai-agents"
 version = "0.15.0"
 description = "Use Composio to get array of strongly typed tools for OpenAI Agents"
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.10,<4"
 authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]

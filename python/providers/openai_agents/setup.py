@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     packages=find_packages(),
     install_requires=["openai-agents>=0.17.5", "composio"],
     include_package_data=True,

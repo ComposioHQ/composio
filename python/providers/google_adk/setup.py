@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     install_requires=[
         "google-adk>=2.2.0",
         "composio",

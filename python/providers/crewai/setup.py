@@ -18,7 +18,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     install_requires=["crewai>=0.134.0,<0.135.0", "composio"],
     include_package_data=True,
 )

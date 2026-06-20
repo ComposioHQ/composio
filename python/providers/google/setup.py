@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     install_requires=[
         "google-cloud-aiplatform>=1.158.0",
         "vertexai>=1.71.1",
