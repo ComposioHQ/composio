@@ -37,7 +37,7 @@ catalog:
   '@typescript/native-preview': 7.0.0-dev.20260615.1
   ai: ^6.0.206
   dotenv: ^17.4.2
-  effect: ^3.21.3
+  effect: ^3.21.4
   hono: ^4.12.25
   openai: ^6.42.0
   picocolors: ^1.1.1
