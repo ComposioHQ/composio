@@ -82,8 +82,6 @@ const META_TOOL_SLUG_LIST = [
   'COMPOSIO_REMOTE_WORKBENCH',
   'COMPOSIO_REMOTE_BASH_TOOL',
   'COMPOSIO_GET_TOOL_SCHEMAS',
-  'COMPOSIO_UPSERT_RECIPE',
-  'COMPOSIO_GET_RECIPE',
 ] as const satisfies ReadonlyArray<SessionExecuteMetaParams['slug']>;
 
 const META_TOOL_SLUGS: ReadonlySet<string> = new Set(META_TOOL_SLUG_LIST);

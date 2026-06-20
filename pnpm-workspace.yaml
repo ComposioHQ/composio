@@ -22,7 +22,7 @@ catalog:
   '@clack/prompts': '^1.0.1'
   '@cloudflare/vitest-pool-workers': 0.16.12
   '@cloudflare/workers-types': ^4.20250917.0
-  '@composio/client': 0.1.0-alpha.72
+  '@composio/client': 0.1.0-alpha.74
   '@effect/cli': ^0.73.2
   '@effect/eslint-plugin': ^0.3.2
   '@effect/language-service': ^0.74.0

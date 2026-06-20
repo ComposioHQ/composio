@@ -381,7 +381,6 @@ esac
         {
           name: 'changeset-peer-fixture',
           private: true,
-          packageManager: packageJson.packageManager,
           workspaces: ['packages/*'],
         },
         null,

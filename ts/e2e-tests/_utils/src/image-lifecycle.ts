@@ -185,7 +185,9 @@ export async function checkDocker(options: CheckDockerOptions = {}): Promise<Exe
   return exec('docker', ['info'], { cwd: repoRoot });
 }
 
-async function getMiseVersion(tool: 'node' | 'bun' | 'deno', repoRoot: string): Promise<string> {
+// bun and pnpm are installed inside the images from mise.toml/mise.lock, so only the
+// matrixed runtimes (node, deno) need to be resolved on the host and threaded as build args.
+async function getMiseVersion(tool: 'node' | 'deno', repoRoot: string): Promise<string> {
   const result = await exec('mise', ['current', tool], { cwd: repoRoot });
   const version = result.stdout.trim();
   if (result.exitCode !== 0 || !version) {
@@ -230,7 +232,6 @@ export async function ensureNodeImage(
   const dockerfilePath =
     options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.node');
   const imageTag = imageTagForNodeVersion(nodeVersion);
-  const bunVersion = await getMiseVersion('bun', repoRoot);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
   if (inspect.exitCode === 0) {
@@ -243,8 +244,6 @@ export async function ensureNodeImage(
     dockerfilePath,
     '--build-arg',
     `NODE_VERSION=${nodeVersion}`,
-    '--build-arg',
-    `BUN_VERSION=${bunVersion}`,
     ...labelsToArgs(defaultNodeLabels(nodeVersion)),
     '-t',
     imageTag,
@@ -416,7 +415,6 @@ export async function ensureDenoImage(
     options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.deno');
   const imageTag = imageTagForDenoVersion(denoVersion);
   const nodeVersion = await getMiseVersion('node', repoRoot);
-  const bunVersion = await getMiseVersion('bun', repoRoot);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
   if (inspect.exitCode === 0) {
@@ -431,8 +429,6 @@ export async function ensureDenoImage(
     `DENO_VERSION=${denoVersion}`,
     '--build-arg',
     `NODE_MAJOR=${getMajorVersion(nodeVersion)}`,
-    '--build-arg',
-    `BUN_VERSION=${bunVersion}`,
     ...labelsToArgs(defaultDenoLabels(denoVersion)),
     '-t',
     imageTag,
@@ -605,7 +601,6 @@ export async function ensureCliImage(
     options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
   const imageTag = imageTagForCliVersion(cliVersion);
   const nodeVersion = await getMiseVersion('node', repoRoot);
-  const bunVersion = await getMiseVersion('bun', repoRoot);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
   if (inspect.exitCode === 0) {
@@ -620,8 +615,6 @@ export async function ensureCliImage(
     `CLI_VERSION=${cliVersion}`,
     '--build-arg',
     `NODE_VERSION=${nodeVersion}`,
-    '--build-arg',
-    `BUN_VERSION=${bunVersion}`,
     ...labelsToArgs(defaultCliLabels(cliVersion)),
     '-t',
     imageTag,
