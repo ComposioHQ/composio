@@ -87,6 +87,9 @@
   },
   "keywords": [],
   "author": "",
+  "contributors": [
+    "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
+  ],
   "license": "ISC",
   "devDependencies": {
     "@type-challenges/utils": "^0.1.1",
