@@ -22,7 +22,7 @@ setup(
     ],
     python_requires=">=3.10,<4",
     install_requires=[
-        "pyautogen>=0.10.0",
+        "pyautogen>=0.2.19,<0.3",
         "flaml==2.6.0",
         "autogen_core>=0.7.5",
         "autogen_agentchat>=0.7.5",
