@@ -24,21 +24,21 @@ modules_for_ruff = [
 type_stubs = [
     "types-requests==2.33.0.20260518",
     "types-protobuf==7.34.1.20260518",
-    "anthropic==0.109.2",
+    "anthropic==0.111.0",
     "crewai==0.134.0",
     "semver==3.0.4",
-    "fastapi==0.137.1",
-    "langchain==1.3.9",
-    "langgraph==1.2.5",
+    "fastapi==0.138.0",
+    "langchain==1.3.10",
+    "langgraph==1.2.6",
     "llama-index==0.14.22",
-    "openai-agents==0.17.5",
+    "openai-agents==0.17.6",
     "langchain-openai==1.3.2",
     "google-cloud-aiplatform==1.158.0",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
 ]
 
 mypy = "mypy==2.1.0"
-ruff_package = "ruff==0.15.17"
+ruff_package = "ruff==0.15.18"
 
 ruff = [
     "ruff",

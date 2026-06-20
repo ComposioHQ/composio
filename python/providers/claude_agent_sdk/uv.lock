@@ -10,12 +10,6 @@ resolution-markers = [
     "python_full_version < '3.11' and sys_platform != 'win32'",
 ]
 
-[options]
-exclude-newer = "2026-06-17T09:11:12Z"
-
-[options.exclude-newer-package]
-composio-client = "2026-06-20T09:11:12Z"
-
 [[package]]
 name = "annotated-types"
 version = "0.7.0"
@@ -50,11 +44,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.5.20"
+version = "2026.6.17"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f3/ce/ee2ecad540810a79593028e88299baeae54d346cc7a0d94b6199988b89b1/certifi-2026.5.20.tar.gz", hash = "sha256:69dea482ab64caa7b9f6aba1c6bf48bb6a5448d1c0f1b17ab42ad8c763a5344d", size = 135422, upload-time = "2026-05-20T11:46:50.073Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/c7/424b75da314c1045981bd9777432fad05a9e0c69daa4ed7e308bbaffe405/certifi-2026.6.17.tar.gz", hash = "sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432", size = 134594, upload-time = "2026-06-17T10:31:07.894Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/8c/57e832b7af6d7c5abe66eb3fbe3a3a32f4d11ea23a1aa7131371035be991/certifi-2026.5.20-py3-none-any.whl", hash = "sha256:3c52e209ba0a4ad7aebe60436a4ab349c39e1e602e8c134221e546902ad25897", size = 134134, upload-time = "2026-05-20T11:46:48.578Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/2f/c5464532e965badff2f4c4c1a3a83f5697f0d7c407ed0cda44aaa99bb451/certifi-2026.6.17-py3-none-any.whl", hash = "sha256:2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db", size = 133289, upload-time = "2026-06-17T10:31:06.348Z" },
 ]
 
 [[package]]
@@ -246,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "claude-agent-sdk"
-version = "0.2.103"
+version = "0.2.105"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -254,13 +248,13 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/fc/fb817a177ffa11e2ce073bcf21c1a24d92fc59c5ccf2a20a2a4cfc7de534/claude_agent_sdk-0.2.103.tar.gz", hash = "sha256:58c89a28c481b65e68855a717137a7b2822f1e829cc2368f438116f7ea8687b2", size = 255630, upload-time = "2026-06-16T20:35:35.284Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/b2/6f506b855dcd625ae38a5bd9ae2cf5f7bb5f02540e8f2871de8dbacc1395/claude_agent_sdk-0.2.105.tar.gz", hash = "sha256:a376a757fd8d6951e1a43b673ed4a24378d586a2937a511426fd9ea8321a865e", size = 255626, upload-time = "2026-06-19T04:11:42.305Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/89/06ac07346d50375fee6f862f896ee749454702cbe71be081cdd57c3b05de/claude_agent_sdk-0.2.103-py3-none-macosx_11_0_arm64.whl", hash = "sha256:ccf1a1b480da1799ce7b718f72879bd58466049249da161f2990af82a60eda49", size = 66449533, upload-time = "2026-06-16T20:35:38.536Z" },
-    { url = "https://files.pythonhosted.org/packages/28/31/7380b0d27bd2fcbe704063a195b9255bbac385e3db93c49a18af0257cfb2/claude_agent_sdk-0.2.103-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:dc35aae6faefcb9422493372ec19b62e1379f8b94d01c2ce9c4c7e3bc0c39667", size = 68515361, upload-time = "2026-06-16T20:35:41.555Z" },
-    { url = "https://files.pythonhosted.org/packages/fe/21/f3247e25d475ca878b6801755b44183be975c28d7ffc16fa0aabab663f83/claude_agent_sdk-0.2.103-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:c665d0e2d8e4867ccb9cfd50595540142bc78d3d65e91e796a40d0b8ebbeb049", size = 76023666, upload-time = "2026-06-16T20:35:45.232Z" },
-    { url = "https://files.pythonhosted.org/packages/9a/41/af7c48a743b8b01b45ffa215455fa4665b7459315197c3936da484830387/claude_agent_sdk-0.2.103-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:fdf4fae0974090924f38090914b58d82bfad8709bab33514eaaf7fce837521e4", size = 76209944, upload-time = "2026-06-16T20:35:49.801Z" },
-    { url = "https://files.pythonhosted.org/packages/8e/5e/5930a283a5aa392352482283da7416b589dddb4ef49b71b58bce8feaf923/claude_agent_sdk-0.2.103-py3-none-win_amd64.whl", hash = "sha256:2b1b57f73ebd9d9436d43354968543e84c164fa637591809da7d4bacf406d7a8", size = 76826039, upload-time = "2026-06-16T20:35:53.254Z" },
+    { url = "https://files.pythonhosted.org/packages/70/a1/100cd7345d1638e55063fed0e5b2d783348822486ebf9984c445691b2345/claude_agent_sdk-0.2.105-py3-none-macosx_11_0_arm64.whl", hash = "sha256:e60026bf1e9da1ea5856a929db2066ca973b8b30dbdae59698d92ac20d1590b9", size = 64449954, upload-time = "2026-06-19T04:11:45.792Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/14/5619e05742bd49996aa8f893a9fa93111fb0da4448ff5769b339d4357f4a/claude_agent_sdk-0.2.105-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:a2ea0d7147996b32e42dd00a8a956638275cd9bab72944cc4b6f7dbc8c6726e8", size = 67785910, upload-time = "2026-06-19T04:11:49.339Z" },
+    { url = "https://files.pythonhosted.org/packages/86/fd/8381d221c8adba317be18b475d516c0eb62b55d1e44dc318cfed9bf6345b/claude_agent_sdk-0.2.105-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:e5ceb54b9589c2716fb1b287608a7cf955db4d642885f9161e76058ecd5b4945", size = 73038021, upload-time = "2026-06-19T04:11:54.195Z" },
+    { url = "https://files.pythonhosted.org/packages/62/0d/e4883cd4fd782376e6f076ba0c166eb8d41cca5be5278f42cdae099340f5/claude_agent_sdk-0.2.105-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:de6cae6d3c234054d019fe7ff1a2f2666683658c8b0a07eb4d91c9ab6ce537e8", size = 73990325, upload-time = "2026-06-19T04:11:58.556Z" },
+    { url = "https://files.pythonhosted.org/packages/13/81/52bd9e60b44d9e46ea969a3158b87ad1f803e8190875a8dc026ff0fcc217/claude_agent_sdk-0.2.105-py3-none-win_amd64.whl", hash = "sha256:72f17ff99b00a7b0b509867a92a8ffba0a0e60047c0a88029ad7c23642bd927f", size = 73742237, upload-time = "2026-06-19T04:12:03.026Z" },
 ]
 
 [[package]]
@@ -286,7 +280,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.13.1"
+version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "composio-client" },
@@ -296,9 +290,9 @@ dependencies = [
     { name = "pysher" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/4e/3e7391c38e13a69ba8634282f14488fb80189c4c8b27460457bf7a34e498/composio-0.13.1.tar.gz", hash = "sha256:957327c6557704135d34e10f3a0c8a885082b3d650e08acfb0f562c69290d289", size = 210832, upload-time = "2026-05-14T07:46:03.508Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/c6/5d1e9b111776bbc3685e5f6122032c26fa4f165cd5dd12dd315bf4411843/composio-0.15.0.tar.gz", hash = "sha256:b6deb3a12e021799826fb191cb74b9c3fdf9555ba908a832ec6b1a6b63d4da17", size = 209932, upload-time = "2026-06-18T08:35:54.892Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/a0/e4777e815c485015174f62e5d9562f814e2b1ea062b4a6a2ba09fe2abdfd/composio-0.13.1-py3-none-any.whl", hash = "sha256:9a9620499d792d8f3336533a68d71f704a55659eb9f7a575cfe8b930409793a5", size = 142353, upload-time = "2026-05-14T07:45:48.687Z" },
+    { url = "https://files.pythonhosted.org/packages/22/75/ceca9c76c5df4bb34004b58b9f27f0ceb1f803efa261a8ee768ce4bfcbdb/composio-0.15.0-py3-none-any.whl", hash = "sha256:1c51dfb7a4e291a353accaea8d090e2b630361a9b7398502f604cddfb93a8b6a", size = 141009, upload-time = "2026-06-18T08:35:42.187Z" },
 ]
 
 [[package]]
@@ -636,7 +630,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "2.42.0"
+version = "2.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -648,9 +642,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/e2/c8c7eb634fd2438c2f3fc5c385dd34d0f9d04d6623bcfdf3adcefcf6d7ca/openai-2.42.0.tar.gz", hash = "sha256:5263ee2868608571499df225471770238c8f3ff1ac296874bfc096bbabb6da3a", size = 785143, upload-time = "2026-06-16T21:52:35.798Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/fa/88d0c58a0c58df7e6758e66b99c5d028d5e0bb49f8812d7203940cd9dbf1/openai-2.43.0.tar.gz", hash = "sha256:e74d238200a26868977002190fb6631613480a93dfe0c9c982e77021ed60a017", size = 785369, upload-time = "2026-06-17T17:06:56.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/61/8ea2cbff2531ee0210706aff60174cd10a5a14c1ca17a8c29b1eb34d0b1b/openai-2.42.0-py3-none-any.whl", hash = "sha256:8cd46b1877cfd4aea7ade9474940cc4f78dbd41cce3893de11c12510d0b70caf", size = 1354709, upload-time = "2026-06-16T21:52:33.712Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/d2/ba767f4bbb30776c03d40906a2d3afad716a165ffa1771fc23b8992f7920/openai-2.43.0-py3-none-any.whl", hash = "sha256:65a670b54fadf2268c9e1330133373c963eb779ee969e5cbad419ec2c21dce97", size = 1355077, upload-time = "2026-06-17T17:06:53.614Z" },
 ]
 
 [[package]]
@@ -795,16 +789,16 @@ wheels = [
 
 [[package]]
 name = "pydantic-settings"
-version = "2.14.1"
+version = "2.14.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/60/1d1e59c9c90d54591469ada7d268251f71c24bdb765f1a8a832cee8c6653/pydantic_settings-2.14.1.tar.gz", hash = "sha256:e874d3bec7e787b0c9958277956ed9b4dd5de6a80e162188fdaff7c5e26fd5fa", size = 235551, upload-time = "2026-05-08T13:40:06.542Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/b5/8f48e906c3e0205276e8bd8cb7512217a87b2685304d64be27cad5b3019f/pydantic_settings-2.14.2.tar.gz", hash = "sha256:c19dd64b19097f1de80184f0cc7b0272a13ae6e170cbf240a3e27e381ed14a5f", size = 237700, upload-time = "2026-06-19T13:44:56.324Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/8d/f1af3832f5e6eb13ba94ee809e72b8ecb5eef226d27ee0bef7d963d943c7/pydantic_settings-2.14.1-py3-none-any.whl", hash = "sha256:6e3c7edfd8277687cdc598f56e5cff0e9bfff0910a3749deaa8d4401c3a2b9de", size = 60964, upload-time = "2026-05-08T13:40:04.958Z" },
+    { url = "https://files.pythonhosted.org/packages/77/c1/6e422f34e569cf8e18df68d1939c81c099d2b61e4f7d9621c8a77560799c/pydantic_settings-2.14.2-py3-none-any.whl", hash = "sha256:a20c97b37910b6550d5ea50fbcc2d4187defe58cd57070b73863d069419c9440", size = 61715, upload-time = "2026-06-19T13:44:55.02Z" },
 ]
 
 [[package]]
@@ -1187,15 +1181,15 @@ wheels = [
 
 [[package]]
 name = "sse-starlette"
-version = "3.4.4"
+version = "3.4.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/2b/58abc2d1fd397e7dde08e947e05c884d8ef2f78d5e2588c17a12d42d6994/sse_starlette-3.4.4.tar.gz", hash = "sha256:07e0fa0460138baf25cdd5fb28683472c3995dc1642225191b3832d62526bcb0", size = 31819, upload-time = "2026-05-12T17:37:17.019Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/1b/bc9e3e7a72dcdad7dc7888758f5d00f56f8909ed5cfdff822bd72bb4c520/sse_starlette-3.4.5.tar.gz", hash = "sha256:83072538bc211a2f68b7b0422226c4af3e9b62e106e07034664b832ca019842a", size = 35249, upload-time = "2026-06-20T17:36:58.322Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/67/805710444ea8cc75fbf70b920ed431a560c4bf9c57f7d5a3117213189399/sse_starlette-3.4.4-py3-none-any.whl", hash = "sha256:3f4dd50d8aed2771a091f3a83000323fc3844541c16b4fe585ae2420cc6df973", size = 16514, upload-time = "2026-05-12T17:37:15.601Z" },
+    { url = "https://files.pythonhosted.org/packages/78/75/c88d3f5dafd59c791da1ce27650d30bf5b70cbf1cbf01cd00e5f9e360915/sse_starlette-3.4.5-py3-none-any.whl", hash = "sha256:e71bad53323f65573c3864a6c3bd0c1eb6e5f092b2e48082b0c35927d19ca296", size = 16518, upload-time = "2026-06-20T17:36:56.729Z" },
 ]
 
 [[package]]

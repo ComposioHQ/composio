@@ -6,12 +6,6 @@ resolution-markers = [
     "python_full_version < '3.10'",
 ]
 
-[options]
-exclude-newer = "2026-06-17T09:11:12Z"
-
-[options.exclude-newer-package]
-composio-client = "2026-06-20T09:11:12Z"
-
 [[package]]
 name = "annotated-types"
 version = "0.7.0"
@@ -57,11 +51,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.5.20"
+version = "2026.6.17"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f3/ce/ee2ecad540810a79593028e88299baeae54d346cc7a0d94b6199988b89b1/certifi-2026.5.20.tar.gz", hash = "sha256:69dea482ab64caa7b9f6aba1c6bf48bb6a5448d1c0f1b17ab42ad8c763a5344d", size = 135422, upload-time = "2026-05-20T11:46:50.073Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/c7/424b75da314c1045981bd9777432fad05a9e0c69daa4ed7e308bbaffe405/certifi-2026.6.17.tar.gz", hash = "sha256:024c88eeec92ca068db80f02b8b07c9cef7b9fe261d1d535abfd5abd6f6af432", size = 134594, upload-time = "2026-06-17T10:31:07.894Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/8c/57e832b7af6d7c5abe66eb3fbe3a3a32f4d11ea23a1aa7131371035be991/certifi-2026.5.20-py3-none-any.whl", hash = "sha256:3c52e209ba0a4ad7aebe60436a4ab349c39e1e602e8c134221e546902ad25897", size = 134134, upload-time = "2026-05-20T11:46:48.578Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/2f/c5464532e965badff2f4c4c1a3a83f5697f0d7c407ed0cda44aaa99bb451/certifi-2026.6.17-py3-none-any.whl", hash = "sha256:2227dcbaafe0d2f59279d1762ddddc37783ed4354594f194ffc31d20f41fc3db", size = 133289, upload-time = "2026-06-17T10:31:06.348Z" },
 ]
 
 [[package]]
@@ -196,7 +190,7 @@ wheels = [
 
 [[package]]
 name = "composio"
-version = "0.13.1"
+version = "0.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "composio-client" },
@@ -206,9 +200,9 @@ dependencies = [
     { name = "pysher" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/4e/3e7391c38e13a69ba8634282f14488fb80189c4c8b27460457bf7a34e498/composio-0.13.1.tar.gz", hash = "sha256:957327c6557704135d34e10f3a0c8a885082b3d650e08acfb0f562c69290d289", size = 210832, upload-time = "2026-05-14T07:46:03.508Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/c6/5d1e9b111776bbc3685e5f6122032c26fa4f165cd5dd12dd315bf4411843/composio-0.15.0.tar.gz", hash = "sha256:b6deb3a12e021799826fb191cb74b9c3fdf9555ba908a832ec6b1a6b63d4da17", size = 209932, upload-time = "2026-06-18T08:35:54.892Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/a0/e4777e815c485015174f62e5d9562f814e2b1ea062b4a6a2ba09fe2abdfd/composio-0.13.1-py3-none-any.whl", hash = "sha256:9a9620499d792d8f3336533a68d71f704a55659eb9f7a575cfe8b930409793a5", size = 142353, upload-time = "2026-05-14T07:45:48.687Z" },
+    { url = "https://files.pythonhosted.org/packages/22/75/ceca9c76c5df4bb34004b58b9f27f0ceb1f803efa261a8ee768ce4bfcbdb/composio-0.15.0-py3-none-any.whl", hash = "sha256:1c51dfb7a4e291a353accaea8d090e2b630361a9b7398502f604cddfb93a8b6a", size = 141009, upload-time = "2026-06-18T08:35:42.187Z" },
 ]
 
 [[package]]
@@ -442,7 +436,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "2.42.0"
+version = "2.43.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio", version = "4.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -455,9 +449,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/e2/c8c7eb634fd2438c2f3fc5c385dd34d0f9d04d6623bcfdf3adcefcf6d7ca/openai-2.42.0.tar.gz", hash = "sha256:5263ee2868608571499df225471770238c8f3ff1ac296874bfc096bbabb6da3a", size = 785143, upload-time = "2026-06-16T21:52:35.798Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/fa/88d0c58a0c58df7e6758e66b99c5d028d5e0bb49f8812d7203940cd9dbf1/openai-2.43.0.tar.gz", hash = "sha256:e74d238200a26868977002190fb6631613480a93dfe0c9c982e77021ed60a017", size = 785369, upload-time = "2026-06-17T17:06:56.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/61/8ea2cbff2531ee0210706aff60174cd10a5a14c1ca17a8c29b1eb34d0b1b/openai-2.42.0-py3-none-any.whl", hash = "sha256:8cd46b1877cfd4aea7ade9474940cc4f78dbd41cce3893de11c12510d0b70caf", size = 1354709, upload-time = "2026-06-16T21:52:33.712Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/d2/ba767f4bbb30776c03d40906a2d3afad716a165ffa1771fc23b8992f7920/openai-2.43.0-py3-none-any.whl", hash = "sha256:65a670b54fadf2268c9e1330133373c963eb779ee969e5cbad419ec2c21dce97", size = 1355077, upload-time = "2026-06-17T17:06:53.614Z" },
 ]
 
 [[package]]
