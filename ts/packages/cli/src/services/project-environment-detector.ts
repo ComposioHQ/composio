@@ -106,9 +106,9 @@ const countExtensions = (files: string[]) => {
 
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
-    if (ext === '.ts' || ext === '.tsx' || ext === '.mts' || ext === '.cts') {
+    if (ext === '.ts' || ext === '.tsx' || ext === '.mts') {
       ts += 1;
-    } else if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') {
+    } else if (ext === '.js' || ext === '.jsx' || ext === '.mjs') {
       js += 1;
     } else if (ext === '.py' || ext === '.pyi' || ext === '.pyw' || ext === '.pyx') {
       py += 1;

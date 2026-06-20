@@ -10,6 +10,7 @@
 
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { fetchWithRetry } from './fetch-with-retry';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -76,7 +77,7 @@ interface Toolkit {
 async function fetchToolkits(): Promise<any[]> {
   console.log('Fetching toolkits from API...');
 
-  const response = await fetch(`${API_BASE}/toolkits`, {
+  const response = await fetchWithRetry(`${API_BASE}/toolkits`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -94,7 +95,7 @@ async function fetchToolkits(): Promise<any[]> {
 async function fetchToolkitChangelog(): Promise<Map<string, string>> {
   console.log('Fetching toolkit changelog...');
 
-  const response = await fetch(`${API_BASE}/toolkits/changelog`, {
+  const response = await fetchWithRetry(`${API_BASE}/toolkits/changelog`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -124,7 +125,7 @@ async function fetchToolkitChangelog(): Promise<Map<string, string>> {
 }
 
 async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
-  const response = await fetch(`${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&limit=1000`, {
+  const response = await fetchWithRetry(`${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&limit=1000`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -145,7 +146,7 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
 }
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
-  const response = await fetch(`${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`, {
+  const response = await fetchWithRetry(`${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -166,7 +167,7 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
 }
 
 async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
-  const response = await fetch(`${API_BASE}/toolkits/${slug}`, {
+  const response = await fetchWithRetry(`${API_BASE}/toolkits/${slug}`, {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': API_KEY!,
@@ -263,9 +264,12 @@ async function main() {
     toolkit.version = versionMap.get(toolkit.slug) || null;
   }
 
-  // Fetch tools, triggers, and auth config details for each toolkit in batches
+  // Fetch tools, triggers, and auth config details for each toolkit in batches.
+  // Each toolkit fires 3 requests in parallel, so batchSize N = ~3N concurrent
+  // requests. Kept low to soften burst pressure on the staging rate limit
+  // (2000 req/min); fetchWithRetry handles the remaining 429s with backoff.
   console.log('Fetching tools, triggers, and auth config details...');
-  const batchSize = 10;
+  const batchSize = 5;
   let completed = 0;
 
   for (let i = 0; i < toolkits.length; i += batchSize) {

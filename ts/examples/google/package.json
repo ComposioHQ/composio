@@ -19,16 +19,15 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
     "@google/genai": "^1.1.0",
     "@modelcontextprotocol/sdk": "catalog:",
-    "dotenv": "^16.4.1"
+    "dotenv": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -1,7 +1,8 @@
 /**
- * CommonJS compatibility e2e test
+ * CommonJS require(esm) interop e2e test.
  *
- * Verifies that @composio/core can be imported using require() in Node.js.
+ * Verifies that Node.js 22 can require @composio/core through its native
+ * require(esm) support without us publishing CommonJS artifacts.
  */
 
 import { e2e, type E2ETestResult } from '@e2e-tests/utils';
@@ -20,49 +21,57 @@ e2e(import.meta.url, {
       result = await runFixture({ filename: 'test.cjs' });
     }, TIMEOUTS.FIXTURE);
 
-    describe('CommonJS compatibility', () => {
+    describe('CommonJS require(esm) interop', () => {
       it('exits successfully', () => {
         expect(result.exitCode).toBe(0);
       });
 
+      it('uses Node.js native require(esm)', () => {
+        expect(result.stdout).toContain('Test 1 passed: require(esm) is available');
+      });
+
+      it('resolves the ESM entrypoint', () => {
+        expect(result.stdout).toContain('Test 2 passed: resolved ESM entrypoint');
+      });
+
       it('require() succeeds', () => {
-        expect(result.stdout).toContain('Test 1 passed: require() succeeded');
+        expect(result.stdout).toContain('Test 3 passed: require() succeeded');
       });
 
       it('exports Composio class', () => {
-        expect(result.stdout).toContain('Test 2 passed: Composio class is exported');
+        expect(result.stdout).toContain('Test 4 passed: Composio class is exported');
       });
 
       it('exports OpenAIProvider class', () => {
-        expect(result.stdout).toContain('Test 3 passed: OpenAIProvider class is exported');
+        expect(result.stdout).toContain('Test 5 passed: OpenAIProvider class is exported');
       });
 
       it('instantiates OpenAIProvider successfully', () => {
-        expect(result.stdout).toContain('Test 4 passed: OpenAIProvider instantiated successfully');
+        expect(result.stdout).toContain('Test 6 passed: OpenAIProvider instantiated successfully');
       });
 
       it('exports AuthScheme', () => {
-        expect(result.stdout).toContain('Test 5 passed: AuthScheme is exported');
+        expect(result.stdout).toContain('Test 7 passed: AuthScheme is exported');
       });
 
       it('exports Error classes', () => {
-        expect(result.stdout).toContain('Test 6 passed: Error classes are exported');
+        expect(result.stdout).toContain('Test 8 passed: Error classes are exported');
       });
 
       it('exports jsonSchemaToZodSchema', () => {
-        expect(result.stdout).toContain('Test 7 passed: jsonSchemaToZodSchema is exported');
+        expect(result.stdout).toContain('Test 9 passed: jsonSchemaToZodSchema is exported');
       });
 
       it('exports constants namespace', () => {
-        expect(result.stdout).toContain('Test 8 passed: constants namespace is exported');
+        expect(result.stdout).toContain('Test 10 passed: constants namespace is exported');
       });
 
       it('exports logger', () => {
-        expect(result.stdout).toContain('Test 9 passed: logger is exported');
+        expect(result.stdout).toContain('Test 11 passed: logger is exported');
       });
 
       it('completes all tests', () => {
-        expect(result.stdout).toContain('All CommonJS compatibility tests passed!');
+        expect(result.stdout).toContain('All CommonJS require(esm) interop tests passed!');
       });
     });
   },
