@@ -19,10 +19,10 @@
   "license": "ISC",
   "dependencies": {
     "@composio/core": "workspace:*",
-    "dotenv": "^16.4.1"
+    "dotenv": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

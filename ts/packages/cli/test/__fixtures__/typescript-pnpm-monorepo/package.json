@@ -3,6 +3,6 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^6.0.3"
   }
 }
