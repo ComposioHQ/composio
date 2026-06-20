@@ -22,20 +22,23 @@ modules_for_ruff = [
 ]
 
 type_stubs = [
-    "types-requests",
-    "types-protobuf",
-    "anthropic",
-    "crewai",
-    "semver",
-    "fastapi",
-    "langchain",
-    "langgraph",
-    "llama-index",
-    "openai-agents",
-    "langchain-openai",
-    "google-cloud-aiplatform",
-    "pytest",
+    "types-requests==2.33.0.20260518",
+    "types-protobuf==7.34.1.20260518",
+    "anthropic==0.109.2",
+    "crewai==0.134.0",
+    "semver==3.0.4",
+    "fastapi==0.137.1",
+    "langchain==1.3.9",
+    "langgraph==1.2.5",
+    "llama-index==0.14.22",
+    "openai-agents==0.17.5",
+    "langchain-openai==1.3.2",
+    "google-cloud-aiplatform==1.158.0",
+    "pytest==9.1.0",
 ]
+
+mypy = "mypy==2.1.0"
+ruff_package = "ruff==0.15.17"
 
 ruff = [
     "ruff",
@@ -47,7 +50,7 @@ ruff = [
 @nox.session
 def fmt(session: Session):
     """Format code"""
-    session.install("ruff")
+    session.install(ruff_package)
     session.run("ruff", "check", "--select", "I", "--fix", *modules_for_ruff)
     session.run("ruff", "format", *modules_for_ruff)
 
@@ -55,7 +58,7 @@ def fmt(session: Session):
 @nox.session
 def chk(session: Session):
     """Check for linter and type issues"""
-    session.install(".", "ruff", "mypy==1.13.0", *type_stubs)
+    session.install(".", ruff_package, mypy, *type_stubs)
     session.run(*ruff, "check", *modules_for_ruff)
     for module in modules_for_mypy:
         session.run("mypy", "--config-file", "config/mypy.ini", module)
@@ -64,7 +67,7 @@ def chk(session: Session):
 @nox.session
 def fix(session: Session):
     """Fix linter issues"""
-    session.install("ruff")
+    session.install(ruff_package)
     session.run(*ruff, "check", "--fix", *modules_for_ruff)
 
 
@@ -79,7 +82,7 @@ def type_inference(session: Session):
     resolve the provider types and verify the type inference works correctly.
     """
     # Install core SDK and mypy
-    session.install(".", "mypy==1.13.0", *type_stubs)
+    session.install(".", mypy, *type_stubs)
 
     # Install all provider packages for type resolution
     session.install(

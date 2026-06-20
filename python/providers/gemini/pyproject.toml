@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "google-genai",
+    "google-genai>=2.8.0",
     "composio",
 ]
 

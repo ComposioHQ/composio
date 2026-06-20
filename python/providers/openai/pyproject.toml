@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "openai",
+    "openai>=2.42.0",
     "composio",
 ]
 
