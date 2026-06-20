@@ -55,7 +55,7 @@ The fixture script:
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: current (as specified in `mise.toml`).
+**Docker** with Node.js versions: 22.22.3, 24.16.0, 25.9.0.
 
 ## Running
 

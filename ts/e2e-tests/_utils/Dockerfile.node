@@ -1,17 +1,20 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 --build-arg BUN_VERSION=1.3.10 -t test-name .
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.22.3 -t test-name .
 #
 # Uses official node:slim images. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
+#
+# bun and pnpm are installed from mise.toml/mise.lock (the single source of truth).
+# Node is the test matrix axis and stays on the base image, so it is disabled in
+# mise (MISE_DISABLE_TOOLS) to avoid shadowing the base image's Node.
 
 ARG NODE_VERSION
 
 FROM node:${NODE_VERSION}-slim
-ARG BUN_VERSION
 
-ENV PNPM_HOME="/pnpm"
-ENV BUN_INSTALL="/usr/local"
-ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
+ENV MISE_DATA_DIR="/mise"
+ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV PATH="/mise/shims:$PATH"
 
 WORKDIR /app
 
@@ -20,12 +23,16 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl unzip && \
     rm -rf /var/lib/apt/lists/*
 
-# Install corepack (for pnpm)
-RUN npm i -g corepack@latest --force && \
-    corepack enable
-
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v${BUN_VERSION}" && \
+# Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
+# mise is installed to /usr/local/bin; the tool binaries are symlinked there too so
+# they stay on PATH for the non-root runtime user (login shells reset PATH).
+RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+COPY mise.toml mise.lock ./
+RUN mise trust /app/mise.toml && \
+    mise install && \
+    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
+    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+    pnpm --version && \
     bun --version
 
 # Copy lockfile first for optimal layer caching

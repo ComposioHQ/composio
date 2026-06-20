@@ -1,6 +1,6 @@
 ---
-title: AuthConfigs
-description: AuthConfigs class  This class is used to manage authentication configurations in the Composio SDK. Auth configs are used to configure authentication providers and settings.
+title: "AuthConfigs"
+description: "AuthConfigs class  This class is used to manage authentication configurations in the Composio SDK. Auth configs are used to configure authentication providers and settings."
 ---
 
 ## Usage
@@ -57,7 +57,7 @@ This action cannot be undone and will prevent any connected accounts that use
 this auth config from functioning.
 
 ```typescript
-async delete(nanoid: string): Promise
+async delete(nanoid: string): Promise<AuthConfigDeleteResponse>
 ```
 
 **Parameters**
@@ -68,7 +68,7 @@ async delete(nanoid: string): Promise
 
 **Returns**
 
-`Promise` — The deletion response
+`Promise<AuthConfigDeleteResponse>` — The deletion response
 
 **Example**
 

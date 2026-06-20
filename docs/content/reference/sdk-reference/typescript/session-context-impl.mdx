@@ -1,6 +1,6 @@
 ---
-title: SessionContextImpl
-description: Concrete implementation of SessionContext. One instance is created per session (or per multi-execute batch) and shared across all custom tool invocations, including sibling routing.  When `customToolsMap` is provided, `execute()` checks local tools first before falling back to the backend API. This allows tool A to call tool B via `session.execute('B', ...)` without hitting the network.
+title: "SessionContextImpl"
+description: "Concrete implementation of SessionContext. One instance is created per session (or per multi-execute batch) and shared across all custom tool invocations, including sibling routing.  When `customToolsMap` is provided, `execute()` checks local tools first before falling back to the backend API. This allows tool A to call tool B via `session.execute('B', ...)` without hitting the network."
 ---
 
 ## Usage
