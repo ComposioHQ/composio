@@ -83,6 +83,7 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
         self._executors: t.Dict[str, AgenticProviderExecuteFn] = {}
+        self._keywords: t.Dict[str, dict] = {}
 
     def wrap_tool(
         self,
@@ -103,6 +104,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         schema_params, keywords = substitute_reserved_python_keywords(
             schema=tool.input_parameters
         )
+        # Remember the mapping so the backward-compat manual path
+        # (``handle_response``) can reinstate the original names too.
+        self._keywords[tool.slug] = keywords
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
@@ -190,8 +194,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if fc.name not in self._executors:
                 continue
 
+            # Restore reserved-keyword parameter names: the model sees the
+            # substituted names, but the backend expects the originals, matching
+            # the AFC execution wrapper above.
+            arguments = reinstate_reserved_python_keywords(
+                request=dict(fc.args), keywords=self._keywords.get(fc.name, {})
+            )
             result = self._executors[fc.name](
-                slug=fc.name, arguments=normalize_tool_arguments(dict(fc.args))
+                slug=fc.name, arguments=normalize_tool_arguments(arguments)
             )
             processed = _process_execution_result(result)
 

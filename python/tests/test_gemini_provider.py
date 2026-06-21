@@ -576,6 +576,39 @@ class TestHandleResponse:
             arguments={"repo": "composio/composio"},
         )
 
+    def test_reinstates_reserved_keyword_args(self):
+        """handle_response must reinstate reserved-keyword param names like the
+        AFC path, so the backend receives the original name, not the substituted one."""
+        from composio_gemini import GeminiProvider
+
+        provider = GeminiProvider()
+        tool = create_mock_tool(
+            "TOOL_WITH_RESERVED",
+            "test",
+            input_parameters={
+                "type": "object",
+                "properties": {
+                    "for": {"type": "string"},
+                    "name": {"type": "string"},
+                },
+                "required": [],
+            },
+        )
+        execute_tool = create_mock_execute_tool()
+        provider.wrap_tools([tool], execute_tool)
+
+        # The model returns the substituted name ("for_rs"); the backend expects "for".
+        response = self._create_mock_response(
+            [("TOOL_WITH_RESERVED", {"for_rs": "test_value", "name": "hello"})]
+        )
+        function_responses, executed = provider.handle_response(response)
+
+        assert executed is True
+        execute_tool.assert_called_once_with(
+            slug="TOOL_WITH_RESERVED",
+            arguments={"for": "test_value", "name": "hello"},
+        )
+
     def test_no_function_calls(self):
         from composio_gemini import GeminiProvider
 
