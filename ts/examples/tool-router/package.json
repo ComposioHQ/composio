@@ -33,13 +33,13 @@
     "openai": "^6.22.0",
     "zod": "catalog:",
     "ai": "catalog:",
-    "dotenv": "^16.4.1",
+    "dotenv": "catalog:",
     "langchain": "^1.1.1",
     "ora": "^9.0.0",
     "pnpm": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -42,6 +42,9 @@
     "mcp"
   ],
   "author": "",
+  "contributors": [
+    "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
+  ],
   "license": "ISC",
   "dependencies": {
     "zod": "^3.25.76"
