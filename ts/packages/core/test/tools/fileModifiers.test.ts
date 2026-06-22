@@ -1732,6 +1732,7 @@ describe('FileToolModifier', () => {
           type: 'object',
           properties: {
             attachment: { $ref: '#/$defs/Attachment' },
+            legacyAttachment: { $ref: '#/definitions/LegacyAttachment' },
             text: { type: 'string' },
           },
           $defs: {
@@ -1741,6 +1742,13 @@ describe('FileToolModifier', () => {
               description: 'Local path to attach',
             },
           },
+          definitions: {
+            LegacyAttachment: {
+              type: 'string',
+              file_uploadable: true,
+              description: 'Legacy local path to attach',
+            },
+          },
         },
       };
 
@@ -1748,6 +1756,11 @@ describe('FileToolModifier', () => {
 
       expect(result.inputParameters?.properties?.attachment).toHaveProperty('format', 'path');
       expect(result.inputParameters?.properties?.attachment).toHaveProperty(
+        'file_uploadable',
+        true
+      );
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty('format', 'path');
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty(
         'file_uploadable',
         true
       );

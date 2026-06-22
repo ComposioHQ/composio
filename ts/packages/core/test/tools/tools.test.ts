@@ -593,6 +593,7 @@ describe('Tools', () => {
         type: 'object',
         properties: {
           data: { $ref: '#/$defs/GetAttachmentResponse' },
+          legacy_data: { $ref: '#/definitions/LegacyAttachmentResponse' },
         },
         $defs: {
           GetAttachmentResponse: {
@@ -600,6 +601,17 @@ describe('Tools', () => {
             properties: { file: { $ref: '#/$defs/FileDownloadable' } },
           },
           FileDownloadable: {
+            type: 'object',
+            file_downloadable: true,
+            properties: { s3url: { type: 'string' } },
+          },
+        },
+        definitions: {
+          LegacyAttachmentResponse: {
+            type: 'object',
+            properties: { file: { $ref: '#/definitions/LegacyFileDownloadable' } },
+          },
+          LegacyFileDownloadable: {
             type: 'object',
             file_downloadable: true,
             properties: { s3url: { type: 'string' } },
@@ -619,8 +631,14 @@ describe('Tools', () => {
       expect(tool.outputParameters?.$defs?.FileDownloadable).toMatchObject({
         file_downloadable: true,
       });
+      expect(tool.outputParameters?.definitions?.LegacyFileDownloadable).toMatchObject({
+        file_downloadable: true,
+      });
       expect(tool.outputParameters?.properties?.data).toEqual({
         $ref: '#/$defs/GetAttachmentResponse',
+      });
+      expect(tool.outputParameters?.properties?.legacy_data).toEqual({
+        $ref: '#/definitions/LegacyAttachmentResponse',
       });
     });
   });
