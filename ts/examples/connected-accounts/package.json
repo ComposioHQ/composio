@@ -17,7 +17,7 @@
     "openai": "catalog:"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

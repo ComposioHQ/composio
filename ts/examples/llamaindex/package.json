@@ -21,11 +21,11 @@
     "@composio/llamaindex": "workspace:*",
     "@llamaindex/openai": "^0.4.20",
     "@llamaindex/workflow": "^1.1.24",
-    "dotenv": "^16.4.1",
+    "dotenv": "catalog:",
     "llamaindex": "^0.12.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.9",
+    "@types/bun": "catalog:",
     "typescript": "catalog:"
   }
 }

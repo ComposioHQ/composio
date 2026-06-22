@@ -101,7 +101,7 @@ Pipeline for `composio generate {ts,py}`:
 
 ### Key Dependencies
 
-`effect`, `@effect/cli`, `@effect/platform`, `@effect/platform-bun`, `@clack/prompts` (terminal UI — stderr by default), `ansis` / `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `semver`, `open`, `decompress`.
+`effect`, `@effect/cli`, `@effect/platform`, `@effect/platform-bun`, `@clack/prompts` (terminal UI — stderr by default), `picocolors`, `@composio/client` (Composio API), `@composio/core` (types), `@composio/ts-builders` (AST gen), `@composio/cli-keyring` (OS credential store), `@composio/cli-local-tools` (local toolkit defs), `semver`, `open`, `decompress`.
 
 ## Output Conventions: Composable CLI Output
 

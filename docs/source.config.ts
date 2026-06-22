@@ -119,6 +119,16 @@ export default defineConfig({
                   compilerOptions: {
                     jsx: 4, // JsxEmit.ReactJSX
                     jsxImportSource: 'react',
+                    // Twoslash type-checks code blocks in its own virtual TS
+                    // environment, which carries a `baseUrl` default that TS 6
+                    // flags as deprecated (TS5101). Silence it here, mirroring
+                    // the root tsconfig.json, so production builds don't fail.
+                    ignoreDeprecations: '6.0',
+                    // TS 6 no longer auto-includes `@types/node` ambiently the
+                    // way 5.9 did, so code blocks using Node globals (`crypto`,
+                    // `process`, `Buffer`) fail to resolve them (TS2591). Pull
+                    // node types in explicitly to restore that.
+                    types: ['node'],
                   },
                 },
                 typesCache: createFileSystemTypesCache({
