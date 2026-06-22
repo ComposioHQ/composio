@@ -1,16 +1,21 @@
 # Reusable Dockerfile for Deno e2e tests
-# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 -t test-name .
+# Usage: docker build -f Dockerfile.deno --build-arg DENO_VERSION=2.6.7 --build-arg NODE_MAJOR=22 -t test-name .
 #
 # Uses official denoland/deno images. For multi-version testing, run the build/run
 # multiple times with different DENO_VERSION values from the shell script.
+#
+# Deno is the test matrix axis (base image); Node comes from nodesource (needed by
+# pnpm and the build). bun and pnpm are installed from mise.toml/mise.lock, with
+# node/deno disabled in mise so it does not shadow the base/nodesource binaries.
 
-ARG DENO_VERSION=2.6.7
+ARG DENO_VERSION
 
 FROM denoland/deno:${DENO_VERSION}
+ARG NODE_MAJOR
 
-ENV PNPM_HOME="/pnpm"
-ENV BUN_INSTALL="/usr/local"
-ENV PATH="$BUN_INSTALL/bin:$PNPM_HOME:$PATH"
+ENV MISE_DATA_DIR="/mise"
+ENV MISE_DISABLE_TOOLS="node,deno,python,uv"
+ENV PATH="/mise/shims:$PATH"
 
 # Switch to root for installation
 USER root
@@ -22,18 +27,21 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl unzip && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Node.js (needed for pnpm and building packages)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+# Install Node.js (needed for pnpm's npm backend and building packages)
+RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# Install corepack (for pnpm)
-RUN npm i -g corepack@latest && \
-    corepack enable
-
-# Install bun (version from .bun-version)
-COPY .bun-version ./
-RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s "bun-v$(cat .bun-version)" && \
+# Install bun + pnpm via mise (versions pinned in mise.toml/mise.lock).
+# mise is installed to /usr/local/bin and the tool binaries are symlinked there too so
+# they stay on PATH for the non-root runtime user (login shells reset PATH).
+RUN curl -fsSL https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+COPY mise.toml mise.lock ./
+RUN mise trust /app/mise.toml && \
+    mise install && \
+    ln -sf "$(mise which bun)" /usr/local/bin/bun && \
+    ln -sf "$(mise which pnpm)" /usr/local/bin/pnpm && \
+    pnpm --version && \
     bun --version
 
 # Copy lockfile first for optimal layer caching
@@ -45,6 +53,7 @@ COPY package.json \
      .pnpmfile.cjs \
      tsconfig.base.json \
      tsdown.config.base.ts \
+     toolchain-versions.json \
      ./
 
 # Copy pre-install scripts (rarely change)
@@ -57,7 +66,7 @@ COPY ts/packages/ ./ts/packages/
 # Install dependencies using pnpm
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
 # because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN pnpm install --frozen-lockfile
+RUN BYPASS_TOOLCHAIN_CHECK=1 pnpm install --frozen-lockfile
 
 # Copy e2e tests last (changes frequently)
 COPY ts/e2e-tests/ ./ts/e2e-tests/

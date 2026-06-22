@@ -105,7 +105,6 @@ export const AuthConfigRetrieveResponseSchema = z.object({
   }),
   noOfConnections: z.number(),
   status: z.enum(['ENABLED', 'DISABLED']),
-  uuid: z.string(),
   authScheme: AuthSchemeEnum.optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   expectedInputFields: z.array(z.unknown()).optional(),

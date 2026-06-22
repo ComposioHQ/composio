@@ -18,6 +18,7 @@ import {
   McpServerGetResponse,
   removeNonRequiredProperties,
   jsonSchemaToZodSchema,
+  normalizeToolArguments,
 } from '@composio/core';
 import type { ToolSet as VercelToolSet, Tool as VercelTool } from 'ai';
 import { tool } from 'ai';
@@ -126,8 +127,11 @@ export class VercelProvider extends BaseAgenticProvider<
       inputSchema: inputParametersSchema,
 
       execute: async params => {
-        const input = typeof params === 'string' ? JSON.parse(params) : params;
-        return await executeTool(composioTool.slug, input);
+        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        return await executeTool(
+          composioTool.slug,
+          normalizeToolArguments(params, composioTool.slug)
+        );
       },
     });
   }

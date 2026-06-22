@@ -16,6 +16,7 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
+  normalizeToolArguments,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -132,8 +133,11 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
       },
       strict: false,
       execute: async params => {
-        const input = typeof params === 'string' ? JSON.parse(params) : params;
-        return await executeTool(composioTool.slug, input);
+        // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
+        return await executeTool(
+          composioTool.slug,
+          normalizeToolArguments(params, composioTool.slug)
+        );
       },
     });
   }

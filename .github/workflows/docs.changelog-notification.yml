@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0 # Fetch full history to detect changes across all commits in push
 
@@ -100,8 +100,8 @@ jobs:
 
       - name: Send Slack Notification
         if: steps.changed-files.outputs.has_changelog == 'true'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: ${{ steps.extract-metadata.outputs.slack_payload }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_CUSTOMER_COMMS_WEBHOOK_URL }}

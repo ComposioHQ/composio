@@ -181,6 +181,24 @@ describe('OpenAIResponsesProvider', () => {
       );
     });
 
+    it('should coerce empty-string arguments to an empty object (issue #2406)', async () => {
+      const toolCall = {
+        id: 'call-123',
+        type: 'function',
+        name: 'test-tool',
+        arguments: '',
+        call_id: 'call-123',
+      } as unknown as OpenAI.Responses.ResponseFunctionToolCall;
+
+      await provider.executeToolCall('test-user', toolCall);
+
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(
+        'test-tool',
+        expect.objectContaining({ arguments: {} }),
+        undefined
+      );
+    });
+
     it('should pass options to executeTool', async () => {
       const userId = 'test-user';
       const toolCall = {

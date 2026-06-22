@@ -21,7 +21,6 @@ const TEMP_JSON = join(PACKAGE_DIR, '.typedoc-output.json');
 
 // Internal classes that should NOT be documented (accessed via other APIs)
 const INTERNAL_CLASSES = new Set([
-  'CustomTools', // Internal - accessed via composio.tools.createCustomTool()
   'AuthScheme', // Utility class
   'ConnectionRequest', // Utility
   'Files', // Not yet stable API
@@ -227,8 +226,15 @@ function extractDescription(comment?: TypeDocReflection['comment']): string {
   if (!comment) return '';
   let desc = extractText(comment.summary);
 
-  // Clean up API paths that shouldn't be in user-facing docs
-  desc = desc.replace(/\/?api\/v\d+\/[^\s]*/g, '').trim();
+  // Clean up bare API paths that shouldn't be in user-facing docs, while
+  // preserving intentional route references inside inline code spans.
+  desc = desc
+    .split(/(`[^`]*`)/g)
+    .map(segment =>
+      segment.startsWith('`') ? segment : segment.replace(/\/?api\/v\d+\/[^\s`),.;]*/g, '')
+    )
+    .join('')
+    .trim();
 
   // Clean up multiple newlines and spaces
   desc = desc
@@ -242,6 +248,10 @@ function extractDescription(comment?: TypeDocReflection['comment']): string {
 function extractTag(comment: TypeDocReflection['comment'] | undefined, tagName: string): string[] {
   if (!comment?.blockTags) return [];
   return comment.blockTags.filter(t => t.tag === tagName).map(t => extractText(t.content));
+}
+
+function formatYamlFrontmatterString(value: string): string {
+  return JSON.stringify(value);
 }
 
 function formatType(type?: TypeDocType, depth = 0): string {
@@ -525,8 +535,8 @@ function generateClassMdx(classDoc: ClassDoc): string {
 
   // Frontmatter - fumadocs renders title and description automatically
   lines.push('---');
-  lines.push(`title: ${classDoc.name}`);
-  lines.push(`description: ${fullDescription}`);
+  lines.push(`title: ${formatYamlFrontmatterString(classDoc.name)}`);
+  lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
 
@@ -808,8 +818,8 @@ async function main() {
     .join('\n');
 
   const indexContent = `---
-title: TypeScript SDK Reference
-description: Complete API reference for the Composio TypeScript SDK (@composio/core).
+title: ${formatYamlFrontmatterString('TypeScript SDK Reference')}
+description: ${formatYamlFrontmatterString('Complete API reference for the Composio TypeScript SDK (@composio/core).')}
 ---
 
 ## Installation

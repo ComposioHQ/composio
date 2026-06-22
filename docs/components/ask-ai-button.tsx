@@ -1,30 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Search, MessageSquare } from 'lucide-react';
 import { useSearchContext } from '@fumadocs/ui/contexts/search';
 import { useI18n } from '@fumadocs/ui/contexts/i18n';
 
-import type { DecimalAPI } from './decimal-widget';
+import {
+  closeDecimalWidget,
+  getDecimal,
+  isDecimalWidgetVisible,
+  loadDecimalWidget,
+  openDecimalWidget,
+} from './decimal-widget';
 
-function getDecimal() {
-  return (window as typeof window & { Decimal?: DecimalAPI }).Decimal;
-}
+export async function toggleDecimalWidget() {
+  const decimal = getDecimal() ?? (await loadDecimalWidget());
+  if (!decimal) return;
 
-function isWidgetVisible(): boolean {
-  const sidebar = document.querySelector('.decimal-widget-sidebar');
-  return sidebar?.classList.contains('open') ?? false;
-}
-
-export function toggleDecimalWidget() {
-  const decimal = getDecimal();
-  if (!decimal) {
-    setTimeout(() => {
-      getDecimal()?.show();
-    }, 500);
-    return;
-  }
-  isWidgetVisible() ? decimal.hide() : decimal.show();
+  isDecimalWidgetVisible() ? closeDecimalWidget() : openDecimalWidget(decimal);
 }
 
 export function detectMac(): boolean {
@@ -42,17 +35,17 @@ export function detectMac(): boolean {
 }
 
 function useIsMac() {
-  const [isMac, setIsMac] = useState(true);
-  useEffect(() => {
-    setIsMac(detectMac());
-  }, []);
-  return isMac;
+  return useSyncExternalStore(
+    () => () => {},
+    detectMac,
+    () => true,
+  );
 }
 
 const handleKeyDown = (e: KeyboardEvent) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
     e.preventDefault();
-    toggleDecimalWidget();
+    void toggleDecimalWidget();
   }
 };
 
@@ -92,7 +85,9 @@ export function SearchAndAskAI() {
       )}
       <button
         type="button"
-        onClick={toggleDecimalWidget}
+        onClick={() => {
+          void toggleDecimalWidget();
+        }}
         className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0"
       >
         Ask AI
@@ -125,7 +120,9 @@ export function SearchAndAskAIMobile() {
       <button
         type="button"
         aria-label="Ask AI"
-        onClick={toggleDecimalWidget}
+        onClick={() => {
+          void toggleDecimalWidget();
+        }}
         className="inline-flex items-center justify-center rounded-md p-2 text-sm font-medium transition-colors duration-100 hover:bg-fd-accent hover:text-fd-accent-foreground"
       >
         <MessageSquare className="size-4.5" />
