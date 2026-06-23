@@ -1,6 +1,7 @@
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createMDX } from 'fumadocs-mdx/next';
+import { withEve } from 'eve/next';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const withMDX = createMDX();
@@ -888,4 +889,7 @@ const config = {
   },
 };
 
-export default withMDX(config);
+// `withEve` mounts the Eve docs assistant (agent/) on same-origin /eve/v1/*
+// routes and runs the agent alongside the Next.js app in one Vercel deploy.
+// Requires Node 24+ (see package.json engines / .node-version).
+export default withEve(withMDX(config));
