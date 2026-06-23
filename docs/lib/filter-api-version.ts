@@ -32,7 +32,11 @@ interface PageTreeRoot {
  *    page tree so the fumadocs-openapi operation pages disappear from the
  *    sidebar, llms.txt walk, and search.
  */
-export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set(['consumer', 'invite-codes']);
+export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set([
+  'consumer',
+  'invite-codes',
+  'authentication',
+]);
 
 /** True if a URL points at a hidden tag's pages (v3.1 or v3.0). */
 function isHiddenTagUrl(url: string): boolean {
