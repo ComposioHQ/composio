@@ -11,6 +11,12 @@ const config = {
   reactStrictMode: true,
   turbopack: {
     root: __dirname,
+    resolveAlias: {
+      // eve/react pulls in a bundled rolldown helper with a bare, unused
+      // `import "node:module"`. Turbopack can't keep that as an external in a
+      // browser chunk, so stub it to an empty module on the browser.
+      'node:module': { browser: './lib/eve-empty-module.js' },
+    },
   },
   // The OpenAPI specs are loaded at request time via
   // `join(process.cwd(), 'public/openapi.json')` (see lib/openapi.ts). Because
