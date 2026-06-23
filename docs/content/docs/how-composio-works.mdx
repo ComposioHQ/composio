@@ -1,7 +1,7 @@
 ---
 title: What is a session?
-description: What Composio sessions do and how they scope users, tools, auth, MCP, and workbench state
-keywords: [session, userID, concepts, meta tools, mcp, workbench]
+description: What Composio sessions do, and how they scope users, tools, toolkits, auth, MCP, and workbench state
+keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 ---
 
 A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
@@ -37,6 +37,14 @@ A session scopes four things:
 - **Authentication**: managed auth, custom auth configs, and connected-account selection.
 - **Execution state**: logs, tool memory, MCP state, and workbench files for the task.
 
+## Tools and toolkits
+
+A **toolkit** is a collection of related tools for a service. The `github` toolkit, for example, contains tools for creating issues, managing pull requests, and starring repositories.
+
+A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
+
+Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/toolkits/custom-tools-and-toolkits) API.
+
 ## Users
 
 A user is an identifier from your app. Composio stores connections under that ID, so tools run with the right account and stay isolated from other users. Use a stable identifier like your database ID, never one that can change.
@@ -52,34 +60,25 @@ A user is an identifier from your app. Composio stores connections under that ID
 
 A user can connect multiple accounts for the same toolkit, like work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific one. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
 
-## What sessions do
+## Meta tools
 
-### Discover and execute tools
+A session gives your agent meta tools, a small fixed set that discover, authenticate, and execute tools at runtime, so you never load hundreds of tool definitions into context:
 
-A session gives your agent meta tools that discover, authenticate, and execute tools at runtime, so you never load hundreds of tool definitions into context:
+<SessionFlow />
 
-```mermaid
-graph LR
-    A["Your agent"] --> B["Session"]
-    B --> C["Meta tools"]
-    C --> D["COMPOSIO_SEARCH_TOOLS"]
-    C --> E["COMPOSIO_GET_TOOL_SCHEMAS"]
-    C --> F["COMPOSIO_MANAGE_CONNECTIONS"]
-    C --> G["COMPOSIO_MULTI_EXECUTE_TOOL"]
-    C --> H["COMPOSIO_REMOTE_WORKBENCH"]
-```
-
-The agent searches for relevant tools, authenticates if needed, and executes them through the same session. Meta-tool calls share context, so the agent searches in one call and executes in the next without losing state.
+The agent searches for relevant tools, authenticates if needed, and executes them through the same session. Meta-tool calls share context, so the agent searches in one call and executes in the next without losing state. See the [Meta Tools reference](/reference/meta-tools) for each tool's input and output schema.
 
 Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns them directly from `session.tools()` with no search step, while keeping session auth, connected accounts, and the workbench.
 
-### Handle authentication
+## Authentication
 
 When a tool needs a connection, the session generates a Connect Link with `session.authorize()`, or the agent handles the flow through `COMPOSIO_MANAGE_CONNECTIONS`.
 
 In chat, the agent can pause, ask the user to connect an app, then retry the tool once auth completes. Composio manages the OAuth redirects, token exchange, and refresh. Once a user connects a toolkit, the connected account persists and future sessions reuse it without re-authentication.
 
-### Preserve workbench state
+For OAuth toolkits, Composio uses [managed apps](/docs/custom-app-vs-managed-app) by default. Bring your own app when you need your own branding, scopes, or consent screen.
+
+## Workbench
 
 Handle large responses and bulk operations in the remote workbench. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
 

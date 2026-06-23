@@ -25,6 +25,7 @@ import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
+import { SessionFlow } from '@/components/session-flow';
 import { HomeSurfaces } from '@/components/home-surfaces';
 import { HomeResources } from '@/components/home-resources';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
@@ -105,6 +106,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     AIToolsBanner,
     DocsHero,
     HomeFeatures,
+    SessionFlow,
     HomeSurfaces,
     HomeResources,
     StepTitle,
