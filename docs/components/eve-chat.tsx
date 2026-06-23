@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
 import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
-import { Streamdown } from 'streamdown';
+import { AssistantMessage } from './eve-message';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
 
 const SUGGESTIONS = [
@@ -27,6 +27,14 @@ export function EveChat() {
   });
 
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming';
+  const messages = agent.data.messages;
+  const lastMessage = messages[messages.length - 1];
+  const lastHasAssistantText =
+    lastMessage?.role === 'assistant' &&
+    lastMessage.parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
+  // Show the loading indicator from submit through the search/read phase, until
+  // the assistant's text actually starts streaming, so it doesn't flicker off.
+  const thinking = isBusy && !lastHasAssistantText;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -125,12 +133,7 @@ export function EveChat() {
                     {message.parts.map((part, i) =>
                       part.type === 'text' ? (
                         message.role === 'assistant' ? (
-                          <Streamdown
-                            key={i}
-                            className="text-[13px] leading-relaxed break-words [&_a]:text-[var(--composio-brand)] [&_a]:underline [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:text-[11.5px] [&_pre]:leading-relaxed [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-fd-foreground/[0.07] [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.9em]"
-                          >
-                            {part.text}
-                          </Streamdown>
+                          <AssistantMessage key={i} text={part.text} />
                         ) : (
                           <p key={i} className="whitespace-pre-wrap break-words">
                             {part.text}
@@ -141,8 +144,15 @@ export function EveChat() {
                   </div>
                 </li>
               ))}
-              {agent.status === 'submitted' && (
-                <li className="text-[13px] text-fd-muted-foreground">Searching the docs…</li>
+              {thinking && (
+                <li className="flex items-center gap-2 text-[13px] text-fd-muted-foreground">
+                  <span className="inline-flex gap-1">
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.3s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.15s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60" />
+                  </span>
+                  Searching the docs…
+                </li>
               )}
             </ul>
           )}
