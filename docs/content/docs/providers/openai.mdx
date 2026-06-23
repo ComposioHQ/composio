@@ -4,9 +4,7 @@ description: Build an agent with OpenAI and enable it to use 1000+ tools with Co
 keywords: [gpt, responses api, chat completions, openai agents sdk, agents sdk]
 ---
 
-Give OpenAI models access to 1000+ tools (Gmail, Slack, GitHub, and more) through Composio. The OpenAI provider converts Composio tools into OpenAI's function-calling format and executes the tool calls the model returns, so you can add authenticated actions to your agent without writing the glue yourself.
-
-Composio integrates with OpenAI through three paths:
+The OpenAI provider formats Composio tools for OpenAI's function-calling and executes the tool calls the model returns. It works three ways:
 
 - The [Responses API](https://platform.openai.com/docs/api-reference/responses), the recommended way to build agentic flows, where you run the tool-call loop yourself.
 - The [Chat Completions API](https://platform.openai.com/docs/api-reference/chat), the classic message-based interface, where you also run the loop.

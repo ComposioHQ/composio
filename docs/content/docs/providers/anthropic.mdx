@@ -4,9 +4,7 @@ description: Build an agent with Claude and enable it to use 1000+ tools with Co
 keywords: [claude, messages api, claude agent sdk, agents sdk]
 ---
 
-Give Claude access to 1000+ tools (Gmail, Slack, GitHub, and more) through Composio. The Anthropic provider converts Composio tools into Claude's tool format and executes the tool calls Claude returns, so you can wire authenticated actions into your agent without writing the glue yourself.
-
-Composio integrates with Anthropic through two paths:
+The Anthropic provider formats Composio tools for Claude and executes the tool calls Claude returns. It works two ways:
 
 - The [Claude Messages API](https://docs.anthropic.com/en/api/messages), where you run the tool-call loop yourself.
 - The [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk), where the SDK runs the loop and Composio tools are exposed as an in-process MCP server.
