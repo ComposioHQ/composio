@@ -37,6 +37,39 @@ def update(nanoid: str, alias: str | None = ..., connection: connected_account_p
 
 ---
 
+### update_acl()
+
+Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.  Only valid on SHARED connections; raises ``ComposioAclOnlyForSharedError`` on a PRIVATE connection. Omit a parameter to leave it unchanged; pass an empty list to clear an allow/deny list. At least one parameter must be provided.
+
+```python
+def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids: List[str | None] = ..., not_allowed_user_ids: List[str | None] = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `allow_all_users?` | `bool \| None` |
+| `allowed_user_ids?` | `List[str \| None]` |
+| `not_allowed_user_ids?` | `List[str \| None]` |
+
+**Returns**
+
+`connected_account_patch_response.ConnectedAccountPatchRes...` — Response with ``id``, ``status``, and ``success``.
+
+**Example**
+
+```python
+composio.connected_accounts.update_acl(
+        'ca_abc',
+        allow_all_users=True,
+        not_allowed_user_ids=['user_bob'],
+    )
+```
+
+---
+
 ### initiate()
 
 Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the ``wait_for_connection`` method.
