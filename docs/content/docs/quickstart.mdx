@@ -418,12 +418,3 @@ readline.close();
 By default, each `composio.create()` call returns a new session with access to all toolkits. Sessions are highly configurable beyond that: [Reusing a session](/docs/how-composio-works#how-sessions-behave) covers storing a session ID and calling `composio.use()` across multi-turn requests, while [Configuring Sessions](/docs/configuring-sessions) covers restricting toolkits, auth configs, and connected accounts.
 
 Prefer to connect over the Model Context Protocol instead? Every session also exposes an MCP endpoint — see [Using sessions via MCP](/docs/sessions-via-mcp).
-
-## Next steps
-
-<Cards>
-  <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Restrict toolkits, set custom auth configs, and select connected accounts" />
-  <Card icon={<Key />} title="Authenticating Users" href="/docs/authentication" description="Learn how users connect their accounts via Connect Links, OAuth, and API keys" />
-  <Card icon={<Plug />} title="Using sessions via MCP" href="/docs/sessions-via-mcp" description="Connect any MCP-compatible client to a session's MCP endpoint" />
-  <Card icon={<Play />} title="Build a chat app" href="/cookbooks/chat-app" description="Full Next.js tutorial: tool discovery, auth, and multi-turn conversations" />
-</Cards>
