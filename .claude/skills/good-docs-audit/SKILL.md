@@ -5,7 +5,7 @@ description: Audit a doc, guide, README, or block of prose against the good-docs
 
 # Good docs audit
 
-Review target documentation against the `good-docs-writing` rules and report where the writing drifts from a clear, direct voice. Default behavior is **report only** — produce findings, do not edit. Only modify files if the user explicitly says to fix, rewrite, or apply.
+Review target documentation against the `good-docs-writing` rules and report where the writing drifts from Modal's voice. Default behavior is **report only** — produce findings, do not edit. Only modify files if the user explicitly says to fix, rewrite, or apply.
 
 ## Procedure
 
@@ -17,17 +17,17 @@ Review target documentation against the `good-docs-writing` rules and report whe
 
 ## Prioritized checklist
 
-Scan for these in roughly this order — the top items most damage the voice:
+Scan for these in roughly this order — the top items most damage the Modal voice:
 
 1. **Hedging & filler** — "it might be the case that," "in order to," "basically," "simply," "just." Cut or commit.
 2. **Passive voice** where active is clearer — "the function is invoked by the client" → "the client invokes the function."
 3. **Marketing fluff / vague intensifiers** — "seamlessly," "powerful," "robust," "blazing-fast," "cutting-edge," "world-class." Replace with a concrete claim or delete.
-4. **Em-dash overuse** — more than one per paragraph, or em-dashes doing a comma/period's job. (If the project bans em-dashes outright, flag every one.)
+4. **Em-dashes** — flag every em-dash (—); the house style bans them. Suggest a period, comma, colon, or parentheses in its place.
 5. **Third-person distance** — "the user," "one," "developers can" where "you" is meant.
 6. **Jargon without context** — an undefined acronym or term-of-art on first use with no grounding.
-7. **Inconsistent terminology** — the same concept named two ways, or core nouns (Session, Toolkit, Connected account, Auth config) miscapitalized or capitalized inconsistently.
+7. **Inconsistent terminology** — the same concept named two ways, or core nouns (App, Function, Image, Volume, Secret) miscapitalized or capitalized inconsistently.
 8. **Title-case drift** — heading case that switches between sentence case and title case within one doc.
-9. **Missing backticks** — code identifiers, commands, params, paths, slugs, or filenames in plain text.
+9. **Missing backticks** — code identifiers, commands, params, paths, or filenames in plain text.
 10. **Buried warnings** — gotchas, version notes, or gated-feature notes in prose that should be callouts.
 11. **Weak openings** — page or section that doesn't lead with the concept or benefit; throat-clearing before the point.
 12. **Fragment / unrunnable code** — snippets that can't be pasted and run, or missing the expected-output / footgun note.
@@ -37,9 +37,9 @@ Scan for these in roughly this order — the top items most damage the voice:
 Output a summary line, then findings grouped by severity. Each finding uses this shape:
 
 ```
-- file.md:42 — [Punctuation] Em-dash overuse
-  Offending: "It's fast — really fast — and — it scales — automatically."
-  Rewrite:   "It's fast and scales automatically."
+- file.md:42 — [Punctuation] Em-dash banned
+  Offending: "Modal is fast — really fast — and it scales automatically."
+  Rewrite:   "Modal is fast, really fast, and it scales automatically."
 ```
 
 Structure the full report as:
@@ -63,7 +63,7 @@ Structure the full report as:
 
 - **Always cite `file:line`** so findings are actionable. Use the line numbers from your Read.
 - **Quote the exact offending text**; don't paraphrase the problem away.
-- **Give a real rewrite**, in the target voice, for every finding — not generic advice.
+- **Give a real rewrite**, in Modal voice, for every finding — not generic advice.
 - **Map each finding to a style-guide category** (Voice, Structure, Terminology, Punctuation, Code, Formatting) in brackets.
 - **Don't invent violations.** If the prose already matches the voice, say so. A short report is a good outcome.
 - **Don't edit by default.** Report, then offer to apply. Only write to files when explicitly asked.
