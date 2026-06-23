@@ -46,9 +46,10 @@ import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
-  transformToolRouterWorkbenchParams,
+  transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
+  resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { ToolRouterSession } from './ToolRouterSession';
@@ -211,6 +212,9 @@ export class ToolRouter<
     }
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
+    const sandboxPayload = transformToolRouterSandboxParams(
+      resolveToolRouterSandboxConfig(routerConfig)
+    );
 
     const connectedAccountsPayload =
       routerConfig.connectedAccounts === undefined
@@ -232,7 +236,7 @@ export class ToolRouter<
       manage_connections: transformToolRouterManageConnectionsParams(
         routerConfig.manageConnections
       ),
-      workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
+      workbench: sandboxPayload,
       multi_account: multiAccountPayload,
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {

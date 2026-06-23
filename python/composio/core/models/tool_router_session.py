@@ -841,6 +841,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         manage_connections: t.Union[
             t.Optional[session_patch_params.ManageConnections], "Omit"
         ] = omit,
+        sandbox: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         multi_account: t.Union[
             t.Optional[session_patch_params.MultiAccount], "Omit"
@@ -852,13 +853,24 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Only the fields provided will be changed; omitted fields are preserved.
         Mutates this session's ``preload`` in-place.
 
-        Pass ``None`` for ``manage_connections``, ``workbench``, or
+        Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
         ``multi_account`` to clear the stored value.
+
+        ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer
+        ``sandbox`` in new code.
 
         All parameters use the same types as the Stainless-generated
         ``client.tool_router.session.patch()`` method.
         """
         from composio.core.models.tool_router import _session_preload_config
+
+        if sandbox is not omit and workbench is not omit:
+            raise exceptions.InvalidParams(
+                "Pass either `sandbox` or `workbench`, not both. "
+                "`workbench` is a backwards-compatible alias for `sandbox`."
+            )
+
+        workbench_payload = sandbox if sandbox is not omit else workbench
 
         response = self._client.tool_router.session.patch(
             session_id=self.session_id,
@@ -868,7 +880,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             auth_configs=auth_configs,
             connected_accounts=connected_accounts,
             manage_connections=manage_connections,
-            workbench=workbench,
+            workbench=workbench_payload,
             multi_account=multi_account,
             preload=preload,
         )
