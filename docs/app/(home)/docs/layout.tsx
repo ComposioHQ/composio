@@ -1,19 +1,21 @@
 import { source } from '@/lib/source';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
-import { decorateExperimentalPages } from '@/lib/decorate-experimental';
+import { decorateSidebarBadges } from '@/lib/decorate-sidebar-badges';
 
-interface ExperimentalFrontmatter {
+interface BadgeFrontmatter {
   experimental?: boolean;
+  legacy?: boolean;
 }
 
+const pages = source.getPages();
 const experimentalUrls = new Set(
-  source
-    .getPages()
-    .filter((page) => (page.data as ExperimentalFrontmatter).experimental)
-    .map((page) => page.url),
+  pages.filter((page) => (page.data as BadgeFrontmatter).experimental).map((page) => page.url),
+);
+const legacyUrls = new Set(
+  pages.filter((page) => (page.data as BadgeFrontmatter).legacy).map((page) => page.url),
 );
 
-const tree = decorateExperimentalPages(source.pageTree, experimentalUrls);
+const tree = decorateSidebarBadges(source.pageTree, experimentalUrls, legacyUrls);
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
