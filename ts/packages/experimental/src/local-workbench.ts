@@ -1,11 +1,11 @@
 import type { Composio } from '@composio/core';
 import type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
 
-export async function experimental_createLocalWorkbenchSession(
+export async function experimental_createLocalWorkbenchSession<THandle = unknown>(
   composio: Composio,
   userId: string,
-  config: LocalWorkbenchConfig
-): Promise<LocalWorkbenchSession> {
+  config: LocalWorkbenchConfig<THandle>
+): Promise<LocalWorkbenchSession<THandle>> {
   const { experimentalProvider: provider, ...workbench } = config.workbench;
   const session = await composio.create(userId, {
     ...config,

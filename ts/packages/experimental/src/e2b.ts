@@ -80,11 +80,16 @@ export function experimental_e2bSandbox(opts: E2BSandboxOptions = {}): SandboxPr
           ...compactRecord(ctx.env ?? {}),
         },
       })) as E2BHandle;
-      await this.writeFile(
-        sandbox,
-        COMPOSIO_WORKBENCH_HELPER_PATH,
-        experimental_createWorkbenchHelperSource()
-      );
+      try {
+        await this.writeFile(
+          sandbox,
+          COMPOSIO_WORKBENCH_HELPER_PATH,
+          experimental_createWorkbenchHelperSource()
+        );
+      } catch (error) {
+        await this.teardown(sandbox);
+        throw error;
+      }
       return sandbox;
     },
     async exec(handle: E2BHandle, code: string, execOpts?: SandboxExecutionOptions) {

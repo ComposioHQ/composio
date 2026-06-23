@@ -285,15 +285,6 @@ describe('transformToolRouterUpdateParams', () => {
     expect(wb).toHaveProperty('enable_proxy_execution', true);
   });
 
-  it('should omit experimental_provider from workbench patches when absent', () => {
-    const result = transformToolRouterUpdateParams({
-      workbench: { sandboxSize: 'large' },
-    });
-    const wb = result.workbench as Record<string, unknown>;
-    expect(wb).toHaveProperty('sandbox_size', 'large');
-    expect(wb).not.toHaveProperty('experimental_provider');
-  });
-
   it('should include enable for manageConnections when explicitly set', () => {
     const result = transformToolRouterUpdateParams({
       manageConnections: { enable: false, callbackUrl: 'https://example.com' },

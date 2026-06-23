@@ -90,4 +90,19 @@ describe('experimental_e2bSandbox', () => {
     );
     expect(fetchMock.mock.calls[0]?.[1].headers).not.toHaveProperty('x-session-access-key');
   });
+
+  it('tears down the e2b sandbox when helper injection fails', async () => {
+    writeMock.mockRejectedValueOnce(new Error('write failed'));
+
+    const provider = experimental_e2bSandbox({ apiKey: 'e2b_key' });
+
+    await expect(
+      provider.provision({
+        sessionId: 'session_123',
+        backendUrl: 'https://backend.test',
+        apiKey: 'project_key',
+      })
+    ).rejects.toThrow('write failed');
+    expect(killMock).toHaveBeenCalledTimes(1);
+  });
 });

@@ -49,10 +49,10 @@ export async function runComposioTool(
   );
 
   const text = await response.text();
-  const body = text ? JSON.parse(text) : undefined;
   if (!response.ok) {
     throw new Error('Composio tool execution failed: ' + response.status + ' ' + text);
   }
+  const body = text ? JSON.parse(text) : undefined;
   return body;
 }
 `;

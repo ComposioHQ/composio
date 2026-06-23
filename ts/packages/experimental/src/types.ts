@@ -41,9 +41,12 @@ export interface SandboxProvider<THandle = unknown> {
   teardown(handle: THandle): Promise<void>;
 }
 
-export type LocalWorkbenchConfig = Omit<ToolRouterCreateSessionConfig, 'workbench'> & {
+export type LocalWorkbenchConfig<THandle = unknown> = Omit<
+  ToolRouterCreateSessionConfig,
+  'workbench'
+> & {
   workbench: NonNullable<ToolRouterCreateSessionConfig['workbench']> & {
-    experimentalProvider: SandboxProvider;
+    experimentalProvider: SandboxProvider<THandle>;
   };
 };
 

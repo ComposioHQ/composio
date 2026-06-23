@@ -30,6 +30,12 @@ await workbench.teardown();
 
 The injected helper exposes `runComposioTool(slug, args)` inside the sandbox and authenticates `/execute` calls with the Composio project API key. For v0, use this only with trusted sandboxes you control because the project API key is injected into that runtime. Python helper parity is a follow-up.
 
+## V0 Scope
+
+This is a provider-agnostic SDK surface with E2B as the first adapter. Other sandbox providers can implement `SandboxProvider` with the same `provision`, `exec`, `runBash`, `writeFile`, and `teardown` contract.
+
+Local workbench v0 covers sandbox provisioning, code execution, file writes, teardown, and TypeScript `runComposioTool` calls through Tool Router `/execute`. It is not yet full remote workbench parity: Python helpers, `invoke_llm`, cloud file persistence, notebook persistence, checkpoints, and server-side workbench lifecycle controls remain follow-ups.
+
 ## Status: Experimental — API may change
 
 This package follows the `experimental_` export convention. APIs may change without the same stability guarantees as `@composio/core`.
