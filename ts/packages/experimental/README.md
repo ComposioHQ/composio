@@ -74,8 +74,10 @@ const composioTools = provider.createSessionTools({
     isConnected: state => state.connection?.isActive === true,
   },
   policy: {
-    normalizeSearchToolkits: ({ toolkits }) =>
-      toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+    beforeSearch: ({ toolkits }) => ({
+      action: 'search',
+      toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+    }),
     beforeExecute: ({ toolSlug, args }) => {
       if (toolSlug.startsWith('COMPOSIO_')) {
         return { action: 'deny', result: { successful: false, error: 'Meta tools are blocked.' } };

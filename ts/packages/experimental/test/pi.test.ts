@@ -234,8 +234,10 @@ describe('PiProvider', () => {
       search,
       execute,
       policy: {
-        normalizeSearchToolkits: ({ toolkits }) =>
-          toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+        beforeSearch: ({ toolkits }) => ({
+          action: 'search',
+          toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+        }),
         beforeExecute: ({ toolSlug, args }) =>
           toolSlug.startsWith('COMPOSIO_')
             ? { action: 'deny', result: { successful: false, error: 'meta tools blocked' } }
@@ -253,7 +255,10 @@ describe('PiProvider', () => {
     );
     expect(search).toHaveBeenCalledWith(
       { query: 'message channel', toolkits: ['slackbot'] },
-      expect.objectContaining({ requestedToolkits: ['slack'] })
+      expect.objectContaining({
+        requestedToolkits: ['slackbot'],
+        originalRequest: expect.objectContaining({ toolkits: ['slack'] }),
+      })
     );
 
     const executeTool = tools[2]!;

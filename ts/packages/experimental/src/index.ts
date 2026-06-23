@@ -195,10 +195,12 @@ export interface PiConnectionHandlers<TState = unknown, TAuthorizeResult = unkno
   ) => unknown | Promise<unknown>;
 }
 
-export type PiSearchPolicyResult =
-  | string[]
-  | undefined
-  | { action: 'search'; toolkits?: string[] }
+export type PiBeforeSearchResult =
+  | {
+      action: 'search';
+      query?: string;
+      toolkits?: string[];
+    }
   | { action: 'deny'; result: unknown };
 
 export type PiBeforeExecuteResult =
@@ -214,12 +216,12 @@ export type PiBeforeExecuteResult =
   | { action: 'manage_connection'; toolkits: string[]; reinitiateAll?: boolean };
 
 export interface PiSessionPolicy {
-  /** Normalize or deny toolkit filters before search. Undefined means global search. */
-  normalizeSearchToolkits?: (params: {
+  /** Intercept search before calling the underlying Composio search capability. */
+  beforeSearch?: (params: {
     query: string;
     toolkits?: string[];
     context: PiSearchContext;
-  }) => PiSearchPolicyResult | Promise<PiSearchPolicyResult>;
+  }) => PiBeforeSearchResult | Promise<PiBeforeSearchResult | undefined> | undefined;
   /** Intercept execution before calling the underlying Composio session/capability. */
   beforeExecute?: (params: {
     toolSlug: string;
@@ -784,31 +786,32 @@ export class PiProvider extends BaseAgenticProvider<
             query: params.query,
             requestedToolkits,
           };
-          const policyResult = await capabilities.policy?.normalizeSearchToolkits?.({
+          const searchDecision = await capabilities.policy?.beforeSearch?.({
             query: params.query,
             toolkits: requestedToolkits,
             context: searchContext,
           });
-          if (
-            policyResult &&
-            typeof policyResult === 'object' &&
-            !Array.isArray(policyResult) &&
-            policyResult.action === 'deny'
-          ) {
-            return toPiResult(policyResult.result, formatter, { slug: names.search, denied: true });
+          if (searchDecision?.action === 'deny') {
+            return toPiResult(searchDecision.result, formatter, {
+              slug: names.search,
+              denied: true,
+            });
           }
 
-          const toolkits = Array.isArray(policyResult)
-            ? normalizeToolkits(policyResult)
-            : policyResult && typeof policyResult === 'object' && policyResult.action === 'search'
-              ? normalizeToolkits(policyResult.toolkits)
+          const query =
+            searchDecision?.action === 'search' && searchDecision.query !== undefined
+              ? searchDecision.query
+              : params.query;
+          const toolkits =
+            searchDecision?.action === 'search' && 'toolkits' in searchDecision
+              ? normalizeToolkits(searchDecision.toolkits)
               : requestedToolkits;
           const value = await capabilities.search(
             {
-              query: params.query,
+              query,
               ...(toolkits ? { toolkits } : {}),
             },
-            searchContext
+            { ...searchContext, query, requestedToolkits: toolkits }
           );
           const authLinks = await applyAuthLinkHandlers(capabilities, value, {
             ...searchContext,
