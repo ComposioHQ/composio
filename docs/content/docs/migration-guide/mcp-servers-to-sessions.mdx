@@ -79,12 +79,14 @@ session = composio.create(
     toolkits=["gmail"],
     auth_configs={"gmail": "ac_xyz123"},
     tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}},
+    mcp=True,
 )
 mcp_url = session.mcp.url
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
@@ -102,6 +104,7 @@ const session = await composio.create("user-123", {
   toolkits: ["gmail"],
   authConfigs: { gmail: "ac_xyz123" },
   tools: { gmail: { enable: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"] } },
+  mcp: true,
 });
 const { mcp } = session;
 const mcpUrl = mcp.url;

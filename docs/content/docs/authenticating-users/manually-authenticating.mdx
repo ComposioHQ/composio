@@ -177,7 +177,7 @@ for slug in pending:
     print(f"Connect {slug}: {connection_request.redirect_url}")
     connection_request.wait_for_connection()
 
-print(f"All toolkits connected! MCP URL: {session.mcp.url}")
+print("All toolkits connected!")
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -209,7 +209,7 @@ for (const slug of pending) {
   await connectionRequest.waitForConnection();
 }
 
-console.log(`All toolkits connected! MCP URL: ${session.mcp.url}`);
+console.log("All toolkits connected!");
 ```
 </Tab>
 </Tabs>

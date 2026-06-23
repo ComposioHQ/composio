@@ -8,12 +8,7 @@ A **session** is the runtime context your agent uses to work for one of your use
 
 ## The basics
 
-When you create a session, Composio gives your agent two ways to access tools:
-
-- **Native tools** from `session.tools()` for frameworks with tool-calling support.
-- **A remote MCP URL** from `session.mcp.url` for MCP-compatible clients.
-
-Both point at the same session context.
+When you create a session, your agent gets tools it can call directly from `session.tools()`, formatted for your framework. If you'd rather connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -21,7 +16,6 @@ Both point at the same session context.
 session = composio.create(user_id="user_123")
 
 tools = session.tools()
-mcp_url = session.mcp.url
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -32,7 +26,6 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 
 const tools = await session.tools();
-const mcpUrl = session.mcp.url;
 ```
 </Tab>
 </Tabs>

@@ -48,7 +48,7 @@ A flow where the AI agent handles authentication by calling `COMPOSIO_MANAGE_CON
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
-An open protocol for connecting AI models to external tools. Every session exposes `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to.
+An open protocol for connecting AI models to external tools. Create a session with `mcp: true` to expose `session.mcp.url` and `session.mcp.headers`, an MCP-compatible endpoint any MCP client can connect to. See [Using sessions via MCP](/docs/sessions-via-mcp).
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
@@ -64,7 +64,7 @@ Middleware that transforms tool behavior: [schema modifiers](/docs/tools-direct/
 </GlossaryTerm>
 
 <GlossaryTerm name="Native Tools">
-Tools accessed through provider packages via `session.tools()`, as opposed to connecting via MCP (`session.mcp.url`). Both methods give the agent the same capabilities, but native tools integrate directly with your AI framework.
+Tools accessed through provider packages via `session.tools()`, as opposed to connecting over MCP. Both give the agent the same capabilities, but tools called directly integrate with your AI framework and support modifiers and custom tools.
 </GlossaryTerm>
 
 <GlossaryTerm name="Organization">
@@ -88,7 +88,7 @@ An adapter package that transforms Composio tools into the format expected by an
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `mcp.url`, `authorize()`, and `toolkits()`. See [What is a session?](/docs/how-composio-works).
+An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `authorize()`, and `toolkits()` (and `mcp.url` when created with `mcp: true`). See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">

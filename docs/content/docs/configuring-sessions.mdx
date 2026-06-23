@@ -496,33 +496,11 @@ Changing `sandbox_size` on an existing session recreates the sandbox on next acc
 
 ## Session methods
 
-### mcp
-
-Get the MCP server URL to use with any MCP-compatible client.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-mcp_url = session.mcp.url
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
-// ---cut---
-const { mcp } = session;
-console.log(mcp.url);
-```
-</Tab>
-</Tabs>
-
-For framework examples, see provider-specific documentation like [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel).
+For framework examples, see provider-specific documentation like [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel). To connect over MCP instead, see [Using sessions via MCP](/docs/sessions-via-mcp).
 
 ### tools()
 
-Get native tools from the session for use with AI frameworks.
+Get the tools the session exposes for your AI framework.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
