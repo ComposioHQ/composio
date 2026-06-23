@@ -155,8 +155,78 @@ const blocks: { title: string; description: string; block: string }[] = [
   },
 ];
 
-export const BOT_BUILD_STAGES: BotBuildStage[] = blocks.reduce<BotBuildStage[]>((stages, { title, description, block }) => {
-  const prev = stages.length > 0 ? stages[stages.length - 1].code : '';
-  stages.push({ title, description, code: prev + block });
-  return stages;
-}, []);
+function cumulative(parts: { title: string; description: string; block: string }[]): BotBuildStage[] {
+  return parts.reduce<BotBuildStage[]>((stages, { title, description, block }) => {
+    const prev = stages.length > 0 ? stages[stages.length - 1].code : '';
+    stages.push({ title, description, code: prev + block });
+    return stages;
+  }, []);
+}
+
+export const BOT_BUILD_STAGES: BotBuildStage[] = cumulative(blocks);
+
+// ── install.ts ────────────────────────────────────────────────────────────
+
+const installAuth = `import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+// The scopes the bot needs. The slackbot toolkit ships Composio-managed OAuth,
+// so you never register your own Slack app.
+const authConfig = await composio.authConfigs.create('slackbot', {
+  type: 'use_composio_managed_auth',
+  name: 'workspace-bot',
+  credentials: {
+    scopes: ['app_mentions:read', 'channels:history', 'chat:write', 'reactions:write', 'users:read'],
+    user_scopes: ['search:read'],
+  },
+});
+`;
+
+const installAuthorize = `
+// One connection for the whole workspace: authorize it as SHARED.
+const setup = await composio.create('setup:workspace-bot', {
+  toolkits: ['slackbot'],
+  authConfigs: { slackbot: authConfig.id },
+  manageConnections: true,
+});
+const request = await setup.authorize('slackbot', {
+  callbackUrl: \`\${process.env.APP_URL}/setup/callback\`,
+  experimental: { accountType: 'SHARED' },
+});
+console.log('Approve the install:', request.redirectUrl);
+`;
+
+const installWire = `
+// On the OAuth callback: open the ACL, subscribe your webhook, create triggers.
+// Persist connectedAccountId as SLACK_CONNECTION_ID for the bot server.
+export async function onSetupCallback(connectedAccountId: string) {
+  await composio.connectedAccounts.updateAcl(connectedAccountId, { allowAllUsers: true });
+  await composio.triggers.setWebhookSubscription({ webhookUrl: \`\${process.env.APP_URL}/webhooks/composio\` });
+  await composio.triggers.create('setup:workspace-bot', 'SLACKBOT_CHANNEL_MESSAGE_RECEIVED', { triggerConfig: { is_bot_message: false } });
+  await composio.triggers.create('setup:workspace-bot', 'SLACKBOT_DIRECT_MESSAGE_RECEIVED', { triggerConfig: {} });
+}
+`;
+
+export const INSTALL_BUILD_STAGES: BotBuildStage[] = cumulative([
+  {
+    title: 'Declare the scopes',
+    description: 'Create a Composio-managed auth config for the slackbot toolkit. No Slack app of your own to register.',
+    block: installAuth,
+  },
+  {
+    title: 'Authorize one shared connection',
+    description: 'Start a setup session and authorize slackbot as a SHARED connection, so a single approval serves every user.',
+    block: installAuthorize,
+  },
+  {
+    title: 'Open it up and wire events',
+    description: 'On the callback, open the ACL to the workspace, subscribe your webhook, and create the message triggers.',
+    block: installWire,
+  },
+]);
+
+export const FILE_BUILDS: Record<string, { file: string; stages: BotBuildStage[] }> = {
+  install: { file: 'install.ts', stages: INSTALL_BUILD_STAGES },
+  bot: { file: 'bot.ts', stages: BOT_BUILD_STAGES },
+};

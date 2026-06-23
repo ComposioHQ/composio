@@ -27,7 +27,8 @@ import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
 import { SlackBotFlow } from '@/components/slack-bot-flow';
-import { BotBuildup } from '@/components/bot-buildup';
+import { FileBuildup } from '@/components/file-buildup';
+import { RepoBrowser } from '@/components/repo-browser';
 import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
@@ -114,7 +115,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     HomeFeatures,
     SessionFlow,
     SlackBotFlow,
-    BotBuildup,
+    FileBuildup,
+    RepoBrowser,
     WorkbenchFlow,
     AuthConfigFlow,
     WhiteLabelFlow,
