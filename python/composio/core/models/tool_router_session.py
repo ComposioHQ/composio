@@ -60,6 +60,7 @@ from composio.core.provider.base import BaseProvider
 if t.TYPE_CHECKING:
     from composio.core.models.tool_router import (
         ToolkitConnectionsDetails,
+        ToolRouterMCPServerConfig,
         ToolRouterSessionExperimental,
     )
 
@@ -85,16 +86,19 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         TTool: The individual tool type returned by the provider.
         TToolCollection: The collection type returned by tools().
 
+    The hosted MCP endpoint (``session.mcp``) exists at runtime on every
+    session, but is only surfaced in the type when you opt in with
+    ``create(..., mcp=True)`` / ``use(..., mcp=True)``, which returns a
+    :class:`ToolRouterSessionWithMcp`. By default agents use native tools via
+    :meth:`tools`. See https://docs.composio.dev/docs/sessions-via-mcp
+
     Attributes:
         session_id: Unique session identifier
-        mcp: MCP server configuration
         experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     #: Unique session identifier.
     session_id: str
-    #: MCP server configuration for this session.
-    mcp: t.Any
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
 
@@ -123,7 +127,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
-        self.mcp = mcp
+        # The MCP endpoint exists on every session at runtime (kept for
+        # backwards compatibility), but is only typed via
+        # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
+        # not surface `mcp` on the base class — MCP is an explicit opt-in.
+        setattr(self, "mcp", mcp)
         self.experimental = experimental
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         self._custom_tools_map = custom_tools_map
@@ -863,3 +871,16 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             preload=preload,
         )
         self.preload = _session_preload_config(response.config.preload)
+
+
+class ToolRouterSessionWithMcp(ToolRouterSession[TTool, TToolCollection]):
+    """A :class:`ToolRouterSession` whose hosted MCP endpoint is exposed.
+
+    Returned by ``create(..., mcp=True)`` / ``use(..., mcp=True)``. The ``mcp``
+    attribute is populated by the base ``__init__`` at runtime; this subclass
+    only surfaces it in the type. See
+    https://docs.composio.dev/docs/sessions-via-mcp
+    """
+
+    #: Hosted MCP server configuration (url + auth headers) for this session.
+    mcp: "ToolRouterMCPServerConfig"

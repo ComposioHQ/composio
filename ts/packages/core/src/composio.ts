@@ -20,8 +20,6 @@ import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
 import { Sessions } from './models/Sessions';
-import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
-import type { CustomTool, CustomToolkit } from './types/customTool.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
@@ -250,10 +248,7 @@ export class Composio<
    * console.log(session.tools());
    * ```
    */
-  create: (
-    userId: string,
-    routerConfig?: ToolRouterCreateSessionConfig
-  ) => Promise<Session<unknown, unknown, TProvider>>;
+  create: Sessions<unknown, unknown, TProvider>['create'];
 
   /**
    * Use an existing tool router session
@@ -261,10 +256,7 @@ export class Composio<
    * @param id {string} The id of the session to use
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  use: (
-    id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
-  ) => Promise<Session<unknown, unknown, TProvider>>;
+  use: Sessions<unknown, unknown, TProvider>['use'];
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -363,8 +355,11 @@ export class Composio<
      * Initialize session aliases.
      * Properly bind the methods to maintain the correct 'this' context.
      */
-    this.create = this.sessions.create.bind(this.sessions);
-    this.use = this.sessions.use.bind(this.sessions);
+    // Cast: Function.prototype.bind collapses the create/use overloads to a
+    // single signature; re-assert the overloaded type. Runtime behaviour is
+    // unchanged — bind only rebinds `this`.
+    this.create = this.sessions.create.bind(this.sessions) as Composio<TProvider>['create'];
+    this.use = this.sessions.use.bind(this.sessions) as Composio<TProvider>['use'];
 
     /**
      * Initialize the client telemetry.

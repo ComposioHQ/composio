@@ -24,7 +24,7 @@ import type { ComposioConfig } from '../composio';
 import {
   ToolRouterCreateSessionConfig,
   Session,
-  SessionExperimental,
+  SessionWithoutMcp,
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
@@ -165,6 +165,17 @@ export class ToolRouter<
    * });
    * ```
    */
+  // Overloads: passing `{ mcp: true }` surfaces `session.mcp` in the returned
+  // type. Otherwise the MCP endpoint is omitted from the type (it still exists
+  // at runtime). See https://docs.composio.dev/docs/sessions-via-mcp
+  async create(
+    userId: string,
+    config: ToolRouterCreateSessionConfig & { mcp: true }
+  ): Promise<Session<TToolCollection, TTool, TProvider>>;
+  async create(
+    userId: string,
+    config?: ToolRouterCreateSessionConfig
+  ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
   async create(
     userId: string,
     config?: ToolRouterCreateSessionConfig
@@ -280,9 +291,19 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
+  // Overloads mirror `create()`: pass `{ mcp: true }` to surface `session.mcp`
+  // in the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
+    options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }
+  ): Promise<Session<TToolCollection, TTool, TProvider>>;
+  async use(
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }
+  ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
+  async use(
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const customTools = options?.customTools;
     const customToolkits = options?.customToolkits;

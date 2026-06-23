@@ -1,0 +1,119 @@
+---
+title: Using sessions via MCP
+description: Connect any MCP-compatible client to a Composio session
+keywords: [mcp, model context protocol, sessions, remote server, hosted mcp]
+---
+
+By default Composio gives your agent **native tools** — function schemas formatted for your framework through a [provider package](/docs/providers). That's what the [Quickstart](/docs/quickstart) uses, and it's the right choice for most agents.
+
+If you'd rather connect over the [Model Context Protocol](https://modelcontextprotocol.io) — for example to plug a session into an MCP-native client like Claude Desktop, Cursor, or any framework's MCP transport — every session also exposes a hosted MCP endpoint. No provider package required.
+
+## The MCP endpoint
+
+Opt into MCP by passing `mcp: true` when you create the session. The session then exposes its hosted MCP server — read the URL and headers off `session.mcp`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+session = composio.create(user_id="user_123", mcp=True)
+
+mcp_url = session.mcp.url
+mcp_headers = session.mcp.headers
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+// twoslash: `{ mcp: true }` ships in the next @composio/core; drop @noErrors once docs bump the dep
+import { Composio } from "@composio/core";
+
+const composio = new Composio();
+const session = await composio.create("user_123", { mcp: true });
+
+const mcpUrl = session.mcp.url;
+const mcpHeaders = session.mcp.headers;
+```
+</Tab>
+</Tabs>
+
+You don't need a provider package to use the MCP endpoint, so you can drop it from your `Composio()` setup if MCP is all you need.
+
+<Callout type="info">
+Resuming a stored session? Pass the same flag — `composio.use(sessionId, { mcp: true })` (TypeScript) or `composio.use(session_id, mcp=True)` (Python) — to surface `session.mcp` on the reused session.
+</Callout>
+
+<Callout type="info">
+The MCP endpoint and `session.tools()` are backed by the same session. Toolkits, auth configs, and connected accounts you set when [configuring the session](/docs/configuring-sessions) apply to both.
+</Callout>
+
+## Wire it into your framework
+
+Pass `session.mcp.url` and `session.mcp.headers` to your framework's MCP client.
+
+<Tabs items={['OpenAI Agents (Python)', 'Claude Agent SDK (Python)', 'Vercel AI SDK (TypeScript)']}>
+<Tab value="OpenAI Agents (Python)">
+```python
+from agents import Agent, HostedMCPTool
+
+agent = Agent(
+    name="Assistant",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "headers": session.mcp.headers,
+                "require_approval": "never",
+            }
+        )
+    ],
+)
+```
+</Tab>
+<Tab value="Claude Agent SDK (Python)">
+```python
+from claude_agent_sdk import ClaudeAgentOptions
+
+options = ClaudeAgentOptions(
+    mcp_servers={
+        "composio": {
+            "type": "http",
+            "url": session.mcp.url,
+            "headers": session.mcp.headers,
+        }
+    },
+)
+```
+</Tab>
+<Tab value="Vercel AI SDK (TypeScript)">
+```typescript
+// @noErrors
+// twoslash: `{ mcp: true }` ships in the next @composio/core; drop @noErrors once docs bump the dep
+import { Composio } from "@composio/core";
+import { createMCPClient } from "@ai-sdk/mcp";
+
+const composio = new Composio();
+const { mcp } = await composio.create("user_123", { mcp: true });
+
+const client = await createMCPClient({
+  transport: {
+    type: "http",
+    url: mcp.url,
+    headers: mcp.headers,
+  },
+});
+const tools = await client.tools();
+```
+</Tab>
+</Tabs>
+
+## Next steps
+
+<Cards>
+  <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Restrict toolkits, set custom auth configs, and select connected accounts" />
+  <Card icon={<Key />} title="Providers" href="/docs/providers" description="Native tool support for OpenAI, Anthropic, Vercel AI, LangChain, and more" />
+</Cards>

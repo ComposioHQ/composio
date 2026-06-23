@@ -185,6 +185,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
         'Shortcut to expose every tool allowed by the session filters directly in session.tools() and the MCP tool list. This disables meta tools by default (search, multi-execute, manage-connections, and workbench). Use when all tools are known upfront and helper/meta tools are not needed. Without this preset, ToolRouter uses its default configuration with meta tools enabled.'
       ),
 
+    mcp: z
+      .boolean()
+      .optional()
+      .describe(
+        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
+      ),
+
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional()
@@ -627,7 +634,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     authConfigs: z.record(z.string(), z.string()).optional(),
     connectedAccounts: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
-      .transform((rec) => {
+      .transform(rec => {
         const out: Record<string, string[]> = {};
         for (const [k, v] of Object.entries(rec)) {
           out[k] = typeof v === 'string' ? [v] : v;
@@ -701,3 +708,18 @@ export interface Session<
   /** Experimental features (files, assistive prompt, etc.) */
   experimental: SessionExperimental;
 }
+
+/**
+ * Session type without the typed `mcp` endpoint.
+ *
+ * Returned by `create()` / `use()` when `{ mcp: true }` is not passed. The
+ * hosted MCP endpoint still exists on the underlying session at runtime — this
+ * only hides it from the type so MCP is an explicit opt-in. Pass `{ mcp: true }`
+ * to get a `Session` with `session.mcp` surfaced. See
+ * https://docs.composio.dev/docs/sessions-via-mcp
+ */
+export type SessionWithoutMcp<
+  TToolCollection,
+  TTool,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
+> = Omit<Session<TToolCollection, TTool, TProvider>, 'mcp'>;

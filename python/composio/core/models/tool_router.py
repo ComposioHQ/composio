@@ -40,6 +40,7 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
+    ToolRouterSessionWithMcp,
 )
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.models.tool_router_constants import (
@@ -579,6 +580,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             else:
                 return None
 
+    # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
+    # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
+    # every session regardless. See https://docs.composio.dev/docs/sessions-via-mcp
+    @t.overload
     def create(
         self,
         *,
@@ -602,6 +607,60 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Create a new tool router session for a user.
@@ -707,6 +766,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param mcp: When True, the returned session surfaces its hosted MCP
+                    endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
+                    the type (returns ToolRouterSessionWithMcp). The endpoint
+                    exists on every session at runtime regardless of this flag;
+                    native tools (``session.tools()``) are unaffected.
+                    See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
 
         Example:
@@ -1012,8 +1077,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             ),
         )
 
-        # Create and return the session
-        return ToolRouterSession(
+        # Create and return the session. `mcp=True` returns the subclass that
+        # surfaces `session.mcp` in the type; the runtime object is otherwise
+        # identical (the base always stores the MCP endpoint).
+        session_cls: t.Type[ToolRouterSession[TTool, TToolCollection]] = (
+            ToolRouterSessionWithMcp if mcp else ToolRouterSession
+        )
+        return session_cls(
             client=self._client,
             provider=self._provider,
             dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
@@ -1033,12 +1103,35 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             inline_custom_tools_payload=inline_custom_tools_payload,
         )
 
+    # Overloads mirror create(): pass ``mcp=True`` to surface ``session.mcp`` in
+    # the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
+    @t.overload
     def use(
         self,
         session_id: str,
         *,
         custom_tools: t.Optional[t.List[CustomTool]] = None,
         custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def use(
+        self,
+        session_id: str,
+        *,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def use(
+        self,
+        session_id: str,
+        *,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Use an existing tool router session.
@@ -1054,6 +1147,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param session_id: The session ID to use.
         :param custom_tools: Optional custom tools to bind to the session.
         :param custom_toolkits: Optional custom toolkits to bind to the session.
+        :param mcp: When True, the returned session surfaces its hosted MCP
+                    endpoint in the type (returns ToolRouterSessionWithMcp).
+                    See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
 
         Example:
@@ -1132,7 +1228,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             assistive_prompt=None,
         )
 
-        return ToolRouterSession(
+        session_cls: t.Type[ToolRouterSession[TTool, TToolCollection]] = (
+            ToolRouterSessionWithMcp if mcp else ToolRouterSession
+        )
+        return session_cls(
             client=self._client,
             provider=self._provider,
             dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
@@ -1156,6 +1255,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
+    "ToolRouterSessionWithMcp",
     "ToolRouterSessionExperimental",
     "ToolRouterToolkitsEnableConfig",
     "ToolRouterToolkitsDisableConfig",
