@@ -166,12 +166,14 @@ export const transformToolRouterUpdateManageConnectionsParams = (
  * PATCH-safe variant of transformToolRouterWorkbenchParams.
  * Does NOT apply `enable ?? true` default — only includes fields explicitly present.
  */
-export const transformToolRouterUpdateWorkbenchParams = (params: {
-  enable?: boolean;
-  enableProxyExecution?: boolean;
-  autoOffloadThreshold?: number;
-  sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge';
-}): SessionPatchParams.Workbench => {
+export const transformToolRouterUpdateWorkbenchParams = (
+  params: {
+    enable?: boolean;
+    enableProxyExecution?: boolean;
+    autoOffloadThreshold?: number;
+    sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge';
+  }
+): SessionPatchParams.Workbench => {
   const result: Record<string, unknown> = {};
   if (params.enable !== undefined) {
     result.enable = params.enable;
@@ -198,8 +200,7 @@ export const transformToolRouterMultiAccountParams = (
   const transformedParams = {
     enable: params.enable,
     max_accounts_per_toolkit: params.maxAccountsPerToolkit,
-    require_explicit_selection:
-      params.requireExplicitSelection ?? (params.enable ? true : undefined),
+    require_explicit_selection: params.requireExplicitSelection ?? (params.enable ? true : undefined),
   };
 
   if (
@@ -257,9 +258,7 @@ export const transformToolRouterUpdateParams = (
     if (config.manageConnections === null) {
       params.manage_connections = null;
     } else {
-      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(
-        config.manageConnections
-      );
+      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(config.manageConnections);
     }
   }
   if (config.workbench !== undefined) {
@@ -275,10 +274,8 @@ export const transformToolRouterUpdateParams = (
     } else {
       const ma: Record<string, unknown> = {};
       if (config.multiAccount.enable !== undefined) ma.enable = config.multiAccount.enable;
-      if (config.multiAccount.maxAccountsPerToolkit !== undefined)
-        ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
-      if (config.multiAccount.requireExplicitSelection !== undefined)
-        ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
+      if (config.multiAccount.maxAccountsPerToolkit !== undefined) ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
+      if (config.multiAccount.requireExplicitSelection !== undefined) ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
       params.multi_account = ma as SessionPatchParams.MultiAccount;
     }
   }

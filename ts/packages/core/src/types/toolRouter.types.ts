@@ -627,7 +627,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     authConfigs: z.record(z.string(), z.string()).optional(),
     connectedAccounts: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
-      .transform(rec => {
+      .transform((rec) => {
         const out: Record<string, string[]> = {};
         for (const [k, v] of Object.entries(rec)) {
           out[k] = typeof v === 'string' ? [v] : v;
