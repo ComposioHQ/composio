@@ -10,7 +10,6 @@
     "ts/packages/cli-keyring",
     "ts/packages/cli-local-tools",
     "ts/packages/ts-builders",
-    "ts/packages/experimental",
     "ts/packages/providers/*"
   ],
   "scripts": {

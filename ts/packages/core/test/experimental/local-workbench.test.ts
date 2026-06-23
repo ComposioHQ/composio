@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { experimental_createLocalWorkbenchSession } from '../src';
-import type { SandboxProvider } from '../src';
+import { experimental_createLocalWorkbenchSession } from '../../src/experimental';
+import type { SandboxProvider } from '../../src/experimental';
 
 describe('experimental_createLocalWorkbenchSession', () => {
   it('strips the SDK-only experimentalProvider before creating the Tool Router session', async () => {
@@ -10,7 +10,7 @@ describe('experimental_createLocalWorkbenchSession', () => {
       update: vi.fn(),
     };
     const provider: SandboxProvider<typeof sandbox> = {
-      provider: 'e2b',
+      provider: 'test-sandbox',
       provision: vi.fn().mockResolvedValue(sandbox),
       exec: vi.fn(),
       runBash: vi.fn(),
@@ -63,6 +63,35 @@ describe('experimental_createLocalWorkbenchSession', () => {
     expect(workbench.sandbox).toBe(sandbox);
   });
 
+  it('does not create a Tool Router session when provisioning fails', async () => {
+    const provider: SandboxProvider = {
+      provider: 'test-sandbox',
+      provision: vi.fn().mockRejectedValue(new Error('provision failed')),
+      exec: vi.fn(),
+      runBash: vi.fn(),
+      writeFile: vi.fn(),
+      teardown: vi.fn(),
+    };
+    const composio = {
+      create: vi.fn(),
+      getConfig: vi.fn().mockReturnValue({
+        apiKey: 'project_key',
+        baseURL: 'https://backend.test',
+      }),
+    };
+
+    await expect(
+      experimental_createLocalWorkbenchSession(composio as never, 'user_123', {
+        toolkits: ['github'],
+        workbench: {
+          enable: true,
+          experimentalProvider: provider,
+        },
+      })
+    ).rejects.toThrow('provision failed');
+    expect(composio.create).not.toHaveBeenCalled();
+  });
+
   it('tears down the sandbox and disables workbench when helper injection fails', async () => {
     const sandbox = { id: 'sandbox_123' };
     const session = {
@@ -70,7 +99,7 @@ describe('experimental_createLocalWorkbenchSession', () => {
       update: vi.fn().mockResolvedValue(undefined),
     };
     const provider: SandboxProvider<typeof sandbox> = {
-      provider: 'e2b',
+      provider: 'test-sandbox',
       provision: vi.fn().mockResolvedValue(sandbox),
       exec: vi.fn(),
       runBash: vi.fn(),

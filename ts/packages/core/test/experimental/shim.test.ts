@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { experimental_createWorkbenchHelperSource } from '../src';
+import { experimental_createWorkbenchHelperSource } from '../../src/experimental';
 
 describe('experimental_createWorkbenchHelperSource', () => {
   it('checks response status before parsing JSON', () => {
