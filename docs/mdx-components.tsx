@@ -39,6 +39,9 @@ import { Glossary, GlossaryTerm } from '@/components/glossary';
 import { ApiBaseUrl } from '@/components/api-base-url';
 import { ApiEndpointsTable } from '@/components/api-endpoints-table';
 import { ClaudeMockUI } from '@/components/claude-mock-ui';
+import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
+import { MediaSplit } from '@/components/media-split';
+import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -129,6 +132,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ApiBaseUrl,
     ApiEndpointsTable,
     ClaudeMockUI,
+    InChatAuthTerminal,
+    MediaSplit,
+    ManageConnectionsVisual,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

@@ -778,3 +778,224 @@ body {
   border-radius: 0 !important;
 }
 
+
+/* ==========================================================================
+   TERMINAL-KIT  (ported from landing-new /dev — components/terminal-kit)
+   Trimmed to what the InChatAuthTerminal component uses: the Claude palette
+   (dark + light), structural tokens, the stacked Input field, and the shared
+   session/body classes. Map the kit's mono font onto the docs JetBrains Mono.
+   ========================================================================== */
+@keyframes terminal-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-theme {
+  --font-geist-mono: var(--font-mono);
+}
+
+.terminal-theme {
+    --terminal-radius-window: 12px;
+    --terminal-radius-panel: 4px;
+    --terminal-radius-sm: 2px;
+    --terminal-session-pad-x: 14px;
+    --terminal-session-pad-y: 12px;
+    --terminal-session-gap: 8px;
+    --terminal-session-inset: 14px;
+    --terminal-session-sent-pad-x: 10px;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "Roboto Mono",
+    Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.625;
+    border-radius: var(--terminal-radius-window);
+}
+
+.terminal-theme-claude {
+    --terminal-bg: #0b0b0b;
+    --terminal-editor-bg: #1f1f1e;
+    --terminal-fg: #ffffff;
+    --terminal-white: #ffffff;
+    --terminal-dim: #c3c2b7;
+    --terminal-dimmer: #898781;
+    --terminal-vdim: #3d3d3d;
+    --terminal-surface: #232323;
+    --terminal-input-bg: #1f1f1e;
+    --terminal-popover: #2a2a2a;
+    --terminal-panel: rgba(255, 255, 255, 0.05);
+    --terminal-panel-strong: rgba(255, 255, 255, 0.07);
+    --terminal-border: rgba(255, 255, 255, 0.1);
+    --terminal-preview-bg: #0e0e0d;
+    --terminal-preview-border: #222220;
+    --terminal-input-border: #565552;
+    --terminal-progress-track: #3d3d3d;
+    --terminal-progress-fill: #d97757;
+    --terminal-green: #4cc38a;
+    --terminal-green-dim: #6fd4a8;
+    --terminal-green-bg: rgba(76, 195, 138, 0.14);
+    --terminal-blue: #4d9fff;
+    --terminal-blue-bright: #0099ff;
+    --terminal-teal: #d97757;
+    --terminal-yellow: #e3c07b;
+    --terminal-orange: #ff8d77;
+    --terminal-red: #ff5a5a;
+    --terminal-purple: #9775fa;
+    --terminal-diff-gutter: #8b8b81;
+    --terminal-diff-insert-fg: #4cc38a;
+    --terminal-diff-insert-bg: rgba(76, 195, 138, 0.12);
+    --terminal-diff-delete-fg: #ff8d77;
+    --terminal-diff-delete-bg: rgba(255, 90, 90, 0.12);
+    --terminal-diff-text: #ffffff;
+    --terminal-traffic-red: #ff5f57;
+    --terminal-traffic-yellow: #febc2e;
+    --terminal-traffic-green: #28c840;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+}
+
+.terminal-theme-claude-light,
+html:not(.dark) .terminal-theme-claude {
+    --terminal-bg: #faf9f5;
+    --terminal-editor-bg: #ffffff;
+    --terminal-fg: #131312;
+    --terminal-white: #131312;
+    --terminal-dim: #3c3c39;
+    --terminal-dimmer: #72716b;
+    --terminal-vdim: #e1e0d9;
+    --terminal-surface: #f4f4ec;
+    --terminal-input-bg: #ffffff;
+    --terminal-popover: #ffffff;
+    --terminal-panel: rgba(19, 19, 18, 0.04);
+    --terminal-panel-strong: rgba(19, 19, 18, 0.07);
+    --terminal-border: rgba(31, 30, 29, 0.12);
+    --terminal-preview-bg: #f0efe8;
+    --terminal-preview-border: rgba(19, 19, 18, 0.06);
+    --terminal-input-border: #a8a7a2;
+    --terminal-progress-track: #e1e0d9;
+    --terminal-progress-fill: #d97757;
+    --terminal-green: #2f7613;
+    --terminal-green-dim: #3d8f18;
+    --terminal-green-bg: #e7f1d9;
+    --terminal-blue: #2c83db;
+    --terminal-blue-bright: #1a66b2;
+    --terminal-teal: #d97757;
+    --terminal-yellow: #865a07;
+    --terminal-orange: #c6613f;
+    --terminal-red: #b43232;
+    --terminal-purple: #5545a1;
+    --terminal-diff-insert-fg: #2f7613;
+    --terminal-diff-insert-bg: #e7f1d9;
+    --terminal-diff-delete-fg: #b43232;
+    --terminal-diff-delete-bg: #f8ebeb;
+    --terminal-diff-text: #131312;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+}
+
+.terminal-theme-claude .terminal-input-control::placeholder {
+    color: var(--terminal-dim);
+    opacity: 1;
+}
+
+.terminal-input-field--stacked {
+    position: relative;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding-block: 6px;
+    padding-inline: 0;
+}
+
+.terminal-input-field--stacked::before,
+.terminal-input-field--stacked::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: var(--terminal-input-border);
+    pointer-events: none;
+}
+
+.terminal-input-field--stacked::before {
+    top: 0;
+}
+
+.terminal-input-field--stacked::after {
+    bottom: 0;
+}
+
+.terminal-cursor {
+    animation: terminal-cursor-blink 1s step-end infinite;
+}
+
+.terminal-panel {
+    border-radius: var(--terminal-radius-panel);
+}
+
+.terminal-panel-sm {
+    border-radius: var(--terminal-radius-sm);
+}
+
+.terminal-session {
+    display: flex;
+    flex-direction: column;
+    gap: var(--terminal-session-gap);
+    min-width: 0;
+}
+
+.terminal-session-sent {
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: var(--terminal-radius-sm);
+    padding-inline: var(--terminal-session-sent-pad-x);
+}
+
+.terminal-session-inset {
+    padding-left: var(--terminal-session-inset);
+}
+
+.terminal-session-flush {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.terminal-body-content {
+    padding-inline: var(--terminal-session-pad-x);
+    padding-block: var(--terminal-session-pad-y);
+}
+
+.terminal-body-footer {
+    padding-inline: var(--terminal-session-pad-x);
+}
+
+.terminal-body-scroll-host {
+    position: relative;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.terminal-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.terminal-body-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-cursor {
+    animation: none;
+    opacity: 1;
+	}
+}

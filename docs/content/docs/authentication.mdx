@@ -6,7 +6,7 @@ keywords: [connect link, oauth, auth config]
 
 Composio handles authentication with Connect Links: hosted pages where your users connect their accounts. There are two approaches. Choose based on where in your app users should authenticate.
 
-<Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
+<ManageConnectionsVisual />
 
 ## Which approach should I use?
 
@@ -15,20 +15,28 @@ Composio handles authentication with Connect Links: hosted pages where your user
 
 Not sure? Start with in-chat. You can add manual auth later.
 
+<MediaSplit>
+<div>
 ## In-chat authentication
 
 By default, when a tool requires authentication, the agent prompts the user with a Connect Link. The user authenticates and confirms in chat. No setup needed. Just create a session and the agent handles OAuth flows, token refresh, and credential management automatically.
 
-<ClaudeMockUI>
-  <p><strong>You:</strong> Summarize my emails from today</p>
-  <p><strong>Agent:</strong> I need you to connect your Gmail account first. Please click here to authorize: <a href="https://connect.composio.dev/link/ln_abc123">https://connect.composio.dev/link/ln_abc123</a></p>
-  <p><strong>You:</strong> Done</p>
-  <p><strong>Agent:</strong> Here's a summary of your emails from today...</p>
-</ClaudeMockUI>
-
 <Card icon={<MessageCircle />} title="In-chat authentication guide" href="/docs/authenticating-users/in-chat-authentication">
   Configuration, callback URLs, and full examples
 </Card>
+</div>
+
+<InChatAuthTerminal
+  task="Summarize my emails from today"
+  toolkit="Gmail"
+  toolkitSlug="gmail"
+  tool="GMAIL_FETCH_EMAILS"
+  toolArgs="newer_than: 1d"
+  toolResult="12 emails"
+  connectUrl="https://connect.composio.dev/link/ln_abc123"
+  result="Here's a summary of your emails from today..."
+/>
+</MediaSplit>
 
 ## Manual authentication
 
