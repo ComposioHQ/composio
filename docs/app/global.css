@@ -1002,3 +1002,10 @@ html:not(.dark) .terminal-theme-claude {
     opacity: 1;
 	}
 }
+
+/* @pierre/diffs: hide the +/- stat in the file header on the example build-ups.
+   The filename ([data-title]) stays; only the addition/deletion counts go. */
+[data-diffs-header] [data-additions-count],
+[data-diffs-header] [data-deletions-count] {
+  display: none;
+}
