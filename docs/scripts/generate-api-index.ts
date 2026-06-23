@@ -36,6 +36,21 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Optional hand-written overview for a tag, merged above the generated
+ * endpoints table. Lives in `api-overviews/<tagSlug>.mdx` (outside `content/`,
+ * so Fumadocs never renders it as its own page). Use this to fold a conceptual
+ * guide into the API reference page instead of keeping a separate docs page.
+ * Frontmatter, if present, is stripped — the generator owns the frontmatter.
+ */
+function readOverview(tagSlug: string): string | null {
+  const overviewPath = join(process.cwd(), 'api-overviews', `${tagSlug}.mdx`);
+  if (!existsSync(overviewPath)) return null;
+  const raw = readFileSync(overviewPath, 'utf-8');
+  const stripped = raw.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
+  return stripped.length > 0 ? stripped : null;
+}
+
 function getOperationsByTag(spec: OpenAPISpec): Record<string, OperationEntry[]> {
   const tagOps: Record<string, OperationEntry[]> = {};
 
@@ -107,6 +122,13 @@ function generateIndexPages() {
     }
 
     const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
+    const overview = readOverview(tagSlug);
+    // Body above the endpoints table: hand-written overview when present,
+    // otherwise the thin OpenAPI tag description.
+    const body = overview ?? tagDescription;
+    const genComment = overview
+      ? `{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/${tagSlug}.mdx, not this file. */}`
+      : '{/* Auto-generated from OpenAPI spec. Do not edit directly. */}';
 
     // Only generate v3.1 index page if the tag has v3.1 operations
     if (ops31.length > 0) {
@@ -131,9 +153,9 @@ title: ${tagName}
 description: "${tagDescription}"
 ---
 
-{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+${genComment}
 
-${tagDescription}
+${body}
 
 ## Endpoints
 
@@ -161,9 +183,9 @@ title: ${tagName}
 description: "${tagDescription}"
 ---
 
-{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+${genComment}
 
-${tagDescription}
+${body}
 
 ## Endpoints
 

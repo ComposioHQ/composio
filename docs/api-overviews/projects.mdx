@@ -1,10 +1,3 @@
----
-title: Projects
-description: "Projects API endpoints"
----
-
-{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/projects.mdx, not this file. */}
-
 Projects are Composio's multi-tenancy primitive. Every Composio account belongs to an **organization**. Inside an organization, **projects** are isolated environments that scope your API keys, connected accounts, auth configs, and webhook configurations. Resources in one project are not accessible from another.
 
 ```mermaid
@@ -70,7 +63,3 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
 ```
 
 Notable security setting: `require_mcp_api_key`, when `true`, requires MCP server requests to include a valid `x-api-key` header. This defaults to `true` for organizations created on or after March 5, 2026. You can also view and update project settings from **Settings > Project Settings** in the [dashboard](https://dashboard.composio.dev/~/project/settings/general).
-
-## Endpoints
-
-<ApiEndpointsTable endpoints={[{"method":"GET","pathV31":"/api/v3.1/org/project/config","pathV3":"/api/v3/org/project/config","summary":"Get project configuration","href":"/reference/v3/api-reference/projects/getOrgProjectConfig"},{"method":"PATCH","pathV31":"/api/v3.1/org/project/config","pathV3":"/api/v3/org/project/config","summary":"Update project configuration","href":"/reference/v3/api-reference/projects/patchOrgProjectConfig"},{"method":"POST","pathV31":"/api/v3.1/org/owner/project/new","pathV3":"/api/v3/org/owner/project/new","summary":"Create a new project","href":"/reference/v3/api-reference/projects/postOrgOwnerProjectNew"},{"method":"GET","pathV31":"/api/v3.1/org/owner/project/list","pathV3":"/api/v3/org/owner/project/list","summary":"List all projects","href":"/reference/v3/api-reference/projects/getOrgOwnerProjectList"},{"method":"GET","pathV31":"/api/v3.1/org/owner/project/{nano_id}","pathV3":"/api/v3/org/owner/project/{nano_id}","summary":"Get project details by ID With Org Api key","href":"/reference/v3/api-reference/projects/getOrgOwnerProjectByNanoId"},{"method":"DELETE","pathV31":"/api/v3.1/org/owner/project/{nano_id}","pathV3":"/api/v3/org/owner/project/{nano_id}","summary":"Delete a project","href":"/reference/v3/api-reference/projects/deleteOrgOwnerProjectByNanoId"},{"method":"POST","pathV31":"/api/v3.1/org/owner/project/{nano_id}/regenerate_api_key","pathV3":"/api/v3/org/owner/project/{nano_id}/regenerate_api_key","summary":"Delete and generate new API key for project","href":"/reference/v3/api-reference/projects/postOrgOwnerProjectByNanoIdRegenerateApiKey"}]} />
