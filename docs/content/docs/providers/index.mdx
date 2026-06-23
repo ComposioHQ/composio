@@ -3,9 +3,13 @@ title: Providers
 description: Composio works with any AI framework. Pick your preferred SDK to get started.
 ---
 
-Composio works with any AI framework. Each provider transforms Composio tools into the native format your framework expects — no glue code needed.
+Composio works with any AI framework. A provider is the adapter that turns Composio tools into the native tool format your framework expects, so you don't write glue code.
+
+Pick the provider that matches the SDK or agent framework you already use. Each one fetches tools, handles execution, and hands your agent objects it understands. If your framework isn't listed, you can [build your own provider](/docs/providers/custom-providers).
 
 ## AI SDKs
+
+Use these when you call a model SDK directly.
 
 <ProviderGrid>
   <ProviderCard
@@ -37,7 +41,9 @@ Composio works with any AI framework. Each provider transforms Composio tools in
   />
 </ProviderGrid>
 
-## Agent Frameworks
+## Agent frameworks
+
+Use these when an agent framework orchestrates the tool calls for you.
 
 <ProviderGrid>
   <ProviderCard

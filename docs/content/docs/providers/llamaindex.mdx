@@ -4,7 +4,7 @@ description: Build an agent with LlamaIndex and enable it to use 1000+ tools wit
 keywords: [llamaindex]
 ---
 
-The LlamaIndex provider transforms Composio tools into LlamaIndex's [FunctionTool](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/) format with built-in execution.
+The LlamaIndex provider turns Composio tools into LlamaIndex [`FunctionTool`](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/) objects that execute themselves. You connect an account, fetch the tools, hand them to a `FunctionAgent`, and LlamaIndex drives the calls. The provider ships for both Python and TypeScript.
 
 <Steps>
 <Step>
@@ -97,3 +97,9 @@ console.log(result.data.result);
 </Tabs>
 </Step>
 </Steps>
+
+## Provider specifics
+
+Each Composio tool becomes a LlamaIndex `FunctionTool` and works the same in both languages. There's nothing special to wire up beyond passing the tools to your agent.
+
+The provider names each tool after its Composio slug and runs execution for you, so any LlamaIndex agent that accepts `FunctionTool` objects, such as `FunctionAgent`, can use them directly.
