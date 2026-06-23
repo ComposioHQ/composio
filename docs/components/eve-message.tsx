@@ -1,26 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
+import { useRouter } from 'next/navigation';
 import { Streamdown } from 'streamdown';
 import hljs from 'highlight.js';
 import { Check, Copy } from 'lucide-react';
 
+function isInternalHref(url: string): boolean {
+  if (url.startsWith('/') || url.startsWith('#')) return true;
+  try {
+    return new URL(url).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Link renderer for assistant Markdown. Internal docs links navigate
+ * client-side with the router and keep the chat open; external links open in a
+ * new tab. (Modifier-clicks fall through to the browser's default.)
+ */
+function MarkdownLink({ href, children, node, ...props }: ComponentProps<'a'> & { node?: unknown }) {
+  const router = useRouter();
+  const url = href ?? '';
+  if (url && isInternalHref(url)) {
+    return (
+      <a
+        href={url}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+          event.preventDefault();
+          router.push(url);
+        }}
+        {...props}
+      >
+        {children}
+      </a>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer" {...props}>
+      {children}
+    </a>
+  );
+}
+
 // Prose renders through Streamdown; code blocks render through the custom
-// <CodeBlock> below (highlight.js — synchronous, browser-safe). linkSafety lets
-// internal docs links open directly; only off-site links get the warning modal.
+// <CodeBlock> below (highlight.js — synchronous, browser-safe). Streamdown's
+// link-safety modal is off; MarkdownLink handles link behavior instead.
 const STREAMDOWN_PROPS = {
-  linkSafety: {
-    enabled: true,
-    onLinkCheck: (url: string) => {
-      // Internal links open directly; only off-site links get the warning modal.
-      if (/^(\/|#|\.)/.test(url)) return true;
-      try {
-        return new URL(url).origin === window.location.origin;
-      } catch {
-        return true;
-      }
-    },
-  },
+  linkSafety: { enabled: false },
+  components: { a: MarkdownLink },
 } as const;
 
 // Map our fence languages to highlight.js language ids (some, like cURL, aren't
