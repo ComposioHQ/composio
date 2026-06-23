@@ -1,7 +1,7 @@
 ---
 title: What is a session?
 description: What Composio sessions do and how they scope users, tools, auth, MCP, and workbench state
-keywords: [session, user id, concepts, meta tools, mcp, workbench]
+keywords: [session, userID, concepts, meta tools, mcp, workbench]
 ---
 
 A **session** is the runtime context your agent uses to work for one of your users. It tells Composio whose connected accounts to use, which tools are available, how authentication should happen, and where state should persist while the agent works.
@@ -32,7 +32,7 @@ const tools = await session.tools();
 
 A session ties together:
 
-- **User ID**: which user's connected accounts and tool executions are in scope.
+- **userID**: which user's connected accounts and tool executions are in scope.
 - **Tool access**: all toolkits by default, or a filtered set of toolkits/tools/tags.
 - **Authentication**: managed auth, custom auth configs, and connected account selection.
 - **Execution state**: logs, tool memory, MCP state, and workbench files for the task.
@@ -41,14 +41,14 @@ A session ties together:
 
 A user is an identifier from your app. Connections are stored under that ID, so tools run with the right account and stay isolated from other users.
 
-**User ID best practices:**
+**UserID best practices:**
 
 - **Recommended:** Database UUID or primary key (`user.id`)
 - **Acceptable:** Unique username (`user.username`)
 - **Avoid:** Email addresses (they can change)
 - **Never:** `default` in production (exposes other users' data)
 
-A user can connect multiple accounts for the same toolkit, such as work and personal Gmail. Use the same user ID, then select the connected account when a session needs a specific account. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+A user can connect multiple accounts for the same toolkit, such as work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific account. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
 
 ## What sessions do
 

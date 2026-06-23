@@ -41,7 +41,7 @@ We have updated several key terms in the SDK and API to improve clarity and cons
 | Apps          | Toolkits           | A collection of tools grouped under a single application                |
 | Integration   | Auth Config        | Configuration containing developer credentials and application-level settings such as scopes and API endpoints. Scoped to a toolkit. |
 | Connection    | Connected accounts | User-linked accounts associated with a toolkit                          |
-| Entity ID     | User ID            | The identifier of the user performing the action (UUID or email)        |
+| Entity ID     | userID             | The identifier of the user performing the action (UUID or email)        |
 | Trigger       | Trigger            | An event that can be subscribed to                                      |
 | Toolsets      | Providers          | LLM or agent framework that can be used with Composio to create agents |
 
@@ -82,11 +82,11 @@ npm install @composio/core
 
 Both SDKs now implement proper namespacing for each concept.
 
-### User ID scoping
+### UserID scoping
 
 The concept of `entity_id` has been expanded and renamed to `user_id`.
 
-All operations are now scoped to a user ID, including:
+All operations are now scoped to a userID, including:
 - Fetching tools
 - Initiating connections
 - Executing tools

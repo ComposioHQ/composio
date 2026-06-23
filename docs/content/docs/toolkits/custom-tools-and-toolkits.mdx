@@ -596,7 +596,7 @@ Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to acc
 
 | Property / Method | Description |
 |-------------------|-------------|
-| `ctx.userId` | The user ID for the current session |
+| `ctx.userId` | The userID for the current session |
 | `ctx.proxyExecute({ toolkit, endpoint, method, body?, parameters? })` | Make an authenticated HTTP request via Composio's auth layer |
 | `ctx.execute(toolSlug, args)` | Execute any Composio native tool from within your custom tool |
 
@@ -605,7 +605,7 @@ Every custom tool's `execute` function receives `(input, ctx)`. Use `ctx` to acc
 
 | Property / Method | Description |
 |-------------------|-------------|
-| `ctx.user_id` | The user ID for the current session |
+| `ctx.user_id` | The userID for the current session |
 | `ctx.proxy_execute(toolkit, endpoint, method, body=None, parameters=[])` | Make an authenticated HTTP request via Composio's auth layer |
 | `ctx.execute(tool_slug, arguments)` | Execute any Composio native tool from within your custom tool |
 

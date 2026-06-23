@@ -52,7 +52,7 @@ An **auth config** is a blueprint that defines how authentication works for a to
 - **Scopes**: what actions your tools can perform
 - **Credentials**: your own app credentials or Composio's managed auth
 
-Composio creates one auth config per toolkit, and it applies to every user who connects that toolkit. When a user authenticates, Composio creates a **connected account** that stores their credentials (OAuth tokens or API keys) and links them to your user ID. When you need to use your own OAuth credentials or customize scopes, you can create [custom auth configs](/docs/custom-app-vs-managed-app).
+Composio creates one auth config per toolkit, and it applies to every user who connects that toolkit. When a user authenticates, Composio creates a **connected account** that stores their credentials (OAuth tokens or API keys) and links them to your userID. When you need to use your own OAuth credentials or customize scopes, you can create [custom auth configs](/docs/custom-app-vs-managed-app).
 
 ```mermaid
 graph LR
@@ -80,7 +80,7 @@ Composio handles this automatically:
 
 <Accordions>
 <Accordion title="What are connected accounts?">
-A connected account is created when a user authenticates with a toolkit. It stores the user's credentials (OAuth tokens or API keys) and links them to your user ID. Each user can have multiple connected accounts, even for the same toolkit (e.g., work and personal Gmail).
+A connected account is created when a user authenticates with a toolkit. It stores the user's credentials (OAuth tokens or API keys) and links them to your userID. Each user can have multiple connected accounts, even for the same toolkit (e.g., work and personal Gmail).
 </Accordion>
 <Accordion title="What happens when tokens expire?">
 Composio automatically refreshes OAuth tokens before they expire. You don't need to handle re-authentication or token expiration. Connected accounts stay valid as long as the user doesn't revoke access.

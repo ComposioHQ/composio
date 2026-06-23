@@ -32,7 +32,7 @@ A hosted page where a user authorizes access to a toolkit. Returned as a `redire
 </GlossaryTerm>
 
 <GlossaryTerm name="Connected Account">
-Created when a user authenticates with a toolkit. Stores credentials (OAuth tokens or API keys) linked to a user ID. Composio automatically refreshes OAuth tokens. A user can have [multiple connected accounts](/docs/managing-multiple-connected-accounts) for the same toolkit. IDs are prefixed `ca_`.
+Created when a user authenticates with a toolkit. Stores credentials (OAuth tokens or API keys) linked to a userID. Composio automatically refreshes OAuth tokens. A user can have [multiple connected accounts](/docs/managing-multiple-connected-accounts) for the same toolkit. IDs are prefixed `ca_`.
 </GlossaryTerm>
 
 <GlossaryTerm name="Connection Request">
@@ -88,7 +88,7 @@ An adapter package that transforms Composio tools into the format expected by an
 </GlossaryTerm>
 
 <GlossaryTerm name="Session">
-An ephemeral configuration object from `composio.create(userId)`. Ties together a user ID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `authorize()`, and `toolkits()` (and `mcp.url` when created with `mcp: true`). See [What is a session?](/docs/how-composio-works).
+An ephemeral configuration object from `composio.create(userId)`. Ties together a userID, available toolkits, auth config, and connected accounts. Immutable. Exposes `tools()`, `authorize()`, and `toolkits()` (and `mcp.url` when created with `mcp: true`). See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="Session ID">
@@ -131,8 +131,8 @@ The ingress URL Composio issues per OAuth app for webhook triggers, plus the sig
 The URL Composio delivers signed events to in your application. One per project, configured via the dashboard or the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions). See [Subscribing to events](/docs/setting-up-triggers/subscribing-to-events).
 </GlossaryTerm>
 
-<GlossaryTerm name="User ID">
-An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between user IDs. See [What is a session?](/docs/how-composio-works).
+<GlossaryTerm name="userID">
+An identifier from your application that Composio uses to scope connected accounts, tool executions, and authorizations. Connections are fully isolated between userIDs. See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
 
 <GlossaryTerm name="White-Labeling">
