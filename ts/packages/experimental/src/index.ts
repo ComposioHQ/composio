@@ -186,8 +186,6 @@ export interface PiConnectionHandlers<TState = unknown, TAuthorizeResult = unkno
     state: TState,
     context: { toolkit: string; request: PiConnectionManagementContext }
   ) => boolean;
-  /** Called for auth links found in authorization results. */
-  onAuthLink?: (result: TAuthorizeResult, context: PiAuthLinkContext) => Promise<void> | void;
   /** Format the final connection-management result returned to the model. */
   formatConnectionResult?: (
     result: PiConnectionManagementResult<TState, TAuthorizeResult>,
@@ -449,7 +447,6 @@ const applyAuthLinkHandlers = async (
   for (const url of links) {
     const linkContext: PiAuthLinkContext = { ...context, url };
     await capabilities.authLinks?.handle?.(linkContext);
-    await capabilities.connections?.onAuthLink?.(value, linkContext);
   }
   return links;
 };
