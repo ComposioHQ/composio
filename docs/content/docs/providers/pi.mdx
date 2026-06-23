@@ -48,8 +48,10 @@ import {
   SessionManager,
 } from '@earendil-works/pi-coding-agent';
 
-const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const provider = new PiProvider();
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new PiProvider(),
+});
 
 const composioSession = await composio.sessions.create('user_123', {
   toolkits: ['github', 'gmail'],
@@ -60,7 +62,7 @@ const composioSession = await composio.sessions.create('user_123', {
   workbench: { enable: true },
 });
 
-const composioTools = provider.createSessionTools({
+const composioTools = composio.provider.createSessionTools({
   sessionId: composioSession.sessionId,
   search: composioSession.search.bind(composioSession),
   execute: composioSession.execute.bind(composioSession),
@@ -128,7 +130,7 @@ Hooks are middleware around each helper. Calling `await next()` runs the default
 
 ```typescript
 // @noErrors
-const composioTools = provider.createSessionTools({
+const composioTools = composio.provider.createSessionTools({
   sessionId: composioSession.sessionId,
   search: composioSession.search.bind(composioSession),
   execute: composioSession.execute.bind(composioSession),
