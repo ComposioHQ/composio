@@ -39,14 +39,16 @@ A session scopes four things:
 
 ## Users
 
-A user is an identifier from your app. Composio stores connections under that ID, so tools run with the right account and stay isolated from other users.
+A user is an identifier from your app. Composio stores connections under that ID, so tools run with the right account and stay isolated from other users. Use a stable identifier like your database ID, never one that can change.
 
-**userID best practices:**
-
+<Accordions>
+<Accordion title="userID best practices">
 - **Recommended:** database UUID or primary key (`user.id`)
 - **Acceptable:** unique username (`user.username`)
 - **Avoid:** email addresses (they can change)
 - **Never:** `default` in production (it exposes other users' data)
+</Accordion>
+</Accordions>
 
 A user can connect multiple accounts for the same toolkit, like work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific one. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
 
