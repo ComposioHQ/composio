@@ -6,6 +6,10 @@ keywords: [sandbox, workbench, remote execution, bulk operations, data processin
 
 The **sandbox** is a persistent Python environment where your agent writes and executes code. It has programmatic access to all Composio tools, plus helper functions for calling LLMs, uploading files, and making API requests. State persists across calls within a [session](/docs/how-composio-works). Your agent runs code in it through the `COMPOSIO_REMOTE_WORKBENCH` meta tool, and shell commands through `COMPOSIO_REMOTE_BASH_TOOL`.
 
+<Callout title="Renamed from workbench">
+This feature used to be called the **workbench**. The preferred session config key is now `sandbox`, but `workbench` still works as a fully supported alias, in both SDKs and on the wire. It isn't deprecated, so existing code keeps running unchanged. The `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` meta tools keep their names.
+</Callout>
+
 <Callout>
 The sandbox is part of the [meta tools](/docs/how-composio-works#meta-tools) system. It's available when you create sessions, not when [executing tools directly](/docs/tools-direct/executing-tools).
 </Callout>
@@ -73,10 +77,6 @@ The agent chains tools inside the sandbox. Fetch GitHub activity, aggregate with
 ### Multi-step workflows
 
 The sandbox preserves variables and files across calls. The agent can paginate through records, transform them, and write to a destination over multiple calls.
-
-<Callout title="Renamed from workbench">
-This feature used to be called the **workbench**. The preferred session config key is now `sandbox`, but `workbench` still works as a fully supported alias, in both SDKs and on the wire. It isn't deprecated, so existing code keeps running unchanged. The `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` meta tools keep their names.
-</Callout>
 
 ## Next
 
