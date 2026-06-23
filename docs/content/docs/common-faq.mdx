@@ -9,7 +9,7 @@ keywords: [faq, questions, help, common questions]
 <Accordions>
 
 <Accordion title="Do I need an AI agent to use Composio?">
-No. If you're building an AI agent, Composio gives it [meta tools](/docs/tools-and-toolkits) that handle tool discovery and execution for you.
+No. If you're building an AI agent, Composio gives it [meta tools](/docs/how-composio-works) that handle tool discovery and execution for you.
 
 If you don't have an agent, use the legacy direct execution guides under **Direct Tool Execution Guides (Legacy)**.
 </Accordion>
@@ -17,7 +17,7 @@ If you don't have an agent, use the legacy direct execution guides under **Direc
 <Accordion title="What is the difference between a tool and a toolkit?">
 A **toolkit** is a collection of related tools grouped by app, like the GitHub toolkit or the Gmail toolkit. A **tool** is a single action within a toolkit, like `GITHUB_CREATE_ISSUE` or `GMAIL_SEND_EMAIL`.
 
-You connect to toolkits via OAuth or API keys, then execute individual tools within them. See [Tools and toolkits](/docs/tools-and-toolkits).
+You connect to toolkits via OAuth or API keys, then execute individual tools within them. See [Tools and toolkits](/docs/how-composio-works).
 </Accordion>
 
 <Accordion title="What is userID and how should I use it?">
@@ -81,7 +81,7 @@ const session2 = await composio.create("user_123", { toolkits: { disable: ["line
 </Tab>
 </Tabs>
 
-To list the toolkits available in a session, call `session.toolkits()`. See [Enable and disable toolkits](/docs/toolkits/enable-and-disable-toolkits).
+To list the toolkits available in a session, call `session.toolkits()`. See [Enable and disable toolkits](/docs/configuring-sessions).
 </Accordion>
 
 <Accordion title="The tool I need doesn't exist. How do I request one?">

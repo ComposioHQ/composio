@@ -43,7 +43,7 @@ export function HomeFeatures() {
         <FeatureCard
           title="Tools that resolve by intent."
           description="Smart tool search over 1000+ apps, surfaced just in time with the right scope."
-          href="/docs/tools-and-toolkits"
+          href="/docs/how-composio-works"
           visual={<ToolkitsVisual />}
         />
         <FeatureCard
