@@ -57,15 +57,15 @@ export class LlamaindexProvider extends BaseAgenticProvider<
   }
 
   /**
-   * Transform MCP URL response into Anthropic-specific format.
-   * By default, Anthropic uses the standard format (same as default),
-   * but this method is here to show providers can customize if needed.
+   * Transform an MCP URL response into the LlamaIndex provider's format.
+   * LlamaIndex uses the standard MCP server response shape, mapping each
+   * entry to an object with a `URL` instance and its name.
    *
    * @param data - The MCP URL response data
    * @returns Standard MCP server response format
    */
   wrapMcpServerResponse(data: McpUrlResponse): McpServerGetResponse {
-    // Anthropic uses the standard format
+    // LlamaIndex uses the standard format
     return data.map(item => ({
       url: new URL(item.url),
       name: item.name,

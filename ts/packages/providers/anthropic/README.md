@@ -96,12 +96,14 @@ const message = await anthropic.messages.create({
 });
 
 // Handle tool calls
-if (message.content[0].type === 'tool_calls') {
-  const toolCall = message.content[0];
-  const result = await composio.provider.executeToolCall('user123', toolCall, {
-    connectedAccountId: 'account123',
-  });
-  console.log('Tool execution result:', result);
+// Anthropic returns tool calls as `tool_use` content blocks.
+for (const block of message.content) {
+  if (block.type === 'tool_use') {
+    const result = await composio.provider.executeToolCall('user123', block, {
+      connectedAccountId: 'account123',
+    });
+    console.log('Tool execution result:', result);
+  }
 }
 ```
 
@@ -138,8 +140,13 @@ const stream = await anthropic.messages.stream({
 });
 
 for await (const messageChunk of stream) {
-  if (messageChunk.type === 'content_block_delta' && messageChunk.delta.type === 'tool_calls') {
-    const result = await composio.provider.executeToolCall('user123', messageChunk.delta, {
+  // Anthropic streams tool calls as `tool_use` content blocks, emitted via a
+  // `content_block_start` event whose `content_block` is the `tool_use` block.
+  if (
+    messageChunk.type === 'content_block_start' &&
+    messageChunk.content_block.type === 'tool_use'
+  ) {
+    const result = await composio.provider.executeToolCall('user123', messageChunk.content_block, {
       connectedAccountId: 'account123',
     });
     console.log('Tool execution result:', result);

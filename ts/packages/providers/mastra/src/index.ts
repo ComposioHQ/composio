@@ -70,12 +70,12 @@ export class MastraProvider extends BaseAgenticProvider<
   }
 
   /**
-   * Transform MCP URL response into Anthropic-specific format.
-   * By default, Anthropic uses the standard format (same as default),
-   * but this method is here to show providers can customize if needed.
+   * Transform an MCP URL response into the Mastra provider's format.
+   * Mastra expects a URL map keyed by server name, so each entry is
+   * reduced into an object of `{ [name]: { url } }`.
    *
    * @param data - The MCP URL response data
-   * @returns Standard MCP server response format
+   * @returns The MCP servers as a Mastra URL map
    */
   wrapMcpServerResponse(data: McpUrlResponse): MastraUrlMap {
     // Transform to Mastra's URL map format
