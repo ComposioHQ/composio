@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
+import { LegacyBadge } from '@/components/legacy-badge';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -31,6 +32,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       {!isLanding && (
         <>
           <DocsTitle>{data.title}</DocsTitle>
+          {data.legacy && <LegacyBadge />}
           <PageActions path={page.url} />
         </>
       )}

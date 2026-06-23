@@ -19,6 +19,8 @@ const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
   /** When true, the page shows an "Experimental" badge in the sidebar. */
   experimental: z.boolean().optional(),
+  /** When true, the page shows a "Legacy" badge at the top of the page. */
+  legacy: z.boolean().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.
    *  - undefined / omitted → default session-based guardrails
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
