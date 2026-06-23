@@ -5,13 +5,13 @@
     "anthropic",
     "openai",
     "vercel",
+    "pi",
     "google",
     "langchain",
     "autogen",
     "crewai",
     "llamaindex",
     "mastra",
-    "pi",
     "custom-providers"
   ]
 }

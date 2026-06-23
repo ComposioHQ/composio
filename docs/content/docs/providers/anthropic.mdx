@@ -284,41 +284,6 @@ A few things are specific to the Anthropic provider:
 - **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes this before execution, so you do not have to parse it yourself.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
 
-## Multi-turn chat
+## Next
 
-For multi-turn apps, create the session once and reuse it across requests with `composio.use()`. Store the session ID in your database or chat state, then rehydrate the session on each later request:
-
-<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
-<Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-# First request: create and store the session ID
-session = composio.create(user_id="user_123")
-session_id = session.session_id
-# store session_id in your database or chat state
-
-# Subsequent requests: reuse the session
-session = composio.use(session_id)
-tools = session.tools()
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-// First request: create and store the session ID
-const session = await composio.create("user_123");
-const sessionId = session.sessionId;
-// store sessionId in your database or chat state
-
-// Subsequent requests: reuse the session
-const session = await composio.use(sessionId);
-const tools = await session.tools();
-```
-</Tab>
-</Tabs>
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

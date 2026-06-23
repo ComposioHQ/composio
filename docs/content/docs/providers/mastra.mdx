@@ -77,3 +77,7 @@ const composio = new Composio({ provider: new MastraProvider({ strict: true }) }
 <Callout type="info">
 The provider runs each tool's JSON Schema through Mastra's schema-compat layer and inlines internal `$ref` pointers first. A few Composio tools reference `$defs` entries that the upstream API does not emit. Rather than crash `tools.get`, the provider falls back to a permissive object schema for that property and logs one warning per tool, so the affected field validates loosely.
 </Callout>
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
