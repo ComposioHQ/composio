@@ -97,6 +97,7 @@ export class ToolRouterSession<
   public preload: ToolRouterSessionPreloadConfig;
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
+  public readonly workbenchAccessKey?: string;
   private readonly preloadedCustomToolSlugs: string[];
   private readonly inlineCustomToolsPayload: ToolRouterSessionMetadata['inlineCustomToolsPayload'];
 
@@ -125,6 +126,7 @@ export class ToolRouterSession<
     this.preload = metadata?.preload ?? { tools: [] };
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
+    this.workbenchAccessKey = metadata?.workbenchAccessKey;
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
     this.inlineCustomToolsPayload = metadata?.inlineCustomToolsPayload;
 

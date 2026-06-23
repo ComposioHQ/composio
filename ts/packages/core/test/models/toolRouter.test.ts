@@ -1279,6 +1279,17 @@ describe('ToolRouter', () => {
         expect(payload?.workbench?.sandbox_size).toBe('large');
       });
 
+      it('forwards experimentalProvider as snake_case experimental_provider on the wire', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          workbench: { experimentalProvider: { provider: 'e2b' } },
+        });
+
+        const payload = mockClient.toolRouter.session.create.mock.calls[0]?.[0];
+        expect(payload?.workbench?.experimental_provider).toBe('e2b');
+      });
+
       it('rejects an invalid sandboxSize value via the zod schema', async () => {
         await expect(
           toolRouter.create(userId, {
@@ -1751,6 +1762,23 @@ describe('ToolRouter', () => {
         expect(typeof session.tools).toBe('function');
         expect(typeof session.authorize).toBe('function');
         expect(typeof session.toolkits).toBe('function');
+      });
+
+      it('exposes create-response workbench access key as a secret session field and MCP header', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce({
+          ...mockSessionCreateResponse,
+          mcp: {
+            ...mockSessionCreateResponse.mcp,
+            headers: {
+              'x-session-access-key': 'session_secret',
+            },
+          },
+        });
+
+        const session = await toolRouter.create(userId);
+
+        expect(session.workbenchAccessKey).toBe('session_secret');
+        expect(session.mcp.headers['x-session-access-key']).toBe('session_secret');
       });
     });
   });
@@ -3050,6 +3078,7 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('toolkits');
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
+      expect(session.workbenchAccessKey).toBeUndefined();
     });
 
     it('should attach custom tools when provided', async () => {
