@@ -1,10 +1,3 @@
----
-title: Authentication
-description: "Authentication related endpoints"
----
-
-{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/authentication.mdx, not this file. */}
-
 These endpoints describe how the Composio API itself authenticates you and let you inspect the identity behind a request.
 
 Every request to the API carries an API key in a header. Composio uses two keys with different scope:
@@ -19,7 +12,3 @@ The session info endpoint returns the identity tied to the current `x-api-key`, 
 </Callout>
 
 This is API-level authentication, not user authentication to toolkits. For connecting your users' accounts to Gmail, Slack, and other apps, see [authenticating users](/docs/authentication).
-
-## Endpoints
-
-<ApiEndpointsTable endpoints={[{"method":"GET","pathV31":"/api/v3.1/auth/session/info","pathV3":"/api/v3/auth/session/info","summary":"Get current user session information","href":"/reference/api-reference/authentication/getAuthSessionInfo"}]} />

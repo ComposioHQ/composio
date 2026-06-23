@@ -1,0 +1,16 @@
+Tools are the individual executable actions inside a toolkit, like `GMAIL_SEND_EMAIL` or `GITHUB_CREATE_ISSUE`. Each tool has an input schema describing its parameters and an output schema describing what it returns. Tool slugs are SCREAMING_SNAKE_CASE and follow a `{TOOLKIT}_{ACTION}` pattern.
+
+Reach for these endpoints when you want to:
+
+- List or search the catalog of available tools, optionally scoped to one or more toolkits.
+- Fetch a single tool's input and output schema by `tool_slug` before constructing a call.
+- Execute a tool on behalf of a user's connected account, or generate the inputs for an execution from natural language.
+- Look up the OAuth scopes a set of tools requires, or send an authenticated proxy request to an app's underlying API.
+
+These endpoints authenticate with your project API key in the `x-api-key` header.
+
+<Callout type="info">
+Manual tool execution requires an explicit toolkit version. Pass `toolkit_versions=latest` (or pin a dated version like `20251027_00`) so calls resolve to a known tool definition. See the [toolkit versioning migration guide](/docs/migration-guide/toolkit-versioning).
+</Callout>
+
+For the concepts behind tools, schemas, and authentication, see [Tools and toolkits](/docs/tools-and-toolkits).

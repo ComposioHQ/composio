@@ -3,9 +3,22 @@ title: Authentication
 description: "Authentication related endpoints"
 ---
 
-{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/authentication.mdx, not this file. */}
 
-Authentication related endpoints
+These endpoints describe how the Composio API itself authenticates you and let you inspect the identity behind a request.
+
+Every request to the API carries an API key in a header. Composio uses two keys with different scope:
+
+- **`x-api-key`**: your project API key. It scopes the request to a single [project](/reference/api-reference/projects) and its connected accounts, auth configs, and webhooks. Use this for almost everything.
+- **`x-org-api-key`**: your organization API key. It operates across the whole organization and is required only for org-level management such as creating projects.
+
+Find both keys in the [dashboard](https://dashboard.composio.dev) under your project and organization settings.
+
+<Callout type="info">
+The session info endpoint returns the identity tied to the current `x-api-key`, including the resolved project and organization. Use it to confirm which project a key belongs to before running other calls.
+</Callout>
+
+This is API-level authentication, not user authentication to toolkits. For connecting your users' accounts to Gmail, Slack, and other apps, see [authenticating users](/docs/authentication).
 
 ## Endpoints
 

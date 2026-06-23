@@ -1,3 +1,10 @@
+---
+title: Logs
+description: "Logging and monitoring"
+---
+
+{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/logs.mdx, not this file. */}
+
 The Logs API returns **individual tool execution events**, one record per tool call. Use it to debug failures, inspect request/response payloads, and trace specific user activity. For aggregated counts (how many tool calls happened), use the [Usage API](/reference/api-reference/organization) instead.
 
 All endpoints in this section require a **project API key** (`x-api-key`) or a valid session cookie.
@@ -137,3 +144,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
 curl https://backend.composio.dev/api/v3.1/logs/tool_execution/log_-jRTWClpBoVo \
   -H "x-api-key: YOUR_PROJECT_API_KEY"
 ```
+
+## Endpoints
+
+<ApiEndpointsTable endpoints={[{"method":"POST","pathV31":"/api/v3.1/logs/tool_execution","pathV3":"/api/v3/logs/tool_execution","summary":"Search and retrieve tool execution logs","href":"/reference/api-reference/logs/postLogsToolExecution"},{"method":"GET","pathV31":"/api/v3.1/logs/tool_execution/{id}","pathV3":"/api/v3/logs/tool_execution/{id}","summary":"Get log details by ID","href":"/reference/api-reference/logs/getLogsToolExecutionById"}]} />

@@ -3,9 +3,21 @@ title: Auth Configs
 description: "Authentication configuration management"
 ---
 
-{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+{/* Auto-generated from OpenAPI spec. Edit the overview at api-overviews/auth-configs.mdx, not this file. */}
 
-Authentication configuration management
+An auth config is a blueprint that defines how a toolkit authenticates across all your users. It specifies the authentication method, the scopes your tools can request, and which credentials Composio uses to run the OAuth or token flow.
+
+A single auth config applies to every user who connects that toolkit. When a user authenticates against it, Composio creates a [connected account](/reference/api-reference/connected-accounts) that stores their tokens and links them to your user ID.
+
+Each auth config defines:
+
+- **Auth scheme**: OAuth2, API key, Bearer token, or Basic Auth
+- **Scopes**: what your tools are allowed to do on the user's behalf
+- **Credentials**: Composio's managed app, or your own OAuth client and secrets
+
+Reach for a custom auth config when you need your own branding on consent screens, custom scopes, a dedicated rate-limit quota, or a custom toolkit instance. See [managed vs custom auth](/docs/custom-app-vs-managed-app) for the decision and [how Composio handles authentication](/docs/authentication) for the full picture.
+
+These endpoints use your project API key in the `x-api-key` header. Each auth config is addressed by its `nanoid`, and you can enable or disable one without deleting it.
 
 ## Endpoints
 

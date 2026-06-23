@@ -1,0 +1,7 @@
+Webhook subscriptions are outbound delivery configurations. They define the URL Composio posts [trigger](/docs/triggers) events to, along with the signing secret and the set of event types you want to receive.
+
+Reach for these endpoints to register where Composio should send events, to filter delivery to specific event types, and to manage the signing secret used to verify those deliveries. List the available event types with the `/webhook_subscriptions/event_types` endpoint, then create a subscription scoped to the ones you care about.
+
+Each subscription is addressed by its `id`. You can update its URL and filters with `PATCH`, delete it, and rotate its signing secret with `/webhook_subscriptions/{id}/rotate_secret` if the secret leaks.
+
+Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Webhook verification](/docs/webhook-verification) for the SDK and manual verification flows.

@@ -8,6 +8,15 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
+import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
+
+/**
+ * API-reference tags hidden on our side even though the upstream OpenAPI spec
+ * (from hermes) includes them. Matched by slug. We neither generate their
+ * `index.mdx` overview pages nor leave stale ones behind. Shared with the
+ * reference page-tree filter so both stay in sync.
+ */
+const HIDDEN_TAGS: ReadonlySet<string> = HIDDEN_API_TAGS;
 
 interface OpenAPIOperation {
   summary?: string;
@@ -105,6 +114,22 @@ function generateIndexPages() {
     const ops31 = v31Ops[tagName] || [];
     const ops3 = v3Ops[tagName] || [];
     const tagSlug = slugify(tagName);
+
+    // Intentionally-hidden tag — skip generation and delete any existing index.mdx
+    // (v3.1 and v3.0) so neither overview page lingers in the sidebar.
+    if (HIDDEN_TAGS.has(tagSlug)) {
+      for (const baseDir of [
+        join(process.cwd(), 'content/reference/api-reference'),
+        join(process.cwd(), 'content/reference/v3/api-reference'),
+      ]) {
+        const hidden = join(baseDir, tagSlug, 'index.mdx');
+        if (existsSync(hidden)) {
+          rmSync(hidden);
+          console.log(`Removed hidden tag: ${hidden}`);
+        }
+      }
+      continue;
+    }
 
     // Tag declared in spec.tags but no operations reference it — clean up any stale index.mdx from a prior run.
     if (ops31.length === 0 && ops3.length === 0) {

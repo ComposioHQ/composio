@@ -4,6 +4,28 @@ import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
+import { HIDDEN_API_TAGS } from './filter-api-version';
+
+/**
+ * True if a reference URL belongs to an intentionally-hidden API tag
+ * (consumer, invite-codes) in either v3.1 or v3.0. These tags exist in the
+ * upstream OpenAPI spec but are hidden on our side. The page tree is filtered
+ * via `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
+ * `getPages()` list (consumed by validate-links, llms.mdx, sitemap) in sync.
+ */
+function isHiddenReferenceUrl(url: string): boolean {
+  for (const tag of HIDDEN_API_TAGS) {
+    if (
+      url.startsWith(`/reference/api-reference/${tag}/`) ||
+      url === `/reference/api-reference/${tag}` ||
+      url.startsWith(`/reference/v3/api-reference/${tag}/`) ||
+      url === `/reference/v3/api-reference/${tag}`
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Transformer to set defaultOpen: true for specific folders in the reference sidebar.
@@ -49,7 +71,7 @@ async function getOpenapiPages() {
 export async function getReferenceSource() {
   if (!_referenceSource) {
     const [openapiLatest, openapiV3Pages] = await getOpenapiPages();
-    _referenceSource = loader({
+    const loaded = loader({
       baseUrl: '/reference',
       source: multiple({
         mdx: reference.toFumadocsSource(),
@@ -62,6 +84,19 @@ export async function getReferenceSource() {
         transformers: [defaultOpenTransformer as any],
       },
     });
+
+    // Exclude intentionally-hidden API tags (consumer, invite-codes) from the
+    // flat page list so validate-links, llms.mdx, llms.txt, and sitemap skip
+    // their fumadocs-openapi operation pages. The sidebar tree is filtered
+    // separately via prepareTree (lib/filter-api-version.ts).
+    const originalGetPages = loaded.getPages.bind(loaded);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (loaded as any).getPages = (...args: Parameters<typeof originalGetPages>) =>
+      originalGetPages(...args).filter(
+        (page: { url: string }) => !isHiddenReferenceUrl(page.url),
+      );
+
+    _referenceSource = loaded;
   }
   return _referenceSource;
 }

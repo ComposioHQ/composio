@@ -9,8 +9,8 @@ The Usage API returns **aggregated counts** of tool calls and sessions. Use it t
 
 There are two query shapes:
 
-- **Summary** — totals across one or more entity types in a time window.
-- **Breakdown** — one entity type, grouped by a dimension (tool, user, session, etc.).
+- **Summary**: totals across one or more entity types in a time window.
+- **Breakdown**: one entity type, grouped by a dimension (tool, user, session, etc.).
 
 Each shape comes in an org-scoped and a project-scoped flavor. The org-scoped endpoints are documented below; the project-scoped usage endpoints (`POST /api/v3.1/project/usage/*`) also appear on the [Projects](/reference/api-reference/projects) reference page.
 
@@ -30,7 +30,7 @@ The org endpoints accept a `project_id` filter so you can slice by project witho
 | Entity type | What it counts |
 |---|---|
 | `tool_calls` | Every tool execution (successful or failed) |
-| `sessions` | Tool router sessions created |
+| `sessions` | Sessions created |
 
 ## Summary
 
@@ -66,7 +66,7 @@ Response:
 | `to` | number | now | Epoch milliseconds |
 | `entity_types` | string[] | all | Subset of `tool_calls`, `sessions` |
 | `filters.user_id` | string \| string[] | — | Filter events by initiating user |
-| `filters.session_id` | string \| string[] | — | Filter events by tool router session |
+| `filters.session_id` | string \| string[] | — | Filter events by session |
 | `filters.project_id` | string \| string[] | — | Only meaningful on org endpoints; ignored on project endpoints |
 
 ## Breakdown
