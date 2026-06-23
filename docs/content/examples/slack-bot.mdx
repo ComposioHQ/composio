@@ -13,14 +13,7 @@ The agent is [Pi](https://github.com/earendil-works/pi-coding-agent), but the ag
 3. **A shared connection** lets the bot speak as the workspace bot, with one install for everyone.
 4. **The proxy** reaches the Slack Web API endpoints the toolkit doesn't wrap as tools.
 
-```mermaid
-flowchart LR
-  S[Slack message] -->|trigger webhook| W[Your server]
-  W --> A[Pi agent]
-  A -->|session.execute| B[Shared Slack connection]
-  A -->|session.execute| U[User's connected apps]
-  B --> S
-```
+<SlackBotFlow />
 
 You bring a Composio API key and an agent runtime. Composio brings the workspace.
 
@@ -241,12 +234,7 @@ const user = await session.proxyExecute({
 
 ## Share one Slack connection
 
-The bot acts in Slack as a single identity no matter who's talking to it. That's one connection, shared. By default a connected account is **PRIVATE**: only the `userId` that created it can use it. The install flow created it as **SHARED** and opened the ACL:
-
-```ts
-// @noErrors
-await composio.connectedAccounts.updateAcl(connectedAccountId, { allowAllUsers: true });
-```
+The bot acts in Slack as a single identity no matter who's talking to it. That's one connection, shared. By default a connected account is **PRIVATE**: only the `userId` that created it can use it. The install flow authorized it as **SHARED**, then the `updateAcl(connectedAccountId, { allowAllUsers: true })` call opened it to the whole workspace.
 
 A shared connection is never resolved implicitly. You **pin** it into a session by ID, which is the `connectedAccounts: { slackbot: [sharedSlackConnectionId] }` line in `sessionForThread`. Now Alice's session has *her* GitHub connection but *the workspace's* Slack connection: the agent posts as the bot, and acts in other apps as Alice. The Slack token lives in Composio, so your app only ever stores a `ca_…` id.
 

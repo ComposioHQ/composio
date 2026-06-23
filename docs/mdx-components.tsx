@@ -26,6 +26,7 @@ import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
+import { SlackBotFlow } from '@/components/slack-bot-flow';
 import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
@@ -111,6 +112,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     DocsHero,
     HomeFeatures,
     SessionFlow,
+    SlackBotFlow,
     WorkbenchFlow,
     AuthConfigFlow,
     WhiteLabelFlow,
