@@ -18,6 +18,14 @@ import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
  */
 const HIDDEN_TAGS: ReadonlySet<string> = HIDDEN_API_TAGS;
 
+/**
+ * Display-title overrides for API-reference tags whose upstream OpenAPI tag
+ * name is stale or off-brand. Keyed by tag slug.
+ */
+const TITLE_OVERRIDES: Record<string, string> = {
+  'tool-router': 'Sessions (prev Tool Router)',
+};
+
 interface OpenAPIOperation {
   summary?: string;
   tags?: string[];
@@ -147,6 +155,9 @@ function generateIndexPages() {
     }
 
     const tagDescription = tagDescriptions[tagName] || `${tagName} API endpoints`;
+    // Display-title overrides for tags whose OpenAPI name is stale (e.g. the
+    // tool router is now Sessions). Keyed by slug.
+    const displayTitle = TITLE_OVERRIDES[tagSlug] ?? tagName;
     const overview = readOverview(tagSlug);
     // Body above the endpoints table: hand-written overview when present,
     // otherwise the thin OpenAPI tag description.
@@ -174,7 +185,7 @@ function generateIndexPages() {
       });
 
       const content = `---
-title: ${tagName}
+title: ${displayTitle}
 description: "${tagDescription}"
 ---
 
@@ -204,7 +215,7 @@ ${body}
       }));
 
       const v3Content = `---
-title: ${tagName}
+title: ${displayTitle}
 description: "${tagDescription}"
 ---
 
