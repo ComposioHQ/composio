@@ -171,7 +171,7 @@ async function handleAuthLinks<T>(session, event: IncomingTriggerPayload, value:
     for (const url of links) {
       await session.execute('SLACKBOT_SEND_MESSAGE', {
         channel: dm,
-        text: \`*Connection needed* — approve access and I'll continue automatically:\\n<\${url}|Connect>\`,
+        text: \`*Connection needed.* Approve access and I'll continue automatically:\\n<\${url}|Connect>\`,
       });
     }
   }
@@ -284,7 +284,7 @@ const BOT_STAGES: { title: string; description: string; parts: string[] }[] = [
   {
     title: 'A basic agent',
     description:
-      'Start from scratch. The smallest possible agent: create a session for a user, hand the Pi provider the session so it can search and execute, run a prompt. This already works against every app that user has connected — no Slack yet.',
+      'Start from scratch. The smallest possible agent: create a session for a user, hand the Pi provider the session so it can search and execute, run a prompt. This already works against every app that user has connected, with no Slack yet.',
     parts: [head1, runPi, runAgent],
   },
   {

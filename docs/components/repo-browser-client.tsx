@@ -2,6 +2,7 @@
 
 import { FileTree, useFileTree, useFileTreeSelection } from '@pierre/trees/react';
 import { File } from '@pierre/diffs/react';
+import { CopyButton } from './copy-button';
 
 export interface RepoFile {
   path: string;
@@ -28,7 +29,8 @@ export function RepoBrowserClient({ files }: { files: RepoFile[] }) {
       <div className="max-h-[640px] overflow-auto border-b border-fd-border p-2 md:border-b-0 md:border-r">
         <FileTree model={model} />
       </div>
-      <div className="max-h-[640px] overflow-auto">
+      <div className="relative max-h-[640px] overflow-auto">
+        <CopyButton text={file.contents} label="Copy file" className="absolute right-2 top-1.5 z-10" />
         <File
           key={file.path}
           file={{ name: file.path, contents: file.contents }}

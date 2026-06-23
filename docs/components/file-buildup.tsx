@@ -4,45 +4,93 @@ import { preloadFileDiff } from '@pierre/diffs/ssr';
 import { DiffView } from './diff-view';
 import { FILE_BUILDS } from '@/lib/slack-bot-build';
 
+async function diffFor(file: string, prev: string, code: string) {
+  const fileDiff = getSingularPatch(createPatch(file, prev, code, '', ''));
+  const { prerenderedHTML } = await preloadFileDiff({ fileDiff, options: { diffStyle: 'unified' } });
+  return { fileDiff, prerenderedHTML };
+}
+
+function StepCard({
+  n,
+  title,
+  file,
+  description,
+  fileDiff,
+  prerenderedHTML,
+  code,
+}: {
+  n: number;
+  title: string;
+  file: string;
+  description?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fileDiff: any;
+  prerenderedHTML: string;
+  code: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-sm border border-fd-border bg-fd-background">
+      <div className="flex items-center gap-2.5 border-b border-fd-border px-3 py-2">
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-[var(--composio-brand)]/10 font-mono text-[11px] font-medium text-[var(--composio-brand)]">
+          {n}
+        </span>
+        <span className="text-[13px] font-medium text-fd-foreground">{title}</span>
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">{file}</span>
+      </div>
+      {description ? <p className="px-3 pt-2.5 text-[13px] leading-snug text-fd-foreground/65">{description}</p> : null}
+      <div className="p-3">
+        <DiffView fileDiff={fileDiff} prerenderedHTML={prerenderedHTML} code={code} />
+      </div>
+    </div>
+  );
+}
+
 /**
  * FileBuildup — renders one of the example's files growing a piece at a time.
- * Each step is a diff against the previous stage (powered by @pierre/diffs), so
- * the reader watches exactly what each concept adds, ending in the full file.
+ * Each step is a diff against the previous stage (powered by @pierre/diffs).
  *
- * Async server component: diff metadata and prerendered HTML are computed at
- * build/request time; the client only hydrates an already-correct diff.
+ * Pass `step` (1-indexed) to render just that one step's diff, so the prose for
+ * a concept can sit right next to the code that adds it. Without `step`, renders
+ * every step with its built-in description.
  */
-export async function FileBuildup({ name }: { name: keyof typeof FILE_BUILDS }) {
+export async function FileBuildup({ name, step }: { name: keyof typeof FILE_BUILDS; step?: number }) {
   const build = FILE_BUILDS[name];
+
+  if (typeof step === 'number') {
+    const i = step - 1;
+    const stage = build.stages[i];
+    if (!stage) return null;
+    const prev = i > 0 ? build.stages[i - 1].code : '';
+    const { fileDiff, prerenderedHTML } = await diffFor(build.file, prev, stage.code);
+    // The heading above and the diff's own filename header already name it, so
+    // render just the diff with no extra card chrome.
+    return (
+      <div className="not-prose my-6">
+        <DiffView fileDiff={fileDiff} prerenderedHTML={prerenderedHTML} code={stage.code} />
+      </div>
+    );
+  }
 
   const steps = [];
   let prev = '';
   for (const stage of build.stages) {
-    const patch = createPatch(build.file, prev, stage.code, '', '');
-    const fileDiff = getSingularPatch(patch);
-    const { prerenderedHTML } = await preloadFileDiff({ fileDiff, options: { diffStyle: 'unified' } });
-    steps.push({ ...stage, fileDiff, prerenderedHTML });
+    steps.push({ ...stage, ...(await diffFor(build.file, prev, stage.code)) });
     prev = stage.code;
   }
 
   return (
     <div className="not-prose my-6 flex flex-col gap-5">
-      {steps.map((step, i) => (
-        <div key={step.title} className="overflow-hidden rounded-sm border border-fd-border bg-fd-background">
-          <div className="flex items-center gap-2.5 border-b border-fd-border px-3 py-2">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-[var(--composio-brand)]/10 font-mono text-[11px] font-medium text-[var(--composio-brand)]">
-              {i + 1}
-            </span>
-            <span className="text-[13px] font-medium text-fd-foreground">{step.title}</span>
-            <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">
-              {build.file}
-            </span>
-          </div>
-          <p className="px-3 pt-2.5 text-[13px] leading-snug text-fd-foreground/65">{step.description}</p>
-          <div className="p-3">
-            <DiffView fileDiff={step.fileDiff} prerenderedHTML={step.prerenderedHTML} />
-          </div>
-        </div>
+      {steps.map((s, i) => (
+        <StepCard
+          key={s.title}
+          n={i + 1}
+          title={s.title}
+          file={build.file}
+          description={s.description}
+          fileDiff={s.fileDiff}
+          prerenderedHTML={s.prerenderedHTML}
+          code={s.code}
+        />
       ))}
     </div>
   );

@@ -51,18 +51,43 @@ A webhook subscription is the *pipe*; each trigger is a *tap*. Together they str
 
 ## Build the bot
 
-Now `bot.ts`. It starts as a bare three-line agent and grows into the server, one Composio concept per step. The diffs below are exactly what each concept adds.
+`bot.ts` starts as a bare three-line agent and grows into the server, one Composio concept at a time. Each diff below is exactly what that concept adds.
 
-A few things carry the weight, so it's worth knowing what to watch for:
+### Start with a basic agent
 
-- **A [session](/docs/configuring-sessions) per user.** Each Slack thread gets its own session keyed to the Slack user. When Alice asks the bot to open a GitHub issue, it opens as *Alice*, against her GitHub connection, with her permissions. Reusing the session across a thread is what gives the agent memory.
-- **One shared Slack connection.** By default a connected account is **PRIVATE** — only its creator can use it. The install authorized the Slack connection as **SHARED** and opened its ACL, so you can **pin** it into anyone's session. Alice's session then has *her* GitHub connection but *the workspace's* Slack connection: it posts as the bot, acts elsewhere as Alice.
-- **Redirected auth links.** When the agent reaches for an app the user hasn't connected, the tool result contains a one-time Composio connect URL. You never want that in the channel or in the model's context. The bot extracts it, **redacts** it from the tool output, DMs it to the user privately, and — because the session was created with `manageConnections` + `waitForConnections` — the run picks back up the moment they approve.
-- **The proxy for the gaps.** Most Slack actions are `SLACKBOT_*` tools. The few that aren't (the typing indicator, opening a DM channel) drop down to `session.proxyExecute`, which calls the Slack Web API with the pinned connection's auth.
+The whole idea, before any Slack: create a session for a user, hand the Pi provider the session so it can search and execute, and run a prompt. This already acts across every app that user has connected.
 
-<FileBuildup name="bot" />
+<FileBuildup name="bot" step={1} />
 
-That's the whole server. The final `Bun.serve` verifies each trigger's signature with `composio.triggers.verifyWebhook`, then hands the normalized payload to `handleSlackMessage` off the response path so Slack and Composio don't retry a slow handler.
+### Put it in a Slack thread
+
+Turn the one-shot agent into a handler. Each Slack thread gets its own [session](/docs/configuring-sessions), reused so the agent keeps context, and the reply goes back with the `SLACKBOT_SEND_MESSAGE` tool. The session is keyed to the Slack user, so when Alice asks for a GitHub issue it opens as *Alice*, against her GitHub connection.
+
+<FileBuildup name="bot" step={2} />
+
+### Share one workspace connection
+
+By default a connected account is **PRIVATE**: only its creator can use it. The install authorized the Slack connection as **SHARED**, so you pin it into every session. Now Alice's session has *her* GitHub connection but *the workspace's* Slack connection. It posts as the bot, and acts everywhere else as Alice.
+
+<FileBuildup name="bot" step={3} />
+
+### Reach the gaps with the proxy
+
+Most Slack actions are `SLACKBOT_*` tools. The few that aren't, like the typing indicator and opening a DM channel, drop down to `session.proxyExecute`, which calls the Slack Web API with the pinned connection's auth so you never touch a token.
+
+<FileBuildup name="bot" step={4} />
+
+### Redirect auth links
+
+The payoff. When the agent reaches for an app the user hasn't connected, the tool result carries a one-time Composio connect URL. You never want it in the channel or in the model's context. The bot extracts it, **redacts** it from the tool output, DMs it to the user privately, and the run resumes the moment they approve, because the session was created with `waitForConnections`.
+
+<FileBuildup name="bot" step={5} />
+
+### Serve the webhook
+
+Verify each trigger's signature with `composio.triggers.verifyWebhook`, then hand the payload to `handleSlackMessage` off the response path so a slow handler doesn't get retried. That's the whole server.
+
+<FileBuildup name="bot" step={6} />
 
 ## The whole project
 
