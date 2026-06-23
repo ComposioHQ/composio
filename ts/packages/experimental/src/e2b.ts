@@ -3,12 +3,8 @@ import type {
   SandboxExecutionResult,
   SandboxProvider,
   SandboxProvisionContext,
-} from './types';
-import {
-  COMPOSIO_WORKBENCH_HELPER_PATH,
-  experimental_createWorkbenchEnv,
-  experimental_createWorkbenchHelperSource,
-} from './shim';
+} from '@composio/core/experimental';
+import { experimental_createWorkbenchEnv } from '@composio/core/experimental';
 
 export interface E2BSandboxOptions {
   apiKey?: string;
@@ -80,16 +76,6 @@ export function experimental_e2bSandbox(opts: E2BSandboxOptions = {}): SandboxPr
           ...compactRecord(ctx.env ?? {}),
         },
       })) as E2BHandle;
-      try {
-        await this.writeFile(
-          sandbox,
-          COMPOSIO_WORKBENCH_HELPER_PATH,
-          experimental_createWorkbenchHelperSource()
-        );
-      } catch (error) {
-        await this.teardown(sandbox);
-        throw error;
-      }
       return sandbox;
     },
     async exec(handle: E2BHandle, code: string, execOpts?: SandboxExecutionOptions) {

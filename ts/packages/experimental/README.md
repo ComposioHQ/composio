@@ -1,6 +1,6 @@
 # @composio/experimental
 
-Experimental Composio SDK capabilities that are useful before they are stable enough for core.
+Optional adapters for experimental Composio SDK capabilities.
 
 ## BYO / Local Workbench
 
@@ -8,10 +8,8 @@ The local workbench lets you run Composio workbench code on your own sandbox pro
 
 ```ts
 import { Composio } from '@composio/core';
-import {
-  experimental_createLocalWorkbenchSession,
-  experimental_e2bSandbox,
-} from '@composio/experimental';
+import { experimental_createLocalWorkbenchSession } from '@composio/core/experimental';
+import { experimental_e2bSandbox } from '@composio/experimental';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
@@ -32,10 +30,40 @@ The injected helper exposes `runComposioTool(slug, args)` inside the sandbox and
 
 ## V0 Scope
 
-This is a provider-agnostic SDK surface with E2B as the first adapter. Other sandbox providers can implement `SandboxProvider` with the same `provision`, `exec`, `runBash`, `writeFile`, and `teardown` contract.
+The provider-agnostic SDK surface lives in `@composio/core/experimental`; this package supplies optional provider adapters. Other sandbox providers can implement `SandboxProvider` with the same `provision`, `exec`, `runBash`, `writeFile`, and `teardown` contract.
+
+```ts
+import type { SandboxProvider } from '@composio/core/experimental';
+
+export function mySandboxProvider(): SandboxProvider<MySandboxHandle> {
+  return {
+    provider: 'my-sandbox',
+    async provision(ctx) {
+      return startSandbox({
+        env: {
+          BACKEND_URL: ctx.backendUrl,
+          COMPOSIO_API_KEY: ctx.apiKey,
+        },
+      });
+    },
+    async exec(handle, code) {
+      return handle.runCode(code);
+    },
+    async runBash(handle, cmd) {
+      return handle.runCommand(cmd);
+    },
+    async writeFile(handle, path, content) {
+      await handle.files.write(path, content);
+    },
+    async teardown(handle) {
+      await handle.stop();
+    },
+  };
+}
+```
 
 Local workbench v0 covers sandbox provisioning, code execution, file writes, teardown, and TypeScript `runComposioTool` calls through Tool Router `/execute`. It is not yet full remote workbench parity: Python helpers, `invoke_llm`, cloud file persistence, notebook persistence, checkpoints, and server-side workbench lifecycle controls remain follow-ups.
 
 ## Status: Experimental — API may change
 
-This package follows the `experimental_` export convention. APIs may change without the same stability guarantees as `@composio/core`.
+This package and the `@composio/core/experimental` exports follow the `experimental_` export convention. APIs may change without the same stability guarantees as stable `@composio/core` exports.

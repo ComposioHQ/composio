@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { experimental_e2bSandbox } from '../src';
+import { experimental_createLocalWorkbenchSession, experimental_e2bSandbox } from '../src';
 
 const createMock = vi.fn();
 const writeMock = vi.fn();
@@ -53,17 +53,32 @@ describe('experimental_e2bSandbox', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const provider = experimental_e2bSandbox({ apiKey: 'e2b_key' });
-    const handle = await provider.provision({
-      sessionId: 'session_123',
-      backendUrl: 'https://backend.test',
-      apiKey: 'project_key',
-    });
+    const composio = {
+      create: vi.fn().mockResolvedValue({
+        sessionId: 'session_123',
+        update: vi.fn(),
+      }),
+      getConfig: vi.fn().mockReturnValue({
+        apiKey: 'project_key',
+        baseURL: 'https://backend.test',
+      }),
+    };
+    const workbench = await experimental_createLocalWorkbenchSession(
+      composio as never,
+      'user_123',
+      {
+        toolkits: ['github'],
+        workbench: {
+          enable: true,
+          experimentalProvider: provider,
+        },
+      }
+    );
 
     expect(createMock).toHaveBeenCalledWith({
       apiKey: 'e2b_key',
       envs: {
         BACKEND_URL: 'https://backend.test',
-        COMPOSIO_TOOLROUTER_SESSION_ID: 'session_123',
         COMPOSIO_API_KEY: 'project_key',
       },
     });
@@ -74,7 +89,7 @@ describe('experimental_e2bSandbox', () => {
     );
 
     const result = await provider.exec(
-      handle,
+      workbench.sandbox,
       "import { runComposioTool } from '/tmp/composio-tools.ts'; await runComposioTool('GITHUB_GET_REPO', {});"
     );
 
@@ -91,18 +106,26 @@ describe('experimental_e2bSandbox', () => {
     expect(fetchMock.mock.calls[0]?.[1].headers).not.toHaveProperty('x-session-access-key');
   });
 
-  it('tears down the e2b sandbox when helper injection fails', async () => {
-    writeMock.mockRejectedValueOnce(new Error('write failed'));
-
+  it('does not create a Tool Router session when e2b provisioning fails', async () => {
+    createMock.mockRejectedValueOnce(new Error('provision failed'));
     const provider = experimental_e2bSandbox({ apiKey: 'e2b_key' });
+    const composio = {
+      create: vi.fn(),
+      getConfig: vi.fn().mockReturnValue({
+        apiKey: 'project_key',
+        baseURL: 'https://backend.test',
+      }),
+    };
 
     await expect(
-      provider.provision({
-        sessionId: 'session_123',
-        backendUrl: 'https://backend.test',
-        apiKey: 'project_key',
+      experimental_createLocalWorkbenchSession(composio as never, 'user_123', {
+        toolkits: ['github'],
+        workbench: {
+          enable: true,
+          experimentalProvider: provider,
+        },
       })
-    ).rejects.toThrow('write failed');
-    expect(killMock).toHaveBeenCalledTimes(1);
+    ).rejects.toThrow('provision failed');
+    expect(composio.create).not.toHaveBeenCalled();
   });
 });
