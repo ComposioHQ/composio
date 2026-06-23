@@ -19,7 +19,8 @@ import { useI18n } from 'fumadocs-ui/contexts/i18n';
 import { useDocsSearch } from 'fumadocs-core/search/client';
 import type { BaseIndex } from 'fumadocs-core/search/algolia';
 import { BotMessageSquare } from 'lucide-react';
-import { toggleDecimalWidget, detectMac } from './ask-ai-button';
+import { detectMac } from './ask-ai-button';
+import { toggleEveChat } from './eve-chat-store';
 
 function MetaKey() {
   const [key, setKey] = useState('⌘');
@@ -275,7 +276,7 @@ export default function CustomSearchDialog({
             className="inline-flex items-center gap-1.5 text-xs text-[var(--composio-orange)] hover:text-[var(--composio-orange)]/80 transition-colors"
             onClick={() => {
               props.onOpenChange(false);
-              void toggleDecimalWidget();
+              toggleEveChat();
             }}
           >
             <BotMessageSquare className="size-3.5" />
