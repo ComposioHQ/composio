@@ -3,6 +3,9 @@
 Drop the "bring your own Slack bot" screenshots here. The example page references
 these exact filenames (PNG, ~1200px wide; redact any secrets):
 
+Bot identity:
+- `bot-avatar.png`            — the bot's profile picture (shown in the intro)
+
 Slack side:
 - `create-app.png`            — Slack "Name app & choose workspace" modal (From scratch)
 - `bot-scopes.png`            — OAuth & Permissions, Bot Token Scopes being added
