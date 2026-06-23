@@ -19,7 +19,10 @@
     "test:integration": "bun test tests/integration/ --timeout 30000"
   },
   "dependencies": {
+    "@pierre/diffs": "^1.2.11",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@shikijs/langs": "^4.2.0",
+    "@shikijs/themes": "^4.2.0",
     "@shikijs/twoslash": "^3.21.0",
     "@vercel/analytics": "^1.6.1",
     "algoliasearch": "^5",
