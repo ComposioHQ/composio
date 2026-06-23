@@ -186,11 +186,6 @@ export interface PiConnectionHandlers<TState = unknown, TAuthorizeResult = unkno
     state: TState,
     context: { toolkit: string; request: PiConnectionManagementContext }
   ) => boolean;
-  /** Format the final connection-management result returned to the model. */
-  formatConnectionResult?: (
-    result: PiConnectionManagementResult<TState, TAuthorizeResult>,
-    context: PiConnectionManagementContext
-  ) => unknown | Promise<unknown>;
 }
 
 export type PiBeforeSearchResult =
@@ -198,6 +193,14 @@ export type PiBeforeSearchResult =
       action: 'search';
       query?: string;
       toolkits?: string[];
+    }
+  | { action: 'deny'; result: unknown };
+
+export type PiBeforeManageConnectionsResult =
+  | {
+      action: 'manage_connection';
+      toolkits?: string[];
+      reinitiateAll?: boolean;
     }
   | { action: 'deny'; result: unknown };
 
@@ -213,13 +216,29 @@ export type PiBeforeExecuteResult =
   | { action: 'deny'; result: unknown }
   | { action: 'manage_connection'; toolkits: string[]; reinitiateAll?: boolean };
 
-export interface PiSessionPolicy {
+export interface PiSessionHooks {
   /** Intercept search before calling the underlying Composio search capability. */
   beforeSearch?: (params: {
     query: string;
     toolkits?: string[];
     context: PiSearchContext;
   }) => PiBeforeSearchResult | Promise<PiBeforeSearchResult | undefined> | undefined;
+  /** Transform the search result before it is returned to Pi. */
+  afterSearch?: (params: {
+    query: string;
+    toolkits?: string[];
+    result: unknown;
+    context: PiSearchContext;
+  }) => unknown | Promise<unknown>;
+  /** Intercept connection management before checking state or initiating auth. */
+  beforeManageConnections?: (params: {
+    toolkits: string[];
+    reinitiateAll: boolean;
+    context: PiConnectionManagementContext;
+  }) =>
+    | PiBeforeManageConnectionsResult
+    | Promise<PiBeforeManageConnectionsResult | undefined>
+    | undefined;
   /** Intercept execution before calling the underlying Composio session/capability. */
   beforeExecute?: (params: {
     toolSlug: string;
@@ -227,11 +246,21 @@ export interface PiSessionPolicy {
     account?: string;
     context: PiExecuteContext;
   }) => PiBeforeExecuteResult | Promise<PiBeforeExecuteResult | undefined> | undefined;
-}
-
-export interface PiAuthLinks {
+  /** Transform the execution result before it is returned to Pi. */
+  afterExecute?: (params: {
+    toolSlug: string;
+    args: Record<string, unknown>;
+    account?: string;
+    result: unknown;
+    context: PiExecuteContext;
+  }) => unknown | Promise<unknown>;
+  /** Transform the connection-management result before it is returned to Pi. */
+  afterManageConnections?: (params: {
+    result: PiConnectionManagementResult;
+    context: PiConnectionManagementContext;
+  }) => unknown | Promise<unknown>;
   /** First-class auth-link hook for embedded apps that DM/redact/resume connection flows. */
-  handle?: (context: PiAuthLinkContext) => Promise<void> | void;
+  onAuthLink?: (context: PiAuthLinkContext) => Promise<void> | void;
 }
 
 export interface PiSessionToolCapabilities extends PiSessionToolOptions {
@@ -240,8 +269,7 @@ export interface PiSessionToolCapabilities extends PiSessionToolOptions {
   search: PiSearchHandler;
   execute: PiExecuteHandler;
   connections?: PiConnectionHandlers;
-  policy?: PiSessionPolicy;
-  authLinks?: PiAuthLinks;
+  hooks?: PiSessionHooks;
 }
 
 export type PiConnectionToolkitResult<TState = unknown, TAuthorizeResult = unknown> = {
@@ -446,7 +474,7 @@ const applyAuthLinkHandlers = async (
   const links = extractComposioConnectLinks(value);
   for (const url of links) {
     const linkContext: PiAuthLinkContext = { ...context, url };
-    await capabilities.authLinks?.handle?.(linkContext);
+    await capabilities.hooks?.onAuthLink?.(linkContext);
   }
   return links;
 };
@@ -475,8 +503,7 @@ const isCapabilityInput = (
   value: PiComposioSessionLike | PiSessionToolCapabilities
 ): value is PiSessionToolCapabilities =>
   'connections' in value ||
-  'policy' in value ||
-  'authLinks' in value ||
+  'hooks' in value ||
   'includeWorkbenchTools' in value ||
   'names' in value;
 
@@ -568,9 +595,9 @@ export class PiProvider extends BaseAgenticProvider<
   /**
    * Create Slack-bot-style dynamic Composio helpers.
    *
-   * Prefer passing capabilities (`search`, `execute`, `connections`, `policy`,
-   * `authLinks`) so app code owns auth, policy, and shared/service-session
-   * routing. Passing a native Tool Router session is also supported; connection
+   * Prefer passing capabilities (`search`, `execute`, `connections`, `hooks`)
+   * so app code owns auth, interception, and shared/service-session routing.
+   * Passing a native Tool Router session is also supported; connection
    * management uses `session.toolkits()` + `session.authorize()` when present
    * and never executes `COMPOSIO_MANAGE_CONNECTIONS` internally.
    */
@@ -601,23 +628,56 @@ export class PiProvider extends BaseAgenticProvider<
       originalRequest: unknown,
       toolkits: string[],
       reinitiateAll = false
-    ): Promise<{ value: unknown; authLinks: string[]; context: PiConnectionManagementContext }> => {
-      const connectionContext: PiConnectionManagementContext = {
+    ): Promise<{
+      value: unknown;
+      authLinks: string[];
+      context: PiConnectionManagementContext;
+      denied?: boolean;
+    }> => {
+      const initialConnectionContext: PiConnectionManagementContext = {
         ...buildBaseContext(toolCallId, names.manageConnections, originalRequest),
         requestedToolkits: toolkits,
         callbackUrl: capabilities.callbackUrl,
         reinitiateAll,
       };
 
-      const statesRaw = await capabilities.connections?.getToolkitStates?.(
+      const decision = await capabilities.hooks?.beforeManageConnections?.({
         toolkits,
+        reinitiateAll,
+        context: initialConnectionContext,
+      });
+      if (decision?.action === 'deny') {
+        return {
+          value: decision.result,
+          authLinks: [],
+          context: initialConnectionContext,
+          denied: true,
+        };
+      }
+
+      const requestedToolkits =
+        decision?.action === 'manage_connection' && decision.toolkits
+          ? (normalizeToolkits(decision.toolkits) ?? [])
+          : toolkits;
+      const shouldReinitiateAll =
+        decision?.action === 'manage_connection'
+          ? (decision.reinitiateAll ?? reinitiateAll)
+          : reinitiateAll;
+      const connectionContext: PiConnectionManagementContext = {
+        ...initialConnectionContext,
+        requestedToolkits,
+        reinitiateAll: shouldReinitiateAll,
+      };
+
+      const statesRaw = await capabilities.connections?.getToolkitStates?.(
+        requestedToolkits,
         connectionContext
       );
-      const states = normalizeToolkitStateMap(statesRaw, toolkits);
+      const states = normalizeToolkitStateMap(statesRaw, requestedToolkits);
       const results: Record<string, PiConnectionToolkitResult> = {};
       const authLinks: string[] = [];
 
-      for (const toolkit of toolkits) {
+      for (const toolkit of requestedToolkits) {
         const state = states.get(toolkit.toLowerCase());
         const connected = state
           ? (capabilities.connections?.isConnected?.(state, {
@@ -626,7 +686,7 @@ export class PiProvider extends BaseAgenticProvider<
             }) ?? defaultIsToolkitConnected(state))
           : false;
 
-        if (connected && !reinitiateAll) {
+        if (connected && !shouldReinitiateAll) {
           results[toolkit] = {
             toolkit,
             connected: true,
@@ -650,7 +710,7 @@ export class PiProvider extends BaseAgenticProvider<
           toolkit,
           {
             callbackUrl: capabilities.callbackUrl,
-            reinitiate: reinitiateAll,
+            reinitiate: shouldReinitiateAll,
           },
           connectionContext
         );
@@ -671,8 +731,11 @@ export class PiProvider extends BaseAgenticProvider<
       }
 
       const defaultResult = formatDefaultConnectionResult(results);
-      const value = capabilities.connections?.formatConnectionResult
-        ? await capabilities.connections.formatConnectionResult(defaultResult, connectionContext)
+      const value = capabilities.hooks?.afterManageConnections
+        ? await capabilities.hooks.afterManageConnections({
+            result: defaultResult,
+            context: connectionContext,
+          })
         : defaultResult;
 
       return { value, authLinks, context: connectionContext };
@@ -700,7 +763,7 @@ export class PiProvider extends BaseAgenticProvider<
         account,
       };
 
-      const decision = await capabilities.policy?.beforeExecute?.({
+      const decision = await capabilities.hooks?.beforeExecute?.({
         toolSlug,
         args,
         account,
@@ -754,7 +817,16 @@ export class PiProvider extends BaseAgenticProvider<
         ...finalContext,
         result: value,
       });
-      return { value, authLinks, context: finalContext };
+      const finalValue = capabilities.hooks?.afterExecute
+        ? await capabilities.hooks.afterExecute({
+            toolSlug: finalToolSlug,
+            args: finalArgs,
+            account: finalAccount,
+            result: value,
+            context: finalContext,
+          })
+        : value;
+      return { value: finalValue, authLinks, context: finalContext };
     };
 
     const searchTools = defineTool({
@@ -783,7 +855,7 @@ export class PiProvider extends BaseAgenticProvider<
             query: params.query,
             requestedToolkits,
           };
-          const searchDecision = await capabilities.policy?.beforeSearch?.({
+          const searchDecision = await capabilities.hooks?.beforeSearch?.({
             query: params.query,
             toolkits: requestedToolkits,
             context: searchContext,
@@ -803,22 +875,31 @@ export class PiProvider extends BaseAgenticProvider<
             searchDecision?.action === 'search' && 'toolkits' in searchDecision
               ? normalizeToolkits(searchDecision.toolkits)
               : requestedToolkits;
+          const finalSearchContext = { ...searchContext, query, requestedToolkits: toolkits };
           const value = await capabilities.search(
             {
               query,
               ...(toolkits ? { toolkits } : {}),
             },
-            { ...searchContext, query, requestedToolkits: toolkits }
+            finalSearchContext
           );
           const authLinks = await applyAuthLinkHandlers(capabilities, value, {
-            ...searchContext,
+            ...finalSearchContext,
             result: value,
           });
+          const hookedValue = capabilities.hooks?.afterSearch
+            ? await capabilities.hooks.afterSearch({
+                query,
+                toolkits,
+                result: value,
+                context: finalSearchContext,
+              })
+            : value;
           const transformed = await maybeTransform(capabilities, {
             tool: 'search',
             requestedToolkits: toolkits,
-            value,
-            context: searchContext,
+            value: hookedValue,
+            context: finalSearchContext,
           });
           return toPiResult(transformed, formatter, { slug: names.search, authLinks });
         } catch (error) {
@@ -866,6 +947,7 @@ export class PiProvider extends BaseAgenticProvider<
           return toPiResult(transformed, formatter, {
             slug: names.manageConnections,
             authLinks: managed.authLinks,
+            denied: managed.denied,
           });
         } catch (error) {
           if (!catchErrors) throw error;

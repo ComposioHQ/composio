@@ -190,7 +190,7 @@ describe('PiProvider', () => {
         authorizeToolkit: (toolkit: string, options: unknown) =>
           session.authorize(toolkit, options),
       },
-      authLinks: { handle: handleAuthLink },
+      hooks: { onAuthLink: handleAuthLink },
       callbackUrl: 'https://example.com/callback',
     });
 
@@ -222,7 +222,7 @@ describe('PiProvider', () => {
     expect((result.content[0] as { text: string } | undefined)?.text).toContain('auth_initiated');
   });
 
-  it('applies search and execute policy hooks', async () => {
+  it('applies search and execute hooks', async () => {
     const search = vi.fn(async () => ({ results: [{ tool: 'SLACKBOT_SEND_MESSAGE' }] }));
     const execute = vi.fn(async (toolSlug: string, args: Record<string, unknown>) => ({
       successful: true,
@@ -233,7 +233,7 @@ describe('PiProvider', () => {
     const tools = provider.createSessionTools({
       search,
       execute,
-      policy: {
+      hooks: {
         beforeSearch: ({ toolkits }) => ({
           action: 'search',
           toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),

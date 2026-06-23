@@ -41,7 +41,7 @@ await session.prompt('Create a GitHub issue for the failing test.');
 
 ## Dynamic session helpers
 
-Use this when Pi should search and execute tools dynamically inside one Tool Router session. Prefer the capability form so your app owns connection management, auth-link routing, and execute policy.
+Use this when Pi should search and execute tools dynamically inside one Tool Router session. Prefer the capability form so your app owns connection management and uses one Pi-style `hooks` object for interception/result transforms.
 
 ```ts
 import { Composio } from '@composio/core';
@@ -73,7 +73,7 @@ const composioTools = provider.createSessionTools({
     authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
     isConnected: state => state.connection?.isActive === true,
   },
-  policy: {
+  hooks: {
     beforeSearch: ({ toolkits }) => ({
       action: 'search',
       toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
@@ -84,9 +84,7 @@ const composioTools = provider.createSessionTools({
       }
       return { action: 'execute', toolSlug, args };
     },
-  },
-  authLinks: {
-    handle: async ({ url, toolkit }) => {
+    onAuthLink: async ({ url, toolkit }) => {
       // DM the user, store the continuation, or redact public output.
       await sendConnectionLinkToUser({ url, toolkit });
     },
@@ -133,9 +131,23 @@ The dynamic helpers are:
 
 Workbench helpers are opt-in because the Tool Router session must be created with workbench enabled.
 
+## Hooks
+
+`hooks` follows Pi's extension-event style: `before*` hooks can rewrite or deny work before it runs, `after*` hooks can transform results, and `onAuthLink` is a side-effect hook for connection URLs.
+
+Available hooks:
+
+- `beforeSearch` — rewrite the query/toolkit filters, or deny search.
+- `afterSearch` — transform search output before Pi sees it.
+- `beforeManageConnections` — rewrite requested toolkits, force reauth, or deny connection management.
+- `afterManageConnections` — transform the aggregate connection-management output.
+- `beforeExecute` — block/rewrite tools, route to another session/execute handler, or return `manage_connection`.
+- `afterExecute` — transform execution output.
+- `onAuthLink` — send/redact/resume auth links out-of-band.
+
 ## Auth link handling
 
-Embedded agents often need to keep Composio connection URLs out of the public transcript. Use the first-class `authLinks.handle()` hook for side effects and `transformResult` for redaction:
+Embedded agents often need to keep Composio connection URLs out of the public transcript. Use the first-class `hooks.onAuthLink()` hook for side effects and `transformResult` for redaction:
 
 ```ts
 import { extractComposioConnectLinks } from '@composio/experimental';
@@ -147,8 +159,8 @@ const tools = provider.createSessionTools({
     getToolkitStates: toolkits => composioSession.toolkits({ toolkits }),
     authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
   },
-  authLinks: {
-    handle: async ({ url, toolkit }) => {
+  hooks: {
+    onAuthLink: async ({ url, toolkit }) => {
       await sendConnectionLinkToUser({ url, toolkit });
     },
   },
