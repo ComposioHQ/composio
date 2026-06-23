@@ -120,13 +120,7 @@ In the Composio dashboard, update your auth config to use your custom redirect U
 
 Here's how the redirect flow works. Your proxy just forwards the browser redirect to Composio. It never touches the authorization code or token.
 
-```mermaid
-flowchart TD
-    A[Your App] -->|User connects| B["OAuth toolkit (e.g. Google, GitHub)"]
-    B -->|Redirects user| C[yourdomain.com]
-    C -->|Forwards redirect| D[backend.composio.dev]
-    D -.->|Redirects back| A
-```
+<WhiteLabelFlow />
 
 <Callout type="info">
 For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).

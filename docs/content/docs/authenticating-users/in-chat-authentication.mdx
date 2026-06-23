@@ -4,17 +4,17 @@ description: Let your agent prompt users to connect accounts during conversation
 keywords: [automatic auth, dynamic auth, agent prompts]
 ---
 
-In-chat authentication lets your agent prompt users to connect accounts during chat. When a tool requires authentication, the agent returns a Connect Link URL. The user authenticates, confirms in chat, and the agent retries. For an overview of all auth approaches, see [Authentication](/docs/authentication).
+In-chat authentication lets your agent prompt users to connect accounts mid-conversation. When a tool needs authentication, the agent returns a Connect Link URL, the user authenticates, confirms in chat, and the agent retries. For an overview of all auth approaches, see [Authentication](/docs/authentication).
 
 ## How it works
 
-1. Agent searches for tools via the `COMPOSIO_SEARCH_TOOLS` meta-tool
-2. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool checks connection status, returns Connect Link URL if needed
-3. User authenticates, confirms in chat, agent continues
+1. The agent searches for tools through the `COMPOSIO_SEARCH_TOOLS` meta-tool.
+2. The `COMPOSIO_MANAGE_CONNECTIONS` meta-tool checks connection status and returns a Connect Link URL if the toolkit isn't connected yet.
+3. The user authenticates, confirms in chat, and the agent continues.
 
 ## Configuration
 
-By just creating a session with default configs, you are enabling in-chat auth. The `manage_connections` parameter defaults to `True`, which includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool automatically:
+Creating a session with default config is all it takes to enable in-chat auth. The `manage_connections` parameter defaults to `True`, which includes the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool automatically:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -174,7 +174,7 @@ readline.close();
 </Tab>
 </Tabs>
 
-What this looks like when you run the code:
+Here's what this looks like when you run the code:
 
 ```
 Assistant: What would you like me to do today? Type 'exit' to end the conversation.

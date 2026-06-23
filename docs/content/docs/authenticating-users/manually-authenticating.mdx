@@ -4,13 +4,13 @@ description: Authenticate users to toolkits outside of chat
 keywords: [pre-auth, onboarding, custom ui, authorize]
 ---
 
-Manual authentication lets you connect users to toolkits outside of the chat flow. Use this when you want to:
-- Pre-authenticate users before they start chatting
-- Build a custom connections UI in your app
+Manual authentication lets you connect users to toolkits outside the chat flow. Reach for it when you want to:
+- Pre-authenticate users before they start chatting.
+- Build a custom connections UI in your app.
 
 ## Authorize a toolkit
 
-Use `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to complete:
+Call `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link) URL, redirect the user, and wait for them to finish:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -44,7 +44,7 @@ console.log(`Connected: ${connectedAccount.id}`);
 </Tab>
 </Tabs>
 
-Redirect the user to the redirect URL. After they authenticate, they'll return to your callback URL. The connection request polls until the user completes authentication (default timeout: 60 seconds).
+Redirect the user to the `redirectUrl`. After they authenticate, they'll return to your callback URL. The connection request polls until the user completes authentication (default timeout: 60 seconds).
 
 <Callout type="info">
 If the user closes the Connect Link without completing auth, the connection remains in `INITIATED` status until it expires.
@@ -52,7 +52,7 @@ If the user closes the Connect Link without completing auth, the connection rema
 
 ## Redirecting users after authentication
 
-Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which user or session triggered the connection.
+Pass a `callbackUrl` to control where users land after authenticating. You can include query parameters to carry context through the flow, for example to identify which `userID` or session triggered the connection.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -122,7 +122,7 @@ toolkits.items.forEach((toolkit) => {
 
 ## Disabling in-chat auth
 
-By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To disable this and handle auth entirely in your UI:
+By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that prompts users to authenticate during chat. To turn it off and handle auth entirely in your own UI, set `manage_connections` to `False`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -146,7 +146,6 @@ const session = await composio.create("user_123", {
 </Tabs>
 
 ## Putting it together
-
 
 A common pattern is to verify all required connections before starting the agent:
 

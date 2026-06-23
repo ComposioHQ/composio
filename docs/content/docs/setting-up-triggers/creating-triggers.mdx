@@ -12,7 +12,7 @@ Create a trigger to start receiving events. A trigger watches for a specific eve
 - A [webhook subscription](/docs/setting-up-triggers/subscribing-to-events) on the project, so events have somewhere to land
 </Callout>
 
-You can create triggers using the [SDK](#using-the-sdk) or the Composio [dashboard](#using-the-dashboard). Some webhook triggers also need a webhook endpoint configured first — covered in [Configuring the webhook endpoint](#configuring-the-webhook-endpoint) below.
+You can create triggers using the [SDK](#using-the-sdk) or the Composio [dashboard](#using-the-dashboard). Some webhook triggers also need a webhook endpoint configured first, covered in [Configuring the webhook endpoint](#configuring-the-webhook-endpoint) below.
 
 ## Configuring the webhook endpoint
 
@@ -24,24 +24,24 @@ Each OAuth app you bring gets its own ingress URL within a project:
 https://backend.composio.dev/api/v3.1/webhook_ingress/{toolkit_slug}/{we_xxx}/trigger_event
 ```
 
-A single OAuth app can serve at most one Composio project: providers accept only one callback URL per OAuth app, and each ingress URL routes to a single project. In return, every project becomes its own webhook tenant — with:
+A single OAuth app can serve at most one Composio project: providers accept only one callback URL per OAuth app, and each ingress URL routes to a single project. In return, every project becomes its own webhook tenant, with:
 
 - **Its own ingress rate limit and backpressure budget**
-- **Project-scoped credentials** — the signing secret and app-level token you provide are stored against this project alone, never shared across projects. Repeat verification handshakes are rejected after the endpoint is verified, so the signing secret can't be silently swapped by a forged challenge.
-- **Clean fan-out** — events reach only that project's trigger instances
+- **Project-scoped credentials**: the signing secret and app-level token you provide are stored against this project alone, never shared across projects. Repeat verification handshakes are rejected after the endpoint is verified, so the signing secret can't be silently swapped by a forged challenge.
+- **Clean fan-out**: events reach only that project's trigger instances
 - **Per-project metering**
 
 Every inbound event is signature-checked at ingress before any trigger fires:
 
 - **HMAC-SHA256** for Slack, **Ed25519** or shared-token matching for other providers
-- **Timestamp replay protection** — when the provider signs a request timestamp, requests outside the allowed skew window are rejected
+- **Timestamp replay protection**: when the provider signs a request timestamp, requests outside the allowed skew window are rejected
 - **Unsigned or tampered requests** are rejected with `400` at ingress, so third parties can't spoof events onto your triggers
 
 <Callout type="warn">
 **Sharing one OAuth app across projects?** Consolidate to a single project or register separate OAuth apps per project before continuing.
 </Callout>
 
-The walkthrough below uses Slack as the example and walks through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section — e.g., [Slack](/toolkits/slack), [Notion](/toolkits/notion).
+The walkthrough below uses Slack as the example and walks through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
 
 ### Step 1: Discover what credentials the endpoint needs
 
@@ -99,7 +99,7 @@ Sample response:
 }
 ```
 
-Hold on to two values from the response: `id` (used as `<ENDPOINT_ID>` below) and `webhook_url` (you'll paste this into the provider's app dashboard in step 4). The call is **idempotent per `(toolkit_slug, client_id)` within a project** — calling it again with the same pair returns the existing endpoint without rotating the URL or wiping the secret.
+Hold on to two values from the response: `id` (used as `<ENDPOINT_ID>` below) and `webhook_url` (you'll paste this into the provider's app dashboard in step 4). The call is **idempotent per `(toolkit_slug, client_id)` within a project**. Calling it again with the same pair returns the existing endpoint without rotating the URL or wiping the secret.
 
 ### Step 3: Store the credentials returned by the schema
 
@@ -119,8 +119,8 @@ curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT
 
 For Slack, the credentials come from:
 
-- **Signing secret** — Slack app → Basic Information → App Credentials → Signing Secret.
-- **App-level token** — Slack app → Basic Information → App-Level Tokens, with scope `authorizations:read`. Required for direct messages, private channels, and reactions; omit it if you only need public-channel events.
+- **Signing secret**: Slack app → Basic Information → App Credentials → Signing Secret.
+- **App-level token**: Slack app → Basic Information → App-Level Tokens, with scope `authorizations:read`. Required for direct messages, private channels, and reactions. Omit it if you only need public-channel events.
 
 <Callout type="warn">
 **Store the credentials before you switch the provider's callback URL in step 4.** If the provider posts to the URL without a secret on the endpoint, every request fails with `400`, and the provider may auto-disable the endpoint after a window of consecutive failures (Slack: ~36 hours).
@@ -133,7 +133,7 @@ Paste the `webhook_url` from step 2 into the provider's app dashboard:
 - **Slack** → Event Subscriptions → Request URL
 - **Notion** → Webhook Endpoints (in the integration's settings)
 
-For providers that issue a verification challenge on save (Slack `url_verification`, Notion's verification token, and so on), Composio responds automatically — no handshake code on your side. Once the provider accepts the URL, continue to [Using the SDK](#using-the-sdk) to create your trigger.
+For providers that issue a verification challenge on save (Slack `url_verification`, Notion's verification token, and so on), Composio responds automatically, with no handshake code on your side. Once the provider accepts the URL, continue to [Using the SDK](#using-the-sdk) to create your trigger.
 
 ### Updating an endpoint
 
@@ -155,7 +155,7 @@ curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_
   -d '{ "data": { "webhook_signing_secret": "<NEW_SECRET>", "app_token": "<NEW_APP_TOKEN>" } }'
 ```
 
-The `webhook_url` is immutable for the lifetime of the endpoint — rotating the signing secret on the provider side is a `PATCH` on the existing endpoint, not a new one.
+The `webhook_url` is immutable for the lifetime of the endpoint. Rotating the signing secret on the provider side is a `PATCH` on the existing endpoint, not a new one.
 
 To inspect a single endpoint:
 

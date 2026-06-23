@@ -4,7 +4,7 @@ description: Understand how Composio delivers event data from connected apps
 keywords: [triggers, webhooks, events, polling, webhook endpoint, concepts]
 ---
 
-When events occur in apps — a new Slack message, a GitHub commit, an incoming email — triggers send event data to your application as structured payloads.
+When events occur in apps (a new Slack message, a GitHub commit, an incoming email), triggers send event data to your application as structured payloads.
 
 <Figure src="/images/triggers-flow.svg" srcDark="/images/triggers-flow-dark.svg" alt="Triggers flow: connected apps send events to Composio, which delivers them to your webhook subscription URL via HTTP POST" caption="How triggers deliver events from apps to your application" />
 
@@ -13,17 +13,17 @@ When events occur in apps — a new Slack message, a GitHub commit, an incoming 
 | Type | What happens | Examples |
 |---|---|---|
 | **Webhook** | The provider pushes events to a Composio-issued ingress URL in real time. Composio verifies the provider's signature, processes the payload, and fans the event out to matching trigger instances. | Slack, Asana, Notion, Outlook |
-| **Polling** | Composio polls the provider on a schedule. Composio managed auth has a 15-minute minimum interval; expect that as the worst-case delay between source event and delivery. | Gmail, Google Calendar |
+| **Polling** | Composio polls the provider on a schedule. Composio-managed auth has a 15-minute minimum interval, so expect that as the worst-case delay between source event and delivery. | Gmail, Google Calendar |
 
-Composio handles ingress setup on most webhook triggers. For some webhook triggers — typically when you bring your own OAuth app — providers only deliver webhooks to URLs you've registered on the OAuth app, so you'll need to register the Composio-issued ingress URL there once for events to start flowing into Composio. See [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint).
+Composio handles ingress setup on most webhook triggers. For some webhook triggers (typically when you bring your own OAuth app), providers only deliver webhooks to URLs you've registered on the OAuth app, so you'll need to register the Composio-issued ingress URL there once for events to start flowing into Composio. See [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint).
 
 ## Working with triggers
 
 1. **Subscribe** to events so Composio knows which URL to deliver to. One-time per project.
 2. **Discover** available trigger types for a toolkit (e.g., `GITHUB_COMMIT_EVENT`).
-3. **Create** an active trigger scoped to a user's connected account — see [Creating triggers](/docs/setting-up-triggers/creating-triggers), which also covers [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint) for triggers that need it.
+3. **Create** an active trigger scoped to a user's connected account. See [Creating triggers](/docs/setting-up-triggers/creating-triggers), which also covers [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint) for triggers that need it.
 4. **Receive events** at your subscription URL and route on `metadata.trigger_slug`.
-5. **Manage** triggers — enable, disable, or delete as needed.
+5. **Manage** triggers: enable, disable, or delete as needed.
 
 <Accordions>
 <Accordion title="What is a trigger type?">

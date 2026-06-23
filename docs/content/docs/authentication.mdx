@@ -4,7 +4,7 @@ description: Understand how Composio handles user authentication to toolkits
 keywords: [connect link, oauth, auth config]
 ---
 
-Composio simplifies authentication with Connect Links: hosted pages where users securely connect their accounts. There are two approaches. Choose based on where in your app users should authenticate.
+Composio handles authentication with Connect Links: hosted pages where your users connect their accounts. There are two approaches. Choose based on where in your app users should authenticate.
 
 <Video src="/images/connect-link-auth-flow-recording.mp4" autoPlay />
 
@@ -54,23 +54,7 @@ An **auth config** is a blueprint that defines how authentication works for a to
 
 Composio creates one auth config per toolkit, and it applies to every user who connects that toolkit. When a user authenticates, Composio creates a **connected account** that stores their credentials (OAuth tokens or API keys) and links them to your userID. When you need to use your own OAuth credentials or customize scopes, you can create [custom auth configs](/docs/custom-app-vs-managed-app).
 
-```mermaid
-graph LR
-    AC["Auth Config<br/><b>ac_gmail_oauth2</b>"]
-
-    subgraph user_1
-        CA1["Work Gmail · <b>ca_1a2b3c</b>"]
-        CA2["Personal Gmail · <b>ca_4d5e6f</b>"]
-    end
-
-    subgraph user_2
-        CA3["Gmail · <b>ca_7g8h9i</b>"]
-    end
-
-    AC --> CA1
-    AC --> CA2
-    AC --> CA3
-```
+<AuthConfigFlow />
 
 Composio handles this automatically:
 
