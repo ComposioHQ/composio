@@ -3,6 +3,6 @@
   "root": true,
   "pages": [
     "index",
-    "slack-bot"
+    "general-agent-with-pi"
   ]
 }
