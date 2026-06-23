@@ -43,7 +43,7 @@ A **toolkit** is a collection of related tools for a service. The `github` toolk
 
 A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_ISSUE`.
 
-Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/configuring-sessions). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/custom-tools-and-toolkits) API.
+Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/configuring-sessions). You can also bind local, in-process tools to a session with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
 
 ## Users
 

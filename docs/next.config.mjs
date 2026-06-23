@@ -365,19 +365,35 @@ const config = {
         destination: '/docs/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
       },
+      // Custom tools and proxy execute moved under the Extending sessions section.
+      {
+        source: '/docs/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/proxy-execute',
+        destination: '/docs/extending-sessions/proxy-execute',
+        permanent: true,
+      },
       {
         source: '/docs/custom-tools',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools/:path*',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
@@ -451,7 +467,7 @@ const config = {
       },
       {
         source: '/custom-tools/:path*',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       // Error handling redirect (old fern URL)

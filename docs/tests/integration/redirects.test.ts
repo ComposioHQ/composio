@@ -23,10 +23,10 @@ const REDIRECTS = [
   { from: "/docs/providers/langgraph", to: "/docs/providers/langchain" },
   { from: "/tools", to: "/toolkits" },
   { from: "/docs/fetching-tools", to: "/docs/tools-direct/fetching-tools" },
-  { from: "/docs/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
+  { from: "/docs/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/docs/how-tools-work", to: "/docs/tools-and-toolkits" },
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
@@ -34,6 +34,8 @@ const REDIRECTS = [
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox" },
+  { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
 ];
 
 describe("Redirects - key patterns", () => {

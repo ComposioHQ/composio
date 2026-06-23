@@ -24,7 +24,7 @@ const session = await composio.create("user_123");
 
 By default, a session has access to every toolkit in the Composio catalog. Your agent can discover and use any of them through `COMPOSIO_SEARCH_TOOLS`. Use the options below to restrict or customize what's available.
 
-You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/custom-tools-and-toolkits).
+You can also attach local custom tools and custom toolkits that run in-process alongside Composio tools. See [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
 
 ## Enabling toolkits
 
@@ -501,7 +501,7 @@ console.log(tools.map((tool) => tool.name));
 </Tab>
 </Tabs>
 
-For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. See [Preloading custom tools](/docs/custom-tools-and-toolkits#preloading-custom-tools).
+For SDK custom tools, set `preload: true` on the custom tool or custom toolkit. See [Preloading custom tools](/docs/extending-sessions/custom-tools-and-toolkits#preloading-custom-tools).
 
 To preload every tool allowed by the session filters, use the `preload.tools = "all"` shortcut (`preload={"tools": "all"}` in Python, `preload: { tools: "all" }` in TypeScript). The `all` shorthand works for both Composio tools and SDK custom tools.
 
