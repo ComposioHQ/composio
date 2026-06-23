@@ -16,6 +16,7 @@ const result = await composio.experimental.list();
 
 ### updateAcl()
 
+Compatibility alias for `composio.connectedAccounts.updateAcl(...)`.
 Update the per-user ACL on a SHARED connected account.
 **Experimental — shape may change in future releases.**
 
@@ -58,22 +59,13 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: '...' });
 
-// Allow every userId to use this connection
-await composio.experimental.updateAcl('ca_abc', { allowAllUsers: true });
+// Prefer the domain-specific mount:
+await composio.connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true });
 
-// Everyone except a specific user
-await composio.experimental.updateAcl('ca_abc', {
-  allowAllUsers: true,
-  notAllowedUserIds: ['user_bob'],
-});
-
-// Targeted allow
+// The experimental alias remains available while the API is experimental:
 await composio.experimental.updateAcl('ca_abc', {
   allowedUserIds: ['user_alice', 'user_bob'],
 });
-
-// Revoke a previously-granted allow list (back to deny-by-default)
-await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
 ```
 
 **Empty-array semantics — read carefully.** Passing `[]` for either
@@ -84,6 +76,5 @@ list **replaces** the list, it does not extend it:
 - `notAllowedUserIds: []` → **clears the deny list**, which silently
   re-grants access to users you previously blocked. Always pair an
   empty deny list with a deliberate audit of the allow side.
-```
 
 ---

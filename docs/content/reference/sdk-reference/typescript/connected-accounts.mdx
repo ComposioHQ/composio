@@ -233,11 +233,11 @@ async link(userId: string, authConfigId: undefined, options: object): Promise<Co
 
 **Parameters**
 
-| Name           | Type        | Description                                                                                                                                                                               |
-| -------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `userId`       | `string`    | \{string\} - The external user ID to create the connected account for.                                                                                                                    |
-| `authConfigId` | `undefined` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default Tool-Router-compatible auth config for that toolkit. |
-| `options`      | `object`    | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link.                                                                                                |
+| Name           | Type        | Description                                                                                                                                                                                       |
+| -------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `userId`       | `string`    | \{string\} - The external user ID to create the connected account for.                                                                                                                            |
+| `authConfigId` | `undefined` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default hoisted Tool-Router-compatible auth config for that toolkit. |
+| `options`      | `object`    | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link.                                                                                                        |
 
 **Returns**
 
@@ -251,11 +251,11 @@ async link(userId: string, authConfigId: string, options?: object): Promise<Conn
 
 **Parameters**
 
-| Name           | Type     | Description                                                                                                                                                                               |
-| -------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `userId`       | `string` | \{string\} - The external user ID to create the connected account for.                                                                                                                    |
-| `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default Tool-Router-compatible auth config for that toolkit. |
-| `options?`     | `object` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link.                                                                                                |
+| Name           | Type     | Description                                                                                                                                                                                       |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `userId`       | `string` | \{string\} - The external user ID to create the connected account for.                                                                                                                            |
+| `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default hoisted Tool-Router-compatible auth config for that toolkit. |
+| `options?`     | `object` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link.                                                                                                        |
 
 **Returns**
 
@@ -286,8 +286,8 @@ const connectedAccount = await composio.connectedAccounts.waitForConnection(conn
 ```
 
 ```typescript
-// Omit authConfigId and let the SDK use/create a Tool-Router-compatible
-// Composio-managed auth config for the toolkit.
+// Omit authConfigId and let the SDK use/create a hoisted
+// Tool-Router-compatible Composio-managed auth config for the toolkit.
 const connectionRequest = await composio.connectedAccounts.link('user_123', {
   toolkit: 'github',
   callbackUrl: 'https://your-app.com/callback',
@@ -366,12 +366,53 @@ const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123')
 
 ---
 
+### updateAcl()
+
+Update the per-user ACL on a SHARED connected account.
+**Experimental — shape may change in future releases.**
+
+Only meaningful for SHARED connections — calling this on a PRIVATE
+connection raises `ComposioAclOnlyForSharedError` (400). ACL writes
+require the connection's creator or an API key.
+
+PATCH semantics: omit a field to leave it unchanged; pass an empty
+array to clear an allow/deny list. At least one field must be
+provided.
+
+```typescript
+async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
+```
+
+**Parameters**
+
+| Name     | Type                                                                                       | Description                              |
+| -------- | ------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| `nanoid` | `string`                                                                                   | The unique identifier of the connection  |
+| `params` | `{ allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }`     | The ACL fields to patch                  |
+
+**Returns**
+
+`Promise<ConnectedAccountPatchResponse>` — The PATCH response
+
+**Example**
+
+```typescript
+await composio.connectedAccounts.updateAcl('ca_abc123', { allowAllUsers: true });
+
+await composio.connectedAccounts.updateAcl('ca_abc123', {
+  allowedUserIds: ['user_alice', 'user_bob'],
+});
+
+await composio.connectedAccounts.updateAcl('ca_abc123', { allowedUserIds: [] });
+```
+
+---
+
 ### update()
 
 Enable or disable a connected account. Accepts `{ enabled: boolean }`.
 
-For ACL writes on SHARED connections, see
-`composio.experimental.updateAcl()`.
+Use `updateAcl()` for ACL writes on SHARED connections.
 
 ```typescript
 async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promise<ConnectedAccountUpdateStatusResponse>

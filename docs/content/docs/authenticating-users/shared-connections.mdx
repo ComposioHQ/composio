@@ -6,7 +6,7 @@ llmGuardrails: "direct-execution"
 ---
 
 <Callout type="warn">
-Shared Connections APIs are experimental and may change in future releases. All new fields are nested under an `experimental` block on the wire, and the SDK methods that operate on them live under the `composio.experimental` namespace (`composio.experimental.update_acl` in Python, `composio.experimental.updateAcl` in TypeScript). The code samples below show the experimental shape — pin a specific SDK version if you depend on the current contract.
+Shared Connections APIs are experimental and may change in future releases. All new fields are nested under an `experimental` block on the wire. TypeScript callers should use `composio.connectedAccounts.updateAcl(...)` for ACL updates (`composio.experimental.updateAcl(...)` remains as an experimental alias); Python currently exposes `composio.experimental.update_acl(...)`. The code samples below show the experimental shape — pin a specific SDK version if you depend on the current contract.
 </Callout>
 
 <Callout type="info">
@@ -160,18 +160,18 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 // Open access to everyone.
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.connectedAccounts.updateAcl("ca_gmail_shared", {
   allowAllUsers: true,
 });
 
 // Add a targeted allow list (without touching the wildcard or deny list).
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.connectedAccounts.updateAcl("ca_gmail_shared", {
   allowedUserIds: ["user_alice", "user_bob"],
 });
 
 // Revoke the allow list — only the creator can use it again
 // (unless allowAllUsers is true).
-await composio.experimental.updateAcl("ca_gmail_shared", {
+await composio.connectedAccounts.updateAcl("ca_gmail_shared", {
   allowedUserIds: [],
 });
 ```
@@ -402,7 +402,7 @@ import {
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 try {
-  await composio.experimental.updateAcl("ca_private_gmail", {
+  await composio.connectedAccounts.updateAcl("ca_private_gmail", {
     allowAllUsers: true,
   });
 } catch (error) {

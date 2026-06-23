@@ -13,6 +13,7 @@ import {
   ConnectedAccountRefreshResponse,
   ConnectedAccountUpdateStatusParams,
   ConnectedAccountUpdateStatusResponse,
+  ConnectedAccountPatchResponse,
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
   ConnectedAccountCreateParams as ConnectedAccountCreateParamsRaw,
 } from '@composio/client/resources/connected-accounts';
@@ -28,12 +29,17 @@ import {
   ConnectedAccountStatuses,
   ConnectedAccountRefreshOptions,
   ConnectedAccountRefreshOptionsSchema,
+  UpdateConnectedAccountAclParams,
   UpdateConnectedAccountParams,
   UpdateConnectedAccountParamsSchema,
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
-import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from './Experimental';
+import {
+  ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT,
+  serializeExperimentalForWire,
+  updateConnectedAccountAcl,
+} from './Experimental';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import {
@@ -55,6 +61,12 @@ let _legacyInitiateWarningEmitted = false;
 
 const TOOL_ROUTER_AUTH_CONFIG_LIST_LIMIT = 100;
 
+function hasHoistedConnectedAccountCreationTools(authConfig: {
+  tool_access_config?: { tools_for_connected_account_creation?: string[] };
+}): boolean {
+  return authConfig.tool_access_config?.tools_for_connected_account_creation?.length === 0;
+}
+
 /**
  * ConnectedAccounts class
  *
@@ -70,8 +82,9 @@ export class ConnectedAccounts {
   }
 
   /**
-   * Resolve the Composio-managed auth config that Tool Router would use for a
-   * toolkit, creating one when the project does not have a compatible config yet.
+   * Resolve the hoisted Composio-managed auth config that Tool Router would use
+   * for a toolkit, creating one when the project does not have a compatible
+   * config yet.
    */
   private async resolveToolRouterAuthConfigId(toolkit: string): Promise<string> {
     const existing = await this.client.authConfigs.list({
@@ -84,7 +97,8 @@ export class ConnectedAccounts {
       authConfig =>
         authConfig.id &&
         authConfig.is_enabled_for_tool_router !== false &&
-        authConfig.status !== 'DISABLED'
+        authConfig.status !== 'DISABLED' &&
+        hasHoistedConnectedAccountCreationTools(authConfig)
     );
     if (compatible?.id) {
       return compatible.id;
@@ -95,6 +109,9 @@ export class ConnectedAccounts {
       auth_config: {
         type: 'use_composio_managed_auth',
         is_enabled_for_tool_router: true,
+        tool_access_config: {
+          tools_for_connected_account_creation: [],
+        },
       },
     });
 
@@ -348,7 +365,7 @@ export class ConnectedAccounts {
    * @docs https://docs.composio.dev/reference/connected-accounts/create-connected-account#create-a-composio-connect-link
    *
    * @param userId {string} - The external user ID to create the connected account for.
-   * @param authConfigId {string} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default Tool-Router-compatible auth config for that toolkit.
+   * @param authConfigId {string} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default hoisted Tool-Router-compatible auth config for that toolkit.
    * @param options {CreateConnectedAccountLinkOptions} - Options for creating a new connected account link.
    * @param options.callbackUrl {string} - The url to redirect the user to post connecting their account.
    * @returns {ConnectionRequest} Connection request object
@@ -379,8 +396,8 @@ export class ConnectedAccounts {
    *
    * @example
    * ```typescript
-   * // Omit authConfigId and let the SDK use/create a Tool-Router-compatible
-   * // Composio-managed auth config for the toolkit.
+   * // Omit authConfigId and let the SDK use/create a hoisted
+   * // Tool-Router-compatible Composio-managed auth config for the toolkit.
    * const connectionRequest = await composio.connectedAccounts.link('user_123', {
    *   toolkit: 'github',
    *   callbackUrl: 'https://your-app.com/callback'
@@ -666,10 +683,46 @@ export class ConnectedAccounts {
   }
 
   /**
+   * Update the per-user ACL on a SHARED connected account.
+   * **Experimental — shape may change in future releases.**
+   *
+   * Only meaningful for SHARED connections — calling this on a PRIVATE
+   * connection raises `ComposioAclOnlyForSharedError` (400). ACL writes
+   * require the connection's creator or an API key.
+   *
+   * PATCH semantics: omit a field to leave it unchanged; pass an empty
+   * array to clear an allow/deny list. At least one field must be
+   * provided.
+   *
+   * @param {string} nanoid - The unique identifier of the connected account
+   * @param {UpdateConnectedAccountAclParams} params - The ACL fields to patch
+   * @returns {Promise<ConnectedAccountPatchResponse>} The PATCH response
+   *
+   * @example
+   * ```typescript
+   * // Allow every userId to use this SHARED connection
+   * await composio.connectedAccounts.updateAcl('ca_abc123', { allowAllUsers: true });
+   *
+   * // Targeted allow list
+   * await composio.connectedAccounts.updateAcl('ca_abc123', {
+   *   allowedUserIds: ['user_alice', 'user_bob'],
+   * });
+   *
+   * // Clear the allow list (back to deny-by-default unless allowAllUsers is true)
+   * await composio.connectedAccounts.updateAcl('ca_abc123', { allowedUserIds: [] });
+   * ```
+   */
+  async updateAcl(
+    nanoid: string,
+    params: UpdateConnectedAccountAclParams
+  ): Promise<ConnectedAccountPatchResponse> {
+    return updateConnectedAccountAcl(this.client, nanoid, params);
+  }
+
+  /**
    * Enable or disable a connected account. Accepts `{ enabled: boolean }`.
    *
-   * For ACL writes on SHARED connections, see
-   * `composio.experimental.updateAcl()`.
+   * Use `updateAcl()` for ACL writes on SHARED connections.
    *
    * @param {string} nanoid - The unique identifier of the connected account
    * @param {UpdateConnectedAccountParams} params - The update parameters
