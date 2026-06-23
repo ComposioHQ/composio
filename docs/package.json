@@ -29,6 +29,8 @@
     "algoliasearch": "^5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "diff": "^9.0.0",
+    "eve": "^0.13.3",
     "framer-motion": "^12.39.0",
     "fumadocs-core": "^16.4.2",
     "fumadocs-mdx": "^14.2.4",
@@ -42,7 +44,8 @@
     "react-dom": "^19.2.3",
     "search-insights": "^2",
     "shiki": "^3.20.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^3.0.11",
@@ -75,7 +78,7 @@
     "@types/node": "^24.10.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "ai": "^6.0.30",
+    "ai": "^6.0.209",
     "ajv": "^8.17.1",
     "ajv-draft-04": "^1.0.0",
     "eslint": "^9.39.2",
