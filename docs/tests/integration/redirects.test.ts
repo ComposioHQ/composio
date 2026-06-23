@@ -10,7 +10,7 @@ import { fetchPage, fetchNoRedirect, BASE_URL } from "./helpers";
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   { from: "/", to: "/docs" },
-  { from: "/examples", to: "/cookbooks" },
+  { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
   { from: "/providers/openai", to: "/docs/providers/openai" },
   { from: "/providers/anthropic", to: "/docs/providers/anthropic" },
@@ -33,6 +33,7 @@ const REDIRECTS = [
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
+  { from: "/docs/workbench", to: "/docs/sandbox" },
 ];
 
 describe("Redirects - key patterns", () => {

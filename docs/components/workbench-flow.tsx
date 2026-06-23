@@ -41,7 +41,7 @@ export function WorkbenchFlow() {
     <div className="not-prose my-6 overflow-hidden rounded-sm border border-fd-border bg-fd-background">
       {/* header strip */}
       <div className="flex items-center justify-between border-b border-fd-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
-        <span>session.workbench</span>
+        <span>session.sandbox</span>
         <span className="inline-flex items-center gap-1.5 text-fd-foreground/55">
           <span className="relative inline-flex">
             <span className="size-1.5 rounded-full bg-[var(--composio-brand)]" />

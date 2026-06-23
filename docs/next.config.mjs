@@ -48,30 +48,27 @@ const config = {
         destination: '/docs',
         permanent: false,
       },
+      // Cookbooks were renamed to Examples; the old articles were removed,
+      // so send every old /cookbooks URL to the Examples index.
       {
-        source: '/examples',
-        destination: '/cookbooks',
+        source: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
-        source: '/cookbooks/vercel-chat',
-        destination: '/cookbooks/chat-app',
-        permanent: true,
-      },
-      // Specific /examples/ subroutes before the catch-all
-      {
-        source: '/examples/combined/:path*',
-        destination: '/cookbooks',
-        permanent: true,
-      },
-      {
-        source: '/examples/:path*',
-        destination: '/cookbooks/:path*',
+        source: '/cookbooks/:path*',
+        destination: '/examples',
         permanent: true,
       },
       {
         source: '/docs/welcome',
         destination: '/docs',
+        permanent: true,
+      },
+      // The workbench was renamed to the sandbox; keep old links working.
+      {
+        source: '/docs/workbench',
+        destination: '/docs/sandbox',
         permanent: true,
       },
       {
@@ -449,7 +446,7 @@ const config = {
       },
       {
         source: '/guides/examples/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
@@ -579,7 +576,7 @@ const config = {
       // Guides case studies
       {
         source: '/guides/casestudy/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       // Docs pages that moved or don't exist
@@ -682,7 +679,7 @@ const config = {
       },
       {
         source: '/apps/usecases/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
@@ -820,7 +817,7 @@ const config = {
       },
       {
         source: '/cryptokit/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {

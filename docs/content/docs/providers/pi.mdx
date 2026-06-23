@@ -60,7 +60,7 @@ const composioSession = await composio.sessions.create('user_123', {
     enable: true,
     callbackUrl: 'https://your-app.example.com/auth/callback',
   },
-  workbench: { enable: true },
+  sandbox: { enable: true },
 });
 
 const composioTools = composio.provider.createSessionTools({

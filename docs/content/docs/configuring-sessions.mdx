@@ -184,7 +184,7 @@ session = composio.create(
     manage_connections={
         "enable": True,
     },
-    workbench={
+    sandbox={
         "enable": True,
     },
 )
@@ -200,6 +200,7 @@ print([tool.name for tool in tools])
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio, SessionPreset } from '@composio/core';
 import { OpenAIAgentsProvider } from '@composio/openai-agents';
 
@@ -219,7 +220,7 @@ const session = await composio.create("user_123", {
   manageConnections: {
     enable: true,
   },
-  workbench: {
+  sandbox: {
     enable: true,
   },
 });
@@ -584,16 +585,16 @@ When executing a tool, the session selects the connected account in this order:
 
 When a user has multiple connected accounts for a toolkit, the session uses the most recently connected one.
 
-## Disabling workbench
+## Disabling the sandbox
 
-By default, sessions include the [workbench](/docs/workbench), a persistent sandbox that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
+By default, sessions include the [sandbox](/docs/sandbox), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
-    workbench={
+    sandbox={
         "enable": False
     }
 )
@@ -601,11 +602,12 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
-  workbench: {
+  sandbox: {
     enable: false,
   },
 });
@@ -615,12 +617,16 @@ const session = await composio.create("user_123", {
 
 When disabled:
 - `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session
-- Workbench-related system prompt lines are stripped
-- Direct workbench calls are rejected with a 400 error
+- Sandbox-related system prompt lines are stripped
+- Direct sandbox calls are rejected with a 400 error
+
+<Callout>
+`sandbox` is the preferred config key. `workbench` still works as a fully supported alias and isn't deprecated, so existing code keeps running unchanged.
+</Callout>
 
 ## Sandbox compute tier
 
-The workbench runs in a per-session sandbox. Pick a compute tier to match the workload: heavier code execution or larger in-memory data benefits from a bigger sandbox. Pass the tier via `workbench.sandbox_size` (snake_case on the wire, `sandboxSize` in the TypeScript SDK).
+The sandbox runs per session. Pick a compute tier to match the workload: heavier code execution or larger in-memory data benefits from a bigger sandbox. Pass the tier via `sandbox.sandbox_size` (snake_case on the wire, `sandboxSize` in the TypeScript SDK).
 
 <Callout type="info">
 Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python). Older SDKs reject `sandboxSize` (TypeScript) or silently drop `sandbox_size` (Python). See the [release notes](/docs/changelog/2026/04/28).
@@ -641,7 +647,7 @@ Defaults to `standard` when omitted.
 ```python
 session = composio.create(
     user_id="user_123",
-    workbench={
+    sandbox={
         "sandbox_size": "large",
     },
 )
@@ -649,11 +655,12 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
-  workbench: {
+  sandbox: {
     enable: true,
     sandboxSize: "large",
   },

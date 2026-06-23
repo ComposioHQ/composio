@@ -13,7 +13,7 @@ const META_TOOLS: { icon: ReactNode; label: string; verb: string }[] = [
   { icon: <Search className="size-3" aria-hidden="true" />, label: 'Search tools', verb: 'discover' },
   { icon: <Plug className="size-3" aria-hidden="true" />, label: 'Manage connections', verb: 'authenticate' },
   { icon: <Zap className="size-3" aria-hidden="true" />, label: 'Execute tool', verb: 'act' },
-  { icon: <Terminal className="size-3" aria-hidden="true" />, label: 'Workbench', verb: 'compute' },
+  { icon: <Terminal className="size-3" aria-hidden="true" />, label: 'Sandbox', verb: 'compute' },
 ];
 
 /**

@@ -78,11 +78,11 @@ In chat, the agent can pause, ask the user to connect an app, then retry the too
 
 For OAuth toolkits, Composio uses [managed apps](/docs/custom-app-vs-managed-app) by default. Bring your own app when you need your own branding, scopes, or consent screen.
 
-## Workbench
+## Sandbox
 
-Handle large responses and bulk operations in the remote workbench. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
+Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
 
-The workbench is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task.
+The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task.
 
 ## How sessions behave
 
@@ -142,5 +142,5 @@ Create a new session for a different user or a fundamentally different task setu
 <Cards>
   <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Enable toolkits, set auth configs, and select connected accounts" />
   <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Connect Links, in-chat auth, manual auth, and custom auth configs" />
-  <Card icon={<Monitor />} title="Workbench" href="/docs/workbench" description="Persistent Python sandbox for large responses and bulk operations" />
+  <Card icon={<Monitor />} title="Sandbox" href="/docs/sandbox" description="Persistent Python sandbox for large responses and bulk operations" />
 </Cards>

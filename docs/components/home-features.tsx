@@ -60,8 +60,8 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description="A workbench pre-wired with your user's connected accounts and 1000+ tools."
-          href="/docs/workbench"
+          description="A sandbox pre-wired with your user's connected accounts and 1000+ tools."
+          href="/docs/sandbox"
           visual={<WorkbenchVisual />}
         />
       </div>

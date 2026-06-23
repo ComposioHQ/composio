@@ -18,13 +18,13 @@ Use sessions unless you need full control over which tools are available and whe
 | **Guidance** | Search returns recommended steps and common pitfalls alongside schemas | You get tool schemas only |
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
 | **Auth** | [In-chat](/docs/authenticating-users/in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authenticating-users/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
-| **[Workbench](/docs/workbench)** | Built in, large responses offloaded automatically | Not available |
+| **[Sandbox](/docs/sandbox)** | Built in, large responses offloaded automatically | Not available |
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
 Sessions are configurable. [Restrict toolkits](/docs/configuring-sessions), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
 
-Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the workbench. It's the middle ground between runtime discovery and direct execution.
+Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the sandbox. It's the middle ground between runtime discovery and direct execution.
 
 ## Sessions
 
