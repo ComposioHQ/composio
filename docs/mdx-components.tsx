@@ -26,6 +26,10 @@ import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
+import { WorkbenchFlow } from '@/components/workbench-flow';
+import { AuthConfigFlow } from '@/components/auth-config-flow';
+import { WhiteLabelFlow } from '@/components/white-label-flow';
+import { ImportConnectionFlow } from '@/components/import-connection-flow';
 import { HomeSurfaces } from '@/components/home-surfaces';
 import { HomeResources } from '@/components/home-resources';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
@@ -107,6 +111,10 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     DocsHero,
     HomeFeatures,
     SessionFlow,
+    WorkbenchFlow,
+    AuthConfigFlow,
+    WhiteLabelFlow,
+    ImportConnectionFlow,
     HomeSurfaces,
     HomeResources,
     StepTitle,

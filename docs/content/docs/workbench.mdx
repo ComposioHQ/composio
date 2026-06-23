@@ -14,19 +14,7 @@ The workbench is part of the [meta tools](/docs/how-composio-works#meta-tools) s
 
 Use the workbench when a task is too complex for individual tool calls. Your agent starts with [`SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE`](/docs/how-composio-works#meta-tools) for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent reaches for `COMPOSIO_REMOTE_WORKBENCH` instead.
 
-```mermaid
-graph TD
-    U["Triage my emails, label urgent ones, log to a Google Sheet"] --> S["1. SEARCH_TOOLS"]
-    S --> M["2. MULTI_EXECUTE"]
-    M --> W["3. REMOTE_WORKBENCH"]
-    W --> D["Done"]
-
-    S -.- S1["Discovers Gmail and Sheets tools"]:::annotation
-    M -.- M1["Fetches unread emails"]:::annotation
-    W -.- W1["Classifies, labels, and logs to sheet in parallel"]:::annotation
-
-    classDef annotation stroke-dasharray: 5 5
-```
+<WorkbenchFlow />
 
 ## What the sandbox provides
 
