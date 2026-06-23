@@ -60,12 +60,6 @@ const config = {
         destination: '/examples',
         permanent: true,
       },
-      // The Slack bot example was generalized and renamed.
-      {
-        source: '/examples/slack-bot',
-        destination: '/examples/general-agent-with-pi',
-        permanent: true,
-      },
       {
         source: '/docs/welcome',
         destination: '/docs',
