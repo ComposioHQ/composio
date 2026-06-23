@@ -61,7 +61,7 @@ export function EveChat() {
         />
       )}
       <aside
-        aria-label="Ask Eve"
+        aria-label="Ask AI"
         className={
           'fixed right-0 top-0 z-50 flex h-dvh w-full flex-col border-l border-fd-border bg-fd-background shadow-xl transition-transform duration-200 ease-out md:w-[400px] ' +
           (isOpen ? 'translate-x-0' : 'translate-x-full')
@@ -71,7 +71,7 @@ export function EveChat() {
         <div className="flex items-center justify-between border-b border-fd-border px-4 py-3">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-[var(--composio-brand)]" aria-hidden="true" />
-            <span className="text-sm font-medium text-fd-foreground">Ask Eve</span>
+            <span className="text-sm font-medium text-fd-foreground">Ask AI</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">docs assistant</span>
           </div>
           <div className="flex items-center gap-0.5">
@@ -104,7 +104,7 @@ export function EveChat() {
           {agent.data.messages.length === 0 ? (
             <div className="flex h-full flex-col justify-center gap-3 text-center">
               <p className="text-sm text-fd-muted-foreground">
-                Ask about the Composio docs. Eve answers from the docs and links the pages it used. It&apos;s not customer support and can&apos;t act on your Composio account.
+                Ask about the Composio docs. It answers from the docs and links the pages it used. It&apos;s not customer support and can&apos;t act on your Composio account.
               </p>
               <div className="flex flex-col gap-1.5">
                 {SUGGESTIONS.map((s) => (

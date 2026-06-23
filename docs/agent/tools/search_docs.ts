@@ -10,6 +10,17 @@ import { buildIndex, tokenize, type DocPage } from '../lib/docs';
  * before answering.
  */
 
+// Collection priority: docs first, then examples, then references and toolkits.
+// (Curated knowledge ranks with docs.) A toolkit-name query still surfaces its
+// toolkit page because nothing else matches it.
+const PRIORITY: Record<DocPage['collection'], number> = {
+  docs: 1.3,
+  knowledge: 1.3,
+  examples: 1.1,
+  reference: 0.85,
+  toolkits: 0.9,
+};
+
 function score(page: DocPage, terms: string[]): number {
   const title = page.title.toLowerCase();
   let total = 0;
@@ -23,7 +34,8 @@ function score(page: DocPage, terms: string[]): number {
   }
   // Heavily downrank legacy (direct-execution) pages so they only surface when
   // nothing in the session-based docs matches.
-  return page.legacy ? total * 0.12 : total;
+  if (page.legacy) total *= 0.12;
+  return total * (PRIORITY[page.collection] ?? 1);
 }
 
 function snippet(page: DocPage, terms: string[]): string {

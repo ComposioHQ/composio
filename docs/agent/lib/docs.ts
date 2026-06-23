@@ -29,7 +29,10 @@ const STOPWORDS = new Set([
   'work', 'works', 'about', 'into', 'so', 'if', 'me', 'get', 'set', 'up',
 ]);
 
+export type Collection = 'docs' | 'examples' | 'reference' | 'toolkits' | 'knowledge';
+
 export interface DocPage {
+  collection: Collection;
   title: string;
   description: string;
   url: string;
@@ -108,6 +111,7 @@ export function toCleanMarkdown(raw: string): string {
 }
 
 function makePage(args: {
+  collection: Collection;
   title: string;
   description: string;
   url: string;
@@ -119,6 +123,7 @@ function makePage(args: {
   );
   const text = toPlainText(args.body);
   return {
+    collection: args.collection,
     title: args.title || args.url,
     description: args.description,
     url: args.url,
@@ -150,7 +155,45 @@ function loadKnowledge(): DocPage[] {
     const bodyStart = m.index! + m[0].length;
     const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : raw.length;
     const body = raw.slice(bodyStart, bodyEnd).trim();
-    pages.push(makePage({ title, description: '', url, legacy: false, body }));
+    pages.push(makePage({ collection: 'knowledge', title, description: '', url, legacy: false, body }));
+  }
+  return pages;
+}
+
+/**
+ * Index the toolkit catalog from `public/data/toolkits.json` so the assistant
+ * can answer "do you have <toolkit>?" — individual toolkit pages are generated
+ * from this data, not from MDX, so they aren't covered by the content scan.
+ */
+function loadToolkits(): DocPage[] {
+  let raw: string;
+  try {
+    raw = readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8');
+  } catch {
+    return [];
+  }
+  let list: Array<{ slug?: string; name?: string; description?: string; category?: string }>;
+  try {
+    const parsed = JSON.parse(raw);
+    list = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
+  } catch {
+    return [];
+  }
+  const pages: DocPage[] = [];
+  for (const tk of list) {
+    if (!tk?.slug) continue;
+    const name = tk.name ?? tk.slug;
+    const body = `${tk.description ?? ''} Category: ${tk.category ?? ''}. Toolkit slug: ${tk.slug}.`;
+    pages.push(
+      makePage({
+        collection: 'toolkits',
+        title: `${name} toolkit`,
+        description: tk.description ?? '',
+        url: `/toolkits/${tk.slug}`,
+        legacy: false,
+        body,
+      }),
+    );
   }
   return pages;
 }
@@ -180,10 +223,20 @@ export function buildIndex(): DocPage[] {
         continue;
       }
       const { title, description, legacy, body } = parseFrontmatter(raw);
-      pages.push(makePage({ title, description, url, legacy: legacy || isLegacyUrl(url), body }));
+      pages.push(
+        makePage({
+          collection: collection as Collection,
+          title,
+          description,
+          url,
+          legacy: legacy || isLegacyUrl(url),
+          body,
+        }),
+      );
     }
   }
   pages.push(...loadKnowledge());
+  pages.push(...loadToolkits());
   indexCache = pages;
   return pages;
 }
