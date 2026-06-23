@@ -29,6 +29,9 @@ vi.mock('../../src/services/pusher/Pusher');
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
+  get: vi.fn(),
+  post: vi.fn(),
+  patch: vi.fn(),
   triggerInstances: {
     listActive: vi.fn(),
     upsert: vi.fn(),
@@ -237,6 +240,75 @@ describe('Triggers', () => {
 
     it('should store the client reference', () => {
       expect(triggers['client']).toBe(mockClient);
+    });
+  });
+
+  describe('setWebhookSubscription', () => {
+    const webhookUrl = 'https://example.com/webhooks/composio';
+    const rawSubscription = {
+      id: 'sub_123',
+      webhook_url: webhookUrl,
+      version: 'V3',
+      enabled_events: ['composio.trigger.message'],
+      secret: 'whsec_123',
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    };
+
+    it('should create a webhook subscription when none exists', async () => {
+      mockClient.get.mockResolvedValue({ items: [] });
+      mockClient.post.mockResolvedValue(rawSubscription);
+
+      const result = await triggers.setWebhookSubscription({ webhookUrl });
+
+      expect(mockClient.get).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
+        query: { limit: 1 },
+      });
+      expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
+        body: {
+          webhook_url: webhookUrl,
+          enabled_events: ['composio.trigger.message'],
+          version: 'V3',
+        },
+      });
+      expect(mockClient.patch).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        ...rawSubscription,
+        id: 'sub_123',
+        webhookUrl,
+        version: 'V3',
+        enabledEvents: ['composio.trigger.message'],
+        secret: 'whsec_123',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      });
+    });
+
+    it('should update the first webhook subscription when one exists', async () => {
+      mockClient.get.mockResolvedValue({ items: [{ id: 'sub_123' }] });
+      mockClient.patch.mockResolvedValue(rawSubscription);
+
+      await triggers.setWebhookSubscription({
+        webhookUrl,
+        enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],
+        version: 'V3',
+      });
+
+      expect(mockClient.patch).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions/sub_123', {
+        body: {
+          webhook_url: webhookUrl,
+          enabled_events: ['composio.trigger.message', 'composio.connected_account.expired'],
+          version: 'V3',
+        },
+      });
+      expect(mockClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should throw validation error for invalid webhook subscription parameters', async () => {
+      await expect(
+        triggers.setWebhookSubscription({ webhookUrl, enabledEvents: [] })
+      ).rejects.toThrow(ValidationError);
+      expect(mockClient.get).not.toHaveBeenCalled();
     });
   });
 

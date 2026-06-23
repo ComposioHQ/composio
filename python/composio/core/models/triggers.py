@@ -187,6 +187,22 @@ class VerifyWebhookResult(t.TypedDict):
     raw_payload: WebhookPayload  # The original parsed payload
 
 
+class WebhookSubscription(t.TypedDict, total=False):
+    """Webhook subscription returned by the Composio API."""
+
+    id: str
+    webhook_url: str
+    version: str
+    enabled_events: t.List[str]
+    secret: str
+    created_at: str
+    updated_at: str
+
+
+DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS = ("composio.trigger.message",)
+WEBHOOK_SUBSCRIPTIONS_PATH = "/api/v3.1/webhook_subscriptions"
+
+
 _ = {
     "appName": "github",
     "payload": {
@@ -894,6 +910,87 @@ class Triggers(Resource):
             self._client.trigger_instances.manage.update,
             status="disable",
         )
+
+    def set_webhook_subscription(
+        self,
+        *,
+        webhook_url: str,
+        enabled_events: t.Optional[t.Sequence[str]] = None,
+        version: t.Union[WebhookVersion, str] = WebhookVersion.V3,
+    ) -> WebhookSubscription:
+        """
+        Create or update the project webhook subscription used for webhook delivery.
+
+        If a subscription already exists, the first subscription is updated. Otherwise a
+        new subscription is created. By default this subscribes to V3 trigger message
+        events.
+
+        Example:
+            composio.triggers.set_webhook_subscription(
+                webhook_url=f"{APP_URL}/webhooks/composio",
+            )
+        """
+        if not webhook_url:
+            raise exceptions.InvalidParams("please provide a valid `webhook_url`")
+
+        events = list(
+            DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS
+            if enabled_events is None
+            else enabled_events
+        )
+        if len(events) == 0:
+            raise exceptions.InvalidParams("please provide at least one enabled event")
+
+        version_value = (
+            version.value if isinstance(version, WebhookVersion) else version
+        )
+        body = {
+            "webhook_url": webhook_url,
+            "enabled_events": events,
+            "version": version_value,
+        }
+
+        existing = self._client.get(
+            WEBHOOK_SUBSCRIPTIONS_PATH,
+            cast_to=object,
+            options={"params": {"limit": 1}},
+        )
+        subscription_id = self._first_webhook_subscription_id(existing)
+
+        if subscription_id:
+            return t.cast(
+                WebhookSubscription,
+                self._client.patch(
+                    f"{WEBHOOK_SUBSCRIPTIONS_PATH}/{subscription_id}",
+                    cast_to=object,
+                    body=body,
+                ),
+            )
+
+        return t.cast(
+            WebhookSubscription,
+            self._client.post(
+                WEBHOOK_SUBSCRIPTIONS_PATH,
+                cast_to=object,
+                body=body,
+            ),
+        )
+
+    @staticmethod
+    def _first_webhook_subscription_id(response: object) -> t.Optional[str]:
+        if not isinstance(response, dict):
+            return None
+
+        items = response.get("items")
+        if not isinstance(items, list) or len(items) == 0:
+            return None
+
+        first = items[0]
+        if not isinstance(first, dict):
+            return None
+
+        subscription_id = first.get("id")
+        return subscription_id if isinstance(subscription_id, str) else None
 
     def get_type(self, slug: str) -> TriggersTypeRetrieveResponse:
         """

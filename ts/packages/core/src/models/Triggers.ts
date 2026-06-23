@@ -31,6 +31,10 @@ import {
   WebhookTriggerPayloadV3Schema,
   WebhookVersion,
   WebhookVersions,
+  DefaultWebhookSubscriptionEvents,
+  SetWebhookSubscriptionParams,
+  SetWebhookSubscriptionParamsSchema,
+  WebhookSubscription,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
@@ -67,6 +71,61 @@ const toStringOrDefault = (value: unknown, defaultValue: string): string => {
   return str.length > 0 ? str : defaultValue;
 };
 
+const WEBHOOK_SUBSCRIPTIONS_PATH = '/api/v3.1/webhook_subscriptions';
+
+type RawWebhookSubscription = Record<string, unknown> & {
+  id?: unknown;
+  webhook_url?: unknown;
+  webhookUrl?: unknown;
+  version?: unknown;
+  enabled_events?: unknown;
+  enabledEvents?: unknown;
+  secret?: unknown;
+  created_at?: unknown;
+  createdAt?: unknown;
+  updated_at?: unknown;
+  updatedAt?: unknown;
+};
+
+type RawWebhookSubscriptionListResponse = Record<string, unknown> & {
+  items?: unknown;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const firstString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
+const stringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const transformWebhookSubscription = (subscription: unknown): WebhookSubscription => {
+  const raw = asRecord(subscription) as RawWebhookSubscription;
+
+  return {
+    ...raw,
+    id: firstString(raw.id) ?? '',
+    webhookUrl: firstString(raw.webhook_url) ?? firstString(raw.webhookUrl) ?? '',
+    version: (firstString(raw.version) ?? WebhookVersions.V3) as WebhookVersion,
+    enabledEvents: stringArray(raw.enabled_events).length
+      ? stringArray(raw.enabled_events)
+      : stringArray(raw.enabledEvents),
+    secret: firstString(raw.secret),
+    createdAt: firstString(raw.created_at) ?? firstString(raw.createdAt),
+    updatedAt: firstString(raw.updated_at) ?? firstString(raw.updatedAt),
+  };
+};
+
+const firstWebhookSubscriptionId = (
+  response: RawWebhookSubscriptionListResponse
+): string | undefined => {
+  const firstItem = Array.isArray(response.items) ? response.items[0] : undefined;
+  return firstString(asRecord(firstItem).id);
+};
+
 /**
  * Trigger (Instance) class
  * /api/v3/trigger_instances
@@ -82,6 +141,50 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     this.pusherService = new PusherService(client);
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
     telemetry.instrument(this, 'Triggers');
+  }
+
+  /**
+   * Create or update the project webhook subscription used for webhook delivery.
+   *
+   * If a subscription already exists, the first subscription is updated. Otherwise a new
+   * subscription is created. By default this subscribes to V3 trigger message events.
+   *
+   * @example
+   * ```ts
+   * await composio.triggers.setWebhookSubscription({
+   *   webhookUrl: `${APP_URL}/webhooks/composio`,
+   * });
+   * ```
+   */
+  async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<WebhookSubscription> {
+    const parsedParams = SetWebhookSubscriptionParamsSchema.safeParse(params);
+
+    if (!parsedParams.success) {
+      throw new ValidationError(`Invalid parameters passed to set webhook subscription`, {
+        cause: parsedParams.error,
+      });
+    }
+
+    const body = {
+      webhook_url: parsedParams.data.webhookUrl,
+      enabled_events: parsedParams.data.enabledEvents ?? [...DefaultWebhookSubscriptionEvents],
+      version: parsedParams.data.version ?? WebhookVersions.V3,
+    };
+
+    const existing = await this.client.get<RawWebhookSubscriptionListResponse>(
+      WEBHOOK_SUBSCRIPTIONS_PATH,
+      { query: { limit: 1 } }
+    );
+    const subscriptionId = firstWebhookSubscriptionId(existing);
+
+    const subscription = subscriptionId
+      ? await this.client.patch<RawWebhookSubscription>(
+          `${WEBHOOK_SUBSCRIPTIONS_PATH}/${encodeURIComponent(subscriptionId)}`,
+          { body }
+        )
+      : await this.client.post<RawWebhookSubscription>(WEBHOOK_SUBSCRIPTIONS_PATH, { body });
+
+    return transformWebhookSubscription(subscription);
   }
 
   /**

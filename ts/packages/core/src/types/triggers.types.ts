@@ -274,6 +274,30 @@ export const WebhookVersions = {
 } as const;
 export type WebhookVersion = (typeof WebhookVersions)[keyof typeof WebhookVersions];
 
+export const DefaultWebhookSubscriptionEvents = ['composio.trigger.message'] as const;
+
+export const SetWebhookSubscriptionParamsSchema = z.object({
+  /** HTTPS URL to receive webhook events. */
+  webhookUrl: z.string().min(1),
+  /** Event types to subscribe to. Defaults to trigger messages. */
+  enabledEvents: z.array(z.string()).min(1).optional(),
+  /** Webhook payload version. Defaults to V3. */
+  version: z.enum(['V1', 'V2', 'V3']).optional(),
+});
+
+export type SetWebhookSubscriptionParams = z.infer<typeof SetWebhookSubscriptionParamsSchema>;
+
+export type WebhookSubscription = {
+  id: string;
+  webhookUrl: string;
+  version: WebhookVersion;
+  enabledEvents: string[];
+  secret?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
 /**
  * Parameters for verifying a webhook signature
  */

@@ -97,6 +97,88 @@ class TestTriggers:
 
         assert triggers._toolkit_versions == custom_versions
 
+    def test_set_webhook_subscription_creates_when_none_exists(
+        self, triggers, mock_client
+    ):
+        """Test set_webhook_subscription creates a subscription when none exists."""
+        webhook_url = "https://example.com/webhooks/composio"
+        raw_subscription = {
+            "id": "sub_123",
+            "webhook_url": webhook_url,
+            "version": "V3",
+            "enabled_events": ["composio.trigger.message"],
+        }
+        mock_client.get.return_value = {"items": []}
+        mock_client.post.return_value = raw_subscription
+
+        result = triggers.set_webhook_subscription(webhook_url=webhook_url)
+
+        mock_client.get.assert_called_once_with(
+            "/api/v3.1/webhook_subscriptions",
+            cast_to=object,
+            options={"params": {"limit": 1}},
+        )
+        mock_client.post.assert_called_once_with(
+            "/api/v3.1/webhook_subscriptions",
+            cast_to=object,
+            body={
+                "webhook_url": webhook_url,
+                "enabled_events": ["composio.trigger.message"],
+                "version": "V3",
+            },
+        )
+        mock_client.patch.assert_not_called()
+        assert result == raw_subscription
+
+    def test_set_webhook_subscription_updates_first_existing(
+        self, triggers, mock_client
+    ):
+        """Test set_webhook_subscription updates the first subscription when one exists."""
+        webhook_url = "https://example.com/webhooks/composio"
+        raw_subscription = {
+            "id": "sub_123",
+            "webhook_url": webhook_url,
+            "version": "V3",
+            "enabled_events": [
+                "composio.trigger.message",
+                "composio.connected_account.expired",
+            ],
+        }
+        mock_client.get.return_value = {"items": [{"id": "sub_123"}]}
+        mock_client.patch.return_value = raw_subscription
+
+        result = triggers.set_webhook_subscription(
+            webhook_url=webhook_url,
+            enabled_events=[
+                "composio.trigger.message",
+                "composio.connected_account.expired",
+            ],
+            version="V3",
+        )
+
+        mock_client.patch.assert_called_once_with(
+            "/api/v3.1/webhook_subscriptions/sub_123",
+            cast_to=object,
+            body={
+                "webhook_url": webhook_url,
+                "enabled_events": [
+                    "composio.trigger.message",
+                    "composio.connected_account.expired",
+                ],
+                "version": "V3",
+            },
+        )
+        mock_client.post.assert_not_called()
+        assert result == raw_subscription
+
+    def test_set_webhook_subscription_rejects_empty_events(self, triggers):
+        """Test set_webhook_subscription rejects empty enabled_events."""
+        with pytest.raises(exceptions.InvalidParams):
+            triggers.set_webhook_subscription(
+                webhook_url="https://example.com/webhooks/composio",
+                enabled_events=[],
+            )
+
     def test_get_type_with_default_versions(
         self, triggers, mock_client, mock_trigger_type
     ):
