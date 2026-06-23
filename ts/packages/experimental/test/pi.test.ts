@@ -158,6 +158,69 @@ describe('PiProvider', () => {
     });
   });
 
+  it('applies remote workbench and bash hooks', async () => {
+    const execute = vi.fn(async (toolSlug: string, args: Record<string, unknown>) => ({
+      successful: true,
+      data: { toolSlug, args },
+      error: null,
+    }));
+    const provider = new PiProvider();
+    const tools = provider.createSessionTools({
+      sessionId: 'trs_123',
+      search: vi.fn(async () => ({})),
+      execute,
+      includeWorkbenchTools: true,
+      hooks: {
+        remoteWorkbench: async (ctx, next) => {
+          ctx.request.code_to_execute = 'print("patched")';
+          const result = await next();
+          return { successful: true, data: { wrapped: result }, error: null };
+        },
+        remoteBash: ctx => ({
+          successful: true,
+          data: { skippedCommand: ctx.request.command },
+          error: null,
+        }),
+      },
+    });
+
+    const remoteWorkbench = tools[3]!;
+    const workbenchResult = await remoteWorkbench.execute(
+      'call_workbench',
+      { code_to_execute: 'print("hello")' } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+
+    expect(execute).toHaveBeenCalledWith(
+      'COMPOSIO_REMOTE_WORKBENCH',
+      { code_to_execute: 'print("patched")', session_id: 'trs_123' },
+      undefined,
+      expect.objectContaining({ sourceTool: PI_COMPOSIO_SESSION_TOOL_NAMES.remoteWorkbench })
+    );
+    expect((workbenchResult.content[0] as { text: string } | undefined)?.text).toContain('wrapped');
+
+    const remoteBash = tools[4]!;
+    const bashResult = await remoteBash.execute(
+      'call_bash',
+      { command: 'cat secret.txt' } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+
+    expect(execute).not.toHaveBeenCalledWith(
+      'COMPOSIO_REMOTE_BASH_TOOL',
+      expect.anything(),
+      expect.anything(),
+      expect.anything()
+    );
+    expect((bashResult.content[0] as { text: string } | undefined)?.text).toContain(
+      'skippedCommand'
+    );
+  });
+
   it('manages connections through native toolkit-state and authorize handlers without executing a meta tool', async () => {
     const session = {
       sessionId: 'trs_123',

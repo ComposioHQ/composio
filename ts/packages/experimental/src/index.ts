@@ -223,6 +223,30 @@ export interface PiExecuteHookContext<TExecuteResult = unknown> {
   ) => Promise<unknown>;
 }
 
+export interface PiRemoteWorkbenchRequest extends Record<string, unknown> {
+  code_to_execute: string;
+  timeout?: number;
+  thought?: string;
+  file_path?: string;
+  disabled_tools?: string[];
+  session_id?: string;
+}
+
+export interface PiRemoteBashRequest extends Record<string, unknown> {
+  command: string;
+  session_id?: string;
+}
+
+export interface PiRemoteWorkbenchHookContext {
+  request: PiRemoteWorkbenchRequest;
+  context: PiExecuteContext;
+}
+
+export interface PiRemoteBashHookContext {
+  request: PiRemoteBashRequest;
+  context: PiExecuteContext;
+}
+
 export interface PiSessionHooks<
   TSearchResult = unknown,
   TExecuteResult = unknown,
@@ -239,6 +263,16 @@ export interface PiSessionHooks<
   /** Middleware around tool execution. Mutate `ctx.request`, call `next()` to execute, or return a replacement result. */
   execute?: (
     ctx: PiExecuteHookContext<TExecuteResult>,
+    next: PiHookNext<TExecuteResult>
+  ) => MaybePromise<unknown>;
+  /** Middleware around the remote Python workbench helper. Runs outside, then through, the generic `execute` hook when `next()` is called. */
+  remoteWorkbench?: (
+    ctx: PiRemoteWorkbenchHookContext,
+    next: PiHookNext<TExecuteResult>
+  ) => MaybePromise<unknown>;
+  /** Middleware around the remote bash helper. Runs outside, then through, the generic `execute` hook when `next()` is called. */
+  remoteBash?: (
+    ctx: PiRemoteBashHookContext,
     next: PiHookNext<TExecuteResult>
   ) => MaybePromise<unknown>;
   /** Middleware for auth links found in any result. Call `next()` to keep the current model-visible result, or return a replacement. */
@@ -1052,28 +1086,48 @@ export class PiProvider extends BaseAgenticProvider<
       ...(executionMode ? { executionMode } : {}),
       execute: async (toolCallId, params) => {
         try {
-          const args = {
+          const request: PiRemoteWorkbenchRequest = {
             ...params,
             ...(params.session_id || capabilities.sessionId
               ? { session_id: params.session_id ?? capabilities.sessionId }
               : {}),
           };
-          const executed = await executeWithPolicy(
-            toolCallId,
-            names.remoteWorkbench,
-            params,
-            'COMPOSIO_REMOTE_WORKBENCH',
-            args
+          const hookContext: PiRemoteWorkbenchHookContext = {
+            request,
+            context: {
+              ...buildBaseContext(toolCallId, names.remoteWorkbench, params),
+              toolSlug: 'COMPOSIO_REMOTE_WORKBENCH',
+              args: request,
+            },
+          };
+          const authLinks: string[] = [];
+          const details: Pick<PiToolDetails, 'denied'> = {};
+          const value = await runHook(
+            capabilities.hooks?.remoteWorkbench,
+            hookContext,
+            async () => {
+              const executed = await executeWithPolicy(
+                toolCallId,
+                names.remoteWorkbench,
+                params,
+                'COMPOSIO_REMOTE_WORKBENCH',
+                hookContext.request
+              );
+              authLinks.push(...executed.authLinks);
+              details.denied = executed.denied;
+              hookContext.context = executed.context;
+              return executed.value;
+            }
           );
           const transformed = await maybeTransform(capabilities, {
             tool: 'remoteWorkbench',
-            value: executed.value,
-            context: executed.context,
+            value,
+            context: hookContext.context,
           });
           return toPiResult(transformed, formatter, {
-            slug: executed.context.toolSlug,
-            authLinks: executed.authLinks,
-            denied: executed.denied,
+            slug: hookContext.context.toolSlug,
+            authLinks,
+            denied: details.denied,
           });
         } catch (error) {
           if (!catchErrors) throw error;
@@ -1107,28 +1161,44 @@ export class PiProvider extends BaseAgenticProvider<
       ...(executionMode ? { executionMode } : {}),
       execute: async (toolCallId, params) => {
         try {
-          const args = {
+          const request: PiRemoteBashRequest = {
             ...params,
             ...(params.session_id || capabilities.sessionId
               ? { session_id: params.session_id ?? capabilities.sessionId }
               : {}),
           };
-          const executed = await executeWithPolicy(
-            toolCallId,
-            names.remoteBash,
-            params,
-            'COMPOSIO_REMOTE_BASH_TOOL',
-            args
-          );
+          const hookContext: PiRemoteBashHookContext = {
+            request,
+            context: {
+              ...buildBaseContext(toolCallId, names.remoteBash, params),
+              toolSlug: 'COMPOSIO_REMOTE_BASH_TOOL',
+              args: request,
+            },
+          };
+          const authLinks: string[] = [];
+          const details: Pick<PiToolDetails, 'denied'> = {};
+          const value = await runHook(capabilities.hooks?.remoteBash, hookContext, async () => {
+            const executed = await executeWithPolicy(
+              toolCallId,
+              names.remoteBash,
+              params,
+              'COMPOSIO_REMOTE_BASH_TOOL',
+              hookContext.request
+            );
+            authLinks.push(...executed.authLinks);
+            details.denied = executed.denied;
+            hookContext.context = executed.context;
+            return executed.value;
+          });
           const transformed = await maybeTransform(capabilities, {
             tool: 'remoteBash',
-            value: executed.value,
-            context: executed.context,
+            value,
+            context: hookContext.context,
           });
           return toPiResult(transformed, formatter, {
-            slug: executed.context.toolSlug,
-            authLinks: executed.authLinks,
-            denied: executed.denied,
+            slug: hookContext.context.toolSlug,
+            authLinks,
+            denied: details.denied,
           });
         } catch (error) {
           if (!catchErrors) throw error;

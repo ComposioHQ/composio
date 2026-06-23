@@ -81,8 +81,19 @@ const composioTools = provider.createSessionTools({
       return next();
     },
     execute: (ctx, next) => {
-      if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
+      if (ctx.request.toolSlug === 'COMPOSIO_MANAGE_CONNECTIONS') {
         return { successful: false, error: 'Meta tools are blocked.' };
+      }
+      return next();
+    },
+    remoteWorkbench: async (ctx, next) => {
+      const result = await next();
+      await auditWorkbenchRun({ code: ctx.request.code_to_execute, result });
+      return result;
+    },
+    remoteBash: async (ctx, next) => {
+      if (ctx.request.command.includes('rm -rf')) {
+        return { successful: false, error: 'Destructive bash commands are blocked.' };
       }
       return next();
     },
@@ -144,6 +155,8 @@ Available hooks:
 - `search(ctx, next)` — rewrite query/toolkit filters, log search results, or return custom search output.
 - `manageConnections(ctx, next)` — rewrite requested toolkits, force reauth, log connection state, or return custom connection output.
 - `execute(ctx, next)` — block/rewrite tools, route to another session/execute handler, call `ctx.manageConnections(...)`, log outputs, or return a file/workbench reference instead of inline data.
+- `remoteWorkbench(ctx, next)` — rewrite Python code/session metadata, audit workbench runs, or replace large outputs with file/workbench references. Calls through the generic `execute` hook when `next()` is used.
+- `remoteBash(ctx, next)` — rewrite/block shell commands, enforce safety policy, audit filesystem access, or replace output. Calls through the generic `execute` hook when `next()` is used.
 - `onAuthLink(ctx, next)` — send/redact/resume auth links out-of-band. `return next()` keeps the original model-visible result; returning another value replaces it.
 
 ## Auth link handling
