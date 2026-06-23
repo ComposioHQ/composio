@@ -136,7 +136,7 @@ function SchemaSection({ title, schema, showRequired = true }: { title: string; 
 
   return (
     <div>
-      <h3 className="text-base font-semibold text-fd-foreground mb-3">{title}</h3>
+      <h2 className="text-base font-semibold text-fd-foreground mb-3">{title}</h2>
       <div className="rounded-lg border border-fd-border bg-fd-card">
         <div className="px-4">
           <ParameterList parameters={properties} requiredFields={schema.required || []} showRequired={showRequired} />
@@ -150,19 +150,31 @@ export function MetaToolDetail({ tool }: { tool: MetaTool }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        {tool.tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            {tool.tags.map((tag) => (
-              <TagBadge key={tag} tag={tag} />
-            ))}
-          </div>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="text-sm font-mono text-fd-muted-foreground">{tool.slug}</code>
+          {tool.tags.map((tag) => (
+            <TagBadge key={tag} tag={tag} />
+          ))}
+        </div>
+        {tool.summary && (
+          <p className="text-base text-fd-foreground leading-relaxed">{tool.summary}</p>
         )}
-        <code className="text-sm font-mono text-fd-muted-foreground">{tool.slug}</code>
       </div>
 
-      {/* Input Parameters */}
-      <SchemaSection title="Input Parameters" schema={tool.inputParameters} />
+      {/* When to use it */}
+      {tool.whenToUse && (
+        <div className="rounded-lg border border-fd-border bg-fd-card p-4">
+          <h2 className="text-base font-semibold text-fd-foreground mb-1.5">When to use it</h2>
+          <p className="text-sm text-fd-muted-foreground leading-relaxed">{tool.whenToUse}</p>
+          {tool.usageNote && (
+            <p className="mt-2 text-sm text-fd-muted-foreground leading-relaxed">{tool.usageNote}</p>
+          )}
+        </div>
+      )}
+
+      {/* Input parameters */}
+      <SchemaSection title="Input parameters" schema={tool.inputParameters} />
 
       {/* Response */}
       <SchemaSection title="Response" schema={tool.responseSchema} showRequired={false} />
