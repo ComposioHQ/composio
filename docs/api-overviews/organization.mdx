@@ -1,17 +1,11 @@
----
-title: Usage metering
-description: Query aggregated tool call and session counts for your org or project, with rich filtering and breakdown options.
-keywords: ['usage', 'metering', 'analytics', 'billing', 'observability']
----
-
-The Usage API returns **aggregated counts** of tool calls and sessions. Use it to power billing dashboards, customer-facing analytics, or internal utilization reports. For individual events, use the [Logs API](/docs/observability/logs).
+The Usage API returns **aggregated counts** of tool calls and sessions. Use it to power billing dashboards, customer-facing analytics, or internal utilization reports. For individual events, use the [Logs API](/reference/api-reference/logs).
 
 There are two query shapes:
 
 - **Summary** — totals across one or more entity types in a time window.
 - **Breakdown** — one entity type, grouped by a dimension (tool, user, session, etc.).
 
-Each shape comes in an org-scoped and a project-scoped flavor.
+Each shape comes in an org-scoped and a project-scoped flavor. The org-scoped endpoints are documented below; the project-scoped usage endpoints (`POST /api/v3.1/project/usage/*`) also appear on the [Projects](/reference/api-reference/projects) reference page.
 
 ## Authentication
 
@@ -190,7 +184,3 @@ curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
     "filters": { "user_id": "user_abc123" }
   }'
 ```
-
-## Next
-
-<Card icon={<Terminal />} title="Tool execution logs" href="/docs/observability/logs" description="Debug individual tool executions with full request/response payloads" />
