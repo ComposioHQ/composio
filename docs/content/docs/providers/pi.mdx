@@ -1,0 +1,201 @@
+---
+title: Pi
+description: Use Composio tools inside Pi coding-agent sessions.
+keywords: [pi, coding agent, pi coding agent, provider, experimental, typescript]
+---
+
+The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). Use it when you want a Pi session to search Composio tools, manage app connections, execute tools, and optionally use Composio's remote workbench.
+
+<Callout type="warning">
+  The Pi provider is experimental and currently ships from `@composio/experimental` for TypeScript
+  projects.
+</Callout>
+
+## Dynamic session helpers
+
+For most Pi apps, expose the dynamic helper tools. They let the model discover exact Composio tool slugs before executing, request missing connections, and run workbench commands when enabled.
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+npm install @composio/core @composio/experimental @earendil-works/pi-coding-agent
+```
+
+</Step>
+
+<Step>
+**Configure API keys**
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+```
+
+</Step>
+
+<Step>
+**Create a Composio session and Pi tools**
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+import { PiProvider, createPiComposioSystemPrompt } from '@composio/experimental';
+import {
+  createAgentSession,
+  DefaultResourceLoader,
+  getAgentDir,
+  SessionManager,
+} from '@earendil-works/pi-coding-agent';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const provider = new PiProvider();
+
+const composioSession = await composio.sessions.create('user_123', {
+  toolkits: ['github', 'gmail'],
+  manageConnections: {
+    enable: true,
+    callbackUrl: 'https://your-app.example.com/auth/callback',
+  },
+  workbench: { enable: true },
+});
+
+const composioTools = provider.createSessionTools({
+  sessionId: composioSession.sessionId,
+  search: composioSession.search.bind(composioSession),
+  execute: composioSession.execute.bind(composioSession),
+  callbackUrl: 'https://your-app.example.com/auth/callback',
+  includeWorkbenchTools: true,
+  connections: {
+    getToolkitStates: toolkits => composioSession.toolkits({ toolkits }),
+    authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
+  },
+  hooks: {
+    execute: (ctx, next) => {
+      if (ctx.request.toolSlug === 'COMPOSIO_MANAGE_CONNECTIONS') {
+        return ctx.deny('Use composio_manage_connections instead.');
+      }
+      return next();
+    },
+    onAuthLink: async ctx => {
+      await sendConnectionLinkToUser(ctx.url);
+      return { message: 'Connection link sent out-of-band.' };
+    },
+  },
+});
+
+const loader = new DefaultResourceLoader({
+  cwd: process.cwd(),
+  agentDir: getAgentDir(),
+  systemPromptOverride: () =>
+    createPiComposioSystemPrompt(composioSession.sessionId, {
+      includeWorkbenchTools: true,
+    }),
+});
+await loader.reload();
+
+const { session: piSession } = await createAgentSession({
+  cwd: process.cwd(),
+  resourceLoader: loader,
+  sessionManager: SessionManager.inMemory(process.cwd()),
+  customTools: composioTools,
+  tools: [
+    'composio_search_tools',
+    'composio_manage_connections',
+    'composio_execute_tool',
+    'composio_remote_workbench',
+    'composio_remote_bash',
+  ],
+});
+
+await piSession.prompt('Find my open GitHub issues and summarize the blockers.');
+```
+
+</Step>
+</Steps>
+
+The provider creates these Pi tools:
+
+- `composio_search_tools` — search Composio for exact tool slugs and schemas.
+- `composio_manage_connections` — check connection state and initiate auth for missing toolkits.
+- `composio_execute_tool` — execute an exact Composio tool slug.
+- `composio_remote_workbench` — run Python in the Composio remote workbench. Requires `includeWorkbenchTools: true`.
+- `composio_remote_bash` — run short bash commands in the remote workbench filesystem. Requires `includeWorkbenchTools: true`.
+
+## Hooks
+
+Hooks are middleware around each helper. Calling `await next()` runs the default Composio behavior and returns the result before anything is shown to the model. Return that result to pass it through, return another value to control what the model sees, or skip `next()` to handle the operation yourself.
+
+```typescript
+// @noErrors
+const composioTools = provider.createSessionTools({
+  sessionId: composioSession.sessionId,
+  search: composioSession.search.bind(composioSession),
+  execute: composioSession.execute.bind(composioSession),
+  hooks: {
+    search: (ctx, next) => {
+      ctx.request.toolkits = ctx.request.toolkits?.map(toolkit =>
+        toolkit === 'slack' ? 'slackbot' : toolkit
+      );
+      return next();
+    },
+    execute: async (ctx, next) => {
+      if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
+        return ctx.deny('Meta tools are blocked.');
+      }
+
+      const result = await next();
+      const file = await saveLargeOutput(result);
+      return file ? { message: `Output saved to ${file}` } : result;
+    },
+    remoteBash: (ctx, next) => {
+      if (ctx.request.command.includes('rm -rf')) {
+        return ctx.deny('Destructive bash commands are blocked.');
+      }
+      return next();
+    },
+    onAuthLink: async (ctx, next) => {
+      await sendConnectionLinkToUser(ctx.url);
+      return shouldShowLinkToModel(ctx) ? next() : { message: 'Connection link sent out-of-band.' };
+    },
+  },
+});
+```
+
+Available hooks:
+
+- `search(ctx, next)`
+- `manageConnections(ctx, next)`
+- `execute(ctx, next)`
+- `remoteWorkbench(ctx, next)`
+- `remoteBash(ctx, next)`
+- `onAuthLink(ctx, next)`
+
+## Static tool wrapping
+
+If you already know exactly which tools to expose, initialize Composio with `PiProvider` and fetch tools directly.
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+import { PiProvider } from '@composio/experimental';
+import { createAgentSession, SessionManager } from '@earendil-works/pi-coding-agent';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new PiProvider(),
+});
+
+const tools = await composio.tools.get('user_123', {
+  tools: ['GITHUB_CREATE_ISSUE'],
+});
+
+const { session } = await createAgentSession({
+  cwd: process.cwd(),
+  sessionManager: SessionManager.inMemory(process.cwd()),
+  customTools: tools,
+  tools: ['GITHUB_CREATE_ISSUE'],
+});
+
+await session.prompt('Create a GitHub issue for the failing test.');
+```

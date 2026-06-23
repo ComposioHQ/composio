@@ -11,6 +11,7 @@
     "crewai",
     "llamaindex",
     "mastra",
+    "pi",
     "custom-providers"
   ]
 }
