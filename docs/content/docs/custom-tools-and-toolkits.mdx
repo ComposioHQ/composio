@@ -13,11 +13,11 @@ Custom tool APIs are experimental and may change in future releases.
 Custom tools work with **native tools** (`session.tools()`). MCP support is coming soon. Custom tools are not available via the MCP server URL yet.
 </Callout>
 
-Custom tools let you define tools that run in-process alongside remote Composio tools within a session. There are three patterns:
+Custom tools let you define tools that run in-process alongside remote Composio tools within a session. You have three patterns:
 
-- **Standalone tools** - for internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules)
-- **Extension tools** - wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests
-- **Custom toolkits** - group related standalone tools under a namespace
+- **Standalone tools**: internal app logic that doesn't need Composio auth (DB lookups, in-memory data, business rules).
+- **Extension tools**: wrap a Composio toolkit's API with custom business logic via `extendsToolkit` / `extends_toolkit`, using `ctx.proxyExecute()` / `ctx.proxy_execute()` for authenticated requests.
+- **Custom toolkits**: group related standalone tools under a namespace.
 
 <IntegrationTabs tabs={[
   { value: "standalone", label: "Standalone Tool" },
@@ -219,7 +219,7 @@ composio = Composio(api_key="your_api_key")
 
 An extension tool wraps a Composio toolkit's API with custom business logic. It inherits auth via `extendsToolkit` / `extends_toolkit`, so `ctx.proxyExecute()` / `ctx.proxy_execute()` handles credentials automatically.
 
-Prefer relative `endpoint` values in proxy calls. They resolve against the toolkit base URL. Absolute URLs are only accepted when they stay on the same scheme and registrable domain as that base URL.
+Prefer relative `endpoint` values in proxy calls. They resolve against the toolkit base URL. Composio only accepts absolute URLs when they stay on the same scheme and registrable domain as that base URL.
 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
@@ -701,7 +701,7 @@ In TypeScript, use uppercase slugs like `SEND_PROMO_EMAIL`. In Python, slugs are
 
 ### Accessing authenticated APIs
 
-If your tool needs to call an API that requires user credentials (Gmail, GitHub, etc.), set `extendsToolkit` / `extends_toolkit` to the toolkit name. Composio will handle authentication automatically, and the agent can prompt users to connect their account if needed.
+If your tool calls an API that requires user credentials (Gmail, GitHub, and so on), set `extendsToolkit` / `extends_toolkit` to the toolkit name. Composio handles authentication automatically, and the agent can prompt users to connect their account when needed.
 
 ### Defining inputs in Python
 
