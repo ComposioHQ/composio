@@ -63,21 +63,12 @@ import {
 import type { CustomToolsMap } from '../types/customTool.types';
 
 function getSessionMetadata(
-  session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse,
-  options?: { includeWorkbenchAccessKey?: boolean }
+  session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
 ) {
-  const mcpHeaders =
-    'mcp' in session
-      ? ((session.mcp as { headers?: Record<string, string | undefined> }).headers ?? {})
-      : {};
-  const workbenchAccessKey = options?.includeWorkbenchAccessKey
-    ? mcpHeaders['x-session-access-key']
-    : undefined;
   const metadata: ToolRouterSessionMetadata = {
     preload: session.config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
-    workbenchAccessKey,
   };
   return metadata;
 }
@@ -136,20 +127,15 @@ export class ToolRouter<
   private createMCPServerConfig({
     type,
     url,
-    headers,
   }: {
     type: MCPServerType;
     url: string;
-    headers?: Record<string, string | undefined>;
   }): ToolRouterMCPServerConfig {
     return {
       type,
       url,
       headers: {
         ...(this.config?.apiKey ? { 'x-api-key': this.config.apiKey } : {}),
-        ...(headers?.['x-session-access-key']
-          ? { 'x-session-access-key': headers['x-session-access-key'] }
-          : {}),
       },
     };
   }
@@ -258,7 +244,7 @@ export class ToolRouter<
       );
     }
     const metadata = {
-      ...getSessionMetadata(session, { includeWorkbenchAccessKey: true }),
+      ...getSessionMetadata(session),
       preloadedCustomToolSlugs: getPreloadedCustomToolSlugs(customToolsMap, defaultCustomPreload),
       inlineCustomToolsPayload,
     };

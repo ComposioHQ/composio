@@ -69,7 +69,6 @@ export function experimental_e2bSandbox(opts: E2BSandboxOptions = {}): SandboxPr
         sessionId: ctx.sessionId,
         backendUrl: ctx.backendUrl,
         apiKey: ctx.apiKey,
-        workbenchAccessKey: ctx.workbenchAccessKey,
       });
       const sandbox = (await Sandbox.create({
         ...(opts.apiKey ? { apiKey: opts.apiKey } : {}),

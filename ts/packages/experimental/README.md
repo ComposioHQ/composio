@@ -28,7 +28,7 @@ await workbench.provider.runBash(workbench.sandbox, 'node --version');
 await workbench.teardown();
 ```
 
-The injected helper exposes `runComposioTool(slug, args)` inside the sandbox. Track 1 uses the project API key for `/execute`; Track 2 swaps that to the scoped session access key once the Apollo create-response field is available. Python helper parity is a follow-up.
+The injected helper exposes `runComposioTool(slug, args)` inside the sandbox and authenticates `/execute` calls with the Composio project API key. For v0, use this only with trusted sandboxes you control because the project API key is injected into that runtime. Python helper parity is a follow-up.
 
 ## Status: Experimental — API may change
 

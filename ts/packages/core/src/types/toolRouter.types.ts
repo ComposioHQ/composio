@@ -36,16 +36,6 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 export const SandboxSizeSchema = z.enum(['standard', 'medium', 'large', 'xlarge']);
 export type SandboxSize = z.infer<typeof SandboxSizeSchema>;
 
-export const ToolRouterWorkbenchExperimentalProviderSchema = z
-  .object({
-    provider: z.string().min(1),
-  })
-  .passthrough()
-  .describe('Experimental SDK-side workbench sandbox provider descriptor.');
-export type ToolRouterWorkbenchExperimentalProvider = z.infer<
-  typeof ToolRouterWorkbenchExperimentalProviderSchema
->;
-
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
   .object({
@@ -250,9 +240,6 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           ),
         sandboxSize: SandboxSizeSchema.optional().describe(
           'Sandbox compute tier for the workbench. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session\'s workbench sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists.'
-        ),
-        experimentalProvider: ToolRouterWorkbenchExperimentalProviderSchema.optional().describe(
-          'Experimental SDK-side local workbench sandbox provider. The provider object stays local; only its provider slug is sent as experimental_provider.'
         ),
       })
       .optional()
@@ -594,7 +581,6 @@ export interface ToolRouterSessionMetadata {
   preload?: ToolRouterSessionPreloadConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
-  workbenchAccessKey?: string;
   preloadedCustomToolSlugs?: string[];
   inlineCustomToolsPayload?: InlineCustomToolsWirePayload;
 }
@@ -659,7 +645,6 @@ export const ToolRouterUpdateSessionConfigSchema = z
         enableProxyExecution: z.boolean().optional(),
         autoOffloadThreshold: z.number().optional(),
         sandboxSize: SandboxSizeSchema.optional(),
-        experimentalProvider: ToolRouterWorkbenchExperimentalProviderSchema.optional(),
       })
       .nullable()
       .optional(),
@@ -698,8 +683,6 @@ export interface Session<
   configVersion?: number;
   /** Non-blocking session creation warnings returned by the API. */
   warnings: ToolRouterSessionWarning[];
-  /** Scoped workbench access key returned only by create responses when available. Treat as a secret. */
-  workbenchAccessKey?: string;
   tools: ToolRouterToolsFn<TToolCollection, TTool, TProvider>;
   authorize: ToolRouterAuthorizeFn;
   toolkits: ToolRouterToolkitsFn;

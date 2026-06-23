@@ -122,16 +122,12 @@ export const transformToolRouterWorkbenchParams = (
     return undefined;
   }
 
-  const result: Record<string, unknown> = {
+  return {
     enable: params.enable ?? true,
     enable_proxy_execution: params.enableProxyExecution,
     auto_offload_threshold: params.autoOffloadThreshold,
     sandbox_size: params.sandboxSize,
   };
-  if (params.experimentalProvider !== undefined) {
-    result.experimental_provider = params.experimentalProvider.provider;
-  }
-  return result as SessionCreateParams.Workbench;
 };
 
 /**
@@ -175,7 +171,6 @@ export const transformToolRouterUpdateWorkbenchParams = (params: {
   enableProxyExecution?: boolean;
   autoOffloadThreshold?: number;
   sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge';
-  experimentalProvider?: { provider: string };
 }): SessionPatchParams.Workbench => {
   const result: Record<string, unknown> = {};
   if (params.enable !== undefined) {
@@ -189,9 +184,6 @@ export const transformToolRouterUpdateWorkbenchParams = (params: {
   }
   if (params.sandboxSize !== undefined) {
     result.sandbox_size = params.sandboxSize;
-  }
-  if (params.experimentalProvider !== undefined) {
-    result.experimental_provider = params.experimentalProvider.provider;
   }
   return result as SessionPatchParams.Workbench;
 };

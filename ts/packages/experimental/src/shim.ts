@@ -4,7 +4,6 @@ export interface WorkbenchHelperEnv {
   sessionId: string;
   backendUrl: string;
   apiKey?: string;
-  workbenchAccessKey?: string;
 }
 
 export function experimental_createWorkbenchHelperSource(): string {
@@ -31,18 +30,11 @@ export async function runComposioTool(
 ): Promise<unknown> {
   const backendUrl = requireEnv('BACKEND_URL').replace(/\/+$/, '');
   const sessionId = requireEnv('COMPOSIO_TOOLROUTER_SESSION_ID');
-  const workbenchAccessKey = readEnv('COMPOSIO_WORKBENCH_ACCESS_KEY');
-  const projectApiKey = readEnv('COMPOSIO_API_KEY');
+  const projectApiKey = requireEnv('COMPOSIO_API_KEY');
   const headers: Record<string, string> = {
     'content-type': 'application/json',
+    'x-api-key': projectApiKey,
   };
-  if (workbenchAccessKey) {
-    headers['x-session-access-key'] = workbenchAccessKey;
-  } else if (projectApiKey) {
-    headers['x-api-key'] = projectApiKey;
-  } else {
-    throw new Error('Missing COMPOSIO_WORKBENCH_ACCESS_KEY or COMPOSIO_API_KEY for Composio tool execution.');
-  }
 
   const response = await fetch(
     backendUrl + '/api/v3/tool_router/session/' + encodeURIComponent(sessionId) + '/execute',
@@ -70,7 +62,6 @@ export function experimental_createWorkbenchEnv(env: WorkbenchHelperEnv): Record
   return {
     BACKEND_URL: env.backendUrl,
     COMPOSIO_TOOLROUTER_SESSION_ID: env.sessionId,
-    ...(env.workbenchAccessKey ? { COMPOSIO_WORKBENCH_ACCESS_KEY: env.workbenchAccessKey } : {}),
     ...(env.apiKey ? { COMPOSIO_API_KEY: env.apiKey } : {}),
   };
 }

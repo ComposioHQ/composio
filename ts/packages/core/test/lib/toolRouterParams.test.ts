@@ -285,15 +285,6 @@ describe('transformToolRouterUpdateParams', () => {
     expect(wb).toHaveProperty('enable_proxy_execution', true);
   });
 
-  it('should transform experimentalProvider to experimental_provider for workbench patches', () => {
-    const result = transformToolRouterUpdateParams({
-      workbench: { experimentalProvider: { provider: 'e2b' } },
-    });
-    expect(result.workbench).toEqual({
-      experimental_provider: 'e2b',
-    });
-  });
-
   it('should omit experimental_provider from workbench patches when absent', () => {
     const result = transformToolRouterUpdateParams({
       workbench: { sandboxSize: 'large' },

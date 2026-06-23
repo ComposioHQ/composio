@@ -6,7 +6,6 @@ export interface SandboxProvisionContext {
   sessionId: string;
   backendUrl: string;
   apiKey?: string;
-  workbenchAccessKey?: string;
   env?: Record<string, string | undefined>;
 }
 
@@ -42,11 +41,11 @@ export interface SandboxProvider<THandle = unknown> {
   teardown(handle: THandle): Promise<void>;
 }
 
-export interface LocalWorkbenchConfig extends ToolRouterCreateSessionConfig {
+export type LocalWorkbenchConfig = Omit<ToolRouterCreateSessionConfig, 'workbench'> & {
   workbench: NonNullable<ToolRouterCreateSessionConfig['workbench']> & {
     experimentalProvider: SandboxProvider;
   };
-}
+};
 
 export interface LocalWorkbenchSession<THandle = unknown> {
   session: Session<unknown, unknown, never>;

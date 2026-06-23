@@ -5,4 +5,4 @@
 
 Add the experimental BYO local workbench package with a provider-agnostic sandbox interface, an E2B implementation, and the TypeScript Composio tool helper shim.
 
-Core now accepts the experimental workbench provider toggle and exposes a create-response workbench access key when the backend returns one.
+The v0 local workbench authenticates sandbox tool execution with the developer's Composio project API key and keeps sandbox provider selection SDK-local.

@@ -67,6 +67,7 @@ describe('experimental_e2bSandbox', () => {
         COMPOSIO_API_KEY: 'project_key',
       },
     });
+    expect(createMock.mock.calls[0]?.[0].envs).not.toHaveProperty('COMPOSIO_WORKBENCH_ACCESS_KEY');
     expect(writeMock).toHaveBeenCalledWith(
       '/tmp/composio-tools.ts',
       expect.stringContaining('/execute')
@@ -87,5 +88,6 @@ describe('experimental_e2bSandbox', () => {
         }),
       })
     );
+    expect(fetchMock.mock.calls[0]?.[1].headers).not.toHaveProperty('x-session-access-key');
   });
 });
