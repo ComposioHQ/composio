@@ -56,6 +56,15 @@ export const denyPiToolCall = (error: string): PiDeniedResult => ({
   denied: true,
 });
 
+export interface PiHookControls {
+  /** Return from a hook to explicitly deny/divert the operation with a model-visible error. */
+  deny(error: string): PiDeniedResult;
+}
+
+const hookControls: PiHookControls = {
+  deny: denyPiToolCall,
+};
+
 export type MaybePromise<T> = T | Promise<T>;
 
 export type PiHookNext<TResult> = () => Promise<TResult>;
@@ -110,7 +119,7 @@ export interface PiExecuteContext extends PiBaseToolContext {
   account?: string;
 }
 
-export interface PiAuthLinkContext<TResult = unknown> {
+export interface PiAuthLinkContext<TResult = unknown> extends PiHookControls {
   url: string;
   toolkit?: string;
   sourceTool: string;
@@ -212,17 +221,17 @@ export interface PiConnectionHandlers<
   ) => boolean;
 }
 
-export interface PiSearchHookContext {
+export interface PiSearchHookContext extends PiHookControls {
   request: { query: string; toolkits?: string[] };
   context: PiSearchContext;
 }
 
-export interface PiManageConnectionsHookContext {
+export interface PiManageConnectionsHookContext extends PiHookControls {
   request: { toolkits: string[]; reinitiateAll: boolean };
   context: PiConnectionManagementContext;
 }
 
-export interface PiExecuteHookContext<TExecuteResult = unknown> {
+export interface PiExecuteHookContext<TExecuteResult = unknown> extends PiHookControls {
   request: {
     toolSlug: string;
     args: Record<string, unknown>;
@@ -251,12 +260,12 @@ export interface PiRemoteBashRequest extends Record<string, unknown> {
   session_id?: string;
 }
 
-export interface PiRemoteWorkbenchHookContext {
+export interface PiRemoteWorkbenchHookContext extends PiHookControls {
   request: PiRemoteWorkbenchRequest;
   context: PiExecuteContext;
 }
 
-export interface PiRemoteBashHookContext {
+export interface PiRemoteBashHookContext extends PiHookControls {
   request: PiRemoteBashRequest;
   context: PiExecuteContext;
 }
@@ -533,7 +542,7 @@ const runHook = async <TResult, TContext>(
 const applyAuthLinkHandlers = async (
   capabilities: PiSessionToolCapabilities,
   value: unknown,
-  context: Omit<PiAuthLinkContext, 'url'>
+  context: Omit<PiAuthLinkContext, 'url' | keyof PiHookControls>
 ): Promise<{ value: unknown; authLinks: string[] }> => {
   const links = extractComposioConnectLinks(value);
   const run = async (index: number, currentValue: unknown): Promise<unknown> => {
@@ -543,7 +552,7 @@ const applyAuthLinkHandlers = async (
       index + 1,
       await runHook(
         capabilities.hooks?.onAuthLink,
-        { ...context, url, result: currentValue },
+        { ...context, ...hookControls, url, result: currentValue },
         async () => currentValue
       )
     );
@@ -733,6 +742,7 @@ export class PiProvider extends BaseAgenticProvider<
         reinitiateAll,
       };
       const hookContext: PiManageConnectionsHookContext = {
+        ...hookControls,
         request: { toolkits, reinitiateAll },
         context: connectionContext,
       };
@@ -831,6 +841,7 @@ export class PiProvider extends BaseAgenticProvider<
       };
       const authLinks: string[] = [];
       const hookContext: PiExecuteHookContext = {
+        ...hookControls,
         request: { toolSlug, args, account },
         context: executeContext,
         manageConnections: async (managedToolkits, manageOptions) => {
@@ -910,6 +921,7 @@ export class PiProvider extends BaseAgenticProvider<
             requestedToolkits,
           };
           const hookContext: PiSearchHookContext = {
+            ...hookControls,
             request: {
               query: params.query,
               ...(requestedToolkits ? { toolkits: requestedToolkits } : {}),
@@ -1114,6 +1126,7 @@ export class PiProvider extends BaseAgenticProvider<
               : {}),
           };
           const hookContext: PiRemoteWorkbenchHookContext = {
+            ...hookControls,
             request,
             context: {
               ...buildBaseContext(toolCallId, names.remoteWorkbench, params),
@@ -1189,6 +1202,7 @@ export class PiProvider extends BaseAgenticProvider<
               : {}),
           };
           const hookContext: PiRemoteBashHookContext = {
+            ...hookControls,
             request,
             context: {
               ...buildBaseContext(toolCallId, names.remoteBash, params),

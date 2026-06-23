@@ -4,7 +4,6 @@ import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
 import {
   PiProvider,
   PI_COMPOSIO_SESSION_TOOL_NAMES,
-  denyPiToolCall,
   extractComposioConnectLinks,
 } from '../src/index';
 
@@ -309,7 +308,7 @@ describe('PiProvider', () => {
         },
         execute: (ctx, next) => {
           if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
-            return denyPiToolCall('meta tools blocked');
+            return ctx.deny('meta tools blocked');
           }
           ctx.request.toolSlug = ctx.request.toolSlug.replace(/^SLACK_/, 'SLACKBOT_');
           return next();
