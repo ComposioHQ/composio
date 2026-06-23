@@ -36,7 +36,6 @@
     "common-faq",
     "glossary",
     "debugging-info",
-    "migration-guide",
-    "troubleshooting"
+    "migration-guide"
   ]
 }

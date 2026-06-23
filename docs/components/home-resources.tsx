@@ -44,9 +44,9 @@ const RESOURCES = [
   },
   {
     icon: <LifeBuoy aria-hidden="true" className="size-4" />,
-    title: 'Troubleshooting',
-    description: 'Common errors and how to fix them.',
-    href: '/docs/troubleshooting',
+    title: 'Common FAQ',
+    description: 'Answers to frequent questions and errors.',
+    href: '/docs/common-faq',
   },
 ];
 
