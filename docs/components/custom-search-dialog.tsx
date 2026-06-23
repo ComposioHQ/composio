@@ -69,8 +69,8 @@ type SearchResultItem = {
 const SEARCH_BREADCRUMB_LABELS: Record<string, string> = {
   toolkits: 'Toolkit',
   toolkit: 'Toolkit',
-  cookbooks: 'Cookbook',
-  cookbook: 'Cookbook',
+  examples: 'Example',
+  example: 'Example',
   docs: 'Docs',
   reference: 'Reference',
   'api-reference': 'API Reference',

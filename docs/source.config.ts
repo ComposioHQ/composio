@@ -68,8 +68,8 @@ export const reference = defineDocs({
   },
 });
 
-export const cookbooks = defineDocs({
-  dir: 'content/cookbooks',
+export const examples = defineDocs({
+  dir: 'content/examples',
   docs: {
     schema: docsSchema,
     postprocess: {

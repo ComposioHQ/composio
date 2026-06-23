@@ -20,7 +20,7 @@ docs/
 ├── app/                  # Next.js app router
 ├── content/              # MDX content
 │   ├── docs/             # Main documentation
-│   ├── cookbooks/        # Cookbooks & guides
+│   ├── examples/         # Examples & guides
 │   ├── changelog/        # Release notes
 │   ├── reference/        # SDK & API reference
 │   └── toolkits/         # Toolkit docs + faq/ snippets

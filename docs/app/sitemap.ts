@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import {
   source,
   getReferenceSource,
-  cookbooksSource,
+  examplesSource,
   toolkitsSource,
   changelogEntries,
   dateToChangelogUrl,
@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${baseUrl}${page.url}`,
   }));
 
-  const cookbooksPages = cookbooksSource.getPages().map((page) => ({
+  const examplesPages = examplesSource.getPages().map((page) => ({
     url: `${baseUrl}${page.url}`,
   }));
 
@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/docs/changelog` },
     ...docsPages,
     ...referencePages,
-    ...cookbooksPages,
+    ...examplesPages,
     ...toolkitsMdxPages,
     ...toolkitsJsonPages,
     ...changelogPages,

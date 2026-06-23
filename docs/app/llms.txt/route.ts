@@ -1,4 +1,4 @@
-import { source, cookbooksSource, referenceSource, toolkitsSource } from '@/lib/source';
+import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -101,7 +101,7 @@ export async function GET() {
   try {
     const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
 
-    const cookbooksPages = cookbooksSource.getPages();
+    const examplesPages = examplesSource.getPages();
     const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
 
@@ -113,9 +113,9 @@ export async function GET() {
 
 ${docsTree}
 
-## Cookbooks
+## Examples
 
-${cookbooksPages.map(formatPage).join('\n')}
+${examplesPages.map(formatPage).join('\n')}
 
 ## API Reference
 

@@ -26,9 +26,9 @@ const RESOURCES = [
   },
   {
     icon: <Wrench aria-hidden="true" className="size-4" />,
-    title: 'Cookbooks',
+    title: 'Examples',
     description: 'End-to-end recipes for real agents.',
-    href: '/cookbooks',
+    href: '/examples',
   },
   {
     icon: <History aria-hidden="true" className="size-4" />,
