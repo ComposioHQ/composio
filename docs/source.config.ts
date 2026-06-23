@@ -51,6 +51,9 @@ export const reference = defineDocs({
       includeProcessedMarkdown: true,
     },
     mdxOptions: applyMdxPreset({
+      // Match the global remark plugins so mermaid diagrams in merged
+      // api-overviews render (applyMdxPreset replaces, not merges).
+      remarkPlugins: [remarkMdxMermaid],
       rehypeCodeOptions: {
         themes: {
           light: 'github-light',

@@ -6,8 +6,8 @@
 export function LegacyBadge() {
   return (
     <span
-      title="Legacy — superseded by sessions; kept for existing integrations"
-      className="not-prose mb-4 inline-flex w-fit items-center gap-1.5 rounded-md border border-amber-600/25 bg-amber-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400"
+      title="Legacy: superseded by sessions; kept for existing integrations"
+      className="not-prose mb-3 inline-flex w-fit items-center gap-1.5 rounded-md border border-fd-border bg-fd-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-fd-muted-foreground"
     >
       Legacy
     </span>
