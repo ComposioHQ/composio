@@ -5,7 +5,7 @@ keywords: [pi, coding agent, pi coding agent, provider, experimental, typescript
 experimental: true
 ---
 
-The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). Use it when you want a Pi session to search Composio tools, manage app connections, execute tools, and optionally use Composio's remote workbench.
+The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent), so a Pi session can search Composio tools, manage app connections, execute tools, and optionally drive Composio's remote workbench. Unlike the other providers, `PiProvider` ships its own hook interface, which you use to intercept, allow, deny, or rewrite every helper call before the model sees the result.
 
 <Callout type="warning">
   The Pi provider is experimental and currently ships from `@composio/experimental` for TypeScript
@@ -14,7 +14,7 @@ The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](ht
 
 ## Dynamic session helpers
 
-For most Pi apps, expose the dynamic helper tools. They let the model discover exact Composio tool slugs before executing, request missing connections, and run workbench commands when enabled.
+For most Pi apps, expose the dynamic helper tools. They let the model discover exact Composio tool slugs before it executes, request missing connections, and run workbench commands when you enable them.
 
 <Steps>
 <Step>
@@ -119,15 +119,19 @@ await piSession.prompt('Find my open GitHub issues and summarize the blockers.')
 
 The provider creates these Pi tools:
 
-- `composio_search_tools` — search Composio for exact tool slugs and schemas.
-- `composio_manage_connections` — check connection state and initiate auth for missing toolkits.
-- `composio_execute_tool` — execute an exact Composio tool slug.
-- `composio_remote_workbench` — run Python in the Composio remote workbench. Requires `includeWorkbenchTools: true`.
-- `composio_remote_bash` — run short bash commands in the remote workbench filesystem. Requires `includeWorkbenchTools: true`.
+- `composio_search_tools` searches Composio for exact tool slugs and schemas.
+- `composio_manage_connections` checks connection state and initiates auth for missing toolkits.
+- `composio_execute_tool` executes an exact Composio tool slug.
+- `composio_remote_workbench` runs Python in the Composio remote workbench, and requires `includeWorkbenchTools: true`.
+- `composio_remote_bash` runs short bash commands in the remote workbench filesystem, and requires `includeWorkbenchTools: true`.
+
+You can rename any of these helpers through the `names` option on `createSessionTools`, and the constants live on `PI_COMPOSIO_SESSION_TOOL_NAMES`.
 
 ## Hooks
 
-Hooks are middleware around each helper. Calling `await next()` runs the default Composio behavior and returns the result before anything is shown to the model. Return that result to pass it through, return another value to control what the model sees, or skip `next()` to handle the operation yourself.
+Hooks are the Pi provider's distinctive feature: middleware that wraps each helper so you own what runs and what the model sees. Pass a `hooks` object to `createSessionTools`, and each hook receives a context and a `next` function. Call `await next()` to run the default Composio behavior and get its result before it reaches the model, return that result to pass it through, return another value to replace what the model sees, or call `ctx.deny(reason)` to block the call with a model-visible error. Skip `next()` entirely to handle the operation yourself.
+
+Every hook is `(ctx, next) => unknown | Promise<unknown>`. The `ctx` object carries a mutable `ctx.request` you can rewrite in place, a read-only `ctx.context` with the tool call id, source tool, and session id, and the `ctx.deny(reason: string)` helper. The same deny result is exported as `denyPiToolCall(reason)` from `@composio/experimental` if you prefer to build it directly.
 
 ```typescript
 // @noErrors
@@ -165,18 +169,20 @@ const composioTools = composio.provider.createSessionTools({
 });
 ```
 
-Available hooks:
+Available hooks, each keyed on `PiSessionHooks`:
 
-- `search(ctx, next)`
-- `manageConnections(ctx, next)`
-- `execute(ctx, next)`
-- `remoteWorkbench(ctx, next)`
-- `remoteBash(ctx, next)`
-- `onAuthLink(ctx, next)`
+- `search(ctx, next)` wraps tool discovery. Rewrite `ctx.request.query` or `ctx.request.toolkits` before search runs.
+- `manageConnections(ctx, next)` wraps connection checks and auth. Inspect `ctx.request.toolkits` and `ctx.request.reinitiateAll`.
+- `execute(ctx, next)` wraps tool execution. Read or rewrite `ctx.request.toolSlug`, `ctx.request.args`, and `ctx.request.account`, and call `ctx.manageConnections(toolkits)` to connect a missing app inline.
+- `remoteWorkbench(ctx, next)` wraps the remote Python helper. Rewrite `ctx.request.code_to_execute` and friends; calling `next()` routes through your `execute` hook too.
+- `remoteBash(ctx, next)` wraps the remote bash helper through `ctx.request.command`; calling `next()` also routes through your `execute` hook.
+- `onAuthLink(ctx, next)` runs for any auth link found in a result. Read `ctx.url`, `ctx.toolkit`, and `ctx.result`, then call `next()` to keep the model-visible result or return a replacement.
+
+The `execute`, `remoteWorkbench`, and `remoteBash` request types are typed as `PiExecuteHookContext`, `PiRemoteWorkbenchHookContext`, and `PiRemoteBashHookContext`, so your editor surfaces the exact fields on `ctx.request`.
 
 ## Static tool wrapping
 
-If you already know exactly which tools to expose, initialize Composio with `PiProvider` and fetch tools directly.
+If you already know exactly which tools to expose, initialize Composio with `PiProvider` and fetch the tools directly.
 
 ```typescript
 // @noErrors
