@@ -117,7 +117,7 @@ The mount exposes four methods:
 | `download(path, options?)` | Fetch a file from the mount as a `RemoteFile`. |
 | `delete(path, options?)` | Remove a file or directory from the mount. |
 
-A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it with `text()` or `buffer()`, or write it to disk with `save(path)`.
+A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it with `text()` or `buffer()`, or write it to disk with `save(path)`. Its `expiresAt` is when that download link expires, not a TTL on the file: the mount itself has no expiry you set.
 
 Every file lives on the session's default `files` mount, surfaced at `/mnt/files/`. Each method takes a `mountId` to address a mount by ID, but there's no SDK call to create custom mounts today, so you'll normally work with `files`.
 
