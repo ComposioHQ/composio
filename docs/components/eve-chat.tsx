@@ -1,44 +1,18 @@
 'use client';
 
-import { Fragment, useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
-import { Send, X, Sparkles, Square } from 'lucide-react';
+import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
+import { Streamdown } from 'streamdown';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
+import 'streamdown/styles.css';
 
 const SUGGESTIONS = [
   'How do I create a session?',
   'How does authentication work?',
   'How do I use the sandbox files?',
 ];
-
-/** Render assistant text with clickable Markdown links ([label](url)); everything else stays plain text. */
-function renderText(text: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  const linkRe = /\[([^\]]+)\]\((\/[^)\s]+|https?:\/\/[^)\s]+)\)/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-  while ((match = linkRe.exec(text)) !== null) {
-    if (match.index > last) nodes.push(<Fragment key={key++}>{text.slice(last, match.index)}</Fragment>);
-    const [, label, href] = match;
-    const external = href.startsWith('http');
-    nodes.push(
-      <a
-        key={key++}
-        href={href}
-        target={external ? '_blank' : undefined}
-        rel={external ? 'noreferrer' : undefined}
-        className="text-[var(--composio-brand)] underline underline-offset-2 hover:opacity-80"
-      >
-        {label}
-      </a>,
-    );
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) nodes.push(<Fragment key={key++}>{text.slice(last)}</Fragment>);
-  return nodes;
-}
 
 /**
  * EveChat — the right-sidebar docs assistant, backed by the eve agent in
@@ -93,14 +67,29 @@ export function EveChat() {
             <span className="text-sm font-medium text-fd-foreground">Ask Eve</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">docs assistant</span>
           </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={closeEveChat}
-            className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground"
-          >
-            <X className="size-4" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-label="New chat"
+              title="New chat"
+              onClick={() => {
+                agent.reset();
+                inputRef.current?.focus();
+              }}
+              disabled={isBusy || agent.data.messages.length === 0}
+              className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <SquarePen className="size-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closeEveChat}
+              className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         {/* messages */}
@@ -136,9 +125,18 @@ export function EveChat() {
                   >
                     {message.parts.map((part, i) =>
                       part.type === 'text' ? (
-                        <p key={i} className="whitespace-pre-wrap break-words">
-                          {message.role === 'assistant' ? renderText(part.text) : part.text}
-                        </p>
+                        message.role === 'assistant' ? (
+                          <Streamdown
+                            key={i}
+                            className="text-[13px] leading-relaxed [&_a]:text-[var(--composio-brand)] [&_a]:underline [&_pre]:overflow-x-auto [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-fd-foreground/[0.07] [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5"
+                          >
+                            {part.text}
+                          </Streamdown>
+                        ) : (
+                          <p key={i} className="whitespace-pre-wrap break-words">
+                            {part.text}
+                          </p>
+                        )
                       ) : null,
                     )}
                   </div>
