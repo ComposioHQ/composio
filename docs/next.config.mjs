@@ -11,6 +11,22 @@ const config = {
   turbopack: {
     root: __dirname,
   },
+  // The OpenAPI specs are loaded at request time via
+  // `join(process.cwd(), 'public/openapi.json')` (see lib/openapi.ts). Because
+  // that path is computed, Next.js' file tracer can't statically detect it, so
+  // the JSON files are NOT bundled into the serverless functions that render
+  // reference pages and their `/llms.mdx/reference/...` (.md) endpoints. Without
+  // them present on disk, fumadocs-openapi throws
+  // `[OpenAPI] Failed to resolve input` and the route 500s in production
+  // (it works at build time only because `public/` exists at the project root).
+  // Explicitly trace the specs into every route that may resolve them at runtime.
+  outputFileTracingIncludes: {
+    '/reference/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/reference/v3/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms.mdx/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms-full.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
+  },
   images: {
     // Enable modern image formats for better compression
     formats: ['image/avif', 'image/webp'],

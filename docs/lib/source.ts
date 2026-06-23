@@ -35,7 +35,13 @@ async function getOpenapiPages() {
     _openapiPagesPromise = Promise.all([
       openapiSource(openapi, { groupBy: 'tag', baseDir: 'api-reference' }),
       openapiSource(openapiV3, { groupBy: 'tag', baseDir: 'v3/api-reference' }),
-    ]);
+    ]).catch((e) => {
+      // Don't permanently cache a failed load (e.g. a transient OpenAPI spec
+      // resolution error in a serverless instance). Clearing the memo lets the
+      // next request retry instead of re-throwing the same cached rejection.
+      _openapiPagesPromise = null;
+      throw e;
+    });
   }
   return _openapiPagesPromise;
 }
