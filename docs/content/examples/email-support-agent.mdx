@@ -1,0 +1,192 @@
+---
+title: Email support agent
+description: Build a Gmail support agent with Composio, FastAPI, LangGraph, Notion logging, and optional LangSmith traces.
+keywords: [email support agent, gmail, langgraph, fastapi, triggers, webhook subscription, notion, langsmith, drafts]
+full: true
+---
+
+This example watches a connected Gmail inbox, runs each new message through a LangGraph workflow, and creates a Gmail draft for a human to review. It never sends email.
+
+Composio does the app work around the agent:
+
+1. **A Gmail trigger** watches for new messages in the connected inbox.
+2. **A webhook subscription** delivers trigger events to your FastAPI endpoint.
+3. **Scoped Gmail tools** let the graph fetch the message and create a draft.
+4. **Scoped Notion tools** create a review table and log each decision.
+5. **Optional LangSmith tracing** shows each graph run while you dogfood.
+
+<Figure
+  src="/images/examples/email-support-agent/architecture.png"
+  alt="Email support agent architecture with Gmail, Composio triggers and tools, FastAPI, and LangGraph"
+  caption="A new Gmail message becomes a signed Composio webhook, then a LangGraph run that calls scoped Composio tools."
+/>
+
+The support policy lives in one Markdown file. Change the company context, FAQ, escalation rules, and draft examples in `workflows/support_email.md` before pointing this at a real inbox.
+
+## Setup
+
+You need:
+
+1. [Python 3.11+](https://www.python.org/downloads/)
+2. [uv](https://docs.astral.sh/uv/)
+3. [Composio API key](https://dashboard.composio.dev/)
+4. [OpenAI API key](https://platform.openai.com/)
+5. A Gmail account to connect through Composio
+6. [ngrok](https://ngrok.com/) for a public local webhook URL
+
+<Accordions>
+  <Accordion title="No public URL? Use ngrok">
+    Composio posts webhooks to your server, so it needs a public URL. In local development, expose FastAPI with:
+
+    ```bash
+    ngrok http 8000
+    ```
+
+    Use the HTTPS URL it prints and append `/webhook/composio`.
+  </Accordion>
+  <Accordion title="Optional prerequisites">
+    Add a [Notion](/toolkits/notion) account if you want the setup script to create a tracking database. Add a [LangSmith](https://docs.langchain.com/langsmith/observability-quickstart) account and `LANGSMITH_API_KEY` if you want traces.
+  </Accordion>
+</Accordions>
+
+Clone the repo and move into the example:
+
+```bash
+cd docs/examples/email-support-agent
+uv sync
+cp .env.example .env
+```
+
+Set the required values in `.env`:
+
+```text
+COMPOSIO_API_KEY=
+OPENAI_API_KEY=
+COMPOSIO_USER_ID=email_support_user
+```
+
+`COMPOSIO_USER_ID` is your stable user key for this example. Composio uses it to scope connected accounts, triggers, and tool calls.
+
+## Start the app
+
+Run FastAPI locally:
+
+```bash
+uv run --env-file .env uvicorn email_support_agent.app:app --reload --port 8000
+```
+
+In another terminal, expose it:
+
+```bash
+ngrok http 8000
+```
+
+Copy the HTTPS URL and append `/webhook/composio`:
+
+```text
+https://YOUR-NGROK.ngrok-free.app/webhook/composio
+```
+
+## Set up Composio
+
+Run the setup script with your public webhook URL:
+
+```bash
+uv run --env-file .env python scripts/setup_composio.py \
+  https://YOUR-NGROK.ngrok-free.app/webhook/composio
+```
+
+The script does the Composio setup in one place:
+
+1. Creates or reuses Gmail and Notion connections for `COMPOSIO_USER_ID`.
+2. Creates the project-level webhook subscription.
+3. Saves the webhook secret to `.env`.
+4. Creates the `GMAIL_NEW_GMAIL_MESSAGE` trigger.
+5. Creates a Notion page and database for support tracking.
+
+The script opens Gmail and Notion Connect Links automatically when either toolkit still needs authorization.
+
+Use `--setup-langsmith` to create or reuse the LangSmith project and enable tracing:
+
+```bash
+uv run --env-file .env python scripts/setup_composio.py \
+  https://YOUR-NGROK.ngrok-free.app/webhook/composio \
+  --setup-langsmith
+```
+
+After setup, the Composio Triggers page should show an active Gmail trigger and webhook deliveries.
+
+<Figure
+  src="/images/examples/email-support-agent/composio-trigger-events.png"
+  alt="Composio dashboard showing an active Gmail trigger and webhook deliveries"
+  caption="The Gmail trigger is user-scoped. The webhook subscription is project-scoped."
+/>
+
+## Understand the Composio pieces
+
+The integration is intentionally small:
+
+- `scripts/setup_composio.py` creates Gmail and Notion auth, the webhook subscription, the Gmail trigger, the Notion database, and optional LangSmith tracing.
+- `email_support_agent/webhook.py` verifies the signed Composio webhook and routes only `GMAIL_NEW_GMAIL_MESSAGE` events.
+- `email_support_agent/utils/tools.py` creates scoped Gmail and Notion sessions.
+- `email_support_agent/utils/gmail.py` fetches the triggering message and creates a Gmail draft.
+- `email_support_agent/utils/notion.py` claims, inserts, updates, and dedupes Notion rows.
+
+The Gmail session only enables fetch and draft tools:
+
+```python
+SAFE_GMAIL_TOOLS = [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+]
+```
+
+`GMAIL_SEND_EMAIL` is not enabled.
+
+## Understand the LangGraph pieces
+
+LangGraph owns the support decision:
+
+```text
+fetch_context
+trust_check
+classify_intent
+claim_message
+draft_reply
+review_pending
+prepare_notion_row
+write_notion_row
+```
+
+The graph is built in `email_support_agent/agent.py`. Helper functions live under `email_support_agent/utils`, following the LangGraph docs pattern of keeping `agent.py` focused on graph construction.
+
+## Try it
+
+Send an email to the connected Gmail inbox. Composio delivers the trigger event to FastAPI, FastAPI verifies the webhook, LangGraph runs, and Gmail gets a draft reply for review.
+
+Gmail triggers are polling-based. With Composio-managed auth, expect delivery to take up to 15 minutes.
+
+If Notion logging is enabled, the graph also writes a row with the sender, message id, draft reference, decision, and reason. Gmail remains the human review surface.
+
+If LangSmith tracing is enabled, each graph run shows the input, output, node path, decision, and latency.
+
+<Figure
+  src="/images/examples/email-support-agent/langsmith-traces.png"
+  alt="LangSmith traces for the email support agent"
+  caption="LangSmith is optional, but useful while dogfooding webhook and graph behavior."
+/>
+
+## Verify
+
+Run the tests from the example directory:
+
+```bash
+uv run --env-file .env python -m unittest discover -s tests -p 'test_*.py'
+```
+
+The tests disable LangSmith tracing at import time, even if your local `.env` has tracing enabled. That keeps dry-run graph traces out of your LangSmith project.
+
+<Cards>
+  <Card title="Triggers" href="/docs/triggers" description="How Composio trigger events move from connected apps to your webhook" />
+  <Card title="Webhook subscriptions" href="/reference/api-reference/webhook-subscriptions" description="Create the project-level URL Composio posts trigger events to" />
+</Cards>

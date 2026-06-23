@@ -1,0 +1,22 @@
+[project]
+name = "email-support-agent-composio"
+version = "0.1.0"
+description = "Composio Gmail trigger webhook with a LangGraph draft-only email support agent."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "composio",
+    "composio_langgraph",
+    "fastapi",
+    "httpx",
+    "langchain-openai",
+    "langsmith",
+    "python-dotenv",
+    "uvicorn",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = []

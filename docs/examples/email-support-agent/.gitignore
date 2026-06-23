@@ -1,0 +1,14 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.DS_Store
+.vercel
+logs/
+*.log
+*.jsonl
+*.sqlite
+*.sqlite-*
+data/idempotency.sqlite*

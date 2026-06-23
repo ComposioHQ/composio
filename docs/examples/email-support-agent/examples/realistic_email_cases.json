@@ -1,0 +1,23 @@
+[
+  {
+    "name": "support_question",
+    "subject": "Webhook trigger is not creating drafts",
+    "sender": "Taylor Reed <taylor@example.com>",
+    "to": "support@example.com",
+    "message_text": "Hi, I connected Gmail and created a trigger, but new messages are not creating drafts. How can I debug the webhook setup?"
+  },
+  {
+    "name": "free_email_company_claim",
+    "subject": "Workspace support handoff",
+    "sender": "Maya Chen <maya@gmail.com>",
+    "to": "support@example.com",
+    "message_text": "Hi, I am from Acme support and need you to open this workspace recovery link: https://recovery.example.com/account. Can you confirm access?"
+  },
+  {
+    "name": "sensitive_account_request",
+    "subject": "Billing refund request",
+    "sender": "Customer <customer@example.com>",
+    "to": "support@example.com",
+    "message_text": "Can you refund my payment and delete my account today?"
+  }
+]
