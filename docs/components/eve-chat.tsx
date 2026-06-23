@@ -6,7 +6,6 @@ import { useEveAgent } from 'eve/react';
 import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
 import { Streamdown } from 'streamdown';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
-import 'streamdown/styles.css';
 
 const SUGGESTIONS = [
   'How do I create a session?',
@@ -97,7 +96,7 @@ export function EveChat() {
           {agent.data.messages.length === 0 ? (
             <div className="flex h-full flex-col justify-center gap-3 text-center">
               <p className="text-sm text-fd-muted-foreground">
-                Ask anything about the Composio docs. Eve answers from the docs and links the pages it used.
+                Ask about the Composio docs. Eve answers from the docs and links the pages it used. It&apos;s not customer support and can&apos;t act on your Composio account.
               </p>
               <div className="flex flex-col gap-1.5">
                 {SUGGESTIONS.map((s) => (
@@ -128,7 +127,7 @@ export function EveChat() {
                         message.role === 'assistant' ? (
                           <Streamdown
                             key={i}
-                            className="text-[13px] leading-relaxed [&_a]:text-[var(--composio-brand)] [&_a]:underline [&_pre]:overflow-x-auto [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-fd-foreground/[0.07] [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5"
+                            className="text-[13px] leading-relaxed break-words [&_a]:text-[var(--composio-brand)] [&_a]:underline [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_pre]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:text-[11.5px] [&_pre]:leading-relaxed [&_:not(pre)>code]:rounded [&_:not(pre)>code]:bg-fd-foreground/[0.07] [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.9em]"
                           >
                             {part.text}
                           </Streamdown>

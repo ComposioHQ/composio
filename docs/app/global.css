@@ -4,6 +4,9 @@
 @import 'fumadocs-openapi/css/preset.css';
 @import "tw-animate-css";
 
+/* Let Tailwind generate the utility classes Streamdown uses (Eve chat markdown). */
+@source "../node_modules/streamdown/dist/index.js";
+
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
