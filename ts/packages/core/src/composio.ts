@@ -204,7 +204,11 @@ export class Composio<
    * @experimental
    */
   experimental: Experimental;
-  /** Model Context Protocol server management */
+  /**
+   * Model Context Protocol server management.
+   * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`.
+   * See https://docs.composio.dev/docs/sessions-via-mcp
+   */
   mcp: MCP;
   /**
    * Create and reuse Composio sessions.

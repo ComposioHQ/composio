@@ -55,9 +55,13 @@ EXPECTED_CLASSES = {
 
 # Additional public-facing classes worth documenting even though they are not
 # exposed as direct properties on ``Composio``.
+#
+# ``SessionContextImpl`` is intentionally omitted: it is an internal
+# implementation detail handed to custom-tool execute functions as a
+# ``SessionContext`` instance, never referenced directly, so it must not
+# appear in the public SDK reference.
 ADDITIONAL_CLASSES = {
     "ToolRouterSession": "core.models.tool_router_session",
-    "SessionContextImpl": "core.models.session_context",
 }
 
 # Modules to search for classes
@@ -126,13 +130,20 @@ def format_type(annotation: Any) -> str:
 def parse_docstring(docstring: str | None) -> dict[str, Any]:
     """Parse docstring into components."""
     if not docstring:
-        return {"description": "", "params": {}, "returns": None, "examples": []}
+        return {
+            "description": "",
+            "params": {},
+            "returns": None,
+            "examples": [],
+            "deprecated": None,
+        }
 
     lines = docstring.strip().split("\n")
     description_lines = []
     params: dict[str, str] = {}
     returns = None
     examples: list[str] = []
+    deprecated_lines: list[str] = []
 
     section = "description"
     current_param = None
@@ -140,6 +151,14 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
 
     for line in lines:
         stripped = line.strip()
+
+        # Check for a ``.. deprecated::`` directive (reStructuredText).
+        if re.match(r"\.\.\s+deprecated::", stripped):
+            section = "deprecated"
+            rest = re.sub(r"\.\.\s+deprecated::\s*", "", stripped).strip()
+            if rest:
+                deprecated_lines.append(rest)
+            continue
 
         # Check for :param name: description
         param_match = re.match(r":param\s+(\w+):\s*(.*)", stripped)
@@ -170,6 +189,8 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             returns += " " + stripped
         elif section == "examples":
             example_lines.append(line)
+        elif section == "deprecated" and stripped:
+            deprecated_lines.append(stripped)
 
     if example_lines:
         examples.append("\n".join(example_lines).strip())
@@ -179,6 +200,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
         "params": params,
         "returns": returns,
         "examples": examples,
+        "deprecated": " ".join(deprecated_lines).strip() if deprecated_lines else None,
     }
 
 
@@ -193,6 +215,7 @@ def extract_class_info(
         "access": config.get("access"),
         "source_link": get_source_link(cls),
         "description": doc["description"],
+        "deprecated": doc.get("deprecated"),
         "properties": [],
         "methods": [],
     }
@@ -268,6 +291,17 @@ def generate_class_mdx(
     lines.append(f"description: {escape_yaml_string(desc)}")
     lines.append("---")
     lines.append("")
+
+    # Class-level deprecation callout (rendered as a fumadocs warning callout).
+    deprecated_note = info.get("deprecated")
+    if deprecated_note:
+        # Normalize reStructuredText ``double backticks`` to MDX `single` so
+        # inline code renders correctly.
+        deprecated_note = re.sub(r"``([^`]+)``", r"`\1`", deprecated_note)
+        lines.append('<Callout type="warn" title="Deprecated">')
+        lines.append(deprecated_note)
+        lines.append("</Callout>")
+        lines.append("")
 
     source_link = info.get("source_link", "")
 

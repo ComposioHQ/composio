@@ -1,6 +1,6 @@
 ---
-title: 'Composio'
-description: 'This is the core class for Composio. It is used to initialize the Composio SDK and provide a global configuration.'
+title: "Composio"
+description: "This is the core class for Composio. It is used to initialize the Composio SDK and provide a global configuration."
 ---
 
 ## Constructor
@@ -18,8 +18,8 @@ constructor(config?: ComposioConfig): Composio
 
 **Parameters**
 
-| Name      | Type             | Description                                |
-| --------- | ---------------- | ------------------------------------------ |
+| Name | Type | Description |
+|------|------|-------------|
 | `config?` | `ComposioConfig` | Configuration options for the Composio SDK |
 
 **Returns**
@@ -35,13 +35,13 @@ const composio = new Composio();
 // Initialize with custom API key and base URL
 const composio = new Composio({
   apiKey: 'your-api-key',
-  baseURL: 'https://api.composio.dev',
+  baseURL: 'https://api.composio.dev'
 });
 
 // Initialize with custom provider
 const composio = new Composio({
   apiKey: 'your-api-key',
-  provider: new CustomProvider(),
+  provider: new CustomProvider()
 });
 ```
 
@@ -49,12 +49,11 @@ const composio = new Composio({
 
 ## Properties
 
-| Name                | Type                | Description                                       |
-| ------------------- | ------------------- | ------------------------------------------------- |
-| `authConfigs`       | `AuthConfigs`       | Manage authentication configurations for toolkits |
-| `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections                  |
-| `create`            | `object`            | Creates a new tool router session for a user.     |
-
+| Name | Type | Description |
+|------|------|-------------|
+| `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
+| `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
+| `create` | `object` | Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`. |
 | `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
@@ -64,7 +63,7 @@ namespace keeps compatibility aliases while APIs are experimental.
 Stateless experimental factories (e.g. `experimental_createTool`) stay
 at the top level. |
 | `files` | `Files` | Upload and download files |
-| `mcp` | `MCP` | Model Context Protocol server management |
+| `mcp` | `MCP` | Model Context Protocol server management. |
 | `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
 | `sessions` | `Sessions` | Create and reuse Composio sessions.
 
@@ -78,11 +77,14 @@ Prefer `composio.sessions.create(...)` for new code. The top-level
 
 ## Methods
 
-### createSession()
+### createSession() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+DEPRECATED: This method will be removed in a future version of the SDK.
+</Callout>
 
 Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
 This method is particularly useful when you need to:
-
 - Add custom headers for specific requests
 - Track request contexts with unique identifiers
 - Override default request behavior for a subset of operations
@@ -96,8 +98,8 @@ createSession(options?: { headers?: ComposioRequestHeaders }): Composio
 
 **Parameters**
 
-| Name       | Type     |
-| ---------- | -------- |
+| Name | Type |
+|------|------|
 | `options?` | `object` |
 
 **Returns**
@@ -109,7 +111,7 @@ createSession(options?: { headers?: ComposioRequestHeaders }): Composio
 ```typescript
 // Create a base Composio instance
 const composio = new Composio({
-  apiKey: 'your-api-key',
+  apiKey: 'your-api-key'
 });
 
 // Create a session with request tracking headers
@@ -117,8 +119,8 @@ const composioWithCustomHeaders = composio.createSession({
   headers: {
     'x-request-id': '1234567890',
     'x-correlation-id': 'session-abc-123',
-    'x-custom-header': 'custom-value',
-  },
+    'x-custom-header': 'custom-value'
+  }
 });
 
 // Use the session for making API calls with the custom headers
@@ -196,6 +198,6 @@ getConfig(): Readonly<ComposioConfig>
 **Returns**
 
 `Readonly<ComposioConfig>` — The frozen configuration
-the SDK is initialized with.
+  the SDK is initialized with.
 
 ---

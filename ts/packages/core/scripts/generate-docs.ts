@@ -195,6 +195,9 @@ interface MethodDoc {
   }[];
   examples: string[];
   isAsync: boolean;
+  /** Present when the symbol carries an `@deprecated` JSDoc tag. The string is
+   * the (possibly empty) tag body, e.g. the recommended replacement. */
+  deprecated?: string;
   source?: { file: string; line: number };
 }
 
@@ -212,6 +215,8 @@ interface ClassDoc {
   methods: MethodDoc[];
   properties: PropertyDoc[];
   source?: { file: string; line: number };
+  /** Present when the class carries a class-level `@deprecated` JSDoc tag. */
+  deprecated?: string;
 }
 
 function extractText(content?: Array<{ kind: string; text: string }>): string {
@@ -351,6 +356,10 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
   const primarySig = reflection.signatures[0];
   const description = extractDescription(primarySig.comment);
   const examples = extractTag(primarySig.comment, '@example');
+  // `@deprecated` may live on the signature comment or the reflection comment.
+  const deprecated =
+    extractTag(primarySig.comment, '@deprecated')[0] ??
+    extractTag(reflection.comment, '@deprecated')[0];
 
   return {
     name: reflection.name,
@@ -358,6 +367,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
     signatures,
     examples,
     isAsync: formatType(primarySig.type).startsWith('Promise'),
+    deprecated,
     source: reflection.sources?.[0]
       ? { file: reflection.sources[0].fileName, line: reflection.sources[0].line }
       : undefined,
@@ -373,6 +383,7 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
     source: reflection.sources?.[0]
       ? { file: reflection.sources[0].fileName, line: reflection.sources[0].line }
       : undefined,
+    deprecated: extractTag(reflection.comment, '@deprecated')[0],
   };
 
   if (!reflection.children) return classDoc;
@@ -416,9 +427,20 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
 function generateMethodMdx(method: MethodDoc): string {
   const lines: string[] = [];
 
-  // Method header
-  lines.push(`### ${method.name}()`);
+  // Method header. Flag deprecated methods in the heading so they read clearly
+  // in the sidebar/anchor and at a glance.
+  const deprecatedSuffix = method.deprecated !== undefined ? ' (deprecated)' : '';
+  lines.push(`### ${method.name}()${deprecatedSuffix}`);
   lines.push('');
+
+  // Deprecation callout (rendered as a fumadocs warning callout).
+  if (method.deprecated !== undefined) {
+    const note = method.deprecated.trim();
+    lines.push('<Callout type="warn" title="Deprecated">');
+    lines.push(note.length > 0 ? escapeTextForMdx(note) : 'This method is deprecated.');
+    lines.push('</Callout>');
+    lines.push('');
+  }
 
   // Description
   if (method.description) {
@@ -539,6 +561,15 @@ function generateClassMdx(classDoc: ClassDoc): string {
   lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
+
+  // Class-level deprecation callout (rendered as a fumadocs warning callout).
+  if (classDoc.deprecated !== undefined) {
+    const note = classDoc.deprecated.trim();
+    lines.push('<Callout type="warn" title="Deprecated">');
+    lines.push(note.length > 0 ? escapeTextForMdx(note) : 'This class is deprecated.');
+    lines.push('</Callout>');
+    lines.push('');
+  }
 
   // Content starts directly with Constructor or Usage (no duplicate title/description)
 

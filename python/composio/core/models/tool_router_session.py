@@ -883,4 +883,6 @@ class ToolRouterSessionWithMcp(ToolRouterSession[TTool, TToolCollection]):
     """
 
     #: Hosted MCP server configuration (url + auth headers) for this session.
+    #: This is the recommended MCP path, gated behind ``mcp=True``.
+    #: See https://docs.composio.dev/docs/sessions-via-mcp
     mcp: "ToolRouterMCPServerConfig"

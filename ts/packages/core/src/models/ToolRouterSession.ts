@@ -86,12 +86,24 @@ const AuthorizeOptionsSchema = z.object({
   experimental: ConnectedAccountExperimentalSchema.optional(),
 });
 
+/**
+ * A Composio session — the object returned by `composio.sessions.create(...)`
+ * and `composio.sessions.use(...)` (also reachable via the top-level
+ * `composio.create(...)` / `composio.use(...)` aliases).
+ *
+ * This is the canonical session surface. Use it to fetch session-scoped tools,
+ * authorize toolkits, search, and execute tools. The public return type is
+ * `Session` / `SessionWithMcp`; this class is its concrete runtime form.
+ *
+ * @see {@link Sessions} for the `composio.sessions` factory.
+ */
 export class ToolRouterSession<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   public readonly sessionId: string;
+  /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (`SessionWithMcp`); the default `Session` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   public preload: ToolRouterSessionPreloadConfig;

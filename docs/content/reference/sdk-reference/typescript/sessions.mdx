@@ -1,6 +1,6 @@
 ---
-title: 'Sessions'
-description: 'First-class API for creating and reusing Composio sessions.  `composio.sessions.create(...)` is the canonical session creation entrypoint. The top-level `composio.create(...)` method remains as a backwards-compatible alias for `composio.sessions.create(...)`.'
+title: "Sessions"
+description: "First-class API for creating and reusing Composio sessions.  `composio.sessions.create(...)` is the canonical session creation entrypoint. The top-level `composio.create(...)` method remains as a backwards-compatible alias for `composio.sessions.create(...)`."
 ---
 
 ## Usage
@@ -8,17 +8,8 @@ description: 'First-class API for creating and reusing Composio sessions.  `comp
 Access this class through the `composio.sessions` property:
 
 ```typescript
-import { Composio } from '@composio/core';
-
 const composio = new Composio({ apiKey: 'your-api-key' });
-const session = await composio.sessions.create('user_123', {
-  toolkits: ['github'],
-});
-
-// Backwards-compatible alias:
-const same = await composio.create('user_123', {
-  toolkits: ['github'],
-});
+const result = await composio.sessions.list();
 ```
 
 ## Methods
@@ -29,20 +20,39 @@ Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`.
 
+**Overload 1**
+
 ```typescript
-async create(userId: string, config?: object): Promise<Session<TToolCollection, TTool, TProvider>>
+async create(userId: string, config: object): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
 
-| Name      | Type     | Description                                                              |
-| --------- | -------- | ------------------------------------------------------------------------ |
-| `userId`  | `string` | \{string\} The user id to create the session for                         |
-| `config?` | `object` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | \{string\} The user id to create the session for |
+| `config` | `object` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
 
 **Returns**
 
 `Promise<Session<TToolCollection, TTool, TProvider>>` — The tool router session
+
+**Overload 2**
+
+```typescript
+async create(userId: string, config?: object): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | \{string\} The user id to create the session for |
+| `config?` | `object` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+
+**Returns**
+
+`Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>` — The tool router session
 
 **Example**
 
@@ -67,20 +77,39 @@ const session = await composio.sessions.create('user_123', {
 
 Use an existing session
 
+**Overload 1**
+
 ```typescript
-async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[] }): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true }): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
 
-| Name       | Type     | Description                             |
-| ---------- | -------- | --------------------------------------- |
-| `id`       | `string` | \{string\} The id of the session to use |
-| `options?` | `object` |                                         |
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | \{string\} The id of the session to use |
+| `options` | `object` |  |
 
 **Returns**
 
 `Promise<Session<TToolCollection, TTool, TProvider>>` — The tool router session
+
+**Overload 2**
+
+```typescript
+async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean }): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `id` | `string` | \{string\} The id of the session to use |
+| `options?` | `object` |  |
+
+**Returns**
+
+`Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>` — The tool router session
 
 **Example**
 

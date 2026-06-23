@@ -39,7 +39,7 @@ def update(nanoid: str, alias: str | None = ..., connection: connected_account_p
 
 ### initiate()
 
-Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the ``wait_for_connection`` method.  .. deprecated:: For Composio-managed (default) auth configs on redirectable OAuth schemes (OAuth1, OAuth2, DCR_OAUTH), the legacy endpoint this method wraps is being retired: **2026-05-08** for new organizations and **2026-07-03** for all remaining organizations. After your org's cutover, this method will raise :class:`composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError` for that specific combination.  Use :meth:`ConnectedAccounts.link` for Composio-managed OAuth — it works for every redirectable scheme regardless of whether the auth config is Composio-managed or custom, and the return shape is the same.  Custom auth configs (your own OAuth app) and non-OAuth schemes (API key, bearer token, basic auth) are unaffected and continue to work on ``initiate()``. See https://docs.composio.dev/docs/changelog/2026/04/24
+Compound function to create a new connected account. This function creates a new connected account and returns a connection request.  Users can then wait for the connection to be established using the ``wait_for_connection`` method.
 
 ```python
 def initiate(user_id: str, auth_config_id: str, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> ConnectionRequest
