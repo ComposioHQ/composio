@@ -30,6 +30,30 @@ const INTERNAL_CLASSES = new Set([
 // Classes that users instantiate directly (show constructor)
 const USER_INSTANTIATED_CLASSES = new Set(['Composio']);
 
+// Pure-docs presentation overrides. The public class names retain their
+// legacy "ToolRouter*" names in source (renaming them is a breaking change),
+// but the SDK reference presents them under the canonical "Session" naming.
+// Keys are the source class names.
+const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
+  ToolRouterSession: 'Session',
+  ToolRouterSessionFilesMount: 'Session files',
+};
+
+const SLUG_OVERRIDES: Record<string, string> = {
+  ToolRouterSession: 'session',
+  ToolRouterSessionFilesMount: 'session-files',
+};
+
+// Resolve the display title for a class (falls back to the class name).
+function displayNameFor(className: string): string {
+  return DISPLAY_NAME_OVERRIDES[className] ?? className;
+}
+
+// Resolve the URL slug / filename stem for a class (falls back to kebab-case).
+function slugFor(className: string): string {
+  return SLUG_OVERRIDES[className] ?? toKebabCase(className);
+}
+
 // Discover model files automatically
 async function discoverModelFiles(): Promise<string[]> {
   const files = await readdir(MODELS_DIR);
@@ -557,7 +581,7 @@ function generateClassMdx(classDoc: ClassDoc): string {
 
   // Frontmatter - fumadocs renders title and description automatically
   lines.push('---');
-  lines.push(`title: ${formatYamlFrontmatterString(classDoc.name)}`);
+  lines.push(`title: ${formatYamlFrontmatterString(displayNameFor(classDoc.name))}`);
   lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
@@ -578,7 +602,10 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('## Constructor');
     lines.push('');
     lines.push(generateMethodMdx(classDoc.constructor));
-  } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
+  } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name) && !(classDoc.name in SLUG_OVERRIDES)) {
+    // Skip the `composio.<accessor>` Usage block for session-object classes —
+    // they are not accessed as a `composio` sub-client property; the class
+    // description explains how to obtain them (via `composio.sessions`).
     lines.push('## Usage');
     lines.push('');
 
@@ -830,7 +857,7 @@ async function main() {
 
     const classDoc = extractClass(reflection);
     const mdx = generateClassMdx(classDoc);
-    const fileName = toKebabCase(className) + '.mdx';
+    const fileName = slugFor(className) + '.mdx';
     const filePath = join(OUTPUT_DIR, fileName);
 
     await writeFile(filePath, mdx);
@@ -844,7 +871,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${name}\`](/reference/sdk-reference/typescript/${toKebabCase(name)}) | ${escapeTextForMdx(description)} |`
+        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTextForMdx(description)} |`
     )
     .join('\n');
 
@@ -911,7 +938,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   // Generate meta.json for sidebar
   const meta = {
     title: 'TypeScript SDK',
-    pages: documented.map(({ name }) => toKebabCase(name)),
+    pages: documented.map(({ name }) => slugFor(name)),
   };
   await writeFile(join(OUTPUT_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
 

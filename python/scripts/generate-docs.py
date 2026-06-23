@@ -74,11 +74,32 @@ CLASS_MODULES = [
     "core.models.mcp",
 ]
 
+# Pure-docs presentation overrides. The public class name ``ToolRouterSession``
+# is kept in source (renaming is a breaking change), but the SDK reference
+# presents the session object under the canonical "Session" naming.
+DISPLAY_NAME_OVERRIDES = {
+    "ToolRouterSession": "Session",
+}
+
+SLUG_OVERRIDES = {
+    "ToolRouterSession": "session",
+}
+
 
 def to_kebab_case(name: str) -> str:
     """Convert PascalCase to kebab-case."""
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1-\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
+
+
+def display_name_for(class_name: str) -> str:
+    """Resolve the display title for a class (falls back to the class name)."""
+    return DISPLAY_NAME_OVERRIDES.get(class_name, class_name)
+
+
+def slug_for(class_name: str) -> str:
+    """Resolve the URL slug / filename stem (falls back to kebab-case)."""
+    return SLUG_OVERRIDES.get(class_name, to_kebab_case(class_name))
 
 
 def escape_yaml_string(s: str) -> str:
@@ -283,11 +304,14 @@ def generate_class_mdx(
         if info["description"]
         else f"{info['name']} class"
     )
+    # Normalize reStructuredText ``double backticks`` to single backticks so the
+    # frontmatter description reads cleanly.
+    desc = re.sub(r"``([^`]+)``", r"`\1`", desc)
     if len(desc) > 150:
         desc = desc[:147] + "..."
 
     lines.append("---")
-    lines.append(f"title: {escape_yaml_string(info['name'])}")
+    lines.append(f"title: {escape_yaml_string(display_name_for(info['name']))}")
     lines.append(f"description: {escape_yaml_string(desc)}")
     lines.append("---")
     lines.append("")
@@ -429,13 +453,13 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
     # Classes table
     class_rows = []
     for c in classes:
-        link = f"/reference/sdk-reference/python/{to_kebab_case(c['name'])}"
+        link = f"/reference/sdk-reference/python/{slug_for(c['name'])}"
         desc = (
             c["description"][:80] + "..."
             if len(c["description"]) > 80
             else c["description"]
         )
-        class_rows.append(f"| [`{c['name']}`]({link}) | {desc} |")
+        class_rows.append(f"| [`{display_name_for(c['name'])}`]({link}) | {desc} |")
 
     # Decorators section
     dec_section = ""
@@ -595,7 +619,7 @@ def main():
         else:
             mdx = generate_class_mdx(info, None)
 
-        file_path = OUTPUT_DIR / f"{to_kebab_case(class_name)}.mdx"
+        file_path = OUTPUT_DIR / f"{slug_for(class_name)}.mdx"
         file_path.write_text(mdx)
 
         documented_classes.append(
@@ -650,7 +674,7 @@ def main():
     # Generate meta.json
     meta = {
         "title": "Python SDK",
-        "pages": [to_kebab_case(c["name"]) for c in documented_classes],
+        "pages": [slug_for(c["name"]) for c in documented_classes],
     }
     (OUTPUT_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
 

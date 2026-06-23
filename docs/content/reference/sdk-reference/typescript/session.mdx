@@ -1,16 +1,7 @@
 ---
-title: "ToolRouterSession"
+title: "Session"
 description: "A Composio session — the object returned by `composio.sessions.create(...)` and `composio.sessions.use(...)` (also reachable via the top-level `composio.create(...)` / `composio.use(...)` aliases).  This is the canonical session surface. Use it to fetch session-scoped tools, authorize toolkits, search, and execute tools. The public return type is `Session` / `SessionWithMcp`; this class is its concrete runtime form."
 ---
-
-## Usage
-
-Access this class through the `composio.toolRouterSession` property:
-
-```typescript
-const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.toolRouterSession.list();
-```
 
 ## Properties
 

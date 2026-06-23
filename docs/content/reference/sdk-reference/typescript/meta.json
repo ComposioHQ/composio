@@ -9,8 +9,8 @@
     "remote-file",
     "sessions",
     "toolkits",
-    "tool-router-session",
-    "tool-router-session-files-mount",
+    "session",
+    "session-files",
     "tools",
     "triggers"
   ]

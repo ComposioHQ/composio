@@ -80,7 +80,9 @@ class ToolRouterSessionPreloadConfig:
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
-    Tool router session containing session information and methods.
+    A Composio session — the object returned by ``composio.create(...)`` /
+    ``composio.use(...)``. Use it to fetch session-scoped tools, authorize
+    toolkits, search, and execute tools.
 
     Generic Parameters:
         TTool: The individual tool type returned by the provider.
