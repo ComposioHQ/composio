@@ -1,0 +1,116 @@
+{
+  "name": "@composio/slim",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Slim Composio core package without packaged source or docs",
+  "main": "dist/index.mjs",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "imports": {
+    "#platform": {
+      "workerd": "./dist/platform/workerd.mjs",
+      "edge-light": "./dist/platform/workerd.mjs",
+      "node": "./dist/platform/node.mjs",
+      "default": "./dist/platform/node.mjs"
+    },
+    "#files": {
+      "workerd": "./dist/models/Files.workerd.mjs",
+      "edge-light": "./dist/models/Files.workerd.mjs",
+      "node": "./dist/models/Files.node.mjs",
+      "default": "./dist/models/Files.node.mjs"
+    },
+    "#file_tool_modifier": {
+      "workerd": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
+      "edge-light": "./dist/utils/modifiers/FileToolModifier.workerd.mjs",
+      "node": "./dist/utils/modifiers/FileToolModifier.node.mjs",
+      "default": "./dist/utils/modifiers/FileToolModifier.node.mjs"
+    },
+    "#config_defaults": {
+      "workerd": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
+      "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
+      "node": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
+      "default": "./dist/utils/config-defaults/ConfigDefaults.node.mjs"
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./experimental": {
+      "types": "./dist/experimental/index.d.mts",
+      "default": "./dist/experimental/index.mjs"
+    },
+    "./platform": {
+      "workerd": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "edge-light": {
+        "types": "./dist/platform/workerd.d.mts",
+        "default": "./dist/platform/workerd.mjs"
+      },
+      "node": {
+        "types": "./dist/platform/node.d.mts",
+        "default": "./dist/platform/node.mjs"
+      },
+      "default": {
+        "types": "./dist/platform/node.d.mts",
+        "default": "./dist/platform/node.mjs"
+      }
+    },
+    "./utils/json-schema": {
+      "types": "./dist/utils/json-schema.d.mts",
+      "default": "./dist/utils/json-schema.mjs"
+    },
+    "./generated": {
+      "types": "./generated/index.d.ts",
+      "default": "./generated/index.js"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist",
+    "generated"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf dist generated node_modules",
+    "build": "pnpm --filter @composio/core build && rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
+    "test": "node -e \"import('./dist/index.mjs').then(() => console.log('@composio/slim import ok'))\""
+  },
+  "keywords": [
+    "composio",
+    "sdk",
+    "slim"
+  ],
+  "author": "",
+  "contributors": [
+    "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)"
+  ],
+  "license": "ISC",
+  "peerDependencies": {
+    "zod": "^3.25 || ^4"
+  },
+  "dependencies": {
+    "@composio/client": "catalog:",
+    "@composio/json-schema-to-zod": "workspace:*",
+    "@types/json-schema": "^7.0.15",
+    "openai": "catalog:",
+    "picocolors": "catalog:",
+    "pusher-js": "^8.5.0",
+    "semver": "^7.8.4",
+    "zod-to-json-schema": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/slim"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/slim#readme"
+}

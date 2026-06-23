@@ -719,16 +719,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.20
-        version: 0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.3.6)
+        version: 0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.4.3)
       '@llamaindex/workflow':
         specifier: ^1.1.24
-        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
+        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.3.6)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1315,6 +1315,28 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
 
+  ts/packages/experimental:
+    dependencies:
+      typebox:
+        specifier: 1.1.38
+        version: 1.1.38
+    devDependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../core
+      '@earendil-works/pi-coding-agent':
+        specifier: 0.79.8
+        version: 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.20.1)(zod@3.25.76)
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@24.10.13)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@24.10.13)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+
   ts/packages/json-schema-to-zod:
     devDependencies:
       '@types/json-schema':
@@ -1517,28 +1539,6 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
 
-  ts/packages/providers/pi:
-    dependencies:
-      typebox:
-        specifier: 1.1.38
-        version: 1.1.38
-    devDependencies:
-      '@composio/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@earendil-works/pi-coding-agent':
-        specifier: 0.79.8
-        version: 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.20.1)(zod@3.25.76)
-      tsdown:
-        specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@24.10.13)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@24.10.13)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
-
   ts/packages/providers/vercel:
     devDependencies:
       '@composio/core':
@@ -1559,6 +1559,36 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.4.3
+
+  ts/packages/slim:
+    dependencies:
+      '@composio/client':
+        specifier: 'catalog:'
+        version: 0.1.0-alpha.74
+      '@composio/json-schema-to-zod':
+        specifier: workspace:*
+        version: link:../json-schema-to-zod
+      '@types/json-schema':
+        specifier: ^7.0.15
+        version: 7.0.15
+      openai:
+        specifier: 'catalog:'
+        version: 6.43.0(ws@8.20.1)(zod@3.25.76)
+      picocolors:
+        specifier: 'catalog:'
+        version: 1.1.1
+      pusher-js:
+        specifier: ^8.5.0
+        version: 8.5.0
+      semver:
+        specifier: ^7.8.4
+        version: 7.8.4
+      zod:
+        specifier: ^3.25 || ^4
+        version: 3.25.76
+      zod-to-json-schema:
+        specifier: 'catalog:'
+        version: 3.25.2(zod@3.25.76)
 
   ts/packages/ts-builders:
     dependencies:
@@ -8772,9 +8802,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@finom/zod-to-json-schema@3.24.11(zod@4.3.6)':
+  '@finom/zod-to-json-schema@3.24.11(zod@4.4.3)':
     dependencies:
-      zod: 4.3.6
+      zod: 4.4.3
 
   '@gerrit0/mini-shiki@3.23.0':
     dependencies:
@@ -9182,11 +9212,11 @@ snapshots:
 
   '@llamaindex/core@0.6.22':
     dependencies:
-      '@finom/zod-to-json-schema': 3.24.11(zod@4.3.6)
+      '@finom/zod-to-json-schema': 3.24.11(zod@4.4.3)
       '@llamaindex/env': 0.1.30
       '@types/node': 24.10.13
       magic-bytes.js: 1.13.0
-      zod: 4.3.6
+      zod: 4.4.3
     transitivePeerDependencies:
       - '@huggingface/transformers'
       - gpt-tokenizer
@@ -9205,39 +9235,20 @@ snapshots:
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.3.6)':
+  '@llamaindex/openai@0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.4.3)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      openai: 5.23.2(ws@8.20.1)(zod@4.3.6)
+      openai: 5.23.2(ws@8.20.1)(zod@4.4.3)
     transitivePeerDependencies:
       - ws
       - zod
-
-  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)':
-    optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
-      hono: 4.12.25
-      zod: 4.3.6
 
   '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)':
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       hono: 4.12.25
       zod: 4.4.3
-
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)':
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
-    transitivePeerDependencies:
-      - '@modelcontextprotocol/sdk'
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - zod
 
   '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)':
     dependencies:
@@ -12204,28 +12215,6 @@ snapshots:
       rfdc: 1.4.1
       wrap-ansi: 9.0.2
 
-  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.3.6):
-    dependencies:
-      '@llamaindex/core': 0.6.22
-      '@llamaindex/env': 0.1.30
-      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
-      '@types/lodash': 4.17.23
-      '@types/node': 24.10.13
-      lodash: 4.17.23
-      magic-bytes.js: 1.13.0
-    transitivePeerDependencies:
-      - '@huggingface/transformers'
-      - '@modelcontextprotocol/sdk'
-      - gpt-tokenizer
-      - hono
-      - next
-      - p-retry
-      - rxjs
-      - tree-sitter
-      - web-tree-sitter
-      - zod
-
   llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
     dependencies:
       '@llamaindex/core': 0.6.22
@@ -12812,11 +12801,6 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
-
-  openai@5.23.2(ws@8.20.1)(zod@4.3.6):
-    optionalDependencies:
-      ws: 8.20.1
-      zod: 4.3.6
 
   openai@5.23.2(ws@8.20.1)(zod@4.4.3):
     optionalDependencies:
@@ -14118,7 +14102,7 @@ snapshots:
 
   zod-from-json-schema@0.5.2:
     dependencies:
-      zod: 4.3.6
+      zod: 4.4.3
 
   zod-to-json-schema@3.25.1(zod@3.25.76):
     dependencies:

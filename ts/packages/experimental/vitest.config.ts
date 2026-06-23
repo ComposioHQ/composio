@@ -2,8 +2,8 @@ import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
 const __dirname = path.resolve(path.dirname(new URL(import.meta.url).pathname));
-const coreDir = path.resolve(__dirname, '../../core');
-const jsonSchemaToZodDir = path.resolve(__dirname, '../../json-schema-to-zod');
+const coreDir = path.resolve(__dirname, '../core');
+const jsonSchemaToZodDir = path.resolve(__dirname, '../json-schema-to-zod');
 
 export default defineConfig({
   resolve: {

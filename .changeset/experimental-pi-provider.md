@@ -1,5 +1,5 @@
 ---
-"@composio/pi": minor
+"@composio/experimental": minor
 ---
 
-Add an experimental Pi coding-agent provider with static Composio tool wrapping and dynamic Tool Router session helpers.
+Add an experimental package with a Pi coding-agent provider, static Composio tool wrapping, and dynamic Tool Router session helpers.

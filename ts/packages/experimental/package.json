@@ -1,18 +1,18 @@
 {
-  "name": "@composio/pi",
+  "name": "@composio/experimental",
   "version": "0.0.1",
-  "description": "Experimental Composio provider for Pi coding-agent sessions",
+  "description": "Experimental Composio integrations and helpers",
   "main": "src/index.ts",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
-    "directory": "ts/packages/providers/pi"
+    "directory": "ts/packages/experimental"
   },
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/pi#readme",
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/experimental#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -20,6 +20,10 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./pi": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     }
@@ -36,6 +40,7 @@
   },
   "keywords": [
     "composio",
+    "experimental",
     "pi",
     "coding-agent",
     "tools",

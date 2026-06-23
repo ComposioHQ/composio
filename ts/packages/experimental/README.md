@@ -1,13 +1,13 @@
-# `@composio/pi`
+# `@composio/experimental`
 
-Experimental Composio provider for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent).
+Experimental Composio integrations and helpers.
 
-This package lets Composio tools be passed to Pi SDK sessions as `customTools`. It also includes a dynamic Tool Router session toolset modeled after the Slack bot integration in `~/composio/slack-bot`.
+This package currently includes a Pi provider for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). It lets Composio tools be passed to Pi SDK sessions as `customTools` and includes a dynamic Tool Router session toolset modeled after the Slack bot integration in `~/composio/slack-bot`.
 
 ## Install
 
 ```bash
-pnpm add @composio/core @composio/pi @earendil-works/pi-coding-agent
+pnpm add @composio/core @composio/experimental @earendil-works/pi-coding-agent
 ```
 
 ## Static tool wrapping
@@ -16,7 +16,7 @@ Use this when you already know the exact Composio tools to expose to Pi.
 
 ```ts
 import { Composio } from '@composio/core';
-import { PiProvider } from '@composio/pi';
+import { PiProvider } from '@composio/experimental';
 import { createAgentSession, SessionManager } from '@earendil-works/pi-coding-agent';
 
 const provider = new PiProvider();
@@ -45,7 +45,7 @@ Use this when Pi should search and execute tools dynamically inside one Tool Rou
 
 ```ts
 import { Composio } from '@composio/core';
-import { PiProvider, createPiComposioSystemPrompt } from '@composio/pi';
+import { PiProvider, createPiComposioSystemPrompt } from '@composio/experimental';
 import {
   createAgentSession,
   DefaultResourceLoader,
@@ -136,7 +136,7 @@ Workbench helpers are opt-in because the Tool Router session must be created wit
 Embedded agents often need to keep Composio connection URLs out of the public transcript. Use the first-class `authLinks.handle()` hook for side effects and `transformResult` for redaction:
 
 ```ts
-import { extractComposioConnectLinks } from '@composio/pi';
+import { extractComposioConnectLinks } from '@composio/experimental';
 
 const tools = provider.createSessionTools({
   search: composioSession.search.bind(composioSession),

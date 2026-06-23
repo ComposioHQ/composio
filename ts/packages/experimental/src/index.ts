@@ -11,7 +11,7 @@
  *   search / execute / connection-management capabilities.
  *
  * @packageDocumentation
- * @module providers/pi
+ * @module experimental
  */
 import {
   BaseAgenticProvider,
