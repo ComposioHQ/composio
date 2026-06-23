@@ -674,7 +674,7 @@ For framework examples, see provider-specific documentation like [OpenAI](/docs/
 
 ### tools()
 
-Get the tools the session exposes for your AI framework.
+Get the tools the session exposes for your AI framework. By default these are the session's [meta tools](/reference/meta-tools), formatted for your configured provider.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -728,7 +728,7 @@ For more details, see [Manually authenticating users](/docs/authenticating-users
 
 ### toolkits()
 
-List available toolkits and their connection status. Use this to build a UI showing which apps are connected.
+List the toolkits enabled for the session and their connection status, sorted by popularity. Use it to build a UI showing which apps are connected. Each toolkit includes its `slug`, `name`, `logo`, and connection status, and the call returns the first 20 by default.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -755,7 +755,113 @@ toolkits.items.forEach((toolkit) => {
 </Tab>
 </Tabs>
 
-Returns the first 20 toolkits by default.
+Filter to only connected toolkits:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+connected = session.toolkits(is_connected=True)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connected = await session.toolkits({ isConnected: true });
+```
+</Tab>
+</Tabs>
+
+Paginate through every toolkit with `limit` and the returned cursor:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+all_toolkits = []
+cursor = None
+
+while True:
+    result = session.toolkits(limit=20, next_cursor=cursor)
+    all_toolkits.extend(result.items)
+    cursor = result.next_cursor
+    if not cursor:
+        break
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const allToolkits: any[] = [];
+let cursor: string | undefined;
+
+do {
+  const { items, cursor: nextCursor } = await session.toolkits({ limit: 20, cursor });
+  allToolkits.push(...items);
+  cursor = nextCursor;
+} while (cursor);
+```
+</Tab>
+</Tabs>
+
+## Browsing the catalog
+
+Before configuring a session, explore the toolkits and tools available. Browse them visually at [dashboard.composio.dev](https://dashboard.composio.dev) or in the [docs catalog](/toolkits), or fetch them programmatically:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+# List toolkits
+toolkits = composio.toolkits.get()
+
+# List tools within a toolkit (top 20 by default)
+tools = composio.tools.get("user_123", toolkits=["GITHUB"])
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
+// List toolkits
+const toolkits = await composio.toolkits.get();
+
+// List tools within a toolkit (top 20 by default)
+const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
+```
+</Tab>
+</Tabs>
+
+Inspect a tool's input and output schema without a user context with `getRawComposioToolBySlug`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+print(tool.name)
+print(tool.description)
+print(tool.input_parameters)
+print(tool.output_parameters)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
+console.log(tool.name);
+console.log(tool.description);
+console.log(tool.inputParameters);
+console.log(tool.outputParameters);
+```
+</Tab>
+</Tabs>
 
 ## Next
 
