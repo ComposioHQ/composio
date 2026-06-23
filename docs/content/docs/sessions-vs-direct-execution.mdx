@@ -5,9 +5,9 @@ keywords: [session, direct execution, tool router, meta tools, architecture, dec
 legacy: true
 ---
 
-**Sessions** give your agent [meta tools](/docs/tools-and-toolkits#meta-tools). The agent discovers which app tools to use, authenticates users, and executes tools at runtime through these meta tools.
+A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/tools-and-toolkits#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
-**Direct execution** gives your code specific tool schemas. You decide which tools to fetch, manage auth yourself, and call `tools.execute()` directly.
+**Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
 Use sessions unless you need full control over which tools are available and when they run.
 
@@ -23,6 +23,8 @@ Use sessions unless you need full control over which tools are available and whe
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
 Sessions are configurable. [Restrict toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+
+Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the workbench. It's the middle ground between runtime discovery and direct execution.
 
 ## Sessions
 
