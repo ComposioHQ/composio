@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ExecuteToolFn, Tool } from '@composio/core';
+import type { ToolDefinition } from '@earendil-works/pi-coding-agent';
 import {
   PiProvider,
   PI_COMPOSIO_SESSION_TOOL_NAMES,
+  denyPiToolCall,
   extractComposioConnectLinks,
 } from '../src/index';
 
@@ -51,7 +53,7 @@ describe('PiProvider', () => {
       title: 'Test',
     });
     expect((result.content[0] as { text: string } | undefined)?.text).toContain('issueNumber');
-    expect(result.details.slug).toBe('GITHUB_CREATE_ISSUE');
+    expect((result.details as { slug?: string }).slug).toBe('GITHUB_CREATE_ISSUE');
   });
 
   it('creates dynamic session tools for search, manage connections, and execute', async () => {
@@ -69,8 +71,9 @@ describe('PiProvider', () => {
     };
     const provider = new PiProvider();
     const tools = provider.createSessionTools(session);
+    const piCompatibleTools: ToolDefinition[] = tools;
 
-    expect(tools.map(tool => tool.name)).toEqual([
+    expect(piCompatibleTools.map(tool => tool.name)).toEqual([
       PI_COMPOSIO_SESSION_TOOL_NAMES.search,
       PI_COMPOSIO_SESSION_TOOL_NAMES.manageConnections,
       PI_COMPOSIO_SESSION_TOOL_NAMES.execute,
@@ -306,7 +309,7 @@ describe('PiProvider', () => {
         },
         execute: (ctx, next) => {
           if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
-            return { successful: false, error: 'meta tools blocked' };
+            return denyPiToolCall('meta tools blocked');
           }
           ctx.request.toolSlug = ctx.request.toolSlug.replace(/^SLACK_/, 'SLACKBOT_');
           return next();
@@ -355,6 +358,7 @@ describe('PiProvider', () => {
     expect((denied.content[0] as { text: string } | undefined)?.text).toContain(
       'meta tools blocked'
     );
+    expect((denied.details as { denied?: boolean }).denied).toBe(true);
   });
 
   it('lets hooks inspect default results and replace what the model sees', async () => {
@@ -429,7 +433,9 @@ describe('PiProvider', () => {
     const text = (result.content[0] as { text: string } | undefined)?.text;
     expect(text).toContain('Connection link sent out-of-band.');
     expect(text).not.toContain('https://connect.composio.dev/gmail');
-    expect(result.details.authLinks).toEqual(['https://connect.composio.dev/gmail']);
+    expect((result.details as { authLinks?: string[] }).authLinks).toEqual([
+      'https://connect.composio.dev/gmail',
+    ]);
   });
 
   it('extracts Composio connect links from nested results', () => {

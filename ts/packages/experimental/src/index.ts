@@ -37,10 +37,24 @@ export type PiToolDetails = {
   denied?: boolean;
 };
 
-export type PiTool = ToolDefinition<TSchema, PiToolDetails>;
+export type PiTool = ToolDefinition;
 export type PiToolCollection = PiTool[];
 
 export type PiToolResultFormatter = (result: unknown) => string;
+
+export type PiDeniedResult = {
+  successful: false;
+  error: string;
+  data: null;
+  denied: true;
+};
+
+export const denyPiToolCall = (error: string): PiDeniedResult => ({
+  successful: false,
+  error,
+  data: null,
+  denied: true,
+});
 
 export type MaybePromise<T> = T | Promise<T>;
 
@@ -336,6 +350,12 @@ const normalizeToolkits = (value: unknown): string[] | undefined => {
 const stringifyError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const isPiDeniedResult = (value: unknown): value is PiDeniedResult =>
+  !!value &&
+  typeof value === 'object' &&
+  (value as Partial<PiDeniedResult>).denied === true &&
+  (value as Partial<PiDeniedResult>).successful === false;
+
 const toPiResult = (
   value: unknown,
   formatter: PiToolResultFormatter,
@@ -344,6 +364,7 @@ const toPiResult = (
   content: [{ type: 'text' as const, text: formatter(value) }],
   details: {
     ...details,
+    denied: details.denied ?? (isPiDeniedResult(value) ? true : undefined),
     result: value,
   },
 });

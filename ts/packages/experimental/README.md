@@ -45,7 +45,7 @@ Use this when Pi should search and execute tools dynamically inside one Tool Rou
 
 ```ts
 import { Composio } from '@composio/core';
-import { PiProvider, createPiComposioSystemPrompt } from '@composio/experimental';
+import { PiProvider, createPiComposioSystemPrompt, denyPiToolCall } from '@composio/experimental';
 import {
   createAgentSession,
   DefaultResourceLoader,
@@ -82,7 +82,7 @@ const composioTools = provider.createSessionTools({
     },
     execute: (ctx, next) => {
       if (ctx.request.toolSlug === 'COMPOSIO_MANAGE_CONNECTIONS') {
-        return { successful: false, error: 'Meta tools are blocked.' };
+        return denyPiToolCall('Meta tools are blocked.');
       }
       return next();
     },
@@ -93,7 +93,7 @@ const composioTools = provider.createSessionTools({
     },
     remoteBash: async (ctx, next) => {
       if (ctx.request.command.includes('rm -rf')) {
-        return { successful: false, error: 'Destructive bash commands are blocked.' };
+        return denyPiToolCall('Destructive bash commands are blocked.');
       }
       return next();
     },
@@ -148,7 +148,7 @@ Workbench helpers are opt-in because the Tool Router session must be created wit
 
 ## Hooks
 
-`hooks` follows Pi's extension-event style with middleware semantics. Each hook receives a mutable `ctx.request` and a typed `next()` function. Calling `await next()` runs the default Composio behavior and returns the result before anything is sent back to the model. Return that result to pass it through, return a replacement value to control what the model sees, or skip `next()` entirely to divert/deny the operation.
+`hooks` follows Pi's extension-event style with middleware semantics. Each hook receives a mutable `ctx.request` and a typed `next()` function. Calling `await next()` runs the default Composio behavior and returns the result before anything is sent back to the model. Return that result to pass it through, return a replacement value to control what the model sees, or skip `next()` entirely to divert/deny the operation. For explicit denials, return `denyPiToolCall('reason')`.
 
 Available hooks:
 
