@@ -73,9 +73,10 @@
   },
   "files": [
     "README.md",
+    "docs",
     "dist",
     "generated",
-    "src/platform"
+    "src"
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",

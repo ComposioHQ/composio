@@ -49,8 +49,8 @@ import {
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
 import { ToolkitVersionParam } from '../types/tool.types';
-import { ComposioConfig } from '../composio';
-import { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 

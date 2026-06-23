@@ -32,6 +32,10 @@ const extendedMockClient = {
   link: {
     create: vi.fn(),
   },
+  authConfigs: {
+    list: vi.fn(),
+    create: vi.fn(),
+  },
 };
 
 describe('ConnectedAccounts', () => {
@@ -1155,6 +1159,101 @@ describe('ConnectedAccounts', () => {
       );
       expect(connectionRequest).toHaveProperty('waitForConnection');
       expect(typeof connectionRequest.waitForConnection).toBe('function');
+    });
+
+    it('should use an existing Tool-Router-compatible managed auth config when authConfigId is omitted', async () => {
+      const userId = 'user_123';
+
+      extendedMockClient.authConfigs.list.mockResolvedValueOnce({
+        items: [
+          {
+            id: 'auth_config_managed_github',
+            status: 'ENABLED',
+            is_enabled_for_tool_router: true,
+            is_composio_managed: true,
+            toolkit: { slug: 'github' },
+          },
+        ],
+        next_cursor: null,
+        total_pages: 1,
+      });
+      extendedMockClient.link.create.mockResolvedValueOnce({
+        connected_account_id: 'conn_456def',
+        redirect_url: 'https://connect.composio.dev/auth?token=abc123',
+      });
+
+      const connectionRequest = await connectedAccounts.link(userId, {
+        toolkit: 'github',
+        callbackUrl: 'https://example.com/callback',
+      });
+
+      expect(extendedMockClient.authConfigs.list).toHaveBeenCalledWith({
+        toolkit_slug: 'github',
+        is_composio_managed: true,
+        limit: 100,
+      });
+      expect(extendedMockClient.authConfigs.create).not.toHaveBeenCalled();
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_ids: [userId],
+          auth_config_ids: ['auth_config_managed_github'],
+          statuses: [ConnectedAccountStatuses.ACTIVE],
+        })
+      );
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
+        auth_config_id: 'auth_config_managed_github',
+        user_id: userId,
+        callback_url: 'https://example.com/callback',
+      });
+      expect(connectionRequest).toHaveProperty('id', 'conn_456def');
+    });
+
+    it('should create a Tool-Router-compatible managed auth config when authConfigId is omitted and none exists', async () => {
+      const userId = 'user_123';
+
+      extendedMockClient.authConfigs.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+      extendedMockClient.authConfigs.create.mockResolvedValueOnce({
+        auth_config: {
+          id: 'auth_config_created_github',
+          auth_scheme: 'OAUTH2',
+          is_composio_managed: true,
+        },
+        toolkit: { slug: 'github' },
+      });
+      extendedMockClient.link.create.mockResolvedValueOnce({
+        connected_account_id: 'conn_created',
+        redirect_url: 'https://connect.composio.dev/auth?token=created',
+      });
+
+      const connectionRequest = await connectedAccounts.link(userId, undefined, {
+        toolkit: 'github',
+      });
+
+      expect(extendedMockClient.authConfigs.create).toHaveBeenCalledWith({
+        toolkit: { slug: 'github' },
+        auth_config: {
+          type: 'use_composio_managed_auth',
+          is_enabled_for_tool_router: true,
+        },
+      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
+        auth_config_id: 'auth_config_created_github',
+        user_id: userId,
+      });
+      expect(connectionRequest).toHaveProperty('id', 'conn_created');
+    });
+
+    it('should require options.toolkit when authConfigId is omitted', async () => {
+      await expect(
+        connectedAccounts.link('user_123', undefined as any, {
+          callbackUrl: 'https://example.com/callback',
+        })
+      ).rejects.toThrow('authConfigId is required unless options.toolkit is provided');
+      expect(extendedMockClient.link.create).not.toHaveBeenCalled();
     });
 
     it('should create a connected account link with callback URL and return a ConnectionRequest', async () => {

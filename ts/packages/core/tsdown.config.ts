@@ -4,7 +4,15 @@ import { baseConfig } from '../../../tsdown.config.base.ts';
 export default defineConfig({
   ...baseConfig,
   tsconfig: 'tsconfig.build.json',
-  copy: [{ from: 'pack/generated/*', to: '.', flatten: false }],
+  copy: [
+    { from: 'pack/generated/*', to: '.', flatten: false },
+    { from: 'docs/**/*', to: 'dist/docs', flatten: false },
+    {
+      from: '../../../docs/content/reference/sdk-reference/typescript/*',
+      to: 'dist/docs/reference/sdk-reference/typescript',
+      flatten: true,
+    },
+  ],
   entry: [
     'src/index.ts',
     'src/experimental/index.ts',

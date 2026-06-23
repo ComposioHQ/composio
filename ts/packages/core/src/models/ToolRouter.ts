@@ -9,7 +9,7 @@
  * const composio = new Composio();
  * const userId = 'user_123';
  *
- * const session = await composio.experimental.create(userId, {
+ * const session = await composio.sessions.create(userId, {
  *   toolkits: ['gmail'],
  *   manageConnections: true
  * });
@@ -19,8 +19,8 @@
  */
 import { Composio as ComposioClient } from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
-import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ComposioConfig } from '../composio';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
 import {
   ToolRouterCreateSessionConfig,
   Session,
@@ -155,7 +155,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    *
-   * const session = await composio.create('user_123', {
+   * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
    *   manageConnections: true,
    *   experimental: {
@@ -274,7 +274,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.toolRouter.use(id);
+   * const session = await composio.sessions.use(id);
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);

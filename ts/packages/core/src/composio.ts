@@ -19,6 +19,7 @@ import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
+import { Sessions } from './models/Sessions';
 import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
 import type { CustomTool, CustomToolkit } from './types/customTool.types';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
@@ -206,8 +207,15 @@ export class Composio<
   /** Model Context Protocol server management */
   mcp: MCP;
   /**
-   * Experimental feature, use with caution
-   * @experimental
+   * Create and reuse Composio sessions.
+   *
+   * Prefer `composio.sessions.create(...)` for new code. The top-level
+   * `composio.create(...)` method is kept as an alias.
+   */
+  sessions: Sessions<unknown, unknown, TProvider>;
+  /**
+   * Legacy alias for `composio.sessions`.
+   * @deprecated Use `composio.sessions` instead.
    */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
   /**
@@ -226,7 +234,12 @@ export class Composio<
    * const composio = new Composio();
    * const userId = 'user_123';
    *
-   * const session = await composio.create(userId, {
+   * const session = await composio.sessions.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * // Backwards-compatible alias:
+   * const same = await composio.create(userId, {
    *  manageConnections: true,
    * });
    *
@@ -341,14 +354,15 @@ export class Composio<
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.experimental = new Experimental(this.client);
-    this.toolRouter = new ToolRouter(this.client, this.config);
+    this.sessions = new Sessions(this.client, this.config);
+    this.toolRouter = this.sessions;
 
     /**
-     * Initialize tool router methods
-     * Properly bind the methods to maintain the correct 'this' context
+     * Initialize session aliases.
+     * Properly bind the methods to maintain the correct 'this' context.
      */
-    this.create = this.toolRouter.create.bind(this.toolRouter);
-    this.use = this.toolRouter.use.bind(this.toolRouter);
+    this.create = this.sessions.create.bind(this.sessions);
+    this.use = this.sessions.use.bind(this.sessions);
 
     /**
      * Initialize the client telemetry.

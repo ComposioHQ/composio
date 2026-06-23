@@ -1,6 +1,6 @@
-import { BaseComposioProvider } from '../provider/BaseProvider';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { version } from '../../package.json';
-import { ComposioRequestHeaders } from '../types/composio.types';
+import type { ComposioRequestHeaders } from '../types/composio.types';
 
 /**
  * Extended globalThis interface for runtime detection

@@ -53,6 +53,8 @@ import { ConnectionData } from '../types/connectedAccountAuthStates.types';
 // warning on every initiate() call.
 let _legacyInitiateWarningEmitted = false;
 
+const TOOL_ROUTER_AUTH_CONFIG_LIST_LIMIT = 100;
+
 /**
  * ConnectedAccounts class
  *
@@ -65,6 +67,38 @@ export class ConnectedAccounts {
   constructor(client: ComposioClient) {
     this.client = client;
     telemetry.instrument(this, 'ConnectedAccounts');
+  }
+
+  /**
+   * Resolve the Composio-managed auth config that Tool Router would use for a
+   * toolkit, creating one when the project does not have a compatible config yet.
+   */
+  private async resolveToolRouterAuthConfigId(toolkit: string): Promise<string> {
+    const existing = await this.client.authConfigs.list({
+      toolkit_slug: toolkit,
+      is_composio_managed: true,
+      limit: TOOL_ROUTER_AUTH_CONFIG_LIST_LIMIT,
+    });
+
+    const compatible = existing.items.find(
+      authConfig =>
+        authConfig.id &&
+        authConfig.is_enabled_for_tool_router !== false &&
+        authConfig.status !== 'DISABLED'
+    );
+    if (compatible?.id) {
+      return compatible.id;
+    }
+
+    const created = await this.client.authConfigs.create({
+      toolkit: { slug: toolkit },
+      auth_config: {
+        type: 'use_composio_managed_auth',
+        is_enabled_for_tool_router: true,
+      },
+    });
+
+    return created.auth_config.id;
   }
 
   /**
@@ -314,8 +348,8 @@ export class ConnectedAccounts {
    * @docs https://docs.composio.dev/reference/connected-accounts/create-connected-account#create-a-composio-connect-link
    *
    * @param userId {string} - The external user ID to create the connected account for.
-   * @param authConfigId {string} - The auth config ID to create the connected account for.
-   * @param options {CreateConnectedAccountOptions} - Options for creating a new connected account.
+   * @param authConfigId {string} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default Tool-Router-compatible auth config for that toolkit.
+   * @param options {CreateConnectedAccountLinkOptions} - Options for creating a new connected account link.
    * @param options.callbackUrl {string} - The url to redirect the user to post connecting their account.
    * @returns {ConnectionRequest} Connection request object
    *
@@ -342,17 +376,61 @@ export class ConnectedAccounts {
    * // Wait for the connection to be established
    * const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequest.id);
    * ```
+   *
+   * @example
+   * ```typescript
+   * // Omit authConfigId and let the SDK use/create a Tool-Router-compatible
+   * // Composio-managed auth config for the toolkit.
+   * const connectionRequest = await composio.connectedAccounts.link('user_123', {
+   *   toolkit: 'github',
+   *   callbackUrl: 'https://your-app.com/callback'
+   * });
+   * ```
    */
+  async link(
+    userId: string,
+    options: CreateConnectedAccountLinkOptions & { toolkit: string }
+  ): Promise<ConnectionRequest>;
+  async link(
+    userId: string,
+    authConfigId: undefined,
+    options: CreateConnectedAccountLinkOptions & { toolkit: string }
+  ): Promise<ConnectionRequest>;
   async link(
     userId: string,
     authConfigId: string,
     options?: CreateConnectedAccountLinkOptions
+  ): Promise<ConnectionRequest>;
+  async link(
+    userId: string,
+    authConfigIdOrOptions?: string | CreateConnectedAccountLinkOptions,
+    options?: CreateConnectedAccountLinkOptions
   ): Promise<ConnectionRequest> {
-    const requestOptions = await CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
+    const rawOptions =
+      typeof authConfigIdOrOptions === 'string' || authConfigIdOrOptions === undefined
+        ? options
+        : authConfigIdOrOptions;
+    const requestOptions = await CreateConnectedAccountLinkOptionsSchema.safeParse(
+      rawOptions || {}
+    );
     if (!requestOptions.success) {
       throw new ValidationError('Failed to parse create connected account link options', {
         cause: requestOptions.error,
       });
+    }
+
+    const opts = requestOptions.data;
+    const authConfigId =
+      typeof authConfigIdOrOptions === 'string'
+        ? authConfigIdOrOptions
+        : opts.toolkit
+          ? await this.resolveToolRouterAuthConfigId(opts.toolkit)
+          : undefined;
+
+    if (!authConfigId) {
+      throw new ValidationError(
+        'authConfigId is required unless options.toolkit is provided to connectedAccounts.link()'
+      );
     }
 
     // Mirror initiate(): guard against silently creating extra connections on
@@ -372,7 +450,6 @@ export class ConnectedAccounts {
       );
     }
 
-    const opts = requestOptions.data;
     const experimentalWire = serializeExperimentalForWire(opts.experimental);
     const body: LinkCreateParams = {
       auth_config_id: authConfigId,

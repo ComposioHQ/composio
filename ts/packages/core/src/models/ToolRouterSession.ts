@@ -1,7 +1,7 @@
 import { telemetry } from '../telemetry/Telemetry';
 import { Composio as ComposioClient, BadRequestError } from '@composio/client';
-import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ComposioConfig } from '../composio';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
