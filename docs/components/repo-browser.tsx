@@ -1,24 +1,20 @@
 import { preloadFile } from '@pierre/diffs/ssr';
 import { RepoBrowserClient, type RepoFile } from './repo-browser-client';
-import sourceData from '@/lib/slack-bot-source.json';
-
-interface SourceFile {
-  path: string;
-  contents: string;
-  composio: boolean;
-}
+import { SOURCES, type SourceName } from '@/lib/sources';
 
 /**
- * RepoBrowser — a real slice of the composio-slack-bot project as a browsable
- * tree + code viewer. The Composio touch-points (triggers, sessions, shared
- * connection, proxy) are bundled with the full project on GitHub. Each file's
- * code is prerendered on the server with @pierre/diffs.
+ * RepoBrowser — a real slice of an example project as a browsable tree + code
+ * viewer, with the Composio touch-points flagged. Each file's code is
+ * prerendered on the server with @pierre/diffs.
+ *
+ * `source` selects which example's snapshot to show (default: the slack-bot /
+ * Pi example, so existing pages are unaffected).
  */
-export async function RepoBrowser() {
-  const source = sourceData as SourceFile[];
+export async function RepoBrowser({ source = 'slack-bot' }: { source?: SourceName }) {
+  const sourceData = SOURCES[source];
 
   const files: RepoFile[] = [];
-  for (const f of source) {
+  for (const f of sourceData) {
     const { prerenderedHTML } = await preloadFile({ file: { name: f.path, contents: f.contents } });
     files.push({ ...f, prerenderedHTML });
   }
@@ -27,7 +23,7 @@ export async function RepoBrowser() {
     <div className="not-prose my-6">
       <div className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
         <span className="size-1.5 rounded-full bg-[var(--composio-brand)]" aria-hidden="true" />
-        a slice of the real project — the Composio files do the work
+        a slice of the real project, the Composio files do the work
       </div>
       <RepoBrowserClient files={files} />
     </div>

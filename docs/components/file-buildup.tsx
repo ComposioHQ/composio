@@ -2,7 +2,7 @@ import { createPatch } from 'diff';
 import { getSingularPatch } from '@pierre/diffs';
 import { preloadFileDiff } from '@pierre/diffs/ssr';
 import { DiffView } from './diff-view';
-import { FILE_BUILDS } from '@/lib/slack-bot-build';
+import { BUILDS, type BuildSource } from '@/lib/builds';
 
 async function diffFor(file: string, prev: string, code: string) {
   const fileDiff = getSingularPatch(createPatch(file, prev, code, '', ''));
@@ -52,9 +52,21 @@ function StepCard({
  * Pass `step` (1-indexed) to render just that one step's diff, so the prose for
  * a concept can sit right next to the code that adds it. Without `step`, renders
  * every step with its built-in description.
+ *
+ * `source` selects which example's build data to use (default: the slack-bot /
+ * Pi example, so existing pages are unaffected).
  */
-export async function FileBuildup({ name, step }: { name: keyof typeof FILE_BUILDS; step?: number }) {
-  const build = FILE_BUILDS[name];
+export async function FileBuildup({
+  name,
+  step,
+  source = 'slack-bot',
+}: {
+  name: string;
+  step?: number;
+  source?: BuildSource;
+}) {
+  const build = BUILDS[source][name];
+  if (!build) return null;
 
   if (typeof step === 'number') {
     const i = step - 1;

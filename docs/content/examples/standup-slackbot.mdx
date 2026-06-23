@@ -1,0 +1,164 @@
+---
+title: Daily standup bot
+description: A Slack bot that DMs each teammate a daily standup drafted from their own connected tools, then posts it to a thread as them. Bring your own Slack app, tool-router sessions, active-connection scoping, the proxy, and per-member auth links.
+keywords: [standup bot, slack bot, slackbot toolkit, custom auth config, tool router, sessions, connected accounts, proxy, auth links, vercel, cron, interactivity]
+full: true
+---
+
+Every team runs standup. The tedious part is writing it: digging through your own PRs, issues, and docs to remember what you did. This bot does that for each person. On a schedule it DMs them a draft, assembled from *their* connected tools, that they review and post with one tap.
+
+The agent is small. The work is the Composio plumbing around it:
+
+1. **Your own Slack app.** Unlike a Composio-managed connection, this bot authenticates as a Slack app *you* register, through a `slackbot` auth config. A one-time [`setup.ts`](#bring-your-own-slack-bot) script does the OAuth.
+2. **The proxy** calls any Slack Web API endpoint as a connected account, so you build on the bot without holding a token, and it posts the final standup *as the member*.
+3. **Tool-router sessions** give each member a session scoped to *their* connected toolkits, so the draft is researched as them.
+4. **Active-connection scoping** means a draft only ever pulls from tools a member actually connected, filtered server-side.
+5. **Per-member auth links** let anyone connect a new tool from the reminder DM, no dashboard trip.
+
+<Mermaid chart={`flowchart TD
+  cron([Vercel cron]) --> thread[Find or create today's thread]
+  thread --> dm[DM each due member: Draft or Connect]
+  dm -->|Draft| session[Tool-router session over connected toolkits]
+  session --> draft[Agent researches and writes the standup]
+  draft --> review[Member reviews: Confirm or Edit]
+  review -->|Confirm| post[Post into the thread as the member]
+  dm -->|Connect| oauth[Per-member OAuth links]
+`} />
+
+Below you build the Composio core from scratch, set up your own bot, then browse the real project. You bring a Composio API key and a Slack app. Composio brings the auth, the sessions, and 1000+ tools to draft from.
+
+## Setup
+
+You need a [Composio API key](https://dashboard.composio.dev), a Slack workspace you can install an app into, and Node with [tsx](https://github.com/privatenumber/tsx). The bot deploys to [Vercel](https://vercel.com) as two serverless functions (a cron and an interactivity handler), so no long-running server.
+
+```bash
+npm install @composio/core @composio/vercel ai dayjs
+```
+
+## Bring your own Slack bot
+
+The Pi [general agent](/examples/general-agent-with-pi) uses a Composio-*managed* Slack connection: nothing to register. This bot is the other path, **a custom app you own**, so it posts under your team's name and icon and you control its scopes. That means three things up front, then a script that does the OAuth so you never touch a token.
+
+<Steps>
+<Step>
+**Create the app from scratch.** At [api.slack.com/apps](https://api.slack.com/apps), click **Create an App**, choose **From scratch**, name it (e.g. `Daily Standup Bot`), and pick your workspace.
+
+![Naming the Slack app and choosing a workspace](/images/standup-slackbot/create-app.png)
+</Step>
+
+<Step>
+**Add the Bot Token Scopes.** Under **OAuth & Permissions**, add: `chat:write`, `im:write`, `channels:history`, `channels:read`, `users:read`, `users:read.email`, `team:read`. Then turn on **Interactivity** and point its Request URL at your deployment's `/api/interactivity`.
+
+![Adding bot token scopes under OAuth & Permissions](/images/standup-slackbot/bot-scopes.png)
+</Step>
+
+<Step>
+**Grab the app credentials.** On **Basic Information**, copy the **Client ID** and **Client Secret**. Composio uses them to drive the OAuth as your app.
+
+![The app's Client ID and Secret under Basic Information](/images/standup-slackbot/app-credentials.png)
+</Step>
+
+<Step>
+**Create an auth config and pick the `Slackbot` toolkit.** In the [Composio dashboard](https://app.composio.dev), click **Create Auth Config** and search `slackbot`. Choose **Slackbot**, *not* `Slack`: `Slackbot` posts as the bot identity, while `Slack` acts as an individual user.
+
+![Choosing the Slackbot toolkit, not Slack](/images/standup-slackbot/auth-config-slackbot.png)
+</Step>
+
+<Step>
+**Use your own credentials.** Pick **OAuth 2.0**, then **Your Own Credentials**, and paste the Client ID and Secret from the previous step. Add `team:read` to the user token scopes.
+
+![Selecting Your Own Credentials and entering the Client ID and Secret](/images/standup-slackbot/auth-config-credentials.png)
+</Step>
+
+<Step>
+**Save the auth config id.** Once created, copy its `ac_...` id into `COMPOSIO_SLACKBOT_AUTH_CONFIG_ID`. This is the one config every member's bot connection runs through.
+
+![The created slackbot auth config with its ac_ id](/images/standup-slackbot/auth-config-created.png)
+</Step>
+
+<Step>
+**Run the setup script.** It binds a session to your auth config, and if the bot isn't connected yet, hands you an OAuth link and waits for approval. The connected account it leaves behind is the identity the bot posts as.
+
+<FileBuildup name="setup" source="standup" />
+
+The first run prints a link and waits:
+
+```text
+╭─────────────────────────────────────────────────────────╮
+│  Daily Standup Bot: One-Time Setup                       │
+╰─────────────────────────────────────────────────────────╯
+  ✅ Auth config has the required user scopes.
+  ·  Bot is not connected yet. Generating an authorization link…
+
+  Open this URL in your browser to authorize the bot:
+
+    https://backend.composio.dev/s/AbC123xy
+
+  Waiting for you to complete the OAuth flow (Ctrl+C to abort)…
+  ✅ Bot connected to Slack.
+
+──────────────────────────────────────────────────────────────────────
+  🎉 Setup complete. Invite the bot to your standup channel and
+     point your Slack app's Interactivity Request URL at
+     https://<your-deployment>/api/interactivity
+──────────────────────────────────────────────────────────────────────
+```
+
+Open that link to approve the bot:
+
+![Approving the bot's OAuth connection](/images/standup-slackbot/oauth-approve.png)
+
+Approve it, and the connection goes live:
+
+![Composio successfully connected to Slackbot](/images/standup-slackbot/connected.png)
+</Step>
+</Steps>
+
+Why a script instead of clicking through the dashboard? It's idempotent and repeatable: re-run it after changing scopes (`--reconnect` in the real version), check it into the repo, and anyone setting up a fork gets the same connection without a manual OAuth dance.
+
+## Talk to Slack as the bot
+
+With the bot connected, you drive Slack through Composio's **proxy**. `proxyExecute` calls any Slack Web API endpoint authenticated as a connected account, so you never hold a token, and it reaches endpoints the named `SLACKBOT_*` tools don't wrap (like `views.open` for modals).
+
+<FileBuildup name="proxy" source="standup" step={1} />
+
+The connected account is just a parameter. Pass the bot's to post as the bot; pass a member's own Slack account and the standup posts under *their* name, which is exactly how **Confirm** posts the finished update.
+
+<FileBuildup name="proxy" source="standup" step={2} />
+
+## Build the draft
+
+The heart of the bot is one function: given a member, research their tools and write their standup. It grows three Composio concepts deep.
+
+### A session writes the draft
+
+A [tool-router session](/docs/configuring-sessions) is the whole agent. Scope it to some toolkits, hand its research tools to the model, and let it investigate and write.
+
+<FileBuildup name="draft" source="standup" step={1} />
+
+### Only draft from connected tools
+
+A member's draft should never invent activity from a tool they haven't connected. Ask Composio which of the catalogue toolkits are **ACTIVE** for them, filtered server-side with `statuses`, and scope the session to exactly those.
+
+<FileBuildup name="draft" source="standup" step={2} />
+
+### Keep the agent from connecting mid-draft
+
+The router can also *manage* connections. During a draft you don't want that: if the agent hits a tool that needs auth, it should skip it, not kick off an OAuth flow. `manageConnections: false` removes those meta-tools from the session.
+
+<FileBuildup name="draft" source="standup" step={3} />
+
+## The whole project
+
+The draft function is the core, but the real bot wraps it in a Vercel cron that DMs each due member on their schedule, an interactivity handler for the Draft / Connect / Confirm / Edit buttons, and a Slack helper that posts **as the member** through the proxy. Browse the tree, the Composio files are flagged:
+
+<RepoBrowser source="standup" />
+
+## Run it
+
+Set your four environment variables, run `npx tsx scripts/setup.ts` once to connect the bot, then `vercel deploy`. On schedule, each member gets a DM. They tap **Draft**, the agent researches their connected tools and writes a standup in a few seconds, and **Confirm** posts it into the day's thread under their own name. Tap **Connect more tools** to add a source, and the next draft includes it.
+
+<Cards>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="What a session can scope: toolkits, tools, connections, and connection management" />
+  <Card title="Custom vs managed auth" href="/docs/custom-app-vs-managed-app" description="Bring-your-own Slack app versus a Composio-managed connection" />
+</Cards>
