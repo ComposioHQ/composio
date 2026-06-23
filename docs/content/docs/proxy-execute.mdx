@@ -337,10 +337,6 @@ Proxy execute forwards the upstream response verbatim — `status`, `headers`, a
 | `403 Forbidden` | The user's OAuth scopes or API key permissions do not cover this endpoint. | Update the [auth config scopes](/docs/auth-configuration/custom-auth-configs) and have the user re-consent. For API keys, regenerate with the required permissions. |
 | `429 Too Many Requests` | Upstream rate limit (GitHub, Google, etc.). | Honor the `Retry-After` header from the response, back off exponentially, and batch requests where possible. Composio does not retry automatically. |
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Terminal />} title="API reference" href="/reference/api-reference/tools/postToolsExecuteProxy" description="Full request and response schema for POST /api/v3.1/tools/execute/proxy" />
-  <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="Understand how Composio tools are discovered and executed in sessions" />
-  <Card icon={<Key />} title="Authentication" href="/docs/authentication" description="How Composio manages OAuth, API keys, and connected accounts" />
-</Cards>
+<Card icon={<Terminal />} title="API reference" href="/reference/api-reference/tools/postToolsExecuteProxy" description="Full request and response schema for POST /api/v3.1/tools/execute/proxy" />
