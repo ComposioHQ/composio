@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ExecuteToolFn, Tool } from '@composio/core';
-import { PiProvider, PI_COMPOSIO_SESSION_TOOL_NAMES, extractComposioConnectLinks } from '../src/index';
+import {
+  PiProvider,
+  PI_COMPOSIO_SESSION_TOOL_NAMES,
+  extractComposioConnectLinks,
+} from '../src/index';
 
 const composioTool = {
   slug: 'GITHUB_CREATE_ISSUE',
@@ -54,8 +58,14 @@ describe('PiProvider', () => {
     const session = {
       sessionId: 'trs_123',
       search: vi.fn(async () => ({ results: [{ tool: 'GITHUB_CREATE_ISSUE' }] })),
-      execute: vi.fn(async (toolSlug: string) => ({ successful: true, data: { toolSlug }, error: null })),
-      authorize: vi.fn(async (toolkit: string) => ({ redirectUrl: `https://connect.composio.dev/${toolkit}` })),
+      execute: vi.fn(async (toolSlug: string) => ({
+        successful: true,
+        data: { toolSlug },
+        error: null,
+      })),
+      authorize: vi.fn(async (toolkit: string) => ({
+        redirectUrl: `https://connect.composio.dev/${toolkit}`,
+      })),
     };
     const provider = new PiProvider();
     const tools = provider.createSessionTools(session);
@@ -74,8 +84,13 @@ describe('PiProvider', () => {
       undefined,
       undefined as never
     );
-    expect(session.search).toHaveBeenCalledWith({ query: 'create github issue', toolkits: ['github'] });
-    expect((searchResult.content[0] as { text: string } | undefined)?.text).toContain('GITHUB_CREATE_ISSUE');
+    expect(session.search).toHaveBeenCalledWith({
+      query: 'create github issue',
+      toolkits: ['github'],
+    });
+    expect((searchResult.content[0] as { text: string } | undefined)?.text).toContain(
+      'GITHUB_CREATE_ISSUE'
+    );
 
     const execute = tools[2]!;
     await execute.execute(
@@ -85,7 +100,11 @@ describe('PiProvider', () => {
       undefined,
       undefined as never
     );
-    expect(session.execute).toHaveBeenCalledWith('GITHUB_CREATE_ISSUE', { title: 'Hello' }, { account: 'acct' });
+    expect(session.execute).toHaveBeenCalledWith(
+      'GITHUB_CREATE_ISSUE',
+      { title: 'Hello' },
+      { account: 'acct' }
+    );
   });
 
   it('can include first-class remote workbench helpers', async () => {
@@ -139,32 +158,129 @@ describe('PiProvider', () => {
     });
   });
 
-  it('falls back to session.authorize when manage-connections execution fails', async () => {
+  it('manages connections through native toolkit-state and authorize handlers without executing a meta tool', async () => {
     const session = {
       sessionId: 'trs_123',
-      search: vi.fn(),
-      execute: vi.fn(async () => {
-        throw new Error('manage connections unavailable');
-      }),
-      authorize: vi.fn(async (toolkit: string) => ({ redirectUrl: `https://connect.composio.dev/${toolkit}` })),
+      search: vi.fn(async (_params: { query: string; toolkits?: string[] }) => ({})),
+      execute: vi.fn(
+        async (
+          _toolSlug: string,
+          _args?: Record<string, unknown>,
+          _options?: { account?: string }
+        ) => ({})
+      ),
+      toolkits: vi.fn(async (_options?: { toolkits?: string[] }) => ({
+        items: [
+          { slug: 'github', connection: { isActive: true } },
+          { slug: 'gmail', connection: undefined },
+        ],
+      })),
+      authorize: vi.fn(async (toolkit: string, _options?: unknown) => ({
+        redirectUrl: `https://connect.composio.dev/${toolkit}`,
+      })),
     };
+    const handleAuthLink = vi.fn();
     const provider = new PiProvider();
-    const [_, manageConnections] = provider.createSessionTools(session, {
+    const [_, manageConnections] = provider.createSessionTools({
+      sessionId: session.sessionId,
+      search: session.search,
+      execute: session.execute,
+      connections: {
+        getToolkitStates: (toolkits: string[]) => session.toolkits({ toolkits }),
+        authorizeToolkit: (toolkit: string, options: unknown) =>
+          session.authorize(toolkit, options),
+      },
+      authLinks: { handle: handleAuthLink },
       callbackUrl: 'https://example.com/callback',
     });
 
     const result = await manageConnections!.execute(
       'call_manage',
-      { toolkits: ['github'] } as never,
+      { toolkits: ['github', 'gmail'] } as never,
       undefined,
       undefined,
       undefined as never
     );
 
-    expect(session.authorize).toHaveBeenCalledWith('github', {
+    expect(session.toolkits).toHaveBeenCalledWith({ toolkits: ['github', 'gmail'] });
+    expect(session.authorize).toHaveBeenCalledWith('gmail', {
       callbackUrl: 'https://example.com/callback',
+      reinitiate: false,
     });
-    expect((result.content[0] as { text: string } | undefined)?.text).toContain('https://connect.composio.dev/github');
+    expect(session.execute).not.toHaveBeenCalledWith(
+      'COMPOSIO_MANAGE_CONNECTIONS',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(handleAuthLink).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://connect.composio.dev/gmail',
+        toolkit: 'gmail',
+        sourceTool: PI_COMPOSIO_SESSION_TOOL_NAMES.manageConnections,
+      })
+    );
+    expect((result.content[0] as { text: string } | undefined)?.text).toContain('auth_initiated');
+  });
+
+  it('applies search and execute policy hooks', async () => {
+    const search = vi.fn(async () => ({ results: [{ tool: 'SLACKBOT_SEND_MESSAGE' }] }));
+    const execute = vi.fn(async (toolSlug: string, args: Record<string, unknown>) => ({
+      successful: true,
+      data: { toolSlug, args },
+      error: null,
+    }));
+    const provider = new PiProvider();
+    const tools = provider.createSessionTools({
+      search,
+      execute,
+      policy: {
+        normalizeSearchToolkits: ({ toolkits }) =>
+          toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+        beforeExecute: ({ toolSlug, args }) =>
+          toolSlug.startsWith('COMPOSIO_')
+            ? { action: 'deny', result: { successful: false, error: 'meta tools blocked' } }
+            : { action: 'execute', toolSlug: toolSlug.replace(/^SLACK_/, 'SLACKBOT_'), args },
+      },
+    });
+
+    const searchTool = tools[0]!;
+    await searchTool.execute(
+      'call_search',
+      { query: 'message channel', toolkits: ['slack'] } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+    expect(search).toHaveBeenCalledWith(
+      { query: 'message channel', toolkits: ['slackbot'] },
+      expect.objectContaining({ requestedToolkits: ['slack'] })
+    );
+
+    const executeTool = tools[2]!;
+    await executeTool.execute(
+      'call_execute',
+      { toolSlug: 'SLACK_SEND_MESSAGE', arguments: { text: 'hi' } } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+    expect(execute).toHaveBeenCalledWith(
+      'SLACKBOT_SEND_MESSAGE',
+      { text: 'hi' },
+      undefined,
+      expect.objectContaining({ toolSlug: 'SLACKBOT_SEND_MESSAGE' })
+    );
+
+    const denied = await executeTool.execute(
+      'call_execute',
+      { toolSlug: 'COMPOSIO_MANAGE_CONNECTIONS', arguments: {} } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+    expect((denied.content[0] as { text: string } | undefined)?.text).toContain(
+      'meta tools blocked'
+    );
   });
 
   it('extracts Composio connect links from nested results', () => {

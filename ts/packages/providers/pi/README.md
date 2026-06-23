@@ -41,7 +41,7 @@ await session.prompt('Create a GitHub issue for the failing test.');
 
 ## Dynamic session helpers
 
-Use this when Pi should search and execute tools dynamically inside one Tool Router session.
+Use this when Pi should search and execute tools dynamically inside one Tool Router session. Prefer the capability form so your app owns connection management, auth-link routing, and execute policy.
 
 ```ts
 import { Composio } from '@composio/core';
@@ -56,19 +56,40 @@ import {
 const provider = new PiProvider();
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-const composioSession = await composio.sessions.create('user-123', {
+const composioSession = await composio.sessions.create('slack:T123:U456', {
   toolkits: ['github', 'gmail'],
   manageConnections: true,
   workbench: { enable: true },
 });
 
-const composioTools = provider.createSessionTools(composioSession, {
+const composioTools = provider.createSessionTools({
+  sessionId: composioSession.sessionId,
+  search: composioSession.search.bind(composioSession),
+  execute: composioSession.execute.bind(composioSession),
   callbackUrl: 'https://your-app.example.com/auth/callback',
   includeWorkbenchTools: true,
-  transformResult: async ({ value }) => {
-    // Redact or route auth links here if embedding Pi in Slack/Discord/etc.
-    return value;
+  connections: {
+    getToolkitStates: toolkits => composioSession.toolkits({ toolkits }),
+    authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
+    isConnected: state => state.connection?.isActive === true,
   },
+  policy: {
+    normalizeSearchToolkits: ({ toolkits }) =>
+      toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
+    beforeExecute: ({ toolSlug, args }) => {
+      if (toolSlug.startsWith('COMPOSIO_')) {
+        return { action: 'deny', result: { successful: false, error: 'Meta tools are blocked.' } };
+      }
+      return { action: 'execute', toolSlug, args };
+    },
+  },
+  authLinks: {
+    handle: async ({ url, toolkit }) => {
+      // DM the user, store the continuation, or redact public output.
+      await sendConnectionLinkToUser({ url, toolkit });
+    },
+  },
+  transformResult: async ({ value }) => value,
 });
 
 const loader = new DefaultResourceLoader({
@@ -98,6 +119,8 @@ const { session } = await createAgentSession({
 await session.prompt('Find my recent GitHub issues and summarize the blockers.');
 ```
 
+`composio_manage_connections` uses your `connections.getToolkitStates()` and `connections.authorizeToolkit()` handlers. It does **not** call `session.execute('COMPOSIO_MANAGE_CONNECTIONS', ...)` internally.
+
 The dynamic helpers are:
 
 - `composio_search_tools` — search Tool Router for exact tool slugs and schemas.
@@ -110,16 +133,25 @@ Workbench helpers are opt-in because the Tool Router session must be created wit
 
 ## Auth link handling
 
-Embedded agents often need to keep Composio connection URLs out of the public transcript. Use `transformResult` to detect and route links:
+Embedded agents often need to keep Composio connection URLs out of the public transcript. Use the first-class `authLinks.handle()` hook for side effects and `transformResult` for redaction:
 
 ```ts
 import { extractComposioConnectLinks } from '@composio/pi';
 
-const tools = provider.createSessionTools(composioSession, {
+const tools = provider.createSessionTools({
+  search: composioSession.search.bind(composioSession),
+  execute: composioSession.execute.bind(composioSession),
+  connections: {
+    getToolkitStates: toolkits => composioSession.toolkits({ toolkits }),
+    authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
+  },
+  authLinks: {
+    handle: async ({ url, toolkit }) => {
+      await sendConnectionLinkToUser({ url, toolkit });
+    },
+  },
   transformResult: async ({ value }) => {
-    const links = extractComposioConnectLinks(value);
-    if (links.length > 0) {
-      // DM the user or store links out-of-band.
+    if (extractComposioConnectLinks(value).length > 0) {
       return { message: 'Connection link sent out-of-band.' };
     }
     return value;
