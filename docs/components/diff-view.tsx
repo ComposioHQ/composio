@@ -15,7 +15,7 @@ export function DiffView({
 }: Pick<FileDiffProps<undefined>, 'fileDiff' | 'prerenderedHTML'> & { code?: string }) {
   return (
     <div className="relative w-full">
-      {code ? <CopyButton text={code} label="Copy file" className="absolute right-2 top-1.5 z-10" /> : null}
+      {code ? <CopyButton text={code} className="absolute right-1.5 top-1.5 z-10" /> : null}
       <FileDiff {...props} options={{ diffStyle: 'unified' }} disableWorkerPool />
     </div>
   );

@@ -3,14 +3,18 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
-/** Small copy-to-clipboard button, positioned by the caller (usually top-right). */
-export function CopyButton({ text, label = 'Copy', className }: { text: string; label?: string; className?: string }) {
+/**
+ * Small icon-only copy-to-clipboard button. Styled to sit subtly in the dark
+ * code header (light icon, faint hover), positioned by the caller (top-right).
+ */
+export function CopyButton({ text, className }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false);
 
   return (
     <button
       type="button"
       aria-label="Copy code"
+      title={copied ? 'Copied' : 'Copy'}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(text);
@@ -21,12 +25,11 @@ export function CopyButton({ text, label = 'Copy', className }: { text: string; 
         }
       }}
       className={
-        'inline-flex items-center gap-1 rounded-sm border border-fd-border bg-fd-background/80 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.05em] text-fd-foreground/60 backdrop-blur transition-colors hover:text-fd-foreground ' +
+        'inline-flex size-6 items-center justify-center rounded-md text-white/45 transition-colors hover:bg-white/10 hover:text-white/90 ' +
         (className ?? '')
       }
     >
-      {copied ? <Check aria-hidden="true" className="size-3" /> : <Copy aria-hidden="true" className="size-3" />}
-      {copied ? 'Copied' : label}
+      {copied ? <Check aria-hidden="true" className="size-3.5" /> : <Copy aria-hidden="true" className="size-3.5" />}
     </button>
   );
 }
