@@ -74,19 +74,23 @@ const composioTools = provider.createSessionTools({
     isConnected: state => state.connection?.isActive === true,
   },
   hooks: {
-    beforeSearch: ({ toolkits }) => ({
-      action: 'search',
-      toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
-    }),
-    beforeExecute: ({ toolSlug, args }) => {
-      if (toolSlug.startsWith('COMPOSIO_')) {
-        return { action: 'deny', result: { successful: false, error: 'Meta tools are blocked.' } };
-      }
-      return { action: 'execute', toolSlug, args };
+    search: (ctx, next) => {
+      ctx.request.toolkits = ctx.request.toolkits?.map(toolkit =>
+        toolkit === 'slack' ? 'slackbot' : toolkit
+      );
+      return next();
     },
-    onAuthLink: async ({ url, toolkit }) => {
+    execute: (ctx, next) => {
+      if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
+        return { successful: false, error: 'Meta tools are blocked.' };
+      }
+      return next();
+    },
+    onAuthLink: async (ctx, next) => {
       // DM the user, store the continuation, or redact public output.
-      await sendConnectionLinkToUser({ url, toolkit });
+      await sendConnectionLinkToUser({ url: ctx.url, toolkit: ctx.toolkit });
+      return { message: 'Connection link sent out-of-band.' };
+      // To also send the original result/link to the model, use: return next();
     },
   },
   transformResult: async ({ value }) => value,
@@ -133,25 +137,20 @@ Workbench helpers are opt-in because the Tool Router session must be created wit
 
 ## Hooks
 
-`hooks` follows Pi's extension-event style: `before*` hooks can rewrite or deny work before it runs, `after*` hooks can transform results, and `onAuthLink` is a side-effect hook for connection URLs.
+`hooks` follows Pi's extension-event style with middleware semantics. Each hook receives a mutable `ctx.request` and a typed `next()` function. Calling `await next()` runs the default Composio behavior and returns the result before anything is sent back to the model. Return that result to pass it through, return a replacement value to control what the model sees, or skip `next()` entirely to divert/deny the operation.
 
 Available hooks:
 
-- `beforeSearch` — rewrite the query/toolkit filters, or deny search.
-- `afterSearch` — transform search output before Pi sees it.
-- `beforeManageConnections` — rewrite requested toolkits, force reauth, or deny connection management.
-- `afterManageConnections` — transform the aggregate connection-management output.
-- `beforeExecute` — block/rewrite tools, route to another session/execute handler, or return `manage_connection`.
-- `afterExecute` — transform execution output.
-- `onAuthLink` — send/redact/resume auth links out-of-band.
+- `search(ctx, next)` — rewrite query/toolkit filters, log search results, or return custom search output.
+- `manageConnections(ctx, next)` — rewrite requested toolkits, force reauth, log connection state, or return custom connection output.
+- `execute(ctx, next)` — block/rewrite tools, route to another session/execute handler, call `ctx.manageConnections(...)`, log outputs, or return a file/workbench reference instead of inline data.
+- `onAuthLink(ctx, next)` — send/redact/resume auth links out-of-band. `return next()` keeps the original model-visible result; returning another value replaces it.
 
 ## Auth link handling
 
-Embedded agents often need to keep Composio connection URLs out of the public transcript. Use the first-class `hooks.onAuthLink()` hook for side effects and `transformResult` for redaction:
+Embedded agents often need to keep Composio connection URLs out of the public transcript. Use `hooks.onAuthLink()` to choose whether the model sees the original result or a redacted replacement:
 
 ```ts
-import { extractComposioConnectLinks } from '@composio/experimental';
-
 const tools = provider.createSessionTools({
   search: composioSession.search.bind(composioSession),
   execute: composioSession.execute.bind(composioSession),
@@ -160,15 +159,15 @@ const tools = provider.createSessionTools({
     authorizeToolkit: (toolkit, options) => composioSession.authorize(toolkit, options),
   },
   hooks: {
-    onAuthLink: async ({ url, toolkit }) => {
-      await sendConnectionLinkToUser({ url, toolkit });
-    },
-  },
-  transformResult: async ({ value }) => {
-    if (extractComposioConnectLinks(value).length > 0) {
+    onAuthLink: async (ctx, next) => {
+      await sendConnectionLinkToUser({ url: ctx.url, toolkit: ctx.toolkit });
+
+      if (shouldAlsoShowLinkToModel(ctx)) {
+        return next();
+      }
+
       return { message: 'Connection link sent out-of-band.' };
-    }
-    return value;
+    },
   },
 });
 ```

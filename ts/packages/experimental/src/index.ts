@@ -42,6 +42,10 @@ export type PiToolCollection = PiTool[];
 
 export type PiToolResultFormatter = (result: unknown) => string;
 
+export type MaybePromise<T> = T | Promise<T>;
+
+export type PiHookNext<TResult> = () => Promise<TResult>;
+
 export interface PiProviderOptions {
   /** Prefix shown in Pi's TUI labels. Defaults to `Composio`. */
   labelPrefix?: string;
@@ -92,12 +96,12 @@ export interface PiExecuteContext extends PiBaseToolContext {
   account?: string;
 }
 
-export interface PiAuthLinkContext {
+export interface PiAuthLinkContext<TResult = unknown> {
   url: string;
   toolkit?: string;
   sourceTool: string;
   originalRequest: unknown;
-  result: unknown;
+  result: TResult;
   sessionId?: string;
 }
 
@@ -117,50 +121,52 @@ export interface PiSessionToolOptions extends PiProviderOptions {
   }) => unknown | Promise<unknown>;
 }
 
-export interface PiComposioSessionLike {
+export interface PiComposioSessionLike<
+  TSearchResult = unknown,
+  TExecuteResult = unknown,
+  TToolkitStates = unknown,
+  TAuthorizeResult = unknown,
+> {
   sessionId?: string;
-  search(params: { query: string; toolkits?: string[] }): Promise<unknown>;
+  search(params: { query: string; toolkits?: string[] }): Promise<TSearchResult>;
   execute(
     toolSlug: string,
     args?: Record<string, unknown>,
     options?: { account?: string }
-  ): Promise<unknown>;
+  ): Promise<TExecuteResult>;
   /** Native Tool Router connection-state API. Preferred over executing a meta tool. */
   toolkits?(options?: {
     toolkits?: string[];
     isConnected?: boolean;
     limit?: number;
     cursor?: string;
-  }): Promise<unknown>;
+  }): Promise<TToolkitStates>;
   authorize?(
     toolkit: string,
     options?: { callbackUrl?: string; alias?: string; experimental?: unknown }
-  ): Promise<
-    | { redirectUrl?: string; redirect_url?: string; connectedAccountId?: string; id?: string }
-    | unknown
-  >;
+  ): Promise<TAuthorizeResult>;
 }
 
-export interface PiExecutableSessionLike {
+export interface PiExecutableSessionLike<TExecuteResult = unknown> {
   sessionId?: string;
   execute(
     toolSlug: string,
     args?: Record<string, unknown>,
     options?: { account?: string }
-  ): Promise<unknown>;
+  ): Promise<TExecuteResult>;
 }
 
-export type PiSearchHandler = (
+export type PiSearchHandler<TSearchResult = unknown> = (
   params: { query: string; toolkits?: string[] },
   context: PiSearchContext
-) => Promise<unknown>;
+) => MaybePromise<TSearchResult>;
 
-export type PiExecuteHandler = (
+export type PiExecuteHandler<TExecuteResult = unknown> = (
   toolSlug: string,
   args: Record<string, unknown>,
   options: { account?: string } | undefined,
   context: PiExecuteContext
-) => Promise<unknown>;
+) => MaybePromise<TExecuteResult>;
 
 export interface PiAuthorizeToolkitOptions {
   callbackUrl?: string;
@@ -169,12 +175,16 @@ export interface PiAuthorizeToolkitOptions {
   reinitiate?: boolean;
 }
 
-export interface PiConnectionHandlers<TState = unknown, TAuthorizeResult = unknown> {
+export interface PiConnectionHandlers<
+  TState = unknown,
+  TAuthorizeResult = unknown,
+  TToolkitStates = unknown,
+> {
   /** Return connection states for the requested toolkits, e.g. from `session.toolkits({ toolkits })`. */
   getToolkitStates?: (
     toolkits: string[],
     context: PiConnectionManagementContext
-  ) => Promise<unknown> | unknown;
+  ) => MaybePromise<TToolkitStates>;
   /** Start auth for one toolkit, e.g. via `session.authorize(toolkit, { callbackUrl })`. */
   authorizeToolkit?: (
     toolkit: string,
@@ -188,88 +198,69 @@ export interface PiConnectionHandlers<TState = unknown, TAuthorizeResult = unkno
   ) => boolean;
 }
 
-export type PiBeforeSearchResult =
-  | {
-      action: 'search';
-      query?: string;
-      toolkits?: string[];
-    }
-  | { action: 'deny'; result: unknown };
-
-export type PiBeforeManageConnectionsResult =
-  | {
-      action: 'manage_connection';
-      toolkits?: string[];
-      reinitiateAll?: boolean;
-    }
-  | { action: 'deny'; result: unknown };
-
-export type PiBeforeExecuteResult =
-  | {
-      action: 'execute';
-      toolSlug?: string;
-      args?: Record<string, unknown>;
-      account?: string;
-      session?: PiExecutableSessionLike;
-      execute?: PiExecuteHandler;
-    }
-  | { action: 'deny'; result: unknown }
-  | { action: 'manage_connection'; toolkits: string[]; reinitiateAll?: boolean };
-
-export interface PiSessionHooks {
-  /** Intercept search before calling the underlying Composio search capability. */
-  beforeSearch?: (params: {
-    query: string;
-    toolkits?: string[];
-    context: PiSearchContext;
-  }) => PiBeforeSearchResult | Promise<PiBeforeSearchResult | undefined> | undefined;
-  /** Transform the search result before it is returned to Pi. */
-  afterSearch?: (params: {
-    query: string;
-    toolkits?: string[];
-    result: unknown;
-    context: PiSearchContext;
-  }) => unknown | Promise<unknown>;
-  /** Intercept connection management before checking state or initiating auth. */
-  beforeManageConnections?: (params: {
-    toolkits: string[];
-    reinitiateAll: boolean;
-    context: PiConnectionManagementContext;
-  }) =>
-    | PiBeforeManageConnectionsResult
-    | Promise<PiBeforeManageConnectionsResult | undefined>
-    | undefined;
-  /** Intercept execution before calling the underlying Composio session/capability. */
-  beforeExecute?: (params: {
-    toolSlug: string;
-    args: Record<string, unknown>;
-    account?: string;
-    context: PiExecuteContext;
-  }) => PiBeforeExecuteResult | Promise<PiBeforeExecuteResult | undefined> | undefined;
-  /** Transform the execution result before it is returned to Pi. */
-  afterExecute?: (params: {
-    toolSlug: string;
-    args: Record<string, unknown>;
-    account?: string;
-    result: unknown;
-    context: PiExecuteContext;
-  }) => unknown | Promise<unknown>;
-  /** Transform the connection-management result before it is returned to Pi. */
-  afterManageConnections?: (params: {
-    result: PiConnectionManagementResult;
-    context: PiConnectionManagementContext;
-  }) => unknown | Promise<unknown>;
-  /** First-class auth-link hook for embedded apps that DM/redact/resume connection flows. */
-  onAuthLink?: (context: PiAuthLinkContext) => Promise<void> | void;
+export interface PiSearchHookContext {
+  request: { query: string; toolkits?: string[] };
+  context: PiSearchContext;
 }
 
-export interface PiSessionToolCapabilities extends PiSessionToolOptions {
+export interface PiManageConnectionsHookContext {
+  request: { toolkits: string[]; reinitiateAll: boolean };
+  context: PiConnectionManagementContext;
+}
+
+export interface PiExecuteHookContext<TExecuteResult = unknown> {
+  request: {
+    toolSlug: string;
+    args: Record<string, unknown>;
+    account?: string;
+    session?: PiExecutableSessionLike<TExecuteResult>;
+    execute?: PiExecuteHandler<TExecuteResult>;
+  };
+  context: PiExecuteContext;
+  manageConnections: (
+    toolkits: string[],
+    options?: { reinitiateAll?: boolean }
+  ) => Promise<unknown>;
+}
+
+export interface PiSessionHooks<
+  TSearchResult = unknown,
+  TExecuteResult = unknown,
+  TState = unknown,
+  TAuthorizeResult = unknown,
+> {
+  /** Middleware around search. Mutate `ctx.request`, call `next()` to run search, or return a replacement result. */
+  search?: (ctx: PiSearchHookContext, next: PiHookNext<TSearchResult>) => MaybePromise<unknown>;
+  /** Middleware around connection management. Mutate `ctx.request`, call `next()` to check/connect, or return a replacement result. */
+  manageConnections?: (
+    ctx: PiManageConnectionsHookContext,
+    next: PiHookNext<PiConnectionManagementResult<TState, TAuthorizeResult>>
+  ) => MaybePromise<unknown>;
+  /** Middleware around tool execution. Mutate `ctx.request`, call `next()` to execute, or return a replacement result. */
+  execute?: (
+    ctx: PiExecuteHookContext<TExecuteResult>,
+    next: PiHookNext<TExecuteResult>
+  ) => MaybePromise<unknown>;
+  /** Middleware for auth links found in any result. Call `next()` to keep the current model-visible result, or return a replacement. */
+  onAuthLink?: (
+    ctx: PiAuthLinkContext<TSearchResult | TExecuteResult | TAuthorizeResult>,
+    next: PiHookNext<TSearchResult | TExecuteResult | TAuthorizeResult>
+  ) => MaybePromise<unknown>;
+}
+
+export interface PiSessionToolCapabilities<
+  TSearchResult = unknown,
+  TExecuteResult = unknown,
+  TState = unknown,
+  TAuthorizeResult = unknown,
+  TToolkitStates = unknown,
+> extends PiSessionToolOptions {
   /** Optional session id for prompt context and default workbench session ids. */
   sessionId?: string;
-  search: PiSearchHandler;
-  execute: PiExecuteHandler;
-  connections?: PiConnectionHandlers;
-  hooks?: PiSessionHooks;
+  search: PiSearchHandler<TSearchResult>;
+  execute: PiExecuteHandler<TExecuteResult>;
+  connections?: PiConnectionHandlers<TState, TAuthorizeResult, TToolkitStates>;
+  hooks?: PiSessionHooks<TSearchResult, TExecuteResult, TState, TAuthorizeResult>;
 }
 
 export type PiConnectionToolkitResult<TState = unknown, TAuthorizeResult = unknown> = {
@@ -466,17 +457,44 @@ const formatDefaultConnectionResult = <TState, TAuthorizeResult>(
   };
 };
 
+const runHook = async <TResult, TContext>(
+  hook: ((ctx: TContext, next: PiHookNext<TResult>) => MaybePromise<unknown>) | undefined,
+  context: TContext,
+  getDefaultResult: () => MaybePromise<TResult>
+): Promise<TResult | unknown> => {
+  if (!hook) return getDefaultResult();
+
+  const state: { nextResult?: Promise<TResult> } = {};
+  const next = async (): Promise<TResult> => {
+    state.nextResult ??= Promise.resolve(getDefaultResult());
+    return state.nextResult;
+  };
+
+  const hookValue = await hook(context, next);
+  if (hookValue !== undefined) return hookValue;
+  return state.nextResult ?? next();
+};
+
 const applyAuthLinkHandlers = async (
   capabilities: PiSessionToolCapabilities,
   value: unknown,
   context: Omit<PiAuthLinkContext, 'url'>
-): Promise<string[]> => {
+): Promise<{ value: unknown; authLinks: string[] }> => {
   const links = extractComposioConnectLinks(value);
-  for (const url of links) {
-    const linkContext: PiAuthLinkContext = { ...context, url };
-    await capabilities.hooks?.onAuthLink?.(linkContext);
-  }
-  return links;
+  const run = async (index: number, currentValue: unknown): Promise<unknown> => {
+    const url = links[index];
+    if (!url) return currentValue;
+    return run(
+      index + 1,
+      await runHook(
+        capabilities.hooks?.onAuthLink,
+        { ...context, url, result: currentValue },
+        async () => currentValue
+      )
+    );
+  };
+
+  return { value: await run(0, value), authLinks: links };
 };
 
 const inferSessionConnections = (
@@ -587,9 +605,28 @@ export class PiProvider extends BaseAgenticProvider<
     return tools.map(tool => this.wrapTool(tool, executeTool));
   }
 
-  createSessionTools(capabilities: PiSessionToolCapabilities): PiToolCollection;
-  createSessionTools(
-    session: PiComposioSessionLike,
+  createSessionTools<
+    TSearchResult = unknown,
+    TExecuteResult = unknown,
+    TState = unknown,
+    TAuthorizeResult = unknown,
+    TToolkitStates = unknown,
+  >(
+    capabilities: PiSessionToolCapabilities<
+      TSearchResult,
+      TExecuteResult,
+      TState,
+      TAuthorizeResult,
+      TToolkitStates
+    >
+  ): PiToolCollection;
+  createSessionTools<
+    TSearchResult = unknown,
+    TExecuteResult = unknown,
+    TToolkitStates = unknown,
+    TAuthorizeResult = unknown,
+  >(
+    session: PiComposioSessionLike<TSearchResult, TExecuteResult, TToolkitStates, TAuthorizeResult>,
     options?: PiSessionToolOptions
   ): PiToolCollection;
   /**
@@ -634,109 +671,85 @@ export class PiProvider extends BaseAgenticProvider<
       context: PiConnectionManagementContext;
       denied?: boolean;
     }> => {
-      const initialConnectionContext: PiConnectionManagementContext = {
+      const connectionContext: PiConnectionManagementContext = {
         ...buildBaseContext(toolCallId, names.manageConnections, originalRequest),
         requestedToolkits: toolkits,
         callbackUrl: capabilities.callbackUrl,
         reinitiateAll,
       };
-
-      const decision = await capabilities.hooks?.beforeManageConnections?.({
-        toolkits,
-        reinitiateAll,
-        context: initialConnectionContext,
-      });
-      if (decision?.action === 'deny') {
-        return {
-          value: decision.result,
-          authLinks: [],
-          context: initialConnectionContext,
-          denied: true,
-        };
-      }
-
-      const requestedToolkits =
-        decision?.action === 'manage_connection' && decision.toolkits
-          ? (normalizeToolkits(decision.toolkits) ?? [])
-          : toolkits;
-      const shouldReinitiateAll =
-        decision?.action === 'manage_connection'
-          ? (decision.reinitiateAll ?? reinitiateAll)
-          : reinitiateAll;
-      const connectionContext: PiConnectionManagementContext = {
-        ...initialConnectionContext,
-        requestedToolkits,
-        reinitiateAll: shouldReinitiateAll,
+      const hookContext: PiManageConnectionsHookContext = {
+        request: { toolkits, reinitiateAll },
+        context: connectionContext,
       };
-
-      const statesRaw = await capabilities.connections?.getToolkitStates?.(
-        requestedToolkits,
-        connectionContext
-      );
-      const states = normalizeToolkitStateMap(statesRaw, requestedToolkits);
-      const results: Record<string, PiConnectionToolkitResult> = {};
       const authLinks: string[] = [];
 
-      for (const toolkit of requestedToolkits) {
-        const state = states.get(toolkit.toLowerCase());
-        const connected = state
-          ? (capabilities.connections?.isConnected?.(state, {
+      const value = await runHook(capabilities.hooks?.manageConnections, hookContext, async () => {
+        const requestedToolkits = normalizeToolkits(hookContext.request.toolkits) ?? [];
+        const shouldReinitiateAll = hookContext.request.reinitiateAll;
+        connectionContext.requestedToolkits = requestedToolkits;
+        connectionContext.reinitiateAll = shouldReinitiateAll;
+
+        const statesRaw = await capabilities.connections?.getToolkitStates?.(
+          requestedToolkits,
+          connectionContext
+        );
+        const states = normalizeToolkitStateMap(statesRaw, requestedToolkits);
+        const results: Record<string, PiConnectionToolkitResult> = {};
+
+        for (const toolkit of requestedToolkits) {
+          const state = states.get(toolkit.toLowerCase());
+          const connected = state
+            ? (capabilities.connections?.isConnected?.(state, {
+                toolkit,
+                request: connectionContext,
+              }) ?? defaultIsToolkitConnected(state))
+            : false;
+
+          if (connected && !shouldReinitiateAll) {
+            results[toolkit] = {
               toolkit,
-              request: connectionContext,
-            }) ?? defaultIsToolkitConnected(state))
-          : false;
+              connected: true,
+              status: 'connected',
+              state,
+            };
+            continue;
+          }
 
-        if (connected && !shouldReinitiateAll) {
-          results[toolkit] = {
+          if (!capabilities.connections?.authorizeToolkit) {
+            results[toolkit] = {
+              toolkit,
+              connected: false,
+              status: 'missing_authorize_handler',
+              state,
+            };
+            continue;
+          }
+
+          const authorization = await capabilities.connections.authorizeToolkit(
             toolkit,
-            connected: true,
-            status: 'connected',
-            state,
-          };
-          continue;
-        }
-
-        if (!capabilities.connections?.authorizeToolkit) {
+            {
+              callbackUrl: capabilities.callbackUrl,
+              reinitiate: shouldReinitiateAll,
+            },
+            connectionContext
+          );
+          const handledAuthorization = await applyAuthLinkHandlers(capabilities, authorization, {
+            ...connectionContext,
+            toolkit,
+            result: authorization,
+          });
+          authLinks.push(...handledAuthorization.authLinks);
           results[toolkit] = {
             toolkit,
             connected: false,
-            status: 'missing_authorize_handler',
+            status: 'auth_initiated',
             state,
+            authorization: handledAuthorization.value,
           };
-          continue;
         }
 
-        const authorization = await capabilities.connections.authorizeToolkit(
-          toolkit,
-          {
-            callbackUrl: capabilities.callbackUrl,
-            reinitiate: shouldReinitiateAll,
-          },
-          connectionContext
-        );
-        const links = await applyAuthLinkHandlers(capabilities, authorization, {
-          ...connectionContext,
-          toolkit,
-          result: authorization,
-        });
-        authLinks.push(...links);
-        results[toolkit] = {
-          toolkit,
-          connected: false,
-          status: 'auth_initiated',
-          state,
-          authorization,
-          authLinks: links,
-        };
-      }
-
-      const defaultResult = formatDefaultConnectionResult(results);
-      const value = capabilities.hooks?.afterManageConnections
-        ? await capabilities.hooks.afterManageConnections({
-            result: defaultResult,
-            context: connectionContext,
-          })
-        : defaultResult;
+        return formatDefaultConnectionResult(results);
+      });
 
       return { value, authLinks, context: connectionContext };
     };
@@ -754,79 +767,65 @@ export class PiProvider extends BaseAgenticProvider<
       context: PiExecuteContext;
       denied?: boolean;
     }> => {
-      const toolkit = toolkitFromToolSlug(toolSlug);
       const executeContext: PiExecuteContext = {
         ...buildBaseContext(toolCallId, sourceTool, originalRequest),
         toolSlug,
-        toolkit,
+        toolkit: toolkitFromToolSlug(toolSlug),
         args,
         account,
       };
-
-      const decision = await capabilities.hooks?.beforeExecute?.({
-        toolSlug,
-        args,
-        account,
+      const authLinks: string[] = [];
+      const hookContext: PiExecuteHookContext = {
+        request: { toolSlug, args, account },
         context: executeContext,
-      });
-
-      if (decision?.action === 'deny') {
-        return { value: decision.result, authLinks: [], context: executeContext, denied: true };
-      }
-
-      if (decision?.action === 'manage_connection') {
-        const managed = await manageConnectionsForToolkits(
-          toolCallId,
-          originalRequest,
-          decision.toolkits,
-          decision.reinitiateAll
-        );
-        return { value: managed.value, authLinks: managed.authLinks, context: executeContext };
-      }
-
-      const finalToolSlug =
-        decision?.action === 'execute' && decision.toolSlug ? decision.toolSlug : toolSlug;
-      const finalArgs = decision?.action === 'execute' && decision.args ? decision.args : args;
-      const finalAccount =
-        decision?.action === 'execute' && 'account' in decision ? decision.account : account;
-      const finalContext: PiExecuteContext = {
-        ...executeContext,
-        toolSlug: finalToolSlug,
-        toolkit: toolkitFromToolSlug(finalToolSlug),
-        args: finalArgs,
-        account: finalAccount,
-      };
-      const execute =
-        decision?.action === 'execute' && decision.execute
-          ? decision.execute
-          : capabilities.execute;
-      const session = decision?.action === 'execute' ? decision.session : undefined;
-      const value = session
-        ? await session.execute(
-            finalToolSlug,
-            finalArgs,
-            finalAccount ? { account: finalAccount } : undefined
-          )
-        : await execute(
-            finalToolSlug,
-            finalArgs,
-            finalAccount ? { account: finalAccount } : undefined,
-            finalContext
+        manageConnections: async (managedToolkits, manageOptions) => {
+          const managed = await manageConnectionsForToolkits(
+            toolCallId,
+            originalRequest,
+            managedToolkits,
+            manageOptions?.reinitiateAll
           );
-      const authLinks = await applyAuthLinkHandlers(capabilities, value, {
-        ...finalContext,
-        result: value,
+          authLinks.push(...managed.authLinks);
+          return managed.value;
+        },
+      };
+
+      const value = await runHook(capabilities.hooks?.execute, hookContext, async () => {
+        const finalToolSlug = hookContext.request.toolSlug;
+        const finalArgs = hookContext.request.args;
+        const finalAccount = hookContext.request.account;
+        const finalContext: PiExecuteContext = {
+          ...executeContext,
+          toolSlug: finalToolSlug,
+          toolkit: toolkitFromToolSlug(finalToolSlug),
+          args: finalArgs,
+          account: finalAccount,
+        };
+        hookContext.context = finalContext;
+
+        const execute = hookContext.request.execute ?? capabilities.execute;
+        const session = hookContext.request.session;
+        const result = session
+          ? await session.execute(
+              finalToolSlug,
+              finalArgs,
+              finalAccount ? { account: finalAccount } : undefined
+            )
+          : await execute(
+              finalToolSlug,
+              finalArgs,
+              finalAccount ? { account: finalAccount } : undefined,
+              finalContext
+            );
+        const handledResult = await applyAuthLinkHandlers(capabilities, result, {
+          ...finalContext,
+          result,
+        });
+        authLinks.push(...handledResult.authLinks);
+        return handledResult.value;
       });
-      const finalValue = capabilities.hooks?.afterExecute
-        ? await capabilities.hooks.afterExecute({
-            toolSlug: finalToolSlug,
-            args: finalArgs,
-            account: finalAccount,
-            result: value,
-            context: finalContext,
-          })
-        : value;
-      return { value: finalValue, authLinks, context: finalContext };
+
+      return { value, authLinks, context: hookContext.context };
     };
 
     const searchTools = defineTool({
@@ -855,51 +854,37 @@ export class PiProvider extends BaseAgenticProvider<
             query: params.query,
             requestedToolkits,
           };
-          const searchDecision = await capabilities.hooks?.beforeSearch?.({
-            query: params.query,
-            toolkits: requestedToolkits,
-            context: searchContext,
-          });
-          if (searchDecision?.action === 'deny') {
-            return toPiResult(searchDecision.result, formatter, {
-              slug: names.search,
-              denied: true,
-            });
-          }
-
-          const query =
-            searchDecision?.action === 'search' && searchDecision.query !== undefined
-              ? searchDecision.query
-              : params.query;
-          const toolkits =
-            searchDecision?.action === 'search' && 'toolkits' in searchDecision
-              ? normalizeToolkits(searchDecision.toolkits)
-              : requestedToolkits;
-          const finalSearchContext = { ...searchContext, query, requestedToolkits: toolkits };
-          const value = await capabilities.search(
-            {
-              query,
-              ...(toolkits ? { toolkits } : {}),
+          const hookContext: PiSearchHookContext = {
+            request: {
+              query: params.query,
+              ...(requestedToolkits ? { toolkits: requestedToolkits } : {}),
             },
-            finalSearchContext
-          );
-          const authLinks = await applyAuthLinkHandlers(capabilities, value, {
-            ...finalSearchContext,
-            result: value,
+            context: searchContext,
+          };
+          const authLinks: string[] = [];
+          const value = await runHook(capabilities.hooks?.search, hookContext, async () => {
+            const toolkits = normalizeToolkits(hookContext.request.toolkits);
+            hookContext.context.query = hookContext.request.query;
+            hookContext.context.requestedToolkits = toolkits;
+            const result = await capabilities.search(
+              {
+                query: hookContext.request.query,
+                ...(toolkits ? { toolkits } : {}),
+              },
+              hookContext.context
+            );
+            const handledResult = await applyAuthLinkHandlers(capabilities, result, {
+              ...hookContext.context,
+              result,
+            });
+            authLinks.push(...handledResult.authLinks);
+            return handledResult.value;
           });
-          const hookedValue = capabilities.hooks?.afterSearch
-            ? await capabilities.hooks.afterSearch({
-                query,
-                toolkits,
-                result: value,
-                context: finalSearchContext,
-              })
-            : value;
           const transformed = await maybeTransform(capabilities, {
             tool: 'search',
-            requestedToolkits: toolkits,
-            value: hookedValue,
-            context: finalSearchContext,
+            requestedToolkits: hookContext.context.requestedToolkits,
+            value,
+            context: hookContext.context,
           });
           return toPiResult(transformed, formatter, { slug: names.search, authLinks });
         } catch (error) {

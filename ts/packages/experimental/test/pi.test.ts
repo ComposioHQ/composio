@@ -217,7 +217,8 @@ describe('PiProvider', () => {
         url: 'https://connect.composio.dev/gmail',
         toolkit: 'gmail',
         sourceTool: PI_COMPOSIO_SESSION_TOOL_NAMES.manageConnections,
-      })
+      }),
+      expect.any(Function)
     );
     expect((result.content[0] as { text: string } | undefined)?.text).toContain('auth_initiated');
   });
@@ -234,14 +235,19 @@ describe('PiProvider', () => {
       search,
       execute,
       hooks: {
-        beforeSearch: ({ toolkits }) => ({
-          action: 'search',
-          toolkits: toolkits?.map(toolkit => (toolkit === 'slack' ? 'slackbot' : toolkit)),
-        }),
-        beforeExecute: ({ toolSlug, args }) =>
-          toolSlug.startsWith('COMPOSIO_')
-            ? { action: 'deny', result: { successful: false, error: 'meta tools blocked' } }
-            : { action: 'execute', toolSlug: toolSlug.replace(/^SLACK_/, 'SLACKBOT_'), args },
+        search: (ctx, next) => {
+          ctx.request.toolkits = ctx.request.toolkits?.map(toolkit =>
+            toolkit === 'slack' ? 'slackbot' : toolkit
+          );
+          return next();
+        },
+        execute: (ctx, next) => {
+          if (ctx.request.toolSlug.startsWith('COMPOSIO_')) {
+            return { successful: false, error: 'meta tools blocked' };
+          }
+          ctx.request.toolSlug = ctx.request.toolSlug.replace(/^SLACK_/, 'SLACKBOT_');
+          return next();
+        },
       },
     });
 
@@ -286,6 +292,81 @@ describe('PiProvider', () => {
     expect((denied.content[0] as { text: string } | undefined)?.text).toContain(
       'meta tools blocked'
     );
+  });
+
+  it('lets hooks inspect default results and replace what the model sees', async () => {
+    const loggedResults: unknown[] = [];
+    const execute = vi.fn(async (toolSlug: string) => ({
+      successful: true,
+      data: { toolSlug, largePayload: 'secret-inline-data' },
+      error: null,
+    }));
+    const provider = new PiProvider();
+    const tools = provider.createSessionTools({
+      search: vi.fn(async () => ({})),
+      execute,
+      hooks: {
+        execute: async (_ctx, next) => {
+          const response = await next();
+          loggedResults.push(response);
+          return {
+            successful: true,
+            data: { file: '/mnt/composio/tool-output.json' },
+            error: null,
+          };
+        },
+      },
+    });
+
+    const result = await tools[2]!.execute(
+      'call_execute',
+      { toolSlug: 'GITHUB_LIST_ISSUES', arguments: {} } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+
+    expect(loggedResults).toEqual([
+      {
+        successful: true,
+        data: { toolSlug: 'GITHUB_LIST_ISSUES', largePayload: 'secret-inline-data' },
+        error: null,
+      },
+    ]);
+    const text = (result.content[0] as { text: string } | undefined)?.text;
+    expect(text).toContain('/mnt/composio/tool-output.json');
+    expect(text).not.toContain('secret-inline-data');
+  });
+
+  it('lets auth-link hooks choose whether the link goes to the model', async () => {
+    const provider = new PiProvider();
+    const tools = provider.createSessionTools({
+      search: vi.fn(async () => ({})),
+      execute: vi.fn(async () => ({})),
+      connections: {
+        getToolkitStates: () => ({ items: [{ slug: 'gmail', connection: undefined }] }),
+        authorizeToolkit: toolkit => ({ redirectUrl: `https://connect.composio.dev/${toolkit}` }),
+      },
+      hooks: {
+        onAuthLink: async ctx => {
+          expect(ctx.url).toBe('https://connect.composio.dev/gmail');
+          return { message: 'Connection link sent out-of-band.' };
+        },
+      },
+    });
+
+    const result = await tools[1]!.execute(
+      'call_manage',
+      { toolkits: ['gmail'] } as never,
+      undefined,
+      undefined,
+      undefined as never
+    );
+
+    const text = (result.content[0] as { text: string } | undefined)?.text;
+    expect(text).toContain('Connection link sent out-of-band.');
+    expect(text).not.toContain('https://connect.composio.dev/gmail');
+    expect(result.details.authLinks).toEqual(['https://connect.composio.dev/gmail']);
   });
 
   it('extracts Composio connect links from nested results', () => {
