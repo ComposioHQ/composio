@@ -37,11 +37,11 @@ These functions are pre-initialized in every sandbox, so your agent can call the
 
 ### Libraries
 
-The sandbox ships with common packages pre-installed: `pandas`, `numpy`, `matplotlib`, `Pillow`, `PyTorch`, and `reportlab`. Beyond these, the workbench maintains a list of supported packages and their dependencies. If the agent uses a package that is not already installed, the workbench installs it automatically.
+The sandbox ships with common packages pre-installed: `pandas`, `numpy`, `matplotlib`, `Pillow`, `PyTorch`, and `reportlab`. Beyond these, the sandbox maintains a list of supported packages and their dependencies. If the agent uses a package that isn't already installed, the sandbox installs it automatically.
 
 ### Error correction
 
-The workbench corrects common mistakes in the code your agent generates. For example, if a script accesses `result["apiKey"]` but the actual field name is `api_key`, the workbench resolves the mismatch instead of failing.
+The sandbox corrects common mistakes in the code your agent generates. For example, if a script accesses `result["apiKey"]` but the actual field name is `api_key`, the sandbox resolves the mismatch instead of failing.
 
 ### Persistent state
 
@@ -64,11 +64,66 @@ Larger tiers require `@composio/core` ≥ `0.8.1` or `composio` ≥ `0.12.1`. Se
 **Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime).
 </Callout>
 
+## Files and mounts
+
+The sandbox has a persistent file mount at `/mnt/files/`. Code running in the sandbox reads and writes files there, and the mount survives sandbox restarts: changing the [compute tier](#compute-tier) recreates the sandbox and clears in-memory state, but `/mnt/files/` persists.
+
+Move files between your app and the mount with `session.experimental.files`. Upload an input file and the agent reads it at `/mnt/files/<path>`. When the agent writes a result, download it from your app.
+
+<Callout>
+The files API ships under `session.experimental`, so the surface may change in a future release.
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create("user_123")
+
+# Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+uploaded = session.experimental.files.upload("./sales.csv")
+print(uploaded.sandbox_mount_prefix, uploaded.mount_relative_path)
+# /mnt/files sales.csv
+
+# After the agent writes a result in the sandbox, download it
+report = session.experimental.files.download("/report.pdf")
+report.save("./report.pdf")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123");
+
+// Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+const uploaded = await session.experimental.files.upload("./sales.csv");
+console.log(uploaded.sandboxMountPrefix, uploaded.mountRelativePath);
+// /mnt/files sales.csv
+
+// After the agent writes a result in the sandbox, download it
+const report = await session.experimental.files.download("/report.pdf");
+await report.save("./report.pdf");
+```
+</Tab>
+</Tabs>
+
+The mount exposes four methods:
+
+| Method | What it does |
+|---|---|
+| `upload(input, options?)` | Upload from a local path, URL, `File`, or buffer. Returns a `RemoteFile`. |
+| `list(options?)` | List files under `path` on the mount, with `cursor` and `limit` pagination. |
+| `download(path, options?)` | Fetch a file from the mount as a `RemoteFile`. |
+| `delete(path, options?)` | Remove a file or directory from the mount. |
+
+A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it with `text()` or `buffer()`, or write it to disk with `save(path)`. Files live on the default `files` mount unless you pass a `mountId`.
+
 ## Common patterns
 
 ### Bulk operations across apps
 
-Use the workbench when a task touches hundreds of items across services. Say you need to triage 150 unread emails. The agent writes a workbench script: classify each email with `invoke_llm`, apply Gmail labels with `run_composio_tool`, and log results to a Google Sheet.
+Use the sandbox when a task touches hundreds of items across services. Say you need to triage 150 unread emails. The agent writes a sandbox script: classify each email with `invoke_llm`, apply Gmail labels with `run_composio_tool`, and log results to a Google Sheet.
 
 ### Data analysis and reporting
 
