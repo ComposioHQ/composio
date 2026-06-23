@@ -22,7 +22,7 @@ Use sessions unless you need full control over which tools are available and whe
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
-Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+Sessions are configurable. [Restrict toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
 
 ## Sessions
 
@@ -76,7 +76,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 ```
 
 <Callout>
-`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.), not app tools (GMAIL_SEND_EMAIL, etc.). The agent discovers app tools at runtime through search. For app tools directly, use direct execution.
+`session.tools()` returns **meta tools** (`COMPOSIO_SEARCH_TOOLS`, etc.), not app tools (`GMAIL_SEND_EMAIL`, etc.). The agent discovers app tools at runtime through search. To work with app tools directly, use direct execution.
 </Callout>
 
 ### Configuration

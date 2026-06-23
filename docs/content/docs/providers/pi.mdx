@@ -129,9 +129,9 @@ You can rename any of these helpers through the `names` option on `createSession
 
 ## Hooks
 
-Hooks are the Pi provider's distinctive feature: middleware that wraps each helper so you own what runs and what the model sees. Pass a `hooks` object to `createSessionTools`, and each hook receives a context and a `next` function. Call `await next()` to run the default Composio behavior and get its result before it reaches the model, return that result to pass it through, return another value to replace what the model sees, or call `ctx.deny(reason)` to block the call with a model-visible error. Skip `next()` entirely to handle the operation yourself.
+Hooks are the Pi provider's distinctive feature: middleware that wraps each helper so you control what runs and what the model sees. Pass a `hooks` object to `createSessionTools`. Each hook is `(ctx, next)`: call `await next()` to run the default behavior and inspect its result, return a value to replace what the model sees, or call `ctx.deny(reason)` to block the call. Skip `next()` to handle the operation yourself.
 
-Every hook is `(ctx, next) => unknown | Promise<unknown>`. The `ctx` object carries a mutable `ctx.request` you can rewrite in place, a read-only `ctx.context` with the tool call id, source tool, and session id, and the `ctx.deny(reason: string)` helper. The same deny result is exported as `denyPiToolCall(reason)` from `@composio/experimental` if you prefer to build it directly.
+`ctx.request` is mutable, so you can rewrite it in place; `ctx.context` is read-only (tool call id, source tool, session id). The deny result is also exported as `denyPiToolCall(reason)` from `@composio/experimental`.
 
 ```typescript
 // @noErrors
@@ -178,36 +178,7 @@ Available hooks, each keyed on `PiSessionHooks`:
 - `remoteBash(ctx, next)` wraps the remote bash helper through `ctx.request.command`; calling `next()` also routes through your `execute` hook.
 - `onAuthLink(ctx, next)` runs for any auth link found in a result. Read `ctx.url`, `ctx.toolkit`, and `ctx.result`, then call `next()` to keep the model-visible result or return a replacement.
 
-The `execute`, `remoteWorkbench`, and `remoteBash` request types are typed as `PiExecuteHookContext`, `PiRemoteWorkbenchHookContext`, and `PiRemoteBashHookContext`, so your editor surfaces the exact fields on `ctx.request`.
-
-## Static tool wrapping
-
-If you already know exactly which tools to expose, initialize Composio with `PiProvider` and fetch the tools directly.
-
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-import { PiProvider } from '@composio/experimental';
-import { createAgentSession, SessionManager } from '@earendil-works/pi-coding-agent';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new PiProvider(),
-});
-
-const tools = await composio.tools.get('user_123', {
-  tools: ['GITHUB_CREATE_ISSUE'],
-});
-
-const { session } = await createAgentSession({
-  cwd: process.cwd(),
-  sessionManager: SessionManager.inMemory(process.cwd()),
-  customTools: tools,
-  tools: ['GITHUB_CREATE_ISSUE'],
-});
-
-await session.prompt('Create a GitHub issue for the failing test.');
-```
+Each request type is fully typed (`PiExecuteHookContext` and friends), so your editor surfaces the exact fields on `ctx.request`.
 
 ## Next
 
