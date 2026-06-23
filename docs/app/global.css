@@ -4,9 +4,10 @@
 @import 'fumadocs-openapi/css/preset.css';
 @import "tw-animate-css";
 
-/* Let Tailwind generate the utility classes Streamdown uses (Eve chat markdown),
-   including the Shiki code-highlighting classes in dist/chunk-*.js. */
+/* Let Tailwind generate the utility classes Streamdown + its code-highlighting
+   plugin use (Eve chat markdown). */
 @source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -2,6 +2,17 @@
 
 import { useState } from 'react';
 import { Streamdown } from 'streamdown';
+import { createCodePlugin } from '@streamdown/code';
+
+// Streamdown core doesn't highlight code; the @streamdown/code plugin does.
+// Match the docs' Shiki themes.
+const codePlugin = createCodePlugin({ themes: ['github-light', 'github-dark'] });
+
+// Highlight code, keep the copy button, drop the download button.
+const STREAMDOWN_PROPS = {
+  code: codePlugin,
+  controls: { code: { copy: true, download: false } },
+} as const;
 
 /**
  * Renders an assistant message: Markdown via Streamdown, with consecutive
@@ -125,7 +136,7 @@ function CodeTabs({ blocks }: { blocks: Block[] }) {
           </button>
         ))}
       </div>
-      <Streamdown className={MD_CLASS + ' [&_pre]:!my-0 [&>div]:!my-0'}>
+      <Streamdown {...STREAMDOWN_PROPS} className={MD_CLASS + ' [&_pre]:!my-0 [&>div]:!my-0'}>
         {fence(current.lang, current.code)}
       </Streamdown>
     </div>
@@ -140,7 +151,7 @@ export function AssistantMessage({ text }: { text: string }) {
         if (g.kind === 'tabs') return <CodeTabs key={i} blocks={g.blocks} />;
         const md = g.kind === 'code' ? fence(g.lang, g.code) : g.text;
         return (
-          <Streamdown key={i} className={MD_CLASS}>
+          <Streamdown key={i} {...STREAMDOWN_PROPS} className={MD_CLASS}>
             {md}
           </Streamdown>
         );
