@@ -30,7 +30,7 @@ export function RepoBrowserClient({ files }: { files: RepoFile[] }) {
         <FileTree model={model} />
       </div>
       <div className="relative max-h-[640px] overflow-auto">
-        <CopyButton text={file.contents} className="absolute right-1.5 top-1.5 z-10" />
+        <CopyButton text={file.contents} className="absolute right-2 top-2 z-10" />
         <File
           key={file.path}
           file={{ name: file.path, contents: file.contents }}
