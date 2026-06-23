@@ -40,6 +40,24 @@ function fence(lang: string, code: string): string {
   return '```' + (lang || '') + '\n' + code + '\n```';
 }
 
+/**
+ * Strip the model's native citation tokens. gpt-5.x emits web-search citations
+ * as `\uE200cite\uE202<ref>\uE201` (private-use delimiters). The refs (e.g.
+ * `turn0search0`) don't resolve here, so drop the span — unless it embeds a real
+ * URL, in which case keep it as a Markdown link. Real citations come through as
+ * normal Markdown links from the agent's instructions.
+ */
+function cleanCitations(text: string): string {
+  return text
+    .replace(/\uE200[\s\S]*?\uE201/g, (span) => {
+      const url = span.match(/(https?:\/\/[^\s\uE200-\uE20F]+|\/[A-Za-z0-9/_#-]+)/);
+      return url ? ` ([source](${url[1]}))` : '';
+    })
+    .replace(/[\uE200-\uE20F]/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+([.,;:!?])/g, '$1');
+}
+
 type Seg = { kind: 'prose'; text: string } | { kind: 'code'; lang: string; code: string };
 
 /** Split into prose and fenced-code segments, tolerating an unclosed trailing fence. */
@@ -144,7 +162,7 @@ function CodeTabs({ blocks }: { blocks: Block[] }) {
 }
 
 export function AssistantMessage({ text }: { text: string }) {
-  const groups = group(parseSegments(text));
+  const groups = group(parseSegments(cleanCitations(text)));
   return (
     <div className="flex flex-col">
       {groups.map((g, i) => {
