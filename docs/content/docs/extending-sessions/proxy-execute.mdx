@@ -8,9 +8,7 @@ keywords: [proxy, proxy execute, session proxy, custom api call, raw api, raw re
 
 The session is already scoped to a [userID](/docs/how-composio-works), so you pass a `toolkit` slug rather than an account ID. Composio resolves the user's connected account for that toolkit and signs the request with it.
 
-<Callout type="info">
-Proxy execute is a building block, not just a fallback. Use it to build experiences on top of Composio that reach past predefined tools, like the [Slack bot example](/examples/slack-bot), which drops down to the proxy for the Slack Web API calls the toolkit doesn't wrap as tools. You get the full HTTP surface of any toolkit your session can reach, with auth handled for you. We'll link more examples here as we add them.
-</Callout>
+Proxy execute is a building block, not just a fallback. Use it to build experiences on top of Composio that reach past predefined tools, like the [Slack bot example](/examples/slack-bot), which drops down to the proxy for the Slack Web API calls the toolkit doesn't wrap as tools. We'll link more examples here as we add them.
 
 <Callout title="Use a scoped API key">
 Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authentication/project-api-key-permissions) that has the **Proxy execute** permission granted. Default full-access keys already include it.
