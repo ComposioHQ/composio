@@ -4,7 +4,7 @@ description: Connect any MCP-compatible client to a Composio session
 keywords: [mcp, model context protocol, sessions, remote server, hosted mcp]
 ---
 
-By default Composio gives your agent **native tools** — function schemas formatted for your framework through a [provider package](/docs/providers). That's what the [Quickstart](/docs/quickstart) uses, and it's the right choice for most agents.
+By default Composio gives your agent **tools it can call directly** — function schemas formatted for your framework through a [provider package](/docs/providers). That's what the [Quickstart](/docs/quickstart) uses, and it's the right choice for most agents.
 
 If you'd rather connect over the [Model Context Protocol](https://modelcontextprotocol.io) — for example to plug a session into an MCP-native client like Claude Desktop, Cursor, or any framework's MCP transport — every session also exposes a hosted MCP endpoint. No provider package required.
 
@@ -27,7 +27,6 @@ mcp_headers = session.mcp.headers
 <Tab value="TypeScript">
 ```typescript
 // @noErrors
-// twoslash: `{ mcp: true }` ships in the next @composio/core; drop @noErrors once docs bump the dep
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
@@ -92,7 +91,6 @@ options = ClaudeAgentOptions(
 <Tab value="Vercel AI SDK (TypeScript)">
 ```typescript
 // @noErrors
-// twoslash: `{ mcp: true }` ships in the next @composio/core; drop @noErrors once docs bump the dep
 import { Composio } from "@composio/core";
 import { createMCPClient } from "@ai-sdk/mcp";
 
@@ -111,9 +109,20 @@ const tools = await client.tools();
 </Tab>
 </Tabs>
 
+## Trade-offs
+
+MCP is the more portable option. Any MCP-compatible client connects with just a URL, and it's supported across more frameworks and apps (Claude Desktop, Cursor, the OpenAI Responses API, and others) without a provider package.
+
+The trade-off is that the MCP client talks to Composio's server directly, so anything the SDK does *around* tool execution doesn't apply:
+
+- **Tool-call modifiers don't run.** `beforeExecute` / `afterExecute` hooks and `modifySchema` transforms live in the SDK's execution path. Over MCP the client executes tools against the server, bypassing them — so you can't intercept, reshape, log, or gate calls the way you can with tools your agent calls directly.
+- **Session-bound custom tools and toolkits don't work.** Tools created with `createCustomTool` / `createCustomToolkit` run in your process. The MCP server only exposes Composio's hosted tools, so your local custom tools aren't available over the endpoint.
+
+If you need any of those, call tools directly through a [provider](/docs/providers) instead of over MCP.
+
 ## Next steps
 
 <Cards>
   <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Restrict toolkits, set custom auth configs, and select connected accounts" />
-  <Card icon={<Key />} title="Providers" href="/docs/providers" description="Native tool support for OpenAI, Anthropic, Vercel AI, LangChain, and more" />
+  <Card icon={<Key />} title="Providers" href="/docs/providers" description="Call tools directly with OpenAI, Anthropic, Vercel AI, LangChain, and more" />
 </Cards>
