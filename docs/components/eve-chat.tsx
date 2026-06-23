@@ -168,12 +168,12 @@ export function EveChat() {
             if (inputRef.current) inputRef.current.value = '';
           }}
         >
-          <div className="flex items-end gap-2 rounded-lg border border-fd-border bg-fd-card px-3 py-2 focus-within:border-[var(--composio-brand)]/50">
+          <div className="flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-3 py-1.5 focus-within:border-[var(--composio-brand)]/50">
             <textarea
               ref={inputRef}
               rows={1}
               placeholder="Ask about the docs…"
-              className="max-h-32 flex-1 resize-none bg-transparent text-[13px] text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
+              className="block max-h-32 min-h-[1.5rem] flex-1 resize-none self-center bg-transparent py-0 text-[13px] leading-6 text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();

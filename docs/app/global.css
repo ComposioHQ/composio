@@ -4,12 +4,175 @@
 @import 'fumadocs-openapi/css/preset.css';
 @import "tw-animate-css";
 
-/* Let Tailwind generate the utility classes Streamdown + its code-highlighting
-   plugin use (Eve chat markdown). */
+/* Let Tailwind generate the utility classes Streamdown uses (Eve chat prose). */
 @source "../node_modules/streamdown/dist/*.js";
-@source "../node_modules/@streamdown/code/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   highlight.js tokens (Eve chat code blocks)
+
+   The Eve chat renders code through a custom <CodeBlock> using highlight.js
+   (synchronous, browser-safe). highlight.js theme stylesheets aren't imported
+   directly because they're not dark-mode aware; instead the GitHub light/dark
+   token colors are inlined here and scoped to `.dark`. The container styles its
+   own background/padding, so only token colors live here.
+   ========================================================================== */
+.eve-hljs .hljs {
+  color: #24292e;
+  background: transparent;
+}
+.eve-hljs .hljs-doctag,
+.eve-hljs .hljs-keyword,
+.eve-hljs .hljs-meta .hljs-keyword,
+.eve-hljs .hljs-template-tag,
+.eve-hljs .hljs-template-variable,
+.eve-hljs .hljs-type,
+.eve-hljs .hljs-variable.language_ {
+  color: #d73a49;
+}
+.eve-hljs .hljs-title,
+.eve-hljs .hljs-title.class_,
+.eve-hljs .hljs-title.class_.inherited__,
+.eve-hljs .hljs-title.function_ {
+  color: #6f42c1;
+}
+.eve-hljs .hljs-attr,
+.eve-hljs .hljs-attribute,
+.eve-hljs .hljs-literal,
+.eve-hljs .hljs-meta,
+.eve-hljs .hljs-number,
+.eve-hljs .hljs-operator,
+.eve-hljs .hljs-variable,
+.eve-hljs .hljs-selector-attr,
+.eve-hljs .hljs-selector-class,
+.eve-hljs .hljs-selector-id {
+  color: #005cc5;
+}
+.eve-hljs .hljs-regexp,
+.eve-hljs .hljs-string,
+.eve-hljs .hljs-meta .hljs-string {
+  color: #032f62;
+}
+.eve-hljs .hljs-built_in,
+.eve-hljs .hljs-symbol {
+  color: #e36209;
+}
+.eve-hljs .hljs-comment,
+.eve-hljs .hljs-code,
+.eve-hljs .hljs-formula {
+  color: #6a737d;
+}
+.eve-hljs .hljs-name,
+.eve-hljs .hljs-quote,
+.eve-hljs .hljs-selector-tag,
+.eve-hljs .hljs-selector-pseudo {
+  color: #22863a;
+}
+.eve-hljs .hljs-subst {
+  color: #24292e;
+}
+.eve-hljs .hljs-section {
+  color: #005cc5;
+  font-weight: bold;
+}
+.eve-hljs .hljs-bullet {
+  color: #735c0f;
+}
+.eve-hljs .hljs-emphasis {
+  color: #24292e;
+  font-style: italic;
+}
+.eve-hljs .hljs-strong {
+  color: #24292e;
+  font-weight: bold;
+}
+.eve-hljs .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+.eve-hljs .hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+
+.dark .eve-hljs .hljs {
+  color: #c9d1d9;
+  background: transparent;
+}
+.dark .eve-hljs .hljs-doctag,
+.dark .eve-hljs .hljs-keyword,
+.dark .eve-hljs .hljs-meta .hljs-keyword,
+.dark .eve-hljs .hljs-template-tag,
+.dark .eve-hljs .hljs-template-variable,
+.dark .eve-hljs .hljs-type,
+.dark .eve-hljs .hljs-variable.language_ {
+  color: #ff7b72;
+}
+.dark .eve-hljs .hljs-title,
+.dark .eve-hljs .hljs-title.class_,
+.dark .eve-hljs .hljs-title.class_.inherited__,
+.dark .eve-hljs .hljs-title.function_ {
+  color: #d2a8ff;
+}
+.dark .eve-hljs .hljs-attr,
+.dark .eve-hljs .hljs-attribute,
+.dark .eve-hljs .hljs-literal,
+.dark .eve-hljs .hljs-meta,
+.dark .eve-hljs .hljs-number,
+.dark .eve-hljs .hljs-operator,
+.dark .eve-hljs .hljs-variable,
+.dark .eve-hljs .hljs-selector-attr,
+.dark .eve-hljs .hljs-selector-class,
+.dark .eve-hljs .hljs-selector-id {
+  color: #79c0ff;
+}
+.dark .eve-hljs .hljs-regexp,
+.dark .eve-hljs .hljs-string,
+.dark .eve-hljs .hljs-meta .hljs-string {
+  color: #a5d6ff;
+}
+.dark .eve-hljs .hljs-built_in,
+.dark .eve-hljs .hljs-symbol {
+  color: #ffa657;
+}
+.dark .eve-hljs .hljs-comment,
+.dark .eve-hljs .hljs-code,
+.dark .eve-hljs .hljs-formula {
+  color: #8b949e;
+}
+.dark .eve-hljs .hljs-name,
+.dark .eve-hljs .hljs-quote,
+.dark .eve-hljs .hljs-selector-tag,
+.dark .eve-hljs .hljs-selector-pseudo {
+  color: #7ee787;
+}
+.dark .eve-hljs .hljs-subst {
+  color: #c9d1d9;
+}
+.dark .eve-hljs .hljs-section {
+  color: #1f6feb;
+  font-weight: bold;
+}
+.dark .eve-hljs .hljs-bullet {
+  color: #f2cc60;
+}
+.dark .eve-hljs .hljs-emphasis {
+  color: #c9d1d9;
+  font-style: italic;
+}
+.dark .eve-hljs .hljs-strong {
+  color: #c9d1d9;
+  font-weight: bold;
+}
+.dark .eve-hljs .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
+.dark .eve-hljs .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}
 
 /* ==========================================================================
    COMPOSIO DOCS

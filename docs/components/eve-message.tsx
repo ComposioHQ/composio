@@ -2,17 +2,76 @@
 
 import { useState } from 'react';
 import { Streamdown } from 'streamdown';
-import { createCodePlugin } from '@streamdown/code';
+import hljs from 'highlight.js';
+import { Check, Copy } from 'lucide-react';
 
-// Streamdown core doesn't highlight code; the @streamdown/code plugin does.
-// Match the docs' Shiki themes.
-const codePlugin = createCodePlugin({ themes: ['github-light', 'github-dark'] });
-
-// Highlight code, keep the copy button, drop the download button.
+// Prose renders through Streamdown; code blocks render through the custom
+// <CodeBlock> below (highlight.js — synchronous, browser-safe). linkSafety lets
+// internal docs links open directly; only off-site links get the warning modal.
 const STREAMDOWN_PROPS = {
-  code: codePlugin,
-  controls: { code: { copy: true, download: false } },
+  linkSafety: {
+    enabled: true,
+    onLinkCheck: (url: string) => {
+      // Internal links open directly; only off-site links get the warning modal.
+      if (/^(\/|#|\.)/.test(url)) return true;
+      try {
+        return new URL(url).origin === window.location.origin;
+      } catch {
+        return true;
+      }
+    },
+  },
 } as const;
+
+// Map our fence languages to highlight.js language ids (some, like cURL, aren't
+// registered grammars and fall back to a near match or auto-detection).
+const HLJS_LANG: Record<string, string> = {
+  py: 'python',
+  ts: 'typescript', tsx: 'typescript',
+  js: 'javascript', jsx: 'javascript',
+  sh: 'bash', shell: 'bash', zsh: 'bash',
+  curl: 'bash', http: 'bash',
+};
+
+function hljsLangFor(lang: string): string | null {
+  const key = lang.toLowerCase();
+  const id = HLJS_LANG[key] ?? key;
+  return hljs.getLanguage(id) ? id : null;
+}
+
+/** Renders a code block with highlight.js token markup and a copy button. */
+function CodeBlock({ lang, code, className }: { lang: string; code: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  const id = hljsLangFor(lang);
+  // Use the known grammar when we have one, else auto-detect; never throw.
+  const html = id
+    ? hljs.highlight(code, { language: id, ignoreIllegals: true }).value
+    : hljs.highlightAuto(code).value;
+  return (
+    <div className={'eve-hljs group relative my-2 overflow-hidden rounded-md border border-fd-border bg-fd-muted/30 ' + (className ?? '')}>
+      <button
+        type="button"
+        aria-label="Copy code"
+        onClick={() => {
+          void navigator.clipboard.writeText(code).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+        className="absolute right-1.5 top-1.5 inline-flex size-6 items-center justify-center rounded text-fd-muted-foreground opacity-0 transition-opacity hover:bg-fd-accent hover:text-fd-foreground group-hover:opacity-100"
+      >
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+      </button>
+      <pre className="max-w-full overflow-x-auto p-3 text-[11.5px] leading-relaxed">
+        <code
+          className={'hljs language-' + (id ?? lang)}
+          // highlight.js output is escaped token markup, not user HTML.
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      </pre>
+    </div>
+  );
+}
 
 /**
  * Renders an assistant message: Markdown via Streamdown, with consecutive
@@ -34,10 +93,6 @@ const LANG_LABEL: Record<string, string> = {
 function labelFor(lang: string): string {
   const key = lang.toLowerCase();
   return LANG_LABEL[key] ?? (lang ? lang[0].toUpperCase() + lang.slice(1) : 'Code');
-}
-
-function fence(lang: string, code: string): string {
-  return '```' + (lang || '') + '\n' + code + '\n```';
 }
 
 /**
@@ -154,9 +209,7 @@ function CodeTabs({ blocks }: { blocks: Block[] }) {
           </button>
         ))}
       </div>
-      <Streamdown {...STREAMDOWN_PROPS} className={MD_CLASS + ' [&_pre]:!my-0 [&>div]:!my-0'}>
-        {fence(current.lang, current.code)}
-      </Streamdown>
+      <CodeBlock lang={current.lang} code={current.code} className="!my-0 rounded-none border-0" />
     </div>
   );
 }
@@ -167,10 +220,10 @@ export function AssistantMessage({ text }: { text: string }) {
     <div className="flex flex-col">
       {groups.map((g, i) => {
         if (g.kind === 'tabs') return <CodeTabs key={i} blocks={g.blocks} />;
-        const md = g.kind === 'code' ? fence(g.lang, g.code) : g.text;
+        if (g.kind === 'code') return <CodeBlock key={i} lang={g.lang} code={g.code} />;
         return (
           <Streamdown key={i} {...STREAMDOWN_PROPS} className={MD_CLASS}>
-            {md}
+            {g.text}
           </Streamdown>
         );
       })}
