@@ -121,20 +121,6 @@ A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it w
 
 Every file lives on the session's default `files` mount, surfaced at `/mnt/files/`. Each method takes a `mountId` to address a mount by ID, but there's no SDK call to create custom mounts today, so you'll normally work with `files`.
 
-## Common patterns
-
-### Bulk operations across apps
-
-Use the sandbox when a task touches hundreds of items across services. Say you need to triage 150 unread emails. The agent writes a sandbox script: classify each email with `invoke_llm`, apply Gmail labels with `run_composio_tool`, and log results to a Google Sheet.
-
-### Data analysis and reporting
-
-The agent chains tools inside the sandbox. Fetch GitHub activity, aggregate with `pandas`, chart with `matplotlib`, summarize with `invoke_llm`, and upload a PDF with `upload_local_file`.
-
-### Multi-step workflows
-
-The sandbox preserves variables and files across calls. The agent can paginate through records, transform them, and write to a destination over multiple calls.
-
 ## Next
 
 <Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools, auth, and sandbox state to a user" />
