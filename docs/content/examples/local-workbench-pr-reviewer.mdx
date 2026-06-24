@@ -1,0 +1,221 @@
+---
+title: Local workbench PR reviewer
+description: Run a GitHub PR reviewer in your own sandbox. Composio creates the Tool Router session, your infrastructure runs the code, and the reviewer posts one grounded PR comment.
+keywords: [local workbench, sandbox, github, pull request review, tool router, e2b, code execution]
+full: true
+---
+
+A **local workbench** runs code in infrastructure you own while Composio handles tool discovery, auth, and execution. Use it when your agent needs a real filesystem, local shell commands, or a sandbox you control.
+
+This example reviews a GitHub pull request from an E2B sandbox. E2B is just the sample runner. The same pattern works with your own VM, container, Kubernetes job, or internal sandbox service.
+
+```bash
+git clone https://github.com/ComposioHQ/local-pr-reviewer
+cd local-pr-reviewer
+bun install
+cp .env.example .env
+bun run connect
+bun run review -- --repo ComposioHQ/composio --pr 123
+```
+
+## How it works
+
+The host owns orchestration. The sandbox owns code execution.
+
+<Mermaid chart={`flowchart LR
+  A[Host CLI] --> B[Create Tool Router session]
+  B --> C[Remote workbench disabled]
+  C --> D[Start user-owned sandbox]
+  D --> E[Write helper source and env]
+  E --> F[Reviewer runs checks]
+  F --> G[run_composio_tool]
+  G --> B
+  F --> H[Post GitHub PR comment]
+`} />
+
+The important bit is the session creation:
+
+```ts
+// @noErrors
+import { Composio } from '@composio/core';
+import { experimental_createLocalWorkbenchSession } from '@composio/core/experimental';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const userId = 'local-pr-reviewer-user';
+
+const workbench = await experimental_createLocalWorkbenchSession(composio, userId, {
+  toolkits: ['github'],
+});
+```
+
+`experimental_createLocalWorkbenchSession` creates a Tool Router session with `workbench.enable: false` and returns:
+
+- `session`: the Tool Router session.
+- `helperSource`: a Python helper with `run_composio_tool`, `invoke_llm`, and `web_search`.
+- `env`: the environment variables the helper needs inside your sandbox.
+
+The app writes `helperSource` into the sandbox as `composio_helper.py`, passes `env` to the process, and runs the reviewer there.
+
+## Why use this instead of the managed sandbox?
+
+Use Composio's managed sandbox when you want zero infrastructure work and Composio-hosted code execution.
+
+Use a local workbench when you need to own the execution boundary:
+
+- Your code or customer data should stay inside your infrastructure.
+- You already have a sandbox provider, CI worker, VM pool, or container runtime.
+- You need custom images, private package mirrors, internal networks, or local filesystem policy.
+- You want Composio tools without giving Composio responsibility for provisioning compute.
+
+This is not a second Tool Router mode. It is a different place to run code.
+
+## Prerequisites
+
+You need:
+
+- [Bun](https://bun.sh)
+- Node.js 20+
+- A Composio project API key
+- An OpenAI API key
+- An E2B API key for this example sandbox runner
+- A GitHub connection for the configured `COMPOSIO_USER_ID`
+
+## Setup
+
+Install the project and create an env file:
+
+```bash
+bun install
+cp .env.example .env
+```
+
+Set these variables:
+
+```bash
+COMPOSIO_API_KEY=...
+OPENAI_API_KEY=...
+E2B_API_KEY=...
+COMPOSIO_USER_ID=local-pr-reviewer-user
+```
+
+Then connect GitHub:
+
+```bash
+bun run connect
+```
+
+Open the URL that prints, approve GitHub, and keep the same `COMPOSIO_USER_ID` for the review run.
+
+## Run locally
+
+Start with the smoke path. It validates CLI parsing and prints the planned flow without credentials, network calls, or sandbox startup.
+
+```bash
+bun run smoke
+```
+
+Run a real review:
+
+```bash
+bun run review -- --repo ComposioHQ/composio --pr 123
+```
+
+The reviewer:
+
+1. Checks that GitHub is connected for `COMPOSIO_USER_ID`.
+2. Creates a local workbench session for the `github` toolkit.
+3. Starts the E2B sandbox.
+4. Uploads `composio_helper.py` and the reviewer agent.
+5. Uses Composio search and schema tools to resolve GitHub actions.
+6. Downloads the PR code, installs dependencies, and runs available checks.
+7. Posts one PR comment only if checks actually ran.
+
+## The host creates the workbench
+
+The host code stays small. It creates the Composio client, checks GitHub auth, and creates the local workbench session.
+
+```ts
+// @noErrors
+export async function createLocalWorkbench(composio: Composio, userId: string) {
+  return experimental_createLocalWorkbenchSession(composio, userId, {
+    toolkits: ['github'],
+  });
+}
+```
+
+The full source for this part is in `docs/examples/local-workbench-pr-reviewer/src/workbench.ts`.
+
+## The sandbox is replaceable
+
+The E2B runner is deliberately isolated in `src/sandbox/e2b.ts`.
+
+```ts
+// @noErrors
+await sandbox.files.write(`${options.remoteDir}/composio_helper.py`, options.helperSource);
+
+await sandbox.commands.run(command, {
+  timeoutMs: runOptions.timeoutMs,
+  envs: runOptions.env,
+  onStdout: runOptions.onStdout,
+  onStderr: runOptions.onStderr,
+});
+```
+
+To use your own sandbox, keep the same contract:
+
+- Create a directory for the agent.
+- Write `helperSource` into that directory.
+- Pass `env` into the agent process.
+- Stream stdout and stderr back to the host.
+- Tear down or recycle the sandbox according to your policy.
+
+## Important env vars
+
+| Variable | Purpose |
+| --- | --- |
+| `COMPOSIO_API_KEY` | Project API key used by the host and local helper. |
+| `OPENAI_API_KEY` | Used by the reviewer agent inside the sandbox. |
+| `E2B_API_KEY` | Used only by the example E2B runner. Replace it if you replace E2B. |
+| `COMPOSIO_USER_ID` | Stable Composio user id that owns the GitHub connection. |
+| `COMPOSIO_BASE_URL` | Optional backend override for staging or local development. |
+| `E2B_TIMEOUT_MS` | Optional sandbox timeout. |
+| `SANDBOX_REMOTE_DIR` | Optional directory where files are written inside the sandbox. |
+
+## What to customize
+
+- Change `src/workbench.ts` to allow more toolkits.
+- Change `src/sandbox/e2b.ts` to use your sandbox provider.
+- Change `sandbox-agent/reviewer-instructions.ts` to adjust review policy.
+- Change `sandbox-agent/agent.ts` to expose different local tools.
+- Store provider keys in managed secret storage instead of `.env`.
+
+## Production notes
+
+- Treat the sandbox as your security boundary.
+- Rotate `COMPOSIO_API_KEY` like any other server-side project secret.
+- Use stable user ids that map to your product users.
+- Keep logs short and redact secrets before forwarding them to observability tools.
+- Decide whether sandboxes should be one-shot, pooled, or durable before adding queues.
+
+## Troubleshooting
+
+**`No active GitHub connection found`**
+
+Run `bun run connect`, approve GitHub, and retry with the same `COMPOSIO_USER_ID`.
+
+**`Missing required env vars for a live run`**
+
+Fill in `COMPOSIO_API_KEY`, `OPENAI_API_KEY`, and `E2B_API_KEY` in `.env`.
+
+**The reviewer does not post a comment**
+
+That is expected if it cannot download the repository or run checks. The agent is instructed not to post unverified reviews.
+
+**The SDK dependency looks local**
+
+The example currently uses the SDK shape from the local workbench PR. When the release containing `experimental_createLocalWorkbenchSession` is published, switch the dependency back to the published `@composio/core` package.
+
+<Cards>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Scope toolkits, connected accounts, auth behavior, and sandbox settings for a session." />
+  <Card title="Sandbox" href="/docs/sandbox" description="Learn how Composio's managed sandbox works when you do want Composio-hosted code execution." />
+</Cards>
