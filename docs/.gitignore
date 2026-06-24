@@ -39,3 +39,8 @@ next-env.d.ts.cache
 # Generated docs snapshot for the Ask AI agent (regenerated on dev/build/typecheck).
 /agent/lib/docs-index.ts
 /agent/lib/docs-index.json
+
+# docs-graph.ts run artifacts (the script is tracked; its outputs are not).
+/docs-graph.dot
+/docs-graph.html
+/docs-graph.json
