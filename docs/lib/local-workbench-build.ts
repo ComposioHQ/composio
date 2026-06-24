@@ -12,7 +12,7 @@
  * Refresh this map (and local-workbench-source.json) when that repo changes.
  *
  * This data is rendered via @pierre/diffs, NOT twoslash, so it is not
- * type-checked — it deliberately uses the unreleased
+ * type-checked, because it deliberately uses the unreleased
  * experimental_createLocalWorkbenchSession export.
  */
 import type { BuildStage } from './slack-bot-build';
@@ -29,7 +29,7 @@ const stage1 = imports;
 
 const stage2 = `${imports}
 // Composio runs tools as a user. Before anything else, make sure this user has
-// an active GitHub connection — there's no point booting a sandbox without one.
+// an active GitHub connection. There's no point booting a sandbox without one.
 async function requireGithubConnection() {
   const list = await composio.connectedAccounts.list({
     userIds: [userId],
@@ -44,8 +44,8 @@ async function requireGithubConnection() {
 `;
 
 const stage3 = `${stage2}
-// The local workbench session. Create a normal Tool Router session yourself with
-// \`workbench.enable: false\` — Composio won't run code for you — then hand that
+// The local sandbox session. Create a normal Composio session yourself with
+// \`workbench.enable: false\` (Composio won't run code for you), then hand that
 // session to the helper, which validates it's local and gives you the pieces to
 // run code yourself, wherever you choose.
 async function createWorkbench() {
@@ -55,8 +55,8 @@ async function createWorkbench() {
   });
   return experimental_createLocalWorkbenchSession(composio, session);
   // returns { helperSource, env }:
-  //   helperSource — a Python helper exposing run_composio_tool / invoke_llm / web_search
-  //   env          — the variables that helper needs to reach Composio from inside your box
+  //   helperSource: a Python helper exposing run_composio_tool / invoke_llm / web_search
+  //   env:          the variables that helper needs to reach Composio from inside your box
 }
 `;
 
@@ -66,7 +66,7 @@ export async function runReview(repo: string, pr: number) {
   const workbench = await createWorkbench();
 
   // Start a sandbox you own, inject the helper, and pass the env. E2B is just
-  // the sample runner — swap createE2bSandbox for any box that honors the same
+  // the sample runner; swap createE2bSandbox for any box that honors the same
   // contract: write a file, set env, run a command, stream output, tear down.
   const sandbox = await createE2bSandbox({
     apiKey: process.env.E2B_API_KEY,
@@ -82,7 +82,7 @@ export async function runReview(repo: string, pr: number) {
   const workbench = await createWorkbench();
 
   // Start a sandbox you own, inject the helper, and pass the env. E2B is just
-  // the sample runner — swap createE2bSandbox for any box that honors the same
+  // the sample runner; swap createE2bSandbox for any box that honors the same
   // contract: write a file, set env, run a command, stream output, tear down.
   const sandbox = await createE2bSandbox({
     apiKey: process.env.E2B_API_KEY,
@@ -92,7 +92,7 @@ export async function runReview(repo: string, pr: number) {
 
   // Run the reviewer agent inside the sandbox and stream its output back. The
   // agent calls run_composio_tool from composio_helper.py, which routes GitHub
-  // actions back through Composio's Tool Router under this user's connection.
+  // actions back through Composio under this user's connection.
   const task = \`Review PR #\${pr} on \${repo}. Run the repo's real checks in this sandbox.\`;
   try {
     await sandbox.run('npx --yes tsx agent.ts', {
@@ -106,62 +106,6 @@ export async function runReview(repo: string, pr: number) {
 }
 `;
 
-const stage6 = `${stage3}
-export async function runReview(repo: string, pr: number) {
-  await requireGithubConnection();
-  const workbench = await createWorkbench();
-
-  // Start a sandbox you own, inject the helper, and pass the env. E2B is just
-  // the sample runner — swap createE2bSandbox for any box that honors the same
-  // contract: write a file, set env, run a command, stream output, tear down.
-  const sandbox = await createE2bSandbox({
-    apiKey: process.env.E2B_API_KEY,
-    helperSource: workbench.helperSource, // written as composio_helper.py
-    env: workbench.env,
-  });
-
-  // Run the reviewer agent inside the sandbox and stream its output back. The
-  // agent calls run_composio_tool from composio_helper.py, which routes GitHub
-  // actions back through Composio's Tool Router under this user's connection.
-  const task = \`Review PR #\${pr} on \${repo}. Run the repo's real checks in this sandbox, \` +
-    \`and post one grounded GitHub comment only if checks actually ran.\`;
-  const collector = collectOutput();
-  try {
-    await sandbox.run('npx --yes tsx agent.ts', {
-      env: { ...workbench.env, TASK: task, OPENAI_API_KEY: process.env.OPENAI_API_KEY },
-      onStdout: collector.onStdout,
-      onStderr: collector.onStderr,
-    });
-  } finally {
-    await sandbox.teardown();
-  }
-
-  // The agent posts the PR comment itself, but only after real checks ran — its
-  // instructions forbid an unverified review. The host just returns the result
-  // the agent printed; nothing is posted if no checks could run.
-  return collector.result() ?? '(no checks ran — nothing posted)';
-}
-
-// The agent emits its final review behind a ::result:: marker on stdout,
-// JSON-encoded, so parse it back (falling back to the raw text).
-function collectOutput() {
-  let output = '';
-  return {
-    onStdout: (chunk: string) => { output += chunk; process.stdout.write(chunk); },
-    onStderr: (chunk: string) => { output += chunk; process.stderr.write(chunk); },
-    result: () => {
-      const match = output.match(/::result::(.*)$/m);
-      if (!match) return undefined;
-      try {
-        return JSON.parse(match[1]) as string;
-      } catch {
-        return match[1];
-      }
-    },
-  };
-}
-`;
-
 const STAGES: { title: string; description: string; code: string }[] = [
   {
     title: 'Create the Composio client',
@@ -172,13 +116,13 @@ const STAGES: { title: string; description: string; code: string }[] = [
   {
     title: 'Check the GitHub connection',
     description:
-      'A local workbench still uses Composio for auth and tool discovery. Before booting any infrastructure, confirm this user has an active GitHub connection — and hand them a connect link if not.',
+      'A local sandbox still uses Composio for auth and tool discovery. Before booting any infrastructure, confirm this user has an active GitHub connection, and hand them a connect link if not.',
     code: stage2,
   },
   {
-    title: 'Create the local workbench session',
+    title: 'Create the local sandbox session',
     description:
-      'The whole idea. Create a Tool Router session yourself with workbench.enable: false — Composio will not run code for you — then hand that session to experimental_createLocalWorkbenchSession, which validates it is local and returns the helper source and env you run yourself.',
+      'The whole idea. Create a Composio session yourself with workbench.enable: false (Composio will not run code for you), then hand that session to experimental_createLocalWorkbenchSession, which validates it is local and returns the helper source and env you run yourself.',
     code: stage3,
   },
   {
@@ -190,14 +134,8 @@ const STAGES: { title: string; description: string; code: string }[] = [
   {
     title: 'Run the reviewer and stream output',
     description:
-      'Run the agent inside the sandbox. Whenever it calls run_composio_tool, the helper routes that GitHub action back through Composio under this user — so tool execution happens in your box, but discovery and auth stay managed.',
+      'Run the agent inside the sandbox. Whenever it calls run_composio_tool, the helper routes that GitHub action back through Composio under this user, so tool execution happens in your box, but discovery and auth stay managed.',
     code: stage5,
-  },
-  {
-    title: 'Post only when checks actually ran',
-    description:
-      "Collect the agent's output and return its grounded result. The agent posts the PR comment itself, and only after real checks ran — its instructions forbid an unverified review, so a repo it cannot build produces no comment at all.",
-    code: stage6,
   },
 ];
 

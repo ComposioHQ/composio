@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 const LOGO_CDN = 'https://logos.composio.dev/api';
 
 /**
- * LocalWorkbenchFlow — branded replacement for the plain `host → sandbox → tools`
+ * LocalWorkbenchFlow: branded replacement for the plain `host → sandbox → tools`
  * mermaid diagram on the local-workbench PR reviewer page.
  *
  * Reads left-to-right as the split that defines a local workbench: the Host
@@ -19,7 +19,7 @@ const LOGO_CDN = 'https://logos.composio.dev/api';
 export function LocalWorkbenchFlow() {
   return (
     <div className="not-prose my-6 overflow-hidden rounded-sm border border-fd-border bg-fd-background">
-      {/* header strip — mono, matches the other branded flow visuals */}
+      {/* header strip: mono, matches the other branded flow visuals */}
       <div className="flex items-center justify-between border-b border-fd-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
         <span>local-sandbox.runtime</span>
         <span className="inline-flex items-center gap-1.5 text-fd-foreground/55">
@@ -82,7 +82,7 @@ export function LocalWorkbenchFlow() {
                 </div>
               </div>
               <p className="mt-2.5 text-[11px] leading-snug text-fd-foreground/55">
-                Clones the PR, installs deps, runs the repo&apos;s real checks — all inside your boundary.
+                Clones the PR, installs deps, runs the repo&apos;s real checks, all inside your boundary.
               </p>
               <p className="mt-2.5 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.05em] text-[var(--composio-brand)]">
                 run_composio_tool <Arrow /> Composio
