@@ -132,6 +132,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     RepoBrowser,
     AppLogo,
     ImessageRepoBrowser,
+    ImessageFileBuildup,
     WorkbenchFlow,
     AuthConfigFlow,
     WhiteLabelFlow,
