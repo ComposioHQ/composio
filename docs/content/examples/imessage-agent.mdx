@@ -22,7 +22,7 @@ The full, runnable project lives at [ComposioHQ/imessage-composio-eve](https://g
 
 ## How it works
 
-One Composio session carries everything. The catalog tools are remote; the iMessage toolkit is a **custom toolkit** that runs in your own process. You register both on one `composio.create(...)` call.
+One Composio session carries everything. The catalog tools are remote; the iMessage toolkit is a **custom toolkit** that runs in your own process. You register both on one `composio.sessions.create(...)` call.
 
 The agent runtime is [eve](https://github.com/vercel/eve). eve owns the agent loop and discovers tools from files, so it needs Composio tools in *its* shape. That's the provider's job: `session.tools()` returns eve-native `defineTool`s. Local and remote tools then travel one path.
 
@@ -122,7 +122,7 @@ const composio = new Composio({
   provider: new EveProvider(),
 });
 
-export const session = composio.create(process.env.COMPOSIO_USER_ID, {
+export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
   experimental: { customToolkits: [imessageToolkit] },
 });
 ```

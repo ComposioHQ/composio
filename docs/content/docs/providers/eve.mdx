@@ -49,7 +49,7 @@ const composio = new Composio({
   provider: new EveProvider(),
 });
 
-export const session = composio.create(process.env.COMPOSIO_USER_ID, {
+export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
   // optional: preload custom toolkits alongside the catalog
   // experimental: { customToolkits: [myToolkit] },
 });
