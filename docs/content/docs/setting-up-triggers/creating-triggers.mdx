@@ -6,7 +6,7 @@ keywords: [triggers, create trigger, trigger config]
 
 A trigger watches for one event (like `GITHUB_COMMIT_EVENT`) on one user's connected account. Create one, and events start flowing to your [subscription or webhook URL](/docs/setting-up-triggers/subscribing-to-events). For the bigger picture, see [Triggers](/docs/triggers).
 
-The user must already be authenticated for the toolkit you want to monitor. That means an [auth config](/docs/authentication#behind-the-scenes) for the toolkit and a [connected account](/docs/authentication) for that user. See [Authentication](/docs/authentication) if you haven't set these up.
+The user needs a [connected account](/docs/authentication) for the toolkit you want to monitor. See [Authentication](/docs/authentication) if you haven't set that up.
 
 ## Inspect the trigger type
 
@@ -49,9 +49,8 @@ from composio import Composio
 composio = Composio()
 user_id = "user-id-123435"
 
-# Before this runs, the user must already be authenticated for the toolkit:
-# an auth config for the toolkit AND a connected account for this user_id.
-# Set these up first — see /docs/authentication.
+# The user needs a connected account for this toolkit before this runs.
+# Set it up first. See /docs/authentication.
 trigger = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
@@ -67,9 +66,8 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 const userId = 'user-id-123435';
 
-// Before this runs, the user must already be authenticated for the toolkit:
-// an auth config for the toolkit AND a connected account for this userId.
-// Set these up first — see /docs/authentication.
+// The user needs a connected account for this toolkit before this runs.
+// Set it up first. See /docs/authentication.
 const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
   triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
 });
