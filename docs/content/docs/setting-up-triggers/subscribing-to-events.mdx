@@ -112,15 +112,7 @@ console.log(`Delivering events to ${subscription.webhookUrl}`);
   </Tab>
 </Tabs>
 
-The first call creates the subscription; later calls update the same one. You can also set the URL in [dashboard settings](https://dashboard.composio.dev/~/project/settings/webhook) or with the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions).
-
-<Callout type="warn">
-The response includes a `secret`. Store it securely and use it to [verify webhook signatures](#verifying-signatures). Every production handler should verify.
-</Callout>
-
-<Callout>
 Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
-</Callout>
 
 ## Handling events
 
@@ -136,6 +128,9 @@ composio = Composio()
 
 @app.post("/webhooks/composio")
 async def webhook_handler(request: Request):
+    # On async frameworks (FastAPI) read the raw body and pass body=/headers=.
+    # On sync frameworks (Flask, Django) you can pass the request directly.
+    # Use the raw body so the signature verifies. Omit verify_secret to skip it.
     result = composio.triggers.parse(
         body=await request.body(),
         headers=request.headers,
@@ -160,6 +155,8 @@ const composio = new Composio();
 
 // Next.js App Router, Hono, or any Fetch-style handler
 export async function POST(request: Request) {
+  // parse() takes a Fetch Request (shown) or an Express-style { body, headers }.
+  // Pass the raw body so the signature verifies; omit verifySecret to skip it.
   const result = await composio.triggers.parse(request, {
     verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
   });
@@ -177,8 +174,6 @@ export async function POST(request: Request) {
 ```
   </Tab>
 </Tabs>
-
-In TypeScript, `parse()` accepts a Fetch `Request` (Next.js App Router, Hono) or an Express-style `{ body, headers }`. In Python, pass the request directly on sync frameworks (Flask, Django), or pass `body=` and `headers=` when the framework reads the body asynchronously (FastAPI, as above). Either way, hand it the **raw** request body, not a pre-parsed object, or signature verification can't reproduce the signed bytes. Omit `verifySecret`/`verify_secret` to parse without verifying (handy for local replays).
 
 <Callout>
 Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
@@ -212,6 +207,14 @@ console.log(triggerType.payload);
 ```
   </Tab>
 </Tabs>
+
+For typed payloads in your editor instead of inspecting at runtime, generate stubs with the CLI:
+
+```bash
+composio generate   # auto-detects TypeScript or Python; or pass `ts` / `py`
+```
+
+This emits typed trigger payloads (alongside tool types) you can import, so your handler is type-checked against the trigger's schema.
 
 ### Webhook payload shape
 
