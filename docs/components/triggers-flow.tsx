@@ -176,7 +176,7 @@ export function TriggersFlow() {
 
         {/* ── Composio (bare logo hub, no card) ── */}
         <div className="relative z-10 flex justify-center md:absolute md:top-1/2 md:left-1/2 md:block md:-translate-x-1/2 md:-translate-y-1/2 md:text-center">
-          <span ref={hubRef} className="inline-flex flex-col items-center gap-2">
+          <span ref={hubRef} className="inline-flex flex-col items-center">
             <img
               alt="Composio"
               className="h-7 w-auto object-contain dark:hidden"
@@ -189,9 +189,6 @@ export function TriggersFlow() {
               draggable={false}
               src="/Composio Logo Dark.svg"
             />
-            <span className="max-w-[150px] text-center font-mono text-[9px] uppercase leading-relaxed tracking-[0.05em] text-fd-foreground/40">
-              verify · normalize · sign
-            </span>
           </span>
         </div>
 
