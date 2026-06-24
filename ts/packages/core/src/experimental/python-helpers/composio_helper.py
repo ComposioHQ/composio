@@ -146,7 +146,15 @@ def run_composio_tool(
     delay_ms = int(retry_config.get("delay_ms", 2000))
 
     for attempt in range(max_retries + 1):
-        status, _headers, text = _post_json(_session_execute_url(), headers, payload)
+        try:
+            status, _headers, text = _post_json(_session_execute_url(), headers, payload)
+        except (urllib.error.URLError, TimeoutError) as error:
+            # Network failure (timeout, connection/DNS error). Retry transient
+            # failures, then surface as the error tuple instead of throwing.
+            if attempt < max_retries:
+                _retry_delay(attempt, delay_ms)
+                continue
+            return {}, "Composio tool request failed: %s" % error
 
         if status == 429 and attempt < max_retries:
             _retry_delay(attempt, delay_ms)
@@ -218,12 +226,12 @@ def invoke_llm(query, reasoning_effort=None):
     if error:
         return "", error
 
-    choices = response.get("data", {}).get("choices", "")
+    choices = (response.get("data") or {}).get("choices", "")
     if not choices:
         return "", "No choices returned from invoke_llm"
 
     first_choice = choices[0] if isinstance(choices, list) else choices
-    content = first_choice.get("message", {}).get("content", "")
+    content = (first_choice.get("message") or {}).get("content", "")
     if not content:
         return "", "No content returned from invoke_llm"
     return _strip_code_fence(content), ""
@@ -243,4 +251,4 @@ def web_search(query):
 
     if error:
         return "", error
-    return response.get("data", {}).get("answer", ""), ""
+    return (response.get("data") or {}).get("answer", ""), ""
