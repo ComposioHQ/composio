@@ -144,16 +144,20 @@ session = composio.create(
 )
 
 tools = session.tools()
+tool_names = [tool.name for tool in tools]
+assert "HACKERNEWS_GET_USER" in tool_names
+assert "LOCAL_LOOKUP_INTERNAL_USER" in tool_names
+assert "LOCAL_INTERNAL_ADMIN_GET_ACCOUNT_HEALTH" in tool_names
+assert "LOCAL_SEARCH_INTERNAL_USERS" not in tool_names
+assert "LOCAL_INTERNAL_ADMIN_GET_ACCOUNT_AUDIT_LOG" not in tool_names
+
 print("Direct tools exposed to the agent:")
 for tool in tools:
     print(f"- {tool.name}")
 
 agent = Agent(
     name="Preload Demo Agent",
-    instructions=(
-        "Use the provided direct tools. Do not search for tools first; the "
-        "needed tools are already loaded."
-    ),
+    instructions="Use the provided tools to perform the task.",
     model=os.environ.get("OPENAI_MODEL", "gpt-5.5"),
     tools=tools,
 )

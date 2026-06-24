@@ -28,13 +28,20 @@ import {
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
+  SessionPreset,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
+  SessionAttachResponse,
   SessionCreateParams,
   SessionCreateResponse,
   SessionRetrieveResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
+import type {
+  CustomTool,
+  CustomToolkit,
+  InlineCustomToolsWirePayload,
+} from '../types/customTool.types';
 import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
@@ -43,7 +50,10 @@ import {
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
 } from '../lib/toolRouterParams';
+import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { ToolRouterSession } from './ToolRouterSession';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
 import {
   assertNoCustomToolSlugsInPreload,
   buildCustomToolsMap,
@@ -54,13 +64,54 @@ import {
 } from './CustomTool';
 import type { CustomToolsMap } from '../types/customTool.types';
 
-function getSessionMetadata(session: SessionCreateResponse | SessionRetrieveResponse) {
+function getSessionMetadata(
+  session: SessionCreateResponse | SessionRetrieveResponse | SessionAttachResponse
+) {
   const metadata: ToolRouterSessionMetadata = {
     preload: session.config.preload,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
   };
   return metadata;
+}
+
+function preloadsAllCustomTools(preload?: { tools?: readonly string[] | string }): boolean {
+  return preload?.tools === PRELOAD_TOOLS_ALL;
+}
+
+function prepareInlineCustomTools(options: {
+  customTools?: CustomTool[];
+  customToolkits?: CustomToolkit[];
+  defaultPreload?: boolean;
+  preloadTools?: readonly string[] | typeof PRELOAD_TOOLS_ALL;
+}): InlineCustomToolsWirePayload | undefined {
+  const { customTools, customToolkits, defaultPreload = false, preloadTools } = options;
+  const hasCustoms = !!(customTools?.length || customToolkits?.length);
+  const localCustomToolsMap = hasCustoms
+    ? buildCustomToolsMap(customTools ?? [], customToolkits)
+    : undefined;
+
+  // Top-level preload.tools is for Composio-managed slugs only. Custom tools
+  // use their own preload flag, so reject LOCAL/custom slugs there before
+  // serializing the inline custom definitions.
+  assertNoCustomToolSlugsInPreload(preloadTools, localCustomToolsMap);
+
+  const serializedTools = customTools?.length
+    ? serializeCustomTools(customTools, { defaultPreload })
+    : undefined;
+  const serializedToolkits = customToolkits?.length
+    ? serializeCustomToolkits(customToolkits, { defaultPreload })
+    : undefined;
+
+  const inlineCustomToolsPayload =
+    serializedTools || serializedToolkits
+      ? {
+          ...(serializedTools ? { custom_tools: serializedTools } : {}),
+          ...(serializedToolkits ? { custom_toolkits: serializedToolkits } : {}),
+        }
+      : undefined;
+
+  return inlineCustomToolsPayload;
 }
 
 export class ToolRouter<
@@ -93,6 +144,8 @@ export class ToolRouter<
 
   /**
    * Creates a new tool router session for a user.
+   * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+   * should be exposed directly; see `ToolRouterCreateSessionConfig`.
    *
    * @param userId {string} The user id to create the session for
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
@@ -100,7 +153,7 @@ export class ToolRouter<
    *
    * @example
    * ```typescript
-   * import { Composio, experimental_createTool } from '@composio/core';
+   * import { Composio } from '@composio/core';
    *
    * const composio = new Composio();
    *
@@ -112,34 +165,26 @@ export class ToolRouter<
    *     customToolkits: [myToolkit],
    *   },
    * });
-   *
-   * // Custom tools are searched by default. Set `preload: true` on a custom
-   * // tool or toolkit to expose it directly from `session.tools()`.
-   *
-   * // Expose all tools allowed by filters directly, without meta/helper tools.
-   * // `preload.tools = "all"` requires a positive filter such as `toolkits`.
-   * const directSession = await composio.create('user_123', {
-   *   sessionPreset: 'direct_tools',
-   *   toolkits: ['github'],
-   * });
    * ```
    */
   async create(
     userId: string,
-    config?: ToolRouterCreateSessionConfig
+    config?: ToolRouterCreateSessionConfig,
+    requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const routerConfig = ToolRouterCreateSessionConfigSchema.parse(config ?? {});
-    const isDirectToolsPreset = routerConfig.sessionPreset === 'direct_tools';
+    const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
     // Extract custom tools/toolkits from experimental config
     const customTools = routerConfig.experimental?.customTools;
     const customToolkits = routerConfig.experimental?.customToolkits;
-    const defaultCustomPreload = routerConfig.preload?.tools === 'all';
-    const localCustomToolsMap =
-      customTools?.length || customToolkits?.length
-        ? buildCustomToolsMap(customTools ?? [], customToolkits)
-        : undefined;
-    assertNoCustomToolSlugsInPreload(routerConfig.preload?.tools, localCustomToolsMap);
+    const defaultCustomPreload = preloadsAllCustomTools(routerConfig.preload);
+    const inlineCustomToolsPayload = prepareInlineCustomTools({
+      customTools,
+      customToolkits,
+      defaultPreload: defaultCustomPreload,
+      preloadTools: routerConfig.preload?.tools,
+    });
 
     // Build the typed experimental payload for the backend
     const experimentalPayload: SessionCreateParams['experimental'] = {};
@@ -150,34 +195,29 @@ export class ToolRouter<
       };
     }
 
-    if (customTools?.length) {
-      experimentalPayload.custom_tools = serializeCustomTools(customTools, {
-        defaultPreload: defaultCustomPreload,
-      });
+    if (inlineCustomToolsPayload?.custom_tools) {
+      experimentalPayload.custom_tools = inlineCustomToolsPayload.custom_tools;
     }
-    if (customToolkits?.length) {
-      experimentalPayload.custom_toolkits = serializeCustomToolkits(customToolkits, {
-        defaultPreload: defaultCustomPreload,
-      });
+    if (inlineCustomToolsPayload?.custom_toolkits) {
+      experimentalPayload.custom_toolkits = inlineCustomToolsPayload.custom_toolkits;
     }
-    const inlineCustomToolsPayload =
-      experimentalPayload.custom_tools || experimentalPayload.custom_toolkits
-        ? {
-            ...(experimentalPayload.custom_tools
-              ? { custom_tools: experimentalPayload.custom_tools }
-              : {}),
-            ...(experimentalPayload.custom_toolkits
-              ? { custom_toolkits: experimentalPayload.custom_toolkits }
-              : {}),
-          }
-        : undefined;
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
+
+    const connectedAccountsPayload =
+      routerConfig.connectedAccounts === undefined
+        ? undefined
+        : Object.fromEntries(
+            Object.entries(routerConfig.connectedAccounts).map(([toolkit, ids]) => [
+              toolkit,
+              typeof ids === 'string' ? [ids] : ids,
+            ])
+          );
 
     const payload: SessionCreateParams = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
-      connected_accounts: routerConfig.connectedAccounts,
+      connected_accounts: connectedAccountsPayload,
       toolkits: transformToolRouterToolkitsParams(routerConfig.toolkits),
       tools: transformToolRouterToolsParams(routerConfig.tools),
       tags: transformToolRouterTagsParams(routerConfig.tags),
@@ -194,7 +234,10 @@ export class ToolRouter<
       experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
     };
 
-    const session = await this.client.toolRouter.session.create(payload);
+    const session = await withCancellation(
+      () => this.client.toolRouter.session.create(payload, requestOptions),
+      requestOptions?.signal
+    );
 
     // Build custom tools map from the response's slug/original_slug mapping
     // instead of computing LOCAL_ prefix client-side
@@ -243,17 +286,76 @@ export class ToolRouter<
    * console.log(session.mcp.headers);
    * ```
    */
-  async use(id: string): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const session = await this.client.toolRouter.session.retrieve(id);
+  async use(
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] },
+    requestOptions?: ComposioRequestOptions
+  ): Promise<Session<TToolCollection, TTool, TProvider>> {
+    const customTools = options?.customTools;
+    const customToolkits = options?.customToolkits;
+    const hasCustoms = !!(customTools?.length || customToolkits?.length);
+
+    let session: SessionRetrieveResponse | SessionAttachResponse;
+    const attachInlineCustomToolsPayload = prepareInlineCustomTools({
+      customTools,
+      customToolkits,
+    });
+    let inlineCustomToolsPayload = attachInlineCustomToolsPayload;
+
+    if (hasCustoms) {
+      const attachBody = { experimental: attachInlineCustomToolsPayload };
+      session = await withCancellation(
+        () => this.client.toolRouter.session.attach(id, attachBody, requestOptions),
+        requestOptions?.signal
+      );
+    } else {
+      session = await withCancellation(
+        () => this.client.toolRouter.session.retrieve(id, requestOptions),
+        requestOptions?.signal
+      );
+    }
+
+    const defaultCustomPreload = preloadsAllCustomTools(session.config.preload);
+    if (hasCustoms && defaultCustomPreload) {
+      // preload.tools = "all" on the existing session is server-authoritative:
+      // the backend exposes every custom tool regardless of per-definition
+      // preload flags, so the initial attach above (which used the caller's
+      // explicit hints) doesn't need re-sending. We only rebuild the in-memory
+      // payload so future search/execute calls re-inject with preload=true and
+      // session.tools() locally mirrors what the server returns.
+      inlineCustomToolsPayload = prepareInlineCustomTools({
+        customTools,
+        customToolkits,
+        defaultPreload: true,
+      });
+    }
+
+    let customToolsMap: CustomToolsMap | undefined;
+    let userId: string | undefined;
+    if (hasCustoms) {
+      customToolsMap = buildCustomToolsMapFromResponse(
+        customTools ?? [],
+        customToolkits,
+        session.experimental
+      );
+      userId = session.config.user_id;
+    }
+
+    const metadata = {
+      ...getSessionMetadata(session),
+      preloadedCustomToolSlugs: getPreloadedCustomToolSlugs(customToolsMap, defaultCustomPreload),
+      inlineCustomToolsPayload,
+    };
+
     return new ToolRouterSession<TToolCollection, TTool, TProvider>(
       this.client,
       this.config,
       session.session_id,
       this.createMCPServerConfig(session.mcp),
       undefined,
-      undefined,
-      undefined,
-      getSessionMetadata(session)
+      customToolsMap,
+      userId,
+      metadata
     );
   }
 }

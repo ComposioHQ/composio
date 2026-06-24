@@ -13,6 +13,7 @@ export default defineConfig({
       '~': path.resolve(__dirname, './'),
       src: path.resolve(__dirname, './src'),
       test: path.resolve(__dirname, './test'),
+      '@composio/core/experimental': path.join(coreDir, 'src/experimental/index.ts'),
       '@composio/core': path.join(coreDir, 'src/index.ts'),
       '@composio/ts-builders': path.join(tsBuildersDir, 'src/index.ts'),
       '@composio/json-schema-to-zod': path.join(jsonSchemaToZodDir, 'src/index.ts'),

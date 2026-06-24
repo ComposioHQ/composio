@@ -17,7 +17,7 @@ export function ProviderCard({ name, href, logo, logoDark, icon, languages }: Pr
   return (
     <Link
       href={href}
-      className="flex items-center gap-5 rounded-lg border border-fd-border bg-fd-card p-5 transition-all hover:bg-fd-accent/50 hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+      className="flex items-center gap-5 rounded-lg border border-fd-border bg-fd-card p-5 transition-all hover:bg-fd-accent/50 hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       <div className="flex h-12 w-12 shrink-0 items-center justify-center">
         {logo && logoDark ? (

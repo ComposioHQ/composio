@@ -9,19 +9,20 @@
 /* ==========================================================================
    COMPOSIO DOCS
 
-   Palette:
-   - Light: Content #ffffff, Sidebar #f7f5f2
-   - Dark:  Content #1a1815, Sidebar #252220
-   - Accent: #ea580c (Tailwind orange-600)
+   Palette (synced with ~/composio/landing + ~/composio/composio_dashboard):
+   - Brand: #0007cd / oklch(0.387 0.264 264.1) — deep electric blue
+   - Light: Content #fbfbfb, Card #ffffff
+   - Dark:  Content #0f0f0f, Card #1a1a1a
 
    Typography:
-   - All text: Inter
-   - Code: IBM Plex Mono
+   - All text: ABC Diatype (sans, loaded locally in app/layout.tsx)
+   - Code: JetBrains Mono
    ========================================================================== */
 
 @theme inline {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --radius: 0.625rem;
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius: 0;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -75,46 +76,47 @@ html {
 }
 
 :root {
-  /* Brand */
-  --composio-orange: #ea580c;
-  --composio-sidebar: #f7f5f2;
+  /* Brand — deep electric blue, shared with composio.dev + dashboard */
+  --composio-brand: #0007cd;
+  --composio-orange: var(--composio-brand); /* legacy alias — kept for back-compat */
+  --composio-sidebar: #fbfbfb;
 
   /* Fumadocs overrides - Light */
-  --color-fd-background: #ffffff;
-  --color-fd-foreground: #171414;
-  --color-fd-muted: #f6f4f2;
-  --color-fd-muted-foreground: #5c5858; /* Improved contrast */
-  --color-fd-border: #e5e0df;
+  --color-fd-background: #fbfbfb;
+  --color-fd-foreground: #0f0f0f;
+  --color-fd-muted: #f3f3f3;
+  --color-fd-muted-foreground: #585858;
+  --color-fd-border: #e5e5e5;
   --color-fd-card: #ffffff;
-  --color-fd-card-foreground: #171414;
+  --color-fd-card-foreground: #0f0f0f;
   --color-fd-popover: #ffffff;
-  --color-fd-popover-foreground: #171414;
-  --color-fd-primary: #171414;
-  --color-fd-primary-foreground: #ffffff;
-  --color-fd-secondary: #f6f4f2;
-  --color-fd-secondary-foreground: #171414;
-  --color-fd-accent: #f6f4f2;
-  --color-fd-accent-foreground: #171414;
-  --color-fd-ring: #e5e0df;
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --color-fd-popover-foreground: #0f0f0f;
+  --color-fd-primary: #0f0f0f;
+  --color-fd-primary-foreground: #fbfbfb;
+  --color-fd-secondary: #f3f3f3;
+  --color-fd-secondary-foreground: #0f0f0f;
+  --color-fd-accent: #f3f3f3;
+  --color-fd-accent-foreground: #0f0f0f;
+  --color-fd-ring: var(--composio-brand);
+  --radius: 0;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.218 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.218 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --popover-foreground: oklch(0.218 0 0);
+  --primary: oklch(0.387 0.264 264.1);
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: oklch(0.218 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.51 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --accent-foreground: oklch(0.218 0 0);
+  --destructive: oklch(0.577 0.215 27.3);
+  --border: oklch(0.931 0 0);
+  --input: oklch(0.931 0 0);
+  --ring: oklch(0.387 0.264 264.1);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -131,43 +133,48 @@ html {
 }
 
 .dark {
-  --composio-sidebar: #131211;
+  /* Lift the brand blue on dark backgrounds — `#0007cd` is too dark
+     against `#0f0f0f`. */
+  --composio-brand: #5B8BF0;
+  --composio-orange: var(--composio-brand);
+
+  --composio-sidebar: #0f0f0f;
 
   /* Fumadocs overrides - Dark */
-  --color-fd-background: #131211;
-  --color-fd-foreground: #e8e4e0;
-  --color-fd-muted: #1e1d1c;
-  --color-fd-muted-foreground: #a8a29e; /* Improved contrast */
-  --color-fd-border: #2c2a28;
-  --color-fd-card: #131211;
-  --color-fd-card-foreground: #e8e4e0;
-  --color-fd-popover: #252220;
-  --color-fd-popover-foreground: #e8e4e0;
-  --color-fd-primary: #e8e4e0;
-  --color-fd-primary-foreground: #1a1815;
-  --color-fd-secondary: #2a2725;
-  --color-fd-secondary-foreground: #e8e4e0;
-  --color-fd-accent: #2a2725;
-  --color-fd-accent-foreground: #e8e4e0;
-  --color-fd-ring: #3d3935;
-  --background: oklch(0.145 0 0);
+  --color-fd-background: #0f0f0f;
+  --color-fd-foreground: #fbfbfb;
+  --color-fd-muted: #1f1f1f;
+  --color-fd-muted-foreground: #b4b4b4;
+  --color-fd-border: rgba(255, 255, 255, 0.06);
+  --color-fd-card: #1c1c1c;
+  --color-fd-card-foreground: #fbfbfb;
+  --color-fd-popover: #1a1a1a;
+  --color-fd-popover-foreground: #fbfbfb;
+  --color-fd-primary: #fbfbfb;
+  --color-fd-primary-foreground: #0f0f0f;
+  --color-fd-secondary: #1a1a1a;
+  --color-fd-secondary-foreground: #fbfbfb;
+  --color-fd-accent: #1a1a1a;
+  --color-fd-accent-foreground: #fbfbfb;
+  --color-fd-ring: var(--composio-brand);
+  --background: oklch(0.159 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.218 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.218 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.218 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: oklch(0.706 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 5%);
+  --destructive: oklch(0.637 0.208 25.3);
+  --border: oklch(1 0 0 / 6%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: oklch(0.745 0.128 275);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -179,7 +186,7 @@ html {
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 6%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 
@@ -359,6 +366,18 @@ textarea:focus-visible {
   background: var(--color-fd-muted);
   padding: 1rem;
   border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* Callouts — muted links, not brand accent */
+[data-fumadocs-body] [data-callout] a:not([data-card]) {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--color-fd-border);
+}
+
+[data-fumadocs-body] [data-callout] a:not([data-card]):hover {
+  text-decoration-color: currentColor;
 }
 
 /* ==========================================================================
@@ -565,6 +584,13 @@ body {
   transition: max-width 0.3s ease;
 }
 
+/* Hide Decimal's built-in launcher tab and floating button — we trigger
+   the widget from our own "Ask AI" button in the nav (see ask-ai-button.tsx). */
+.decimal-widget-sidebar-tab,
+.decimal-widget-button {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -573,3 +599,182 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* ==========================================================================
+   404 glitch animation (ported from landing site)
+   ========================================================================== */
+@keyframes glitch-404 {
+  0%,
+  3% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+  6% {
+    text-shadow:
+      3px 0 var(--composio-brand),
+      -3px 0 #cd0700;
+    transform: translate(-3px, 1px);
+  }
+  12% {
+    text-shadow:
+      -3px 0 var(--composio-brand),
+      3px 0 #cd0700;
+    transform: translate(3px, -1px);
+  }
+  18% {
+    text-shadow:
+      2px 0 var(--composio-brand),
+      -2px 0 #cd0700;
+    transform: translate(-1px, 2px);
+  }
+  24% {
+    text-shadow:
+      -1px 0 var(--composio-brand),
+      1px 0 #cd0700;
+    transform: translate(2px, -1px);
+  }
+  30%,
+  100% {
+    text-shadow: none;
+    transform: translate(0);
+  }
+}
+
+.animate-glitch-404 {
+  animation: glitch-404 2.6s ease-out infinite;
+}
+
+/* ==========================================================================
+   Hero demo — fade-in for prompts, traces, and responses
+   ========================================================================== */
+@keyframes hero-demo-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: hero-demo-fade-in 280ms ease-out both;
+}
+
+/* ==========================================================================
+   Landing-hero theme tokens — keep chat / card skins legible in both
+   light and dark mode. Skins reference these via `var(--hero-*)`.
+   ========================================================================== */
+:root {
+  --hero-surface: #ffffff;
+  --hero-surface-2: #f6f5f3;
+  --hero-bubble: #f3f3f1;
+  --hero-text: rgba(15, 15, 15, 0.9);
+  --hero-text-muted: rgba(15, 15, 15, 0.45);
+  --hero-border: rgba(15, 15, 15, 0.12);
+  --hero-border-soft: rgba(15, 15, 15, 0.06);
+  --hero-shimmer: #0a0a0a;
+}
+.dark {
+  /* Aligned with --color-fd-card / --color-fd-muted so the hero chat
+     panel sits at the same grey as the feature cards below it; the
+     darker `#141416` chat surface used to read as a shadow patch
+     against the page bg. */
+  --hero-surface: #1c1c1c;
+  --hero-surface-2: #222222;
+  --hero-bubble: #262626;
+  --hero-text: rgba(245, 245, 247, 0.92);
+  --hero-text-muted: rgba(245, 245, 247, 0.5);
+  --hero-border: rgba(255, 255, 255, 0.08);
+  --hero-border-soft: rgba(255, 255, 255, 0.04);
+  --hero-shimmer: #f5f5f7;
+}
+
+/* ==========================================================================
+   Hero "active card" drop shadow — neutral black blur around any card
+   that lights up in the agent loop. Lives in plain CSS because Tailwind
+   v4's arbitrary `shadow-[...rgba(...)...]` doesn't parse the commas
+   inside `rgba()` cleanly.
+   ========================================================================== */
+.hero-card-shadow {
+  /* `!important` needed because Tailwind v4's `transition-shadow` chains
+     `box-shadow` through several CSS variables (`--tw-shadow`, etc.) that
+     default to `0 0 #0000`, which otherwise overrides this declaration. */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.18) !important;
+}
+.dark .hero-card-shadow {
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Latest tool-call name in the mock chat — shimmer effect on a dark
+   gradient (light mode) / light gradient (dark mode). Defined in CSS
+   instead of inline so the gradient stops can reference theme tokens
+   without breaking on `var(...) + hex-alpha` concatenation. */
+.hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(15, 15, 15, 0.35) 0%,
+    rgba(15, 15, 15, 0.7) 40%,
+    rgba(15, 15, 15, 1) 50%,
+    rgba(15, 15, 15, 0.7) 60%,
+    rgba(15, 15, 15, 0.35) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-text 2s ease-in-out infinite;
+}
+.dark .hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(245, 245, 247, 0.35) 0%,
+    rgba(245, 245, 247, 0.7) 40%,
+    rgba(245, 245, 247, 1) 50%,
+    rgba(245, 245, 247, 0.7) 60%,
+    rgba(245, 245, 247, 0.35) 100%
+  );
+}
+
+/* ==========================================================================
+   Landing-hero keyframes (ported from landing-new)
+   ========================================================================== */
+@keyframes hero-cpu-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes shimmer-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Square the navbar theme toggle (and its inner icons) to match the
+   zero-radius search input. Fumadocs hard-codes `rounded-full` via
+   Tailwind utilities, so the override needs !important to beat the
+   utility layer's specificity. */
+[data-theme-toggle],
+[data-theme-toggle] > * {
+  border-radius: 0 !important;
+}
+

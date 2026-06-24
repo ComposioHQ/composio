@@ -7,6 +7,7 @@
  */
 import ComposioClient, { BadRequestError } from '@composio/client';
 import {
+  ConnectedAccountCreateResponse,
   ConnectedAccountDeleteResponse,
   ConnectedAccountRefreshParams,
   ConnectedAccountRefreshResponse,
@@ -15,6 +16,7 @@ import {
   ConnectedAccountListParams as ConnectedAccountListParamsRaw,
   ConnectedAccountCreateParams as ConnectedAccountCreateParamsRaw,
 } from '@composio/client/resources/connected-accounts';
+import { LinkCreateParams } from '@composio/client/resources/link';
 import {
   CreateConnectedAccountOptions,
   ConnectedAccountRetrieveResponse,
@@ -31,6 +33,7 @@ import {
 } from '../types/connectedAccounts.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
+import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from './Experimental';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import {
@@ -38,17 +41,16 @@ import {
   transformConnectedAccountResponse,
 } from '../utils/transformers/connectedAccounts';
 import {
+  ComposioAclOnlyForSharedError,
   ComposioFailedToCreateConnectedAccountLink,
   ComposioLegacyConnectedAccountsEndpointRetiredError,
   ComposioMultipleConnectedAccountsError,
 } from '../errors';
 import logger from '../utils/logger';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
-
-// Schemes that take the redirectable OAuth path on the legacy
-// `POST /api/v3/connected_accounts` endpoint, and so are subject to the
-// 2026-05-08 / 2026-07-03 retirement when the auth config is Composio-managed.
-const LEGACY_RETIRING_OAUTH_SCHEMES = new Set(['OAUTH1', 'OAUTH2', 'DCR_OAUTH']);
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 // One-time-per-process guard so long-running services don't spam the deprecation
 // warning on every initiate() call.
@@ -92,7 +94,10 @@ export class ConnectedAccounts {
    * });
    * ```
    */
-  async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse> {
+  async list(
+    query?: ConnectedAccountListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountListResponse> {
     let rawQuery: ConnectedAccountListParamsRaw | undefined = undefined;
 
     if (query) {
@@ -107,13 +112,23 @@ export class ConnectedAccounts {
         cursor: parsedQuery.data.cursor?.toString(),
         limit: parsedQuery.data.limit,
         order_by: parsedQuery.data.orderBy,
-        statuses: parsedQuery.data.statuses,
+        // Cast widens to match the Stainless-generated client params, which
+        // lag behind the live API enum. Apollo accepts the union value at
+        // runtime (`z.nativeEnum(ConnectionStatusEnum)` on the query param);
+        // remove the cast once `@composio/client` is regenerated.
+        statuses: parsedQuery.data.statuses as ConnectedAccountListParamsRaw['statuses'],
         toolkit_slugs: parsedQuery.data.toolkitSlugs,
         user_ids: parsedQuery.data.userIds,
+        ...(parsedQuery.data.accountType !== undefined && {
+          account_type: parsedQuery.data.accountType,
+        }),
       };
     }
 
-    const result = await this.client.connectedAccounts.list(rawQuery);
+    const result = await withCancellation(
+      () => this.client.connectedAccounts.list(rawQuery, requestOptions),
+      requestOptions?.signal
+    );
     return transformConnectedAccountListResponse(result);
   }
 
@@ -187,14 +202,18 @@ export class ConnectedAccounts {
   async initiate(
     userId: string,
     authConfigId: string,
-    options?: CreateConnectedAccountOptions
+    options?: CreateConnectedAccountOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
     // Check if there are multiple connected accounts for the authConfig of the user
-    const connectedAccount = await this.list({
-      userIds: [userId],
-      authConfigIds: [authConfigId],
-      statuses: [ConnectedAccountStatuses.ACTIVE],
-    });
+    const connectedAccount = await this.list(
+      {
+        userIds: [userId],
+        authConfigIds: [authConfigId],
+        statuses: [ConnectedAccountStatuses.ACTIVE],
+      },
+      requestOptions
+    );
     if (connectedAccount.items.length > 0 && !options?.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(
         `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
@@ -228,10 +247,44 @@ export class ConnectedAccounts {
       },
     };
 
-    let response;
+    let response: ConnectedAccountCreateResponse;
+    let httpResponse: Response | undefined;
     try {
-      response = await this.client.connectedAccounts.create(createParams);
+      // Chain `.withResponse()` so we can read the SEC-339 `Deprecation`
+      // header (RFC 9745) the apollo retiring branch sets — that header is
+      // emitted only when the auth config is Composio-managed AND on a
+      // redirectable OAuth scheme, so it's the canonical signal that this
+      // caller needs to migrate. Custom auth configs and non-OAuth schemes
+      // never see the header, eliminating the false-positive warning that
+      // an `auth_scheme`-only check produced for `link()`-unaffected callers.
+      const apiCall = this.client.connectedAccounts.create(createParams, requestOptions);
+      if (typeof (apiCall as { withResponse?: unknown }).withResponse === 'function') {
+        const resolved = await withCancellation(
+          () =>
+            (
+              apiCall as unknown as {
+                withResponse: () => Promise<{
+                  data: ConnectedAccountCreateResponse;
+                  response: Response;
+                }>;
+              }
+            ).withResponse(),
+          requestOptions?.signal
+        );
+        response = resolved.data;
+        httpResponse = resolved.response;
+      } else {
+        // Test mocks may return a plain Promise without `withResponse`.
+        // Fall back to a naked await; the deprecation gate below stays
+        // off in that case (no header to read).
+        response = await withCancellation(() => apiCall, requestOptions?.signal);
+      }
     } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to the legacy-endpoint error below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       // When the server has flipped this org to the retired path, the legacy
       // endpoint returns 400 with a stable migration message. Surface it as
       // a typed error so callers get an actionable hint instead of a generic
@@ -249,25 +302,17 @@ export class ConnectedAccounts {
       throw error;
     }
 
-    // Warn once per process when a successful initiate() lands on the
-    // redirectable-OAuth path. We can't tell from the response alone whether
-    // the auth config is Composio-managed (the field that determines whether
-    // the cutover applies), so the warning text is conditional in wording —
-    // custom-OAuth users can ignore it, Composio-managed-OAuth users see a
-    // clear pointer to link() before their org's cutover lands.
-    const responseAuthScheme = response.connectionData?.authScheme;
-    if (
-      !_legacyInitiateWarningEmitted &&
-      typeof responseAuthScheme === 'string' &&
-      LEGACY_RETIRING_OAUTH_SCHEMES.has(responseAuthScheme)
-    ) {
+    // Warn once per process when apollo flags this response as on the
+    // retiring path. Header presence is a 1:1 signal — custom auth configs
+    // and non-OAuth schemes get a clean response and stay silent, fixing
+    // the false-positive that auth_scheme-based detection produced.
+    if (!_legacyInitiateWarningEmitted && httpResponse?.headers.get('Deprecation')) {
       _legacyInitiateWarningEmitted = true;
       logger.warn(
         '[Deprecation] composio.connectedAccounts.initiate() will stop ' +
-          'working for Composio-managed OAuth auth configs on 2026-05-08 ' +
-          '(new orgs) and 2026-07-03 (all orgs). If this auth config is ' +
-          'Composio-managed, switch to composio.connectedAccounts.link() ' +
-          'before then. Custom auth configs are unaffected. See ' +
+          'working for this auth config on or before 2026-07-03 (see Sunset ' +
+          'header on the response). Switch to composio.connectedAccounts.link() — ' +
+          'same return shape, same allowMultiple semantics. ' +
           'https://docs.composio.dev/docs/changelog/2026/04/24'
       );
     }
@@ -323,23 +368,29 @@ export class ConnectedAccounts {
   async link(
     userId: string,
     authConfigId: string,
-    options?: CreateConnectedAccountLinkOptions
+    options?: CreateConnectedAccountLinkOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const requestOptions = await CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
-    if (!requestOptions.success) {
+    const parsedLinkOptions = CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
+    if (!parsedLinkOptions.success) {
       throw new ValidationError('Failed to parse create connected account link options', {
-        cause: requestOptions.error,
+        cause: parsedLinkOptions.error,
       });
     }
 
     // Mirror initiate(): guard against silently creating extra connections on
-    // the same auth config unless the caller explicitly opts in.
-    const existing = await this.list({
-      userIds: [userId],
-      authConfigIds: [authConfigId],
-      statuses: [ConnectedAccountStatuses.ACTIVE],
-    });
-    if (existing.items.length > 0 && !requestOptions.data.allowMultiple) {
+    // the same auth config unless the caller explicitly opts in. The preflight
+    // list call honors the caller's signal too — the whole composite is
+    // cancellable as a single unit.
+    const existing = await this.list(
+      {
+        userIds: [userId],
+        authConfigIds: [authConfigId],
+        statuses: [ConnectedAccountStatuses.ACTIVE],
+      },
+      requestOptions
+    );
+    if (existing.items.length > 0 && !parsedLinkOptions.data.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(
         `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
       );
@@ -349,13 +400,21 @@ export class ConnectedAccounts {
       );
     }
 
+    const opts = parsedLinkOptions.data;
+    const experimentalWire = serializeExperimentalForWire(opts.experimental);
+    const body: LinkCreateParams = {
+      auth_config_id: authConfigId,
+      user_id: userId,
+      ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
+      ...(opts.alias !== undefined && { alias: opts.alias }),
+      ...(experimentalWire !== undefined && { experimental: experimentalWire }),
+    };
+
     try {
-      const response = await this.client.link.create({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        ...(requestOptions?.data.callbackUrl && { callback_url: requestOptions.data.callbackUrl }),
-        ...(requestOptions?.data.alias != null && { alias: requestOptions.data.alias }),
-      });
+      const response = await withCancellation(
+        () => this.client.link.create(body, requestOptions),
+        requestOptions?.signal
+      );
 
       const connectionRequest = createConnectionRequest(
         this.client,
@@ -365,6 +424,20 @@ export class ConnectedAccounts {
       );
       return connectionRequest;
     } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to ComposioFailedToCreateConnectedAccountLink below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
+      // The server rejects ACL on PRIVATE connections — surface that as a
+      // typed error so callers can `instanceof` instead of grepping messages.
+      if (
+        error instanceof BadRequestError &&
+        typeof error.message === 'string' &&
+        error.message.includes(ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT)
+      ) {
+        throw new ComposioAclOnlyForSharedError(error.message, { cause: error });
+      }
       throw new ComposioFailedToCreateConnectedAccountLink(
         'Failed to create connected account link',
         {
@@ -422,8 +495,14 @@ export class ConnectedAccounts {
    * console.log(account.toolkit.slug); // e.g., 'github'
    * ```
    */
-  async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
-    const response = await this.client.connectedAccounts.retrieve(nanoid);
+  async get(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountRetrieveResponse> {
+    const response = await withCancellation(
+      () => this.client.connectedAccounts.retrieve(nanoid, requestOptions),
+      requestOptions?.signal
+    );
     return transformConnectedAccountResponse(response);
   }
 
@@ -443,8 +522,14 @@ export class ConnectedAccounts {
    * await composio.connectedAccounts.delete('conn_abc123');
    * ```
    */
-  async delete(nanoid: string): Promise<ConnectedAccountDeleteResponse> {
-    return this.client.connectedAccounts.delete(nanoid);
+  async delete(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountDeleteResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.delete(nanoid, undefined, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -465,7 +550,8 @@ export class ConnectedAccounts {
    */
   async refresh(
     nanoid: string,
-    options?: ConnectedAccountRefreshOptions
+    options?: ConnectedAccountRefreshOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRefreshResponse> {
     let params: ConnectedAccountRefreshParams | undefined = undefined;
 
@@ -483,7 +569,10 @@ export class ConnectedAccounts {
       };
     }
 
-    return this.client.connectedAccounts.refresh(nanoid, params);
+    return withCancellation(
+      () => this.client.connectedAccounts.refresh(nanoid, params, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -508,9 +597,13 @@ export class ConnectedAccounts {
    */
   async updateStatus(
     nanoid: string,
-    params: ConnectedAccountUpdateStatusParams
+    params: ConnectedAccountUpdateStatusParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, params);
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, params, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -525,8 +618,14 @@ export class ConnectedAccounts {
    * console.log(enabledAccount.isDisabled); // false
    * ```
    */
-  async enable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
+  async enable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, { enabled: true }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -547,12 +646,21 @@ export class ConnectedAccounts {
    * // });
    * ```
    */
-  async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  async disable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, { enabled: false }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
-   * Update a connected account's alias and/or credentials.
+   * Enable or disable a connected account. Accepts `{ enabled: boolean }`.
+   *
+   * For ACL writes on SHARED connections, see
+   * `composio.experimental.updateAcl()`.
    *
    * @param {string} nanoid - The unique identifier of the connected account
    * @param {UpdateConnectedAccountParams} params - The update parameters
@@ -566,7 +674,8 @@ export class ConnectedAccounts {
    */
   async update(
     nanoid: string,
-    params: UpdateConnectedAccountParams
+    params: UpdateConnectedAccountParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -575,6 +684,9 @@ export class ConnectedAccounts {
       });
     }
 
-    return this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data, requestOptions),
+      requestOptions?.signal
+    );
   }
 }

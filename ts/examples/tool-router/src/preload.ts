@@ -9,6 +9,7 @@
  *   COMPOSIO_API_KEY=... OPENAI_API_KEY=... bun src/preload.ts
  */
 import 'dotenv/config';
+import assert from 'node:assert/strict';
 import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
 import { OpenAIAgentsProvider } from '@composio/openai-agents';
 import { Agent, run } from '@openai/agents';
@@ -129,6 +130,13 @@ const session = await composio.create('preload-example-user', {
 });
 
 const tools = await session.tools();
+const toolNames = tools.map(tool => tool.name);
+assert(toolNames.includes('HACKERNEWS_GET_USER'));
+assert(toolNames.includes('LOCAL_LOOKUP_INTERNAL_USER'));
+assert(toolNames.includes('LOCAL_INTERNAL_ADMIN_GET_ACCOUNT_HEALTH'));
+assert(!toolNames.includes('LOCAL_SEARCH_INTERNAL_USERS'));
+assert(!toolNames.includes('LOCAL_INTERNAL_ADMIN_GET_ACCOUNT_AUDIT_LOG'));
+
 console.log('Direct tools exposed to the agent:');
 for (const tool of tools) {
   console.log(`- ${tool.name}`);
@@ -136,8 +144,7 @@ for (const tool of tools) {
 
 const agent = new Agent({
   name: 'Preload Demo Agent',
-  instructions:
-    'Use the provided direct tools. Do not search for tools first; the needed tools are already loaded.',
+  instructions: 'Use the provided tools to perform the task.',
   model: process.env.OPENAI_MODEL ?? 'gpt-5.5',
   tools,
 });

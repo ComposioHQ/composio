@@ -5,11 +5,13 @@ This example demonstrates how to use Composio SDK for tool-router.
 ## Setup
 
 1. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 2. **Configure environment:**
+
    ```bash
    cp .env.example .env
    ```
@@ -41,11 +43,12 @@ pnpm direct-tools
 - Fetches available tools
 - Demonstrates basic usage patterns
 - Shows how to preload selected app tools and SDK-local custom tools into `session.tools()`
-- Shows `sessionPreset: "direct_tools"` for loading all tools allowed by session filters without meta/helper tools
+- Shows `SessionPreset.DIRECT_TOOLS` for loading all tools allowed by session filters without meta/helper tools
 
 ## Customization
 
 Edit `src/index.ts` to:
+
 - Add specific apps you want to integrate with
 - Implement your business logic
 - Add error handling and logging

@@ -1,10 +1,15 @@
 import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { Composio, type Tool } from '@composio/core';
 import app from '../src/index';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
 describe('@composio/core Files - Cloudflare Workers compatibility', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should list the available endpoints', async () => {
     const request = new IncomingRequest('http://localhost/');
     const ctx = createExecutionContext();
@@ -23,7 +28,6 @@ describe('@composio/core Files - Cloudflare Workers compatibility', () => {
       [
         "/test/files/upload",
         "/test/files/download",
-        "/test/file-modifier/error-message",
         "/test/auto-upload-disabled",
         "/test/default-config",
       ]
@@ -60,19 +64,43 @@ describe('@composio/core Files - Cloudflare Workers compatibility', () => {
     expect(body.error).toContain('not supported in Cloudflare Workers');
   });
 
-  it('should throw FileToolModifier error when executing a tool in Cloudflare Workers', async () => {
-    const request = new IncomingRequest('http://localhost/test/file-modifier/error-message');
-    const ctx = createExecutionContext();
-    const response = await app.fetch(request, env, ctx);
-    await waitOnExecutionContext(ctx);
+  it('should surface the edge-runtime FileToolModifier error from execute() when auto-upload is enabled', async () => {
+    // Runs inside workerd (vitest-pool-workers), so `#file_tool_modifier` resolves to the
+    // .workerd variant — the exact module under test. We drive the real public execute()
+    // pipeline and stub only the network tool lookup, so the before-execute file modifier
+    // is reached without depending on a remote tool registry or network access.
+    const composio = new Composio({
+      apiKey: env.COMPOSIO_API_KEY,
+      dangerouslyAllowAutoUploadDownloadFiles: true,
+    });
 
-    expect(response.status).toBe(200);
-
-    const body = (await response.json()) as {
-      error?: string;
+    const fileTool: Tool = {
+      slug: 'CUSTOM_FILE_TOOL',
+      name: 'Custom File Tool',
+      description: 'Fixture tool with a file-uploadable input',
+      inputParameters: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            file_uploadable: true,
+          },
+        },
+        required: ['file'],
+      },
+      toolkit: { slug: 'custom', name: 'custom' },
     };
 
-    expect(body.error).toContain('not available on edge runtimes');
+    vi.spyOn(composio.tools, 'getRawComposioToolBySlug').mockResolvedValue(fileTool);
+
+    await expect(
+      composio.tools.execute('CUSTOM_FILE_TOOL', {
+        arguments: {
+          file: 'https://example.com/test.pdf',
+        },
+        dangerouslySkipVersionCheck: true,
+      })
+    ).rejects.toThrow('not available on edge runtimes');
   });
 
   it('should successfully initialize Composio with automatic file handling disabled', async () => {

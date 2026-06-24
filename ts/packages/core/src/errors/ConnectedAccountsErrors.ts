@@ -5,6 +5,9 @@ export const ConnectedAccountErrorCodes = {
   MULTIPLE_CONNECTED_ACCOUNTS: 'MULTIPLE_CONNECTED_ACCOUNTS',
   FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK: 'FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK',
   LEGACY_CONNECTED_ACCOUNTS_ENDPOINT_RETIRED: 'LEGACY_CONNECTED_ACCOUNTS_ENDPOINT_RETIRED',
+  SHARED_ACCESS_DENIED: 'SHARED_ACCESS_DENIED',
+  ACL_ONLY_FOR_SHARED: 'ACL_ONLY_FOR_SHARED',
+  SHARED_CONNECTION_NOT_ACCESSIBLE: 'SHARED_CONNECTION_NOT_ACCESSIBLE',
 } as const;
 
 export class ComposioConnectedAccountNotFoundError extends ComposioError {
@@ -50,6 +53,76 @@ export class ComposioFailedToCreateConnectedAccountLink extends ComposioError {
       code: ConnectedAccountErrorCodes.FAILED_TO_CREATE_CONNECTED_ACCOUNT_LINK,
     });
     this.name = 'ComposioFailedToCreateConnectedAccountLink';
+  }
+}
+
+/**
+ * Thrown when a tool execution attempts to use a SHARED connected account
+ * but the requesting `userId` is not allowed by the connection's ACL.
+ *
+ * Surfaces when a SHARED connection is reached directly (e.g. via
+ * `composio.tools.execute(slug, { connectedAccountId })`) without going
+ * through a tool-router session.
+ */
+export class ComposioSharedAccessDeniedError extends ComposioError {
+  constructor(
+    message: string = 'Access denied: this SHARED connected account is not available to the requesting user',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.SHARED_ACCESS_DENIED,
+      statusCode: 403,
+      possibleFixes: options.possibleFixes || [
+        "Ask the connection's creator to grant access via composio.experimental.updateAcl() — set allowAllUsers, add the userId to allowedUserIds, or remove it from notAllowedUserIds.",
+      ],
+    });
+    this.name = 'ComposioSharedAccessDeniedError';
+  }
+}
+
+/**
+ * Thrown when ACL fields (`allowAllUsers`, `allowedUserIds`,
+ * `notAllowedUserIds`) are sent on a `PRIVATE` connection — at create
+ * time or via PATCH. ACL is only meaningful for `SHARED` connections.
+ */
+export class ComposioAclOnlyForSharedError extends ComposioError {
+  constructor(
+    message: string = 'ACL fields are only valid on SHARED connected accounts',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.ACL_ONLY_FOR_SHARED,
+      statusCode: 400,
+      possibleFixes: options.possibleFixes || [
+        'Use accountType: "SHARED", or omit ACL fields when creating/updating a PRIVATE connection.',
+      ],
+    });
+    this.name = 'ComposioAclOnlyForSharedError';
+  }
+}
+
+/**
+ * Thrown by `toolRouter.session.create()` / `session.patch()` when the
+ * session's `userId` cannot use a pinned SHARED connection. Raised at
+ * session-create time so the session never enters a state that fails
+ * mid-execution.
+ */
+export class ComposioSharedConnectionNotAccessibleError extends ComposioError {
+  constructor(
+    message: string = 'A SHARED connected account pinned in the session config is not accessible to the session user',
+    options: Omit<ComposioErrorOptions, 'code' | 'statusCode'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: ConnectedAccountErrorCodes.SHARED_CONNECTION_NOT_ACCESSIBLE,
+      statusCode: 400,
+      possibleFixes: options.possibleFixes || [
+        'Grant the session user access via composio.experimental.updateAcl() on the pinned connection, or pin a different connection the user can use.',
+      ],
+    });
+    this.name = 'ComposioSharedConnectionNotAccessibleError';
   }
 }
 

@@ -1,7 +1,10 @@
 import { telemetry } from '../telemetry/Telemetry';
-import { Composio as ComposioClient } from '@composio/client';
+import { Composio as ComposioClient, BadRequestError } from '@composio/client';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ComposioConfig } from '../composio';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -16,6 +19,8 @@ import {
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
   ToolRouterSessionWarning,
+  ToolRouterUpdateSessionConfig,
+  ToolRouterUpdateSessionConfigSchema,
 } from '../types/toolRouter.types';
 import {
   transformSearchResponse,
@@ -24,10 +29,17 @@ import {
 import { SessionMetaToolOptions } from '../types/modifiers.types';
 import { ConnectionRequest } from '../types/connectionRequest.types';
 import { createConnectionRequest } from './ConnectionRequest';
-import { ConnectedAccountStatuses } from '../types/connectedAccounts.types';
+import {
+  ConnectedAccountExperimentalSchema,
+  ConnectedAccountStatuses,
+  ConnectedAccountType,
+  ConnectedAccountAclConfig,
+} from '../types/connectedAccounts.types';
+import { ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT, serializeExperimentalForWire } from './Experimental';
+import { z } from 'zod/v3';
 import { transform } from '../utils/transform';
 import { ToolkitConnectionStateSchema } from '../types/toolRouter.types';
-import { ValidationError } from '../errors';
+import { ComposioAclOnlyForSharedError, ValidationError } from '../errors';
 import { Tools } from './Tools';
 import { ToolRouterSessionFilesMount } from './ToolRouterSessionFileMount';
 import type {
@@ -41,18 +53,41 @@ import type { Tool, ToolExecuteResponse } from '../types/tool.types';
 import type { SessionProxyExecuteParams } from '../types/toolRouter.types';
 import type {
   SessionExecuteParams,
+  SessionLinkParams,
   SessionSearchParams,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 import { SessionProxyExecuteParamsSchema } from '../types/toolRouter.types';
 import { SessionContextImpl } from './SessionContext';
-import { findCustomTool, executeCustomTool } from './customToolExecution';
-import { findCustomToolMapEntryByFinalSlug } from './CustomTool';
+import {
+  assertUnambiguousCustomToolSlug,
+  findCustomTool,
+  executeCustomTool,
+} from './customToolExecution';
+import {
+  findCustomToolMapEntryByFinalSlug,
+  findCustomToolMapEntryByToolkitAndOriginalSlug,
+} from './CustomTool';
 import { transformProxyParams } from './proxyParamsTransform';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
+import { transformToolRouterUpdateParams } from '../lib/toolRouterParams';
 
 const COMPOSIO_MULTI_EXECUTE_TOOL = 'COMPOSIO_MULTI_EXECUTE_TOOL';
 export const DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX =
-  '[Direct tool - call directly, no search or connection check needed beforehand.]';
+  '[Direct tool - call directly, no search needed beforehand.]';
+
+/**
+ * Options accepted by {@link ToolRouterSession.authorize}.
+ *
+ * Validated at the SDK boundary so callers get clear `ValidationError`s for
+ * oversized ACL lists or invalid `userId`s — same caps as the equivalent
+ * `composio.connectedAccounts.link()` path (≤1000 entries per list, each
+ * `userId` 1..256 characters).
+ */
+const AuthorizeOptionsSchema = z.object({
+  callbackUrl: z.string().optional(),
+  alias: z.string().optional(),
+  experimental: ConnectedAccountExperimentalSchema.optional(),
+});
 
 export class ToolRouterSession<
   TToolCollection,
@@ -62,9 +97,9 @@ export class ToolRouterSession<
   public readonly sessionId: string;
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
-  public readonly preload: ToolRouterSessionPreloadConfig;
-  public readonly configVersion?: number;
-  public readonly warnings: ToolRouterSessionWarning[];
+  public preload: ToolRouterSessionPreloadConfig;
+  public configVersion?: number;
+  public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];
   private readonly inlineCustomToolsPayload: ToolRouterSessionMetadata['inlineCustomToolsPayload'];
 
@@ -117,11 +152,15 @@ export class ToolRouterSession<
    * When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL
    * is intercepted: local tools are executed in-process, remote tools are sent to the backend.
    */
-  async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType<TProvider['wrapTools']>> {
+  async tools(
+    modifiers?: SessionMetaToolOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
     const tools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined
+      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      requestOptions
     );
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
     const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
@@ -139,12 +178,13 @@ export class ToolRouterSession<
         if (customTool) {
           return executeCustomTool(customTool, input, this.sessionContext!);
         }
+        assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
         return this.executeBackendSessionTool(
           ToolsModel,
           toolSlug,
           input,
           modifiers,
-          toolBySlug.get(toolSlug.toUpperCase()),
+          toolBySlug.get(toolSlug.toUpperCase())
         );
       };
 
@@ -272,8 +312,11 @@ export class ToolRouterSession<
       name: tk.name,
       description: tk.description,
       tools: tk.tools.map(tool => {
-        // Look up the entry to get the final slug
-        const entry = this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
+        // Look up by toolkit + original slug so toolkits can safely reuse common names
+        // like VERSION, CLICK, or SEARCH without losing the backend-assigned final slug.
+        const entry =
+          findCustomToolMapEntryByToolkitAndOriginalSlug(this.customToolsMap, tk.slug, tool.slug) ??
+          this.customToolsMap!.byOriginalSlug.get(tool.slug.toUpperCase());
         return {
           slug: entry?.finalSlug ?? tool.slug,
           name: tool.name,
@@ -289,16 +332,70 @@ export class ToolRouterSession<
   /**
    * Initiate an authorization flow for a toolkit.
    * Returns a ConnectionRequest with a redirect URL for the user.
+   *
+   * Pass `experimental: { accountType: 'SHARED', aclConfigForShared }` to
+   * create a SHARED connection with a per-user ACL in one flow. Default
+   * behaviour (omit the block) creates a PRIVATE connection.
+   *
+   * Experimental — shape may change in future releases.
+   *
+   * `aclConfigForShared` is validated against the same caps as
+   * `composio.connectedAccounts.link()` (≤1000 entries per list, each
+   * `userId` 1..256 characters). Invalid input throws `ValidationError`
+   * at the SDK boundary.
    */
   async authorize(
     toolkit: string,
-    options?: { callbackUrl?: string; alias?: string }
+    options?: {
+      callbackUrl?: string;
+      alias?: string;
+      experimental?: {
+        accountType?: ConnectedAccountType;
+        aclConfigForShared?: ConnectedAccountAclConfig;
+      };
+    },
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const response = await this.client.toolRouter.session.link(this.sessionId, {
+    const parsedAuthorizeOptions = AuthorizeOptionsSchema.safeParse(options ?? {});
+    if (!parsedAuthorizeOptions.success) {
+      throw new ValidationError('Failed to parse tool router authorize options', {
+        cause: parsedAuthorizeOptions.error,
+      });
+    }
+    const opts = parsedAuthorizeOptions.data;
+    const experimentalWire = serializeExperimentalForWire(opts.experimental);
+    const body: SessionLinkParams = {
       toolkit,
-      ...(options?.callbackUrl && { callback_url: options.callbackUrl }),
-      ...(options?.alias != null && { alias: options.alias }),
-    });
+      ...(opts.callbackUrl !== undefined && { callback_url: opts.callbackUrl }),
+      ...(opts.alias !== undefined && { alias: opts.alias }),
+      ...(experimentalWire !== undefined && {
+        experimental: experimentalWire as SessionLinkParams.Experimental,
+      }),
+    };
+
+    let response;
+    try {
+      response = await withCancellation(
+        () => this.client.toolRouter.session.link(this.sessionId, body, requestOptions),
+        requestOptions?.signal
+      );
+    } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to a domain error below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
+      // The server rejects ACL on PRIVATE connections — surface that as a
+      // typed error mirroring `composio.connectedAccounts.link()`.
+      if (
+        error instanceof BadRequestError &&
+        typeof error.message === 'string' &&
+        error.message.includes(ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT)
+      ) {
+        throw new ComposioAclOnlyForSharedError(error.message, { cause: error });
+      }
+      throw error;
+    }
 
     return createConnectionRequest(
       this.client,
@@ -312,7 +409,7 @@ export class ToolRouterSession<
    * Query the connection state of toolkits in the session.
    * Supports pagination and filtering by toolkit slugs.
    */
-  async toolkits(options?: ToolRouterToolkitsOptions) {
+  async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions) {
     const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
     if (!toolkitOptions.success) {
       throw new ValidationError('Failed to parse toolkits options', {
@@ -320,13 +417,17 @@ export class ToolRouterSession<
       });
     }
 
-    const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
+    const toolkitsParams = {
       cursor: toolkitOptions.data.cursor,
       limit: toolkitOptions.data.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,
       search: toolkitOptions.data.search,
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.toolRouter.session.toolkits(this.sessionId, toolkitsParams, requestOptions),
+      requestOptions?.signal
+    );
 
     const toolkitConnectedStates = result.items.map(item => {
       const connectedState = transform(item)
@@ -367,10 +468,13 @@ export class ToolRouterSession<
    * Search for tools by semantic use case.
    * Returns relevant tools for the given query with schemas and guidance.
    */
-  async search(params: {
-    query: string;
-    toolkits?: string[];
-  }): Promise<ToolRouterSessionSearchResponse> {
+  async search(
+    params: {
+      query: string;
+      toolkits?: string[];
+    },
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionSearchResponse> {
     const experimental = inlineCustomToolsExperimental<SessionSearchParams.Experimental>(
       this.inlineCustomToolsPayload
     );
@@ -379,7 +483,10 @@ export class ToolRouterSession<
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
       ...(experimental ? { experimental } : {}),
     };
-    const response = await this.client.toolRouter.session.search(this.sessionId, searchParams);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions),
+      requestOptions?.signal
+    );
     const transformed = transformSearchResponse(response);
     return ToolRouterSessionSearchResponseSchema.parse(transformed);
   }
@@ -400,18 +507,30 @@ export class ToolRouterSession<
   async execute(
     toolSlug: string,
     arguments_?: Record<string, unknown>,
-    options?: ToolRouterSessionExecuteOptions
+    options?: ToolRouterSessionExecuteOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionExecuteResponse> {
     // Check if this is a local tool (by original or final slug)
     const entry = findCustomTool(this.customToolsMap, toolSlug);
     if (entry) {
-      const result = await executeCustomTool(entry, arguments_ ?? {}, this.sessionContext!);
+      // Bail before invoking user code if the caller has already aborted.
+      // Custom-tool execution is *cooperative*: long-running user code
+      // won't observe later aborts unless the user wires the signal into
+      // their own fetch/work — we pass it through via the executeCustomTool
+      // session context so they can.
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
+      const result = await executeCustomTool(entry, arguments_ ?? {}, this.sessionContext!, {
+        signal: requestOptions?.signal,
+      });
       return {
         data: result.data,
         error: result.error,
         logId: '',
       };
     }
+    assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
 
     // Remote execution
     const executeParams: SessionExecuteParams = {
@@ -428,7 +547,10 @@ export class ToolRouterSession<
       executeParams.experimental = experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(this.sessionId, executeParams);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      requestOptions?.signal
+    );
     const transformed = transformExecuteResponse(response);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
@@ -441,7 +563,8 @@ export class ToolRouterSession<
    * @returns The proxied API response with status, data, headers
    */
   async proxyExecute(
-    params: SessionProxyExecuteParams
+    params: SessionProxyExecuteParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionProxyExecuteResponse> {
     const validated = SessionProxyExecuteParamsSchema.safeParse(params);
     if (!validated.success) {
@@ -449,9 +572,10 @@ export class ToolRouterSession<
     }
 
     const clientParams = transformProxyParams(validated.data);
-    const response = await this.client.toolRouter.session.proxyExecute(
-      this.sessionId,
-      clientParams
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+      requestOptions?.signal
     );
 
     return {
@@ -469,6 +593,26 @@ export class ToolRouterSession<
           }
         : {}),
     };
+  }
+
+  /**
+   * Partially update the session configuration.
+   * Only the fields provided will be changed; omitted fields are preserved.
+   * Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
+   */
+  async update(
+    config: ToolRouterUpdateSessionConfig,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<void> {
+    const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
+    const params = transformToolRouterUpdateParams(parsed);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
+      requestOptions?.signal
+    );
+    this.configVersion = response.config_version;
+    this.preload = response.config.preload;
+    this.warnings = response.warnings ?? [];
   }
 
   // ── Private helpers ──────────────────────────────────────────
@@ -541,6 +685,7 @@ export class ToolRouterSession<
       if (entry) {
         localItems.push({ index: i, entry });
       } else {
+        assertUnambiguousCustomToolSlug(this.customToolsMap, parsed[i].tool_slug);
         remoteIndices.push(i);
       }
     }

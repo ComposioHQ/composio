@@ -11,10 +11,18 @@ import {
 
 const composio = new Composio({ provider: new VercelProvider() });
 
+// In production, store session IDs per user in your database
+let sessionId: string | null = null;
+
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const session = await composio.create("user_123");
+  // Reuse existing session or create a new one
+  const session = sessionId
+    ? await composio.use(sessionId)
+    : await composio.create("user_123");
+  sessionId = session.sessionId;
+
   const tools = await session.tools();
 
   const result = streamText({

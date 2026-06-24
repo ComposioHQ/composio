@@ -6,7 +6,11 @@ import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
-import { ToolRouterCreateSessionConfig, Session } from '../../src/types/toolRouter.types';
+import {
+  ToolRouterCreateSessionConfig,
+  Session,
+  SessionPreset,
+} from '../../src/types/toolRouter.types';
 import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
 
@@ -19,11 +23,15 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 vi.mock('../../src/models/Tools', () => {
   return {
-    Tools: vi.fn().mockImplementation(() => ({
-      getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-      wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-    })),
+    Tools: vi.fn().mockImplementation(function () {
+      return {
+        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        getRawToolRouterSessionTools: vi
+          .fn()
+          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+      };
+    }),
   };
 });
 
@@ -31,10 +39,12 @@ vi.mock('../../src/models/Tools', () => {
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
+  post: vi.fn(),
   toolRouter: {
     session: {
       create: vi.fn(),
       retrieve: vi.fn(),
+      attach: vi.fn(),
       link: vi.fn(),
       toolkits: vi.fn(),
       search: vi.fn(),
@@ -161,6 +171,8 @@ describe('ToolRouter', () => {
       provider: mockProvider,
       apiKey: 'test-api-key',
     });
+    mockClient.toolRouter.session.retrieve.mockResolvedValue(mockSessionRetrieveResponse);
+    mockClient.toolRouter.session.attach.mockResolvedValue(mockSessionRetrieveResponse);
   });
 
   describe('constructor', () => {
@@ -187,16 +199,19 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+          },
+          undefined
+        );
 
         expect(session).toHaveProperty('sessionId', 'session_123');
         expect(session).toHaveProperty('mcp');
@@ -217,16 +232,19 @@ describe('ToolRouter', () => {
 
         const session = await toolRouter.create(userId, {});
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+          },
+          undefined
+        );
 
         expect(session.sessionId).toBe('session_123');
         expect(session.preload.tools).toEqual([]);
@@ -247,19 +265,22 @@ describe('ToolRouter', () => {
           preload: { tools: ['GMAIL_FETCH_EMAILS'] },
         });
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['gmail'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['gmail'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            preload: { tools: ['GMAIL_FETCH_EMAILS'] },
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          preload: { tools: ['GMAIL_FETCH_EMAILS'] },
-        });
+          undefined
+        );
 
         expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
         expect(session.configVersion).toBe(2);
@@ -279,19 +300,22 @@ describe('ToolRouter', () => {
           preload: { tools: 'all' },
         });
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['github'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['github'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            preload: { tools: 'all' },
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          preload: { tools: 'all' },
-        });
+          undefined
+        );
 
         expect(session.preload.tools).toBe('all');
       });
@@ -322,27 +346,30 @@ describe('ToolRouter', () => {
         });
 
         const session = await toolRouter.create(userId, {
-          sessionPreset: 'direct_tools',
+          sessionPreset: SessionPreset.DIRECT_TOOLS,
           toolkits: ['github'],
         });
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['github'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['github'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: { enable: false },
+            workbench: { enable: false },
+            multi_account: undefined,
+            preload: { tools: 'all' },
+            search: { enable: false },
+            execute: { enable_multi_execute: false },
+            experimental: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: { enable: false },
-          workbench: { enable: false },
-          multi_account: undefined,
-          preload: { tools: 'all' },
-          search: { enable: false },
-          execute: { enable_multi_execute: false },
-          experimental: undefined,
-        });
+          undefined
+        );
         expect(session.preload.tools).toBe('all');
       });
 
@@ -355,30 +382,33 @@ describe('ToolRouter', () => {
         });
 
         const session = await toolRouter.create(userId, {
-          sessionPreset: 'direct_tools',
+          sessionPreset: SessionPreset.DIRECT_TOOLS,
           toolkits: ['github'],
           manageConnections: true,
           workbench: { enable: true },
           preload: { tools: ['GITHUB_CREATE_ISSUE'] },
         });
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['github'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['github'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: { enable: true },
+            workbench: { enable: true },
+            multi_account: undefined,
+            preload: { tools: ['GITHUB_CREATE_ISSUE'] },
+            search: { enable: false },
+            execute: { enable_multi_execute: false },
+            experimental: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: { enable: true },
-          workbench: { enable: true },
-          multi_account: undefined,
-          preload: { tools: ['GITHUB_CREATE_ISSUE'] },
-          search: { enable: false },
-          execute: { enable_multi_execute: false },
-          experimental: undefined,
-        });
+          undefined
+        );
         expect(session.preload.tools).toEqual(['GITHUB_CREATE_ISSUE']);
       });
 
@@ -407,7 +437,7 @@ describe('ToolRouter', () => {
         });
 
         await toolRouter.create(userId, {
-          sessionPreset: 'direct_tools',
+          sessionPreset: SessionPreset.DIRECT_TOOLS,
           toolkits: ['github'],
           preload: { tools: ['GITHUB_CREATE_ISSUE'] },
           experimental: { customTools: [grepTool] },
@@ -438,18 +468,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['gmail', 'slack', 'github'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['gmail', 'slack', 'github'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with enable toolkits configuration', async () => {
@@ -463,18 +496,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['gmail', 'slack'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['gmail', 'slack'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with disable toolkits configuration', async () => {
@@ -488,18 +524,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            disable: ['notion', 'trello'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              disable: ['notion', 'trello'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
     });
 
@@ -513,18 +552,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint', 'idempotentHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint', 'idempotentHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with tags object with enable property', async () => {
@@ -538,18 +580,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint', 'idempotentHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint', 'idempotentHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with tags object with disable property', async () => {
@@ -563,19 +608,22 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: undefined,
-            disable: ['destructiveHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: undefined,
+              disable: ['destructiveHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with tags object with both enable and disable properties', async () => {
@@ -590,19 +638,22 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint', 'idempotentHint'],
-            disable: ['destructiveHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint', 'idempotentHint'],
+              disable: ['destructiveHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with single tag in array', async () => {
@@ -614,18 +665,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with all tag types', async () => {
@@ -637,18 +691,21 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with tags combined with toolkits', async () => {
@@ -661,20 +718,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['gmail', 'slack'],
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['gmail', 'slack'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: {
+              enable: ['readOnlyHint'],
+            },
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: {
-            enable: ['readOnlyHint'],
-          },
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
     });
 
@@ -892,16 +952,19 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections({ enable: true }),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections({ enable: true }),
+            workbench: undefined,
+          },
+          undefined
+        );
       });
 
       it('should create a session with manageConnections as boolean (false)', async () => {
@@ -913,16 +976,19 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections({ enable: false }),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections({ enable: false }),
+            workbench: undefined,
+          },
+          undefined
+        );
       });
 
       it('should create a session with manageConnections as object with enable', async () => {
@@ -936,16 +1002,19 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections({ enable: true }),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections({ enable: true }),
+            workbench: undefined,
+          },
+          undefined
+        );
       });
 
       it('should create a session with manageConnections object with callbackUrl', async () => {
@@ -960,19 +1029,22 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections({
-            enable: true,
-            callbackUrl: 'https://myapp.com/callback',
-          }),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections({
+              enable: true,
+              callbackUrl: 'https://myapp.com/callback',
+            }),
+            workbench: undefined,
+          },
+          undefined
+        );
       });
 
       it('should create a session with full manageConnections configuration', async () => {
@@ -987,19 +1059,22 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections({
-            enable: true,
-            callbackUrl: 'https://myapp.com/callback',
-          }),
-          workbench: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections({
+              enable: true,
+              callbackUrl: 'https://myapp.com/callback',
+            }),
+            workbench: undefined,
+          },
+          undefined
+        );
       });
     });
 
@@ -1016,46 +1091,52 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: {
-            gmail: 'auth_config_123',
-            slack: 'auth_config_456',
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: {
+              gmail: 'auth_config_123',
+              slack: 'auth_config_456',
+            },
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
-      it('should create a session with connectedAccounts', async () => {
+      it('should create a session with connectedAccounts (string coerced to array)', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
         const config: ToolRouterCreateSessionConfig = {
           connectedAccounts: {
             gmail: 'conn_123',
-            slack: 'conn_456',
+            slack: ['conn_456'],
           },
         };
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: {
-            gmail: 'conn_123',
-            slack: 'conn_456',
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: {
+              gmail: ['conn_123'],
+              slack: ['conn_456'],
+            },
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
 
       it('should create a session with both authConfigs and connectedAccounts', async () => {
@@ -1072,20 +1153,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: {
-            gmail: 'auth_config_123',
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: {
+              gmail: 'auth_config_123',
+            },
+            connected_accounts: {
+              slack: ['conn_456'],
+            },
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
           },
-          connected_accounts: {
-            slack: 'conn_456',
-          },
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-        });
+          undefined
+        );
       });
     });
 
@@ -1101,20 +1185,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: true,
-            enable_proxy_execution: true,
-            auto_offload_threshold: undefined,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: true,
+              enable_proxy_execution: true,
+              auto_offload_threshold: undefined,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should create a session with autoOffloadThreshold only', async () => {
@@ -1128,20 +1215,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: true,
-            enable_proxy_execution: undefined,
-            auto_offload_threshold: 1000,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: true,
+              enable_proxy_execution: undefined,
+              auto_offload_threshold: 1000,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should create a session with full workbench configuration', async () => {
@@ -1156,20 +1246,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: true,
-            enable_proxy_execution: true,
-            auto_offload_threshold: 500,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: true,
+              enable_proxy_execution: true,
+              auto_offload_threshold: 500,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should create a session with workbench proxy and offload disabled', async () => {
@@ -1184,20 +1277,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: true,
-            enable_proxy_execution: false,
-            auto_offload_threshold: 0,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: true,
+              enable_proxy_execution: false,
+              auto_offload_threshold: 0,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should create a session with workbench entirely disabled', async () => {
@@ -1211,20 +1307,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: false,
-            enable_proxy_execution: undefined,
-            auto_offload_threshold: undefined,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: false,
+              enable_proxy_execution: undefined,
+              auto_offload_threshold: undefined,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('should create a session with workbench explicitly enabled', async () => {
@@ -1240,20 +1339,23 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: {
-            enable: true,
-            enable_proxy_execution: true,
-            auto_offload_threshold: 20000,
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: {
+              enable: true,
+              enable_proxy_execution: true,
+              auto_offload_threshold: 20000,
+            },
           },
-        });
+          undefined
+        );
       });
 
       it('forwards sandboxSize as snake_case sandbox_size on the wire', async () => {
@@ -1443,9 +1545,10 @@ describe('ToolRouter', () => {
             multi_account: {
               enable: true,
               max_accounts_per_toolkit: undefined,
-              require_explicit_selection: undefined,
+              require_explicit_selection: true,
             },
-          })
+          }),
+          undefined
         );
       });
 
@@ -1470,7 +1573,8 @@ describe('ToolRouter', () => {
               max_accounts_per_toolkit: 3,
               require_explicit_selection: true,
             },
-          })
+          }),
+          undefined
         );
       });
 
@@ -1503,9 +1607,10 @@ describe('ToolRouter', () => {
             multi_account: {
               enable: true,
               max_accounts_per_toolkit: 5,
-              require_explicit_selection: undefined,
+              require_explicit_selection: true,
             },
-          })
+          }),
+          undefined
         );
       });
     });
@@ -1524,21 +1629,24 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          experimental: {
-            assistive_prompt_config: {
-              user_timezone: 'America/New_York',
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            experimental: {
+              assistive_prompt_config: {
+                user_timezone: 'America/New_York',
+              },
             },
           },
-        });
+          undefined
+        );
       });
 
       it('should not include experimental in payload when assistivePrompt is not provided', async () => {
@@ -1550,17 +1658,20 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          experimental: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            experimental: undefined,
+          },
+          undefined
+        );
       });
 
       it('should not include experimental in payload when userTimezone is not provided', async () => {
@@ -1574,17 +1685,20 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: undefined,
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          experimental: undefined,
-        });
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: undefined,
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            experimental: undefined,
+          },
+          undefined
+        );
       });
 
       it('should create a session with experimental config combined with other options', async () => {
@@ -1601,23 +1715,26 @@ describe('ToolRouter', () => {
 
         await toolRouter.create(userId, config);
 
-        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith({
-          user_id: userId,
-          toolkits: {
-            enable: ['gmail', 'slack'],
-          },
-          auth_configs: undefined,
-          connected_accounts: undefined,
-          tools: undefined,
-          tags: undefined,
-          manage_connections: createExpectedManageConnections(),
-          workbench: undefined,
-          experimental: {
-            assistive_prompt_config: {
-              user_timezone: 'Europe/London',
+        expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
+          {
+            user_id: userId,
+            toolkits: {
+              enable: ['gmail', 'slack'],
+            },
+            auth_configs: undefined,
+            connected_accounts: undefined,
+            tools: undefined,
+            tags: undefined,
+            manage_connections: createExpectedManageConnections(),
+            workbench: undefined,
+            experimental: {
+              assistive_prompt_config: {
+                user_timezone: 'Europe/London',
+              },
             },
           },
-        });
+          undefined
+        );
       });
 
       it('should transform experimental assistive_prompt from API response to SDK format', async () => {
@@ -1686,7 +1803,8 @@ describe('ToolRouter', () => {
         expect(mockClient.toolRouter.session.create).toHaveBeenCalledWith(
           expect.objectContaining({
             user_id: '',
-          })
+          }),
+          undefined
         );
       });
     });
@@ -1758,9 +1876,13 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const connectionRequest = await session.authorize(toolkit);
 
-      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
-        toolkit,
-      });
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(
+        sessionId,
+        {
+          toolkit,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1775,10 +1897,14 @@ describe('ToolRouter', () => {
         callbackUrl: 'https://myapp.com/callback',
       });
 
-      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
-        toolkit,
-        callback_url: 'https://myapp.com/callback',
-      });
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(
+        sessionId,
+        {
+          toolkit,
+          callback_url: 'https://myapp.com/callback',
+        },
+        undefined
+      );
 
       expect(connectionRequest.id).toBe('conn_456');
       expect(connectionRequest.redirectUrl).toBe('https://composio.dev/auth/redirect');
@@ -1814,9 +1940,13 @@ describe('ToolRouter', () => {
         'Authorization failed: Invalid toolkit'
       );
 
-      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
-        toolkit,
-      });
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(
+        sessionId,
+        {
+          toolkit,
+        },
+        undefined
+      );
     });
 
     it('should handle network errors during authorization', async () => {
@@ -1840,6 +1970,95 @@ describe('ToolRouter', () => {
       expect(connectionRequest).toHaveProperty('toString');
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
+
+    // authorize() validates experimental.aclConfigForShared at the SDK
+    // boundary — same caps as link() (1000-entry list, 256-char user_id).
+    it('forwards the experimental block to the wire', async () => {
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.authorize(toolkit, {
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: {
+            allowAllUsers: true,
+            notAllowedUserIds: ['user_bob'],
+          },
+        },
+      });
+
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(
+        sessionId,
+        {
+          toolkit,
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: {
+              allow_all_users: true,
+              not_allowed_user_ids: ['user_bob'],
+            },
+          },
+        },
+        undefined
+      );
+    });
+
+    it('omits the experimental block entirely when not provided', async () => {
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.authorize(toolkit);
+
+      const body = mockClient.toolRouter.session.link.mock.calls[0][1];
+      expect('experimental' in body).toBe(false);
+    });
+
+    it('throws ValidationError when allowedUserIds exceeds the 1000-entry cap', async () => {
+      const session = await toolRouter.create(userId);
+      const oversizedList = Array.from({ length: 1001 }, (_, i) => `user_${i}`);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: oversizedList },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when a user_id exceeds the 256-char length cap', async () => {
+      const session = await toolRouter.create(userId);
+      const tooLongUserId = 'u'.repeat(257);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: [tooLongUserId] },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when a user_id is empty', async () => {
+      const session = await toolRouter.create(userId);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { notAllowedUserIds: [''] },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
   });
 
   describe('toolkits function', () => {
@@ -1856,12 +2075,16 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.toolkits();
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: undefined,
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: undefined,
+          is_connected: undefined,
+        },
+        undefined
+      );
 
       expect(result).toHaveProperty('items');
       expect(result).toHaveProperty('cursor', 'cursor_789');
@@ -1878,12 +2101,16 @@ describe('ToolRouter', () => {
         cursor: 'cursor_abc',
       });
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: 'cursor_abc',
-        limit: 10,
-        toolkits: undefined,
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: 'cursor_abc',
+          limit: 10,
+          toolkits: undefined,
+          is_connected: undefined,
+        },
+        undefined
+      );
 
       expect(result.items).toHaveLength(3);
     });
@@ -1896,12 +2123,16 @@ describe('ToolRouter', () => {
         toolkits: ['gmail', 'slack'],
       });
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: ['gmail', 'slack'],
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: ['gmail', 'slack'],
+          is_connected: undefined,
+        },
+        undefined
+      );
 
       expect(result.items).toHaveLength(3);
     });
@@ -1914,12 +2145,16 @@ describe('ToolRouter', () => {
         isConnected: true,
       });
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: undefined,
-        is_connected: true,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: undefined,
+          is_connected: true,
+        },
+        undefined
+      );
 
       expect(result.items).toHaveLength(3);
     });
@@ -1934,12 +2169,16 @@ describe('ToolRouter', () => {
         toolkits: ['github'],
       });
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: 'cursor_xyz',
-        limit: 5,
-        toolkits: ['github'],
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: 'cursor_xyz',
+          limit: 5,
+          toolkits: ['github'],
+          is_connected: undefined,
+        },
+        undefined
+      );
 
       expect(result.items).toHaveLength(3);
     });
@@ -1955,12 +2194,16 @@ describe('ToolRouter', () => {
         isConnected: false,
       });
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: 'cursor_xyz',
-        limit: 5,
-        toolkits: ['github', 'gmail'],
-        is_connected: false,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: 'cursor_xyz',
+          limit: 5,
+          toolkits: ['github', 'gmail'],
+          is_connected: false,
+        },
+        undefined
+      );
 
       expect(result.items).toHaveLength(3);
     });
@@ -2192,9 +2435,13 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const result = await session.search({ query: 'send emails' });
 
-      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
-        queries: [{ use_case: 'send emails' }],
-      });
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(
+        sessionId,
+        {
+          queries: [{ use_case: 'send emails' }],
+        },
+        undefined
+      );
       expect(result.success).toBe(true);
       expect(result.results[0].useCase).toBe('send emails');
       expect(result.results[0].primaryToolSlugs).toEqual(['GMAIL_SEND_EMAIL']);
@@ -2211,10 +2458,14 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       await session.search({ query: 'send emails', toolkits: ['gmail', 'slack'] });
 
-      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
-        queries: [{ use_case: 'send emails' }],
-        toolkits: ['gmail', 'slack'],
-      });
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(
+        sessionId,
+        {
+          queries: [{ use_case: 'send emails' }],
+          toolkits: ['gmail', 'slack'],
+        },
+        undefined
+      );
     });
 
     it('should pass inline custom tools to search', async () => {
@@ -2244,17 +2495,21 @@ describe('ToolRouter', () => {
       });
       await session.search({ query: 'search local text' });
 
-      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(sessionId, {
-        queries: [{ use_case: 'search local text' }],
-        experimental: {
-          custom_tools: [
-            expect.objectContaining({
-              slug: 'GREP',
-              preload: true,
-            }),
-          ],
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(
+        sessionId,
+        {
+          queries: [{ use_case: 'search local text' }],
+          experimental: {
+            custom_tools: [
+              expect.objectContaining({
+                slug: 'GREP',
+                preload: true,
+              }),
+            ],
+          },
         },
-      });
+        undefined
+      );
     });
 
     it('should propagate search API errors', async () => {
@@ -2288,10 +2543,14 @@ describe('ToolRouter', () => {
         body: 'Hello',
       });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-        tool_slug: 'GMAIL_SEND_EMAIL',
-        arguments: { to: 'user@example.com', subject: 'Hi', body: 'Hello' },
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        sessionId,
+        {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          arguments: { to: 'user@example.com', subject: 'Hi', body: 'Hello' },
+        },
+        undefined
+      );
       expect(result.data).toEqual({ tool_slug: 'GMAIL_SEND_EMAIL', id: 'msg_123' });
       expect(result.error).toBeNull();
       expect(result.logId).toBe('log_abc');
@@ -2313,10 +2572,14 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       await session.execute('HACKERNEWS_GET_USER');
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-        tool_slug: 'HACKERNEWS_GET_USER',
-        arguments: {},
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        sessionId,
+        {
+          tool_slug: 'HACKERNEWS_GET_USER',
+          arguments: {},
+        },
+        undefined
+      );
     });
 
     it('should pass account option to session execute', async () => {
@@ -2326,11 +2589,15 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       await session.execute('GMAIL_SEND_EMAIL', { to: 'user@example.com' }, { account: 'work' });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-        tool_slug: 'GMAIL_SEND_EMAIL',
-        arguments: { to: 'user@example.com' },
-        account: 'work',
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        sessionId,
+        {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          arguments: { to: 'user@example.com' },
+          account: 'work',
+        },
+        undefined
+      );
     });
 
     it('should pass inline custom tools to remote execute when custom tools are bound', async () => {
@@ -2359,13 +2626,17 @@ describe('ToolRouter', () => {
       });
       await session.execute('GMAIL_SEND_EMAIL', { to: 'user@example.com' });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(sessionId, {
-        tool_slug: 'GMAIL_SEND_EMAIL',
-        arguments: { to: 'user@example.com' },
-        experimental: {
-          custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        sessionId,
+        {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          arguments: { to: 'user@example.com' },
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+          },
         },
-      });
+        undefined
+      );
     });
   });
 
@@ -2376,13 +2647,15 @@ describe('ToolRouter', () => {
     beforeEach(() => {
       // Reset the Tools mock before each test
       vi.clearAllMocks();
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
     });
 
     it('should fetch and wrap tools without modifiers', async () => {
@@ -2397,7 +2670,11 @@ describe('ToolRouter', () => {
       });
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        undefined,
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2422,9 +2699,11 @@ describe('ToolRouter', () => {
       const tools = await session.tools(modifiers);
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifiers.modifySchema,
-      });
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifiers.modifySchema },
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2442,16 +2721,18 @@ describe('ToolRouter', () => {
         },
       });
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId, {
         toolkits: ['gmail'],
@@ -2542,15 +2823,17 @@ describe('ToolRouter', () => {
         error: null,
         successful: true,
       });
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2601,12 +2884,14 @@ describe('ToolRouter', () => {
         successful: true,
       });
       const multiExecuteTool = { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' };
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2717,11 +3002,15 @@ describe('ToolRouter', () => {
     it('should handle tools fetching errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        getRawToolRouterSessionTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockRejectedValue(new Error('Failed to fetch tools')),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId);
 
@@ -2744,9 +3033,11 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalledTimes(2);
 
       const firstToolsInstance = (Tools as any).mock.results[0].value;
-      expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifier1.modifySchema,
-      });
+      expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifier1.modifySchema },
+        undefined
+      );
       expect(firstToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2754,9 +3045,11 @@ describe('ToolRouter', () => {
       );
 
       const secondToolsInstance = (Tools as any).mock.results[1].value;
-      expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, {
-        modifySchema: modifier2.modifySchema,
-      });
+      expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        { modifySchema: modifier2.modifySchema },
+        undefined
+      );
       expect(secondToolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2783,6 +3076,7 @@ describe('ToolRouter', () => {
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'custom_session_123',
+        undefined,
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2811,6 +3105,7 @@ describe('ToolRouter', () => {
       const toolsInstance = (Tools as any).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'empty_session_123',
+        undefined,
         undefined
       );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
@@ -2882,18 +3177,26 @@ describe('ToolRouter', () => {
       await session1.toolkits();
       await session2.toolkits();
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith('session_1', {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: undefined,
-        is_connected: undefined,
-      });
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith('session_2', {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: undefined,
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        'session_1',
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: undefined,
+          is_connected: undefined,
+        },
+        undefined
+      );
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        'session_2',
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: undefined,
+          is_connected: undefined,
+        },
+        undefined
+      );
     });
 
     it('should handle rapid successive calls', async () => {
@@ -2924,7 +3227,9 @@ describe('ToolRouter', () => {
 
       const session = await toolRouter.use(sessionId);
 
-      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId);
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId, undefined);
+      expect(mockClient.toolRouter.session.attach).not.toHaveBeenCalled();
+      expect(mockClient.post).not.toHaveBeenCalled();
       expect(session).toHaveProperty('sessionId', 'session_123');
       expect(session).toHaveProperty('mcp');
       expect(session.mcp).toEqual({
@@ -2939,6 +3244,51 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('toolkits');
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
+    });
+
+    it('should attach custom tools when provided', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+
+      mockClient.toolRouter.session.attach.mockResolvedValueOnce({
+        ...mockSessionRetrieveResponse,
+        experimental: {
+          custom_tools: [
+            {
+              slug: 'SERVER_GREP',
+              original_slug: 'GREP',
+              extends_toolkit: null,
+            },
+          ],
+        },
+      });
+
+      const session = await toolRouter.use(sessionId, { customTools: [grepTool] });
+
+      expect(mockClient.toolRouter.session.attach).toHaveBeenCalledWith(
+        sessionId,
+        {
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+          },
+        },
+        undefined
+      );
+      expect(mockClient.toolRouter.session.attach.mock.calls[0][1].experimental).not.toHaveProperty(
+        'custom_toolkits'
+      );
+      expect(mockClient.post).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      expect(session.customTools()).toEqual([
+        expect.objectContaining({
+          slug: 'SERVER_GREP',
+          name: 'Grep',
+        }),
+      ]);
     });
 
     it('should return a session with correct session ID', async () => {
@@ -2970,7 +3320,11 @@ describe('ToolRouter', () => {
       expect(Tools).toHaveBeenCalled();
 
       const toolsInstance = (Tools as any).mock.results[0].value;
-      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(sessionId, undefined);
+      expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
+        sessionId,
+        undefined,
+        undefined
+      );
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [{ slug: 'COMPOSIO_SEARCH_TOOLS' }],
@@ -2986,9 +3340,13 @@ describe('ToolRouter', () => {
 
       const connectionRequest = await session.authorize('github');
 
-      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
-        toolkit: 'github',
-      });
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(
+        sessionId,
+        {
+          toolkit: 'github',
+        },
+        undefined
+      );
       expect(connectionRequest).toHaveProperty('redirectUrl', 'https://composio.dev/auth/redirect');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
     });
@@ -3001,16 +3359,122 @@ describe('ToolRouter', () => {
 
       const toolkitsResult = await session.toolkits();
 
-      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(sessionId, {
-        cursor: undefined,
-        limit: undefined,
-        toolkits: undefined,
-        is_connected: undefined,
-      });
+      expect(mockClient.toolRouter.session.toolkits).toHaveBeenCalledWith(
+        sessionId,
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkits: undefined,
+          is_connected: undefined,
+        },
+        undefined
+      );
       expect(toolkitsResult.items).toHaveLength(3);
       expect(toolkitsResult.items[0].slug).toBe('gmail');
     });
 
+    it('should attach custom tools and expose SDK-preloaded custom schemas', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        preload: true,
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      mockClient.toolRouter.session.attach.mockResolvedValueOnce({
+        ...mockSessionRetrieveResponse,
+        tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+        experimental: {
+          custom_tools: [
+            {
+              slug: 'LOCAL_GREP',
+              original_slug: 'GREP',
+              extends_toolkit: null,
+            },
+          ],
+        },
+      });
+      mockProvider.wrapTools.mockReturnValue('mocked-custom-tools');
+
+      const session = await toolRouter.use(sessionId, { customTools: [grepTool] });
+      await session.tools();
+
+      expect(mockClient.toolRouter.session.attach).toHaveBeenCalledWith(
+        sessionId,
+        {
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP', preload: true })],
+          },
+        },
+        undefined
+      );
+      expect(mockClient.post).not.toHaveBeenCalled();
+      expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      const wrappedTools = mockProvider.wrapTools.mock.calls[0][0] as Array<{ slug: string }>;
+      expect(wrappedTools.map(tool => tool.slug)).toEqual(['COMPOSIO_SEARCH_TOOLS', 'LOCAL_GREP']);
+    });
+
+    it('should apply preload all from an attached session to custom tools in use()', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      mockClient.toolRouter.session.attach.mockResolvedValueOnce({
+        ...mockSessionRetrieveResponse,
+        tool_router_tools: ['COMPOSIO_SEARCH_TOOLS'],
+        config: {
+          ...mockSessionRetrieveResponse.config,
+          preload: { tools: 'all' },
+        },
+        experimental: {
+          custom_tools: [
+            {
+              slug: 'LOCAL_GREP',
+              original_slug: 'GREP',
+              extends_toolkit: null,
+            },
+          ],
+        },
+      });
+      mockProvider.wrapTools.mockReturnValue('mocked-custom-tools');
+      mockClient.toolRouter.session.search.mockResolvedValueOnce({
+        success: true,
+        error: null,
+        results: [],
+        tool_schemas: {},
+        toolkit_connection_statuses: [],
+        next_steps_guidance: [],
+        session: {
+          id: sessionId,
+          generate_id: false,
+          instructions: 'Reuse session',
+        },
+        time_info: {
+          current_time_utc: '2025-03-09T12:00:00.000Z',
+          current_time_utc_epoch_seconds: 1741521600,
+          message: 'UTC',
+        },
+      });
+
+      const session = await toolRouter.use(sessionId, { customTools: [grepTool] });
+      await session.tools();
+      await session.search({ query: 'search local text' });
+
+      const wrappedTools = mockProvider.wrapTools.mock.calls[0][0] as Array<{ slug: string }>;
+      expect(wrappedTools.map(tool => tool.slug)).toEqual(['COMPOSIO_SEARCH_TOOLS', 'LOCAL_GREP']);
+      expect(mockClient.toolRouter.session.search).toHaveBeenCalledWith(
+        sessionId,
+        {
+          queries: [{ use_case: 'search local text' }],
+          experimental: {
+            custom_tools: [expect.objectContaining({ slug: 'GREP', preload: true })],
+          },
+        },
+        undefined
+      );
+    });
     it('should handle different session IDs', async () => {
       const session1Response = {
         ...mockSessionRetrieveResponse,
@@ -3032,6 +3496,17 @@ describe('ToolRouter', () => {
       expect(session1.sessionId).toBe('session_1');
       expect(session2.sessionId).toBe('session_2');
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(2);
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenNthCalledWith(
+        1,
+        'session_1',
+        undefined
+      );
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenNthCalledWith(
+        2,
+        'session_2',
+        undefined
+      );
+      expect(mockClient.post).not.toHaveBeenCalled();
     });
 
     it('should handle MCP server type correctly', async () => {
@@ -3048,7 +3523,8 @@ describe('ToolRouter', () => {
       mockClient.toolRouter.session.retrieve.mockRejectedValueOnce(error);
 
       await expect(toolRouter.use(sessionId)).rejects.toThrow('Session not found');
-      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId);
+      expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledWith(sessionId, undefined);
+      expect(mockClient.post).not.toHaveBeenCalled();
     });
 
     it('should handle retrieve with different tool lists', async () => {
@@ -3080,6 +3556,7 @@ describe('ToolRouter', () => {
       // Both should have been called once
       expect(mockClient.toolRouter.session.create).toHaveBeenCalledTimes(1);
       expect(mockClient.toolRouter.session.retrieve).toHaveBeenCalledTimes(1);
+      expect(mockClient.post).not.toHaveBeenCalled();
     });
   });
 });

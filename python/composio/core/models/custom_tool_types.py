@@ -10,6 +10,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 import typing_extensions as te
+from composio_client.types.tool_router import session_create_params
 from pydantic import BaseModel
 
 from composio_client.types.tool_router.session_execute_response import (
@@ -109,22 +110,8 @@ class CustomTool:
     preload: t.Optional[bool] = None
 
 
-class CustomToolWireDefinition(te.TypedDict, total=False):
-    slug: te.Required[str]
-    name: te.Required[str]
-    description: te.Required[str]
-    input_schema: te.Required[t.Dict[str, t.Any]]
-    extends_toolkit: str
-    output_schema: t.Dict[str, t.Any]
-    preload: bool
-
-
-class CustomToolkitWireDefinition(te.TypedDict, total=False):
-    slug: te.Required[str]
-    name: te.Required[str]
-    description: te.Required[str]
-    tools: te.Required[t.List[CustomToolWireDefinition]]
-    preload: bool
+CustomToolWireDefinition = session_create_params.ExperimentalCustomTool
+CustomToolkitWireDefinition = session_create_params.ExperimentalCustomToolkit
 
 
 class InlineCustomToolsWirePayload(te.TypedDict, total=False):
@@ -153,6 +140,7 @@ class CustomToolsMap:
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
     by_original_slug: t.Dict[str, CustomToolsMapEntry] = field(default_factory=dict)
     toolkits: t.Optional[t.List[t.Any]] = None
+    tools: t.Optional[t.List["CustomTool"]] = None
 
 
 # ────────────────────────────────────────────────────────────────

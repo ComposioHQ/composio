@@ -4,6 +4,7 @@ from .core.models.custom_tool_types import (
     CustomTool,
     SessionContext,
 )
+from .core.models.tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .core.models.tool_router_session_files import RemoteFile
 from .core.models.tools import (
     after_execute,
@@ -35,6 +36,7 @@ __all__ = (
     "ExperimentalToolkit",
     "RemoteFile",
     "SessionContext",
+    "SESSION_PRESET_DIRECT_TOOLS",
     "ConnectionExpiredEvent",
     "ConnectionState",
     "ConnectionStatusEnum",

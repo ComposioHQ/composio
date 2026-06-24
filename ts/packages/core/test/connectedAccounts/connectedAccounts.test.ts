@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
+import { Experimental } from '../../src/models/Experimental';
 import ComposioClient from '@composio/client';
 import { ConnectedAccountRetrieveResponse } from '@composio/client/resources/connected-accounts.mjs';
 import {
+  ComposioAclOnlyForSharedError,
   ComposioConnectedAccountNotFoundError,
   ComposioFailedToCreateConnectedAccountLink,
 } from '../../src/errors';
+import { BadRequestError } from '@composio/client';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
 import { ComposioMultipleConnectedAccountsError } from '../../src/errors';
 import { AuthSchemeTypes } from '../../src/types/authConfigs.types';
@@ -22,6 +25,7 @@ const extendedMockClient = {
     retrieve: vi.fn(),
     delete: vi.fn(),
     refresh: vi.fn(),
+    patch: vi.fn(),
     updateStatus: vi.fn(),
     createConnectedAccountLink: vi.fn(),
   },
@@ -59,7 +63,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.list(query);
 
-      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(query);
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(query, undefined);
       expect(result).toEqual({
         items: [],
         nextCursor: null,
@@ -74,7 +78,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.list();
 
-      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(undefined);
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(undefined, undefined);
       expect(result).toEqual({
         items: [],
         nextCursor: null,
@@ -119,19 +123,23 @@ describe('ConnectedAccounts', () => {
           user_ids: [userId],
           auth_config_ids: [authConfigId],
           statuses: [ConnectedAccountStatuses.ACTIVE],
-        })
+        }),
+        undefined
       );
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: options.callbackUrl,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: options.callbackUrl,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -164,16 +172,19 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: undefined,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: undefined,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -211,7 +222,8 @@ describe('ConnectedAccounts', () => {
         expect.objectContaining({
           auth_config: { id: authConfigId },
           connection: expect.objectContaining({ user_id: userId, alias: 'work-gmail' }),
-        })
+        }),
+        undefined
       );
     });
 
@@ -332,7 +344,8 @@ describe('ConnectedAccounts', () => {
           user_ids: [userId],
           auth_config_ids: [authConfigId],
           statuses: [ConnectedAccountStatuses.ACTIVE],
-        })
+        }),
+        undefined
       );
     });
 
@@ -403,16 +416,19 @@ describe('ConnectedAccounts', () => {
         allowMultiple: true,
       });
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: undefined,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: undefined,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -451,16 +467,19 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: options.callbackUrl,
+            state: options.config,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: options.callbackUrl,
-          state: options.config,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.ACTIVE);
@@ -495,6 +514,120 @@ describe('ConnectedAccounts', () => {
       expect(connectionRequest).toHaveProperty('id', 'conn_456');
       expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.INITIATED);
       expect(connectionRequest).toHaveProperty('redirectUrl', 'https://auth.example.com/connect');
+    });
+  });
+
+  // SEC-339: initiate() must gate its deprecation warning on the response
+  // `Deprecation` HTTP header (RFC 9745) that apollo emits only on the
+  // retiring branch (Composio-managed + redirectable OAuth). These tests pin
+  // that contract so the previous false-positive behavior — warning purely
+  // off auth_scheme, which over-fired for custom auth configs — can't come
+  // back. See https://docs.composio.dev/docs/changelog/2026/04/24
+  describe('initiate deprecation header gate', () => {
+    /** Wrap a value as an APIPromise-shaped thenable that also exposes
+     * `.withResponse()` returning the value plus a synthesised Response
+     * carrying the given headers. Mirrors the @composio/client APIPromise
+     * surface that the SDK now consumes for header-aware deprecation. */
+    function mockApiPromiseWithHeaders<T>(
+      data: T,
+      headers: Record<string, string> = {}
+    ): Promise<T> & {
+      withResponse: () => Promise<{ data: T; response: Response }>;
+    } {
+      const response = new Response(null, { headers: new Headers(headers) });
+      const promise = Promise.resolve(data) as Promise<T> & {
+        withResponse: () => Promise<{ data: T; response: Response }>;
+      };
+      promise.withResponse = () => Promise.resolve({ data, response });
+      return promise;
+    }
+
+    const userId = 'user_dep';
+    const authConfigId = 'auth_config_dep';
+    const baseResponse = {
+      id: 'conn_dep',
+      connectionData: {
+        val: {
+          authScheme: AuthSchemeTypes.OAUTH2,
+          status: 'INITIALIZING',
+          redirectUrl: 'https://auth.example.com/connect',
+        },
+      },
+    };
+
+    /** Re-import the model with a fresh module-level
+     * `_legacyInitiateWarningEmitted` so each test starts unwarned. */
+    async function freshConnectedAccounts() {
+      vi.resetModules();
+      const { ConnectedAccounts: Fresh } = await import('../../src/models/ConnectedAccounts');
+      const fresh = new Fresh(extendedMockClient as unknown as ComposioClient);
+      const loggerMod = await import('../../src/utils/logger');
+      const warnSpy = vi.spyOn(loggerMod.default, 'warn').mockImplementation(() => {});
+      return { connectedAccounts: fresh, warnSpy };
+    }
+
+    it('warns once when response carries a Deprecation header (managed + OAuth retiring path)', async () => {
+      const { connectedAccounts: fresh, warnSpy } = await freshConnectedAccounts();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+      extendedMockClient.connectedAccounts.create.mockReturnValueOnce(
+        mockApiPromiseWithHeaders(baseResponse, {
+          Deprecation: '@1776988800',
+          Sunset: 'Fri, 08 May 2026 00:00:00 GMT',
+          Link: '<https://docs.composio.dev/docs/changelog/2026/04/24>; rel="deprecation"',
+        })
+      );
+
+      const req = await fresh.initiate(userId, authConfigId);
+
+      expect(req).toHaveProperty('id', 'conn_dep');
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0]![0]).toMatch(/composio\.connectedAccounts\.link\(\)/);
+      expect(warnSpy.mock.calls[0]![0]).toMatch(/2026-07-03/);
+    });
+
+    it('does NOT warn when response has no Deprecation header (custom auth config)', async () => {
+      // Regression test: prior auth_scheme-only check warned for any
+      // OAUTH2 response, including custom configs that are not subject
+      // to the cutover. Header absence is the canonical "you're fine"
+      // signal from apollo.
+      const { connectedAccounts: fresh, warnSpy } = await freshConnectedAccounts();
+      extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+        items: [],
+        next_cursor: null,
+        total_pages: 1,
+      });
+      extendedMockClient.connectedAccounts.create.mockReturnValueOnce(
+        mockApiPromiseWithHeaders(baseResponse /* no Deprecation header */)
+      );
+
+      const req = await fresh.initiate(userId, authConfigId);
+
+      expect(req).toHaveProperty('id', 'conn_dep');
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('warns at most once per process even across multiple managed-OAuth calls', async () => {
+      const { connectedAccounts: fresh, warnSpy } = await freshConnectedAccounts();
+      // Two consecutive managed-OAuth calls. Both responses carry the
+      // Deprecation header, but the module-level guard should let only
+      // the first one through.
+      for (let i = 0; i < 2; i++) {
+        extendedMockClient.connectedAccounts.list.mockResolvedValueOnce({
+          items: [],
+          next_cursor: null,
+          total_pages: 1,
+        });
+        extendedMockClient.connectedAccounts.create.mockReturnValueOnce(
+          mockApiPromiseWithHeaders(baseResponse, { Deprecation: '@1776988800' })
+        );
+        await fresh.initiate(userId, authConfigId);
+      }
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -534,7 +667,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.get(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid, undefined);
       expect(result).toEqual({
         id: 'nanoid',
         status: 'ACTIVE',
@@ -632,7 +765,11 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.delete(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(
+        nanoid,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -646,7 +783,11 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, undefined);
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -659,10 +800,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, { redirectUrl });
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: redirectUrl,
-        validate_credentials: undefined,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: redirectUrl,
+          validate_credentials: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -674,10 +819,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: undefined,
-        validate_credentials: true,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: undefined,
+          validate_credentials: true,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -693,10 +842,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, options);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: options.redirectUrl,
-        validate_credentials: options.validateCredentials,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: options.redirectUrl,
+          validate_credentials: options.validateCredentials,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -719,10 +872,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, {});
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: undefined,
-        validate_credentials: undefined,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: undefined,
+          validate_credentials: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -739,7 +896,8 @@ describe('ConnectedAccounts', () => {
 
       expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
         nanoid,
-        params
+        params,
+        undefined
       );
       expect(result).toEqual(mockResponse);
     });
@@ -754,9 +912,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.enable(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: true,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: true,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -770,9 +932,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.disable(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: false,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: false,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -971,9 +1137,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.update(nanoid, { enabled: true });
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: true,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: true,
+        },
+        undefined
+      );
       expect(result).toEqual({ success: true, id: nanoid, status: 'ACTIVE' });
     });
 
@@ -985,9 +1155,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.update(nanoid, { enabled: false });
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: false,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: false,
+        },
+        undefined
+      );
       expect(result).toEqual({ success: true });
     });
 
@@ -1024,10 +1198,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1057,11 +1234,14 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        callback_url: options.callbackUrl,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          callback_url: options.callbackUrl,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1101,10 +1281,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, undefined);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1130,10 +1313,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1211,11 +1397,14 @@ describe('ConnectedAccounts', () => {
         const options = { callbackUrl };
         const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-        expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-          auth_config_id: authConfigId,
-          user_id: userId,
-          callback_url: callbackUrl,
-        });
+        expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+          {
+            auth_config_id: authConfigId,
+            user_id: userId,
+            callback_url: callbackUrl,
+          },
+          undefined
+        );
 
         expect(connectionRequest).toHaveProperty('id', 'conn_456def');
         expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1289,10 +1478,13 @@ describe('ConnectedAccounts', () => {
         'Failed to create connected account link'
       );
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
     });
 
     it('should not include callback_url in API call when callbackUrl is not provided', async () => {
@@ -1310,10 +1502,13 @@ describe('ConnectedAccounts', () => {
       await connectedAccounts.link(userId, authConfigId, options);
 
       // Verify that callback_url is not included in the API call
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       // Ensure callback_url key is not present at all
       const callArgs = extendedMockClient.link.create.mock.calls[0][0];
@@ -1336,11 +1531,14 @@ describe('ConnectedAccounts', () => {
 
       await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        callback_url: 'https://example.com/callback',
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          callback_url: 'https://example.com/callback',
+        },
+        undefined
+      );
     });
 
     it('throws ComposioMultipleConnectedAccountsError when an active connection exists and allowMultiple is false', async () => {
@@ -1395,12 +1593,272 @@ describe('ConnectedAccounts', () => {
         alias: 'work-gmail',
       });
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        alias: 'work-gmail',
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          alias: 'work-gmail',
+        },
+        undefined
+      );
       expect(connectionRequest).toHaveProperty('id', 'conn_new');
+    });
+  });
+
+  describe('link with experimental block (SHARED + ACL)', () => {
+    beforeEach(() => {
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+      extendedMockClient.link.create.mockResolvedValue({
+        connected_account_id: 'conn_shared_abc',
+        redirect_url: 'https://connect.composio.dev/auth?token=xyz',
+      });
+    });
+
+    it('forwards experimental block with accountType + aclConfigForShared to client.link.create', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123', {
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: {
+            allowAllUsers: true,
+            notAllowedUserIds: ['user_bob'],
+          },
+        },
+      });
+
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: {
+              allow_all_users: true,
+              not_allowed_user_ids: ['user_bob'],
+            },
+          },
+        },
+        undefined
+      );
+    });
+
+    it('omits the inner acl block when aclConfigForShared is undefined', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123', {
+        experimental: { accountType: 'SHARED' },
+      });
+
+      const body = extendedMockClient.link.create.mock.calls[0][0];
+      expect(body.experimental).toEqual({ account_type: 'SHARED' });
+      expect('acl_config_for_shared' in body.experimental).toBe(false);
+    });
+
+    it('omits the experimental block entirely when not provided', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123');
+
+      const body = extendedMockClient.link.create.mock.calls[0][0];
+      expect('experimental' in body).toBe(false);
+    });
+
+    it('serializes only the inner ACL fields the caller provided', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123', {
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: { allowedUserIds: ['user_alice'] },
+        },
+      });
+
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+          },
+        },
+        undefined
+      );
+    });
+
+    it('preserves explicit empty arrays in the serialized body', async () => {
+      await connectedAccounts.link('user_123', 'auth_config_123', {
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: { allowedUserIds: [], notAllowedUserIds: [] },
+        },
+      });
+
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: {
+              allowed_user_ids: [],
+              not_allowed_user_ids: [],
+            },
+          },
+        },
+        undefined
+      );
+    });
+
+    it('maps 400 AclOnlyForShared to ComposioAclOnlyForSharedError', async () => {
+      extendedMockClient.link.create.mockReset();
+      extendedMockClient.link.create.mockRejectedValueOnce(
+        Object.assign(
+          new BadRequestError(
+            400,
+            undefined,
+            'acl_config_for_shared is only valid on SHARED connections.',
+            {}
+          ),
+          {}
+        )
+      );
+
+      await expect(
+        connectedAccounts.link('user_123', 'auth_config_123', {
+          experimental: {
+            accountType: 'PRIVATE',
+            aclConfigForShared: { allowAllUsers: true },
+          },
+        })
+      ).rejects.toBeInstanceOf(ComposioAclOnlyForSharedError);
+    });
+
+    it('falls back to ComposioFailedToCreateConnectedAccountLink on unrelated errors', async () => {
+      extendedMockClient.link.create.mockReset();
+      extendedMockClient.link.create.mockRejectedValueOnce(new Error('network died'));
+
+      await expect(connectedAccounts.link('user_123', 'auth_config_123')).rejects.toBeInstanceOf(
+        ComposioFailedToCreateConnectedAccountLink
+      );
+    });
+  });
+
+  describe('list with accountType filter', () => {
+    it('forwards accountType to the wire as a flat query param', async () => {
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+
+      await connectedAccounts.list({ accountType: 'SHARED', userIds: ['user_creator'] });
+
+      const callArg = extendedMockClient.connectedAccounts.list.mock.calls[0][0];
+      expect(callArg.account_type).toBe('SHARED');
+      expect(callArg.user_ids).toEqual(['user_creator']);
+    });
+
+    it('omits account_type when accountType is not provided', async () => {
+      extendedMockClient.connectedAccounts.list.mockResolvedValue({
+        items: [],
+        next_cursor: null,
+        total_pages: 0,
+      });
+
+      await connectedAccounts.list({ userIds: ['user_creator'] });
+
+      const callArg = extendedMockClient.connectedAccounts.list.mock.calls[0][0];
+      expect('account_type' in callArg).toBe(false);
+    });
+  });
+
+  describe('composio.experimental.updateAcl', () => {
+    let experimental: Experimental;
+
+    beforeEach(() => {
+      experimental = new Experimental(extendedMockClient as unknown as ComposioClient);
+    });
+
+    it('serializes PATCH body under experimental.acl_config_for_shared', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        id: 'ca_abc',
+        status: 'ACTIVE',
+        success: true,
+      });
+
+      const result = await experimental.updateAcl('ca_abc', {
+        allowAllUsers: true,
+        notAllowedUserIds: ['user_bob'],
+      });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
+        experimental: {
+          acl_config_for_shared: {
+            allow_all_users: true,
+            not_allowed_user_ids: ['user_bob'],
+          },
+        },
+      });
+      expect(result).toEqual({ id: 'ca_abc', status: 'ACTIVE', success: true });
+    });
+
+    it('omits absent fields from the inner block (PATCH semantics)', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        id: 'ca_abc',
+        status: 'ACTIVE',
+        success: true,
+      });
+
+      await experimental.updateAcl('ca_abc', { allowedUserIds: ['user_alice'] });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
+        experimental: {
+          acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+        },
+      });
+    });
+
+    it('preserves empty array to clear a list', async () => {
+      extendedMockClient.connectedAccounts.patch.mockResolvedValueOnce({
+        id: 'ca_abc',
+        status: 'ACTIVE',
+        success: true,
+      });
+
+      await experimental.updateAcl('ca_abc', { allowedUserIds: [] });
+
+      expect(extendedMockClient.connectedAccounts.patch).toHaveBeenCalledWith('ca_abc', {
+        experimental: { acl_config_for_shared: { allowed_user_ids: [] } },
+      });
+    });
+
+    it('rejects an empty params object via the refine', async () => {
+      await expect(experimental.updateAcl('ca_abc', {})).rejects.toMatchObject({
+        name: 'ValidationError',
+      });
+      expect(extendedMockClient.connectedAccounts.patch).not.toHaveBeenCalled();
+    });
+
+    it('maps 400 AclOnlyForShared to ComposioAclOnlyForSharedError', async () => {
+      extendedMockClient.connectedAccounts.patch.mockRejectedValueOnce(
+        new BadRequestError(
+          400,
+          undefined,
+          'acl_config_for_shared is only valid on SHARED connections.',
+          {}
+        )
+      );
+
+      await expect(
+        experimental.updateAcl('ca_abc', { allowAllUsers: true })
+      ).rejects.toBeInstanceOf(ComposioAclOnlyForSharedError);
+    });
+
+    it('rethrows non-AclOnlyForShared errors unchanged', async () => {
+      const otherError = new Error('connection lost');
+      extendedMockClient.connectedAccounts.patch.mockRejectedValueOnce(otherError);
+
+      await expect(experimental.updateAcl('ca_abc', { allowAllUsers: true })).rejects.toBe(
+        otherError
+      );
     });
   });
 });

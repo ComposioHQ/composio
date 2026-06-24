@@ -17,6 +17,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # dotenv environment variable files
 .env
+.envrc
 .env.development.local
 .env.test.local
 .env.production.local
@@ -62,3 +63,6 @@ test/e2e/*/node_modules
 
 # Agent memory
 .agent_cache
+
+# mise (per-dev overrides)
+.mise.local.toml

@@ -59,10 +59,17 @@ from .custom_tool_types import (
     CustomToolsMapEntry,
     CustomToolWireDefinition,
 )
+from .tool_router_constants import PRELOAD_TOOLS_ALL
 
 if t.TYPE_CHECKING:
+    from composio_client.types.tool_router.session_attach_response import (
+        Experimental as SessionAttachResponseExperimental,
+    )
     from composio_client.types.tool_router.session_create_response import (
         Experimental as SessionCreateResponseExperimental,
+    )
+    from composio_client.types.tool_router.session_retrieve_response import (
+        Experimental as SessionRetrieveResponseExperimental,
     )
 
 
@@ -472,99 +479,6 @@ class ExperimentalToolkit:
 
 
 # ────────────────────────────────────────────────────────────────
-# ExperimentalAPI — the composio.experimental namespace
-# ────────────────────────────────────────────────────────────────
-
-
-class ExperimentalAPI:
-    """Experimental APIs accessed via ``composio.experimental``.
-
-    Provides decorators for creating custom tools and toolkits
-    that run in-process alongside remote Composio tools.
-    """
-
-    Toolkit = ExperimentalToolkit
-
-    @t.overload
-    def tool(self, fn: t.Callable[..., t.Any], /) -> CustomTool: ...
-
-    @t.overload
-    def tool(
-        self,
-        *,
-        slug: t.Optional[str] = None,
-        name: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        extends_toolkit: t.Optional[str] = None,
-        output_params: t.Optional[t.Type[BaseModel]] = None,
-        preload: t.Optional[bool] = None,
-    ) -> t.Callable[[t.Callable[..., t.Any]], CustomTool]: ...
-
-    def tool(
-        self,
-        fn: t.Optional[t.Callable[..., t.Any]] = None,
-        *,
-        slug: t.Optional[str] = None,
-        name: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        extends_toolkit: t.Optional[str] = None,
-        output_params: t.Optional[t.Type[BaseModel]] = None,
-        preload: t.Optional[bool] = None,
-    ) -> t.Union[CustomTool, t.Callable[[t.Callable[..., t.Any]], CustomTool]]:
-        """Decorator to create a custom tool from a function.
-
-        Infers slug, name, description, and input_params from the function.
-        Override any with explicit keyword arguments.
-
-        Examples::
-
-            # Bare decorator — no parens
-            @composio.experimental.tool
-            def grep(input: GrepInput, ctx):
-                \"\"\"Search for a pattern.\"\"\"
-                return {"matches": []}
-
-            # With parens — no args
-            @composio.experimental.tool()
-            def grep(input: GrepInput, ctx):
-                \"\"\"Search for a pattern.\"\"\"
-                return {"matches": []}
-
-            # With extends_toolkit — inherits auth
-            @composio.experimental.tool(extends_toolkit="gmail")
-            def create_draft(input: DraftInput, ctx):
-                \"\"\"Create a Gmail draft.\"\"\"
-                return ctx.proxy_execute(toolkit="gmail", ...)
-        """
-
-        def decorator(f: t.Callable[..., t.Any]) -> CustomTool:
-            annotation_locals = _get_caller_locals()
-            return _infer_tool_from_function(
-                f,
-                slug=slug,
-                name=name,
-                description=description,
-                extends_toolkit=extends_toolkit,
-                output_params=output_params,
-                preload=preload,
-                annotation_locals=annotation_locals,
-            )
-
-        if fn is not None:
-            return _infer_tool_from_function(
-                fn,
-                slug=slug,
-                name=name,
-                description=description,
-                extends_toolkit=extends_toolkit,
-                output_params=output_params,
-                preload=preload,
-                annotation_locals=_get_caller_locals(),
-            )
-        return decorator
-
-
-# ────────────────────────────────────────────────────────────────
 # Serialization (for backend API payload)
 # ────────────────────────────────────────────────────────────────
 
@@ -716,13 +630,20 @@ def build_custom_tools_map(
         by_final_slug=by_final_slug,
         by_original_slug=by_original_slug,
         toolkits=list(toolkits) if toolkits else None,
+        tools=list(tools) if tools else None,
     )
 
 
 def build_custom_tools_map_from_response(
     tools: t.List[CustomTool],
     toolkits: t.Optional[t.List[ExperimentalToolkit]],
-    experimental: t.Optional[SessionCreateResponseExperimental],
+    experimental: t.Optional[
+        t.Union[
+            "SessionAttachResponseExperimental",
+            "SessionCreateResponseExperimental",
+            "SessionRetrieveResponseExperimental",
+        ]
+    ],
 ) -> CustomToolsMap:
     """Build a CustomToolsMap using the slug/original_slug mapping from the backend response."""
     by_final_slug: t.Dict[str, CustomToolsMapEntry] = {}
@@ -776,6 +697,7 @@ def build_custom_tools_map_from_response(
         by_final_slug=by_final_slug,
         by_original_slug=by_original_slug,
         toolkits=list(toolkits) if toolkits else None,
+        tools=list(tools) if tools else None,
     )
 
 
@@ -794,7 +716,7 @@ def assert_no_custom_tool_slugs_in_preload(
     custom_tools_map: t.Optional[CustomToolsMap],
 ) -> None:
     """Reject legacy top-level preload of custom tool slugs."""
-    if preload_tools is None or preload_tools == "all":
+    if preload_tools is None or preload_tools == PRELOAD_TOOLS_ALL:
         return
     if isinstance(preload_tools, str):
         raise ValidationError(
@@ -807,6 +729,8 @@ def assert_no_custom_tool_slugs_in_preload(
     for slug in preload_tools:
         normalized = slug.upper()
         if normalized.startswith(LOCAL_TOOL_PREFIX) or (
+            # Top-level preload.tools is only for Composio-managed tool slugs.
+            # Custom tools use preload=True on their SDK definitions instead.
             custom_tools_map is not None
             and (
                 normalized in custom_tools_map.by_original_slug

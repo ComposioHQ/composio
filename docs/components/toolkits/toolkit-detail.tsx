@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Search, Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema } from '@/lib/toolkit-schema';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 import { AuthDetailsSection } from '@/components/toolkits/auth-details-section';
 import { FaqSection, type FaqItem } from '@/components/toolkits/faq-section';
 
@@ -317,56 +318,41 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
       </Link>
 
       {/* Header */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 gap-4">
           <ToolkitIcon key={toolkit.slug} toolkit={toolkit} />
           <div className="min-w-0 flex-1">
             {/* Title row */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
-                <button
-                  onClick={copySlug}
-                  className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
-                >
-                  {toolkit.slug.toUpperCase()}
-                  {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h1 className="text-xl font-bold tracking-tight text-fd-foreground">{(toolkit.name?.trim() || toolkit.slug)}</h1>
+              <button
+                onClick={copySlug}
+                className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
+              >
+                {toolkit.slug.toUpperCase()}
+                {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+              </button>
               {toolkit.version && (
-                <div className="flex items-center gap-2 text-sm text-fd-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 text-xs text-fd-muted-foreground">
                   <span>Latest version</span>
                   <button
                     onClick={copyVersion}
-                    className="inline-flex items-center gap-1 rounded border border-orange-500/30 bg-orange-500/10 px-1.5 py-0.5 font-mono text-xs text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
+                    className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
                   >
                     {toolkit.version}
                     {versionCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
                   </button>
-                </div>
+                </span>
               )}
             </div>
 
             {/* Description */}
             <p className="mt-1.5 text-sm text-fd-muted-foreground">{toolkit.description}</p>
-
-            {/* Actions */}
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`https://platform.composio.dev/marketplace/${toolkit.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-600 transition-colors hover:bg-orange-500/20 dark:text-orange-400"
-                >
-                  Try {(toolkit.name?.trim() || toolkit.slug)}
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Page actions */}
-            <PageActions path={path} />
           </div>
+        </div>
+
+        {/* Page actions */}
+        <PageActions path={path} variant="inline" />
       </div>
 
       {/* Authentication Details */}
@@ -392,7 +378,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
             >
               Tools ({tools.length})
               {activeTab === 'tools' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
               )}
             </button>
             {triggers.length > 0 && (
@@ -406,7 +392,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               >
                 Triggers ({triggers.length})
                 {activeTab === 'triggers' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                 )}
               </button>
             )}
@@ -423,7 +409,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               autoComplete="off"
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-orange-500/50 focus-visible:ring-2 focus-visible:ring-orange-500/20"
+              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
             />
           </div>
 
@@ -454,6 +440,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
           </div>
         </div>
       )}
+      <EditOnGitHub path="docs/components/toolkits/toolkit-detail.tsx" />
     </div>
   );
 }

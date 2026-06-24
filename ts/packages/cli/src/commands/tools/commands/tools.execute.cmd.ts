@@ -299,6 +299,32 @@ type StoredExecuteOutputSummary = {
 const serializeExecuteOutput = (result: unknown): string =>
   JSON.stringify(result, ciRedactReplacer, 2);
 
+const permissionApprovalLabel = (approval?: string): string | undefined => {
+  switch (approval) {
+    case 'always_approved':
+      return 'always approved';
+    case 'cached_approved':
+      return 'cached approved';
+    case 'approved_once':
+      return 'approved once';
+    case 'approved_for_session':
+      return 'approved for session';
+    default:
+      return undefined;
+  }
+};
+
+const executionSuccessSuffix = (result: {
+  readonly logId?: string;
+  readonly permissionApproval?: string;
+}) => {
+  const metadata = [
+    permissionApprovalLabel(result.permissionApproval),
+    result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
+  ].filter((value): value is string => Boolean(value));
+  return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
+};
+
 const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirectory?: string) =>
   Effect.gen(function* () {
     const outputFilePath = yield* storeCliSessionArtifact({
@@ -557,6 +583,8 @@ const emitExecuteFailureTelemetry = (params: {
     }
   });
 
+const writeExecuteStdout = (ui: TerminalUI, data: string) => ui.output(data, { force: true });
+
 export const showToolsExecuteInputHelp = (toolSlug: string) =>
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
@@ -595,7 +623,8 @@ export const showToolsExecuteInputHelp = (toolSlug: string) =>
 
     yield* ui.note(formatToolInputParameters(tool), `Execute Help: ${tool.slug}`);
     yield* ui.log.step(`Run:\n> composio execute "${tool.slug}" -d '{"key":"value"}'`);
-    yield* ui.output(
+    yield* writeExecuteStdout(
+      ui,
       JSON.stringify({ slug: tool.slug, input_parameters: tool.input_parameters }, null, 2)
     );
   });
@@ -906,7 +935,8 @@ const emitCachedSchema = (
     yield* ui.log.message(
       `Schema saved, inspect keys like: jq '{required: (.inputSchema.required // []), keys: (.inputSchema.properties | keys)}' ${definition.schemaPath}`
     );
-    yield* ui.output(
+    yield* writeExecuteStdout(
+      ui,
       JSON.stringify(
         {
           slug,
@@ -1107,6 +1137,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
           resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
             ? {
                 orgId: resolvedProject.orgId,
+                projectId: resolvedProject.projectId,
                 consumerUserId: resolvedProject.consumerUserId,
               }
             : undefined,
@@ -1212,7 +1243,8 @@ const runConnectedToolkitFailFast = (params: {
       const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
       yield* params.ui.log.error(message);
       yield* params.ui.note(connectionTips(params.slug, params.surface), 'Tips');
-      yield* params.ui.output(
+      yield* writeExecuteStdout(
+        params.ui,
         JSON.stringify(
           {
             successful: false,
@@ -1325,7 +1357,7 @@ const runExecuteWithSpinner = (params: {
               ? 'No tool was executed. Local validation was skipped.'
               : 'No tool was executed. Arguments were validated locally only.'
           );
-          yield* params.ui.output(JSON.stringify(summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
             orgId:
               params.resolvedProject.projectType === 'CONSUMER'
@@ -1371,7 +1403,8 @@ const runExecuteWithSpinner = (params: {
             projectMode: params.projectMode,
             stage: 'execution',
           });
-          yield* params.ui.output(
+          yield* writeExecuteStdout(
+            params.ui,
             JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
           );
           yield* appendCliSessionHistory({
@@ -1421,14 +1454,11 @@ const runExecuteWithSpinner = (params: {
             stage: 'execution',
             logId: result.logId,
           });
-          yield* params.ui.output(JSON.stringify(result, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* Effect.fail(new ToolExecutionError(summary.error));
         }
 
-        const logId = result.logId
-          ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-          : '';
-        yield* spinner.stop(`Execution successful${logId}`);
+        yield* spinner.stop(`Execution successful${executionSuccessSuffix(result)}`);
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
@@ -1440,7 +1470,7 @@ const runExecuteWithSpinner = (params: {
           yield* params.ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${output.summary.tokenCount} tokens)`
           );
-          yield* params.ui.output(JSON.stringify(output.summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
             orgId:
               params.resolvedProject.projectType === 'CONSUMER'
@@ -1464,8 +1494,7 @@ const runExecuteWithSpinner = (params: {
           return;
         }
 
-        yield* params.ui.log.message(`Response\n${output.json}`);
-        yield* params.ui.output(output.json);
+        yield* writeExecuteStdout(params.ui, output.json);
         yield* appendCliSessionHistory({
           orgId:
             params.resolvedProject.projectType === 'CONSUMER'
@@ -1843,7 +1872,8 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* ui.output(
+      yield* writeExecuteStdout(
+        ui,
         JSON.stringify(
           {
             successful,
@@ -2003,11 +2033,9 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           continue;
         }
 
-        const logId =
-          'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-            : '';
-        yield* ui.log.step(`[${result.slug}] Execution successful${logId}`);
+        yield* ui.log.step(
+          `[${result.slug}] Execution successful${executionSuccessSuffix(result)}`
+        );
         if ('data' in result) {
           yield* ui.note(serializeExecuteOutput(result), `Response: ${result.slug}`);
         }
@@ -2019,7 +2047,8 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
       yield* ui.log.message(
         `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
       );
-      yield* ui.output(
+      yield* writeExecuteStdout(
+        ui,
         JSON.stringify(
           {
             successful,

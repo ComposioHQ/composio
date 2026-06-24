@@ -12,13 +12,14 @@ import typing as t
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from composio_client import omit
-from composio.client.types import Tool
+from composio_client import BadRequestError, Omit, omit
+from composio_client._types import SequenceNotStr
 from composio_client.types.tool_list_response import (
     ItemDeprecated,
     ItemDeprecatedToolkit,
     ItemToolkit,
 )
+from composio_client.types.tool_router import session_link_params, session_patch_params
 from composio_client.types.tool_router.session_execute_response import (
     SessionExecuteResponse,
 )
@@ -29,9 +30,13 @@ from composio_client.types.tool_router.session_search_response import (
     SessionSearchResponse,
 )
 
+from composio import exceptions
 from composio.client import HttpClient
+from composio.client.types import Tool
+from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
+from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
@@ -47,7 +52,6 @@ from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
     inline_custom_tools_search_experimental,
 )
-from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
 from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
@@ -55,13 +59,13 @@ from composio.core.provider.base import BaseProvider
 
 if t.TYPE_CHECKING:
     from composio.core.models.tool_router import (
-        ToolRouterSessionExperimental,
         ToolkitConnectionsDetails,
+        ToolRouterSessionExperimental,
     )
 
 COMPOSIO_MULTI_EXECUTE_TOOL = "COMPOSIO_MULTI_EXECUTE_TOOL"
 DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX = (
-    "[Direct tool - call directly, no search or connection check needed beforehand.]"
+    "[Direct tool - call directly, no search needed beforehand.]"
 )
 MAX_PARALLEL_WORKERS = 5
 
@@ -536,6 +540,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         *,
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
+        experimental: t.Optional[session_link_params.Experimental] = None,
     ) -> ConnectionRequest:
         """
         Authorize a toolkit for the user and get a connection request.
@@ -544,13 +549,27 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
 
         :param alias: Human-readable alias for the connection. Must be unique
             per userId and toolkit within the project.
+        :param experimental: Experimental options for this connection. Pass an
+            ``Experimental`` dict with ``account_type`` and/or
+            ``acl_config_for_shared`` to create a SHARED connection with a
+            per-user ACL. Experimental — shape may change in future releases.
         """
-        response = self._client.tool_router.session.link(
-            session_id=self.session_id,
-            toolkit=toolkit,
-            callback_url=callback_url if callback_url else omit,
-            alias=alias if alias is not None else omit,
-        )
+        try:
+            response = self._client.tool_router.session.link(
+                session_id=self.session_id,
+                toolkit=toolkit,
+                callback_url=callback_url if callback_url else omit,
+                alias=alias if alias is not None else omit,
+                experimental=experimental if experimental is not None else omit,
+            )
+        except BadRequestError as error:
+            # The server rejects ACL on PRIVATE connections — surface that
+            # as a typed error mirroring ``composio.connected_accounts.link()``.
+            message = str(error)
+            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
+                raise exceptions.ComposioAclOnlyForSharedError(message) from error
+            raise
+
         return ConnectionRequest(
             id=response.connected_account_id,
             redirect_url=response.redirect_url,
@@ -571,11 +590,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Get toolkit connection states for the session.
         """
         from composio.core.models.tool_router import (
+            ToolkitConnectedAccount,
             ToolkitConnection,
             ToolkitConnectionAuthConfig,
-            ToolkitConnectionState,
-            ToolkitConnectedAccount,
             ToolkitConnectionsDetails,
+            ToolkitConnectionState,
         )
 
         toolkits_params: t.Dict[str, t.Any] = {}
@@ -798,3 +817,49 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             body=body,
             parameters=parameters,
         )
+
+    def update(
+        self,
+        *,
+        toolkits: t.Union[session_patch_params.Toolkits, "Omit"] = omit,
+        tools: t.Union[t.Dict[str, session_patch_params.Tools], "Omit"] = omit,
+        tags: t.Union[session_patch_params.Tags, "Omit"] = omit,
+        auth_configs: t.Union[t.Dict[str, str], "Omit"] = omit,
+        connected_accounts: t.Union[
+            t.Optional[t.Dict[str, SequenceNotStr[str]]], "Omit"
+        ] = omit,
+        manage_connections: t.Union[
+            t.Optional[session_patch_params.ManageConnections], "Omit"
+        ] = omit,
+        workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
+        multi_account: t.Union[
+            t.Optional[session_patch_params.MultiAccount], "Omit"
+        ] = omit,
+        preload: t.Union[session_patch_params.Preload, "Omit"] = omit,
+    ) -> None:
+        """Partially update the session configuration.
+
+        Only the fields provided will be changed; omitted fields are preserved.
+        Mutates this session's ``preload`` in-place.
+
+        Pass ``None`` for ``manage_connections``, ``workbench``, or
+        ``multi_account`` to clear the stored value.
+
+        All parameters use the same types as the Stainless-generated
+        ``client.tool_router.session.patch()`` method.
+        """
+        from composio.core.models.tool_router import _session_preload_config
+
+        response = self._client.tool_router.session.patch(
+            session_id=self.session_id,
+            toolkits=toolkits,
+            tools=tools,
+            tags=tags,
+            auth_configs=auth_configs,
+            connected_accounts=connected_accounts,
+            manage_connections=manage_connections,
+            workbench=workbench,
+            multi_account=multi_account,
+            preload=preload,
+        )
+        self.preload = _session_preload_config(response.config.preload)

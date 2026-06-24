@@ -13,6 +13,7 @@ import {
   ComposioFileUploadPathNotAllowedError,
   ComposioSensitiveFilePathBlockedError,
 } from '../../errors/FileModifierErrors';
+import { ComposioRequestCancelledError } from '../../errors/SDKErrors';
 import type { beforeFileUploadModifier } from '../../types/modifiers.types';
 import {
   downloadFileFromS3,
@@ -22,9 +23,78 @@ import {
 import {
   isPlainObject,
   transformProperties,
-  schemaHasFileUploadable,
-  schemaHasFileDownloadable,
+  schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
+import { dereferenceJsonSchema } from '../jsonSchema';
+import { withCancellation } from '../cancellation';
+
+/**
+ * Inlines internal `$ref` pointers so the file walkers below can see the
+ * `file_uploadable` / `file_downloadable` flags that live behind a
+ * `$ref`/`$defs` indirection (e.g. `GMAIL_GET_ATTACHMENT`). The walkers only
+ * recurse `properties`/`anyOf`/`oneOf`/`allOf`/`items` and never dereference,
+ * so without this a flagged field reachable only through a `$ref` is silently
+ * missed — the file is never staged/downloaded. `'sentinel'` mode keeps tools
+ * whose schema omits the `$defs` target working (see
+ * https://github.com/ComposioHQ/composio/issues/3307) instead of throwing.
+ */
+const resolveFileSchema = (
+  schema: JSONSchemaProperty | undefined
+): JSONSchemaProperty | undefined =>
+  schema ? dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' }) : schema;
+
+const getSchemaVariants = (schema: JSONSchemaProperty | undefined): JSONSchemaProperty[] => [
+  ...(schema?.anyOf ?? []),
+  ...(schema?.oneOf ?? []),
+  ...(schema?.allOf ?? []),
+];
+
+const jsonSchemaTypeMatchesValue = (schema: JSONSchemaProperty, value: unknown): boolean => {
+  const schemaType = schema.type;
+
+  if (Array.isArray(schemaType)) {
+    return schemaType.some(type => jsonSchemaTypeMatchesValue({ ...schema, type }, value));
+  }
+
+  if (schemaType === undefined) {
+    if (schema.properties) return isPlainObject(value);
+    if (schema.items) return Array.isArray(value);
+    return false;
+  }
+
+  switch (schemaType) {
+    case 'array':
+      return Array.isArray(value);
+    case 'object':
+      return isPlainObject(value);
+    case 'string':
+      return typeof value === 'string';
+    case 'integer':
+      return Number.isInteger(value);
+    case 'number':
+      return typeof value === 'number';
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'null':
+      return value === null;
+    default:
+      return false;
+  }
+};
+
+const findSchemaVariantWithFileProperty = (
+  schema: JSONSchemaProperty | undefined,
+  property: 'file_uploadable' | 'file_downloadable',
+  value: unknown
+): JSONSchemaProperty | undefined => {
+  const candidates = getSchemaVariants(schema).filter(variant =>
+    schemaHasFileProperty(variant, property)
+  );
+
+  return (
+    candidates.find(candidate => jsonSchemaTypeMatchesValue(candidate, value)) ?? candidates[0]
+  );
+};
 
 /**
  * Recursively walks a runtime value and its matching JSON-Schema node,
@@ -41,7 +111,10 @@ const hydrateFiles = async (
     client: ComposioClient;
   } & Pick<
     GetFileDataAfterUploadingToS3Options,
-    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
+    | 'sensitiveFileUploadProtection'
+    | 'fileUploadPathDenySegments'
+    | 'fileUploadAllowlist'
+    | 'signal'
   > & {
       beforeFileUpload?: beforeFileUploadModifier;
     }
@@ -87,6 +160,7 @@ const hydrateFiles = async (
         sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
         fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
         fileUploadAllowlist: ctx.fileUploadAllowlist,
+        signal: ctx.signal,
       });
     }
 
@@ -113,6 +187,7 @@ const hydrateFiles = async (
           sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
           fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
           fileUploadAllowlist: ctx.fileUploadAllowlist,
+          signal: ctx.signal,
         });
       }
     }
@@ -124,31 +199,23 @@ const hydrateFiles = async (
       client: ctx.client,
       sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
       fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+      signal: ctx.signal,
     });
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 2. Handle anyOf/oneOf/allOf — pick the first variant that contains a
-  // file_uploadable property and hydrate against it.
+  // 2. Handle anyOf/oneOf/allOf — pick the file-bearing variant whose
+  // JSON Schema shape matches the runtime value, then hydrate against it.
   //
   // We deliberately do NOT loop over every uploadable variant. With `oneOf`,
   // exactly one variant should apply at runtime, and applying multiple would
   // upload the same file once per variant — two presigned-URL round-trips and
-  // two S3 PUTs for a two-variant `oneOf`. Matching the Python SDK
-  // (`_find_uploadable_schema_variant`), we short-circuit on the first match.
+  // two S3 PUTs for a two-variant `oneOf`. If no runtime shape matches, fall
+  // back to the first file-bearing variant to preserve historical behavior.
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
-
-  if (schemaVariants.length > 0) {
-    const firstUploadableVariant = schemaVariants.find(schemaHasFileUploadable);
-    if (firstUploadableVariant) {
-      return hydrateFiles(value, firstUploadableVariant, ctx);
-    }
-    // If no uploadable variants found, fall through to check base properties
+  const uploadableVariant = findSchemaVariantWithFileProperty(schema, 'file_uploadable', value);
+  if (uploadableVariant) {
+    return hydrateFiles(value, uploadableVariant, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -186,7 +253,7 @@ const hydrateFiles = async (
  */
 const downloadS3File = async (
   value: Record<string, unknown>,
-  ctx: { toolSlug: string; fileDownloadDir?: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string; signal?: AbortSignal }
 ): Promise<unknown> => {
   const { s3url, mimetype } = value as {
     s3url: string;
@@ -201,6 +268,7 @@ const downloadS3File = async (
       s3Url: s3url,
       mimeType: mimetype ?? 'application/octet-stream',
       fileDownloadDir: ctx.fileDownloadDir,
+      signal: ctx.signal,
     });
 
     logger.debug(`Downloaded → ${dl.filePath}`);
@@ -238,7 +306,7 @@ const downloadS3File = async (
 const hydrateDownloads = async (
   value: unknown,
   schema: JSONSchemaProperty | undefined,
-  ctx: { toolSlug: string; fileDownloadDir?: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string; signal?: AbortSignal }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct S3 reference (data-driven detection)
@@ -257,28 +325,20 @@ const hydrateDownloads = async (
   // ──────────────────────────────────────────────────────────────────────────
   // 3. Handle anyOf/oneOf/allOf - try each variant that may contain file_downloadable
   // ──────────────────────────────────────────────────────────────────────────
-  const schemaVariants = [
-    ...(schema?.anyOf ?? []),
-    ...(schema?.oneOf ?? []),
-    ...(schema?.allOf ?? []),
-  ];
+  const schemaVariants = getSchemaVariants(schema);
 
   if (schemaVariants.length > 0) {
-    // Find variants that have file_downloadable properties
-    const downloadableVariants = schemaVariants.filter(schemaHasFileDownloadable);
-
-    // Process with each downloadable variant
-    let result = value;
-    for (const variant of downloadableVariants) {
-      result = await hydrateDownloads(result, variant, ctx);
+    const downloadableVariant = findSchemaVariantWithFileProperty(
+      schema,
+      'file_downloadable',
+      value
+    );
+    if (downloadableVariant) {
+      return hydrateDownloads(value, downloadableVariant, ctx);
     }
 
     // If no downloadable variants found, still traverse the value for s3url objects
-    if (downloadableVariants.length === 0) {
-      return hydrateDownloads(value, undefined, ctx);
-    }
-
-    return result;
+    return hydrateDownloads(value, undefined, ctx);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -335,12 +395,14 @@ export class FileToolModifier {
       return schema;
     }
 
-    const properties = transformProperties(schema.inputParameters.properties);
+    const inputParameters = resolveFileSchema(schema.inputParameters)!;
+    const properties = transformProperties(inputParameters.properties!);
 
     return {
       ...schema,
       inputParameters: {
-        ...schema.inputParameters,
+        ...inputParameters,
+        type: 'object',
         properties,
       },
     };
@@ -352,24 +414,30 @@ export class FileToolModifier {
       toolSlug: string;
       toolkitSlug?: string;
       params: ToolExecuteParams;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteParams> {
-    const { params, toolSlug, toolkitSlug = 'unknown' } = options;
+    const { params, toolSlug, toolkitSlug = 'unknown', signal } = options;
     const { arguments: args } = params;
 
     if (!args || typeof args !== 'object') return params;
 
-    // Recursively transform the arguments tree without mutating the caller’s copy
     try {
-      const newArgs = await hydrateFiles(args, tool.inputParameters, {
-        toolSlug,
-        toolkitSlug,
-        client: this.client,
-        ...this.fileUploadPathOptions,
-      });
+      const newArgs = await withCancellation(
+        () =>
+          hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
+            toolSlug,
+            toolkitSlug,
+            client: this.client,
+            ...this.fileUploadPathOptions,
+            signal,
+          }),
+        signal
+      );
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
       if (
+        error instanceof ComposioRequestCancelledError ||
         error instanceof ComposioSensitiveFilePathBlockedError ||
         error instanceof ComposioFileUploadAbortedError ||
         error instanceof ComposioFileUploadPathNotAllowedError ||
@@ -387,17 +455,22 @@ export class FileToolModifier {
     tool: Tool,
     options: {
       toolSlug: string;
-      toolkitSlug: string; // kept for API parity, unused here
+      toolkitSlug: string;
       result: ToolExecuteResponse;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteResponse> {
-    const { result, toolSlug } = options;
+    const { result, toolSlug, signal } = options;
 
-    // Walk result.data without mutating the original, using output schema for guidance
-    const dataWithDownloads = await hydrateDownloads(result.data, tool.outputParameters, {
-      toolSlug,
-      fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
-    });
+    const dataWithDownloads = await hydrateDownloads(
+      result.data,
+      resolveFileSchema(tool.outputParameters),
+      {
+        toolSlug,
+        fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
+        signal,
+      }
+    );
 
     return { ...result, data: dataWithDownloads as typeof result.data };
   }

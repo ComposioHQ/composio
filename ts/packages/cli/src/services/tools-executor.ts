@@ -1,14 +1,15 @@
 import { FileSystem } from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
-import { executeLocalToolBySlug, isLocalToolSlug } from '@composio/cli-local-tools';
+import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
 import type {
   SessionExecuteResponse,
   SessionExecuteMetaResponse,
   SessionExecuteMetaParams,
 } from '@composio/client/resources/tool-router';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { createToolRouterSession } from 'src/effects/create-tool-router-session';
+import { createToolRouterSessionContext } from 'src/effects/create-tool-router-session';
+import { gateToolExecution, type PermissionGateResult } from 'src/services/tool-permissions';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -32,6 +33,7 @@ export interface ToolExecuteParams {
   readonly connectedAccounts?: Record<string, string>;
   readonly cacheScope?: {
     readonly orgId: string;
+    readonly projectId: string;
     readonly consumerUserId: string;
   };
 }
@@ -44,6 +46,7 @@ export interface ToolExecuteResponse {
   readonly data: Record<string, unknown>;
   readonly error: string | null;
   readonly logId: string;
+  readonly permissionApproval?: NonNullable<PermissionGateResult>['approvalStatus'];
 }
 
 export interface ToolsExecutor {
@@ -79,8 +82,6 @@ const META_TOOL_SLUG_LIST = [
   'COMPOSIO_REMOTE_WORKBENCH',
   'COMPOSIO_REMOTE_BASH_TOOL',
   'COMPOSIO_GET_TOOL_SCHEMAS',
-  'COMPOSIO_UPSERT_RECIPE',
-  'COMPOSIO_GET_RECIPE',
 ] as const satisfies ReadonlyArray<SessionExecuteMetaParams['slug']>;
 
 const META_TOOL_SLUGS: ReadonlySet<string> = new Set(META_TOOL_SLUG_LIST);
@@ -92,12 +93,16 @@ const isMetaToolSlug = (slug: string): slug is SessionExecuteMetaParams['slug'] 
  * Normalize the raw Tool Router response into the shape the CLI commands expect.
  */
 const normalizeResponse = (
-  raw: SessionExecuteResponse | SessionExecuteMetaResponse
+  raw: SessionExecuteResponse | SessionExecuteMetaResponse,
+  permissionGateResult?: PermissionGateResult
 ): ToolExecuteResponse => ({
   successful: raw.error === null,
   data: raw.data,
   error: raw.error,
   logId: raw.log_id,
+  ...(permissionGateResult?.approvalStatus
+    ? { permissionApproval: permissionGateResult.approvalStatus }
+    : {}),
 });
 
 /**
@@ -142,10 +147,11 @@ export const ToolsExecutorLive = Layer.effect(
       execute: (slug, params) =>
         Effect.gen(function* () {
           const cliConfig = yield* ComposioCliUserConfig;
-          if (
-            isLocalToolSlug(slug) &&
-            !cliConfig.isExperimentalFeatureEnabled(CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS)
-          ) {
+          const localToolResolution = resolveLocalTool(slug, { includeUnsupported: true });
+          const localToolsEnabled = cliConfig.isExperimentalFeatureEnabled(
+            CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS
+          );
+          if (localToolResolution && !localToolsEnabled) {
             return yield* Effect.fail(
               new Error(
                 `Local tools are experimental. Enable them with \`composio config experimental ${CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS} on\` before executing ${slug}.`
@@ -153,25 +159,42 @@ export const ToolsExecutorLive = Layer.effect(
             );
           }
 
-          const localResult = yield* Effect.tryPromise(() =>
-            executeLocalToolBySlug(slug, params.arguments)
-          );
-          if (localResult) {
-            return {
-              successful: true,
-              data: localResult as Record<string, unknown>,
-              error: null,
-              logId: '',
-            } satisfies ToolExecuteResponse;
+          if (localToolResolution) {
+            const localResult = yield* Effect.tryPromise(() =>
+              executeLocalToolBySlug(slug, params.arguments)
+            );
+            if (localResult) {
+              return {
+                successful: true,
+                data: localResult as Record<string, unknown>,
+                error: null,
+                logId: '',
+              } satisfies ToolExecuteResponse;
+            }
           }
 
           const client = yield* clientSingleton.get();
           const resolvedClient = params.client ?? client;
           // One session per invocation — CLI runs one tool per process.
-          const sessionId = yield* createToolRouterSession(resolvedClient, params.userId, {
+          const {
+            sessionId,
+            localExperimentalPayload,
+            permissionSnapshot,
+            connectedAccounts,
+            connectedAccountWordIds,
+          } = yield* createToolRouterSessionContext(resolvedClient, params.userId, {
             manageConnections: true,
             connectedAccounts: params.connectedAccounts,
             cacheScope: params.cacheScope,
+          });
+          const toolkitSlug = slug.split('_')[0]?.toLowerCase();
+          const permissionGateResult = yield* gateToolExecution({
+            toolSlug: slug,
+            connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,
+            connectedAccountWordId: toolkitSlug
+              ? connectedAccountWordIds?.[toolkitSlug]
+              : undefined,
+            snapshot: permissionSnapshot,
           });
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
@@ -201,14 +224,16 @@ export const ToolsExecutorLive = Layer.effect(
                   arguments: normalizedArguments,
                 });
               }
-              return resolvedClient.toolRouter.session.execute(sessionId, {
+              const executePayload = {
                 tool_slug: slug,
                 arguments: normalizedArguments,
-              });
+                ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
+              };
+              return resolvedClient.toolRouter.session.execute(sessionId, executePayload);
             }
           );
 
-          return normalizeResponse(raw);
+          return normalizeResponse(raw, permissionGateResult);
         }).pipe(
           Effect.catchAll((error): Effect.Effect<never, unknown> => {
             const mapped = mapComposioError({ error, toolSlug: slug });

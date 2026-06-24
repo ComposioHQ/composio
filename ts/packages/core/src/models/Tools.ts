@@ -30,8 +30,6 @@ import {
   ToolListParams as ComposioToolListParams,
   ToolExecuteParams as ComposioToolExecuteParams,
 } from '@composio/client/resources/tools';
-import { CustomTools } from './CustomTools';
-import { CustomToolInputParameter, CustomToolOptions } from '../types/customTool.types';
 import {
   afterExecuteModifier,
   ExecuteToolModifiers,
@@ -43,7 +41,6 @@ import { BaseComposioProvider } from '../provider/BaseProvider';
 import logger from '../utils/logger';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
-  ComposioCustomToolsNotInitializedError,
   ComposioInvalidModifierError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
@@ -58,12 +55,38 @@ import type { SessionExecuteParams } from '@composio/client/resources/tool-route
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
 import { schemaHasFileUploadable } from '../utils/modifiers/FileToolModifier.utils.neutral';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
 type ToolRouterSessionExecuteOptions = {
   experimental?: SessionExecuteParams.Experimental;
 };
+
+type RawToolParameters =
+  | ToolRetrieveResponse['input_parameters']
+  | ComposioToolListResponse['items'][0]['input_parameters'];
+
+/**
+ * Normalize a raw `input_parameters` / `output_parameters` payload returned by
+ * the Composio API. Maps `null`, `undefined`, and empty `{}` — all of which
+ * mean "no declared schema" — to `undefined` so the strict `ParametersSchema`
+ * validator never sees them. Non-empty objects pass through unchanged and
+ * remain subject to strict Zod validation.
+ *
+ * MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
+ * declared output schema and the API serializes that as `{}`, which would
+ * otherwise trip `ParametersSchema`. See
+ * https://github.com/ComposioHQ/composio/issues/3354.
+ */
+function normalizeRawToolParameters(
+  params: RawToolParameters | null | undefined
+): RawToolParameters | undefined {
+  if (params == null || Object.keys(params).length === 0) return undefined;
+  return params;
+}
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -75,7 +98,6 @@ export class Tools<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   private client: ComposioClient;
-  private readonly customTools: CustomTools;
   private provider: TProvider;
   private autoUploadDownloadFiles: boolean;
   private toolkitVersions: ToolkitVersionParam;
@@ -101,7 +123,6 @@ export class Tools<
     }
 
     this.client = client;
-    this.customTools = new CustomTools(client);
     this.provider = config.provider;
     this.autoUploadDownloadFiles = config?.dangerouslyAllowAutoUploadDownloadFiles === true;
     this.toolkitVersions = config?.toolkitVersions ?? CONFIG_DEFAULTS.toolkitVersions;
@@ -119,7 +140,6 @@ export class Tools<
     this.execute = this.execute.bind(this);
     // Set the execute method for the provider.
     this.provider._setExecuteToolFn(this.createExecuteFnForProviders());
-    // Bind methods that use customTools to ensure correct 'this' context
     this.getRawComposioToolBySlug = this.getRawComposioToolBySlug.bind(this);
     this.getRawComposioTools = this.getRawComposioTools.bind(this);
 
@@ -142,8 +162,8 @@ export class Tools<
   ): Tool {
     return ToolSchema.parse({
       ...tool,
-      inputParameters: tool.input_parameters,
-      outputParameters: tool.output_parameters,
+      inputParameters: normalizeRawToolParameters(tool.input_parameters),
+      outputParameters: normalizeRawToolParameters(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,
@@ -216,8 +236,12 @@ export class Tools<
       toolkitSlug: string;
       params: ToolExecuteParams;
     },
-    modifiers?: ExecuteToolModifiers
+    modifiers?: ExecuteToolModifiers,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteParams> {
+    if (requestOptions?.signal?.aborted) {
+      throw new ComposioRequestCancelledError();
+    }
     let modifiedParams = params;
     // if auto upload download files is enabled, upload the files to the Composio API
     if (this.autoUploadDownloadFiles) {
@@ -229,7 +253,11 @@ export class Tools<
         toolSlug,
         toolkitSlug,
         params: modifiedParams,
+        signal: requestOptions?.signal,
       });
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
     } else if (
       schemaHasFileUploadable(tool.inputParameters) &&
       !this.warnedAutoUploadDisabledForTool.has(toolSlug)
@@ -259,6 +287,9 @@ export class Tools<
           toolkitSlug,
           params: modifiedParams,
         });
+        if (requestOptions?.signal?.aborted) {
+          throw new ComposioRequestCancelledError();
+        }
       } else {
         throw new ComposioInvalidModifierError('Invalid beforeExecute modifier. Not a function.');
       }
@@ -285,8 +316,17 @@ export class Tools<
       toolkitSlug: string;
       result: ToolExecuteResponse;
     },
-    modifier?: afterExecuteModifier
+    modifier?: afterExecuteModifier,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
+    // The tool already executed and may have mutated external state, so a late
+    // abort does NOT short-circuit post-processing: skipping the caller's
+    // afterExecute modifier here would leave a half-finished pipeline that
+    // still looks like success-shaped data. Once the remote call has committed
+    // we run file download + afterExecute to completion. The signal is still
+    // forwarded to the download so a stuck transfer degrades gracefully
+    // (file_downloaded: false) rather than blocking, but it never skips
+    // afterExecute.
     let modifiedResult = result;
     // if auto upload download files is enabled, download the files from the Composio API
     if (this.autoUploadDownloadFiles) {
@@ -295,6 +335,7 @@ export class Tools<
         toolSlug,
         toolkitSlug,
         result: modifiedResult,
+        signal: requestOptions?.signal,
       });
     }
     // apply the after execute modifiers
@@ -314,10 +355,12 @@ export class Tools<
   }
 
   /**
-   * Lists all tools available in the Composio SDK including custom tools.
+   * Lists Composio API tools available to the SDK.
    *
-   * This method fetches tools from the Composio API in raw format and combines them with
-   * any registered custom tools. The response can be filtered and modified as needed.
+   * This method fetches remote Composio tools from the API in raw format. The response can be
+   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * them when creating or reusing a Tool Router session, then use `session.tools()`,
+   * `session.customTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -372,7 +415,8 @@ export class Tools<
    */
   async getRawComposioTools(
     query: ToolListParams,
-    options?: SchemaModifierOptions
+    options?: SchemaModifierOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolList> {
     if ('tools' in query && 'toolkits' in query) {
       throw new ValidationError(
@@ -437,21 +481,17 @@ export class Tools<
 
     logger.debug(`Fetching tools with filters: ${JSON.stringify(filters, null, 2)}`);
 
-    const tools = await this.client.tools.list(filters);
+    const tools = await withCancellation(
+      () => this.client.tools.list(filters, requestOptions),
+      requestOptions?.signal
+    );
 
     if (!tools) {
       return [];
     }
     const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
 
-    const customTools = await this.customTools.getCustomTools({
-      toolSlugs: 'tools' in queryParams.data ? queryParams.data.tools : undefined,
-    });
-
-    let modifiedTools = await this.applyDefaultSchemaModifiers([
-      ...caseTransformedTools,
-      ...customTools,
-    ]);
+    let modifiedTools = await this.applyDefaultSchemaModifiers(caseTransformedTools);
 
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
@@ -491,16 +531,21 @@ export class Tools<
    */
   async getRawToolRouterSessionTools(
     sessionId: string,
-    options?: SchemaModifierOptions
+    options?: SchemaModifierOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolList> {
     const tools: ToolList = [];
     let cursor: string | null | undefined;
 
     do {
-      const response = await this.client.toolRouter.session.tools(sessionId, {
+      const sessionToolsParams = {
         limit: TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT,
         ...(cursor ? { cursor } : {}),
-      });
+      };
+      const response = await withCancellation(
+        () => this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions),
+        requestOptions?.signal
+      );
       tools.push(...response.items.map(tool => this.transformToolCases(tool)));
       cursor = response.next_cursor;
     } while (cursor);
@@ -532,6 +577,9 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
+   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
    * @param {GetRawComposioToolBySlugOptions} [options] - Optional configuration for tool retrieval
@@ -561,9 +609,6 @@ export class Tools<
    *   }
    * );
    *
-   * // Get a custom tool (will check custom tools first)
-   * const customTool = await composio.tools.getRawComposioToolBySlug('MY_CUSTOM_TOOL');
-   *
    * // Access tool properties
    * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
    * console.log({
@@ -576,16 +621,11 @@ export class Tools<
    * });
    * ```
    */
-  async getRawComposioToolBySlug(slug: string, options?: ToolRetrievalOptions): Promise<Tool> {
-    // check if the tool is a custom tool
-    const customTool = await this.customTools.getCustomToolBySlug(slug);
-    if (customTool) {
-      logger.debug(`Found ${slug} to be a custom tool`, JSON.stringify(customTool, null, 2));
-      return customTool;
-    } else {
-      logger.debug(`Tool ${slug} is not a custom tool. Fetching from Composio API`);
-    }
-    // if not, fetch the tool from the Composio API
+  async getRawComposioToolBySlug(
+    slug: string,
+    options?: ToolRetrievalOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<Tool> {
     let tool: ToolRetrieveResponse;
     try {
       // Build API call parameters based on version source
@@ -593,8 +633,14 @@ export class Tools<
         ? { version: options.version } // Explicit version → use 'version' param
         : { toolkit_versions: this.toolkitVersions }; // SDK config → use 'toolkit_versions' param
 
-      tool = await this.client.tools.retrieve(slug, retrieveParams);
+      tool = await withCancellation(
+        () => this.client.tools.retrieve(slug, retrieveParams, requestOptions),
+        requestOptions?.signal
+      );
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       throw new ComposioToolNotFoundError(`Unable to retrieve tool with slug ${slug}`, {
         cause: error,
       });
@@ -624,7 +670,7 @@ export class Tools<
    *
    * @param {string} userId - The user id to get the tools for
    * @param {ToolListParams} filters - The filters to apply when fetching tools
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @param {ProviderOptions<TProvider> & ComposioRequestOptions} [options] - Provider options, modifiers, and/or AbortSignal
    * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tools collection
    *
    * @example
@@ -635,28 +681,16 @@ export class Tools<
    *   limit: 10
    * });
    *
-   * // Get tools with search
-   * const searchTools = await composio.tools.get('default', {
-   *   search: 'user',
-   *   limit: 10
-   * });
-   *
-   * // Get a specific tool by slug
-   * const hackerNewsUserTool = await composio.tools.get('default', 'HACKERNEWS_GET_USER');
-   *
-   * // Get a tool with schema modifications
-   * const tool = await composio.tools.get('default', 'GITHUB_GET_REPOS', {
-   *   modifySchema: (toolSlug, toolkitSlug, schema) => {
-   *     // Customize the tool schema
-   *     return {...schema, description: 'Custom description'};
-   *   }
-   * });
+   * // Timeout a slow search after 5s
+   * const tools = await composio.tools.get('default', {
+   *   search: 'send email',
+   * }, { signal: AbortSignal.timeout(5_000) });
    * ```
    */
   async get<T extends TProvider>(
     userId: string,
     filters: ToolListParams,
-    options?: ProviderOptions<TProvider>
+    options?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
   /**
@@ -665,7 +699,7 @@ export class Tools<
    *
    * @param {string} userId - The user id to get the tool for
    * @param {string} slug - The slug of the tool to fetch
-   * @param {ProviderOptions<TProvider>} [options] - Optional provider options including modifiers
+   * @param {ProviderOptions<TProvider> & ComposioRequestOptions} [options] - Optional provider options including modifiers and signal
    * @returns {Promise<ReturnType<T['wrapTools']>>} The wrapped tool
    *
    * @example
@@ -680,51 +714,56 @@ export class Tools<
    *     return {...schema, description: 'Custom description'};
    *   }
    * });
+   *
+   * // Timeout after 5s
+   * const tools = await composio.tools.get('user_1', { search: 'email' }, {
+   *   signal: AbortSignal.timeout(5_000)
+   * });
    * ```
    */
   async get<T extends TProvider>(
     userId: string,
     slug: string,
-    options?: ProviderOptions<TProvider>
+    options?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<ReturnType<T['wrapTools']>>;
 
-  /**
-   * Get a tool or list of tools based on the provided arguments.
-   * This is an implementation method that handles all overloads.
-   *
-   * @param {string} userId - The user id to get the tool(s) for
-   * @param {ToolListParams | string} arg2 - Either a slug string or filters object
-   * @param {ProviderOptions<TProvider> | ToolkitVersion} [arg3] - Optional provider options or version string
-   * @param {ProviderOptions<TProvider>} [arg4] - Optional provider options (when arg3 is version)
-   * @returns {Promise<TToolCollection>} The tool collection
-   */
   async get(
     userId: string,
     arg2: ToolListParams | string,
-    arg3?: ProviderOptions<TProvider>
+    arg3?: ProviderOptions<TProvider> & ComposioRequestOptions
   ): Promise<TToolCollection> {
-    // Handle the two-parameter overloads
-    const options = arg3 as ProviderOptions<TProvider>;
+    const options = arg3;
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
+    // Strip signal so it isn't captured in the provider execution closure —
+    // an expired AbortSignal.timeout() would poison every future tool call.
+    const { signal: _, ...modifiers } = options ?? {};
 
-    // if the second argument is a string, get a single tool
     if (typeof arg2 === 'string') {
-      const tool = await this.getRawComposioToolBySlug(arg2, {
-        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-      });
+      const tool = await this.getRawComposioToolBySlug(
+        arg2,
+        {
+          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
+        },
+        requestOptions
+      );
       return this.wrapToolsForProvider(
         userId,
         [tool],
-        options as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers
       ) as TToolCollection;
     } else {
-      // if the second argument is an object, get a list of tools
-      const tools = await this.getRawComposioTools(arg2, {
-        modifySchema: options?.modifySchema as TransformToolSchemaModifier,
-      });
+      const tools = await this.getRawComposioTools(
+        arg2,
+        {
+          modifySchema: options?.modifySchema as TransformToolSchemaModifier,
+        },
+        requestOptions
+      );
       return this.wrapToolsForProvider(
         userId,
         tools,
-        options as ExecuteToolModifiers
+        modifiers as ExecuteToolModifiers
       ) as TToolCollection;
     }
   }
@@ -848,7 +887,8 @@ export class Tools<
    */
   private async executeComposioTool(
     tool: Tool,
-    body: ToolExecuteParams
+    body: ToolExecuteParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     const toolkitVersion =
       body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
@@ -857,7 +897,7 @@ export class Tools<
       throw new ComposioToolVersionRequiredError();
     }
     try {
-      const result = await this.client.tools.execute(tool.slug, {
+      const executeBody: ComposioToolExecuteParams = {
         allow_tracing: body.allowTracing,
         connected_account_id: body.connectedAccountId,
         custom_auth_params: body.customAuthParams
@@ -880,10 +920,17 @@ export class Tools<
         user_id: body.userId,
         version: toolkitVersion,
         text: body.text,
-      });
+      };
+      const result = await withCancellation(
+        () => this.client.tools.execute(tool.slug, executeBody, requestOptions),
+        requestOptions?.signal
+      );
       // transform the response to the ToolExecuteResponse format
       return this.transformToolExecuteResponse(result);
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       const toolError = handleToolExecutionError(tool.slug, error as Error);
       throw toolError;
     }
@@ -892,8 +939,7 @@ export class Tools<
   /**
    * Executes a given tool with the provided parameters.
    *
-   * This method calls the Composio API or a custom tool handler to execute the tool and returns the response.
-   * It automatically determines whether to use a custom tool or a Composio API tool based on the slug.
+   * This method calls the Composio API to execute the tool and returns the response.
    *
    * **Version Control:**
    * By default, manual tool execution requires a specific toolkit version. If the version resolves to "latest",
@@ -910,7 +956,6 @@ export class Tools<
    * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
    * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
    *
-   * @throws {ComposioCustomToolsNotInitializedError} If the CustomTools instance is not initialized
    * @throws {ComposioConnectedAccountNotFoundError} If the connected account is not found
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found
    * @throws {ComposioToolVersionRequiredError} If version resolves to "latest" and dangerouslySkipVersionCheck is not true
@@ -961,30 +1006,37 @@ export class Tools<
    *   }
    * });
    * ```
+   *
+   * @example Execute with timeout
+   * ```typescript
+   * const result = await composio.tools.execute('HACKERNEWS_GET_FRONTPAGE', {
+   *   userId: 'default',
+   *   arguments: {},
+   *   dangerouslySkipVersionCheck: true,
+   * }, { signal: AbortSignal.timeout(5_000) });
+   * ```
    */
   async execute(
     slug: string,
     body: ToolExecuteParams,
-    modifiers?: ExecuteToolModifiers
+    options?: ExecuteToolModifiers & ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
-    if (!this.customTools) {
-      throw new ComposioCustomToolsNotInitializedError(
-        'CustomTools not initialized. Make sure Tools class is properly constructed.'
-      );
-    }
-
     const executeParams = ToolExecuteParamsSchema.safeParse(body);
     if (!executeParams.success) {
       throw new ValidationError('Invalid tool execute parameters', { cause: executeParams.error });
     }
 
-    // Determine if it's a custom tool or composio tool
-    const customTool = await this.customTools.getCustomToolBySlug(slug);
-    const tool =
-      customTool ??
-      (await this.getRawComposioToolBySlug(slug, {
+    const requestOptions: ComposioRequestOptions | undefined =
+      options?.signal != null ? { signal: options.signal } : undefined;
+    const { signal: _, ...modifiers } = options ?? {};
+
+    const tool = await this.getRawComposioToolBySlug(
+      slug,
+      {
         version: body.version,
-      }));
+      },
+      requestOptions
+    );
     const toolkitSlug = tool.toolkit?.slug ?? 'unknown';
 
     // Apply before execute modifiers
@@ -995,13 +1047,11 @@ export class Tools<
         toolkitSlug,
         params: executeParams.data,
       },
-      modifiers
+      modifiers as ExecuteToolModifiers,
+      requestOptions
     );
 
-    // Execute the tool (custom or composio)
-    let result = customTool
-      ? await this.customTools.executeCustomTool(customTool.slug, params)
-      : await this.executeComposioTool(tool, params);
+    let result = await this.executeComposioTool(tool, params, requestOptions);
 
     // Apply after execute modifiers
     result = await this.applyAfterExecuteModifiers(
@@ -1011,7 +1061,8 @@ export class Tools<
         toolkitSlug,
         result,
       },
-      modifiers?.afterExecute
+      (modifiers as ExecuteToolModifiers).afterExecute,
+      requestOptions
     );
 
     return result;
@@ -1033,7 +1084,8 @@ export class Tools<
     body: ToolExecuteMetaParams,
     modifiers?: SessionExecuteMetaModifiers,
     tool?: Tool,
-    options?: ToolRouterSessionExecuteOptions
+    options?: ToolRouterSessionExecuteOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolExecuteResponse> {
     const executeParams = ToolExecuteMetaParamsSchema.safeParse(body);
     if (!executeParams.success) {
@@ -1065,7 +1117,10 @@ export class Tools<
       executePayload.experimental = options.experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(body.sessionId, executePayload);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(body.sessionId, executePayload, requestOptions),
+      requestOptions?.signal
+    );
 
     // Prepare the result
     let result: ToolExecuteResponse = {
@@ -1102,8 +1157,11 @@ export class Tools<
    * console.log(toolsEnum.items);
    * ```
    */
-  async getToolsEnum(): Promise<ToolRetrieveEnumResponse> {
-    return this.client.tools.retrieveEnum();
+  async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
+    return withCancellation(
+      () => this.client.tools.retrieveEnum(requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -1124,8 +1182,15 @@ export class Tools<
    * console.log(inputParams.schema);
    * ```
    */
-  async getInput(slug: string, body: ToolGetInputParams): Promise<ToolGetInputResponse> {
-    return this.client.tools.getInput(slug, body);
+  async getInput(
+    slug: string,
+    body: ToolGetInputParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolGetInputResponse> {
+    return withCancellation(
+      () => this.client.tools.getInput(slug, body, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -1151,7 +1216,10 @@ export class Tools<
    * console.log(response.data);
    * ```
    */
-  async proxyExecute(body: ToolProxyParams): Promise<ToolProxyResponse> {
+  async proxyExecute(
+    body: ToolProxyParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolProxyResponse> {
     const toolProxyParams = ToolProxyParamsSchema.safeParse(body);
     if (!toolProxyParams.success) {
       throw new ValidationError('Invalid tool proxy parameters', { cause: toolProxyParams.error });
@@ -1174,7 +1242,7 @@ export class Tools<
       );
     }
 
-    return this.client.tools.proxy({
+    const proxyBody = {
       endpoint: toolProxyParams.data.endpoint,
       method: toolProxyParams.data.method,
       body: toolProxyParams.data.body,
@@ -1189,57 +1257,10 @@ export class Tools<
        */
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,
-    });
-  }
-
-  /**
-   * Creates a custom tool that can be used within the Composio SDK.
-   *
-   * Custom tools allow you to extend the functionality of Composio with your own implementations
-   * while keeping a consistent interface for both built-in and custom tools.
-   *
-   * @param {CustomToolOptions} body - The configuration for the custom tool
-   * @returns {Promise<Tool>} The created custom tool
-   *
-   * @example
-   * ```typescript
-   * // creating a custom tool with a toolkit
-   * await composio.tools.createCustomTool({
-   *   name: 'My Custom Tool',
-   *   description: 'A custom tool that does something specific',
-   *   slug: 'MY_CUSTOM_TOOL',
-   *   userId: 'default',
-   *   connectedAccountId: '123',
-   *   toolkitSlug: 'github',
-   *   inputParameters: z.object({
-   *     param1: z.string().describe('First parameter'),
-   *   }),
-   *   execute: async (input, connectionConfig, executeToolRequest) => {
-   *     // Custom logic here
-   *     return { data: { result: 'Success!' } };
-   *   }
-   * });
-   * ```
-   *
-   * @example
-   * ```typescript
-   * // creating a custom tool without a toolkit
-   * await composio.tools.createCustomTool({
-   *   name: 'My Custom Tool',
-   *   description: 'A custom tool that does something specific',
-   *   slug: 'MY_CUSTOM_TOOL',
-   *   inputParameters: z.object({
-   *     param1: z.string().describe('First parameter'),
-   *   }),
-   *   execute: async (input) => {
-   *     // Custom logic here
-   *     return { data: { result: 'Success!' } };
-   *   }
-   * });
-   */
-  async createCustomTool<T extends CustomToolInputParameter>(
-    body: CustomToolOptions<T>
-  ): Promise<Tool> {
-    return this.customTools.createTool(body);
+    } as ComposioToolProxyParams;
+    return withCancellation(
+      () => this.client.tools.proxy(proxyBody, requestOptions),
+      requestOptions?.signal
+    );
   }
 }

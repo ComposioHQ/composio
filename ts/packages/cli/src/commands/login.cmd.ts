@@ -1,4 +1,6 @@
+import path from 'node:path';
 import { Command, Options } from '@effect/cli';
+import { FileSystem } from '@effect/platform';
 import { DateTime, Effect, Option, Schedule } from 'effect';
 import open from 'open';
 import {
@@ -6,16 +8,19 @@ import {
   getSessionInfo,
   getSessionInfoByUserApiKey,
   listOrganizations,
+  type OrganizationSummary,
   type SessionInfoResponse,
 } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
+import { isInteractiveTerminal } from 'src/utils/stdio';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
@@ -28,6 +33,11 @@ export const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDescription('Login without browser interaction')
 );
 
+const pollOpt = Options.boolean('poll').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Poll the most recent pending browser login and complete it')
+);
+
 const noWait = Options.boolean('no-wait').pipe(
   Options.withDefault(false),
   Options.withDescription(
@@ -36,7 +46,7 @@ const noWait = Options.boolean('no-wait').pipe(
 );
 
 const keyOpt = Options.text('key').pipe(
-  Options.withDescription('Complete login using session key from composio login --no-wait'),
+  Options.withDescription('Poll and complete login using the session key from composio login'),
   Options.optional
 );
 
@@ -46,14 +56,14 @@ const userApiKeyOpt = Options.text('user-api-key').pipe(
 );
 
 const orgOpt = Options.text('org').pipe(
-  Options.withDescription('Default organization ID or name to store for CLI commands'),
+  Options.withDescription('Current organization ID or name to store for CLI commands'),
   Options.optional
 );
 
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
-  Options.withDescription('Skip org picker; use session default org')
+  Options.withDescription('Skip org picker; use current org')
 );
 
 const noSkillInstall = Options.boolean('no-skill-install').pipe(
@@ -65,6 +75,152 @@ const agentOpt = Options.boolean('agent').pipe(
   Options.withDefault(false),
   Options.withDescription('Sign up or log in using a Composio agent identity')
 );
+
+const PENDING_LOGIN_FILE_NAME = 'pending-login-session.json';
+const PENDING_LOGIN_TTL_MS = 10 * 60 * 1000;
+const LOGIN_POLL_INTERVAL_SECONDS = 5;
+const LOGIN_POLL_TIMEOUT_SECONDS = 10 * 60;
+const LOGIN_POLL_RETRIES = Math.ceil(LOGIN_POLL_TIMEOUT_SECONDS / LOGIN_POLL_INTERVAL_SECONDS);
+
+type PendingLoginSession = {
+  readonly key: string;
+  readonly loginUrl: string;
+  readonly expiresAt: string;
+  readonly cachedAt: string;
+};
+
+const pendingLoginPath = Effect.gen(function* () {
+  const cacheDir = yield* setupCacheDir;
+  return path.join(cacheDir, PENDING_LOGIN_FILE_NAME);
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const parsePendingLoginSession = (raw: string): PendingLoginSession => {
+  const parsed: unknown = JSON.parse(raw);
+  if (
+    !isRecord(parsed) ||
+    typeof parsed.key !== 'string' ||
+    typeof parsed.loginUrl !== 'string' ||
+    typeof parsed.expiresAt !== 'string' ||
+    typeof parsed.cachedAt !== 'string'
+  ) {
+    throw new Error('Pending login cache is invalid');
+  }
+  return {
+    key: parsed.key,
+    loginUrl: parsed.loginUrl,
+    expiresAt: parsed.expiresAt,
+    cachedAt: parsed.cachedAt,
+  };
+};
+
+const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const filePath = yield* pendingLoginPath;
+    const payload: PendingLoginSession = {
+      ...session,
+      cachedAt: new Date().toISOString(),
+    };
+    yield* fs.writeFileString(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+  });
+
+const clearPendingLoginSession = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const filePath = yield* pendingLoginPath;
+  yield* fs.remove(filePath).pipe(Effect.catchAll(() => Effect.void));
+});
+
+const readPendingLoginSession = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const filePath = yield* pendingLoginPath;
+  const exists = yield* fs.exists(filePath);
+  if (!exists) {
+    return yield* Effect.fail(
+      new Error('No pending login found. Run `composio login < /dev/null` first.')
+    );
+  }
+
+  const session = yield* fs
+    .readFileString(filePath, 'utf8')
+    .pipe(Effect.map(parsePendingLoginSession));
+  const cachedAt = Date.parse(session.cachedAt);
+  if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > PENDING_LOGIN_TTL_MS) {
+    yield* clearPendingLoginSession;
+    return yield* Effect.fail(
+      new Error('Pending login expired. Run `composio login < /dev/null` again.')
+    );
+  }
+
+  return session;
+});
+
+const formatNonInteractiveLoginInstructions = (params: {
+  readonly loginUrl: string;
+  readonly pollCommand: string;
+}) => `Open this URL in your browser to log in:
+
+  ${params.loginUrl}
+
+Then run this command to complete login:
+
+  ${params.pollCommand}
+
+hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.`;
+
+const formatPollLoginComplete = (params: {
+  readonly email?: string;
+  readonly defaultOrgId: string;
+  readonly defaultOrgName?: string;
+  readonly organizations: ReadonlyArray<OrganizationSummary>;
+}) => {
+  const orgLines =
+    params.organizations.length > 0
+      ? params.organizations
+          .map(org => `  ${org.id === params.defaultOrgId ? '*' : '-'} ${org.name} (${org.id})`)
+          .join('\n')
+      : '  No organizations were returned for this account.';
+
+  return `Login complete${params.email ? ` for ${params.email}` : ''}.
+
+Current org:
+
+  ${params.defaultOrgName ?? params.defaultOrgId} (${params.defaultOrgId})
+
+Available organizations:
+
+${orgLines}
+
+The CLI selected the first organization as your current org. To choose a different current org, run:
+
+  composio orgs switch --org-id <org_id>`;
+};
+
+const serializePollLoginResult = (params: {
+  readonly email?: string;
+  readonly defaultOrgId: string;
+  readonly defaultOrgName?: string;
+  readonly organizations: ReadonlyArray<OrganizationSummary>;
+}) =>
+  JSON.stringify(
+    {
+      email: params.email ?? null,
+      current_org: {
+        id: params.defaultOrgId,
+        name: params.defaultOrgName ?? params.defaultOrgId,
+      },
+      organizations: params.organizations.map(org => ({
+        id: org.id,
+        name: org.name,
+        selected: org.id === params.defaultOrgId,
+      })),
+      switch_command: 'composio orgs switch --org-id <org_id>',
+    },
+    null,
+    2
+  );
 
 const formatLoginSuccessMessage = (params: { email?: string; orgName?: string }): string => {
   const { email, orgName } = params;
@@ -93,7 +249,7 @@ const emitLoginComplete = (params: {
     yield* ui.log.success(formatLoginSuccessMessage({ email, orgName }));
     if (!skipHints) {
       yield* ui.log.info(commandHintStep('Execute a tool directly', 'root.execute'));
-      yield* ui.log.info(commandHintStep('Switch your default org', 'root.orgs.switch'));
+      yield* ui.log.info(commandHintStep('Switch your current org', 'root.orgs.switch'));
     }
 
     yield* ui.output(
@@ -267,7 +423,14 @@ const storeCredentials = (params: {
  * When noWait is false: polls until session is linked (same as browser flow).
  * When noWait is true: checks once and fails if not linked.
  */
-const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPicker: boolean }) =>
+const loginWithKey = (params: {
+  key: string;
+  noWait: boolean;
+  skipOrgProjectPicker: boolean;
+  pollRetries?: number;
+  defaultToFirstOrg?: boolean;
+  skipOutput?: boolean;
+}) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const ctx = yield* ComposioUserContext;
@@ -307,8 +470,8 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
             );
           }),
           Schedule.exponential('0.3 seconds').pipe(
-            Schedule.intersect(Schedule.recurs(15)),
-            Schedule.intersect(Schedule.spaced('5 seconds'))
+            Schedule.intersect(Schedule.recurs(params.pollRetries ?? 15)),
+            Schedule.intersect(Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`))
           )
         ).pipe(
           Effect.tap(() => spinner.stop('Login successful')),
@@ -323,8 +486,24 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
       userApiKey: uakApiKey,
     });
 
+    const organizations = params.defaultToFirstOrg
+      ? yield* listOrganizations({
+          baseURL: ctx.data.baseURL,
+          apiKey: uakApiKey,
+        }).pipe(
+          Effect.map(response => response.data),
+          Effect.catchAll(error =>
+            Effect.gen(function* () {
+              yield* Effect.logDebug('Failed to list organizations after login:', error);
+              return [] as ReadonlyArray<OrganizationSummary>;
+            })
+          )
+        )
+      : [];
+    const defaultOrg = params.defaultToFirstOrg ? organizations[0] : undefined;
     const xProjectId = uakSessionInfo.project.nano_id;
-    const xOrgId = uakSessionInfo.project.org.id;
+    const xOrgId = defaultOrg?.id ?? uakSessionInfo.project.org.id;
+    const xOrgName = defaultOrg?.name ?? uakSessionInfo.project.org.name;
 
     const willRunPicker = !params.skipOrgProjectPicker;
     yield* storeCredentials({
@@ -334,7 +513,7 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
       initialProjectId: xProjectId,
       fallbackEmail: linkedSession.account.email,
       skipHints: willRunPicker,
-      skipOutput: willRunPicker,
+      skipOutput: true,
     });
 
     if (willRunPicker) {
@@ -345,7 +524,7 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         Effect.catchAll(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Org picker failed:', error);
-            yield* ui.log.warn('Could not load org list. Using session default org.');
+            yield* ui.log.warn('Could not load org list. Using current org.');
             return undefined;
           })
         )
@@ -369,7 +548,28 @@ const loginWithKey = (params: { key: string; noWait: boolean; skipOrgProjectPick
         orgId: finalOrgId,
         orgName: finalOrgName,
       });
+      return {
+        email: linkedSession.account.email ?? undefined,
+        orgId: finalOrgId,
+        orgName: finalOrgName,
+        organizations,
+      };
     }
+
+    if (!params.skipOutput) {
+      yield* emitLoginComplete({
+        email: linkedSession.account.email ?? undefined,
+        orgId: xOrgId,
+        orgName: xOrgName,
+      });
+    }
+
+    return {
+      email: linkedSession.account.email ?? undefined,
+      orgId: xOrgId,
+      orgName: xOrgName,
+      organizations,
+    };
   });
 
 /**
@@ -403,8 +603,34 @@ export const browserLogin = (params: {
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
     const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+    const pollCommand = 'composio login --poll';
+    const expiresAt = DateTime.formatIso(session.expiresAt);
+    yield* writePendingLoginSession({
+      key: session.id,
+      loginUrl: url,
+      expiresAt,
+    });
 
-    const effectiveNoBrowser = params.noBrowser || params.noWait;
+    const canPrompt = isInteractiveTerminal();
+    const effectiveNoWait = params.noWait || !canPrompt;
+    const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
+
+    if (effectiveNoWait) {
+      const loginInstructions = formatNonInteractiveLoginInstructions({
+        loginUrl: url,
+        pollCommand,
+      });
+
+      if (canPrompt) {
+        yield* ui.log.info('Please login using the following URL:');
+        yield* ui.note(url, 'Login URL');
+        yield* ui.note(loginInstructions, 'Login instructions');
+      }
+
+      yield* ui.output(loginInstructions);
+      return;
+    }
+
     if (effectiveNoBrowser) {
       yield* ui.log.info('Please login using the following URL:');
     } else {
@@ -412,19 +638,6 @@ export const browserLogin = (params: {
     }
 
     yield* ui.note(url, 'Login URL');
-
-    if (params.noWait) {
-      const loginInfo = {
-        status: 'pending',
-        message: 'Complete login by opening the URL',
-        login_url: url,
-        cli_key: session.id,
-        expires_at: DateTime.formatIso(session.expiresAt),
-      };
-      yield* ui.note(JSON.stringify(loginInfo, null, 2), 'Login info');
-      yield* ui.output(JSON.stringify(loginInfo, null, 2));
-      return;
-    }
 
     yield* ui.output(url);
 
@@ -499,7 +712,7 @@ export const browserLogin = (params: {
         Effect.catchAll(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Org picker failed:', error);
-            yield* ui.log.warn('Could not load org list. Using session default org.');
+            yield* ui.log.warn('Could not load org list. Using current org.');
             return undefined;
           })
         )
@@ -534,9 +747,9 @@ export const browserLogin = (params: {
  * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
  * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
  * with --no-wait, checks once and fails if not linked.
- * Use --user-api-key to log in directly without a browser flow, and --org to override the default org.
+ * Use --user-api-key to log in directly without a browser flow, and --org to override the current org.
  * Use --agent to sign up or log in using a Composio agent identity.
- * Use -y to skip org picker and use session default org.
+ * Use -y to skip org picker and use current org.
  *
  * @example
  * ```bash
@@ -555,6 +768,7 @@ export const loginCmd = Command.make(
   'login',
   {
     noBrowser,
+    poll: pollOpt,
     noWait,
     key: keyOpt,
     userApiKey: userApiKeyOpt,
@@ -563,15 +777,29 @@ export const loginCmd = Command.make(
     noSkillInstall,
     agent: agentOpt,
   },
-  ({ noBrowser, noWait, key, userApiKey, org, yes, noSkillInstall, agent }) =>
+  ({ noBrowser, poll, noWait, key, userApiKey, org, yes, noSkillInstall, agent }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
+      const canPrompt = isInteractiveTerminal();
 
-      yield* ui.intro('composio login');
+      if (canPrompt) {
+        yield* ui.intro('composio login');
+      }
 
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
         return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
+      }
+
+      if (
+        poll &&
+        (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
+      ) {
+        return yield* Effect.fail(
+          new Error(
+            '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
+          )
+        );
       }
 
       if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
@@ -592,6 +820,34 @@ export const loginCmd = Command.make(
         );
       }
 
+      if (poll) {
+        const pendingLogin = yield* readPendingLoginSession;
+        const loginResult = yield* loginWithKey({
+          key: pendingLogin.key,
+          noWait: false,
+          skipOrgProjectPicker: true,
+          pollRetries: LOGIN_POLL_RETRIES,
+          defaultToFirstOrg: true,
+          skipOutput: true,
+        });
+        yield* clearPendingLoginSession;
+        const pollSummaryParams = {
+          email: loginResult.email,
+          defaultOrgId: loginResult.orgId,
+          defaultOrgName: loginResult.orgName,
+          organizations: loginResult.organizations,
+        };
+        const pollSummary = formatPollLoginComplete(pollSummaryParams);
+        if (canPrompt) {
+          yield* ui.note(pollSummary, 'Login complete');
+        }
+        yield* ui.output(serializePollLoginResult(pollSummaryParams), { force: true });
+        if (!noSkillInstall && canPrompt) {
+          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
+        }
+        return;
+      }
+
       if (agent) {
         return yield* handleAgentAuthError(
           Effect.gen(function* () {
@@ -603,7 +859,7 @@ export const loginCmd = Command.make(
               `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
             );
             yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
-            if (!noSkillInstall) {
+            if (!noSkillInstall && canPrompt) {
               yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
             }
           })
@@ -616,7 +872,7 @@ export const loginCmd = Command.make(
           noWait,
           skipOrgProjectPicker: true,
         });
-        if (!noSkillInstall) {
+        if (!noSkillInstall && canPrompt) {
           yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
         }
         return;
@@ -627,7 +883,7 @@ export const loginCmd = Command.make(
           userApiKey: userApiKey.value,
           org: Option.getOrUndefined(org),
         });
-        if (!noSkillInstall) {
+        if (!noSkillInstall && canPrompt) {
           yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
         }
         return;
@@ -651,7 +907,7 @@ export const loginCmd = Command.make(
         skipOrgProjectPicker: yes,
       });
 
-      if (!noSkillInstall && !noWait) {
+      if (!noSkillInstall && !noWait && canPrompt) {
         yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
       }
     })

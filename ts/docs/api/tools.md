@@ -178,46 +178,12 @@ const result = await composio.tools.execute('GITHUB_GET_ISSUES', {
 
 **Throws:**
 
-- `ComposioCustomToolsNotInitializedError`: If the CustomTools instance is not initialized
 - `ComposioToolNotFoundError`: If the tool with the given slug is not found
 - `ComposioToolExecutionError`: If there is an error during tool execution
 
-### createCustomTool(body)
-
-Creates a custom tool that can be used within the Composio SDK.
-
-```typescript
-import { z } from 'zod';
-
-const customTool = await composio.tools.createCustomTool({
-  name: 'My Custom Tool',
-  description: 'A custom tool that does something specific',
-  slug: 'MY_CUSTOM_TOOL',
-  inputParams: z.object({
-    param1: z.string().describe('Description of param1'),
-    param2: z.number().optional().describe('Optional numeric parameter')
-  }),
-  execute: async (input) => {
-    // Custom logic here
-    console.log('Input:', input.param1, input.param2);
-    return { 
-      data: { result: 'Success!' },
-      error: null,
-      successful: true
-    };
-  },
-});
-```
-
-**Parameters:**
-
-- `body` (CustomToolOptions): The configuration for the custom tool
-
-**Returns:** Promise<Tool> - The created custom tool
-
 ### getRawComposioTools(query, options?)
 
-Lists all tools available in the Composio SDK including custom tools. This method provides direct access to tool data without provider-specific wrapping.
+Lists all tools available from the Composio API. This method provides direct access to tool data without provider-specific wrapping.
 
 ```typescript
 // Get important tools from a toolkit (auto-applies important filter)
@@ -497,17 +463,3 @@ interface ToolExecuteResponse {
   sessionInfo?: unknown; // Session information
 }
 ```
-
-### CustomToolOptions
-
-```typescript
-interface CustomToolOptions {
-  name: string; // Name of the custom tool
-  description: string; // Description of the custom tool
-  slug: string; // Unique slug for the custom tool
-  inputParameters: Record<string, unknown>; // Input parameters schema
-  outputParameters?: Record<string, unknown>; // Output parameters schema
-  handler: (params: ToolExecuteParams, context: ExecuteMetadata) => Promise<ToolExecuteResponse>; // Handler function
-}
-```
-

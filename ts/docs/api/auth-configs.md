@@ -16,6 +16,12 @@ const allAuthConfigs = await composio.authConfigs.list();
 const githubAuthConfigs = await composio.authConfigs.list({
   toolkit: 'github',
 });
+
+// Search auth configs by name or id and include disabled configs
+const searchedAuthConfigs = await composio.authConfigs.list({
+  search: 'github',
+  showDisabled: true,
+});
 ```
 
 **Parameters:**
@@ -81,8 +87,8 @@ const updatedAuthConfig = await composio.authConfigs.update('auth_config_123', {
     client_secret: 'new_client_secret',
   },
   toolAccessConfig: {
-    toolsAvailableForExecution: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER']
-  }
+    toolsAvailableForExecution: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER'],
+  },
 });
 
 // Update a default auth config with new scopes
@@ -90,8 +96,8 @@ const updatedDefaultAuth = await composio.authConfigs.update('auth_config_456', 
   type: 'default',
   scopes: 'read:user,repo',
   toolAccessConfig: {
-    toolsAvailableForExecution: ['GITHUB_GET_A_REPOSITORY', 'GITHUB_LIST_REPOSITORIES_FOR_A_USER']
-  }
+    toolsAvailableForExecution: ['GITHUB_GET_A_REPOSITORY', 'GITHUB_LIST_REPOSITORIES_FOR_A_USER'],
+  },
 });
 ```
 
@@ -104,7 +110,8 @@ const updatedDefaultAuth = await composio.authConfigs.update('auth_config_456', 
 
 **Returns:** Promise<AuthConfigUpdateResponse> - The updated auth config
 
-**Throws:** 
+**Throws:**
+
 - ValidationError if the update parameters are invalid
 - ComposioAuthConfigNotFoundError if the auth config cannot be found
 
@@ -133,8 +140,10 @@ await composio.authConfigs.delete('auth_config_123');
 interface AuthConfigListParams {
   cursor?: string; // Pagination cursor
   limit?: number; // Limit the number of results
-  orderBy?: string; // Order by field
+  search?: string; // Search auth configs by name or id
+  showDisabled?: boolean; // Include disabled auth configs
   toolkit?: string; // Filter by toolkit slug
+  isComposioManaged?: boolean; // Filter by Composio-managed auth configs
 }
 ```
 
@@ -184,7 +193,7 @@ interface AuthConfigCreateParams {
 
 ```typescript
 // Discriminated union type for updating auth configs
-type AuthConfigUpdateParams = 
+type AuthConfigUpdateParams =
   | {
       type: 'custom';
       credentials: Record<string, string | number | boolean | unknown>;

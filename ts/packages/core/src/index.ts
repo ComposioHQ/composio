@@ -9,7 +9,19 @@ export {
   jsonSchemaToZodSchema,
   removeNonRequiredProperties,
 } from './utils/jsonSchema';
+export type {
+  DereferenceJsonSchemaOptions,
+  UnresolvedRefReason,
+  UnresolvedRefStrategy,
+} from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
+export { normalizeToolArguments } from './utils/toolArguments';
+export {
+  sanitizeSchemaPropertyKeys,
+  restoreOriginalKeys,
+  mappingHasRenames,
+} from './utils/schemaPropertyKeys';
+export type { KeyMapping, KeySanitizationPolicy } from './utils/schemaPropertyKeys';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
 export { RemoteFile } from './models/RemoteFile';
@@ -30,13 +42,22 @@ export * from './types/files.types';
 export * from './types/connectionRequest.types';
 export * from './types/toolRouter.types';
 export * from './types/ToolRouterSessionFilesMount.types';
+export * from './types/requestOptions.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+export { telemetry } from './telemetry/Telemetry';
 
 // Experimental custom tools — exported with experimental_ prefix for top-level import
 export { createCustomTool as experimental_createTool } from './models/CustomTool';
 export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
+
+// Experimental shared connected accounts — shape may change in future releases.
+// `updateAcl` is mounted as a method on `composio.experimental.updateAcl(...)`
+// because it takes a client and performs I/O. The `Experimental` class
+// itself is re-exported so callers can type their own composio handles
+// (e.g. in test helpers).
+export { Experimental } from './models/Experimental';
 
 // Error handling exports
 export * from './errors';

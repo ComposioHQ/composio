@@ -11,7 +11,7 @@ type InlineCustomToolsExperimental =
 export function inlineCustomToolsExperimental<TExperimental extends InlineCustomToolsExperimental>(
   payload?: InlineCustomToolsWirePayload
 ): TExperimental | undefined {
-  // The SDK wire payload is a structural subset of Stainless' endpoint-specific
-  // experimental payloads, with input-only preload hints on custom definitions.
+  // Stainless generates endpoint-specific experimental types with the same custom
+  // definition shape, so this helper centralizes the structural cast.
   return payload as TExperimental | undefined;
 }

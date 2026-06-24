@@ -1,71 +1,21 @@
 import { z } from 'zod/v3';
-import { Tool, ToolProxyParams } from './tool.types';
+import type { z as z4 } from 'zod/v4';
 import type {
   SessionProxyExecuteParams,
   ToolRouterSessionExecuteResponse,
   ToolRouterSessionProxyExecuteResponse,
 } from './toolRouter.types';
-import { ToolExecuteResponse } from '@composio/client/resources/tools';
-import { ConnectionData } from './connectedAccountAuthStates.types';
 import type {
   SessionCreateParams,
   SessionCreateResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 
-// ────────────────────────────────────────────────────────────────
-// Legacy custom tool types (used by composio.tools.createCustomTool)
-// ────────────────────────────────────────────────────────────────
-
-type BaseCustomToolOptions<T extends z.ZodType> = {
-  name: string;
-  description?: string;
-  slug: string;
-  inputParams: T;
-};
-
-type ToolkitBasedExecute<T extends z.ZodType> = {
-  execute: (
-    input: z.infer<T>,
-    connectionConfig: ConnectionData | null,
-    executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>
-  ) => Promise<ToolExecuteResponse>;
-  toolkitSlug: string;
-};
-
-type StandaloneExecute<T extends z.ZodType> = {
-  execute: (input: z.infer<T>) => Promise<ToolExecuteResponse>;
-  toolkitSlug?: never;
-};
-
-export type CustomToolOptions<T extends z.ZodType> = BaseCustomToolOptions<T> &
-  (ToolkitBasedExecute<T> | StandaloneExecute<T>);
-
-export type CustomToolRegistry = Map<
-  string,
-  { options: CustomToolOptions<CustomToolInputParameter>; schema: Tool }
->;
-
-export type InputParamsSchema = {
-  definitions: {
-    input: {
-      type: string;
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
-};
-
-export type CustomToolInputParameter = z.ZodType;
-
-export interface CustomToolRegistryItem {
-  options: CustomToolOptions<CustomToolInputParameter>;
-  schema: Tool;
-}
-
-export interface ExecuteMetadata {
-  userId: string;
-  connectedAccountId?: string;
-}
+export type AnyZodSchema = z.ZodType | z4.ZodType;
+export type InferZodSchema<T extends AnyZodSchema> = T extends z.ZodType
+  ? z.infer<T>
+  : T extends z4.ZodType
+    ? z4.infer<T>
+    : never;
 
 // ────────────────────────────────────────────────────────────────
 // New custom tool types (for tool router integration via createCustomTool())
@@ -85,6 +35,14 @@ export interface SessionContext {
   ): Promise<ToolRouterSessionExecuteResponse>;
   /** Proxy API calls through Composio's auth layer (resolved from session toolkit). */
   proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse>;
+  /**
+   * Caller-supplied AbortSignal forwarded from `session.execute(..., { signal })`.
+   * Custom-tool execution is cooperative: long-running user code that respects
+   * this signal (e.g. by passing it into `fetch`) can abort mid-execution and
+   * surface as `ComposioRequestCancelledError`. Undefined when the caller did
+   * not pass `requestOptions`.
+   */
+  readonly signal?: AbortSignal;
 }
 
 /**
@@ -95,8 +53,8 @@ export interface SessionContext {
  * - `(input) => data` — for tools that don't need session context
  * - `(input, ctx) => data` — for tools that need to call other tools or proxy APIs
  */
-export type CustomToolExecuteFn<T extends z.ZodType> = (
-  input: z.infer<T>,
+export type CustomToolExecuteFn<T extends AnyZodSchema> = (
+  input: InferZodSchema<T>,
   ctx: SessionContext
 ) => Promise<Record<string, unknown>>;
 
@@ -139,18 +97,18 @@ export const CreateCustomToolBaseSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'When true, expose this custom tool directly from session.tools(). This is SDK-local for custom tools and is sent to v3.1 with the inline custom definition.'
+      'When true, include this custom tool in session.tools() so it can be called without searching first.'
     ),
 });
 
 /** Options for creating a custom tool via `createCustomTool()`. */
-export type CreateCustomToolParams<T extends z.ZodType> = z.infer<
+export type CreateCustomToolParams<T extends AnyZodSchema> = z.infer<
   typeof CreateCustomToolBaseSchema
 > & {
   /** Zod schema for input parameters */
   inputParams: T;
   /** Optional Zod schema for output parameters (sent to backend for documentation) */
-  outputParams?: z.ZodType;
+  outputParams?: AnyZodSchema;
   /** The function that executes the tool */
   execute: CustomToolExecuteFn<T>;
 };
@@ -170,26 +128,23 @@ export interface CustomTool {
    */
   readonly extendsToolkit?: string;
   /**
-   * Whether this custom tool should be exposed directly from session.tools().
-   * This is SDK-local for custom tools and is sent to v3.1 with the inline
-   * custom definition.
+   * Include this custom tool in session.tools() so it can be called without
+   * searching first.
    */
   readonly preload?: boolean;
   readonly inputSchema: Record<string, unknown>;
   /** JSON Schema representation of the output (for backend documentation) */
   readonly outputSchema?: Record<string, unknown>;
   /** @internal Original Zod schema — used for runtime input validation (defaults, coercions, transforms) */
-  readonly inputParams: z.ZodType;
+  readonly inputParams: AnyZodSchema;
   /** Direct reference to the execute function — useful for testing */
-  readonly execute: CustomToolExecuteFn<z.ZodType>;
+  readonly execute: CustomToolExecuteFn<AnyZodSchema>;
 }
 
 /** Serialized tool definition sent to backend for search indexing. Uses official client type. */
 export type CustomToolDefinition = SessionCreateParams.Experimental.CustomTool;
 
-export type CustomToolWireDefinition = CustomToolDefinition & {
-  preload?: boolean;
-};
+export type CustomToolWireDefinition = CustomToolDefinition;
 
 // ────────────────────────────────────────────────────────────────
 // Custom toolkit types
@@ -206,7 +161,7 @@ export const CreateCustomToolkitBaseSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'When true, expose tools in this custom toolkit directly from session.tools(). Tool-level preload values override this default.'
+      'When true, include tools from this custom toolkit in session.tools(). Tool-level preload values override this default.'
     ),
 });
 
@@ -225,7 +180,7 @@ export interface CustomToolkit {
   readonly name: string;
   readonly description: string;
   /**
-   * Default direct-exposure setting for tools in this custom toolkit.
+   * Default session.tools() exposure for tools in this custom toolkit.
    * Tool-level preload values override this default.
    */
   readonly preload?: boolean;
@@ -235,10 +190,7 @@ export interface CustomToolkit {
 /** Serialized toolkit definition sent to backend. Uses official client type. */
 export type CustomToolkitDefinition = SessionCreateParams.Experimental.CustomToolkit;
 
-export type CustomToolkitWireDefinition = Omit<CustomToolkitDefinition, 'tools'> & {
-  preload?: boolean;
-  tools: Array<CustomToolkitDefinition['tools'][number] & { preload?: boolean }>;
-};
+export type CustomToolkitWireDefinition = CustomToolkitDefinition;
 
 export interface InlineCustomToolsWirePayload {
   custom_tools?: CustomToolWireDefinition[];
@@ -262,10 +214,16 @@ export type CustomToolsMapEntry = {
 export type CustomToolsMap = {
   /** Lookup by final slug (e.g. LOCAL_GET_USER_CONTEXT) — used for agent execution path */
   byFinalSlug: Map<string, CustomToolsMapEntry>;
-  /** Lookup by original slug (e.g. GET_USER_CONTEXT) — used for programmatic session.execute() */
+  /** Lookup by unique original slug (e.g. GET_USER_CONTEXT) — used for programmatic session.execute() */
   byOriginalSlug: Map<string, CustomToolsMapEntry>;
+  /** Lookup by resolved toolkit + original slug — used when multiple custom toolkits reuse tool names */
+  byToolkitAndOriginalSlug?: Map<string, CustomToolsMapEntry>;
+  /** Original slugs that appear in multiple toolkits and cannot be resolved safely without the final slug */
+  ambiguousOriginalSlugs?: Set<string>;
   /** The original custom toolkits passed at session creation — used for session.customToolkits() */
   toolkits?: CustomToolkit[];
+  /** The original standalone custom tools passed at session creation — kept for inline re-injection on later requests. */
+  tools?: CustomTool[];
 };
 
 // ────────────────────────────────────────────────────────────────

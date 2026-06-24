@@ -96,6 +96,7 @@ describe('CLI: composio dev connected-accounts link', () => {
     connected_account_id: 'con_test_link',
     link_token: 'lt_test_token',
     redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+    account_type: 'PRIVATE' as const,
   }));
 
   afterEach(() => {
@@ -288,6 +289,7 @@ describe('CLI: composio dev connected-accounts link', () => {
           connected_account_id: '',
           link_token: 'lt_test_token',
           redirect_url: '',
+          account_type: 'PRIVATE' as const,
         }),
       },
     })
@@ -374,6 +376,7 @@ describe('CLI: composio dev connected-accounts link', () => {
           connected_account_id: 'con_second_link',
           link_token: 'lt_test_token',
           redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+          account_type: 'PRIVATE' as const,
         }),
       },
       fixture: 'global-test-user-id',

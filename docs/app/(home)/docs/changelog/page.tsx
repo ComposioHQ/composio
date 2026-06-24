@@ -27,6 +27,7 @@ import {
 } from 'fumadocs-ui/layouts/docs/page';
 import { CopyLink } from '@/components/copy-link';
 import { PageActions } from '@/components/page-actions';
+import { EditOnGitHub } from '@/components/edit-on-github';
 
 const mdxComponents = getMDXComponents();
 
@@ -54,7 +55,7 @@ export default function ChangelogPage() {
                   <div className="mb-3 md:absolute md:left-0 md:w-28 md:text-right md:pr-6">
                     <CopyLink
                       href={dateToChangelogUrl(entry.date)}
-                      className="text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors"
+                      className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors"
                     >
                       {formatDate(entry.date)}
                     </CopyLink>
@@ -77,6 +78,7 @@ export default function ChangelogPage() {
             })}
           </div>
         </div>
+        <EditOnGitHub path="docs/app/(home)/docs/changelog/page.tsx" />
       </DocsBody>
     </DocsPage>
   );

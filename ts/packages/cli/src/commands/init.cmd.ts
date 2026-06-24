@@ -33,7 +33,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 const yesOpt = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
-  Options.withDescription('Auto-select the default org project, else first developer project')
+  Options.withDescription('Auto-select the current org project, else first developer project')
 );
 
 // ---------------------------------------------------------------------------
