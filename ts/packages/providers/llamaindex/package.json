@@ -29,7 +29,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [

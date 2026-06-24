@@ -26,7 +26,7 @@
   "sideEffects": false,
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "build:beeper-imessage": "bun run ./scripts/build-beeper-imessage-binaries.ts",
     "build:peekaboo": "bun run ./scripts/build-peekaboo-binaries.ts",
     "build:composio-native-ui": "bun run ./scripts/build-composio-native-ui-binaries.ts",

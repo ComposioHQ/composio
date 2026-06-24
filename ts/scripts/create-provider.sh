@@ -44,7 +44,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],

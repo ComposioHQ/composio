@@ -31,7 +31,7 @@ If `COMPOSIO_API_KEY` is not set, the suite is skipped.
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: 22.22.3, 24.16.0, 25.9.0.
+**Docker** with Node.js versions: 22.22.3, 24.17.0, 25.9.0.
 
 This ensures the behavior is tested against specific Node.js versions independent of the developer's local setup.
 

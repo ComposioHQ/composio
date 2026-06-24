@@ -52,7 +52,7 @@ function inferCwd(importMetaUrl: string, repoRoot: string): string {
  * import type { E2ETestResult } from '@e2e-tests/utils';
  *
  * e2e(import.meta.url, {
- *   versions: { node: ['22.22.3', '24.16.0', '25.9.0'] },
+ *   versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
  *   env: { COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY },
  *   defineTests: ({ describe, it, expect, beforeAll, runFixture }) => {
  *     let result: E2ETestResult;

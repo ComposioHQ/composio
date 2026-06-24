@@ -10,18 +10,18 @@ import { e2e } from '@e2e-tests/utils';
 import { describe, it, expect } from 'bun:test';
 
 e2e(import.meta.url, {
-  versions: { node: ['22.22.3', '24.16.0', '25.9.0'] },
+  versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
   defineTests: () => {
     describe('json-schema-to-zod with Zod v4', () => {
       describe('Basic functionality', () => {
         it('converts basic string schema', () => {
           const schema: JsonSchema = { type: 'string' };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse('hello')).toBe('hello');
           expect(() => zodSchema.parse(123)).toThrow();
         });
-    
+
         it('converts object schema with validation', () => {
           const schema: JsonSchema = {
             type: 'object',
@@ -32,34 +32,34 @@ e2e(import.meta.url, {
             required: ['name'],
           };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
           expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
           expect(() => zodSchema.parse({ age: 30 })).toThrow();
         });
-    
+
         it('converts array schema', () => {
           const schema: JsonSchema = {
             type: 'array',
             items: { type: 'string' },
           };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse(['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
           expect(() => zodSchema.parse(['one', 2])).toThrow();
         });
-    
+
         it('validates email format', () => {
           const schema: JsonSchema = {
             type: 'string',
             format: 'email',
           };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse('test@example.com')).toBe('test@example.com');
           expect(() => zodSchema.parse('invalid-email')).toThrow();
         });
-    
+
         it('handles complex nested schemas', () => {
           const schema: JsonSchema = {
             type: 'object',
@@ -86,7 +86,7 @@ e2e(import.meta.url, {
             required: ['user'],
           };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           const validData = {
             user: {
               name: 'Jane Doe',
@@ -98,19 +98,19 @@ e2e(import.meta.url, {
           };
           expect(zodSchema.parse(validData)).toEqual(validData);
         });
-    
+
         it('handles anyOf schemas', () => {
           const schema: JsonSchema = {
             anyOf: [{ type: 'string' }, { type: 'number' }],
           };
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse('hello')).toBe('hello');
           expect(zodSchema.parse(42)).toBe(42);
           expect(() => zodSchema.parse(true)).toThrow();
         });
       });
-    
+
       describe('Parsing behavior', () => {
         it('converts basic schemas and verifies parsing behavior', () => {
           const schema: JsonSchema = {
@@ -122,15 +122,15 @@ e2e(import.meta.url, {
             required: ['name'],
             additionalProperties: false,
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
           expect(zodSchema.parse({ name: 'John', age: 30 })).toEqual({ name: 'John', age: 30 });
           expect(() => zodSchema.parse({ age: 30 })).toThrow();
           expect(() => zodSchema.parse({ name: 'John', extra: 'field' })).toThrow();
         });
-    
+
         it('handles additionalProperties: true', () => {
           const schema: JsonSchema = {
             type: 'object',
@@ -139,9 +139,9 @@ e2e(import.meta.url, {
             },
             additionalProperties: true,
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
           expect(zodSchema.parse({ name: 'John', extra: 'allowed', another: 123 })).toEqual({
             name: 'John',
@@ -149,7 +149,7 @@ e2e(import.meta.url, {
             another: 123,
           });
         });
-    
+
         it('handles additionalProperties with type constraint', () => {
           const schema: JsonSchema = {
             type: 'object',
@@ -158,9 +158,9 @@ e2e(import.meta.url, {
             },
             additionalProperties: { type: 'number' },
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse({ name: 'John' })).toEqual({ name: 'John' });
           expect(zodSchema.parse({ name: 'John', age: 30, count: 5 })).toEqual({
             name: 'John',
@@ -169,7 +169,7 @@ e2e(import.meta.url, {
           });
           expect(() => zodSchema.parse({ name: 'John', extra: 'string' })).toThrow();
         });
-    
+
         it('handles nested objects with different additionalProperties settings', () => {
           const schema: JsonSchema = {
             type: 'object',
@@ -191,29 +191,29 @@ e2e(import.meta.url, {
             },
             additionalProperties: { type: 'string' },
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           const validData = {
             strictChild: { name: 'John' },
             flexibleChild: { age: 30, extra: 'allowed' },
             extraString: 'this should be a string',
           };
           expect(zodSchema.parse(validData)).toEqual(validData);
-    
+
           expect(() =>
             zodSchema.parse({
               strictChild: { name: 'John', extra: 'not allowed' },
             })
           ).toThrow();
-    
+
           expect(() =>
             zodSchema.parse({
               extraNumber: 123,
             })
           ).toThrow();
         });
-    
+
         it('handles complex nested arrays', () => {
           const schema: JsonSchema = {
             type: 'array',
@@ -229,17 +229,15 @@ e2e(import.meta.url, {
               required: ['id'],
             },
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           const validData = [{ id: 1, tags: ['a', 'b'] }, { id: 2, tags: ['c'] }, { id: 3 }];
           expect(zodSchema.parse(validData)).toEqual(validData);
-    
-          expect(() =>
-            zodSchema.parse([{ tags: ['a', 'b'] }])
-          ).toThrow();
+
+          expect(() => zodSchema.parse([{ tags: ['a', 'b'] }])).toThrow();
         });
-    
+
         it('handles union types with anyOf', () => {
           const schema: JsonSchema = {
             anyOf: [
@@ -254,19 +252,18 @@ e2e(import.meta.url, {
               },
             ],
           };
-    
+
           const zodSchema = jsonSchemaToZod(schema);
-    
+
           expect(zodSchema.parse('hello')).toBe('hello');
           expect(zodSchema.parse(42)).toBe(42);
           expect(zodSchema.parse({ type: 'custom' })).toEqual({ type: 'custom' });
-    
+
           expect(() => zodSchema.parse('ab')).toThrow();
           expect(() => zodSchema.parse(-1)).toThrow();
           expect(() => zodSchema.parse({ foo: 'bar' })).toThrow();
         });
       });
     });
-  }
+  },
 });
-
