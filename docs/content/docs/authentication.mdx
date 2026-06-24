@@ -4,7 +4,11 @@ description: Understand how Composio handles user authentication to toolkits
 keywords: [connect link, oauth, auth config, in-chat auth, dynamic auth]
 ---
 
-Composio handles authentication for you. Your users connect their accounts through a secure [Connect Link](/reference/api-reference/connected-accounts/postConnectedAccountsLink), and Composio manages their tokens from there.
+Composio organizes everything around your **users**. A user is whoever your agent acts on behalf of: a person in your app, identified by a [`userID`](/docs/how-composio-works) you choose. Authentication is always per user. Each user connects their own accounts, their Gmail, their GitHub, their Slack, and Composio stores and refreshes those credentials against that `userID`.
+
+This is the core idea: your agent runs the same tools for many people, and every tool call runs as a specific user against that user's connected accounts. User A's agent never touches user B's data. You pass the `userID` when you create a session, and Composio handles the auth from there.
+
+Your users connect their accounts through a secure [Connect Link](/reference/api-reference/connected-accounts/postConnectedAccountsLink), and Composio manages their tokens for you.
 
 <ManageConnectionsVisual />
 
@@ -68,7 +72,7 @@ const session = await composio.create("user_123", {
 
 Don't want to wait for the agent? Call `session.authorize()` to generate a Connect Link on demand, for onboarding, a settings page, or a pre-flight check before a task.
 
-<Card icon={<ShieldCheck />} title="Manual auth management" href="/docs/authenticating-users/manually-authenticating">
+<Card icon={<ShieldCheck />} title="Manual auth management" href="/docs/manually-authenticating">
   `session.authorize()`, callback URLs, connection status, and disabling in-chat prompts
 </Card>
 
@@ -120,4 +124,4 @@ console.log(connectionRequest.redirectUrl);
 
 ## Next
 
-<Card icon={<ShieldCheck />} title="Manual auth management" href="/docs/authenticating-users/manually-authenticating" description="Generate Connect Links yourself, check connection status, and disable in-chat prompts" />
+<Card icon={<ShieldCheck />} title="Manual auth management" href="/docs/manually-authenticating" description="Generate Connect Links yourself, check connection status, and disable in-chat prompts" />

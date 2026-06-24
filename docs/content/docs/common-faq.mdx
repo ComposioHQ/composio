@@ -138,7 +138,7 @@ Toolkits with Composio-managed auth need no configuration. For toolkits without 
 <Accordion title="Can a user connect multiple accounts for the same app?">
 Yes. A user can connect both a personal and a work Gmail account, for example. Call `session.authorize()` multiple times for the same toolkit. Each session uses the most recently connected account by default, but you can pin a specific account when creating the session.
 
-For direct tool execution, use `initiate()` with `allow_multiple: true` and pass the `connected_account_id` when executing. See [Managing multiple connected accounts](/docs/authenticating-users/managing-multiple-connected-accounts).
+For direct tool execution, use `initiate()` with `allow_multiple: true` and pass the `connected_account_id` when executing. See [Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
 </Accordion>
 
 <Accordion title="How does token refresh work?">
@@ -150,7 +150,7 @@ If a refresh fails permanently, for example because the user revoked access or t
 <Accordion title="How do I redirect users back to my app after they connect?">
 Pass a `callbackUrl` when calling `link()`, `initiate()`, or `session.authorize()`. After authentication, Composio redirects the user to that URL with `status=success` or `status=failed` and the `connected_account_id` appended as query parameters.
 
-Include your own query parameters in the callback URL (for example `?user_id=user_123&source=onboarding`) to carry context through the flow. Composio preserves them. See [sessions](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication) or [direct tool setup](/docs/tools-direct/authenticating-tools#redirecting-users-after-authentication).
+Include your own query parameters in the callback URL (for example `?user_id=user_123&source=onboarding`) to carry context through the flow. Composio preserves them. See [sessions](/docs/manually-authenticating#redirecting-users-after-authentication) or [direct tool setup](/docs/tools-direct/authenticating-tools#redirecting-users-after-authentication).
 </Accordion>
 
 <Accordion title="How do I use my own API key for a toolkit instead of asking each user for theirs?">

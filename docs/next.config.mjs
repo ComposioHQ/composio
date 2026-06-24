@@ -301,6 +301,22 @@ const config = {
         destination: '/docs/programmatic-auth-configs',
         permanent: true,
       },
+      // Authenticating users folder flattened into the Authenticate users section
+      {
+        source: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/managing-multiple-connected-accounts',
+        destination: '/docs/managing-multiple-connected-accounts',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/shared-connections',
+        destination: '/docs/shared-connections',
+        permanent: true,
+      },
       // Authentication reference renamed to "Authenticating to Composio"
       {
         source: '/reference/authentication',
