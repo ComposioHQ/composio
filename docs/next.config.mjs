@@ -152,12 +152,12 @@ const config = {
       // Authentication pages moved from tool-router to docs
       {
         source: '/tool-router/using-in-chat-authentication',
-        destination: '/docs/authenticating-users/in-chat-authentication',
+        destination: '/docs/authentication#in-chat-authentication',
         permanent: true,
       },
       {
         source: '/tool-router/manually-authenticating-users',
-        destination: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
         permanent: true,
       },
       {
@@ -360,11 +360,6 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/managing-multiple-connected-accounts',
-        destination: '/docs/authenticating-users/managing-multiple-connected-accounts',
-        permanent: true,
-      },
-      {
         source: '/features/authentication',
         destination: '/docs/authentication',
         permanent: true,
@@ -450,11 +445,6 @@ const config = {
       {
         source: '/docs/custom-auth-configs',
         destination: '/docs/auth-configuration/custom-auth-configs',
-        permanent: true,
-      },
-      {
-        source: '/docs/programmatic-auth-configs',
-        destination: '/docs/auth-configuration/programmatic-auth-configs',
         permanent: true,
       },
       {

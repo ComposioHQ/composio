@@ -8,6 +8,17 @@ Composio organizes everything around your **users**. A user is whoever your agen
 
 This is the core idea: your agent runs the same tools for many people, and every tool call runs as a specific user against that user's connected accounts. User A's agent never touches user B's data. You pass the `userID` when you create a session, and Composio handles the auth from there.
 
+Because connections are stored under the `userID`, use a stable identifier, like your database ID, never one that can change.
+
+<Accordions>
+<Accordion title="userID best practices">
+- **Recommended:** database UUID or primary key (`user.id`)
+- **Acceptable:** unique username (`user.username`)
+- **Avoid:** email addresses (they can change)
+- **Never:** `default` in production (it exposes other users' data)
+</Accordion>
+</Accordions>
+
 Your users connect their accounts through a secure [Connect Link](/reference/api-reference/connected-accounts/postConnectedAccountsLink), and Composio manages their tokens for you.
 
 <ManageConnectionsVisual />
