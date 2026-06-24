@@ -17,9 +17,8 @@ import type { ReactNode } from 'react';
 export function LocalSandboxBoundary() {
   return (
     <div className="not-prose my-6 overflow-hidden rounded-sm border border-fd-border bg-fd-background">
-      <div className="flex items-center justify-between border-b border-fd-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
-        <span>where your code runs</span>
-        <span className="text-fd-foreground/55">your boundary = your security boundary</span>
+      <div className="border-b border-fd-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
+        where your code runs, relative to your security boundary
       </div>
 
       <div className="grid items-stretch gap-px bg-fd-border md:grid-cols-2">
@@ -91,7 +90,12 @@ function Boundary({ tone, children }: { tone: 'neutral' | 'accent'; children: Re
   const border =
     tone === 'accent' ? 'border-[var(--composio-brand)]/40' : 'border-dashed border-fd-foreground/25';
   return (
-    <div className={'relative rounded-sm border bg-fd-foreground/[0.015] p-2.5 pt-5 ' + border}>
+    <div
+      className={
+        'relative flex min-h-[124px] flex-col justify-center rounded-sm border bg-fd-foreground/[0.015] p-2.5 pt-6 ' +
+        border
+      }
+    >
       <span className="absolute left-2 top-1 font-mono text-[9px] uppercase tracking-[0.06em] text-fd-foreground/40">
         your boundary
       </span>
