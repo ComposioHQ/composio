@@ -58,7 +58,7 @@ function decorateNode(node: Node, experimental: Set<string>, isNew: Set<string>,
     return decorated;
   }
   if (node.type === 'page' && experimental.has(node.url)) {
-    return { ...node, name: withBadge(node.name, <SidebarBadge label="Experimental" tone="experimental" />) } as Item;
+    return { ...node, name: withBadge(node.name, <SidebarBadge label="Exp" tone="experimental" />) } as Item;
   }
   if (node.type === 'page' && isNew.has(node.url)) {
     return { ...node, name: withBadge(node.name, <SidebarBadge label="New" tone="new" />) } as Item;
