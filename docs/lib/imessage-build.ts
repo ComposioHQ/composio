@@ -56,7 +56,64 @@ export const sendMessage = experimental_createTool('SEND', {
 });
 `;
 
+const wiringClient = `import { Composio } from '@composio/core';
+import { EveProvider } from '@composio/experimental';
+
+export const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new EveProvider(),
+});
+`;
+
+const wiringSession = `import { Composio } from '@composio/core';
+import { EveProvider } from '@composio/experimental';
+
+export const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new EveProvider(),
+});
+
+export const session = composio.sessions.create('user_123');
+`;
+
+const wiringToolkit = `import { Composio } from '@composio/core';
+import { EveProvider } from '@composio/experimental';
+import { createImessageToolkit } from './imessage';
+
+export const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new EveProvider(),
+});
+
+export const session = composio.sessions.create('user_123', {
+  experimental: { customToolkits: [createImessageToolkit()] },
+});
+`;
+
 export const FILE_BUILDS = {
+  wiring: {
+    file: 'composio.ts',
+    stages: [
+      {
+        title: 'Client with the eve provider',
+        description:
+          'The eve provider makes session.tools() return eve-native tools, so eve can call them directly.',
+        code: wiringClient,
+      },
+      {
+        title: 'A session for the user',
+        description:
+          'sessions.create scopes the toolset to one user. It already exposes the whole Composio catalog.',
+        code: wiringSession,
+      },
+      {
+        title: 'Register the local toolkit',
+        description:
+          'Pass the custom toolkit so the local iMessage tools join the catalog on the same session.',
+        code: wiringToolkit,
+      },
+    ],
+  },
   send: {
     file: 'imessage/send-message.ts',
     stages: [

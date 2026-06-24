@@ -46,12 +46,35 @@ function StepCard({
 }
 
 /**
- * ImessageFileBuildup — renders the iMessage SEND tool growing a piece at a
+ * ImessageFileBuildup — renders one of the example's files growing a piece at a
  * time. Each step is a green diff against the previous stage (via @pierre/diffs),
  * mirroring the Pi example's FileBuildup.
+ *
+ * Pass `step` (1-indexed) to render just that one step's diff, so the prose for
+ * a concept can sit right next to the code that adds it. Without `step`, renders
+ * every step with its built-in description.
  */
-export async function ImessageFileBuildup({ name }: { name: keyof typeof FILE_BUILDS }) {
+export async function ImessageFileBuildup({
+  name,
+  step,
+}: {
+  name: keyof typeof FILE_BUILDS;
+  step?: number;
+}) {
   const build = FILE_BUILDS[name];
+
+  if (typeof step === 'number') {
+    const i = step - 1;
+    const stage = build.stages[i];
+    if (!stage) return null;
+    const prev = i > 0 ? build.stages[i - 1].code : '';
+    const { fileDiff, prerenderedHTML } = await diffFor(build.file, prev, stage.code);
+    return (
+      <div className="not-prose my-6">
+        <DiffView fileDiff={fileDiff} prerenderedHTML={prerenderedHTML} code={stage.code} />
+      </div>
+    );
+  }
 
   const steps = [];
   let prev = '';
