@@ -28,9 +28,14 @@ export async function listActiveAccounts(userId: string, toolkitSlug?: string) {
 // rely on a default-account fallback). Resolved once and memoized.
 let botAccountIdPromise: Promise<string | undefined> | undefined;
 function getBotAccountId(): Promise<string | undefined> {
-  botAccountIdPromise ??= listActiveAccounts(BOT_USER, "slackbot").then(
-    (accounts) => accounts[0]?.id
-  );
+  botAccountIdPromise ??= listActiveAccounts(BOT_USER, "slackbot")
+    .then((accounts) => accounts[0]?.id)
+    .then((id) => {
+      // Don't cache a miss: if the bot isn't connected yet, retry next call so a
+      // later setup/OAuth is picked up without waiting for a cold start.
+      if (!id) botAccountIdPromise = undefined;
+      return id;
+    });
   return botAccountIdPromise;
 }
 

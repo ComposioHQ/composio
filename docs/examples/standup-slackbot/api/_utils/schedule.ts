@@ -25,9 +25,12 @@ export function formatToday(): string {
   return dayjs().tz(DEFAULT_STANDUP_TIMEZONE).format("dddd, MMMM D, YYYY");
 }
 
-/** Draft lookback: Monday reaches back to Friday, else the previous day. */
-export function lookbackWindow(): { date: string; label: string } {
-  const now = dayjs().tz(DEFAULT_STANDUP_TIMEZONE);
+/** Draft lookback: Monday reaches back to Friday, else the previous day.
+ *  Computed in the member's own timezone so the window matches their day. */
+export function lookbackWindow(
+  timezone: string = DEFAULT_STANDUP_TIMEZONE
+): { date: string; label: string } {
+  const now = dayjs().tz(timezone);
   const days = now.day() === 1 ? 3 : 1;
   return {
     date: now.subtract(days, "day").format("YYYY-MM-DD"),

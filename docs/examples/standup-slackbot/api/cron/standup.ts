@@ -21,6 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const results: { member: string; status: string }[] = [];
+  // One shared thread per calendar day, keyed to the team timezone on purpose:
+  // everyone posts into the same thread even though reminders fire in each
+  // member's local time. (Per-member timezone here would fork the thread.)
   const today = formatToday();
 
   // Only members whose configured time falls in this 30-minute slot.
@@ -70,8 +73,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { memberEmail: member.slackEmail, threadTs: thread, channelId: channelId! },
           showConnect
         );
-        await sendDmBlocks(userId, menu.text, menu.blocks);
-        return { member: member.slackEmail, status: "reminded" };
+        const dm = await sendDmBlocks(userId, menu.text, menu.blocks);
+        return {
+          member: member.slackEmail,
+          status: dm ? "reminded" : "error: dm failed",
+        };
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         return { member: member.slackEmail, status: `error: ${errMsg}` };

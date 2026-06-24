@@ -153,7 +153,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Slow work (AI draft, OAuth links, posting): ack within Slack's 3s window,
   // then run via waitUntil, which keeps the function alive after the response is
   // sent. A plain post-send await would be frozen by Vercel.
-  waitUntil(processSlowAction(action, ctx, dmChannel, dmTs, payload).catch(() => {}));
+  waitUntil(
+    processSlowAction(action, ctx, dmChannel, dmTs, payload).catch(async (err) => {
+      // Don't leave the member stuck on the loading message: log and tell them.
+      console.error("standup interaction failed:", err);
+      await postMessage(
+        dmChannel,
+        "⚠️ Something went wrong handling that. Please try again."
+      ).catch(() => {});
+    })
+  );
   return res.status(200).send("");
 }
 
@@ -192,8 +201,14 @@ async function processSlowAction(
       )
     ).filter(Boolean) as { label: string; url: string }[];
 
-    if (links.length === 0) {
+    if (unconnected.length === 0) {
       await postMessage(dmChannel, "You're already connected to everything! 🎉");
+    } else if (links.length === 0) {
+      // Toolkits remain, but every connect link failed to generate.
+      await postMessage(
+        dmChannel,
+        "⚠️ Couldn't generate connect links right now. Please try again in a moment."
+      );
     } else {
       const menu = buildConnectMenu(links);
       await postMessage(dmChannel, menu.text, { blocks: menu.blocks });

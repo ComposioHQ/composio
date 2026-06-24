@@ -62,7 +62,7 @@ export async function generateDraftText(
 
   const { text } = await generateText({
     model: MODEL,
-    system: buildDraftPrompt(member, lookbackWindow(), connectedSlugs),
+    system: buildDraftPrompt(member, lookbackWindow(member.standupTimezone), connectedSlugs),
     prompt: `Research and write @${member.githubUsername}'s standup update.`,
     tools,
     stopWhen: stepCountIs(40),
