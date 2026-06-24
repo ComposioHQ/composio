@@ -8,7 +8,7 @@ const LOGO_CDN = 'https://logos.composio.dev/api';
  * mermaid diagram on the local-workbench PR reviewer page.
  *
  * Reads left-to-right as the split that defines a local workbench: the Host
- * creates a Tool Router session with code execution turned off and starts a
+ * creates a session with code execution turned off and starts a
  * sandbox you own; the Sandbox runs the reviewer, calling run_composio_tool
  * back out for each GitHub action; Composio resolves and executes those tool
  * calls under the user's connection and returns results. Tool execution lives
@@ -104,7 +104,7 @@ export function LocalWorkbenchFlow() {
               <div className="flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--composio-brand)]">
                   <Wrench aria-hidden="true" className="size-2.5" />
-                  Tool Router
+                  Session
                 </span>
                 <img
                   alt=""
