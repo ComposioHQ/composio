@@ -582,7 +582,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
 
         return t.cast(
             ToolExecutionResponse,
-            self._client.tools.execute(
+            # Disable retries: tool execution is a non-idempotent write, and a
+            # silent retry after a read timeout can duplicate the side effect.
+            self._client.without_retries.tools.execute(
                 tool_slug=slug,
                 arguments=arguments,
                 connected_account_id=none_to_omit(connected_account_id),
@@ -740,7 +742,9 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
         ] = None,
     ) -> tool_proxy_response.ToolProxyResponse:
         """Proxy a tool call to the Composio API"""
-        return self._client.tools.proxy(
+        # Disable retries: a proxied call is a non-idempotent write, and a silent
+        # retry after a read timeout can duplicate the side effect.
+        return self._client.without_retries.tools.proxy(
             endpoint=endpoint,
             method=method,
             body=body if body is not None else omit,

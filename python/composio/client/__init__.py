@@ -182,6 +182,50 @@ class HttpClient(BaseComposio, WithLogger):
                 "provider": provider,
             },
         )
+        # Lazily-built sibling client with retries disabled; see `without_retries`.
+        self._without_retries: t.Optional["HttpClient"] = None
+
+    def copy(  # type: ignore[override]
+        self,
+        *,
+        _extra_kwargs: t.Mapping[str, t.Any] = {},
+        **kwargs: t.Any,
+    ) -> te.Self:
+        """
+        Clone the client, re-injecting the required ``provider`` keyword.
+
+        The Stainless-generated ``copy`` rebuilds the client via
+        ``self.__class__(...)`` without passing ``provider``, which this subclass
+        requires — so the inherited ``copy``/``with_options`` raise ``TypeError``.
+        Threading ``provider`` through ``_extra_kwargs`` makes them work again
+        (e.g. ``with_options(max_retries=0)``).
+        """
+        return super().copy(  # type: ignore[misc]
+            _extra_kwargs={"provider": self.provider, **_extra_kwargs},
+            **kwargs,
+        )
+
+    # Re-alias `with_options` to this override. The base class binds
+    # `with_options = copy` at class-definition time, so without this it would
+    # still resolve to the base `copy` and miss the `provider` re-injection.
+    with_options = copy
+
+    @property
+    def without_retries(self) -> "HttpClient":
+        """
+        A cached sibling client that never retries requests.
+
+        Used for non-idempotent writes (``tools.execute`` / ``tools.proxy``),
+        where a silent retry after a read timeout can duplicate a side effect
+        (e.g. send an email twice). Reads keep the default retry behaviour.
+
+        The sibling is cached rather than rebuilt per call: each clone creates a
+        new ``ContextVar``, and dynamically-created ``ContextVar``s are never
+        garbage-collected.
+        """
+        if self._without_retries is None:
+            self._without_retries = self.with_options(max_retries=0)
+        return self._without_retries
 
     def _prepare_request(self, request: Request) -> None:
         """
