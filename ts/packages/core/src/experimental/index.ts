@@ -6,7 +6,10 @@
  */
 
 // Re-export for backward compatibility with existing code
-export { createCustomTool as experimental_createTool, createCustomToolkit as experimental_createToolkit } from '../models/CustomTool';
+export {
+  createCustomTool as experimental_createTool,
+  createCustomToolkit as experimental_createToolkit,
+} from '../models/CustomTool';
 export type {
   CustomTool,
   CreateCustomToolParams,
@@ -15,3 +18,10 @@ export type {
   CustomToolkit,
   CreateCustomToolkitParams,
 } from '../types/customTool.types';
+export type { LocalWorkbenchSession } from './types';
+export {
+  experimental_createPythonWorkbenchHelperSource,
+  experimental_createWorkbenchEnv,
+} from './shim';
+export type { PythonWorkbenchHelperSourceOptions, WorkbenchEnvOptions } from './shim';
+export { experimental_createLocalWorkbenchSession } from './local-workbench';
