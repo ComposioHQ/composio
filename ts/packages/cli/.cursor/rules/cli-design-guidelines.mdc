@@ -225,7 +225,7 @@ COMMANDS
 
 ## Color & Formatting
 
-- Use `ansis` or `picocolors` for colored output.
+- Use `picocolors` for colored output.
 - Respect `NO_COLOR` env var and `TERM=dumb`.
 - Provide `--no-color` flag.
 - No animations or progress bars when stdout isn't a TTY.

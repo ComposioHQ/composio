@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import app from '../src/index';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
+const LIVE_API_TEST_TIMEOUT_MS = 30_000;
 
 describe('@composio/core Cloudflare Workers compatibility', () => {
   it('should list the available endpoints', async () => {
@@ -89,29 +90,33 @@ describe('@composio/core Cloudflare Workers compatibility', () => {
     expect(body.error).toContain('not supported in Cloudflare Workers');
   });
 
-  it('should fetch HackerNews user pg successfully', async () => {
-    const request = new IncomingRequest('http://localhost/test/hackernews');
-    const ctx = createExecutionContext();
-    const response = await app.fetch(request, env, ctx);
-    await waitOnExecutionContext(ctx);
+  it(
+    'should fetch HackerNews user pg successfully',
+    async () => {
+      const request = new IncomingRequest('http://localhost/test/hackernews');
+      const ctx = createExecutionContext();
+      const response = await app.fetch(request, env, ctx);
+      await waitOnExecutionContext(ctx);
 
-    const body = (await response.json()) as {
-      success: boolean;
-      message?: string;
-      error?: string;
-      data?: {
-        username: string;
-        karma: number;
-        about?: string;
+      const body = (await response.json()) as {
+        success: boolean;
+        message?: string;
+        error?: string;
+        data?: {
+          username: string;
+          karma: number;
+          about?: string;
+        };
       };
-    };
 
-    console.log('HackerNews response:', JSON.stringify(body, null, 2));
+      console.log('HackerNews response:', JSON.stringify(body, null, 2));
 
-    expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.message).toContain('pg');
-    expect(body.data?.username).toBe('pg');
-    expect(body.data?.karma).toBeGreaterThan(0);
-  });
+      expect(response.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.message).toContain('pg');
+      expect(body.data?.username).toBe('pg');
+      expect(body.data?.karma).toBeGreaterThan(0);
+    },
+    LIVE_API_TEST_TIMEOUT_MS
+  );
 });

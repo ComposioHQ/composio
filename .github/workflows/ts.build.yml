@@ -4,10 +4,30 @@ on:
   push:
     branches: [master]
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.build.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.ts'
   pull_request:
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.build.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.ts'
+
+# Print Turborepo telemetry events to the logs instead of sending them.
+env:
+  TURBO_TELEMETRY_DEBUG: 1
 
 jobs:
   build:

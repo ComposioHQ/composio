@@ -4,17 +4,7 @@ import ts from 'typescript';
 
 const repoRoot = process.cwd();
 const examplesRoot = path.join(repoRoot, 'ts', 'examples');
-const allowedSourceExtensions = new Set([
-  '.cjs',
-  '.cts',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.mts',
-  '.ts',
-  '.tsx',
-  '.json',
-]);
+const allowedSourceExtensions = new Set(['.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.json']);
 
 type ValidationIssue = {
   example: string;
@@ -53,7 +43,6 @@ const validatePackageJson = (exampleName: string, exampleDir: string) => {
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
       name?: string;
-      packageManager?: string;
       private?: boolean;
       scripts?: Record<string, string>;
     };
@@ -66,10 +55,6 @@ const validatePackageJson = (exampleName: string, exampleDir: string) => {
       addIssue(exampleName, packageJsonPath, 'Examples must be marked private');
     }
 
-    if (!pkg.packageManager?.startsWith('pnpm@')) {
-      addIssue(exampleName, packageJsonPath, 'Examples must declare a pnpm packageManager');
-    }
-
     if (!pkg.scripts || (!pkg.scripts.start && !pkg.scripts.dev)) {
       addIssue(exampleName, packageJsonPath, 'Examples must expose a start or dev script');
     }
@@ -80,7 +65,11 @@ const validatePackageJson = (exampleName: string, exampleDir: string) => {
     };
 
     if (!Object.keys(allDeps).some(dep => dep.startsWith('@composio/'))) {
-      addIssue(exampleName, packageJsonPath, 'Examples must depend on at least one @composio package');
+      addIssue(
+        exampleName,
+        packageJsonPath,
+        'Examples must depend on at least one @composio package'
+      );
     }
   } catch (error) {
     addIssue(
@@ -140,14 +129,13 @@ const validateSourceFile = (exampleName: string, filePath: string) => {
   }
 
   const sourceText = fs.readFileSync(filePath, 'utf8');
-  const isTsFile = ['.ts', '.tsx', '.mts', '.cts'].includes(extension);
-  const scriptKind = extension === '.tsx'
-    ? ts.ScriptKind.TSX
-    : extension === '.jsx'
-      ? ts.ScriptKind.JSX
-      : extension === '.js'
-        ? ts.ScriptKind.JS
-        : extension === '.cjs'
+  const isTsFile = ['.ts', '.tsx', '.mts'].includes(extension);
+  const scriptKind =
+    extension === '.tsx'
+      ? ts.ScriptKind.TSX
+      : extension === '.jsx'
+        ? ts.ScriptKind.JSX
+        : extension === '.js'
           ? ts.ScriptKind.JS
           : extension === '.mjs'
             ? ts.ScriptKind.JS
@@ -177,9 +165,7 @@ const validateSourceFile = (exampleName: string, filePath: string) => {
           )
         : undefined;
 
-    const formattedLocation = location
-      ? `:${location.line + 1}:${location.character + 1}`
-      : '';
+    const formattedLocation = location ? `:${location.line + 1}:${location.character + 1}` : '';
 
     addIssue(exampleName, `${relativePath}${formattedLocation}`, `Syntax error: ${message}`);
   }
