@@ -1,15 +1,40 @@
 from __future__ import annotations
 
 import unittest
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from email_support_agent.utils.notion import (
     build_notion_row_payload,
+    claim_notion_message_row,
     insert_notion_row,
     insert_notion_row_payload,
     update_notion_message_row,
     upsert_notion_row_payload,
 )
+
+
+CLAIM_STATE = {
+    "decision": "draft",
+    "intent": "support_question",
+    "subject": "Webhook trigger is not creating drafts",
+    "message_id": "msg_claim",
+    "sender": "Sam Dario <tester@example.com>",
+    "thread_id": "thread_claim",
+    "reasons": ["Support question fits the configured workflow."],
+}
+
+
+def _row(page_id: str, *, draft_link: str, created_time: str) -> dict[str, object]:
+    return {
+        "id": page_id,
+        "url": f"https://notion.test/{page_id}",
+        "created_time": created_time,
+        "properties": {
+            "Message ID": {"rich_text": [{"plain_text": "msg_claim"}]},
+            "Draft Link": {"rich_text": [{"plain_text": draft_link}]},
+        },
+    }
 
 
 SAMPLE_STATE = {
@@ -255,6 +280,99 @@ class NotionRowTests(unittest.TestCase):
         archive_tool.invoke.assert_called_once_with({"page_id": "claim_page", "archive": True})
         insert_tool.invoke.assert_called_once_with(payload)
         self.assertEqual(result["fallback_reinsert"]["archived_claim_row"], "claim_page")
+
+
+class ClaimNotionMessageRowTests(unittest.TestCase):
+    def _session(self, composio_cls: MagicMock, tools: list[MagicMock]) -> None:
+        session = MagicMock()
+        session.tools.return_value = tools
+        composio_cls.return_value.create.return_value = session
+
+    @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
+    @patch("email_support_agent.utils.tools.Composio")
+    def test_claim_fails_open_when_insert_returns_no_page_id(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
+        query_tool, insert_tool = MagicMock(), MagicMock()
+        query_tool.invoke.return_value = {"results": []}
+        insert_tool.invoke.return_value = {"successful": False}
+        query_tool.name = "NOTION_QUERY_DATABASE"
+        insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
+        self._session(composio_cls, [query_tool, insert_tool])
+
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(CLAIM_STATE, user_id="test_user")
+
+        self.assertTrue(result["acquired"])
+        self.assertTrue(result["claim_failed"])
+
+    @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
+    @patch("email_support_agent.utils.tools.Composio")
+    def test_claim_trusts_own_insert_when_not_yet_queryable(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
+        query_tool, insert_tool, archive_tool = MagicMock(), MagicMock(), MagicMock()
+        query_tool.invoke.side_effect = [{"results": []}, {"results": []}]
+        insert_tool.invoke.return_value = {"successful": True, "data": {"id": "page_new"}}
+        query_tool.name = "NOTION_QUERY_DATABASE"
+        insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
+        archive_tool.name = "NOTION_ARCHIVE_NOTION_PAGE"
+        self._session(composio_cls, [query_tool, insert_tool, archive_tool])
+
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(CLAIM_STATE, user_id="test_user")
+
+        self.assertTrue(result["acquired"])
+        self.assertTrue(result["claim_unverified"])
+        archive_tool.invoke.assert_not_called()
+
+    @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
+    @patch("email_support_agent.utils.tools.Composio")
+    def test_completed_row_blocks_as_duplicate(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
+        query_tool, insert_tool = MagicMock(), MagicMock()
+        query_tool.invoke.return_value = {
+            "results": [_row("page_done", draft_link="https://mail.google.com/draft", created_time="2026-06-23T00:00:00Z")]
+        }
+        query_tool.name = "NOTION_QUERY_DATABASE"
+        insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
+        self._session(composio_cls, [query_tool, insert_tool])
+
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(CLAIM_STATE, user_id="test_user")
+
+        self.assertFalse(result["acquired"])
+        self.assertTrue(result["duplicate"])
+        insert_tool.invoke.assert_not_called()
+
+    @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
+    @patch("email_support_agent.utils.tools.Composio")
+    def test_stale_pending_row_is_reclaimed(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
+        stale_time = (datetime.now(UTC) - timedelta(seconds=4000)).isoformat()
+        fresh_time = datetime.now(UTC).isoformat()
+        query_tool, insert_tool, archive_tool = MagicMock(), MagicMock(), MagicMock()
+        query_tool.invoke.side_effect = [
+            {"results": [_row("page_stale", draft_link="Pending draft creation", created_time=stale_time)]},
+            {"results": [_row("page_new", draft_link="Pending draft creation", created_time=fresh_time)]},
+            {"results": [_row("page_new", draft_link="Pending draft creation", created_time=fresh_time)]},
+        ]
+        insert_tool.invoke.return_value = {"successful": True, "data": {"id": "page_new"}}
+        query_tool.name = "NOTION_QUERY_DATABASE"
+        insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
+        archive_tool.name = "NOTION_ARCHIVE_NOTION_PAGE"
+        self._session(composio_cls, [query_tool, insert_tool, archive_tool])
+
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(CLAIM_STATE, user_id="test_user")
+
+        self.assertTrue(result["acquired"])
+        insert_tool.invoke.assert_called_once()
+        archive_tool.invoke.assert_any_call({"page_id": "page_stale", "archive": True})
+
+    @patch("email_support_agent.utils.tools.Composio")
+    def test_claim_without_message_id_disables_protection(self, composio_cls: MagicMock) -> None:
+        state = {key: value for key, value in CLAIM_STATE.items() if key != "message_id"}
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(state, user_id="test_user")
+
+        self.assertTrue(result["acquired"])
+        self.assertFalse(result["duplicate_protection"])
+        composio_cls.return_value.create.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -111,7 +111,12 @@ def review_pending_node(state: EmailSupportState) -> EmailSupportState:
         return {"decision": "duplicate_skipped", "reasons": reasons}
 
     if state.get("decision") == "draft":
-        reasons = [*(state.get("reasons") or []), "Draft created for human review; no email was sent."]
+        draft_result = state.get("draft_result") if isinstance(state.get("draft_result"), dict) else {}
+        if draft_result.get("skipped_existing_draft"):
+            note = "Existing Gmail draft left for human review; no new draft was created."
+        else:
+            note = "Draft created for human review; no email was sent."
+        reasons = [*(state.get("reasons") or []), note]
         return {"decision": "review_pending", "reasons": reasons}
     return {}
 

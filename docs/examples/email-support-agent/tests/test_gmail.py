@@ -3,8 +3,34 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from email_support_agent.utils.gmail import create_gmail_review_draft, messages_from_fetch_result
+from email_support_agent.utils.gmail import (
+    _select_message,
+    create_gmail_review_draft,
+    messages_from_fetch_result,
+)
 from email_support_agent.utils.tools import DRAFT_TOOL
+
+
+class SelectMessageTests(unittest.TestCase):
+    def test_matches_camelcase_message_id(self) -> None:
+        messages = [{"messageId": "msg_123", "subject": "Hello"}]
+        self.assertEqual(_select_message(messages, message_id="msg_123")["subject"], "Hello")
+
+    def test_matches_thread_id_when_message_id_absent_from_results(self) -> None:
+        messages = [
+            {"id": "other", "threadId": "thread_x"},
+            {"id": "want", "threadId": "thread_123"},
+        ]
+        selected = _select_message(messages, message_id="missing", thread_id="thread_123")
+        self.assertEqual(selected["id"], "want")
+
+    def test_returns_none_when_identifier_given_but_unmatched(self) -> None:
+        messages = [{"id": "unrelated", "subject": "Other thread"}]
+        self.assertIsNone(_select_message(messages, message_id="msg_123", thread_id="thread_123"))
+
+    def test_subject_fallback_only_without_identifiers(self) -> None:
+        messages = [{"id": "a", "subject": "Other"}, {"id": "b", "subject": "Target"}]
+        self.assertEqual(_select_message(messages, message_id=None, subject="Target")["id"], "b")
 
 
 class GmailResultTests(unittest.TestCase):

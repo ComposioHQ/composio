@@ -47,7 +47,12 @@ def fetch_gmail_trigger_message(state: EmailSupportState) -> EmailSupportState:
         },
     )
     messages = messages_from_fetch_result(result)
-    selected = _select_message(messages, message_id=message_id, subject=subject)
+    selected = _select_message(
+        messages,
+        message_id=message_id,
+        thread_id=state.get("thread_id"),
+        subject=subject,
+    )
     return {"fetched_email": {**fetched_email, **(selected or {})}, "fetch_result": result}
 
 
@@ -149,10 +154,30 @@ def _reply_subject(subject: str) -> str:
     return f"Re: {cleaned}"
 
 
-def _select_message(messages: list[dict[str, Any]], *, message_id: str | None, subject: str) -> dict[str, Any] | None:
+def _select_message(
+    messages: list[dict[str, Any]],
+    *,
+    message_id: str | None,
+    thread_id: str | None = None,
+    subject: str = "",
+) -> dict[str, Any] | None:
+    # Prefer an exact id match so we never operate on another thread's content.
     for message in messages:
-        if message_id and message_id in {message.get("id"), message.get("message_id")}:
+        if message_id and message_id in {
+            message.get("id"),
+            message.get("message_id"),
+            message.get("messageId"),
+        }:
             return message
+    for message in messages:
+        if thread_id and thread_id in {message.get("thread_id"), message.get("threadId")}:
+            return message
+    # Only fall back to a fuzzy subject/first-result match when we had no identifier
+    # to disambiguate; otherwise an unmatched id means the target is absent and we
+    # must not guess.
+    if message_id or thread_id:
+        return None
+    for message in messages:
         if subject and message.get("subject") == subject:
             return message
     return messages[0] if messages else None

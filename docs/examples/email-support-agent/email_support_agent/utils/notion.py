@@ -19,6 +19,7 @@ from email_support_agent.utils.workflow import load_workflow_config, workflow_su
 
 
 DEFAULT_NOTION_ENABLED_VALUES = {"1", "true", "yes"}
+PENDING_DRAFT_REFERENCE = "Pending draft creation"
 
 
 def notion_logging_enabled() -> bool:
@@ -79,7 +80,7 @@ def _draft_reference(state: dict[str, Any]) -> str:
             f"Dry-run draft for thread {thread_id}".strip()
         )
     if draft_result.get("pending"):
-        return "Pending draft creation"
+        return PENDING_DRAFT_REFERENCE
     for key in ("draft_id", "id", "message_id", "thread_id"):
         value = draft_result.get(key)
         if value:
@@ -189,41 +190,81 @@ def claim_notion_message_row(state: dict[str, Any], *, user_id: str, dry_run: bo
     payload = build_notion_row_payload(claim_state)
     message_id = _payload_value(payload, _env("NOTION_MESSAGE_ID_PROPERTY", "Message ID"))
     if not payload["database_id"] or not message_id:
-        return {"acquired": True, "skipped": True, "reason": "Notion claim is not configured.", "payload": payload}
+        # Without a database id and Gmail message id we cannot dedupe. Proceed (fail open)
+        # but make clear that duplicate protection is not active so callers do not assume it.
+        return {
+            "acquired": True,
+            "skipped": True,
+            "duplicate_protection": False,
+            "reason": "Notion duplicate protection unavailable (missing database id or Gmail message id).",
+            "payload": payload,
+        }
 
     if dry_run:
         return {"acquired": True, "dry_run": True, "payload": payload, "message_id": message_id}
 
     tools = notion_tool_map(user_id)
     existing = _find_rows_by_message_id(payload, tools, message_id)
-    if existing:
+    blocking = _blocking_rows(existing)
+    if blocking:
         return {
             "acquired": False,
+            "duplicate": True,
             "reason": "Notion row already exists for this Gmail message.",
             "message_id": message_id,
-            "existing_rows": existing,
+            "existing_rows": blocking,
         }
+
+    # Only stale placeholder claim rows remain (a crashed earlier run); clear them so they
+    # do not accumulate and re-claim the message.
+    _archive_rows(tools, [row for row in existing if row not in blocking])
 
     insert_tool = tools.get(NOTION_INSERT_ROW_TOOL)
     if not insert_tool:
         raise RuntimeError(f"{NOTION_INSERT_ROW_TOOL} was not available in the scoped session")
     result = invoke_tool(insert_tool, payload)
     row_id = _page_id_from_result(result)
+    if not row_id:
+        # The insert tool failed to return a page id. Treat this as a tooling failure, not a
+        # duplicate, so support handling is not silently dropped.
+        return {
+            "acquired": True,
+            "claim_failed": True,
+            "duplicate_protection": False,
+            "reason": "Notion claim insert did not return a page id; proceeding without duplicate protection.",
+            "message_id": message_id,
+            "insert_result": result if isinstance(result, dict) else {"raw": str(result)},
+        }
 
     time.sleep(float(os.getenv("NOTION_CLAIM_SETTLE_SECONDS", "2")))
     rows = _find_rows_by_message_id(payload, tools, message_id)
-    row_ids = [row.get("id") for row in rows]
-    acquired = bool(row_id and row_ids and row_ids[0] == row_id)
+    if not any(row.get("id") == row_id for row in rows):
+        # Our own insert is not yet queryable (eventual consistency). Trust the insert rather
+        # than archiving it and dropping the message as a false duplicate.
+        return {
+            "acquired": True,
+            "claim_unverified": True,
+            "reason": "Inserted Notion claim row not yet queryable; proceeding without re-verification.",
+            "message_id": message_id,
+            "row_id": row_id,
+            "insert_result": result if isinstance(result, dict) else {"raw": str(result)},
+        }
 
-    if row_id and not acquired:
+    # Among rows that actually compete for the claim (ignoring stale placeholders), the
+    # earliest row wins so concurrent deliveries converge on a single owner.
+    active_ids = [row.get("id") for row in _blocking_rows(rows)]
+    acquired = bool(active_ids and active_ids[0] == row_id)
+
+    if acquired:
+        _archive_duplicate_rows(payload, tools, message_id, keep_page_id=row_id)
+    else:
         archive_tool = tools.get(NOTION_ARCHIVE_PAGE_TOOL)
         if archive_tool:
             invoke_tool(archive_tool, {"page_id": row_id, "archive": True})
-    elif acquired:
-        _archive_duplicate_rows(payload, tools, message_id, keep_page_id=row_id)
 
     return {
         "acquired": acquired,
+        "duplicate": not acquired,
         "message_id": message_id,
         "row_id": row_id,
         "rows": rows,
@@ -366,29 +407,104 @@ def _result_rows(result: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _result_next_cursor(result: Any) -> str | None:
+    if not isinstance(result, dict):
+        return None
+    for candidate in (result, result.get("data") if isinstance(result.get("data"), dict) else None):
+        if isinstance(candidate, dict) and candidate.get("has_more"):
+            cursor = candidate.get("next_cursor")
+            if isinstance(cursor, str) and cursor:
+                return cursor
+    return None
+
+
+def _claim_ttl_seconds() -> float:
+    try:
+        return float(os.getenv("NOTION_CLAIM_TTL_SECONDS", "900"))
+    except ValueError:
+        return 900.0
+
+
+def _row_age_seconds(row: dict[str, Any]) -> float | None:
+    created = row.get("created_time")
+    if not isinstance(created, str) or not created:
+        return None
+    try:
+        timestamp = datetime.fromisoformat(created.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - timestamp).total_seconds()
+
+
+def _is_pending_claim_row(row: dict[str, Any]) -> bool:
+    return str(row.get("draft_link") or "").strip() == PENDING_DRAFT_REFERENCE
+
+
+def _blocking_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rows that should block a new claim.
+
+    A completed row (real prior handling) always blocks. A pending placeholder row blocks
+    only while it is within the claim TTL, i.e. an in-flight concurrent delivery. Stale
+    placeholder rows left by a crashed run no longer block redelivery.
+    """
+    ttl = _claim_ttl_seconds()
+    blocking: list[dict[str, Any]] = []
+    for row in rows:
+        if _is_pending_claim_row(row):
+            age = _row_age_seconds(row)
+            if age is not None and age > ttl:
+                continue
+        blocking.append(row)
+    return blocking
+
+
+def _archive_rows(tools: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    archive_tool = tools.get(NOTION_ARCHIVE_PAGE_TOOL)
+    if not archive_tool:
+        return
+    for row in rows:
+        page_id = row.get("id")
+        if page_id:
+            invoke_tool(archive_tool, {"page_id": page_id, "archive": True})
+
+
 def _find_rows_by_message_id(payload: dict[str, Any], tools: dict[str, Any], message_id: str) -> list[dict[str, Any]]:
     query_tool = tools.get(NOTION_QUERY_DATABASE_TOOL)
     if not query_tool:
         return []
     property_name = _env("NOTION_MESSAGE_ID_PROPERTY", "Message ID")
-    result = invoke_tool(
-        query_tool,
-        {
+    draft_link_property = _env("NOTION_DRAFT_LINK_PROPERTY", "Draft Link")
+    matches: list[dict[str, Any]] = []
+    start_cursor: str | None = None
+    # Paginate the whole database so rows beyond the first page are still deduped once the
+    # inbox grows past a single 100-row window.
+    for _ in range(int(os.getenv("NOTION_QUERY_MAX_PAGES", "50"))):
+        query: dict[str, Any] = {
             "database_id": payload["database_id"],
             "page_size": 100,
             "sorts": [{"property_name": "created_time", "ascending": True}],
-        },
-    )
-    rows = _result_rows(result)
-    return [
-        {
-            "id": row.get("id"),
-            "url": row.get("url"),
-            "created_time": row.get("created_time"),
         }
-        for row in rows
-        if row.get("id") and _row_property_text(row, property_name) == message_id
-    ]
+        if start_cursor:
+            query["start_cursor"] = start_cursor
+        result = invoke_tool(query_tool, query)
+        for row in _result_rows(result):
+            if row.get("id") and _row_property_text(row, property_name) == message_id:
+                matches.append(
+                    {
+                        "id": row.get("id"),
+                        "url": row.get("url"),
+                        "created_time": row.get("created_time"),
+                        "draft_link": _row_property_text(row, draft_link_property),
+                    }
+                )
+        start_cursor = _result_next_cursor(result)
+        if not start_cursor:
+            break
+    return matches
 
 
 def _find_row_by_page_id(payload: dict[str, Any], tools: dict[str, Any], page_id: str) -> dict[str, Any] | None:
