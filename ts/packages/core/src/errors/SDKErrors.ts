@@ -1,7 +1,9 @@
+import { APIUserAbortError } from '@composio/client';
 import { ComposioError, ComposioErrorOptions } from './ComposioError';
 
 export const SDKErrorCodes = {
   NO_API_KEY_PROVIDED: 'NO_API_KEY_PROVIDED',
+  REQUEST_CANCELLED: 'REQUEST_CANCELLED',
 };
 
 export class ComposioNoAPIKeyError extends ComposioError {
@@ -25,4 +27,66 @@ export class ComposioNoAPIKeyError extends ComposioError {
     });
     this.name = 'ComposioNoAPIKeyError';
   }
+}
+
+/**
+ * Thrown when an SDK call is cancelled via the caller-supplied `AbortSignal`.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await composio.tools.execute(slug, body, { signal: AbortSignal.timeout(5_000) });
+ * } catch (err) {
+ *   if (err instanceof ComposioRequestCancelledError) return;
+ *   throw err;
+ * }
+ * ```
+ */
+export class ComposioRequestCancelledError extends ComposioError {
+  constructor(
+    message: string = 'Request was cancelled by the caller',
+    options: Omit<ComposioErrorOptions, 'code'> = {}
+  ) {
+    super(message, {
+      ...options,
+      code: SDKErrorCodes.REQUEST_CANCELLED,
+      possibleFixes: options.possibleFixes ?? [
+        'This error is expected when you abort the request via AbortController. Handle it in your catch block to distinguish caller-initiated cancellation from other failures.',
+      ],
+    });
+    this.name = 'ComposioRequestCancelledError';
+  }
+}
+
+/**
+ * `APIUserAbortError` has `.name === "Error"` at runtime (doesn't override it),
+ * so we fall back to `constructor.name` for dual-package-hazard cases.
+ * @internal
+ */
+export function isRequestAbortError(error: unknown): boolean {
+  return _isRequestAbortErrorAt(error, /* depth= */ 0);
+}
+
+function _isRequestAbortErrorAt(error: unknown, depth: number): boolean {
+  if (depth > 5) return false;
+  if (error instanceof APIUserAbortError) return true;
+  if (
+    typeof DOMException !== 'undefined' &&
+    error instanceof DOMException &&
+    error.name === 'AbortError'
+  ) {
+    return true;
+  }
+  if (!(error instanceof Error)) return false;
+  if (
+    error.constructor.name === 'APIUserAbortError' ||
+    error.name === 'AbortError' ||
+    error.name === 'APIUserAbortError'
+  ) {
+    return true;
+  }
+  if ('cause' in error && error.cause !== undefined && error.cause !== null) {
+    return _isRequestAbortErrorAt(error.cause, depth + 1);
+  }
+  return false;
 }

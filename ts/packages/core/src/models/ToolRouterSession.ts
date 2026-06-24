@@ -2,6 +2,9 @@ import { telemetry } from '../telemetry/Telemetry';
 import { Composio as ComposioClient, BadRequestError } from '@composio/client';
 import { BaseComposioProvider } from '../provider/BaseProvider';
 import { ComposioConfig } from '../composio';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 import {
   ToolRouterMCPServerConfig,
   SessionExperimental,
@@ -149,11 +152,15 @@ export class ToolRouterSession<
    * When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL
    * is intercepted: local tools are executed in-process, remote tools are sent to the backend.
    */
-  async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType<TProvider['wrapTools']>> {
+  async tools(
+    modifiers?: SessionMetaToolOptions,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ReturnType<TProvider['wrapTools']>> {
     const ToolsModel = new Tools<TToolCollection, TTool, TProvider>(this.client, this.config);
     const tools = await ToolsModel.getRawToolRouterSessionTools(
       this.sessionId,
-      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined
+      modifiers?.modifySchema ? { modifySchema: modifiers.modifySchema } : undefined,
+      requestOptions
     );
     const sessionTools = await this.addPreloadedCustomTools(tools, modifiers);
     const toolBySlug = new Map(sessionTools.map(tool => [tool.slug.toUpperCase(), tool]));
@@ -346,15 +353,16 @@ export class ToolRouterSession<
         accountType?: ConnectedAccountType;
         aclConfigForShared?: ConnectedAccountAclConfig;
       };
-    }
+    },
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const requestOptions = AuthorizeOptionsSchema.safeParse(options ?? {});
-    if (!requestOptions.success) {
+    const parsedAuthorizeOptions = AuthorizeOptionsSchema.safeParse(options ?? {});
+    if (!parsedAuthorizeOptions.success) {
       throw new ValidationError('Failed to parse tool router authorize options', {
-        cause: requestOptions.error,
+        cause: parsedAuthorizeOptions.error,
       });
     }
-    const opts = requestOptions.data;
+    const opts = parsedAuthorizeOptions.data;
     const experimentalWire = serializeExperimentalForWire(opts.experimental);
     const body: SessionLinkParams = {
       toolkit,
@@ -367,8 +375,16 @@ export class ToolRouterSession<
 
     let response;
     try {
-      response = await this.client.toolRouter.session.link(this.sessionId, body);
+      response = await withCancellation(
+        () => this.client.toolRouter.session.link(this.sessionId, body, requestOptions),
+        requestOptions?.signal
+      );
     } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to a domain error below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       // The server rejects ACL on PRIVATE connections — surface that as a
       // typed error mirroring `composio.connectedAccounts.link()`.
       if (
@@ -393,7 +409,7 @@ export class ToolRouterSession<
    * Query the connection state of toolkits in the session.
    * Supports pagination and filtering by toolkit slugs.
    */
-  async toolkits(options?: ToolRouterToolkitsOptions) {
+  async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions) {
     const toolkitOptions = ToolRouterToolkitsOptionsSchema.safeParse(options ?? {});
     if (!toolkitOptions.success) {
       throw new ValidationError('Failed to parse toolkits options', {
@@ -401,13 +417,17 @@ export class ToolRouterSession<
       });
     }
 
-    const result = await this.client.toolRouter.session.toolkits(this.sessionId, {
+    const toolkitsParams = {
       cursor: toolkitOptions.data.cursor,
       limit: toolkitOptions.data.limit,
       toolkits: toolkitOptions.data.toolkits,
       is_connected: toolkitOptions.data.isConnected,
       search: toolkitOptions.data.search,
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.toolRouter.session.toolkits(this.sessionId, toolkitsParams, requestOptions),
+      requestOptions?.signal
+    );
 
     const toolkitConnectedStates = result.items.map(item => {
       const connectedState = transform(item)
@@ -448,10 +468,13 @@ export class ToolRouterSession<
    * Search for tools by semantic use case.
    * Returns relevant tools for the given query with schemas and guidance.
    */
-  async search(params: {
-    query: string;
-    toolkits?: string[];
-  }): Promise<ToolRouterSessionSearchResponse> {
+  async search(
+    params: {
+      query: string;
+      toolkits?: string[];
+    },
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionSearchResponse> {
     const experimental = inlineCustomToolsExperimental<SessionSearchParams.Experimental>(
       this.inlineCustomToolsPayload
     );
@@ -460,7 +483,10 @@ export class ToolRouterSession<
       ...(params.toolkits?.length ? { toolkits: params.toolkits } : {}),
       ...(experimental ? { experimental } : {}),
     };
-    const response = await this.client.toolRouter.session.search(this.sessionId, searchParams);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.search(this.sessionId, searchParams, requestOptions),
+      requestOptions?.signal
+    );
     const transformed = transformSearchResponse(response);
     return ToolRouterSessionSearchResponseSchema.parse(transformed);
   }
@@ -481,12 +507,23 @@ export class ToolRouterSession<
   async execute(
     toolSlug: string,
     arguments_?: Record<string, unknown>,
-    options?: ToolRouterSessionExecuteOptions
+    options?: ToolRouterSessionExecuteOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionExecuteResponse> {
     // Check if this is a local tool (by original or final slug)
     const entry = findCustomTool(this.customToolsMap, toolSlug);
     if (entry) {
-      const result = await executeCustomTool(entry, arguments_ ?? {}, this.sessionContext!);
+      // Bail before invoking user code if the caller has already aborted.
+      // Custom-tool execution is *cooperative*: long-running user code
+      // won't observe later aborts unless the user wires the signal into
+      // their own fetch/work — we pass it through via the executeCustomTool
+      // session context so they can.
+      if (requestOptions?.signal?.aborted) {
+        throw new ComposioRequestCancelledError();
+      }
+      const result = await executeCustomTool(entry, arguments_ ?? {}, this.sessionContext!, {
+        signal: requestOptions?.signal,
+      });
       return {
         data: result.data,
         error: result.error,
@@ -510,7 +547,10 @@ export class ToolRouterSession<
       executeParams.experimental = experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(this.sessionId, executeParams);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      requestOptions?.signal
+    );
     const transformed = transformExecuteResponse(response);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
@@ -523,7 +563,8 @@ export class ToolRouterSession<
    * @returns The proxied API response with status, data, headers
    */
   async proxyExecute(
-    params: SessionProxyExecuteParams
+    params: SessionProxyExecuteParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolRouterSessionProxyExecuteResponse> {
     const validated = SessionProxyExecuteParamsSchema.safeParse(params);
     if (!validated.success) {
@@ -531,9 +572,10 @@ export class ToolRouterSession<
     }
 
     const clientParams = transformProxyParams(validated.data);
-    const response = await this.client.toolRouter.session.proxyExecute(
-      this.sessionId,
-      clientParams
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+      requestOptions?.signal
     );
 
     return {
@@ -558,10 +600,16 @@ export class ToolRouterSession<
    * Only the fields provided will be changed; omitted fields are preserved.
    * Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
    */
-  async update(config: ToolRouterUpdateSessionConfig): Promise<void> {
+  async update(
+    config: ToolRouterUpdateSessionConfig,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<void> {
     const parsed = ToolRouterUpdateSessionConfigSchema.parse(config);
     const params = transformToolRouterUpdateParams(parsed);
-    const response = await this.client.toolRouter.session.patch(this.sessionId, params);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.patch(this.sessionId, params, requestOptions),
+      requestOptions?.signal
+    );
     this.configVersion = response.config_version;
     this.preload = response.config.preload;
     this.warnings = response.warnings ?? [];

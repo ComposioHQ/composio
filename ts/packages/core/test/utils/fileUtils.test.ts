@@ -107,7 +107,7 @@ describe('fileUtils', () => {
       });
 
       expect(result.name).toBe('document.pdf');
-      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery);
+      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, { signal: undefined });
     });
 
     it('should generate filename when URL has no filename', async () => {

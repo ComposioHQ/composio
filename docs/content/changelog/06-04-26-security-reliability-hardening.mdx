@@ -1,0 +1,39 @@
+---
+title: "Security, API, and platform updates"
+description: "Recent changes across MCP and API authentication, Proxy Execute, connected accounts and triggers, token redaction, webhooks, rate limits, and retired legacy endpoints."
+date: "2026-06-04"
+---
+
+A summary of recent security, API, and platform changes you may need to act on. Most won't apply to you, so skim for the ones that do. We are continuing to ship more.
+
+### Legacy MCP Config routes
+- MCP requests now require an API key or `Authorization: Bearer` token. We recommend moving to `composio.create` 
+
+### API Keys
+- IP whitelisting, choose which ip address can work from your api keys.
+- Scoped API Key are slowly being rolled out with first preset for `proxyExecute`. You will be able to control what actions your api keys can take.
+
+### Proxy Execute
+- Proxy Execute is disabled on `v3` api, please use `v3.1` or update your sdks.
+- Proxy Execute is now an opt-in capability on an API key, it is a superset of regular capabilities + proxy execute.
+- Proxy Execute requests have a 250MB payload cap.
+
+### Connections 
+- Connected-account tokens are redacted in API responses, for both Composio-managed and custom auth configs. Please use [Proxy Execute](https://docs.composio.dev/docs/proxy-execute) instead. If you need this for some special case please reach out to support.
+- Reiterating: Composio-managed OAuth connections are moving from `initiate` to `link`. The cutover for remaining organizations is July 3, 2026.
+
+### Workbench
+- Code execution through the remote workbench (`COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`) now runs only inside a [Composio session](https://docs.composio.dev/docs/how-composio-works). If your code execution stopped working, run it within a Composio session.
+
+### Webhooks
+
+- Webhook URLs must be publicly reachable; internal and loopback targets are now rejected.
+- Deliveries are now signed (verify the `webhook-signature` header), and there is a new `composio.trigger.disabled` event. Manage subscriptions with the [Webhook Subscriptions API](https://docs.composio.dev/reference/api-reference/webhook-subscriptions).
+
+### Rate limits
+
+- Per-IP rate limits now apply; requests that exceed them receive `429` responses.
+
+### Endpoints
+
+- The legacy v1 and v2 endpoints, deprecated last year, have now been removed. Any calls to `/v1` or `v2` endpoints now return `410`, please use the class of `v3` and `v3.1` endpoints, if you need a guide to migration you can use [this](https://docs.composio.dev/docs/migration-guide/new-sdk)

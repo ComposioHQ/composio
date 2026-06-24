@@ -15,18 +15,20 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 // Mock Tools class
 vi.mock('../../src/models/Tools', () => ({
-  Tools: vi.fn().mockImplementation(() => ({
-    getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
-      { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
-      { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
-    ]),
-    wrapToolsForToolRouter: vi.fn().mockReturnValue('wrapped-tools'),
-    executeSessionTool: vi.fn().mockResolvedValue({
-      data: { remote: true },
-      error: null,
-      successful: true,
-    }),
-  })),
+  Tools: vi.fn().mockImplementation(function () {
+    return {
+      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([
+        { slug: 'COMPOSIO_SEARCH_TOOLS', name: 'Search Tools' },
+        { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL', name: 'Multi Execute' },
+      ]),
+      wrapToolsForToolRouter: vi.fn().mockReturnValue('wrapped-tools'),
+      executeSessionTool: vi.fn().mockResolvedValue({
+        data: { remote: true },
+        error: null,
+        successful: true,
+      }),
+    };
+  }),
 }));
 
 // ── Fixtures ─────────────────────────────────────────────────────
@@ -306,10 +308,14 @@ describe('ToolRouterSession execution routing', () => {
 
       await session.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_123', {
-        tool_slug: 'GMAIL_SEND_EMAIL',
-        arguments: { to: 'test@test.com' },
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        'sess_123',
+        {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          arguments: { to: 'test@test.com' },
+        },
+        undefined
+      );
       expect(localExecute).not.toHaveBeenCalled();
     });
 
@@ -334,12 +340,16 @@ describe('ToolRouterSession execution routing', () => {
         parameters: [{ in: 'header', name: 'X-Test', value: '1' }],
       });
 
-      expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith('sess_123', {
-        toolkit_slug: 'github',
-        endpoint: 'https://api.github.com/user',
-        method: 'GET',
-        parameters: [{ name: 'X-Test', type: 'header', value: '1' }],
-      });
+      expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith(
+        'sess_123',
+        {
+          toolkit_slug: 'github',
+          endpoint: 'https://api.github.com/user',
+          method: 'GET',
+          parameters: [{ name: 'X-Test', type: 'header', value: '1' }],
+        },
+        undefined
+      );
       expect(result).toEqual({
         status: 200,
         data: { ok: true },
@@ -378,10 +388,14 @@ describe('ToolRouterSession execution routing', () => {
       const session = createSession(mockClient, [chainedTool]);
       await session.execute('CHAINED_TOOL', { to: 'test@test.com' });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_123', {
-        tool_slug: 'GMAIL_SEND_EMAIL',
-        arguments: { to: 'test@test.com' },
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        'sess_123',
+        {
+          tool_slug: 'GMAIL_SEND_EMAIL',
+          arguments: { to: 'test@test.com' },
+        },
+        undefined
+      );
     });
 
     it('should route sibling local tools in-process without hitting the API', async () => {

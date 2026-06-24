@@ -283,52 +283,38 @@ For a more complete integration, check out the [OpenAI Provider example](../exam
 
 ## Creating Custom Tools
 
-You can extend Composio by creating your own custom tools:
+You can extend Tool Router sessions with your own local custom tools:
 
 ```typescript
+import { Composio, experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-// Create a custom tool
-const customTool = await composio.tools.createCustomTool({
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+const customTool = experimental_createTool('WEATHER_FORECAST', {
   name: 'Weather Forecast',
   description: 'Get the weather forecast for a location',
-  slug: 'WEATHER_FORECAST',
   inputParams: z.object({
     location: z.string().describe('The location to get the forecast for'),
-    days: z.number().optional().default(3).describe('Number of days for the forecast')
+    days: z.number().optional().default(3).describe('Number of days for the forecast'),
   }),
   execute: async (input) => {
-    try {
-      const { location, days = 3 } = input;
-
-      // Here you would call your weather API
-      const forecast = await getWeatherForecast(location, days);
-
-      return {
-        data: { forecast },
-        error: null,
-        successful: true,
-      };
-    } catch (error) {
-      return {
-        data: {},
-        successful: false,
-        error: error.message,
-      };
-    }
+    const { location, days = 3 } = input;
+    const forecast = await getWeatherForecast(location, days);
+    return { forecast };
   },
 });
 
-// Now you can use your custom tool
-const result = await composio.tools.execute('WEATHER_FORECAST', {
-  userId: 'default',
-  arguments: {
-    location: 'San Francisco, CA',
-    days: 5,
-  },
+const session = await composio.create('default', {
+  experimental: { customTools: [customTool] },
 });
 
-console.log(result.data.forecast);
+const result = await session.execute('WEATHER_FORECAST', {
+  location: 'San Francisco, CA',
+  days: 5,
+});
+
+console.log(result.data?.forecast);
 ```
 
 For more advanced session management features, check out the [Session Management Guide](./advanced/session-management.md).

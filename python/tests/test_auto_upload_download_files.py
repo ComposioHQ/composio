@@ -12,6 +12,8 @@ from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 
+from tests.conftest import mock_http_client
+
 
 @pytest.fixture(autouse=True)
 def disable_telemetry():
@@ -24,7 +26,7 @@ def disable_telemetry():
 @pytest.fixture
 def mock_client():
     """Create a mock HTTP client."""
-    return Mock()
+    return mock_http_client()
 
 
 @pytest.fixture

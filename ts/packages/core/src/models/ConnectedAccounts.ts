@@ -48,6 +48,9 @@ import {
 } from '../errors';
 import logger from '../utils/logger';
 import { ConnectionData } from '../types/connectedAccountAuthStates.types';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
 // One-time-per-process guard so long-running services don't spam the deprecation
 // warning on every initiate() call.
@@ -91,7 +94,10 @@ export class ConnectedAccounts {
    * });
    * ```
    */
-  async list(query?: ConnectedAccountListParams): Promise<ConnectedAccountListResponse> {
+  async list(
+    query?: ConnectedAccountListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountListResponse> {
     let rawQuery: ConnectedAccountListParamsRaw | undefined = undefined;
 
     if (query) {
@@ -119,7 +125,10 @@ export class ConnectedAccounts {
       };
     }
 
-    const result = await this.client.connectedAccounts.list(rawQuery);
+    const result = await withCancellation(
+      () => this.client.connectedAccounts.list(rawQuery, requestOptions),
+      requestOptions?.signal
+    );
     return transformConnectedAccountListResponse(result);
   }
 
@@ -193,14 +202,18 @@ export class ConnectedAccounts {
   async initiate(
     userId: string,
     authConfigId: string,
-    options?: CreateConnectedAccountOptions
+    options?: CreateConnectedAccountOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
     // Check if there are multiple connected accounts for the authConfig of the user
-    const connectedAccount = await this.list({
-      userIds: [userId],
-      authConfigIds: [authConfigId],
-      statuses: [ConnectedAccountStatuses.ACTIVE],
-    });
+    const connectedAccount = await this.list(
+      {
+        userIds: [userId],
+        authConfigIds: [authConfigId],
+        statuses: [ConnectedAccountStatuses.ACTIVE],
+      },
+      requestOptions
+    );
     if (connectedAccount.items.length > 0 && !options?.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(
         `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
@@ -244,25 +257,34 @@ export class ConnectedAccounts {
       // caller needs to migrate. Custom auth configs and non-OAuth schemes
       // never see the header, eliminating the false-positive warning that
       // an `auth_scheme`-only check produced for `link()`-unaffected callers.
-      const apiCall = this.client.connectedAccounts.create(createParams);
+      const apiCall = this.client.connectedAccounts.create(createParams, requestOptions);
       if (typeof (apiCall as { withResponse?: unknown }).withResponse === 'function') {
-        const resolved = await (
-          apiCall as unknown as {
-            withResponse: () => Promise<{
-              data: ConnectedAccountCreateResponse;
-              response: Response;
-            }>;
-          }
-        ).withResponse();
+        const resolved = await withCancellation(
+          () =>
+            (
+              apiCall as unknown as {
+                withResponse: () => Promise<{
+                  data: ConnectedAccountCreateResponse;
+                  response: Response;
+                }>;
+              }
+            ).withResponse(),
+          requestOptions?.signal
+        );
         response = resolved.data;
         httpResponse = resolved.response;
       } else {
         // Test mocks may return a plain Promise without `withResponse`.
         // Fall back to a naked await; the deprecation gate below stays
         // off in that case (no header to read).
-        response = await apiCall;
+        response = await withCancellation(() => apiCall, requestOptions?.signal);
       }
     } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to the legacy-endpoint error below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       // When the server has flipped this org to the retired path, the legacy
       // endpoint returns 400 with a stable migration message. Surface it as
       // a typed error so callers get an actionable hint instead of a generic
@@ -346,23 +368,29 @@ export class ConnectedAccounts {
   async link(
     userId: string,
     authConfigId: string,
-    options?: CreateConnectedAccountLinkOptions
+    options?: CreateConnectedAccountLinkOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const requestOptions = await CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
-    if (!requestOptions.success) {
+    const parsedLinkOptions = CreateConnectedAccountLinkOptionsSchema.safeParse(options || {});
+    if (!parsedLinkOptions.success) {
       throw new ValidationError('Failed to parse create connected account link options', {
-        cause: requestOptions.error,
+        cause: parsedLinkOptions.error,
       });
     }
 
     // Mirror initiate(): guard against silently creating extra connections on
-    // the same auth config unless the caller explicitly opts in.
-    const existing = await this.list({
-      userIds: [userId],
-      authConfigIds: [authConfigId],
-      statuses: [ConnectedAccountStatuses.ACTIVE],
-    });
-    if (existing.items.length > 0 && !requestOptions.data.allowMultiple) {
+    // the same auth config unless the caller explicitly opts in. The preflight
+    // list call honors the caller's signal too — the whole composite is
+    // cancellable as a single unit.
+    const existing = await this.list(
+      {
+        userIds: [userId],
+        authConfigIds: [authConfigId],
+        statuses: [ConnectedAccountStatuses.ACTIVE],
+      },
+      requestOptions
+    );
+    if (existing.items.length > 0 && !parsedLinkOptions.data.allowMultiple) {
       throw new ComposioMultipleConnectedAccountsError(
         `Multiple connected accounts found for user ${userId} in auth config ${authConfigId}. Please use the allowMultiple option to allow multiple connected accounts.`
       );
@@ -372,7 +400,7 @@ export class ConnectedAccounts {
       );
     }
 
-    const opts = requestOptions.data;
+    const opts = parsedLinkOptions.data;
     const experimentalWire = serializeExperimentalForWire(opts.experimental);
     const body: LinkCreateParams = {
       auth_config_id: authConfigId,
@@ -383,7 +411,10 @@ export class ConnectedAccounts {
     };
 
     try {
-      const response = await this.client.link.create(body);
+      const response = await withCancellation(
+        () => this.client.link.create(body, requestOptions),
+        requestOptions?.signal
+      );
 
       const connectionRequest = createConnectionRequest(
         this.client,
@@ -393,6 +424,11 @@ export class ConnectedAccounts {
       );
       return connectionRequest;
     } catch (error) {
+      // Caller-initiated cancellation must surface as the typed error,
+      // not get remapped to ComposioFailedToCreateConnectedAccountLink below.
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       // The server rejects ACL on PRIVATE connections — surface that as a
       // typed error so callers can `instanceof` instead of grepping messages.
       if (
@@ -459,8 +495,14 @@ export class ConnectedAccounts {
    * console.log(account.toolkit.slug); // e.g., 'github'
    * ```
    */
-  async get(nanoid: string): Promise<ConnectedAccountRetrieveResponse> {
-    const response = await this.client.connectedAccounts.retrieve(nanoid);
+  async get(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountRetrieveResponse> {
+    const response = await withCancellation(
+      () => this.client.connectedAccounts.retrieve(nanoid, requestOptions),
+      requestOptions?.signal
+    );
     return transformConnectedAccountResponse(response);
   }
 
@@ -480,8 +522,14 @@ export class ConnectedAccounts {
    * await composio.connectedAccounts.delete('conn_abc123');
    * ```
    */
-  async delete(nanoid: string): Promise<ConnectedAccountDeleteResponse> {
-    return this.client.connectedAccounts.delete(nanoid);
+  async delete(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountDeleteResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.delete(nanoid, undefined, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -502,7 +550,8 @@ export class ConnectedAccounts {
    */
   async refresh(
     nanoid: string,
-    options?: ConnectedAccountRefreshOptions
+    options?: ConnectedAccountRefreshOptions,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountRefreshResponse> {
     let params: ConnectedAccountRefreshParams | undefined = undefined;
 
@@ -520,7 +569,10 @@ export class ConnectedAccounts {
       };
     }
 
-    return this.client.connectedAccounts.refresh(nanoid, params);
+    return withCancellation(
+      () => this.client.connectedAccounts.refresh(nanoid, params, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -545,9 +597,13 @@ export class ConnectedAccounts {
    */
   async updateStatus(
     nanoid: string,
-    params: ConnectedAccountUpdateStatusParams
+    params: ConnectedAccountUpdateStatusParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, params);
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, params, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -562,8 +618,14 @@ export class ConnectedAccounts {
    * console.log(enabledAccount.isDisabled); // false
    * ```
    */
-  async enable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: true });
+  async enable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, { enabled: true }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -584,8 +646,14 @@ export class ConnectedAccounts {
    * // });
    * ```
    */
-  async disable(nanoid: string): Promise<ConnectedAccountUpdateStatusResponse> {
-    return this.client.connectedAccounts.updateStatus(nanoid, { enabled: false });
+  async disable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ConnectedAccountUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, { enabled: false }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -606,7 +674,8 @@ export class ConnectedAccounts {
    */
   async update(
     nanoid: string,
-    params: UpdateConnectedAccountParams
+    params: UpdateConnectedAccountParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountUpdateStatusResponse> {
     const parsedParams = UpdateConnectedAccountParamsSchema.safeParse(params);
     if (!parsedParams.success) {
@@ -615,6 +684,9 @@ export class ConnectedAccounts {
       });
     }
 
-    return this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data);
+    return withCancellation(
+      () => this.client.connectedAccounts.updateStatus(nanoid, parsedParams.data, requestOptions),
+      requestOptions?.signal
+    );
   }
 }

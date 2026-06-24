@@ -13,9 +13,10 @@ from composio.client.types import Tool
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.utils.shared import (
+    ToolSchemaAliases,
+    alias_tool_input_schema,
     get_pydantic_signature_format_from_schema_params,
-    reinstate_reserved_python_keywords,
-    substitute_reserved_python_keywords,
+    normalize_tool_arguments,
 )
 
 # google-genai is only needed for handle_response (backward compat)
@@ -81,7 +82,9 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
 
     def __init__(self, **kwargs: t.Any):
         super().__init__(**kwargs)
-        self._executors: t.Dict[str, AgenticProviderExecuteFn] = {}
+        self._executors: t.Dict[
+            str, t.Tuple[AgenticProviderExecuteFn, ToolSchemaAliases]
+        ] = {}
 
     def wrap_tool(
         self,
@@ -96,20 +99,15 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         1. Derive a ``FunctionDeclaration`` schema via ``from_callable()``
         2. Store it in the AFC ``function_map`` for automatic execution
         """
-        self._executors[tool.slug] = execute_tool
-
-        # Handle reserved Python keywords in parameter names
-        schema_params, keywords = substitute_reserved_python_keywords(
-            schema=tool.input_parameters
-        )
+        aliases = alias_tool_input_schema(schema=tool.input_parameters)
+        self._executors[tool.slug] = (execute_tool, aliases)
 
         def function(**kwargs: t.Any) -> t.Dict:
             """Composio tool execution wrapper."""
             kwargs = _to_serializable(kwargs)
-            kwargs = reinstate_reserved_python_keywords(
-                request=kwargs, keywords=keywords
-            )
-            result = execute_tool(tool.slug, kwargs)
+            kwargs = aliases.restore_arguments(kwargs)
+            # Normalize defensively so a stringified payload is coerced to a dict (issue #2406).
+            result = execute_tool(tool.slug, normalize_tool_arguments(kwargs))
             return _process_execution_result(result)
 
         # Create a real function object (passes inspect.isfunction)
@@ -128,7 +126,7 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # The google-genai SDK requires parameterized array types — bare List
         # generates {"type": "ARRAY"} without "items", which the API rejects.
         sig_params = get_pydantic_signature_format_from_schema_params(
-            schema_params=schema_params,
+            schema_params=aliases.schema,
             skip_default=True,
         )
         action_func.__signature__ = Signature(parameters=sig_params)  # type: ignore
@@ -188,7 +186,11 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             if fc.name not in self._executors:
                 continue
 
-            result = self._executors[fc.name](slug=fc.name, arguments=dict(fc.args))
+            execute_tool, aliases = self._executors[fc.name]
+            arguments = aliases.restore_arguments(dict(fc.args))
+            result = execute_tool(
+                slug=fc.name, arguments=normalize_tool_arguments(arguments)
+            )
             processed = _process_execution_result(result)
 
             function_responses.append(
