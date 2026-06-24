@@ -156,13 +156,27 @@ The trigger and subscription are separate on purpose. The trigger is the Gmail-s
 
 ### Build the graph
 
-`email_support_agent/utils/tools.py` and `email_support_agent/agent.py` are where the boundary gets sharp: Composio owns app access, and LangGraph owns the prescribed workflow. The files grow in three steps:
+`email_support_agent/utils/tools.py` is the boundary between Composio and the graph. Define the allowed tool surface once, up front:
 
-<FileBuildup name="emailGraph" />
+```python
+SAFE_GMAIL_TOOLS = [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+]
+
+SAFE_NOTION_TOOLS = [
+    "NOTION_INSERT_ROW_DATABASE",
+    "NOTION_QUERY_DATABASE",
+    "NOTION_ARCHIVE_NOTION_PAGE",
+    "NOTION_UPDATE_PAGE",
+]
+```
 
 The graph does not receive the whole Gmail toolkit. It can fetch the triggering message and create a draft. `GMAIL_SEND_EMAIL` is not enabled.
 
 Notion gets a separate scoped session for the database tools used by the review queue. The runtime session filter limits which Composio tools this workflow can call.
+
+`email_support_agent/agent.py` then wires those scoped helpers into the prescribed LangGraph path: fetch the message, check trust, classify intent, claim the message in Notion, draft, mark review pending, and write the final Notion row.
 
 You can also restrict OAuth permissions at the app level. Create a Gmail or Notion Auth Config with narrower scopes in the Dashboard, or create it programmatically with `credentials.scopes`, then pass that auth config into the session.
 
