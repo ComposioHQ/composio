@@ -111,7 +111,7 @@ async function main() {
     log.info("Bot is not connected yet. Generating an authorization link…");
     // Manual authentication: authorize() returns a Connect Link, then
     // waitForConnection() resolves once the bot finishes OAuth in the browser.
-    // https://docs.composio.dev/docs/authenticating-users/manually-authenticating
+    // https://docs.composio.dev/docs/manually-authenticating
     const connectionRequest = await session.authorize(TOOLKIT_SLUG);
     if (!connectionRequest.redirectUrl) {
       throw new Error("Composio did not return an authorization link.");
