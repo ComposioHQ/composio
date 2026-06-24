@@ -20,11 +20,9 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   protobufjs: true
+  sharp: false
   tree-sitter: true
   workerd: true
-
-ignoredBuiltDependencies:
-  - sharp
 
 catalog:
   '@ai-sdk/openai': ^3.0.71
