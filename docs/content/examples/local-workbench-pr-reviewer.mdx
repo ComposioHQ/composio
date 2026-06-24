@@ -12,7 +12,7 @@ This example builds a GitHub PR reviewer that does exactly that: it clones a pul
 It comes down to a handful of Composio pieces:
 
 1. **A local workbench session** is a Tool Router session with code execution turned off. Composio still does discovery and auth; it just won't run code for you.
-2. **The helper contract** is what comes back: a Python helper exposing `run_composio_tool`, `invoke_llm`, and `web_search`, plus the `env` it needs. You inject it into your sandbox and the agent calls it.
+2. **The helper contract** is what comes back: a Python helper exposing the same [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox) tools Composio's managed sandbox runs for you, plus the `env` it needs. You inject it into your sandbox and the agent calls it.
 3. **Your sandbox is the boundary.** Tool *execution* happens in a box you control. E2B is the replaceable sample runner; the contract it honors is the real interface.
 4. **Only post when checks ran.** The reviewer is instructed never to post an unverified review, so a repo it can't build produces no comment at all.
 
@@ -30,7 +30,7 @@ You need a [Composio API key](https://dashboard.composio.dev), an OpenAI API key
 
 <Accordions>
   <Accordion title="No sandbox provider? Use the E2B sample runner">
-    The host writes the Composio helper into a sandbox and runs the agent there, so it needs *somewhere* to run code. This example ships an [E2B](https://e2b.dev) runner in `src/sandbox/e2b.ts` so you can run it today with just an `E2B_API_KEY` — no infrastructure of your own.
+    The host writes the Composio helper into a sandbox and runs the agent there, so it needs *somewhere* to run code. This example ships an [E2B](https://e2b.dev) runner in `src/sandbox/e2b.ts` so you can run it today with just an `E2B_API_KEY`. E2B is a hosted sandbox provider: that key provisions an isolated microVM to run the agent in, so you don't have to stand up a VM or container yourself. It's still real infrastructure, just E2B's to manage rather than yours.
 
     E2B is deliberately isolated to that one file. To run on your own VM, container, or CI worker, replace `createE2bSandbox` with anything that honors the same contract: create a directory, write `helperSource` into it, pass `env` to the process, stream stdout and stderr back, and tear down on your schedule.
   </Accordion>
@@ -122,8 +122,3 @@ A slim set of knobs; most have sensible defaults.
 | `COMPOSIO_USER_ID` | Stable user id that owns the GitHub connection. Defaults to `local-pr-reviewer-user`. |
 | `COMPOSIO_BASE_URL` | Optional backend override for staging or local development. |
 | `SANDBOX_REMOTE_DIR` | Optional directory the helper and agent are written to inside the sandbox. |
-
-<Cards>
-  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Scope toolkits, connected accounts, auth behavior, and sandbox settings for a session." />
-  <Card title="Sandbox" href="/docs/sandbox" description="How Composio's managed sandbox works, for when you do want Composio-hosted code execution." />
-</Cards>
