@@ -9,9 +9,7 @@ related:
     description: "A worked example: clone a PR into a sandbox you own and post one grounded review."
 ---
 
-A **local sandbox** runs your agent's code on infrastructure you own: your VM, container, Kubernetes job, or CI worker. Execution stays inside your security boundary, while Composio still handles tool discovery and auth from outside it.
-
-Use it when you already run your agent somewhere and don't want tool execution to leave that boundary. The [remote sandbox](/docs/sandbox/remote) makes the opposite trade: Composio runs the code for you, so there's nothing to operate, but execution happens on Composio's side. A local sandbox keeps the same helpers and moves only execution into your box.
+A **local sandbox** runs your agent's code in your own infrastructure instead of Composio's hosted [remote sandbox](/docs/sandbox/remote), so code execution never leaves your security boundary.
 
 <LocalSandboxBoundary />
 
@@ -19,9 +17,9 @@ Use it when you already run your agent somewhere and don't want tool execution t
 
 Reach for a local sandbox when:
 
-- **The execution boundary has to be yours.** The agent clones a repo, runs untrusted code, or touches data that can't leave your infrastructure. You decide what the box can reach and when it's torn down.
-- **You already run sandboxes.** You have a VM pool, a container platform, or a CI worker, and you'd rather run agent code there than hand it to a hosted runtime.
-- **You need a filesystem and shell you own.** The task installs packages, runs a real build, or shells out to tools that live next to your code.
+- **Sensitive code or data.** The agent runs untrusted code or touches data that can't leave your infrastructure.
+- **You already run sandboxes.** You'd rather run agent code in your own VM, container, or CI worker than a hosted runtime.
+- **You need your own filesystem and shell.** The task installs packages, runs a build, or shells out to local tools.
 
 If none of that applies, use the [remote sandbox](/docs/sandbox/remote). It's the same helper surface with no infrastructure to run.
 
@@ -80,23 +78,19 @@ Three helpers are available in a local sandbox today. The file and proxy helpers
 | `run_composio_tool` | Execute any Composio tool | ✅ |
 | `invoke_llm` | Call an LLM | ✅ |
 | `web_search` | Search the web | ✅ |
-| `upload_local_file` | Upload generated files to storage | Not yet |
-| `proxy_execute` | Call an API directly when no tool exists | Not yet |
-| `smart_file_extract` | Extract text from PDFs and images | Not yet |
+| `upload_local_file` | Upload generated files to storage | ❌ |
+| `proxy_execute` | Call an API directly when no tool exists | ❌ |
+| `smart_file_extract` | Extract text from PDFs and images | ❌ |
 
 If your agent needs one of the remote-only helpers, use the [remote sandbox](/docs/sandbox/remote) for now.
 
-The helper is the *only* Composio-specific thing your sandbox carries. Anything that can create a directory, write `helperSource` into it, and run a process with `env` set can host a local sandbox.
-
 ## Security: the sandbox is your boundary
 
-The project API key reaches the helper through `env` as `COMPOSIO_API_KEY`, so it lives inside the sandbox. Any code or output in the sandbox can read it. **Treat the sandbox as your security boundary**: it has the same blast radius as that key, which can act across every connection on the project.
+The helper reaches Composio with your project `COMPOSIO_API_KEY`, injected into the sandbox through `env`. Any code or output in the sandbox can read it, and that key acts across every connection on the project.
 
 <Callout type="warn">
-Scope and isolate the box the way you would any environment holding a project credential. Run untrusted code with the network, filesystem, and lifetime limits you'd apply to code you don't fully trust, and rotate `COMPOSIO_API_KEY` if a run could have exposed it.
+The sandbox is your security boundary. Isolate it like anything else holding a project credential, and rotate `COMPOSIO_API_KEY` if a run could have leaked it.
 </Callout>
-
-A session-scoped key, narrowing what the in-sandbox credential can do down to just that session, is the planned follow-up. Until then, the project key is what the helper carries.
 
 ## Next
 
