@@ -356,16 +356,6 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/webhook-verification',
-        destination: '/docs/setting-up-triggers/subscribing-to-events#verifying-signatures',
-        permanent: true,
-      },
-      {
-        source: '/docs/setting-up-triggers/webhook-verification',
-        destination: '/docs/setting-up-triggers/subscribing-to-events#verifying-signatures',
-        permanent: true,
-      },
-      {
         source: '/triggers',
         destination: '/docs/triggers',
         permanent: true,

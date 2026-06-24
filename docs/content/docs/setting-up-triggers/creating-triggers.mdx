@@ -103,15 +103,9 @@ const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
   </Tab>
 </Tabs>
 
-<Callout>
-Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, pin a version at SDK initialization. See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
-</Callout>
+Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, [pin a version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version) at SDK initialization.
 
 That's it. The trigger is active. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events).
-
-<Callout>
-**Bringing your own OAuth app?** Some realtime triggers need a one-time webhook endpoint registration before they fire. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
-</Callout>
 
 ## Next
 

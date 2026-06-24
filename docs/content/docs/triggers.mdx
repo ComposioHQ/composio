@@ -32,14 +32,9 @@ Most realtime triggers need no extra setup. If you **bring your own OAuth app**,
 
 ## Trigger types and instances
 
-<Accordions>
-<Accordion title="What is a trigger type?">
 A **trigger type** is a template that defines what event to listen for and what configuration it needs. For example, `GITHUB_COMMIT_EVENT` requires an `owner` and a `repo`. Each toolkit exposes its own set of trigger types.
-</Accordion>
-<Accordion title="What is a trigger instance?">
+
 A **trigger instance** is a type activated for one [user's connected account](/docs/how-composio-works). Creating a `GITHUB_COMMIT_EVENT` trigger for user `alice` on the `composio` repo produces an instance with its own `ti_*` ID that you can enable, disable, or delete independently.
-</Accordion>
-</Accordions>
 
 ## Working with triggers
 

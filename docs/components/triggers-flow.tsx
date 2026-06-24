@@ -70,26 +70,27 @@ export function TriggersFlow() {
         <Column>
           <Lane label="Composio" accent />
           <div className="flex flex-1 flex-col">
-            <div className="relative flex-1 border border-[var(--composio-brand)]/30 bg-[var(--composio-brand)]/[0.04] p-3">
+            <div className="relative flex flex-1 flex-col items-center justify-center gap-3 border border-[var(--composio-brand)]/30 bg-[var(--composio-brand)]/[0.04] p-4">
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 w-[2px] bg-[var(--composio-brand)]"
               />
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--composio-brand)]">
-                  trigger
-                </span>
-                <span className="font-mono text-[10px] text-fd-foreground/45">ti_xyz789</span>
-              </div>
-              <p className="mt-2.5 text-[11px] leading-snug text-fd-foreground/60">
+              <img
+                alt="Composio"
+                className="h-6 w-auto object-contain dark:hidden"
+                draggable={false}
+                src="/Composio Logo.svg"
+              />
+              <img
+                alt="Composio"
+                className="hidden h-6 w-auto object-contain dark:block"
+                draggable={false}
+                src="/Composio Logo Dark.svg"
+              />
+              <p className="text-center text-[11px] leading-snug text-fd-foreground/60">
                 Receives the event (provider push or poll), verifies the source,
                 normalizes it, and signs it.
               </p>
-              <div className="mt-2.5 overflow-hidden rounded-sm border border-fd-border bg-fd-card px-2.5 py-1.5">
-                <code className="font-mono text-[10px] text-fd-foreground/70">
-                  composio.trigger.message
-                </code>
-              </div>
             </div>
           </div>
           <Connector accent />
