@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
+## [0.16.0] - 2026-06-22
+
+### Changed
+- Bumped the Python SDK and provider packages from `0.15.0` to `0.16.0`.
+- Refreshed Python core and provider dependency ranges, plus root and provider uv locks, to the newest compatible versions.
+
 ## [0.15.0] - 2026-06-16
 
 ### Fixed

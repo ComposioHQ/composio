@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="composio_openai_agents",
-    version="0.15.0",
+    version="0.16.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of strongly typed tools for OpenAI Agents",
@@ -20,8 +20,8 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     packages=find_packages(),
-    install_requires=["openai-agents>=0.0.3", "composio"],
+    install_requires=["openai-agents>=0.17.5", "composio"],
     include_package_data=True,
 )

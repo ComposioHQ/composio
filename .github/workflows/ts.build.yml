@@ -9,6 +9,10 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.ts'
   pull_request:
     paths:
       - 'ts/**'
@@ -16,6 +20,10 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.ts'
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:

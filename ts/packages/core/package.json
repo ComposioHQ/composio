@@ -79,7 +79,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run",
     "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",

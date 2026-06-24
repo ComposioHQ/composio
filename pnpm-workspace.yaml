@@ -15,6 +15,15 @@ packages:
   - ts/packages/ts-builders
   - ts/packages/wrappers/*
 
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true
+  sharp: false
+  tree-sitter: true
+  workerd: true
+
 catalog:
   '@ai-sdk/openai': ^3.0.71
   '@arethetypeswrong/cli': ^0.18.3
@@ -41,7 +50,7 @@ catalog:
   hono: ^4.12.25
   openai: ^6.42.0
   picocolors: ^1.1.1
-  pnpm: ^10.28.0
+  pnpm: ^11.8.0
   publint: ^0.3.21
   tsdown: ^0.22.3
   tsx: ^4.22.4

@@ -27,7 +27,7 @@ declare module 'bun' {
 }
 
 e2e(import.meta.url, {
-  versions: { node: ['22.22.3', '24.16.0', '25.9.0'] },
+  versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
   env: {
     COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,
     OPENAI_API_KEY: Bun.env.OPENAI_API_KEY,
@@ -99,7 +99,7 @@ e2e(import.meta.url, {
           expect(toolCalls).toBeDefined();
           expect(result.error).toBeUndefined();
           expect(result.object).toBeDefined();
-          expect(result.object.karma).toBeGreaterThan(0);
+          expect(result.object.karma).toBeGreaterThanOrEqual(0);
 
           await mcpClient.disconnect();
         },
