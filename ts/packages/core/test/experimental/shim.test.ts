@@ -14,7 +14,13 @@ describe('experimental_createPythonWorkbenchHelperSource', () => {
     expect(source).toContain('def web_search(');
     expect(source).toContain('"x-api-key": api_key');
     expect(source).toContain('/api/v3/tool_router/session/%s/execute');
-    expect(source).toContain('DEFAULT_INVOKE_LLM_MODEL = "openai/gpt-oss-120b"');
+    // Config is injected via an `_INTERNAL` prologue, read by the helper.
+    expect(source).toContain('_INTERNAL = _composio_internal_json.loads(');
+    expect(source).toContain('openai/gpt-oss-120b');
+    expect(source).toContain(
+      'DEFAULT_INVOKE_LLM_MODEL = _INTERNAL.get("invoke_llm_model", "openai/gpt-oss-120b")'
+    );
+    expect(source).not.toContain('__COMPOSIO_INVOKE_LLM_MODEL__');
     expect(source).not.toContain('proxy_execute');
     expect(source).not.toContain('upload_local_file');
     expect(source).not.toContain('smart_file_extract');
@@ -23,6 +29,21 @@ describe('experimental_createPythonWorkbenchHelperSource', () => {
     expect(source).not.toContain('COMPOSIO_WORKBENCH_ACCESS_KEY');
     expect(source).not.toContain('runComposioTool');
     expect(source).not.toContain('export async');
+  });
+
+  it('injects a custom invoke LLM model into the _INTERNAL prologue', () => {
+    const source = experimental_createPythonWorkbenchHelperSource({
+      invokeLlmModel: 'custom/model-x',
+    });
+
+    expect(source).toContain('_INTERNAL = _composio_internal_json.loads(');
+    expect(source).toContain('custom/model-x');
+    // The injected JSON is a valid Python double-quoted string literal.
+    expect(source).toContain('loads("{\\"invoke_llm_model\\":\\"custom/model-x\\"}")');
+    // The prologue must precede the helper body so `_INTERNAL` is defined first.
+    expect(source.indexOf('_INTERNAL = _composio_internal_json.loads(')).toBeLessThan(
+      source.indexOf('DEFAULT_INVOKE_LLM_MODEL = _INTERNAL.get(')
+    );
   });
 
   it('checks HTTP status before parsing successful JSON responses', () => {

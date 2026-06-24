@@ -1,4 +1,4 @@
-export const PYTHON_WORKBENCH_HELPER_SOURCE = `import json
+import json
 import os
 import random
 import time
@@ -8,7 +8,15 @@ import urllib.request
 import uuid
 
 
-DEFAULT_INVOKE_LLM_MODEL = __COMPOSIO_INVOKE_LLM_MODEL__
+# Config is injected by the SDK via an `_INTERNAL` dict in a prologue prepended
+# at runtime. When running this file directly (e.g. pytest), default to empty.
+try:
+    _INTERNAL
+except NameError:
+    _INTERNAL = {}
+
+
+DEFAULT_INVOKE_LLM_MODEL = _INTERNAL.get("invoke_llm_model", "openai/gpt-oss-120b")
 RATE_LIMIT_PATTERNS = (
     "rate limit",
     "ratelimit",
@@ -178,7 +186,7 @@ def _strip_code_fence(content):
             stripped = stripped[4:].strip()
         if stripped.endswith(code_fence):
             stripped = stripped[:-3].strip()
-    elif stripped.lower().startswith("json\\n"):
+    elif stripped.lower().startswith("json\n"):
         stripped = stripped[5:].strip()
     return stripped.strip()
 
@@ -236,4 +244,3 @@ def web_search(query):
     if error:
         return "", error
     return response.get("data", {}).get("answer", ""), ""
-`;

@@ -1,4 +1,4 @@
-import { PYTHON_WORKBENCH_HELPER_SOURCE } from './python-workbench-helper-source';
+import { PYTHON_WORKBENCH_HELPER_SOURCE } from './python-helpers.generated';
 
 export interface WorkbenchEnvOptions {
   sessionId: string;
@@ -35,8 +35,14 @@ export function experimental_createWorkbenchEnv(env: WorkbenchEnvOptions): Recor
 export function experimental_createPythonWorkbenchHelperSource(
   opts: PythonWorkbenchHelperSourceOptions = {}
 ): string {
-  return PYTHON_WORKBENCH_HELPER_SOURCE.replace(
-    '__COMPOSIO_INVOKE_LLM_MODEL__',
-    JSON.stringify(opts.invokeLlmModel ?? 'openai/gpt-oss-120b')
-  );
+  // Inject config by prepending an `_INTERNAL` prologue the helper reads from,
+  // rather than string-substituting a sentinel. The helper `.py` is authored as
+  // real, lintable/testable Python; the generated constant is verbatim.
+  // JSON.stringify-of-JSON.stringify yields a double-quoted string literal that
+  // is valid Python — JSON string escapes are a subset of Python's.
+  const config = { invoke_llm_model: opts.invokeLlmModel ?? 'openai/gpt-oss-120b' };
+  const prologue =
+    `import json as _composio_internal_json\n` +
+    `_INTERNAL = _composio_internal_json.loads(${JSON.stringify(JSON.stringify(config))})\n`;
+  return prologue + PYTHON_WORKBENCH_HELPER_SOURCE;
 }
