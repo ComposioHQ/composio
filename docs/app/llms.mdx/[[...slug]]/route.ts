@@ -797,7 +797,7 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Premium Tools](/toolkits/premium-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
     '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
     '',
     '## All Toolkits',
