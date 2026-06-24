@@ -1,8 +1,10 @@
 """Tests for provider-facing tool schema aliases."""
 
+import asyncio
 import copy
 import importlib.util
 import inspect
+import re
 import sys
 import types
 from pathlib import Path
@@ -19,6 +21,7 @@ from composio.utils.shared import (
 
 
 PYTHON_ROOT = Path(__file__).resolve().parents[1]
+ANTHROPIC_PROPERTY_RE = re.compile(r"^[a-zA-Z0-9_.-]{1,64}$")
 
 
 def _load_module(monkeypatch, module_name: str, path: Path):
@@ -88,17 +91,30 @@ def test_alias_tool_input_schema_rejects_duplicate_aliases():
 
 
 def test_legacy_keyword_helpers_use_tool_schema_aliases():
+    long_name = "x" * 80
     schema = {
         "type": "object",
-        "properties": {"$top": {"type": "integer"}},
-        "required": ["$top"],
+        "properties": {
+            "$top": {"type": "integer"},
+            "@microsoft.graph.conflictBehavior": {"type": "string"},
+            long_name: {"type": "string"},
+        },
+        "required": ["$top", long_name],
     }
 
     aliased_schema, aliases = substitute_reserved_python_keywords(schema)
 
-    assert list(aliased_schema["properties"]) == ["_top"]
-    assert aliased_schema["required"] == ["_top"]
+    aliased_names = list(aliased_schema["properties"])
+    assert aliased_names[0] == "_top"
+    assert aliased_names[1] == "_microsoft_graph_conflictBehavior"
+    assert len(aliased_names[2]) == 64
+    assert all(ANTHROPIC_PROPERTY_RE.fullmatch(name) for name in aliased_names)
+    assert aliased_schema["required"] == ["_top", aliased_names[2]]
     assert aliases["_top"] == "$top"
+    assert aliases["_microsoft_graph_conflictBehavior"] == (
+        "@microsoft.graph.conflictBehavior"
+    )
+    assert aliases[aliased_names[2]] == long_name
 
 
 def test_gemini_manual_response_restores_provider_visible_aliases(monkeypatch):
@@ -212,3 +228,136 @@ def test_google_adk_wrap_tool_aliases_signature_and_restores_arguments(monkeypat
         slug="TOOL_WITH_RESERVED",
         arguments={"from": "sender@example.com", "limit": 10},
     )
+
+
+def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
+    anthropic_module = types.ModuleType("anthropic")
+    types_module = types.ModuleType("anthropic.types")
+    beta_module = types.ModuleType("anthropic.types.beta")
+    beta_tool_use_module = types.ModuleType("anthropic.types.beta.beta_tool_use_block")
+    message_module = types.ModuleType("anthropic.types.message")
+    tool_param_module = types.ModuleType("anthropic.types.tool_param")
+    tool_use_module = types.ModuleType("anthropic.types.tool_use_block")
+
+    class BetaToolUseBlock:
+        pass
+
+    class Message:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    class ToolUseBlock:
+        pass
+
+    beta_tool_use_module.BetaToolUseBlock = BetaToolUseBlock
+    message_module.Message = Message
+    tool_param_module.ToolParam = dict
+    tool_use_module.ToolUseBlock = ToolUseBlock
+    monkeypatch.setitem(sys.modules, "anthropic", anthropic_module)
+    monkeypatch.setitem(sys.modules, "anthropic.types", types_module)
+    monkeypatch.setitem(sys.modules, "anthropic.types.beta", beta_module)
+    monkeypatch.setitem(
+        sys.modules,
+        "anthropic.types.beta.beta_tool_use_block",
+        beta_tool_use_module,
+    )
+    monkeypatch.setitem(sys.modules, "anthropic.types.message", message_module)
+    monkeypatch.setitem(sys.modules, "anthropic.types.tool_param", tool_param_module)
+    monkeypatch.setitem(sys.modules, "anthropic.types.tool_use_block", tool_use_module)
+
+    provider_module = _load_module(
+        monkeypatch,
+        "test_composio_anthropic_provider",
+        PYTHON_ROOT / "providers/anthropic/composio_anthropic/provider.py",
+    )
+    provider = provider_module.AnthropicProvider()
+    provider.execute_tool = Mock(return_value={"successful": True})
+    long_name = "x" * 80
+    tool = SimpleNamespace(
+        slug="TOOL_WITH_ODATA",
+        description="Tool with OData parameters",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "$top": {"type": "integer"},
+                "@microsoft.graph.conflictBehavior": {"type": "string"},
+                long_name: {"type": "string"},
+            },
+            "required": ["$top", long_name],
+        },
+    )
+
+    wrapped = provider.wrap_tool(tool)
+
+    aliased_names = list(wrapped["input_schema"]["properties"])
+    assert aliased_names[0] == "_top"
+    assert aliased_names[1] == "_microsoft_graph_conflictBehavior"
+    assert len(aliased_names[2]) == 64
+    assert all(ANTHROPIC_PROPERTY_RE.fullmatch(name) for name in aliased_names)
+
+    tool_call = SimpleNamespace(
+        name="TOOL_WITH_ODATA",
+        input={
+            "_top": 10,
+            "_microsoft_graph_conflictBehavior": "rename",
+            aliased_names[2]: "value",
+        },
+    )
+    provider.execute_tool_call(user_id="user", tool_call=tool_call)
+
+    provider.execute_tool.assert_called_once_with(
+        slug="TOOL_WITH_ODATA",
+        arguments={
+            "$top": 10,
+            "@microsoft.graph.conflictBehavior": "rename",
+            long_name: "value",
+        },
+        modifiers=None,
+        user_id="user",
+    )
+
+
+def test_claude_agent_sdk_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
+    claude_agent_sdk_module = types.ModuleType("claude_agent_sdk")
+
+    def sdk_tool(name, description, input_schema):
+        def decorator(fn):
+            fn._tool_name = name
+            fn._tool_description = description
+            fn._input_schema = input_schema
+            return fn
+
+        return decorator
+
+    claude_agent_sdk_module.McpSdkServerConfig = dict
+    claude_agent_sdk_module.SdkMcpTool = object
+    claude_agent_sdk_module.create_sdk_mcp_server = Mock()
+    claude_agent_sdk_module.tool = sdk_tool
+    monkeypatch.setitem(sys.modules, "claude_agent_sdk", claude_agent_sdk_module)
+
+    provider_module = _load_module(
+        monkeypatch,
+        "test_composio_claude_agent_sdk_provider",
+        PYTHON_ROOT
+        / "providers/claude_agent_sdk/composio_claude_agent_sdk/provider.py",
+    )
+    provider = provider_module.ClaudeAgentSDKProvider()
+    execute_tool = Mock(return_value={"successful": True})
+    tool = SimpleNamespace(
+        slug="TOOL_WITH_ODATA",
+        description="Tool with OData parameters",
+        input_parameters={
+            "type": "object",
+            "properties": {"$top": {"type": "integer"}},
+            "required": ["$top"],
+        },
+    )
+
+    wrapped = provider.wrap_tool(tool, execute_tool)
+
+    assert list(wrapped._input_schema["properties"]) == ["_top"]
+    assert wrapped._input_schema["required"] == ["_top"]
+    result = asyncio.run(wrapped({"_top": 5}))
+
+    assert result["content"][0]["type"] == "text"
+    execute_tool.assert_called_once_with("TOOL_WITH_ODATA", {"$top": 5})

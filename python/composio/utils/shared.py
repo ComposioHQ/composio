@@ -4,6 +4,7 @@ Shared utils.
 
 import copy
 import dataclasses
+import hashlib
 import json
 import keyword
 import typing as t
@@ -49,6 +50,7 @@ reserved_names = ["validate"]
 
 _OBJ_MARKER = "-_object_-"
 _ARR_MARKER = "-_array_-"
+_MAX_PROVIDER_ALIAS_LENGTH = 64
 
 
 def normalize_tool_arguments(arguments: t.Any) -> t.Dict[str, t.Any]:
@@ -116,6 +118,11 @@ def _make_python_identifier(name: str) -> str:
         safe = f"_{safe}"
     if keyword.iskeyword(safe):
         safe = _make_safe_name(safe)
+    if len(safe) > _MAX_PROVIDER_ALIAS_LENGTH:
+        hash_suffix = hashlib.sha256(name.encode()).hexdigest()[:8]
+        safe = (
+            f"{safe[: _MAX_PROVIDER_ALIAS_LENGTH - len(hash_suffix) - 1]}_{hash_suffix}"
+        )
     return safe
 
 
@@ -139,8 +146,10 @@ def alias_tool_input_schema(schema: t.Dict) -> ToolSchemaAliases:
 
     Python keywords keep the historical ``_rs`` suffix (``from`` becomes
     ``from_rs``). Other names that cannot be used as Python identifiers are
-    converted to underscores. If two properties would expose the same alias,
-    an :class:`InvalidSchemaError` is raised instead of guessing.
+    converted to underscores and long aliases are capped at 64 characters so
+    the same provider-facing schema is accepted by Anthropic-style tool schema
+    validators. If two properties would expose the same alias, an
+    :class:`InvalidSchemaError` is raised instead of guessing.
     """
     aliased_schema = copy.deepcopy(schema)
     schema_params, aliases = _alias_schema_properties(aliased_schema)
