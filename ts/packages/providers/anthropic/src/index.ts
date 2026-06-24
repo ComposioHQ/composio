@@ -143,9 +143,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     // Anthropic rejects the whole `tools` array if any property key falls outside
     // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
     // over-long flattened keys). Rewrite offending keys and remember how to undo it.
-    const { schema, mapping } = sanitizeSchemaPropertyKeys(
-      rawSchema as unknown as Record<string, unknown>
-    );
+    const { schema, mapping } = sanitizeSchemaPropertyKeys(rawSchema);
 
     if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
@@ -156,7 +154,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: schema as unknown as InputSchema,
+      input_schema: schema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }

@@ -33,15 +33,22 @@ const VALID_KEY_RE = /^[a-zA-Z0-9_.-]{1,64}$/;
 const MAX_KEY_LENGTH = 64;
 
 /**
- * Readable replacements for the most common illegal characters so aliases stay
- * recognizable (e.g. `$top` -> `dollar_top`, `@odata.type` -> `at_odata.type`).
- * Any other illegal character falls back to `_`. Mirrors the Python SDK's
- * sanitization for cross-language consistency.
+ * Readable replacements for the two most common illegal characters — the OData
+ * prefixes Composio surfaces — so aliases stay recognizable on the wire (e.g.
+ * `$top` -> `dollar_top`, `@odata.type` -> `at_odata.type`). Any other illegal
+ * character falls back to `_` (see {@link sanitizeKey}).
  */
 const ILLEGAL_CHAR_MAP: Record<string, string> = {
   $: 'dollar_',
   '@': 'at_',
 };
+
+/**
+ * Maximum schema nesting we traverse. Mirrors the cap in core's
+ * `dereferenceJsonSchema` so a pathologically deep (or cyclic-looking) schema
+ * can't blow the stack during sanitization or restoration.
+ */
+const MAX_SCHEMA_DEPTH = 512;
 
 /**
  * Reverse mapping used to restore original property names at execution time.
@@ -102,6 +109,13 @@ function sanitizeKey(name: string): string {
   }
   sanitized = sanitized.replace(/[^a-zA-Z0-9_.-]/g, '_');
 
+  // Anthropic's pattern requires at least one character; an empty original (or
+  // one made entirely of stripped characters) would otherwise emit `''`, which
+  // still fails validation. Fall back to a deterministic non-empty alias.
+  if (sanitized.length === 0) {
+    sanitized = `key_${shortHash(name)}`;
+  }
+
   if (sanitized.length > MAX_KEY_LENGTH) {
     const suffix = `_${shortHash(name)}`;
     sanitized = sanitized.slice(0, MAX_KEY_LENGTH - suffix.length) + suffix;
@@ -112,18 +126,22 @@ function sanitizeKey(name: string): string {
 
 /** Returns a sanitized key guaranteed to be unique within `taken`. */
 function uniqueSanitizedKey(name: string, taken: Set<string>): string {
-  let candidate = sanitizeKey(name);
+  const candidate = sanitizeKey(name);
   if (!taken.has(candidate)) {
     return candidate;
   }
-  // Collision (different originals mapping to the same alias) — append a hash.
+  // Collision (different originals mapping to the same alias) — append a hash,
+  // then an incrementing counter if that still collides. The counter changes
+  // every iteration, so this always makes progress and can't spin (the previous
+  // `slice + '_'` approach had a fixed point at `<63 chars>_`).
   const suffix = `_${shortHash(name)}`;
   const base = candidate.slice(0, MAX_KEY_LENGTH - suffix.length);
-  candidate = base + suffix;
-  while (taken.has(candidate)) {
-    candidate = `${candidate.slice(0, MAX_KEY_LENGTH - 1)}_`;
+  let resolved = base + suffix;
+  for (let counter = 1; taken.has(resolved); counter++) {
+    const tail = `${suffix}_${counter}`;
+    resolved = base.slice(0, MAX_KEY_LENGTH - tail.length) + tail;
   }
-  return candidate;
+  return resolved;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -138,19 +156,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  *
  * The input node is never mutated; a new node is returned.
  */
-function sanitizeNode(node: Record<string, unknown>): {
+function sanitizeNode(
+  node: Record<string, unknown>,
+  depth = 0
+): {
   node: Record<string, unknown>;
   mapping: KeyMapping;
 } {
+  if (depth > MAX_SCHEMA_DEPTH) {
+    throw new Error(
+      `Tool schema nesting exceeded the maximum supported depth (${MAX_SCHEMA_DEPTH})`
+    );
+  }
+
   const result: Record<string, unknown> = { ...node };
-  const renames: Record<string, string> = {};
-  const children: Record<string, KeyMapping> = {};
+  // Lookup/result tables are prototype-free so a property key that collides with
+  // an `Object.prototype` member (`__proto__`, `constructor`, `toString`, …)
+  // becomes a plain own entry instead of resolving to (or reparenting via) the
+  // inherited member. Mirrors core's `POLLUTING_KEYS` defense in `jsonSchema.ts`.
+  const renames: Record<string, string> = Object.create(null);
+  const children: Record<string, KeyMapping> = Object.create(null);
   let items: KeyMapping | (KeyMapping | null)[] | undefined;
 
   const properties = node.properties;
   if (isPlainObject(properties)) {
-    const newProperties: Record<string, unknown> = {};
-    const renamedOriginalToSanitized: Record<string, string> = {};
+    const newProperties: Record<string, unknown> = Object.create(null);
+    const renamedOriginalToSanitized: Record<string, string> = Object.create(null);
 
     // Reserve all already-valid keys up front so they keep their exact names and
     // sanitized aliases are generated around them (a valid `dollar_top` must not
@@ -166,7 +197,7 @@ function sanitizeNode(node: Record<string, unknown>): {
       const safeKey = isValidKey(key) ? key : uniqueSanitizedKey(key, taken);
       taken.add(safeKey);
 
-      const child = isPlainObject(rawValue) ? sanitizeNode(rawValue) : null;
+      const child = isPlainObject(rawValue) ? sanitizeNode(rawValue, depth + 1) : null;
       newProperties[safeKey] = child ? child.node : rawValue;
       if (child && mappingHasRenames(child.mapping)) {
         children[safeKey] = child.mapping;
@@ -195,7 +226,7 @@ function sanitizeNode(node: Record<string, unknown>): {
   // too — `properties`-only traversal would let them through and still 400.
   const itemsSchema = node.items;
   if (isPlainObject(itemsSchema)) {
-    const child = sanitizeNode(itemsSchema);
+    const child = sanitizeNode(itemsSchema, depth + 1);
     result.items = child.node;
     if (mappingHasRenames(child.mapping)) {
       items = child.mapping;
@@ -207,7 +238,7 @@ function sanitizeNode(node: Record<string, unknown>): {
     let anyRenamed = false;
     for (const entry of itemsSchema) {
       if (isPlainObject(entry)) {
-        const child = sanitizeNode(entry);
+        const child = sanitizeNode(entry, depth + 1);
         sanitizedItems.push(child.node);
         if (mappingHasRenames(child.mapping)) {
           itemMappings.push(child.mapping);
@@ -257,27 +288,41 @@ export function sanitizeSchemaPropertyKeys<T extends Record<string, unknown>>(
  * its alias was actually generated. Nested objects and arrays are handled
  * recursively. Returns a new value; the input is not mutated.
  */
-export function restoreOriginalKeys(value: unknown, mapping: KeyMapping): unknown {
+export function restoreOriginalKeys(value: unknown, mapping: KeyMapping, depth = 0): unknown {
+  if (depth > MAX_SCHEMA_DEPTH) {
+    throw new Error(
+      `Tool arguments nesting exceeded the maximum supported depth (${MAX_SCHEMA_DEPTH})`
+    );
+  }
+
   if (Array.isArray(value)) {
     const { items } = mapping;
     if (Array.isArray(items)) {
       return value.map((item, index) => {
         const itemMapping = items[index];
-        return itemMapping ? restoreOriginalKeys(item, itemMapping) : item;
+        return itemMapping ? restoreOriginalKeys(item, itemMapping, depth + 1) : item;
       });
     }
     if (items) {
-      return value.map(item => restoreOriginalKeys(item, items));
+      return value.map(item => restoreOriginalKeys(item, items, depth + 1));
     }
     return value;
   }
 
   if (isPlainObject(value)) {
-    const restored: Record<string, unknown> = {};
+    // Prototype-free so a model-supplied key equal to an `Object.prototype`
+    // member name (`__proto__`, `constructor`, …) is written as a plain own
+    // property rather than reparenting the result or hitting an inherited member.
+    const restored: Record<string, unknown> = Object.create(null);
     for (const [key, val] of Object.entries(value)) {
+      // `renames`/`children` are themselves prototype-free (see `sanitizeNode`),
+      // so these lookups return `undefined` for non-own keys instead of an
+      // inherited function — no spurious rename and no crash on recursion.
       const originalKey = mapping.renames[key] ?? key;
       const childMapping = mapping.children[key];
-      restored[originalKey] = childMapping ? restoreOriginalKeys(val, childMapping) : val;
+      restored[originalKey] = childMapping
+        ? restoreOriginalKeys(val, childMapping, depth + 1)
+        : val;
     }
     return restored;
   }

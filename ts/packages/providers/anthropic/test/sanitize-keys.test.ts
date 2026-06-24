@@ -196,6 +196,60 @@ describe('sanitizeSchemaPropertyKeys', () => {
     const restored = restoreOriginalKeys({ pair: [{ dollar_top: 9 }, { plain: 'x' }] }, mapping);
     expect(restored).toEqual({ pair: [{ $top: 9 }, { plain: 'x' }] });
   });
+
+  // A key that is empty (or made entirely of stripped characters) would emit
+  // `''`, which still violates Anthropic's `{1,64}` length bound.
+  it('emits a non-empty conforming alias for empty / all-illegal keys', () => {
+    const schema = {
+      type: 'object',
+      properties: { '': { type: 'string' }, '@@@': { type: 'integer' } },
+    };
+
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
+    const keys = Object.keys(out.properties as Record<string, unknown>);
+
+    expect(keys).toHaveLength(2);
+    keys.forEach(k => expect(k).toMatch(ANTHROPIC_KEY_RE)); // each ≥ 1 char and conforming
+    expect(new Set(Object.values(mapping.renames))).toEqual(new Set(['', '@@@']));
+  });
+
+  // Pathologically deep schemas must fail loudly rather than overflow the stack.
+  it('throws instead of overflowing the stack on deeply nested schemas', () => {
+    let deep: Record<string, unknown> = {
+      type: 'object',
+      properties: { $x: { type: 'integer' } },
+    };
+    for (let i = 0; i < 2000; i++) {
+      deep = { type: 'object', properties: { nested: deep } };
+    }
+
+    expect(() => sanitizeSchemaPropertyKeys(deep)).toThrow(/depth/i);
+  });
+
+  // Property keys that collide with `Object.prototype` member names must be
+  // treated as ordinary keys, never reparent the emitted schema, and never
+  // mutate `Object.prototype`. Built via JSON.parse so `__proto__` is a real
+  // own key rather than prototype-setting literal syntax.
+  it('treats prototype-member property names as ordinary keys', () => {
+    const schema = JSON.parse(
+      '{"type":"object","properties":{"$top":{"type":"integer"},"__proto__":{"type":"string"},"constructor":{"type":"string"}}}'
+    );
+
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
+    const props = out.properties as Record<string, unknown>;
+
+    expect(Object.prototype.hasOwnProperty.call(props, '__proto__')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(props, 'constructor')).toBe(true);
+    expect(props['constructor']).toEqual({ type: 'string' });
+    expect(({} as Record<string, unknown>).type).toBeUndefined(); // prototype untouched
+
+    const restored = restoreOriginalKeys({ dollar_top: 1, constructor: 'c' }, mapping) as Record<
+      string,
+      unknown
+    >;
+    expect(restored['$top']).toBe(1);
+    expect(restored['constructor']).toBe('c');
+  });
 });
 
 describe('restoreOriginalKeys', () => {
@@ -252,6 +306,34 @@ describe('restoreOriginalKeys', () => {
       $top: 10, // root alias restored to the OData name
       filters: { dollar_top: 'keep-me' }, // nested genuine key left alone
     });
+  });
+
+  // Security: a model can emit argument keys equal to Object.prototype member
+  // names (and `__proto__` reaches restoration via the JSON-string input path).
+  // Restoration must not crash, must not corrupt the payload, and must never
+  // mutate Object.prototype — the reverse maps and result object are all
+  // prototype-free.
+  it('handles prototype-member keys in tool arguments without crashing or polluting', () => {
+    const { mapping } = sanitizeSchemaPropertyKeys({
+      type: 'object',
+      properties: { $top: { type: 'integer' }, name: { type: 'string' } },
+      required: ['$top'],
+    });
+
+    const input = JSON.parse(
+      '{"dollar_top":1,"constructor":{"inner":2},"toString":"t","__proto__":{"polluted":true},"hasOwnProperty":"h","name":"n"}'
+    );
+
+    // Threw with `TypeError` before this PR's hardening (lookups resolved to the
+    // inherited `Object` function); a plain assignment here would also fail.
+    const restored = restoreOriginalKeys(input, mapping) as Record<string, unknown>;
+
+    expect(restored['$top']).toBe(1);
+    expect(restored['name']).toBe('n');
+    expect(restored['toString']).toBe('t');
+    expect(restored['hasOwnProperty']).toBe('h');
+    expect((restored['constructor'] as Record<string, unknown>).inner).toBe(2);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined(); // prototype untouched
   });
 });
 
