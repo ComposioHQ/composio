@@ -67,10 +67,13 @@ def main(argv: list[str]) -> int:
     )
 
     # Bump each sha256 by pairing it with the URL line directly above.
+    updated_platforms: set[str] = set()
+
     def repl_sha(match: re.Match[str]) -> str:
         url_line, sha_line = match.group(1), match.group(2)
         for plat, sha in shas.items():
             if f"composio-{plat}.zip" in url_line:
+                updated_platforms.add(plat)
                 return url_line + re.sub(
                     r'"[0-9a-f]{64}"',
                     lambda _m: f'"{sha}"',
@@ -84,9 +87,17 @@ def main(argv: list[str]) -> int:
         src,
     )
 
-    if n_ver != 1 or n_url == 0 or n_sha == 0:
+    expected_platforms = set(shas)
+    if (
+        n_ver != 1
+        or n_url != len(shas)
+        or n_sha != len(shas)
+        or updated_platforms != expected_platforms
+    ):
         print(
-            f"bump produced unexpected edit counts (version={n_ver}, url={n_url}, sha={n_sha})",
+            "bump produced unexpected edits "
+            f"(version={n_ver}, url={n_url}, sha={n_sha}, "
+            f"updated_platforms={sorted(updated_platforms)})",
             file=sys.stderr,
         )
         return 1
