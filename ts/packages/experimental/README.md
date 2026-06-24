@@ -200,7 +200,7 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new EveProvider(),
 });
-const session = composio.create(process.env.COMPOSIO_USER_ID, {
+const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
   /* toolkits, customToolkits */
 });
 
