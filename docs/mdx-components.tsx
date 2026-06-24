@@ -28,6 +28,7 @@ import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
 import { TriggersFlow } from '@/components/triggers-flow';
 import { SlackBotFlow } from '@/components/slack-bot-flow';
+import { LocalWorkbenchFlow } from '@/components/local-workbench-flow';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
 import { WorkbenchFlow } from '@/components/workbench-flow';
@@ -121,6 +122,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     SessionFlow,
     TriggersFlow,
     SlackBotFlow,
+    LocalWorkbenchFlow,
     FileBuildup,
     RepoBrowser,
     WorkbenchFlow,
