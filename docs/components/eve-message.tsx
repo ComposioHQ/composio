@@ -2,7 +2,8 @@
 
 import { useState, type ComponentProps } from 'react';
 import { useRouter } from 'next/navigation';
-import { Streamdown } from 'streamdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import hljs from 'highlight.js';
 import { Check, Copy } from 'lucide-react';
 
@@ -45,13 +46,11 @@ function MarkdownLink({ href, children, node, ...props }: ComponentProps<'a'> & 
   );
 }
 
-// Prose renders through Streamdown; code blocks render through the custom
-// <CodeBlock> below (highlight.js — synchronous, browser-safe). Streamdown's
-// link-safety modal is off; MarkdownLink handles link behavior instead.
-const STREAMDOWN_PROPS = {
-  linkSafety: { enabled: false },
-  components: { a: MarkdownLink },
-} as const;
+// Prose renders through react-markdown (we control link behavior and keys);
+// code blocks render through the custom <CodeBlock> below (highlight.js,
+// synchronous and browser-safe).
+const MD_COMPONENTS: Components = { a: MarkdownLink };
+const MD_PLUGINS = [remarkGfm];
 
 // Map our fence languages to highlight.js language ids (some, like cURL, aren't
 // registered grammars and fall back to a near match or auto-detection).
@@ -252,9 +251,11 @@ export function AssistantMessage({ text }: { text: string }) {
         if (g.kind === 'tabs') return <CodeTabs key={i} blocks={g.blocks} />;
         if (g.kind === 'code') return <CodeBlock key={i} lang={g.lang} code={g.code} />;
         return (
-          <Streamdown key={i} {...STREAMDOWN_PROPS} className={MD_CLASS}>
-            {g.text}
-          </Streamdown>
+          <div key={i} className={MD_CLASS}>
+            <ReactMarkdown remarkPlugins={MD_PLUGINS} components={MD_COMPONENTS}>
+              {g.text}
+            </ReactMarkdown>
+          </div>
         );
       })}
     </div>

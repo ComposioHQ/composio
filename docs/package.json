@@ -48,9 +48,10 @@
     "posthog-js": "^1.319.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "search-insights": "^2",
     "shiki": "^3.20.0",
-    "streamdown": "^2.5.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.4.3"
   },

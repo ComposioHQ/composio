@@ -165,7 +165,10 @@ export function EveChat() {
             event.preventDefault();
             const value = inputRef.current?.value ?? '';
             submit(value);
-            if (inputRef.current) inputRef.current.value = '';
+            if (inputRef.current) {
+              inputRef.current.value = '';
+              inputRef.current.style.height = 'auto';
+            }
           }}
         >
           <div className="flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-3 py-1.5 focus-within:border-[var(--composio-brand)]/50">
@@ -173,12 +176,19 @@ export function EveChat() {
               ref={inputRef}
               rows={1}
               placeholder="Ask about the docs…"
-              className="block max-h-32 min-h-[1.5rem] flex-1 resize-none self-center bg-transparent py-0 text-[13px] leading-6 text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
+              className="block max-h-32 min-h-[1.5rem] flex-1 resize-none self-center overflow-y-auto bg-transparent py-0 text-[13px] leading-6 text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
+              onChange={(event) => {
+                // Auto-grow with content, up to max-h-32 (128px), then scroll.
+                const el = event.currentTarget;
+                el.style.height = 'auto';
+                el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   submit(event.currentTarget.value);
                   event.currentTarget.value = '';
+                  event.currentTarget.style.height = 'auto';
                 }
               }}
             />

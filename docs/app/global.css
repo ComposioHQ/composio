@@ -4,9 +4,6 @@
 @import 'fumadocs-openapi/css/preset.css';
 @import "tw-animate-css";
 
-/* Let Tailwind generate the utility classes Streamdown uses (Eve chat prose). */
-@source "../node_modules/streamdown/dist/*.js";
-
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
@@ -1173,4 +1170,25 @@ html:not(.dark) .terminal-theme-claude {
 [data-diffs-header] [data-additions-count],
 [data-diffs-header] [data-deletions-count] {
   display: none;
+}
+
+/* Copy-to-clipboard button in the @pierre/diffs code header. The widget themes
+   itself off the OS prefers-color-scheme (its shadow root pins
+   `color-scheme: light dark`), NOT the site's class-based dark toggle — so the
+   header is light on a light-OS user even when the docs are in dark mode. Match
+   the header with light-dark() so the chip is legible on either header. */
+.diff-copy-button {
+  color-scheme: light dark;
+  border-color: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.1));
+  background-color: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.04));
+  color: light-dark(#71717a, #a1a1aa);
+}
+.diff-copy-button:hover {
+  border-color: light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.2));
+  background-color: light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.1));
+  color: light-dark(#18181b, #f4f4f5);
+}
+.diff-copy-button:focus-visible {
+  outline: 2px solid light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.25));
+  outline-offset: 1px;
 }
