@@ -70,8 +70,8 @@ response, error = run_composio_tool(
 
 Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed. The [remote sandbox page](/docs/sandbox/remote#built-in-helpers) documents what each helper does.
 
-<Callout type="warn" title="Not full parity with the remote sandbox yet">
-A local sandbox isn't a 1:1 copy of the remote one today. The helper ships three of the remote sandbox's [six built-in helpers](/docs/sandbox/remote#built-in-helpers): `run_composio_tool`, `invoke_llm`, and `web_search`. The remote-only `upload_local_file`, `proxy_execute`, and `smart_file_extract` helpers aren't in a local sandbox yet. The remote sandbox's managed-runtime features (pre-installed libraries, automatic error correction, persistent Jupyter state, compute tiers, and the [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts)) are properties of the runtime Composio hosts, not the helper contract, so you provide those yourself in your own box.
+<Callout title="Helper coverage">
+These three helpers cover the common path: calling tools, invoking an LLM, and searching the web. A few of the [remote sandbox's helpers](/docs/sandbox/remote#built-in-helpers), like file handling and direct API proxying, aren't available locally yet. If your agent needs those, use the remote sandbox for now.
 </Callout>
 
 The helper is the *only* Composio-specific thing your sandbox carries. Anything that can create a directory, write `helperSource` into it, and run a process with `env` set can host a local sandbox.
