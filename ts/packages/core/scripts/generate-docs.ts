@@ -978,9 +978,13 @@ function cleanupGenericTypes(type: string): string {
 }
 
 // Escape type strings for safe use in MDX backtick code spans.
-// Escapes curly braces which MDX interprets as JSX expressions.
+// Escapes backslashes first so later Markdown escapes cannot be neutralized.
 export function escapeTypeForMdx(type: string): string {
-  return type.replace(/\{/g, '\\{').replace(/\}/g, '\\}').replace(/\|/g, '\\|');
+  return type
+    .replace(/\\/g, '\\\\')
+    .replace(/\{/g, '\\{')
+    .replace(/\}/g, '\\}')
+    .replace(/\|/g, '\\|');
 }
 
 function isInlineObjectType(type: string): boolean {

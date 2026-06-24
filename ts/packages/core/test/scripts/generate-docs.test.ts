@@ -33,6 +33,10 @@ describe('generate-docs type rendering', () => {
     );
   });
 
+  it('escapes existing backslashes before adding MDX table escapes', () => {
+    expect(escapeTypeForMdx(String.raw`{ pattern: '\|' }`)).toBe(String.raw`\{ pattern: '\\\|' \}`);
+  });
+
   it('reads named parameter and return types from source signatures', () => {
     const source = `
 class Example {
