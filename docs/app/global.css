@@ -7,6 +7,171 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ==========================================================================
+   highlight.js tokens (Eve chat code blocks)
+
+   The Eve chat renders code through a custom <CodeBlock> using highlight.js
+   (synchronous, browser-safe). highlight.js theme stylesheets aren't imported
+   directly because they're not dark-mode aware; instead the GitHub light/dark
+   token colors are inlined here and scoped to `.dark`. The container styles its
+   own background/padding, so only token colors live here.
+   ========================================================================== */
+.eve-hljs .hljs {
+  color: #24292e;
+  background: transparent;
+}
+.eve-hljs .hljs-doctag,
+.eve-hljs .hljs-keyword,
+.eve-hljs .hljs-meta .hljs-keyword,
+.eve-hljs .hljs-template-tag,
+.eve-hljs .hljs-template-variable,
+.eve-hljs .hljs-type,
+.eve-hljs .hljs-variable.language_ {
+  color: #d73a49;
+}
+.eve-hljs .hljs-title,
+.eve-hljs .hljs-title.class_,
+.eve-hljs .hljs-title.class_.inherited__,
+.eve-hljs .hljs-title.function_ {
+  color: #6f42c1;
+}
+.eve-hljs .hljs-attr,
+.eve-hljs .hljs-attribute,
+.eve-hljs .hljs-literal,
+.eve-hljs .hljs-meta,
+.eve-hljs .hljs-number,
+.eve-hljs .hljs-operator,
+.eve-hljs .hljs-variable,
+.eve-hljs .hljs-selector-attr,
+.eve-hljs .hljs-selector-class,
+.eve-hljs .hljs-selector-id {
+  color: #005cc5;
+}
+.eve-hljs .hljs-regexp,
+.eve-hljs .hljs-string,
+.eve-hljs .hljs-meta .hljs-string {
+  color: #032f62;
+}
+.eve-hljs .hljs-built_in,
+.eve-hljs .hljs-symbol {
+  color: #e36209;
+}
+.eve-hljs .hljs-comment,
+.eve-hljs .hljs-code,
+.eve-hljs .hljs-formula {
+  color: #6a737d;
+}
+.eve-hljs .hljs-name,
+.eve-hljs .hljs-quote,
+.eve-hljs .hljs-selector-tag,
+.eve-hljs .hljs-selector-pseudo {
+  color: #22863a;
+}
+.eve-hljs .hljs-subst {
+  color: #24292e;
+}
+.eve-hljs .hljs-section {
+  color: #005cc5;
+  font-weight: bold;
+}
+.eve-hljs .hljs-bullet {
+  color: #735c0f;
+}
+.eve-hljs .hljs-emphasis {
+  color: #24292e;
+  font-style: italic;
+}
+.eve-hljs .hljs-strong {
+  color: #24292e;
+  font-weight: bold;
+}
+.eve-hljs .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+.eve-hljs .hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+
+.dark .eve-hljs .hljs {
+  color: #c9d1d9;
+  background: transparent;
+}
+.dark .eve-hljs .hljs-doctag,
+.dark .eve-hljs .hljs-keyword,
+.dark .eve-hljs .hljs-meta .hljs-keyword,
+.dark .eve-hljs .hljs-template-tag,
+.dark .eve-hljs .hljs-template-variable,
+.dark .eve-hljs .hljs-type,
+.dark .eve-hljs .hljs-variable.language_ {
+  color: #ff7b72;
+}
+.dark .eve-hljs .hljs-title,
+.dark .eve-hljs .hljs-title.class_,
+.dark .eve-hljs .hljs-title.class_.inherited__,
+.dark .eve-hljs .hljs-title.function_ {
+  color: #d2a8ff;
+}
+.dark .eve-hljs .hljs-attr,
+.dark .eve-hljs .hljs-attribute,
+.dark .eve-hljs .hljs-literal,
+.dark .eve-hljs .hljs-meta,
+.dark .eve-hljs .hljs-number,
+.dark .eve-hljs .hljs-operator,
+.dark .eve-hljs .hljs-variable,
+.dark .eve-hljs .hljs-selector-attr,
+.dark .eve-hljs .hljs-selector-class,
+.dark .eve-hljs .hljs-selector-id {
+  color: #79c0ff;
+}
+.dark .eve-hljs .hljs-regexp,
+.dark .eve-hljs .hljs-string,
+.dark .eve-hljs .hljs-meta .hljs-string {
+  color: #a5d6ff;
+}
+.dark .eve-hljs .hljs-built_in,
+.dark .eve-hljs .hljs-symbol {
+  color: #ffa657;
+}
+.dark .eve-hljs .hljs-comment,
+.dark .eve-hljs .hljs-code,
+.dark .eve-hljs .hljs-formula {
+  color: #8b949e;
+}
+.dark .eve-hljs .hljs-name,
+.dark .eve-hljs .hljs-quote,
+.dark .eve-hljs .hljs-selector-tag,
+.dark .eve-hljs .hljs-selector-pseudo {
+  color: #7ee787;
+}
+.dark .eve-hljs .hljs-subst {
+  color: #c9d1d9;
+}
+.dark .eve-hljs .hljs-section {
+  color: #1f6feb;
+  font-weight: bold;
+}
+.dark .eve-hljs .hljs-bullet {
+  color: #f2cc60;
+}
+.dark .eve-hljs .hljs-emphasis {
+  color: #c9d1d9;
+  font-style: italic;
+}
+.dark .eve-hljs .hljs-strong {
+  color: #c9d1d9;
+  font-weight: bold;
+}
+.dark .eve-hljs .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
+.dark .eve-hljs .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}
+
+/* ==========================================================================
    COMPOSIO DOCS
 
    Palette (synced with ~/composio/landing + ~/composio/composio_dashboard):
@@ -778,3 +943,249 @@ body {
   border-radius: 0 !important;
 }
 
+
+/* ==========================================================================
+   TERMINAL-KIT  (ported from landing-new /dev — components/terminal-kit)
+   Trimmed to what the InChatAuthTerminal component uses: the Claude palette
+   (dark + light), structural tokens, the stacked Input field, and the shared
+   session/body classes. Map the kit's mono font onto the docs JetBrains Mono.
+   ========================================================================== */
+@keyframes terminal-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-theme {
+  --font-geist-mono: var(--font-mono);
+}
+
+.terminal-theme {
+    --terminal-radius-window: 12px;
+    --terminal-radius-panel: 4px;
+    --terminal-radius-sm: 2px;
+    --terminal-session-pad-x: 14px;
+    --terminal-session-pad-y: 12px;
+    --terminal-session-gap: 8px;
+    --terminal-session-inset: 14px;
+    --terminal-session-sent-pad-x: 10px;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "Roboto Mono",
+    Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.625;
+    border-radius: var(--terminal-radius-window);
+}
+
+.terminal-theme-claude {
+    --terminal-bg: #0b0b0b;
+    --terminal-editor-bg: #1f1f1e;
+    --terminal-fg: #ffffff;
+    --terminal-white: #ffffff;
+    --terminal-dim: #c3c2b7;
+    --terminal-dimmer: #898781;
+    --terminal-vdim: #3d3d3d;
+    --terminal-surface: #232323;
+    --terminal-input-bg: #1f1f1e;
+    --terminal-popover: #2a2a2a;
+    --terminal-panel: rgba(255, 255, 255, 0.05);
+    --terminal-panel-strong: rgba(255, 255, 255, 0.07);
+    --terminal-border: rgba(255, 255, 255, 0.1);
+    --terminal-preview-bg: #0e0e0d;
+    --terminal-preview-border: #222220;
+    --terminal-input-border: #565552;
+    --terminal-progress-track: #3d3d3d;
+    --terminal-progress-fill: #d97757;
+    --terminal-green: #4cc38a;
+    --terminal-green-dim: #6fd4a8;
+    --terminal-green-bg: rgba(76, 195, 138, 0.14);
+    --terminal-blue: #4d9fff;
+    --terminal-blue-bright: #0099ff;
+    --terminal-teal: #d97757;
+    --terminal-yellow: #e3c07b;
+    --terminal-orange: #ff8d77;
+    --terminal-red: #ff5a5a;
+    --terminal-purple: #9775fa;
+    --terminal-diff-gutter: #8b8b81;
+    --terminal-diff-insert-fg: #4cc38a;
+    --terminal-diff-insert-bg: rgba(76, 195, 138, 0.12);
+    --terminal-diff-delete-fg: #ff8d77;
+    --terminal-diff-delete-bg: rgba(255, 90, 90, 0.12);
+    --terminal-diff-text: #ffffff;
+    --terminal-traffic-red: #ff5f57;
+    --terminal-traffic-yellow: #febc2e;
+    --terminal-traffic-green: #28c840;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+}
+
+.terminal-theme-claude-light,
+html:not(.dark) .terminal-theme-claude {
+    --terminal-bg: #faf9f5;
+    --terminal-editor-bg: #ffffff;
+    --terminal-fg: #131312;
+    --terminal-white: #131312;
+    --terminal-dim: #3c3c39;
+    --terminal-dimmer: #72716b;
+    --terminal-vdim: #e1e0d9;
+    --terminal-surface: #f4f4ec;
+    --terminal-input-bg: #ffffff;
+    --terminal-popover: #ffffff;
+    --terminal-panel: rgba(19, 19, 18, 0.04);
+    --terminal-panel-strong: rgba(19, 19, 18, 0.07);
+    --terminal-border: rgba(31, 30, 29, 0.12);
+    --terminal-preview-bg: #f0efe8;
+    --terminal-preview-border: rgba(19, 19, 18, 0.06);
+    --terminal-input-border: #a8a7a2;
+    --terminal-progress-track: #e1e0d9;
+    --terminal-progress-fill: #d97757;
+    --terminal-green: #2f7613;
+    --terminal-green-dim: #3d8f18;
+    --terminal-green-bg: #e7f1d9;
+    --terminal-blue: #2c83db;
+    --terminal-blue-bright: #1a66b2;
+    --terminal-teal: #d97757;
+    --terminal-yellow: #865a07;
+    --terminal-orange: #c6613f;
+    --terminal-red: #b43232;
+    --terminal-purple: #5545a1;
+    --terminal-diff-insert-fg: #2f7613;
+    --terminal-diff-insert-bg: #e7f1d9;
+    --terminal-diff-delete-fg: #b43232;
+    --terminal-diff-delete-bg: #f8ebeb;
+    --terminal-diff-text: #131312;
+    background-color: var(--terminal-bg);
+    color: var(--terminal-fg);
+}
+
+.terminal-theme-claude .terminal-input-control::placeholder {
+    color: var(--terminal-dim);
+    opacity: 1;
+}
+
+.terminal-input-field--stacked {
+    position: relative;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding-block: 6px;
+    padding-inline: 0;
+}
+
+.terminal-input-field--stacked::before,
+.terminal-input-field--stacked::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: var(--terminal-input-border);
+    pointer-events: none;
+}
+
+.terminal-input-field--stacked::before {
+    top: 0;
+}
+
+.terminal-input-field--stacked::after {
+    bottom: 0;
+}
+
+.terminal-cursor {
+    animation: terminal-cursor-blink 1s step-end infinite;
+}
+
+.terminal-panel {
+    border-radius: var(--terminal-radius-panel);
+}
+
+.terminal-panel-sm {
+    border-radius: var(--terminal-radius-sm);
+}
+
+.terminal-session {
+    display: flex;
+    flex-direction: column;
+    gap: var(--terminal-session-gap);
+    min-width: 0;
+}
+
+.terminal-session-sent {
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: var(--terminal-radius-sm);
+    padding-inline: var(--terminal-session-sent-pad-x);
+}
+
+.terminal-session-inset {
+    padding-left: var(--terminal-session-inset);
+}
+
+.terminal-session-flush {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.terminal-body-content {
+    padding-inline: var(--terminal-session-pad-x);
+    padding-block: var(--terminal-session-pad-y);
+}
+
+.terminal-body-footer {
+    padding-inline: var(--terminal-session-pad-x);
+}
+
+.terminal-body-scroll-host {
+    position: relative;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.terminal-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.terminal-body-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-cursor {
+    animation: none;
+    opacity: 1;
+	}
+}
+
+/* @pierre/diffs: the +/- stat counts in the file header are hidden via the
+   `unsafeCSS` option in components/diff-view.tsx, NOT here — the header renders
+   inside an open shadow root that global CSS can't pierce. */
+
+/* Copy-to-clipboard button in the @pierre/diffs code header. The widget themes
+   itself off the OS prefers-color-scheme (its shadow root pins
+   `color-scheme: light dark`), NOT the site's class-based dark toggle — so the
+   header is light on a light-OS user even when the docs are in dark mode. Match
+   the header with light-dark() so the chip is legible on either header. */
+.diff-copy-button {
+  color-scheme: light dark;
+  border-color: light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.1));
+  background-color: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.04));
+  color: light-dark(#71717a, #a1a1aa);
+}
+.diff-copy-button:hover {
+  border-color: light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.2));
+  background-color: light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.1));
+  color: light-dark(#18181b, #f4f4f5);
+}
+.diff-copy-button:focus-visible {
+  outline: 2px solid light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.25));
+  outline-offset: 1px;
+}

@@ -1,12 +1,15 @@
 import { createPatch } from 'diff';
 import { getSingularPatch } from '@pierre/diffs';
 import { preloadFileDiff } from '@pierre/diffs/ssr';
-import { DiffView } from './diff-view';
-import { FILE_BUILDS } from '@/lib/slack-bot-build';
+import { DiffView, HIDE_DIFF_STATS_CSS } from './diff-view';
+import { FILE_BUILDS } from '@/lib/file-builds';
 
 async function diffFor(file: string, prev: string, code: string) {
   const fileDiff = getSingularPatch(createPatch(file, prev, code, '', ''));
-  const { prerenderedHTML } = await preloadFileDiff({ fileDiff, options: { diffStyle: 'unified' } });
+  const { prerenderedHTML } = await preloadFileDiff({
+    fileDiff,
+    options: { diffStyle: 'unified', unsafeCSS: HIDE_DIFF_STATS_CSS },
+  });
   return { fileDiff, prerenderedHTML };
 }
 
@@ -23,7 +26,7 @@ function StepCard({
   title: string;
   file: string;
   description?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   fileDiff: any;
   prerenderedHTML: string;
   code: string;
@@ -35,9 +38,13 @@ function StepCard({
           {n}
         </span>
         <span className="text-[13px] font-medium text-fd-foreground">{title}</span>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">{file}</span>
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">
+          {file}
+        </span>
       </div>
-      {description ? <p className="px-3 pt-2.5 text-[13px] leading-snug text-fd-foreground/65">{description}</p> : null}
+      {description ? (
+        <p className="px-3 pt-2.5 text-[13px] leading-snug text-fd-foreground/65">{description}</p>
+      ) : null}
       <div className="p-3">
         <DiffView fileDiff={fileDiff} prerenderedHTML={prerenderedHTML} code={code} />
       </div>
@@ -52,9 +59,19 @@ function StepCard({
  * Pass `step` (1-indexed) to render just that one step's diff, so the prose for
  * a concept can sit right next to the code that adds it. Without `step`, renders
  * every step with its built-in description.
+ *
+ * `name` keys into the merged FILE_BUILDS registry (see lib/file-builds.ts),
+ * which carries every example's stages under unique keys.
  */
-export async function FileBuildup({ name, step }: { name: keyof typeof FILE_BUILDS; step?: number }) {
+export async function FileBuildup({
+  name,
+  step,
+}: {
+  name: keyof typeof FILE_BUILDS;
+  step?: number;
+}) {
   const build = FILE_BUILDS[name];
+  if (!build) return null;
 
   if (typeof step === 'number') {
     const i = step - 1;

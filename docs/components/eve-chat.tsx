@@ -1,9 +1,10 @@
 'use client';
 
-import { Fragment, useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
-import { Send, X, Sparkles, Square } from 'lucide-react';
+import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
+import { AssistantMessage, ToolActivity } from './eve-message';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
 
 const SUGGESTIONS = [
@@ -11,34 +12,6 @@ const SUGGESTIONS = [
   'How does authentication work?',
   'How do I use the sandbox files?',
 ];
-
-/** Render assistant text with clickable Markdown links ([label](url)); everything else stays plain text. */
-function renderText(text: string): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  const linkRe = /\[([^\]]+)\]\((\/[^)\s]+|https?:\/\/[^)\s]+)\)/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-  while ((match = linkRe.exec(text)) !== null) {
-    if (match.index > last) nodes.push(<Fragment key={key++}>{text.slice(last, match.index)}</Fragment>);
-    const [, label, href] = match;
-    const external = href.startsWith('http');
-    nodes.push(
-      <a
-        key={key++}
-        href={href}
-        target={external ? '_blank' : undefined}
-        rel={external ? 'noreferrer' : undefined}
-        className="text-[var(--composio-brand)] underline underline-offset-2 hover:opacity-80"
-      >
-        {label}
-      </a>,
-    );
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) nodes.push(<Fragment key={key++}>{text.slice(last)}</Fragment>);
-  return nodes;
-}
 
 /**
  * EveChat — the right-sidebar docs assistant, backed by the eve agent in
@@ -54,6 +27,14 @@ export function EveChat() {
   });
 
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming';
+  const messages = agent.data.messages;
+  const lastMessage = messages[messages.length - 1];
+  const lastHasAssistantText =
+    lastMessage?.role === 'assistant' &&
+    lastMessage.parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
+  // Show the loading indicator from submit through the search/read phase, until
+  // the assistant's text actually starts streaming, so it doesn't flicker off.
+  const thinking = isBusy && !lastHasAssistantText;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +61,7 @@ export function EveChat() {
         />
       )}
       <aside
-        aria-label="Ask Eve"
+        aria-label="Ask AI"
         className={
           'fixed right-0 top-0 z-50 flex h-dvh w-full flex-col border-l border-fd-border bg-fd-background shadow-xl transition-transform duration-200 ease-out md:w-[400px] ' +
           (isOpen ? 'translate-x-0' : 'translate-x-full')
@@ -90,17 +71,33 @@ export function EveChat() {
         <div className="flex items-center justify-between border-b border-fd-border px-4 py-3">
           <div className="flex items-center gap-2">
             <Sparkles className="size-4 text-[var(--composio-brand)]" aria-hidden="true" />
-            <span className="text-sm font-medium text-fd-foreground">Ask Eve</span>
+            <span className="text-sm font-medium text-fd-foreground">Ask AI</span>
             <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/40">docs assistant</span>
           </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={closeEveChat}
-            className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground"
-          >
-            <X className="size-4" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-label="New chat"
+              title="New chat"
+              onClick={() => {
+                if (isBusy) agent.stop();
+                agent.reset();
+                inputRef.current?.focus();
+              }}
+              disabled={agent.data.messages.length === 0}
+              className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <SquarePen className="size-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closeEveChat}
+              className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         {/* messages */}
@@ -108,7 +105,7 @@ export function EveChat() {
           {agent.data.messages.length === 0 ? (
             <div className="flex h-full flex-col justify-center gap-3 text-center">
               <p className="text-sm text-fd-muted-foreground">
-                Ask anything about the Composio docs. Eve answers from the docs and links the pages it used.
+                Ask about the Composio docs. It answers from the docs and links the pages it used. It&apos;s not customer support and can&apos;t act on your Composio account.
               </p>
               <div className="flex flex-col gap-1.5">
                 {SUGGESTIONS.map((s) => (
@@ -134,18 +131,32 @@ export function EveChat() {
                         : 'max-w-full text-[13px] leading-relaxed text-fd-foreground/90'
                     }
                   >
-                    {message.parts.map((part, i) =>
-                      part.type === 'text' ? (
-                        <p key={i} className="whitespace-pre-wrap break-words">
-                          {message.role === 'assistant' ? renderText(part.text) : part.text}
-                        </p>
-                      ) : null,
-                    )}
+                    {message.parts.map((part, i) => {
+                      if (part.type === 'text') {
+                        return message.role === 'assistant' ? (
+                          <AssistantMessage key={i} text={part.text} />
+                        ) : (
+                          <p key={i} className="whitespace-pre-wrap break-words">
+                            {part.text}
+                          </p>
+                        );
+                      }
+                      return message.role === 'assistant' ? (
+                        <ToolActivity key={i} part={part} />
+                      ) : null;
+                    })}
                   </div>
                 </li>
               ))}
-              {agent.status === 'submitted' && (
-                <li className="text-[13px] text-fd-muted-foreground">Searching the docs…</li>
+              {thinking && (
+                <li className="flex items-center gap-2 text-[13px] text-fd-muted-foreground">
+                  <span className="inline-flex gap-1">
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.3s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.15s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60" />
+                  </span>
+                  Searching the docs…
+                </li>
               )}
             </ul>
           )}
@@ -158,20 +169,30 @@ export function EveChat() {
             event.preventDefault();
             const value = inputRef.current?.value ?? '';
             submit(value);
-            if (inputRef.current) inputRef.current.value = '';
+            if (inputRef.current) {
+              inputRef.current.value = '';
+              inputRef.current.style.height = 'auto';
+            }
           }}
         >
-          <div className="flex items-end gap-2 rounded-lg border border-fd-border bg-fd-card px-3 py-2 focus-within:border-[var(--composio-brand)]/50">
+          <div className="flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-3 py-1.5 focus-within:border-[var(--composio-brand)]/50">
             <textarea
               ref={inputRef}
               rows={1}
               placeholder="Ask about the docs…"
-              className="max-h-32 flex-1 resize-none bg-transparent text-[13px] text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
+              className="block max-h-32 min-h-[1.5rem] flex-1 resize-none self-center overflow-y-auto bg-transparent py-0 text-[13px] leading-6 text-fd-foreground outline-none placeholder:text-fd-muted-foreground"
+              onChange={(event) => {
+                // Auto-grow with content, up to max-h-32 (128px), then scroll.
+                const el = event.currentTarget;
+                el.style.height = 'auto';
+                el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   submit(event.currentTarget.value);
                   event.currentTarget.value = '';
+                  event.currentTarget.style.height = 'auto';
                 }
               }}
             />

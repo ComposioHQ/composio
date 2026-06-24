@@ -5,5 +5,7 @@
     "index",
     "general-agent-with-pi",
     "email-support-agent"
+    "standup-slackbot",
+    "local-sandbox-pr-reviewer"
   ]
 }

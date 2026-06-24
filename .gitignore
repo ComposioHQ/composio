@@ -66,3 +66,10 @@ test/e2e/*/node_modules
 
 # mise (per-dev overrides)
 .mise.local.toml
+.env*
+docs/.eve/*
+docs/.workflow-data/*
+
+# Local agent / tooling state (regenerated per machine)
+.pi/
+.playwright-mcp/

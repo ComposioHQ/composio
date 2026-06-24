@@ -1,0 +1,10 @@
+{
+  "buildCommand": "",
+  "outputDirectory": "",
+  "crons": [
+    {
+      "path": "/api/cron/standup",
+      "schedule": "*/30 * * * 1-5"
+    }
+  ]
+}
