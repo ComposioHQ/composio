@@ -27,8 +27,14 @@
  * See https://github.com/ComposioHQ/composio/issues/3047.
  */
 
-// JSON-Schema keywords whose values are themselves schemas (recurse into them).
-const SUBSCHEMA_KEYS = ['items', 'additionalItems', 'contains', 'not'] as const;
+// JSON-Schema keywords whose values are themselves schemas and sit in a
+// *positive* position, so relaxing them widens the parent (recurse into them).
+//
+// `not` is deliberately excluded: it negates its subschema, so relaxing the
+// inner schema (e.g. making it nullable) would *narrow* what the parent admits —
+// a `null` valid under `not: { type: 'string' }` would start failing. That is
+// the opposite of this helper's only-widen guarantee, so `not` is left as-is.
+const SUBSCHEMA_KEYS = ['items', 'additionalItems', 'contains'] as const;
 // Keywords whose values are arrays of schemas.
 const SUBSCHEMA_LIST_KEYS = ['anyOf', 'oneOf', 'allOf', 'prefixItems'] as const;
 // Keywords whose values are maps of name -> schema.

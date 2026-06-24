@@ -134,6 +134,26 @@ describe('relaxOutputSchema (issue #3047)', () => {
     });
   });
 
+  it('leaves a `not` subschema untouched so relaxation never narrows validation', () => {
+    // `not` negates its subschema: relaxing the inner schema (making it
+    // nullable) would *reject* values that were valid before (e.g. `null` under
+    // `not: { type: 'string' }`), violating the only-widen invariant. The inner
+    // schema must therefore be preserved verbatim, even when nested in an object
+    // that is itself relaxed.
+    expect(relaxOutputSchema({ not: { type: 'string' } })).toEqual({ not: { type: 'string' } });
+    expect(
+      relaxOutputSchema({
+        type: 'object',
+        additionalProperties: false,
+        properties: { x: { not: { type: 'string' } } },
+      })
+    ).toEqual({
+      type: ['object', 'null'],
+      additionalProperties: true,
+      properties: { x: { not: { type: 'string' } } },
+    });
+  });
+
   it('returns an empty schema unchanged (no type, no properties)', () => {
     expect(relaxOutputSchema({})).toEqual({});
   });

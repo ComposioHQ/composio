@@ -110,4 +110,16 @@ describe('Mastra output validation against real schema-compat (issue #3047)', ()
     expect(strict.safeParse({ id: 'iss_1' }).success).toBe(false); // the gap
     expect(relaxed.safeParse({ id: 'iss_1' }).success).toBe(true); // fixed
   });
+
+  it('never narrows validation through a `not` keyword', () => {
+    const schema = { not: { type: 'string' } }; // "must not be a string" — null is valid
+    const strict = compileForValidation(schema);
+    const relaxed = compileForValidation(relaxOutputSchema(schema));
+
+    // Relaxing `not`'s subschema would make these previously-valid values fail.
+    expect(strict.safeParse(null).success).toBe(true);
+    expect(relaxed.safeParse(null).success).toBe(true); // still valid, not narrowed
+    expect(relaxed.safeParse(42).success).toBe(true); // still valid
+    expect(relaxed.safeParse('str').success).toBe(false); // constraint preserved
+  });
 });
