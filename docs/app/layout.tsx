@@ -15,7 +15,6 @@ const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['configuring-sessions'], source },
   { slug: ['white-labeling-authentication'], source },
   { slug: ['glossary'], source: referenceSource },
-  { slug: ['common-faq'], source },
   { slug: ['troubleshooting'], source },
 ];
 
