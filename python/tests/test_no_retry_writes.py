@@ -7,12 +7,14 @@ duplicate the side effect (e.g. send an email twice). ``Tools.execute`` and
 retry-disabled clone), while reads keep the default retry behaviour.
 """
 
+import inspect
 import typing as t
 from unittest.mock import Mock, patch
 
 import httpx
 import pytest
 from composio_client import DEFAULT_MAX_RETRIES, APIError
+from composio_client import Composio as BaseComposio
 
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
@@ -85,6 +87,37 @@ class TestCopyOverride:
         # Reads on the original client keep retrying.
         assert client.max_retries == DEFAULT_MAX_RETRIES
 
+    def test_clone_preserves_strict_response_validation(self) -> None:
+        # The generated `copy` drops `_strict_response_validation`; the override
+        # re-injects it so the sibling differs from the parent only in retries.
+        client = HttpClient(
+            provider="test",
+            api_key="sk-test",
+            base_url="https://backend.invalid",
+            _strict_response_validation=True,
+        )
+
+        assert client.without_retries._strict_response_validation is True
+
+
+class TestStainlessCopyContract:
+    """Pin the generated-client internals the ``copy()`` override depends on.
+
+    These guard the contract so a ``composio_client`` regen that breaks it fails
+    as an obvious assertion here rather than a cryptic ``TypeError`` raised deep
+    inside ``with_options`` at runtime.
+    """
+
+    def test_base_copy_accepts_extra_kwargs(self) -> None:
+        # The override threads `provider` (and `_strict_response_validation`)
+        # through `_extra_kwargs`; the base `copy` must still accept it.
+        assert "_extra_kwargs" in inspect.signature(BaseComposio.copy).parameters
+
+    def test_with_options_is_aliased_to_our_copy_override(self) -> None:
+        # The base binds `with_options = copy` at class-definition time, so the
+        # subclass must re-alias it to the override that re-injects `provider`.
+        assert HttpClient.with_options is HttpClient.copy
+
 
 class TestWritePathDoesNotRetry:
     """``execute`` / ``proxy`` must reach the transport exactly once."""
@@ -124,6 +157,8 @@ class TestWritePathDoesNotRetry:
         client = _client_with_transport(handler)
         tools = Tools(client=client, provider=Mock())
 
+        # `proxy` does no tool-schema lookup, so the only transport hit is the
+        # write itself — no read to patch out (unlike the execute test above).
         with pytest.raises(APIError):
             tools.proxy(endpoint="/any", method="POST")
 
