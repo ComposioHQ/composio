@@ -1563,7 +1563,12 @@ class TestUploadBytesToS3:
         mock_s3_response.key = "s3-key-123"
         mock_s3_response.new_presigned_url = "https://s3.example.com/upload?token=abc"
         mock_client.post.return_value = mock_s3_response
-        mock_put.side_effect = requests.exceptions.Timeout("timeout")
+        # The exception text itself carries the presigned URL (incl. token), as
+        # real urllib3 errors do — the SDK must not surface it in the message.
+        mock_put.side_effect = requests.exceptions.Timeout(
+            "HTTPSConnectionPool(host='s3.example.com', port=443): "
+            "Max retries exceeded with url: /upload?token=abc"
+        )
 
         with pytest.raises(ErrorUploadingFile) as exc_info:
             _upload_bytes_to_s3(
@@ -2422,7 +2427,9 @@ class TestFileDownloadablePathTraversal:
         )
         with patch(
             "composio.core.models._files.requests.get",
-            side_effect=requests.exceptions.Timeout("timeout"),
+            side_effect=requests.exceptions.Timeout(
+                "Max retries exceeded with url: /file?token=abc"
+            ),
         ):
             with pytest.raises(ErrorDownloadingFile) as exc_info:
                 f.download(outdir)
@@ -2434,7 +2441,9 @@ class TestFileDownloadablePathTraversal:
         outdir = tmp_path / "safe"
         response = self._mock_response()
         response.iter_content = MagicMock(
-            side_effect=requests.exceptions.ReadTimeout("timeout")
+            side_effect=requests.exceptions.ReadTimeout(
+                "Max retries exceeded with url: /file?token=abc"
+            )
         )
         f = FileDownloadable(
             name="report.pdf",
@@ -2449,6 +2458,25 @@ class TestFileDownloadablePathTraversal:
                 f.download(outdir)
 
         assert "Error downloading file" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
+        response.close.assert_called_once()
+
+    def test_download_non_200_redacts_url_and_closes(self, tmp_path):
+        outdir = tmp_path / "safe"
+        response = self._mock_response()
+        response.status_code = 403
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=response,
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
         assert "token=abc" not in str(exc_info.value)
         response.close.assert_called_once()
 

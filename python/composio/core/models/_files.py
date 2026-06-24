@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import typing as t
 from pathlib import Path
@@ -49,6 +50,8 @@ _MAX_RESPONSE_SIZE = 100 * 1024 * 1024  # 100 MB default limit
 Maximum response size in bytes when fetching files from URLs.
 Prevents memory exhaustion attacks from malicious URLs pointing to large files.
 """
+
+_logger = logging.getLogger(__name__)
 
 _CONNECT_TIMEOUT = 5  # seconds
 _READ_TIMEOUT = 60  # seconds
@@ -151,7 +154,12 @@ def upload(url: str, file: Path) -> bool:
                 data=data,
                 timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
             )
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
+            _logger.debug(
+                "Upload to %s failed: %s",
+                _sanitize_url_for_logging(url),
+                type(e).__name__,
+            )
             return False
         return response.status_code == 200
 
@@ -395,7 +403,8 @@ def _upload_bytes_to_s3(
     except requests.exceptions.RequestException as e:
         raise ErrorUploadingFile(
             "Failed to upload to S3: "
-            f"{_sanitize_url_for_logging(s3meta.new_presigned_url)}. Error: {e}"
+            f"{_sanitize_url_for_logging(s3meta.new_presigned_url)}. "
+            f"Error: {type(e).__name__}"
         ) from e
 
     if upload_response.status_code != 200:
@@ -590,10 +599,13 @@ class FileDownloadable(BaseModel):
         except requests.exceptions.RequestException as e:
             raise ErrorDownloadingFile(
                 "Error downloading file: "
-                f"{_sanitize_url_for_logging(self.s3url)}. Error: {e}"
+                f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
             ) from e
         if response.status_code != 200:
-            raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
+            response.close()
+            raise ErrorDownloadingFile(
+                f"Error downloading file: {_sanitize_url_for_logging(self.s3url)}"
+            )
 
         try:
             with outfile.open("wb") as fd:
@@ -602,7 +614,7 @@ class FileDownloadable(BaseModel):
         except requests.exceptions.RequestException as e:
             raise ErrorDownloadingFile(
                 "Error downloading file: "
-                f"{_sanitize_url_for_logging(self.s3url)}. Error: {e}"
+                f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
             ) from e
         finally:
             response.close()
