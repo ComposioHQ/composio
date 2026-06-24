@@ -69,36 +69,41 @@ export function Figure({ src, srcDark, alt, caption, size = 'full', className, w
     onError: handleReady,
   };
 
+  const lightImage = (
+    <Image
+      src={src}
+      {...sharedProps}
+      onLoad={handleReady}
+      className={cn(imgClasses, srcDark && 'dark:hidden')}
+    />
+  );
+  const darkImage = srcDark ? (
+    <Image
+      src={srcDark}
+      {...sharedProps}
+      onLoad={handleReady}
+      className={cn(imgClasses, 'hidden dark:block')}
+    />
+  ) : null;
+
   return (
     <figure className={cn('my-8', isConstrained && 'flex flex-col items-center', className)}>
-      {srcDark ? (
+      {isLoaded && srcDark ? (
         <>
           <Zoom zoomImg={{ src }}>
-            <Image
-              src={src}
-              {...sharedProps}
-              onLoad={handleReady}
-              className={cn(imgClasses, 'dark:hidden')}
-            />
+            {lightImage}
           </Zoom>
           <Zoom zoomImg={{ src: srcDark }}>
-            <Image
-              src={srcDark}
-              {...sharedProps}
-              onLoad={handleReady}
-              className={cn(imgClasses, 'hidden dark:block')}
-            />
+            {darkImage}
           </Zoom>
         </>
+      ) : isLoaded ? (
+        <Zoom zoomImg={{ src }}>{lightImage}</Zoom>
       ) : (
-        <Zoom zoomImg={{ src }}>
-          <Image
-            src={src}
-            {...sharedProps}
-            onLoad={handleReady}
-            className={imgClasses}
-          />
-        </Zoom>
+        <>
+          {lightImage}
+          {darkImage}
+        </>
       )}
       {caption && (
         <figcaption className="mt-3 text-sm text-fd-muted-foreground text-center">
