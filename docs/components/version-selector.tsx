@@ -35,7 +35,7 @@ export function NavVersionSelector() {
 
     if (newVersion === '3.0') {
       // Shared pages — go to v3 overview
-      if (path.includes('/sdk-reference') || path.includes('/meta-tools') || path === '/reference') {
+      if (path.includes('/sdk-reference') || path === '/reference') {
         window.location.href = '/reference/v3';
       } else {
         window.location.href = path.replace('/reference/', '/reference/v3/');

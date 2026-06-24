@@ -6,7 +6,7 @@ keywords: [managed auth, oauth, auth config, own developer credentials, toolkit 
 
 Managed auth means Composio registers and maintains the OAuth app for a toolkit, so your users can connect their accounts with no OAuth credentials for you to set up. Most popular toolkits (GitHub, Gmail, Slack, and many more) ship with managed auth and work the moment you create a session.
 
-When a tool needs an account, the [`COMPOSIO_MANAGE_CONNECTIONS`](/reference/meta-tools/manage_connections) meta tool returns a secure [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link). The user signs in there, and Composio stores and refreshes their tokens. You write no auth code. See [Authentication](/docs/authentication) for the full flow.
+When a tool needs an account, the [`COMPOSIO_MANAGE_CONNECTIONS`](/toolkits/meta-tools/manage_connections) meta tool returns a secure [Connect Link](/docs/tools-direct/authenticating-tools#hosted-authentication-connect-link). The user signs in there, and Composio stores and refreshes their tokens. You write no auth code. See [Authentication](/docs/authentication) for the full flow.
 
 ## When you don't need to do anything
 

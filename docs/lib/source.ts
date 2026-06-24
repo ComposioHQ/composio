@@ -32,7 +32,7 @@ function isHiddenReferenceUrl(url: string): boolean {
  */
 const defaultOpenTransformer = {
   folder(node: { name: string; defaultOpen?: boolean }, folderPath: string) {
-    if (folderPath === 'api-reference' || folderPath === 'sdk-reference' || folderPath === 'meta-tools' || folderPath === 'v3/api-reference') {
+    if (folderPath === 'api-reference' || folderPath === 'sdk-reference' || folderPath === 'v3/api-reference') {
       return { ...node, defaultOpen: true };
     }
     return node;
