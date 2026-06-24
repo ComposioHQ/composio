@@ -6,10 +6,6 @@ llmGuardrails: "direct-execution"
 experimental: true
 ---
 
-<Callout type="warn">
-ACL fields nest under an `experimental` block on the request and response, so the shapes below may shift between SDK versions. Pin a specific SDK version if you depend on the current contract.
-</Callout>
-
 By default, a connected account is **PRIVATE**: only the `userID` that created it can use it. A **SHARED** connection can be reached by other `userID`s, subject to a per-connection access control list (ACL).
 
 You use a shared connection by [pinning it into a session](#using-a-shared-connection): the session's `userID` doesn't own the connection, but the pin makes it available. A SHARED connection is never resolved implicitly, so a session reaches one only when you pin it explicitly.
