@@ -16,6 +16,7 @@ import pytest
 from composio.exceptions import InvalidSchemaError
 from composio.utils.shared import (
     alias_tool_input_schema,
+    json_schema_to_model,
     substitute_reserved_python_keywords,
 )
 
@@ -93,6 +94,7 @@ def test_alias_tool_input_schema_rejects_duplicate_aliases():
 def test_legacy_keyword_helpers_use_tool_schema_aliases():
     long_name = "x" * 80
     schema = {
+        "title": "ODataParams",
         "type": "object",
         "properties": {
             "$top": {"type": "integer"},
@@ -105,16 +107,49 @@ def test_legacy_keyword_helpers_use_tool_schema_aliases():
     aliased_schema, aliases = substitute_reserved_python_keywords(schema)
 
     aliased_names = list(aliased_schema["properties"])
-    assert aliased_names[0] == "_top"
-    assert aliased_names[1] == "_microsoft_graph_conflictBehavior"
+    assert aliased_names[0] == "param_top"
+    assert aliased_names[1] == "param_microsoft_graph_conflictBehavior"
     assert len(aliased_names[2]) == 64
     assert all(ANTHROPIC_PROPERTY_RE.fullmatch(name) for name in aliased_names)
-    assert aliased_schema["required"] == ["_top", aliased_names[2]]
-    assert aliases["_top"] == "$top"
-    assert aliases["_microsoft_graph_conflictBehavior"] == (
+    assert aliased_schema["required"] == ["param_top", aliased_names[2]]
+    assert aliases["param_top"] == "$top"
+    assert aliases["param_microsoft_graph_conflictBehavior"] == (
         "@microsoft.graph.conflictBehavior"
     )
     assert aliases[aliased_names[2]] == long_name
+    model = json_schema_to_model(aliased_schema)
+    assert "param_top" in model.model_fields
+
+
+def test_alias_tool_input_schema_dereferences_refs_before_aliasing():
+    schema = {
+        "$ref": "#/$defs/SearchParams",
+        "$defs": {
+            "SearchParams": {
+                "type": "object",
+                "properties": {
+                    "filter": {"$ref": "#/$defs/ODataFilter"},
+                },
+                "required": ["filter"],
+            },
+            "ODataFilter": {
+                "type": "object",
+                "properties": {"$top": {"type": "integer"}},
+                "required": ["$top"],
+            },
+        },
+    }
+
+    aliases = alias_tool_input_schema(schema)
+
+    assert "$defs" not in aliases.schema
+    assert aliases.schema["required"] == ["filter"]
+    filter_schema = aliases.schema["properties"]["filter"]
+    assert list(filter_schema["properties"]) == ["param_top"]
+    assert filter_schema["required"] == ["param_top"]
+    assert aliases.restore_arguments({"filter": {"param_top": 10}}) == {
+        "filter": {"$top": 10}
+    }
 
 
 def test_gemini_manual_response_restores_provider_visible_aliases(monkeypatch):
@@ -290,16 +325,16 @@ def test_anthropic_wrap_tool_aliases_schema_and_restores_arguments(monkeypatch):
     wrapped = provider.wrap_tool(tool)
 
     aliased_names = list(wrapped["input_schema"]["properties"])
-    assert aliased_names[0] == "_top"
-    assert aliased_names[1] == "_microsoft_graph_conflictBehavior"
+    assert aliased_names[0] == "param_top"
+    assert aliased_names[1] == "param_microsoft_graph_conflictBehavior"
     assert len(aliased_names[2]) == 64
     assert all(ANTHROPIC_PROPERTY_RE.fullmatch(name) for name in aliased_names)
 
     tool_call = SimpleNamespace(
         name="TOOL_WITH_ODATA",
         input={
-            "_top": 10,
-            "_microsoft_graph_conflictBehavior": "rename",
+            "param_top": 10,
+            "param_microsoft_graph_conflictBehavior": "rename",
             aliased_names[2]: "value",
         },
     )
@@ -355,9 +390,9 @@ def test_claude_agent_sdk_wrap_tool_aliases_schema_and_restores_arguments(monkey
 
     wrapped = provider.wrap_tool(tool, execute_tool)
 
-    assert list(wrapped._input_schema["properties"]) == ["_top"]
-    assert wrapped._input_schema["required"] == ["_top"]
-    result = asyncio.run(wrapped({"_top": 5}))
+    assert list(wrapped._input_schema["properties"]) == ["param_top"]
+    assert wrapped._input_schema["required"] == ["param_top"]
+    result = asyncio.run(wrapped({"param_top": 5}))
 
     assert result["content"][0]["type"] == "text"
     execute_tool.assert_called_once_with("TOOL_WITH_ODATA", {"$top": 5})

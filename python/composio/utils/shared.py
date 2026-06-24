@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
 
 from composio.exceptions import InvalidParams, InvalidSchemaError
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.logging import get as get_logger
 from composio.utils.schema_converter import (
     CONTAINER_TYPE,
@@ -114,8 +115,8 @@ def _make_python_identifier(name: str) -> str:
     )
     if not safe:
         safe = "param"
-    if safe[0].isdigit():
-        safe = f"_{safe}"
+    if safe[0].isdigit() or safe[0] == "_":
+        safe = f"param_{safe.lstrip('_') or 'value'}"
     if keyword.iskeyword(safe):
         safe = _make_safe_name(safe)
     if len(safe) > _MAX_PROVIDER_ALIAS_LENGTH:
@@ -146,12 +147,20 @@ def alias_tool_input_schema(schema: t.Dict) -> ToolSchemaAliases:
 
     Python keywords keep the historical ``_rs`` suffix (``from`` becomes
     ``from_rs``). Other names that cannot be used as Python identifiers are
-    converted to underscores and long aliases are capped at 64 characters so
-    the same provider-facing schema is accepted by Anthropic-style tool schema
-    validators. If two properties would expose the same alias, an
+    converted to Pydantic-safe identifiers and long aliases are capped at 64
+    characters so the same provider-facing schema is accepted by
+    Anthropic-style tool schema validators. Internal JSON Schema references are
+    inlined before aliasing so referenced object properties are exposed through
+    the same safe names. If two properties would expose the same alias, an
     :class:`InvalidSchemaError` is raised instead of guessing.
     """
-    aliased_schema = copy.deepcopy(schema)
+    aliased_schema = t.cast(
+        t.Dict[str, t.Any],
+        dereference_json_schema(
+            copy.deepcopy(schema),
+            on_unresolved="sentinel",
+        ),
+    )
     schema_params, aliases = _alias_schema_properties(aliased_schema)
     return ToolSchemaAliases(schema=schema_params, aliases=aliases)
 
