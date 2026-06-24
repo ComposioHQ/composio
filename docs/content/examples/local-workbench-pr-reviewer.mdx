@@ -9,6 +9,10 @@ A **local workbench** runs code in infrastructure you own while Composio handles
 
 This example reviews a GitHub pull request from an E2B sandbox. E2B is just the sample runner. The same pattern works with your own VM, container, Kubernetes job, or internal sandbox service.
 
+<Callout type="warn">
+  This example uses the experimental `experimental_createLocalWorkbenchSession` API. Until the release containing it ships, the example pins a local build of `@composio/core`. Switch the dependency back to the published package once it's released.
+</Callout>
+
 ```bash
 git clone https://github.com/ComposioHQ/local-pr-reviewer
 cd local-pr-reviewer
@@ -33,7 +37,7 @@ The host owns orchestration. The sandbox owns code execution.
   F --> H[Post GitHub PR comment]
 `} />
 
-The important bit is the session creation:
+The core of the integration is creating the session:
 
 ```ts
 // @noErrors
@@ -67,7 +71,7 @@ Use a local workbench when you need to own the execution boundary:
 - You need custom images, private package mirrors, internal networks, or local filesystem policy.
 - You want Composio tools without giving Composio responsibility for provisioning compute.
 
-This is not a second Tool Router mode. It is a different place to run code.
+This isn't a second Tool Router mode. It's just a different place to run code.
 
 ## Prerequisites
 
@@ -169,7 +173,7 @@ To use your own sandbox, keep the same contract:
 - Stream stdout and stderr back to the host.
 - Tear down or recycle the sandbox according to your policy.
 
-## Important env vars
+## Environment variables
 
 | Variable | Purpose |
 | --- | --- |
@@ -209,11 +213,7 @@ Fill in `COMPOSIO_API_KEY`, `OPENAI_API_KEY`, and `E2B_API_KEY` in `.env`.
 
 **The reviewer does not post a comment**
 
-That is expected if it cannot download the repository or run checks. The agent is instructed not to post unverified reviews.
-
-**The SDK dependency looks local**
-
-The example currently uses the SDK shape from the local workbench PR. When the release containing `experimental_createLocalWorkbenchSession` is published, switch the dependency back to the published `@composio/core` package.
+That's expected if it can't download the repository or run the checks. The agent is instructed not to post unverified reviews.
 
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Scope toolkits, connected accounts, auth behavior, and sandbox settings for a session." />
