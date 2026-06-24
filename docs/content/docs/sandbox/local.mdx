@@ -4,7 +4,7 @@ description: Run Composio tools in a sandbox you own — your filesystem, your s
 keywords: [local sandbox, sandbox, workbench, bring your own runtime, code execution, security boundary, run_composio_tool, experimental_createLocalWorkbenchSession]
 ---
 
-A **local sandbox** runs your agent's code in an execution environment *you* own: your VM, container, Kubernetes job, or internal sandbox service. It's the [remote sandbox](/docs/sandbox/remote) split at the execution boundary. With the remote sandbox, Composio runs the agent's code for you in a hosted Python environment. With a local sandbox, you run that code yourself, and Composio still does tool discovery and auth and hands the agent the same helpers to call tools with.
+A **local sandbox** runs your agent's code in an execution environment *you* own: your VM, container, Kubernetes job, or internal sandbox service. It's the [remote sandbox](/docs/sandbox/remote) split at the execution boundary. With the remote sandbox, Composio runs the agent's code for you in a hosted Python environment. With a local sandbox, you run that code yourself, and Composio still does tool discovery and auth and hands the agent the same core helpers to call tools with.
 
 ## Where it fits
 
@@ -57,7 +57,7 @@ The API ships under the `experimental_` prefix and the `@composio/core/experimen
 
 ## The helper contract
 
-`helperSource` exposes the same in-sandbox helpers the remote sandbox runs for you: [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox/remote#built-in-helpers). The agent imports them and calls tools without knowing that execution is local:
+`helperSource` exposes three in-sandbox helpers, with the same signatures the remote sandbox uses: [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox/remote#built-in-helpers). The agent imports them and calls tools without knowing that execution is local:
 
 ```python
 from composio_helper import run_composio_tool, invoke_llm, web_search
@@ -68,7 +68,11 @@ response, error = run_composio_tool(
 )
 ```
 
-Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed. The [remote sandbox page](/docs/sandbox/remote#built-in-helpers) documents what each helper does; a local sandbox honors the same contract, so your agent code is portable between the two.
+Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed. The [remote sandbox page](/docs/sandbox/remote#built-in-helpers) documents what each helper does.
+
+<Callout type="warn" title="Not full parity with the remote sandbox yet">
+A local sandbox isn't a 1:1 copy of the remote one today. The helper ships three of the remote sandbox's [six built-in helpers](/docs/sandbox/remote#built-in-helpers): `run_composio_tool`, `invoke_llm`, and `web_search`. The remote-only `upload_local_file`, `proxy_execute`, and `smart_file_extract` helpers aren't in a local sandbox yet. The remote sandbox's managed-runtime features (pre-installed libraries, automatic error correction, persistent Jupyter state, compute tiers, and the [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts)) are properties of the runtime Composio hosts, not the helper contract, so you provide those yourself in your own box.
+</Callout>
 
 The helper is the *only* Composio-specific thing your sandbox carries. Anything that can create a directory, write `helperSource` into it, and run a process with `env` set can host a local sandbox.
 
