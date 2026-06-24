@@ -162,6 +162,8 @@ describe('AuthConfigs', () => {
         cursor: undefined,
         is_composio_managed: undefined,
         limit: undefined,
+        search: undefined,
+        show_disabled: undefined,
         toolkit_slug: undefined,
       });
 
@@ -179,6 +181,8 @@ describe('AuthConfigs', () => {
         cursor: 'cursor_123',
         isComposioManaged: true,
         limit: 10,
+        search: 'github config',
+        showDisabled: true,
         toolkit: 'github',
       };
 
@@ -188,6 +192,8 @@ describe('AuthConfigs', () => {
         cursor: 'cursor_123',
         is_composio_managed: true,
         limit: 10,
+        search: 'github config',
+        show_disabled: true,
         toolkit_slug: 'github',
       });
 
