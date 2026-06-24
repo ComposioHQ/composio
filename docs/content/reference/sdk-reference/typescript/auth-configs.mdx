@@ -19,7 +19,7 @@ const result = await composio.authConfigs.list();
 Create a new auth config
 
 ```typescript
-async create(toolkit: string, options: object): Promise<{ authScheme: string; id: string; isComposioManaged: boolean; toolkit: string }>
+async create(toolkit: string, options: CreateAuthConfigParams, requestOptions?: ComposioRequestOptions): Promise<CreateAuthConfigResponse>
 ```
 
 **Parameters**
@@ -27,11 +27,12 @@ async create(toolkit: string, options: object): Promise<{ authScheme: string; id
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `string` | Unique identifier of the toolkit |
-| `options` | `object` | Options for creating a new auth config |
+| `options` | `CreateAuthConfigParams` | Options for creating a new auth config |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — Created auth config
+`Promise<CreateAuthConfigResponse>` — Created auth config
 
 **Example**
 
@@ -57,7 +58,7 @@ This action cannot be undone and will prevent any connected accounts that use
 this auth config from functioning.
 
 ```typescript
-async delete(nanoid: string): Promise<AuthConfigDeleteResponse>
+async delete(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigDeleteResponse>
 ```
 
 **Parameters**
@@ -65,6 +66,7 @@ async delete(nanoid: string): Promise<AuthConfigDeleteResponse>
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to delete |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -88,7 +90,7 @@ When disabled, the auth config cannot be used to create new connected accounts
 or authenticate with third-party services, but existing connections may continue to work.
 
 ```typescript
-async disable(nanoid: string): Promise
+async disable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateStatusResponse>
 ```
 
 **Parameters**
@@ -96,10 +98,11 @@ async disable(nanoid: string): Promise
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to disable |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise` — The updated auth config details
+`Promise<AuthConfigUpdateStatusResponse>` — The updated auth config details
 
 **Example**
 
@@ -119,7 +122,7 @@ When enabled, the auth config can be used to create new connected accounts
 and authenticate with third-party services.
 
 ```typescript
-async enable(nanoid: string): Promise
+async enable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateStatusResponse>
 ```
 
 **Parameters**
@@ -127,10 +130,11 @@ async enable(nanoid: string): Promise
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to enable |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise` — The updated auth config details
+`Promise<AuthConfigUpdateStatusResponse>` — The updated auth config details
 
 **Example**
 
@@ -149,7 +153,7 @@ This method fetches detailed information about a single auth config
 and transforms the response to the SDK's standardized format.
 
 ```typescript
-async get(nanoid: string): Promise<...>
+async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigRetrieveResponse>
 ```
 
 **Parameters**
@@ -157,10 +161,11 @@ async get(nanoid: string): Promise<...>
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to retrieve |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — The auth config details
+`Promise<AuthConfigRetrieveResponse>` — The auth config details
 
 **Example**
 
@@ -181,18 +186,19 @@ This method retrieves auth configs from the Composio API, transforms them to the
 and supports filtering by various parameters.
 
 ```typescript
-async list(query?: { cursor?: string; isComposioManaged?: boolean; limit?: number; toolkit?: string }): Promise<...>
+async list(query?: AuthConfigListParams, requestOptions?: ComposioRequestOptions): Promise<AuthConfigListResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `query?` | `object` | Optional query parameters for filtering auth configs |
+| `query?` | `AuthConfigListParams` | Optional query parameters for filtering auth configs |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise<...>` — A paginated list of auth configurations
+`Promise<AuthConfigListResponse>` — A paginated list of auth configurations
 
 **Example**
 
@@ -203,6 +209,12 @@ const allConfigs = await composio.authConfigs.list();
 // List auth configs for a specific toolkit
 const githubConfigs = await composio.authConfigs.list({
   toolkit: 'github'
+});
+
+// Search auth configs by name or id
+const searchedConfigs = await composio.authConfigs.list({
+  search: 'github',
+  showDisabled: true
 });
 
 // List Composio-managed auth configs
@@ -222,7 +234,7 @@ scopes, or tool restrictions. The update type (custom or default) determines whi
 fields can be updated.
 
 ```typescript
-async update(nanoid: string, data: object): Promise
+async update(nanoid: string, data: AuthConfigUpdateParams, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateResponse>
 ```
 
 **Parameters**
@@ -230,11 +242,12 @@ async update(nanoid: string, data: object): Promise
 | Name | Type | Description |
 |------|------|-------------|
 | `nanoid` | `string` | The unique identifier of the auth config to update |
-| `data` | `object` | The data to update, which can be either custom or default type |
+| `data` | `AuthConfigUpdateParams` | The data to update, which can be either custom or default type |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise` — The updated auth config
+`Promise<AuthConfigUpdateResponse>` — The updated auth config
 
 **Example**
 
@@ -265,19 +278,20 @@ the auth config cannot be used to create new connected accounts or authenticate
 with third-party services.
 
 ```typescript
-async updateStatus(status: 'ENABLED' | 'DISABLED', nanoid: string): Promise
+async updateStatus(status: 'ENABLED' | 'DISABLED', nanoid: string, requestOptions?: ComposioRequestOptions): Promise<AuthConfigUpdateStatusResponse>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `status` | `'ENABLED' | 'DISABLED'` | The status to set ('ENABLED' or 'DISABLED') |
+| `status` | `'ENABLED' \| 'DISABLED'` | The status to set ('ENABLED' or 'DISABLED') |
 | `nanoid` | `string` | The unique identifier of the auth config |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
-`Promise` — The updated auth config details
+`Promise<AuthConfigUpdateStatusResponse>` — The updated auth config details
 
 **Example**
 

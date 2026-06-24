@@ -34,7 +34,7 @@ Resolution rule (deny wins):
  4. otherwise → DENY
 
 ```typescript
-async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
+async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -42,7 +42,7 @@ async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserId
 | Name | Type |
 |------|------|
 | `nanoid` | `string` |
-| `params` | `object` |
+| `params` | `UpdateConnectedAccountAclParams` |
 
 **Returns**
 

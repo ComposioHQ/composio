@@ -7,10 +7,11 @@
  * Run: pnpm --filter @composio/core generate:docs
  */
 
+import { readFileSync } from 'fs';
 import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 // Paths (relative to ts/packages/core)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -139,6 +140,7 @@ interface TypeDocSignature {
   parameters?: TypeDocParameter[];
   type?: TypeDocType;
   typeParameter?: TypeDocTypeParameter[];
+  sources?: Array<{ fileName: string; line: number }>;
 }
 
 interface TypeDocParameter {
@@ -214,6 +216,13 @@ interface ClassDoc {
   source?: { file: string; line: number };
 }
 
+interface SourceSignatureTypes {
+  parameters: Map<string, string>;
+  returnType?: string;
+}
+
+const sourceFileCache = new Map<string, string>();
+
 function extractText(content?: Array<{ kind: string; text: string }>): string {
   if (!content) return '';
   return content
@@ -248,6 +257,326 @@ function extractDescription(comment?: TypeDocReflection['comment']): string {
 function extractTag(comment: TypeDocReflection['comment'] | undefined, tagName: string): string[] {
   if (!comment?.blockTags) return [];
   return comment.blockTags.filter(t => t.tag === tagName).map(t => extractText(t.content));
+}
+
+function getSourceFileText(fileName: string): string | undefined {
+  const filePath = join(PACKAGE_DIR, 'src', fileName);
+  const cached = sourceFileCache.get(filePath);
+  if (cached !== undefined) return cached;
+
+  try {
+    const text = readFileSync(filePath, 'utf-8');
+    sourceFileCache.set(filePath, text);
+    return text;
+  } catch {
+    return undefined;
+  }
+}
+
+function getLineOffset(text: string, line: number): number {
+  let offset = 0;
+  for (let currentLine = 1; currentLine < line; currentLine++) {
+    const nextLine = text.indexOf('\n', offset);
+    if (nextLine === -1) return text.length;
+    offset = nextLine + 1;
+  }
+  return offset;
+}
+
+function updateTypeDepth(
+  char: string,
+  depth: { angle: number; brace: number; bracket: number; paren: number }
+) {
+  switch (char) {
+    case '<':
+      depth.angle++;
+      break;
+    case '>':
+      depth.angle = Math.max(0, depth.angle - 1);
+      break;
+    case '{':
+      depth.brace++;
+      break;
+    case '}':
+      depth.brace = Math.max(0, depth.brace - 1);
+      break;
+    case '[':
+      depth.bracket++;
+      break;
+    case ']':
+      depth.bracket = Math.max(0, depth.bracket - 1);
+      break;
+    case '(':
+      depth.paren++;
+      break;
+    case ')':
+      depth.paren = Math.max(0, depth.paren - 1);
+      break;
+  }
+}
+
+function splitTopLevel(input: string, delimiter: string): string[] {
+  const parts: string[] = [];
+  const depth = { angle: 0, brace: 0, bracket: 0, paren: 0 };
+  let quote: string | null = null;
+  let start = 0;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    const prev = input[i - 1];
+
+    if (quote) {
+      if (char === quote && prev !== '\\') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+
+    updateTypeDepth(char, depth);
+
+    if (
+      char === delimiter &&
+      depth.angle === 0 &&
+      depth.brace === 0 &&
+      depth.bracket === 0 &&
+      depth.paren === 0
+    ) {
+      parts.push(input.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+
+  const finalPart = input.slice(start).trim();
+  if (finalPart) {
+    parts.push(finalPart);
+  }
+  return parts;
+}
+
+function findMatchingParen(text: string, openIndex: number): number {
+  const depth = { angle: 0, brace: 0, bracket: 0, paren: 0 };
+  let quote: string | null = null;
+
+  for (let i = openIndex; i < text.length; i++) {
+    const char = text[i];
+    const prev = text[i - 1];
+
+    if (quote) {
+      if (char === quote && prev !== '\\') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+
+    if (char === '(') {
+      depth.paren++;
+    } else if (char === ')') {
+      depth.paren--;
+      if (depth.paren === 0) return i;
+    } else {
+      updateTypeDepth(char, depth);
+    }
+  }
+
+  return -1;
+}
+
+function findTopLevelChar(input: string, target: string): number {
+  const depth = { angle: 0, brace: 0, bracket: 0, paren: 0 };
+  let quote: string | null = null;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    const prev = input[i - 1];
+
+    if (quote) {
+      if (char === quote && prev !== '\\') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+
+    if (
+      char === target &&
+      !(target === '=' && input[i + 1] === '>') &&
+      depth.angle === 0 &&
+      depth.brace === 0 &&
+      depth.bracket === 0 &&
+      depth.paren === 0
+    ) {
+      return i;
+    }
+
+    updateTypeDepth(char, depth);
+  }
+
+  return -1;
+}
+
+function findReturnTypeColon(text: string, start: number): number {
+  const depth = { angle: 0, brace: 0, bracket: 0, paren: 0 };
+  let quote: string | null = null;
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    const prev = text[i - 1];
+
+    if (quote) {
+      if (char === quote && prev !== '\\') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+
+    const isTopLevel =
+      depth.angle === 0 && depth.brace === 0 && depth.bracket === 0 && depth.paren === 0;
+    if (isTopLevel) {
+      if (char === ':') return i;
+      if (char === '{' || char === ';') return -1;
+    }
+
+    updateTypeDepth(char, depth);
+  }
+
+  return -1;
+}
+
+function findSignatureEnd(text: string, start: number): number {
+  const depth = { angle: 0, brace: 0, bracket: 0, paren: 0 };
+  let quote: string | null = null;
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    const prev = text[i - 1];
+
+    if (quote) {
+      if (char === quote && prev !== '\\') {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"' || char === '`') {
+      quote = char;
+      continue;
+    }
+
+    const isTopLevel =
+      depth.angle === 0 && depth.brace === 0 && depth.bracket === 0 && depth.paren === 0;
+    const startsInlineObjectType =
+      char === '{' &&
+      [':', '|', '&', '(', ',', '='].includes(previousNonWhitespace(text, i - 1) ?? '');
+
+    if ((char === ';' || (char === '{' && !startsInlineObjectType)) && isTopLevel) {
+      return i;
+    }
+
+    updateTypeDepth(char, depth);
+  }
+
+  return -1;
+}
+
+function previousNonWhitespace(text: string, index: number): string | undefined {
+  for (let i = index; i >= 0; i--) {
+    const char = text[i];
+    if (!/\s/.test(char)) {
+      return char;
+    }
+  }
+  return undefined;
+}
+
+function normalizeSourceParamName(name: string): string | undefined {
+  const normalized = name
+    .trim()
+    .replace(/^\.\.\./, '')
+    .split(/\s+/)
+    .pop()
+    ?.replace(/\?$/, '');
+
+  if (!normalized || normalized.startsWith('{') || normalized.startsWith('[')) {
+    return undefined;
+  }
+  return normalized;
+}
+
+function parseSourceParameter(param: string): [string, string] | undefined {
+  const colonIndex = findTopLevelChar(param, ':');
+  if (colonIndex === -1) return undefined;
+
+  const name = normalizeSourceParamName(param.slice(0, colonIndex));
+  if (!name) return undefined;
+
+  let type = param.slice(colonIndex + 1).trim();
+  const defaultIndex = findTopLevelChar(type, '=');
+  if (defaultIndex !== -1) {
+    type = type.slice(0, defaultIndex).trim();
+  }
+  return [name, type];
+}
+
+export function parseSourceSignatureTypesAtLine(
+  text: string,
+  line: number
+): SourceSignatureTypes | undefined {
+  const lineOffset = getLineOffset(text, line);
+  const openParen = text.indexOf('(', lineOffset);
+  if (openParen === -1) return undefined;
+
+  const closeParen = findMatchingParen(text, openParen);
+  if (closeParen === -1) return undefined;
+
+  const parameters = new Map<string, string>();
+  const paramsText = text.slice(openParen + 1, closeParen).trim();
+  for (const param of splitTopLevel(paramsText, ',')) {
+    const parsed = parseSourceParameter(param);
+    if (parsed) {
+      parameters.set(parsed[0], parsed[1]);
+    }
+  }
+
+  const colonIndex = findReturnTypeColon(text, closeParen + 1);
+  if (colonIndex === -1) return { parameters };
+
+  const absoluteReturnStart = colonIndex + 1;
+  const returnEnd = findSignatureEnd(text, absoluteReturnStart);
+  const returnType =
+    returnEnd === -1
+      ? text.slice(absoluteReturnStart).trim()
+      : text.slice(absoluteReturnStart, returnEnd).trim();
+
+  return { parameters, returnType };
+}
+
+function getSourceSignatureTypes(signature: TypeDocSignature): SourceSignatureTypes | undefined {
+  const source = signature.sources?.[0];
+  if (!source) return undefined;
+
+  const text = getSourceFileText(source.fileName);
+  if (!text) return undefined;
+
+  return parseSourceSignatureTypesAtLine(text, source.line);
 }
 
 function formatYamlFrontmatterString(value: string): string {
@@ -331,10 +660,11 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
   }
 
   const signatures = reflection.signatures.map(sig => {
+    const sourceTypes = getSourceSignatureTypes(sig);
     const parameters = (sig.parameters || []).map(param => ({
       // Clean up ugly TypeScript internal names
       name: param.name.startsWith('__') ? 'options' : param.name,
-      type: formatType(param.type),
+      type: sourceTypes?.parameters.get(param.name) ?? formatType(param.type),
       required: !param.flags?.isOptional,
       description: extractDescription(param.comment),
       default: param.defaultValue,
@@ -342,7 +672,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
 
     return {
       parameters,
-      returnType: formatType(sig.type),
+      returnType: sourceTypes?.returnType ?? formatType(sig.type),
       returnDescription: extractTag(sig.comment, '@returns')[0],
     };
   });
@@ -357,7 +687,9 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
     description,
     signatures,
     examples,
-    isAsync: formatType(primarySig.type).startsWith('Promise'),
+    isAsync:
+      signatures[0]?.returnType.startsWith('Promise') ??
+      formatType(primarySig.type).startsWith('Promise'),
     source: reflection.sources?.[0]
       ? { file: reflection.sources[0].fileName, line: reflection.sources[0].line }
       : undefined,
@@ -647,26 +979,29 @@ function cleanupGenericTypes(type: string): string {
 
 // Escape type strings for safe use in MDX backtick code spans.
 // Escapes curly braces which MDX interprets as JSX expressions.
-function escapeTypeForMdx(type: string): string {
-  return type.replace(/\{/g, '\\{').replace(/\}/g, '\\}');
+export function escapeTypeForMdx(type: string): string {
+  return type.replace(/\{/g, '\\{').replace(/\}/g, '\\}').replace(/\|/g, '\\|');
 }
 
-// Simplify complex types for table display (aggressive)
-function simplifyTypeForTable(type: string): string {
+function isInlineObjectType(type: string): boolean {
+  return type.startsWith('{') || type.includes(': {');
+}
+
+// Simplify complex types for table display while preserving public object shapes.
+export function simplifyTypeForTable(type: string): string {
   // First clean up internal generics
   const cleaned = cleanupGenericTypes(type);
 
+  if (isInlineObjectType(cleaned)) {
+    return cleaned;
+  }
+
   // If type is too long or complex, simplify it
-  if (cleaned.length > 80 || (cleaned.includes('{') && cleaned.includes('}'))) {
+  if (cleaned.length > 80) {
     // Extract just the outer type name if it's a generic
     const genericMatch = cleaned.match(/^([A-Za-z]+)<.*>$/);
     if (genericMatch) {
       return `${genericMatch[1]}<...>`;
-    }
-
-    // For object types, just show 'object'
-    if (cleaned.startsWith('{') || cleaned.includes(': {')) {
-      return 'object';
     }
 
     // For function types, simplify
@@ -685,12 +1020,16 @@ function simplifyTypeForTable(type: string): string {
 }
 
 // Simplify types for code block display (less aggressive, preserves structure)
-function simplifyTypeForSignature(type: string): string {
+export function simplifyTypeForSignature(type: string): string {
   // First clean up internal generics
   const cleaned = cleanupGenericTypes(type);
 
+  if (isInlineObjectType(cleaned)) {
+    return cleaned;
+  }
+
   // Keep types under 100 chars as-is
-  if (cleaned.length <= 100 && !cleaned.includes(': {')) {
+  if (cleaned.length <= 100) {
     return cleaned;
   }
 
@@ -710,11 +1049,6 @@ function simplifyTypeForSignature(type: string): string {
     if (args.length > 60 || args.includes(': {')) {
       return `${name}<...>`;
     }
-  }
-
-  // For inline object types in signatures
-  if (cleaned.includes(': {') || (cleaned.startsWith('{') && cleaned.length > 60)) {
-    return 'object';
   }
 
   // Truncate very long types
@@ -897,7 +1231,14 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   console.log(`  Files generated: ${documented.length + 2}`); // +2 for index.mdx and meta.json
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+function isDirectRun(): boolean {
+  const entrypoint = process.argv[1];
+  return Boolean(entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href);
+}
+
+if (isDirectRun()) {
+  main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}
