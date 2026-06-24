@@ -259,8 +259,23 @@ def claim_notion_message_row(state: dict[str, Any], *, user_id: str, dry_run: bo
         if any(row.get("id") == row_id for row in rows):
             break
     if not any(row.get("id") == row_id for row in rows):
-        # Our own insert is not yet queryable (eventual consistency). Trust the insert rather
-        # than archiving it and dropping the message as a false duplicate.
+        # Our own insert is not yet queryable (eventual consistency). If a competing
+        # blocking row for the same message is already visible, defer to it and drop
+        # our row instead of double-drafting. Otherwise trust our insert rather than
+        # dropping the message as a false duplicate.
+        competitors = _blocking_rows(rows)
+        if competitors:
+            archive_tool = tools.get(NOTION_ARCHIVE_PAGE_TOOL)
+            if archive_tool:
+                invoke_tool(archive_tool, {"page_id": row_id, "archive": True})
+            return {
+                "acquired": False,
+                "duplicate": True,
+                "reason": "Another Notion row already claims this Gmail message; our claim row was not yet queryable.",
+                "message_id": message_id,
+                "row_id": row_id,
+                "existing_rows": competitors,
+            }
         return {
             "acquired": True,
             "claim_unverified": True,

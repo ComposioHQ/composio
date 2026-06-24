@@ -325,6 +325,31 @@ class ClaimNotionMessageRowTests(unittest.TestCase):
 
     @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
     @patch("email_support_agent.utils.tools.Composio")
+    def test_claim_defers_when_competitor_visible_and_insert_unverified(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
+        query_tool, insert_tool, archive_tool = MagicMock(), MagicMock(), MagicMock()
+        competitor = _row(
+            "page_competitor",
+            draft_link="https://mail.google.com/draft",
+            created_time="2026-06-23T00:00:00Z",
+        )
+        # Pre-insert check is empty; post-insert queries surface a competing
+        # claim row while our own page id is never queryable.
+        query_tool.invoke.side_effect = [{"results": []}] + [{"results": [competitor]}] * 5
+        insert_tool.invoke.return_value = {"successful": True, "data": {"id": "page_new"}}
+        query_tool.name = "NOTION_QUERY_DATABASE"
+        insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
+        archive_tool.name = "NOTION_ARCHIVE_NOTION_PAGE"
+        self._session(composio_cls, [query_tool, insert_tool, archive_tool])
+
+        with patch.dict("os.environ", {"NOTION_LOG_ROWS": "true", "NOTION_DATABASE_ID": "notion_db_123"}, clear=False):
+            result = claim_notion_message_row(CLAIM_STATE, user_id="test_user")
+
+        self.assertFalse(result["acquired"])
+        self.assertTrue(result["duplicate"])
+        archive_tool.invoke.assert_called_once()
+
+    @patch("email_support_agent.utils.notion.time.sleep", return_value=None)
+    @patch("email_support_agent.utils.tools.Composio")
     def test_completed_row_blocks_as_duplicate(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
         query_tool, insert_tool = MagicMock(), MagicMock()
         query_tool.invoke.return_value = {
