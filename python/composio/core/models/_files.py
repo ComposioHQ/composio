@@ -24,6 +24,7 @@ from composio.exceptions import (
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -813,10 +814,23 @@ class FileHelper(WithLogger):
         Should only be called when the caller opted in via
         `dangerously_allow_auto_upload_download_files=True`.
         Recursively handles anyOf, oneOf, allOf, nested properties, and array items.
+
+        ``$ref``/``$defs`` indirection is inlined first so file_uploadable flags
+        reachable only through a reference are visible to the transform below
+        (https://github.com/ComposioHQ/composio/issues/3506). Tool schemas come
+        from the API, which may emit a ``$ref`` without a ``$defs`` block
+        (https://github.com/ComposioHQ/composio/issues/3307); ``"sentinel"``
+        degrades that gracefully instead of raising.
         """
-        if "properties" not in schema:
+        resolved = dereference_json_schema(schema, on_unresolved="sentinel")
+        if "properties" not in resolved:
             return schema
 
+        # Preserve the original object's identity (callers such as
+        # ``process_schema_recursively`` mutate in place) while adopting the
+        # dereferenced, ``$defs``-stripped shape.
+        schema.clear()
+        schema.update(resolved)
         schema["properties"] = {
             key: self._transform_schema_for_file_upload(prop)
             for key, prop in schema["properties"].items()
@@ -1042,7 +1056,12 @@ class FileHelper(WithLogger):
         """
         return self._substitute_file_uploads_recursively(
             tool=tool,
-            schema=tool.input_parameters,
+            # Inline $ref/$defs once at the boundary so the walker sees
+            # file_uploadable flags hidden behind a reference. Non-mutating:
+            # ``tool.input_parameters`` is left untouched.
+            schema=dereference_json_schema(
+                tool.input_parameters, on_unresolved="sentinel"
+            ),
             request=request,
             before_file_upload=before_file_upload,
         )
@@ -1160,7 +1179,13 @@ class FileHelper(WithLogger):
             "ToolExecutionResponse",
             self._substitute_file_downloads_recursively(
                 tool=tool,
-                schema=tool.output_parameters,
+                # Inline $ref/$defs once at the boundary so the walker sees
+                # file_downloadable flags hidden behind a reference (e.g.
+                # GMAIL_GET_ATTACHMENT). Non-mutating: ``tool.output_parameters``
+                # is left untouched.
+                schema=dereference_json_schema(
+                    tool.output_parameters, on_unresolved="sentinel"
+                ),
                 request=t.cast(dict, response),
             ),
         )
