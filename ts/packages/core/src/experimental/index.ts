@@ -20,7 +20,6 @@ export type {
 } from '../types/customTool.types';
 export type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
 export {
-  COMPOSIO_WORKBENCH_HELPER_PATH,
   experimental_createPythonWorkbenchHelperSource,
   experimental_createWorkbenchEnv,
 } from './shim';

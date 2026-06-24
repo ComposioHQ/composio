@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  COMPOSIO_WORKBENCH_HELPER_PATH,
-  experimental_createLocalWorkbenchSession,
-} from '../../src/experimental';
+import { experimental_createLocalWorkbenchSession } from '../../src/experimental';
 
 describe('experimental_createLocalWorkbenchSession', () => {
   it('creates a Tool Router session with remote workbench disabled', async () => {
@@ -44,7 +41,6 @@ describe('experimental_createLocalWorkbenchSession', () => {
     });
     expect(workbench.helperSource).toContain('def run_composio_tool(');
     expect(workbench.helperSource).not.toContain('project_key');
-    expect(COMPOSIO_WORKBENCH_HELPER_PATH).toBe('/tmp/composio_tools.py');
   });
 
   it('adds disabled workbench config when omitted by the caller', async () => {
