@@ -106,7 +106,8 @@ composio = Composio()
 @app.post("/webhooks/composio")
 async def webhook_handler(request: Request):
     result = composio.triggers.parse(
-        request,
+        body=await request.body(),
+        headers=request.headers,
         verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"],
     )
 
@@ -143,7 +144,7 @@ export async function POST(request: Request) {
   </Tab>
 </Tabs>
 
-`parse()` accepts a Fetch `Request` or an Express-style `{ body, headers }`. For signature verification, hand it the **raw** request body, not a pre-parsed object. Omit `verifySecret` to parse without verifying (handy for local replays).
+In TypeScript, `parse()` accepts a Fetch `Request` (Next.js App Router, Hono) or an Express-style `{ body, headers }`. In Python, pass the request directly on sync frameworks (Flask, Django), or pass `body=` and `headers=` when the framework reads the body asynchronously (FastAPI, as above). Either way, hand it the **raw** request body, not a pre-parsed object, or signature verification can't reproduce the signed bytes. Omit `verifySecret`/`verify_secret` to parse without verifying (handy for local replays).
 
 <Callout>
 Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
