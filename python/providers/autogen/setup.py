@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="composio_autogen",
-    version="0.15.0",
+    version="0.16.0",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Autogen agent.",
@@ -20,12 +20,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
+    python_requires=">=3.10,<4",
     install_requires=[
-        "pyautogen>=0.2.19",
-        "flaml==2.2.0",
-        "autogen_core>=0.4.0",
-        "autogen_agentchat>=0.4.0",
+        "pyautogen>=0.2.19,<0.3",
+        "flaml==2.6.0",
+        "autogen_core>=0.7.5",
         "composio",
     ],
     include_package_data=True,

@@ -14,14 +14,13 @@ import {
   ExecuteToolFn,
   McpUrlResponse,
   McpServerGetResponse,
-  jsonSchemaToZodSchema,
   normalizeToolArguments,
 } from '@composio/core';
+import { jsonSchemaToZodShape } from '@composio/core/utils/json-schema';
 import {
   tool as sdkTool,
   type Options as ClaudeAgentOptions,
 } from '@anthropic-ai/claude-agent-sdk';
-import type { ZodObject, ZodRawShape } from 'zod/v3';
 
 /**
  * Type for a single Claude Agent SDK MCP tool definition
@@ -103,13 +102,24 @@ export class ClaudeAgentSDKProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: Tool, executeTool: ExecuteToolFn): ClaudeAgentTool {
-    const inputZodSchema = jsonSchemaToZodSchema(
+    const inputZodShape = jsonSchemaToZodShape(
       composioTool.inputParameters ?? { type: 'object', properties: {} }
     );
-    // Some issues with zod types and errors when instantiation is excessively deep and possibly infinite.
-    const inputZodShape = (inputZodSchema as unknown as ZodObject<ZodRawShape>).shape;
 
-    return sdkTool(
+    // The SDK types tool() generically over its zod raw shape, which makes the handler argument
+    // instantiate excessively deep against the v3 shape returned here (TS2589). Narrow tool() to a
+    // concrete, monomorphic signature once — this sidesteps the deep instantiation and lets the
+    // handler keep a precise argument type, instead of scattering `as never` casts at the call.
+    const defineTool = sdkTool as unknown as (
+      name: string,
+      description: string,
+      inputShape: ReturnType<typeof jsonSchemaToZodShape>,
+      handler: (
+        args: Record<string, unknown>
+      ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>
+    ) => ClaudeAgentTool;
+
+    return defineTool(
       composioTool.slug,
       composioTool.description ?? `Execute ${composioTool.slug}`,
       inputZodShape,

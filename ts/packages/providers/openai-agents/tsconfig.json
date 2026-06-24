@@ -3,9 +3,6 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "esnext",
-    "declaration": true,
-    "declarationDir": "./dist",
-    "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",

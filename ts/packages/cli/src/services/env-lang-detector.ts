@@ -75,11 +75,7 @@ export class EnvLangDetector extends Effect.Service<EnvLangDetector>()('services
           if (!hasTypescriptIndicator && !hasPythonIndicator) {
             // Get actual file names (not lowercase) for extension checking
             const hasTypeScriptFiles = files.some(
-              file =>
-                file.endsWith('.ts') ||
-                file.endsWith('.tsx') ||
-                file.endsWith('.mts') ||
-                file.endsWith('.cts')
+              file => file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.mts')
             );
 
             const hasPythonFiles = files.some(
@@ -153,11 +149,7 @@ export class EnvLangDetector extends Effect.Service<EnvLangDetector>()('services
             const allFileNames = [...files, ...allFiles];
 
             const deepTsFiles = allFileNames.filter(
-              file =>
-                file.endsWith('.ts') ||
-                file.endsWith('.tsx') ||
-                file.endsWith('.mts') ||
-                file.endsWith('.cts')
+              file => file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.mts')
             ).length;
 
             const deepPyFiles = allFileNames.filter(
