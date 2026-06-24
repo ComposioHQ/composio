@@ -82,6 +82,7 @@
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "turbo": "^2.9.18",
+    "typescript": "catalog:",
     "typescript-eslint": "^8.61.1",
     "vitest": "catalog:",
     "zod": "catalog:"
