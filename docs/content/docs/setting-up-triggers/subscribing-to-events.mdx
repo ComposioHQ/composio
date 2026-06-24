@@ -208,13 +208,17 @@ console.log(triggerType.payload);
   </Tab>
 </Tabs>
 
-For typed payloads in your editor instead of inspecting at runtime, generate stubs with the CLI:
+From the CLI, inspect a single trigger type's config and payload schema:
 
 ```bash
-composio generate   # auto-detects TypeScript or Python; or pass `ts` / `py`
+composio triggers info "GITHUB_COMMIT_EVENT"
 ```
 
-This emits typed trigger payloads (alongside tool types) you can import, so your handler is type-checked against the trigger's schema.
+Or generate typed stubs for your project (scope to the toolkits you use with `--toolkits`), so your handler is type-checked against the trigger's payload:
+
+```bash
+composio generate --toolkits github   # auto-detects TypeScript or Python
+```
 
 ### Webhook payload shape
 

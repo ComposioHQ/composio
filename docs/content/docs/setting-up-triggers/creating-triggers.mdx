@@ -49,6 +49,9 @@ from composio import Composio
 composio = Composio()
 user_id = "user-id-123435"
 
+# Before this runs, the user must already be authenticated for the toolkit:
+# an auth config for the toolkit AND a connected account for this user_id.
+# Set these up first — see /docs/authentication.
 trigger = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
@@ -64,6 +67,9 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 const userId = 'user-id-123435';
 
+// Before this runs, the user must already be authenticated for the toolkit:
+// an auth config for the toolkit AND a connected account for this userId.
+// Set these up first — see /docs/authentication.
 const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
   triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
 });

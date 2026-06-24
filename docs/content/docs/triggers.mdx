@@ -10,10 +10,7 @@ When something happens in a connected app (a new Slack message, a GitHub commit,
 
 ## Where events arrive
 
-However Composio learns about an event, it delivers it to you in one of two places. There is only ever **one** destination you configure: your own URL.
-
-- **Locally**, over an SDK subscription (`subscribe()`). No public URL, no signing. This is the fastest way to see events while developing.
-- **In production**, at a single webhook URL you register once per project. Composio `POST`s every event there.
+Composio delivers every event to one destination you control: your webhook URL. You register it once per project, and Composio `POST`s every trigger event there, signed so you can verify it.
 
 ## Realtime vs polling
 
@@ -27,7 +24,7 @@ Under the hood, Composio learns about events in one of two ways. You don't confi
 Either way, the event lands in the same place: your subscription or webhook URL, in the same payload shape.
 
 <Callout>
-Most realtime triggers need no extra setup. If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+If you **bring your own OAuth app**, some providers only deliver to URLs registered on that app, so you register Composio's ingress URL there once. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 </Callout>
 
 ## Trigger types and instances
@@ -38,13 +35,10 @@ A **trigger instance** is a type activated for one [user's connected account](/d
 
 ## Working with triggers
 
-1. **Create** a trigger for a user's connected account. See [Creating triggers](/docs/setting-up-triggers/creating-triggers).
+0. **Authenticate** the user for the toolkit: an [auth config](/docs/authentication#behind-the-scenes) and a [connected account](/docs/authentication). See [Authentication](/docs/authentication).
+1. **Create** a trigger for the user's connected account. See [Creating triggers](/docs/setting-up-triggers/creating-triggers).
 2. **Receive** its events: locally with `subscribe()`, or in production at your webhook URL. See [Receiving events](/docs/setting-up-triggers/subscribing-to-events).
 3. **Manage** triggers: enable, disable, or delete. See [Managing triggers](/docs/setting-up-triggers/managing-triggers).
-
-<Callout>
-Triggers are scoped to a connected account. If you haven't set up authentication yet, start with [Authentication](/docs/authentication).
-</Callout>
 
 ## Next
 
