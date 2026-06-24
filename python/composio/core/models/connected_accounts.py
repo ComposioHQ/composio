@@ -7,19 +7,21 @@ import typing as t
 import warnings
 
 import typing_extensions as te
+from composio_client import BadRequestError, omit
 
 from composio import exceptions
 from composio.client import HttpClient
-from composio_client import BadRequestError, omit
 from composio.client.types import (
     connected_account_create_params,
     connected_account_patch_params,
     connected_account_patch_response,
     connected_account_retrieve_response,
     connected_account_update_status_response,
+    link_create_params,
 )
 
 from .base import Resource
+from .experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 
 logger = logging.getLogger(__name__)
 
@@ -558,6 +560,7 @@ class ConnectedAccounts:
         callback_url: t.Optional[str] = None,
         alias: t.Optional[str] = None,
         allow_multiple: bool = False,
+        experimental: t.Optional[link_create_params.Experimental] = None,
     ) -> ConnectionRequest:
         """
         Create a Composio Connect Link for a user to connect their account to a given auth config.
@@ -574,6 +577,10 @@ class ConnectedAccounts:
             ``ComposioMultipleConnectedAccountsError`` if the user already has an
             ``ACTIVE`` connection on this auth config. Pair with ``alias`` and a
             session-level ``multi_account`` config to disambiguate at execution time.
+        :param experimental: Experimental options for this connection. Pass an
+            ``Experimental`` dict with ``account_type`` and/or
+            ``acl_config_for_shared`` to create a SHARED connection with a
+            per-user ACL. Experimental — shape may change in future releases.
         :return: Connection request object.
 
         Example:
@@ -597,6 +604,19 @@ class ConnectedAccounts:
 
             # Wait for the connection to be established
             connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+
+        Example creating a SHARED connection with an ACL (experimental):
+            connection_request = composio.connected_accounts.link(
+                'user_creator',
+                'auth_config_123',
+                experimental={
+                    'account_type': 'SHARED',
+                    'acl_config_for_shared': {
+                        'allow_all_users': True,
+                        'not_allowed_user_ids': ['user_bob'],
+                    },
+                },
+            )
         """
         # Mirror ``initiate()``: guard against silently creating extra
         # connections on the same auth config.
@@ -615,12 +635,22 @@ class ConnectedAccounts:
                 auth_config_id,
             )
 
-        response = self._client.link.create(
-            auth_config_id=auth_config_id,
-            user_id=user_id,
-            callback_url=callback_url if callback_url is not None else omit,
-            alias=alias if alias is not None else omit,
-        )
+        try:
+            response = self._client.link.create(
+                auth_config_id=auth_config_id,
+                user_id=user_id,
+                callback_url=callback_url if callback_url is not None else omit,
+                alias=alias if alias is not None else omit,
+                experimental=experimental if experimental is not None else omit,
+            )
+        except BadRequestError as error:
+            # The server rejects ACL on PRIVATE connections — surface that
+            # as a typed error so callers can ``except`` instead of grepping
+            # messages.
+            message = str(error)
+            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
+                raise exceptions.ComposioAclOnlyForSharedError(message) from error
+            raise
 
         return ConnectionRequest(
             id=response.connected_account_id,

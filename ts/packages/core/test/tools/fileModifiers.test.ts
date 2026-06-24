@@ -6,6 +6,7 @@ import {
   ComposioFileUploadAbortedError,
   ComposioFileUploadError,
 } from '../../src/errors/FileModifierErrors';
+import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import * as fileUtils from '../../src/utils/fileUtils.node';
 import { Tools } from '../../src/models/Tools';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
@@ -481,6 +482,32 @@ describe('FileToolModifier', () => {
       ).rejects.toThrow(ComposioFileUploadError);
     });
 
+    it('should throw ComposioRequestCancelledError on caller-aborted upload', async () => {
+      const controller = new AbortController();
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockImplementationOnce(async () => {
+        controller.abort();
+        const error = new Error('The operation was aborted');
+        error.name = 'AbortError';
+        throw error;
+      });
+
+      const params = {
+        arguments: {
+          file: '/path/to/file.txt',
+        },
+        userId: 'test-user',
+      };
+
+      await expect(
+        fileToolModifier.fileUploadModifier(mockTool, {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          params,
+          signal: controller.signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
+    });
+
     it('should handle File object for file_uploadable parameters', async () => {
       const mockFileData = {
         name: 'file.txt',
@@ -788,6 +815,178 @@ describe('FileToolModifier', () => {
 
       expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(1);
       expect(result.arguments?.fileInput).toEqual(mockFileData);
+    });
+
+    it('should upload each file when anyOf accepts a single file or an array of files', async () => {
+      const mockFileData1 = {
+        name: 'file1.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file1.txt',
+      };
+      const mockFileData2 = {
+        name: 'file2.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file2.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3)
+        .mockResolvedValueOnce(mockFileData1)
+        .mockResolvedValueOnce(mockFileData2);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                { type: 'string', file_uploadable: true },
+                {
+                  type: 'array',
+                  items: { type: 'string', file_uploadable: true },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithSingleOrArrayFile, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachment: ['/path/to/file1.txt', '/path/to/file2.txt'],
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(2);
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenNthCalledWith(
+        1,
+        '/path/to/file1.txt',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenNthCalledWith(
+        2,
+        '/path/to/file2.txt',
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        }
+      );
+      expect(result.arguments?.attachment).toEqual([mockFileData1, mockFileData2]);
+    });
+
+    it('should keep single-file behavior when anyOf also accepts an array of files', async () => {
+      const mockFileData = {
+        name: 'file.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                { type: 'string', file_uploadable: true },
+                {
+                  type: 'array',
+                  items: { type: 'string', file_uploadable: true },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithSingleOrArrayFile, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachment: '/path/to/file.txt',
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(1);
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/file.txt', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.attachment).toEqual(mockFileData);
+    });
+
+    it('should upload file array items whose item schema is an anyOf file branch', async () => {
+      const mockFileData1 = {
+        name: 'file1.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file1.txt',
+      };
+      const mockFileData2 = {
+        name: 'file2.txt',
+        mimetype: 'text/plain',
+        s3key: 'uploads/file2.txt',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3)
+        .mockResolvedValueOnce(mockFileData1)
+        .mockResolvedValueOnce(mockFileData2);
+
+      const toolWithArrayItemAnyOf: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachments: {
+              type: 'array',
+              items: {
+                anyOf: [{ type: 'string', file_uploadable: true }, { type: 'null' }],
+              },
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithArrayItemAnyOf, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: {
+            attachments: ['/path/to/file1.txt', null, '/path/to/file2.txt'],
+          },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledTimes(2);
+      expect(result.arguments?.attachments).toEqual([mockFileData1, null, mockFileData2]);
     });
 
     it('should not upload when value is null for anyOf with null variant', async () => {
@@ -1398,6 +1597,101 @@ describe('FileToolModifier', () => {
       });
     });
 
+    it('should download each file when anyOf accepts a single file or an array of files', async () => {
+      const mockDownloadResult1 = {
+        name: 'file1.txt',
+        mimeType: 'text/plain',
+        s3Url: 'downloads/file1.txt',
+        filePath: '/downloaded/file1.txt',
+      };
+      const mockDownloadResult2 = {
+        name: 'file2.txt',
+        mimeType: 'text/plain',
+        s3Url: 'downloads/file2.txt',
+        filePath: '/downloaded/file2.txt',
+      };
+      vi.mocked(fileUtils.downloadFileFromS3)
+        .mockResolvedValueOnce(mockDownloadResult1)
+        .mockResolvedValueOnce(mockDownloadResult2);
+
+      const toolWithSingleOrArrayFile: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        outputParameters: {
+          type: 'object',
+          properties: {
+            attachment: {
+              anyOf: [
+                {
+                  type: 'object',
+                  file_downloadable: true,
+                  properties: {
+                    s3url: { type: 'string' },
+                    mimetype: { type: 'string' },
+                  },
+                },
+                {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    file_downloadable: true,
+                    properties: {
+                      s3url: { type: 'string' },
+                      mimetype: { type: 'string' },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+      };
+
+      const modifiedResult = await fileToolModifier.fileDownloadModifier(
+        toolWithSingleOrArrayFile,
+        {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          result: {
+            data: {
+              attachment: [
+                {
+                  s3url: 'https://s3.example.com/file1.txt',
+                  mimetype: 'text/plain',
+                },
+                {
+                  s3url: 'https://s3.example.com/file2.txt',
+                  mimetype: 'text/plain',
+                },
+              ],
+            },
+            error: null,
+            successful: true,
+          },
+        }
+      );
+
+      expect(fileUtils.downloadFileFromS3).toHaveBeenCalledTimes(2);
+      expect(modifiedResult.data.attachment).toEqual([
+        {
+          uri: '/downloaded/file1.txt',
+          file_downloaded: true,
+          s3url: 'https://s3.example.com/file1.txt',
+          mimeType: 'text/plain',
+        },
+        {
+          uri: '/downloaded/file2.txt',
+          file_downloaded: true,
+          s3url: 'https://s3.example.com/file2.txt',
+          mimeType: 'text/plain',
+        },
+      ]);
+    });
+
     it('should not download when value is null for anyOf with null variant', async () => {
       const toolWithAnyOf: Tool = {
         slug: 'test-tool',
@@ -1444,6 +1738,126 @@ describe('FileToolModifier', () => {
 
       expect(fileUtils.downloadFileFromS3).not.toHaveBeenCalled();
       expect(modifiedResult.data.fileOutput).toBeNull();
+    });
+  });
+
+  // The schema walkers recurse properties/anyOf/oneOf/allOf/items but never
+  // dereference `$ref`. Composio toolkits express file flags through a
+  // `$ref`/`$defs` indirection (e.g. GMAIL_GET_ATTACHMENT), so without
+  // dereferencing the flag is invisible and the file is silently skipped.
+  // See https://github.com/ComposioHQ/composio/issues/3506.
+  describe('$ref / $defs indirection', () => {
+    it('marks a file_uploadable behind a $ref/$defs as format: "path" in modifyToolSchema', async () => {
+      const schema: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Attachment' },
+            legacyAttachment: { $ref: '#/definitions/LegacyAttachment' },
+            text: { type: 'string' },
+          },
+          $defs: {
+            Attachment: {
+              type: 'string',
+              file_uploadable: true,
+              description: 'Local path to attach',
+            },
+          },
+          definitions: {
+            LegacyAttachment: {
+              type: 'string',
+              file_uploadable: true,
+              description: 'Legacy local path to attach',
+            },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.modifyToolSchema(schema);
+
+      expect(result.inputParameters?.properties?.attachment).toHaveProperty('format', 'path');
+      expect(result.inputParameters?.properties?.attachment).toHaveProperty(
+        'file_uploadable',
+        true
+      );
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty('format', 'path');
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty(
+        'file_uploadable',
+        true
+      );
+      expect(result.inputParameters?.properties?.text).not.toHaveProperty('format');
+    });
+
+    it('uploads a file whose file_uploadable flag is reachable only via $ref/$defs', async () => {
+      const mockFileData = {
+        name: 'doc.pdf',
+        mimetype: 'application/pdf',
+        s3key: 'uploads/doc.pdf',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithRef: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Attachment' },
+          },
+          $defs: {
+            Attachment: { type: 'string', file_uploadable: true },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithRef, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: { attachment: '/path/to/doc.pdf' },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/doc.pdf', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.attachment).toEqual(mockFileData);
+    });
+
+    it('degrades gracefully when a $ref has no matching $defs target', async () => {
+      // Some toolkits ship a `$ref` without ever declaring `$defs`
+      // (https://github.com/ComposioHQ/composio/issues/3307). The modifier
+      // must not throw; the unresolved branch simply carries no file flag.
+      const schema: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Missing' },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.modifyToolSchema(schema);
+      expect(result.inputParameters?.properties?.attachment).not.toHaveProperty('format');
     });
   });
 });
@@ -1595,18 +2009,22 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       });
 
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
-      expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-        arguments: {
-          file: '/path/to/file.txt',
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        'COMPOSIO_TOOL',
+        {
+          arguments: {
+            file: '/path/to/file.txt',
+          },
+          allow_tracing: undefined,
+          connected_account_id: undefined,
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          text: undefined,
+          user_id: 'test-user',
+          version: 'latest',
         },
-        allow_tracing: undefined,
-        connected_account_id: undefined,
-        custom_auth_params: undefined,
-        custom_connection_data: undefined,
-        text: undefined,
-        user_id: 'test-user',
-        version: 'latest',
-      });
+        undefined
+      );
     });
 
     it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {

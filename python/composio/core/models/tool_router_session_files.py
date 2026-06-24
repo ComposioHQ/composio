@@ -118,7 +118,18 @@ class RemoteFile:
 
     def buffer(self) -> bytes:
         """Fetch the file content as bytes."""
-        response = requests.get(self.download_url)
+        try:
+            response = requests.get(
+                self.download_url,
+                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+            )
+        except requests.exceptions.RequestException as e:
+            raise RemoteFileDownloadError(
+                f"Failed to download file: {type(e).__name__}",
+                download_url=self.download_url,
+                mount_relative_path=self.mount_relative_path,
+                filename=self.filename,
+            ) from e
 
         if not response.ok:
             raise RemoteFileDownloadError(
@@ -287,11 +298,15 @@ class ToolRouterSessionFilesMount:
             mimetype=mime,
         )
 
-        upload_resp = requests.put(
-            create_resp.upload_url,
-            data=content,
-            headers={"Content-Type": mime},
-        )
+        try:
+            upload_resp = requests.put(
+                create_resp.upload_url,
+                data=content,
+                headers={"Content-Type": mime},
+                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+            )
+        except requests.exceptions.RequestException as e:
+            raise ValidationError(f"Failed to upload file: {type(e).__name__}") from e
 
         if not upload_resp.ok:
             raise ValidationError(

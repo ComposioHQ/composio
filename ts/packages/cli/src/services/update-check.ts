@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
+import { isInteractiveTerminal } from 'src/utils/stdio';
 import { resolveInstalledCliVersion } from './run-companion-modules';
 
 /**
@@ -50,6 +51,7 @@ export interface UpdateCheckConfig {
   readonly binaryAssetName: string | undefined;
   readonly accessToken: string | undefined;
   readonly fetchFn: (url: string, init?: RequestInit) => Promise<Response>;
+  readonly isInteractive: () => boolean;
 }
 
 const _home = join(homedir(), '.composio');
@@ -73,6 +75,7 @@ const defaultConfig: UpdateCheckConfig = {
   binaryAssetName: getCurrentBinaryAssetName(),
   accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
   fetchFn: fetch,
+  isInteractive: isInteractiveTerminal,
 };
 
 // ── Pure helpers ────────────────────────────────────────────────────────
@@ -123,6 +126,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    */
   function showUpdateNotice(): void {
     try {
+      if (!config.isInteractive()) return;
+
       const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
       if (!state.latestVersion || !semver.valid(state.latestVersion)) return;
       if (state.latestVersion === config.currentVersion) return;

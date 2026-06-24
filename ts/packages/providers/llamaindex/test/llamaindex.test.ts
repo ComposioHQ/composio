@@ -209,6 +209,25 @@ describe('LlamaindexProvider', () => {
 
       await expect(wrappedTool.call({ query: 'test' })).rejects.toThrow('Tool execution failed');
     });
+
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      const result = await wrappedTool.call(
+        JSON.stringify({ query: 'test query' }) as unknown as Record<string, unknown>
+      );
+
+      expect(executeToolFn).toHaveBeenCalledWith(sampleTool.slug, { query: 'test query' });
+      expect(JSON.parse(result as string).data.params).toEqual({ query: 'test query' });
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const wrappedTool = provider.wrapTool(sampleTool, executeToolFn);
+
+      await expect(
+        wrappedTool.call('{"query":' as unknown as Record<string, unknown>)
+      ).rejects.toThrow(/not valid JSON/);
+    });
   });
 
   describe('MCP Server Response Transformation', () => {

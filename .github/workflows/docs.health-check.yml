@@ -108,11 +108,11 @@ jobs:
 
       - name: Notify Slack
         if: steps.check.outputs.has_failures == 'true'
-        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: ${{ steps.check.outputs.slack_payload }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
 
       - name: Fail on unhealthy endpoints
         if: steps.check.outputs.has_failures == 'true'

@@ -15,7 +15,13 @@ import {
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
-import { Toolkit, Toolkits, ToolkitDetailed, type ToolkitSearchResult } from 'src/models/toolkits';
+import {
+  Toolkit,
+  Toolkits,
+  ToolkitDetailed,
+  ToolkitSlug,
+  type ToolkitSearchResult,
+} from 'src/models/toolkits';
 import { AuthConfigItem, AuthConfigItems } from 'src/models/auth-configs';
 import { ConnectedAccountItem, ConnectedAccountItems } from 'src/models/connected-accounts';
 import { TriggerInstanceItems } from 'src/models/triggers';
@@ -28,6 +34,7 @@ import {
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import * as constants from 'src/constants';
+import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -250,7 +257,7 @@ export type ToolkitsResponse = Schema.Schema.Type<typeof ToolkitsResponse>;
 // Similar to Toolkits, without auth_schemes, with auth_config_details instead
 export const ToolkitRetrieveResponse = Schema.Struct({
   name: Schema.String,
-  slug: Schema.Trim.pipe(Schema.nonEmptyString()),
+  slug: ToolkitSlug,
   is_local_toolkit: Schema.Boolean,
   composio_managed_auth_schemes: Schema.optionalWith(Schema.Array(Schema.String), {
     default: () => [],
@@ -1325,6 +1332,7 @@ const buildDefaultHeaders = (params: {
   orgId?: string;
   projectId?: string;
 }): Record<string, string> | undefined => {
+  const cliSessionId = getCurrentCwdSessionId();
   const defaultHeaders = {
     'x-framework': 'cli',
     'x-source': 'CLI',
@@ -1338,6 +1346,9 @@ const buildDefaultHeaders = (params: {
           'x-org-id': params.orgId,
           'x-project-id': params.projectId,
         } satisfies Record<string, string>)
+      : {}),
+    ...(cliSessionId
+      ? ({ 'x-cli-session-id': cliSessionId } satisfies Record<string, string>)
       : {}),
   };
 

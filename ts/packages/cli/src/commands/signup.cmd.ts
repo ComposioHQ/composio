@@ -56,7 +56,7 @@ export const runAgentSignup = (params: {
           `Status: ${summary.status}`,
           `Email: ${summary.email ?? 'unknown'}`,
           `Slug: ${summary.slug ?? 'unknown'}`,
-          `Default Org ID: ${summary.org_id ?? 'pending'}`,
+          `Current Org ID: ${summary.org_id ?? 'pending'}`,
           `Project ID: ${summary.project_id ?? 'pending'}`,
           `Agent key: stored in ~/.composio/agent.json`,
         ].join('\n'),

@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import typing as t
 
@@ -9,6 +10,7 @@ from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
 from composio.utils.pydantic import parse_pydantic_error
+from composio.utils.shared import normalize_tool_arguments
 
 
 # Recursively remove 'examples' keys from the schema properties
@@ -86,7 +88,8 @@ class OpenAIAgentsProvider(
                         await asyncio.to_thread(  # Running a thread since `execute_tool` is not async
                             execute_tool,
                             slug=tool.slug,
-                            arguments=json.loads(payload) if payload else {},
+                            # Models occasionally emit arguments as a JSON string (issue #2406).
+                            arguments=normalize_tool_arguments(payload),
                         )
                     )
                 )
@@ -108,8 +111,12 @@ class OpenAIAgentsProvider(
                 )
 
         # Ensure the schema has additionalProperties set to false
-        # this is required by OpenAI's function validation
-        modified_schema = tool.input_parameters.copy()
+        # this is required by OpenAI's function validation.
+        # Deep-copy so the in-place edits below (additionalProperties + the
+        # examples/pattern/default removal) never mutate the caller's
+        # Tool.input_parameters, matching the deepcopy contract in
+        # composio.utils.shared.
+        modified_schema = copy.deepcopy(tool.input_parameters)
         modified_schema["additionalProperties"] = False
 
         # Apply the example removal function. This is done to optimize the

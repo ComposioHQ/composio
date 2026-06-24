@@ -21,7 +21,7 @@ The event does not fire when you disable a trigger yourself — neither through 
 
 ## Subscribe
 
-Add `composio.trigger.disabled` to your subscription's `enabled_events` — via the [dashboard webhook settings](https://platform.composio.dev?next_page=/settings/webhook) or the Webhook Subscriptions API:
+Add `composio.trigger.disabled` to your subscription's `enabled_events` — via the [dashboard webhook settings](https://dashboard.composio.dev/~/project/settings/webhook) or the Webhook Subscriptions API:
 
 ```bash
 curl -X PATCH https://backend.composio.dev/api/v3/webhook_subscriptions/ws_your-subscription-id \

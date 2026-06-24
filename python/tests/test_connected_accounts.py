@@ -284,6 +284,7 @@ class TestConnectedAccounts:
         client.connected_accounts.update_status = Mock()
         client.connected_accounts.refresh = Mock()
         client.connected_accounts.create = Mock()
+        client.connected_accounts.patch = Mock()
         client.link.create = Mock()
         return client
 
@@ -523,6 +524,229 @@ class TestConnectedAccounts:
         mock_from_id.assert_called_once_with(id="conn-123", client=mock_client)
         mock_request.wait_for_connection.assert_called_once_with(timeout=42.0)
         assert result == "connected"
+
+
+def _make_bad_request_error(message: str):
+    """Build a BadRequestError instance for testing the error mapper.
+
+    The composio_client BadRequestError constructor signature is internal —
+    rather than depend on it, we stub a minimal object that ``str(error)``
+    surfaces the message and which is recognized as the BadRequestError type
+    by ``isinstance``. This mirrors how production responses arrive: the
+    error class with a message body.
+    """
+    from composio_client import BadRequestError
+
+    error = BadRequestError.__new__(BadRequestError)
+    Exception.__init__(error, message)
+    return error
+
+
+class TestConnectedAccountsAcl:
+    """Tests for SHARED accounts surface on ``link()`` and
+    ``composio.experimental.update_acl()``."""
+
+    @pytest.fixture
+    def mock_client(self):
+        client = Mock()
+        client.connected_accounts.retrieve = Mock()
+        client.connected_accounts.list = Mock()
+        client.connected_accounts.delete = Mock()
+        client.connected_accounts.update_status = Mock()
+        client.connected_accounts.refresh = Mock()
+        client.connected_accounts.create = Mock()
+        client.connected_accounts.patch = Mock()
+        client.link.create = Mock()
+        # Default: no existing connections, so link() doesn't trip the guard.
+        no_accounts = Mock()
+        no_accounts.items = []
+        client.connected_accounts.list.return_value = no_accounts
+        # Default link.create response — overridden per test where the
+        # response shape matters.
+        default_link = Mock()
+        default_link.connected_account_id = "ca_test_shared"
+        default_link.redirect_url = "https://redirect"
+        client.link.create.return_value = default_link
+        return client
+
+    @pytest.fixture
+    def connected_accounts(self, mock_client):
+        return ConnectedAccounts(client=mock_client)
+
+    @pytest.fixture
+    def experimental(self, mock_client):
+        from composio.core.models.experimental import ExperimentalAPI
+
+        return ExperimentalAPI(client=mock_client)
+
+    # -- link() forwards the experimental block -----------------------------
+
+    def test_link_forwards_experimental_block(self, connected_accounts, mock_client):
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            experimental={
+                "account_type": "SHARED",
+                "acl_config_for_shared": {
+                    "allow_all_users": True,
+                    "not_allowed_user_ids": ["user_bob"],
+                },
+            },
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"] == {
+            "account_type": "SHARED",
+            "acl_config_for_shared": {
+                "allow_all_users": True,
+                "not_allowed_user_ids": ["user_bob"],
+            },
+        }
+
+    def test_link_omits_experimental_when_not_provided(
+        self, connected_accounts, mock_client
+    ):
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"] is omit
+
+    def test_link_preserves_explicit_empty_lists(self, connected_accounts, mock_client):
+        """An empty list is meaningful (clear the allow/deny list)."""
+        connected_accounts.link(
+            user_id="user_creator",
+            auth_config_id="auth_config_123",
+            experimental={
+                "account_type": "SHARED",
+                "acl_config_for_shared": {
+                    "allowed_user_ids": [],
+                    "not_allowed_user_ids": [],
+                },
+            },
+        )
+
+        call_kwargs = mock_client.link.create.call_args.kwargs
+        assert call_kwargs["experimental"]["acl_config_for_shared"] == {
+            "allowed_user_ids": [],
+            "not_allowed_user_ids": [],
+        }
+
+    def test_link_maps_acl_only_for_shared_to_typed_error(
+        self, connected_accounts, mock_client
+    ):
+        mock_client.link.create.side_effect = _make_bad_request_error(
+            "acl_config_for_shared is only valid on SHARED connections."
+        )
+
+        with pytest.raises(exceptions.ComposioAclOnlyForSharedError):
+            connected_accounts.link(
+                user_id="user_creator",
+                auth_config_id="auth_config_123",
+                experimental={
+                    "account_type": "PRIVATE",
+                    "acl_config_for_shared": {"allow_all_users": True},
+                },
+            )
+
+    def test_link_rethrows_non_acl_bad_request_errors(
+        self, connected_accounts, mock_client
+    ):
+        unrelated = _make_bad_request_error("auth_config_id is required")
+        mock_client.link.create.side_effect = unrelated
+
+        from composio_client import BadRequestError
+
+        with pytest.raises(BadRequestError):
+            connected_accounts.link(
+                user_id="user_creator", auth_config_id="auth_config_123"
+            )
+
+    # -- experimental.update_acl() body construction + mapper ---------------
+
+    def test_update_acl_serializes_nested_body(self, experimental, mock_client):
+        response = Mock()
+        response.id = "ca_abc"
+        response.status = "ACTIVE"
+        response.success = True
+        mock_client.connected_accounts.patch.return_value = response
+
+        result = experimental.update_acl(
+            "ca_abc",
+            allow_all_users=True,
+            not_allowed_user_ids=["user_bob"],
+        )
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={
+                "acl_config_for_shared": {
+                    "allow_all_users": True,
+                    "not_allowed_user_ids": ["user_bob"],
+                }
+            },
+        )
+        assert result is response
+
+    def test_update_acl_omits_absent_fields(self, experimental, mock_client):
+        experimental.update_acl("ca_abc", allowed_user_ids=["user_alice"])
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={
+                "acl_config_for_shared": {"allowed_user_ids": ["user_alice"]}
+            },
+        )
+
+    def test_update_acl_preserves_empty_array(self, experimental, mock_client):
+        experimental.update_acl("ca_abc", allowed_user_ids=[])
+
+        mock_client.connected_accounts.patch.assert_called_once_with(
+            "ca_abc",
+            experimental={"acl_config_for_shared": {"allowed_user_ids": []}},
+        )
+
+    def test_update_acl_rejects_all_none(self, experimental, mock_client):
+        with pytest.raises(exceptions.ValidationError):
+            experimental.update_acl("ca_abc")
+        mock_client.connected_accounts.patch.assert_not_called()
+
+    def test_update_acl_maps_acl_only_for_shared_to_typed_error(
+        self, experimental, mock_client
+    ):
+        mock_client.connected_accounts.patch.side_effect = _make_bad_request_error(
+            "acl_config_for_shared is only valid on SHARED connections."
+        )
+
+        with pytest.raises(exceptions.ComposioAclOnlyForSharedError):
+            experimental.update_acl("ca_abc", allow_all_users=True)
+
+    def test_update_acl_rethrows_non_acl_bad_request_errors(
+        self, experimental, mock_client
+    ):
+        unrelated = _make_bad_request_error("some other 400")
+        mock_client.connected_accounts.patch.side_effect = unrelated
+
+        from composio_client import BadRequestError
+
+        with pytest.raises(BadRequestError):
+            experimental.update_acl("ca_abc", allow_all_users=True)
+
+    def test_update_acl_requires_client(self):
+        from composio.core.models.experimental import ExperimentalAPI
+
+        with pytest.raises(exceptions.ValidationError):
+            ExperimentalAPI().update_acl("ca_abc", allow_all_users=True)
+
+    # -- list(account_type=...) — flat experimental filter -----------------
+
+    def test_list_forwards_account_type_filter(self, connected_accounts, mock_client):
+        connected_accounts.list(account_type="SHARED", user_ids=["user_creator"])
+        mock_client.connected_accounts.list.assert_called_once_with(
+            account_type="SHARED", user_ids=["user_creator"]
+        )
 
 
 # SEC-339: initiate() must gate its DeprecationWarning on the response

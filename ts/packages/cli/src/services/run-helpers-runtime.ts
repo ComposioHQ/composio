@@ -311,10 +311,20 @@ export const installRunHelpers = async ({
     }
   };
 
+  const shouldStreamHelperLog = (step: string, formattedLine: string | null): boolean => {
+    if (helperContext.logsOff === true) return false;
+    if (helperContext.debug === true) return true;
+    return formattedLine !== null && (step.startsWith('subAgent.') || step.startsWith('agent.'));
+  };
+
   const helperDebugLog = (step: string, details: Record<string, unknown> = {}) => {
-    const line = formatHelperDebugEvent(step, details);
+    const formattedLine = formatHelperDebugEvent(step, details);
     const elapsedMs = Date.now() - perfDebugStart;
-    appendRunLogLine(line ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`);
+    const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
+    appendRunLogLine(line);
+    if (shouldStreamHelperLog(step, formattedLine)) {
+      process.stderr.write(`${line}\n`);
+    }
   };
 
   const parseJson = (text: string): unknown => {

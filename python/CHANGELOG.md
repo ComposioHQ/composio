@@ -5,6 +5,50 @@ All notable changes to the Composio Python SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+> Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
+
+## [0.16.0] - 2026-06-22
+
+### Changed
+- Bumped the Python SDK and provider packages from `0.15.0` to `0.16.0`.
+- Refreshed Python core and provider dependency ranges, plus root and provider uv locks, to the newest compatible versions.
+
+## [0.15.0] - 2026-06-16
+
+### Fixed
+- Forwarded `user_id` from `triggers.create(..., user_id=...)` into the trigger upsert request via `extra_body`, so 2FA-enabled trigger projects can verify the pinned connected account belongs to the caller.
+
+### Changed
+- Bumped the Python SDK and provider packages from `0.14.0` to `0.15.0`.
+
+## [0.14.0] - 2026-06-05
+
+### Removed
+- Removed the legacy `composio.tools.custom_tool` registry path, including `core.models.custom_tools`, `ExecuteRequestFn`, the old fallback execution wiring, the old security tests, and the legacy custom-tools example.
+
+### Changed
+- Kept custom tools on the 2026 tool-router surface: `composio.experimental.tool()`, `composio.experimental.Toolkit`, inline execution, preload/attach/use flows, and `session.custom_tools()`.
+- Bumped the Python SDK and provider packages from `0.13.1` to `0.14.0`.
+
+## [0.13.1] - 2026-05-13
+
+### Added
+- **SHARED connected accounts (experimental)**: Connections can now be marked SHARED at create time and reached from a tool-router session by other `user_id`s when explicitly pinned and authorised via a per-user ACL. Mirrors the TypeScript SDK's `@composio/core@0.10.0` release.
+  - `composio.connected_accounts.link(..., experimental={"account_type": "SHARED", "acl_config_for_shared": {...}})` to create.
+  - `composio.experimental.update_acl(nanoid, allow_all_users=..., allowed_user_ids=[...], not_allowed_user_ids=[...])` to update the per-user ACL on an existing SHARED connection. PATCH semantics: omit a field to leave it unchanged; pass `[]` to clear an allow/deny list.
+  - `session.authorize(toolkit, experimental={...})` for the same flow inside a tool-router session.
+  - `composio.connected_accounts.list(account_type='PRIVATE' | 'SHARED' | 'ALL')` filter.
+  - New typed errors: `ComposioAclOnlyForSharedError`, `ComposioSharedAccessDeniedError`, `ComposioSharedConnectionNotAccessibleError`.
+  - **Experimental — shape may change in future releases.** Pinning a SHARED connection in a session config and direct execute by `connected_account_id` are unchanged.
+- **`composio.experimental` namespace**: new module housing experimental SDK methods that take a client (`update_acl`) alongside the existing decorators (`tool`, `Toolkit`).
+
+### Fixed
+- **`initiate()` deprecation warning false-positives**: the legacy `POST /api/v3/connected_accounts` deprecation warning is now gated on the response `Deprecation` HTTP header (RFC 9745) rather than the `auth_scheme` of the request. Custom auth configs and non-OAuth schemes no longer trigger a spurious warning. The legacy endpoint's retired-path 400 is also surfaced as a typed `ComposioLegacyConnectedAccountsEndpointRetiredError`. See https://docs.composio.dev/docs/changelog/2026/04/24.
+- **Schema converter nullability**: `null`-only `anyOf` blocks now preserve nullability instead of dropping to a bare `str` fallback.
+
+### Changed
+- Bumped `composio-client` dependency from `1.36.0` → `1.39.0` so the generated typed client carries the `Experimental` TypedDicts for the SHARED-connection surface.
+
 ## [0.8.11] - 2025-09-10
 
 ### Added

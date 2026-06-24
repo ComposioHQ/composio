@@ -1160,6 +1160,7 @@ export const TestLayer = (input?: TestLiveInput) =>
               connected_account_id: 'con_test_link',
               link_token: 'lt_test_token',
               redirect_url: 'https://app.composio.dev/link?token=lt_test_token',
+              account_type: 'PRIVATE' as const,
             })),
           proxyExecute:
             toolRouterOverrides?.proxyExecute ??

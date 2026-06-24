@@ -191,7 +191,7 @@ const commandTool = <TInput extends z.ZodTypeAny>(definition: {
   slug: definition.slug,
   name: definition.name,
   description: definition.description,
-  platforms: ['darwin-arm64', 'darwin-x64'],
+  platforms: ['darwin-arm64'],
   inputParams: definition.inputParams,
   outputParams: cliOutput,
   execution: {
@@ -212,7 +212,7 @@ export const peekabooToolkit: LocalToolkitDeclaration = {
   slug: 'PEEKABOO',
   name: 'Peekaboo (local)',
   description: 'Local macOS screen capture and GUI automation tools backed by the Peekaboo CLI.',
-  platforms: ['darwin-arm64', 'darwin-x64'],
+  platforms: ['darwin-arm64'],
   source: {
     type: 'cli',
     package: `@steipete/peekaboo@${PEEKABOO_VERSION}`,
@@ -227,10 +227,6 @@ export const peekabooToolkit: LocalToolkitDeclaration = {
         {
           platforms: ['darwin-arm64'],
           path: 'peekaboo/darwin-arm64/peekaboo',
-        },
-        {
-          platforms: ['darwin-x64'],
-          path: 'peekaboo/darwin-x64/peekaboo',
         },
       ],
     },

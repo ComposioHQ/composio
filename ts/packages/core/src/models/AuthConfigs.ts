@@ -29,6 +29,8 @@ import {
   transformAuthConfigRetrieveResponse,
   transformCreateAuthConfigResponse,
 } from '../utils/transformers/authConfigs';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
 /**
  * AuthConfigs class
  *
@@ -72,20 +74,35 @@ export class AuthConfigs {
    *   toolkit: 'github'
    * });
    *
+   * // Search auth configs by name or id
+   * const searchedConfigs = await composio.authConfigs.list({
+   *   search: 'github',
+   *   showDisabled: true
+   * });
+   *
    * // List Composio-managed auth configs
    * const managedConfigs = await composio.authConfigs.list({
    *   isComposioManaged: true
    * });
    * ```
    */
-  async list(query?: AuthConfigListParams): Promise<AuthConfigListResponse> {
+  async list(
+    query?: AuthConfigListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigListResponse> {
     const parsedQuery = query ? AuthConfigListParamsSchema.parse(query) : undefined;
-    const result = await this.client.authConfigs.list({
+    const listParams = {
       cursor: parsedQuery?.cursor,
       is_composio_managed: parsedQuery?.isComposioManaged,
       limit: parsedQuery?.limit,
+      search: parsedQuery?.search,
+      show_disabled: parsedQuery?.showDisabled,
       toolkit_slug: parsedQuery?.toolkit,
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.authConfigs.list(listParams, requestOptions),
+      requestOptions?.signal
+    );
     return transformAuthConfigListResponse(result);
   }
 
@@ -109,7 +126,8 @@ export class AuthConfigs {
    */
   async create(
     toolkit: string,
-    options: CreateAuthConfigParams = { type: 'use_composio_managed_auth' }
+    options: CreateAuthConfigParams = { type: 'use_composio_managed_auth' },
+    requestOptions?: ComposioRequestOptions
   ): Promise<CreateAuthConfigResponse> {
     const parsedOptions = CreateAuthConfigParamsSchema.safeParse(options);
     if (parsedOptions.error) {
@@ -117,7 +135,7 @@ export class AuthConfigs {
         cause: parsedOptions.error,
       });
     }
-    const result = await this.client.authConfigs.create({
+    const createBody = {
       toolkit: {
         slug: toolkit,
       },
@@ -154,7 +172,11 @@ export class AuthConfigs {
                   }
                 : undefined,
             },
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.authConfigs.create(createBody, requestOptions),
+      requestOptions?.signal
+    );
     return transformCreateAuthConfigResponse(result);
   }
 
@@ -177,8 +199,14 @@ export class AuthConfigs {
    * console.log(authConfig.toolkit.slug); // e.g., 'github'
    * ```
    */
-  async get(nanoid: string): Promise<AuthConfigRetrieveResponse> {
-    const result = await this.client.authConfigs.retrieve(nanoid);
+  async get(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigRetrieveResponse> {
+    const result = await withCancellation(
+      () => this.client.authConfigs.retrieve(nanoid, requestOptions),
+      requestOptions?.signal
+    );
     return transformAuthConfigRetrieveResponse(result);
   }
 
@@ -212,18 +240,21 @@ export class AuthConfigs {
    * });
    * ```
    */
-  async update(nanoid: string, data: AuthConfigUpdateParams): Promise<AuthConfigUpdateResponse> {
+  async update(
+    nanoid: string,
+    data: AuthConfigUpdateParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigUpdateResponse> {
     const parsedData = AuthConfigUpdateParamsSchema.safeParse(data);
     if (parsedData.error) {
       throw new ValidationError('Failed to parse auth config update data', {
         cause: parsedData.error,
       });
     }
-    return this.client.authConfigs.update(
-      nanoid,
+    const updateBody =
       parsedData.data.type === 'custom'
         ? {
-            type: 'custom',
+            type: 'custom' as const,
             credentials: parsedData.data.credentials,
             is_enabled_for_tool_router: parsedData.data.isEnabledForToolRouter,
             tool_access_config: {
@@ -235,7 +266,7 @@ export class AuthConfigs {
             },
           }
         : {
-            type: 'default',
+            type: 'default' as const,
             scopes: parsedData.data.scopes,
             is_enabled_for_tool_router: parsedData.data.isEnabledForToolRouter,
             tool_access_config: {
@@ -245,7 +276,10 @@ export class AuthConfigs {
                 parsedData.data.toolAccessConfig?.toolsAvailableForExecution ??
                 parsedData.data.restrictToFollowingTools,
             },
-          }
+          };
+    return withCancellation(
+      () => this.client.authConfigs.update(nanoid, updateBody, requestOptions),
+      requestOptions?.signal
     );
   }
 
@@ -266,8 +300,14 @@ export class AuthConfigs {
    * await composio.authConfigs.delete('auth_abc123');
    * ```
    */
-  async delete(nanoid: string): Promise<AuthConfigDeleteResponse> {
-    return this.client.authConfigs.delete(nanoid);
+  async delete(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigDeleteResponse> {
+    return withCancellation(
+      () => this.client.authConfigs.delete(nanoid, undefined, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -293,9 +333,13 @@ export class AuthConfigs {
    */
   async updateStatus(
     status: 'ENABLED' | 'DISABLED',
-    nanoid: string
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
   ): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus(status, { nanoid });
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus(status, { nanoid }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -315,8 +359,14 @@ export class AuthConfigs {
    * await composio.authConfigs.enable('auth_abc123');
    * ```
    */
-  async enable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus('ENABLED', { nanoid });
+  async enable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus('ENABLED', { nanoid }, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -336,7 +386,13 @@ export class AuthConfigs {
    * await composio.authConfigs.disable('auth_abc123');
    * ```
    */
-  async disable(nanoid: string): Promise<AuthConfigUpdateStatusResponse> {
-    return this.client.authConfigs.updateStatus('DISABLED', { nanoid });
+  async disable(
+    nanoid: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<AuthConfigUpdateStatusResponse> {
+    return withCancellation(
+      () => this.client.authConfigs.updateStatus('DISABLED', { nanoid }, requestOptions),
+      requestOptions?.signal
+    );
   }
 }

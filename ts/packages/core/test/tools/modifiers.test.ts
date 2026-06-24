@@ -98,7 +98,8 @@ describe('Tools Modifiers', () => {
         slug,
         expect.objectContaining({
           arguments: { limit: 10 },
-        })
+        }),
+        undefined
       );
     });
 
@@ -240,9 +241,13 @@ describe('Tools Modifiers', () => {
       });
 
       // Verify schema modification
-      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(slug, {
-        modifySchema: schemaModifier,
-      });
+      expect(getRawComposioToolBySlugSpy).toHaveBeenCalledWith(
+        slug,
+        {
+          modifySchema: schemaModifier,
+        },
+        undefined
+      );
       expect(mockTool.description).toBe('Enhanced GITHUB_GET_REPOS for better context');
       expect(mockTool.tags).toContain('enhanced');
       expect(mockTool.tags).toContain('modified');

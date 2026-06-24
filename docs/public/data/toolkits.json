@@ -485,7 +485,7 @@
       {
         "slug": "COMPOSIO_REMOTE_WORKBENCH",
         "name": "Execute Code remotely in work bench",
-        "description": "\n  Process **REMOTE FILES** or script BULK TOOL EXECUTIONS using Python code IN A REMOTE SANDBOX. If you can see the data in chat, DON'T USE THIS TOOL.\n**ONLY** use this when processing **data stored in a remote file** or when scripting bulk tool executions.\n\nDO NOT USE\n- When the complete response is already inline/in-memory, or you only need quick parsing, summarization, or basic math.\n\nUSE IF\n- To parse/analyze tool outputs saved by COMPOSIO_MULTI_EXECUTE_TOOL to a remote file in the sandbox or to script multi-tool chains there.\n- For bulk or repeated executions of known Composio tools (e.g., add a label to 100 emails).\n- To call APIs via proxy_execute when no Composio tool exists for that API.\n\n\nOUTPUTS\n- Returns a compact result or, if too long, artifacts under `/mnt/files/.composio/output` (cloud-backed FUSE mount, persisted across sandbox restarts).\n\nIMPORTANT CODING RULES:\n  1. Stepwise Execution: Split work into small steps. Save intermediate outputs to `/mnt/files/` (cloud-backed, persisted across failures/timeouts) or variables. Call COMPOSIO_REMOTE_WORKBENCH again for the next step.\n  2. Notebook Persistence: This is a persistent Jupyter notebook cell: variables, functions, imports, and in-memory state persist across executions. Helper functions are preloaded.\n  3. Top-level cells: Do not use `return`; Jupyter only allows it inside functions. For final values, end with `output` or `print(output)`, not `return output`.\n  4. Parallelism & Timeout (CRITICAL): There is a **hard 3-minute (180s) execution limit** per cell. Always prioritize PARALLEL execution using ThreadPoolExecutor for bulk operations - e.g., call run_composio_tool or invoke_llm across rows. If data is large, split it into smaller batches across cells.\n  5. Checkpoints: Save checkpoints to `/mnt/files/` so that long runs can be resumed from the last completed step, even after a timeout or sandbox restart.\n  6. Schema Safety: Never assume the response schema for run_composio_tool if not known already from previous tools. To inspect schema, either run a simple request **outside** the workbench or use invoke_llm helper.\n  7. LLM Helpers: Always use invoke_llm helper for summary, analysis, or field extraction on results; prefer it for much better results over ad hoc filtering.\n  8. Avoid Meta Loops: Do not use run_composio_tool to call COMPOSIO_* meta tools. Only use it for app tools.\n  9. Pagination: Use when data spans multiple pages. Continue fetching pages with the returned next_page_token or cursor until none remains. Parallelize page fetches when the tool supports page_number.\n  10. No Hardcoding: Never hardcode data. Load it from files or tool responses, iterating to construct intermediate or final inputs/outputs.\n  11. If the final output is in a workbench file, use upload_local_file to download it - never expose the raw workbench file path to the user. Prefer to download useful artifacts after task is complete.\n\n\nENV & HELPERS:\n- Home directory: `/home/user`.\n- NOTE: Helper functions already initialized in the workbench - DO NOT import or redeclare them:\n    - \n`run_composio_tool(tool_slug: str, arguments: dict) -> tuple[Dict[str, Any], str]`: Execute a known Composio **app** tool. Do not invent names; match the tool input schema. Use for loops/parallel/bulk calls.\n      i) run_composio_tool returns JSON with top-level \"data\". Parse carefully—structure may be nested.\n    \n    - \n`invoke_llm(query: str) -> tuple[str, str]`: Invoke an LLM for semantic tasks. Pass MAX 200k characters.\n      i) NOTE Prompting guidance: When building prompts for invoke_llm, prefer f-strings (or concatenation) so literal braces stay intact. If using str.format, escape braces by doubling them ({{ }}).\n      ii) Define the exact JSON schema you want and batch items into smaller groups to stay within token limit.\n\n    - `upload_local_file(*file_paths) -> tuple[Dict[str, Any], str]`: Upload sandbox files to Composio S3/R2 storage for user-downloadable artifacts.\n    - `proxy_execute(method, endpoint, toolkit, query_params=None, body=None, headers=None) -> tuple[Any, str]`: Call a toolkit API directly when no Composio tool exists. Only one toolkit can be invoked with proxy_execute per workbench call\n    - `web_search(query: str) -> tuple[str, str]`: Search the web for information.\n    - `smart_file_extract(sandbox_file_path: str, show_preview: bool = True) -> tuple[str, str]`: Extracts text from files in the sandbox (e.g., PDF, image).\n    - Workbench comes with comprehensive Image Processing (PIL/Pillow, OpenCV, scikit-image), PyTorch ML libraries, Document and Report handling tools (pandoc, python-docx, pdfplumber, reportlab), and standard Data Analysis tools (pandas, numpy, matplotlib) for advanced visual, analytical, and AI tasks.\n  All helper functions return a tuple (result, error). Always check error before using result.\n\n## Python Helper Functions for LLM Scripting\n\n\n### run_composio_tool\nExecutes a known Composio tool via backend API. Do NOT call COMPOSIO_* meta tools to avoid cycles.\n\n    def run_composio_tool(tool_slug: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str]\n    # Returns: (tool_response_dict, error_message)\n    #   Success: ({\"data\": {actual_data}}, \"\") - Note the top-level data\n    #   Error:   ({}, \"error_message\") or (response_data, \"error_message\")\n\n    result, error = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 1, \"user_id\": \"me\"})\n    if error:\n        print(\"GMAIL_FETCH_EMAILS error:\", error)\n    else:\n        email_data = result.get(\"data\", {})\n        print(\"Fetched:\", email_data)\n    \n\n\n### invoke_llm\nCalls LLM for reasoning, analysis, and semantic tasks. Pass MAX 200k characters.\n\n    def invoke_llm(query: str) -> tuple[str, str]\n    # Returns: (llm_response, error_message)\n\n    # Example: analyze tool response with LLM\n    tool_resp, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5, \"user_id\": \"me\"})\n    if not err:\n      parsed = tool_resp.get(\"data\", {})\n      resp, err2 = invoke_llm(f\"Summarize these emails: {parsed}\")\n      if not err2:\n        print(resp)\n    # TIP: batch prompts to reduce LLM calls.\n    \n\n\n### upload_local_file\nUploads sandbox files to Composio S3/R2 storage for upload/download requests involving generated sandbox artifacts. Single files upload directly; multiple files are auto-zipped.\n\n    def upload_local_file(*file_paths) -> tuple[Dict[str, Any], str]\n    # Returns: (result_dict, error_string)\n    # Success: ({\"s3_url\": str, \"uploaded_file\": str, \"type\": str, \"id\": str, \"s3key\": str, \"message\": str}, \"\")\n    # Error: ({}, \"error_message\")\n\n    # Single file\n    result, error = upload_local_file(\"/path/to/report.pdf\")\n\n    # Multiple files are auto-zipped\n    result, error = upload_local_file(\"/home/user/doc1.txt\", \"/home/user/doc2.txt\")\n\n    if not error:\n      print(\"Uploaded:\", result[\"s3_url\"])\n\n\n### proxy_execute\nDirect API call to a connected toolkit service.\n\n    def proxy_execute(\n        method: Literal[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"PATCH\"],\n        endpoint: str,\n        toolkit: str,\n        query_params: Optional[Dict[str, str]] = None,\n        body: Optional[object] = None,\n        headers: Optional[Dict[str, str]] = None,\n    ) -> tuple[Any, str]\n    # Returns: (response_data, error_message)\n\n    # Example: GET request with query parameters\n    query_params = {\"q\": \"is:unread\", \"maxResults\": \"10\"}\n    data, error = proxy_execute(\"GET\", \"/gmail/v1/users/me/messages\", \"gmail\", query_params=query_params)\n    if not error:\n      print(\"Success:\", data)\n\n\n### web_search\nSearches the web via Exa AI.\n\n    def web_search(query: str) -> tuple[str, str]\n    # Returns: (search_results_text, error_message)\n\n    results, error = web_search(\"latest developments in AI\")\n    if not error:\n        print(\"Results:\", results)\n\n## Best Practices\n\n\n### Error-first pattern and Defensive parsing (print keys while narrowing)\n    res, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5})\n    if err:\n        print(\"error:\", err)\n    elif isinstance(res, dict):\n        print(\"res keys:\", list(res.keys()))\n        data = res.get(\"data\") or {}\n        print(\"data keys:\", list(data.keys()))\n        msgs = data.get(\"messages\") or []\n        print(\"messages count:\", len(msgs))\n        for m in msgs:\n            print(\"subject:\", m.get(\"subject\", \"<missing>\"))\n\n### Parallelize within the 3-minute cell timeout\nAdjust concurrency so all tasks finish within 3 minutes.\n\n    import concurrent.futures\n\n    MAX_CONCURRENCY = 10 # Adjust as needed\n\n    def process_one(item):\n        result, error = run_composio_tool(\"GMAIL_SEND_EMAIL\", item)\n        if error:\n            return {\"status\": \"failed\", \"error\": error}\n        return {\"status\": \"ok\", \"data\": result}\n\n    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENCY) as ex:\n        results = list(ex.map(process_one, items))\n    \n\n    "
+        "description": "\n  Process **REMOTE FILES** or script BULK TOOL EXECUTIONS using Python code IN A REMOTE SANDBOX. If you can see the data in chat, DON'T USE THIS TOOL.\n**ONLY** use this when processing **data stored in a remote file** or when scripting bulk tool executions.\n\nDO NOT USE\n- When the complete response is already inline/in-memory, or you only need quick parsing, summarization, or basic math.\n\nUSE IF\n- To parse/analyze tool outputs saved by COMPOSIO_MULTI_EXECUTE_TOOL to a remote file in the sandbox or to script multi-tool chains there.\n- For bulk or repeated executions of known Composio tools (e.g., add a label to 100 emails).\n- To call APIs via proxy_execute when no Composio tool exists for that API.\n\n\nOUTPUTS\n- Returns a compact result or, if too long, artifacts under `/mnt/files/.composio/output` (cloud-backed FUSE mount, persisted across sandbox restarts).\n\nIMPORTANT CODING RULES:\n  1. Stepwise Execution: Split work into small steps. Save intermediate outputs to `/mnt/files/` (cloud-backed, persisted across failures/timeouts) or variables. Call COMPOSIO_REMOTE_WORKBENCH again for the next step.\n  2. Notebook Persistence: This is a persistent Jupyter notebook cell: variables, functions, imports, and in-memory state persist across executions. Helper functions are preloaded.\n  3. Top-level cells: Do not use `return`; Jupyter only allows it inside functions. For final values, end with `output` or `print(output)`, not `return output`.\n  4. Parallelism & Timeout (CRITICAL): There is a **hard 3-minute (180s) execution limit** per cell. Always prioritize PARALLEL execution using ThreadPoolExecutor for bulk operations - e.g., call run_composio_tool or invoke_llm across rows. If data is large, split it into smaller batches across cells.\n  5. Checkpoints: Save checkpoints to `/mnt/files/` so that long runs can be resumed from the last completed step, even after a timeout or sandbox restart.\n  6. Schema Safety: Never assume the response schema for run_composio_tool if not known already from previous tools. To inspect schema, either run a simple request **outside** the workbench or use invoke_llm helper.\n  7. LLM Helpers: Always use invoke_llm helper for summary, analysis, or field extraction on results; prefer it for much better results over ad hoc filtering.\n  8. Avoid Meta Loops: Do not use run_composio_tool to call COMPOSIO_* meta tools. Only use it for app tools.\n  9. Pagination: Use when data spans multiple pages. Continue fetching pages with the returned next_page_token or cursor until none remains. Parallelize page fetches when the tool supports page_number.\n  10. No Hardcoding: Never hardcode data. Load it from files or tool responses, iterating to construct intermediate or final inputs/outputs.\n  11. If the final output is in a workbench file, use upload_local_file to download it - never expose the raw workbench file path to the user. Prefer to download useful artifacts after task is complete.\n\n\nENV & HELPERS:\n- Home directory: `/home/user`.\n- NOTE: Helper functions already initialized in the workbench - DO NOT import or redeclare them:\n    - \n`run_composio_tool(tool_slug: str, arguments: dict) -> tuple[Dict[str, Any], str]`: Execute a known Composio **app** tool. Do not invent names; match the tool input schema. Use for loops/parallel/bulk calls.\n      i) run_composio_tool returns JSON with top-level \"data\". Parse carefully—structure may be nested.\n    \n    - \n`invoke_llm(query: str) -> tuple[str, str]`: Invoke an LLM for semantic tasks. Pass MAX 200k characters.\n      i) NOTE Prompting guidance: When building prompts for invoke_llm, prefer f-strings (or concatenation) so literal braces stay intact. If using str.format, escape braces by doubling them ({{ }}).\n      ii) Define the exact JSON schema you want and batch items into smaller groups to stay within token limit.\n\n    - `upload_local_file(*file_paths) -> tuple[Dict[str, Any], str]`: Upload sandbox files to Composio S3/R2 storage for user-downloadable artifacts.\n    - `proxy_execute(method, endpoint, toolkit, query_params=None, body=None, headers=None) -> tuple[Any, str]`: Call a toolkit API directly when no Composio tool exists. Only one toolkit can be invoked with proxy_execute per workbench call\n    - `web_search(query: str) -> tuple[str, str]`: Search the web for information.\n    - `smart_file_extract(sandbox_file_path: str, show_preview: bool = True) -> tuple[str, str]`: Extracts text from files in the sandbox (e.g., PDF, image).\n  All helper functions return a tuple (result, error). Always check error before using result.\n\n## Python Helper Functions for LLM Scripting\n\n\n### run_composio_tool\nExecutes a known Composio tool via backend API. Do NOT call COMPOSIO_* meta tools to avoid cycles.\n\n    def run_composio_tool(tool_slug: str, arguments: Dict[str, Any]) -> tuple[Dict[str, Any], str]\n    # Returns: (tool_response_dict, error_message)\n    #   Success: ({\"data\": {actual_data}}, \"\") - Note the top-level data\n    #   Error:   ({}, \"error_message\") or (response_data, \"error_message\")\n\n    result, error = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 1, \"user_id\": \"me\"})\n    if error:\n        print(\"GMAIL_FETCH_EMAILS error:\", error)\n    else:\n        email_data = result.get(\"data\", {})\n        print(\"Fetched:\", email_data)\n    \n\n\n### invoke_llm\nCalls LLM for reasoning, analysis, and semantic tasks. Pass MAX 200k characters.\n\n    # Returns: (llm_response, error_message)\n\n    # Example: analyze tool response with LLM\n    tool_resp, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5, \"user_id\": \"me\"})\n    if not err:\n      parsed = tool_resp.get(\"data\", {})\n      resp, err2 = invoke_llm(f\"Summarize these emails: {parsed}\")\n      if not err2:\n        print(resp)\n    # TIP: batch prompts to reduce LLM calls.\n    \n\n\n### upload_local_file\nUploads sandbox files to Composio S3/R2 storage for upload/download requests involving generated sandbox artifacts. Single files upload directly; multiple files are auto-zipped.\n\n    # Returns: (result_dict, error_string)\n    # Success: ({\"s3_url\": str, \"uploaded_file\": str, \"type\": str, \"id\": str, \"s3key\": str, \"message\": str}, \"\")\n    # Error: ({}, \"error_message\")\n\n    # Single file\n    result, error = upload_local_file(\"/path/to/report.pdf\")\n\n    # Multiple files are auto-zipped\n    result, error = upload_local_file(\"/home/user/doc1.txt\", \"/home/user/doc2.txt\")\n\n    if not error:\n      print(\"Uploaded:\", result[\"s3_url\"])\n\n\n### proxy_execute\nDirect API call to a connected toolkit service.\n\n    def proxy_execute(\n        method: Literal[\"GET\",\"POST\",\"PUT\",\"DELETE\",\"PATCH\"],\n        endpoint: str,\n        toolkit: str,\n        query_params: Optional[Dict[str, str]] = None,\n        body: Optional[object] = None,\n        headers: Optional[Dict[str, str]] = None,\n    ) -> tuple[Any, str]\n    # Returns: (response_data, error_message)\n\n    # Example: GET request with query parameters\n    query_params = {\"q\": \"is:unread\", \"maxResults\": \"10\"}\n    data, error = proxy_execute(\"GET\", \"/gmail/v1/users/me/messages\", \"gmail\", query_params=query_params)\n    if not error:\n      print(\"Success:\", data)\n\n\n### web_search\nSearches the web via Exa AI.\n\n    # Returns: (search_results_text, error_message)\n\n    results, error = web_search(\"latest developments in AI\")\n    if not error:\n        print(\"Results:\", results)\n\n## Best Practices\n\n\n### Error-first pattern and Defensive parsing (print keys while narrowing)\n    res, err = run_composio_tool(\"GMAIL_FETCH_EMAILS\", {\"max_results\": 5})\n    if err:\n        print(\"error:\", err)\n    elif isinstance(res, dict):\n        print(\"res keys:\", list(res.keys()))\n        data = res.get(\"data\") or {}\n        print(\"data keys:\", list(data.keys()))\n        msgs = data.get(\"messages\") or []\n        print(\"messages count:\", len(msgs))\n        for m in msgs:\n            print(\"subject:\", m.get(\"subject\", \"<missing>\"))\n\n### Parallelize within the 3-minute cell timeout\nAdjust concurrency so all tasks finish within 3 minutes.\n\n    import concurrent.futures\n\n    MAX_CONCURRENCY = 10 # Adjust as needed\n\n    def process_one(item):\n        result, error = run_composio_tool(\"GMAIL_SEND_EMAIL\", item)\n        if error:\n            return {\"status\": \"failed\", \"error\": error}\n        return {\"status\": \"ok\", \"data\": result}\n\n    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENCY) as ex:\n        results = list(ex.map(process_one, items))\n    \n\n    "
       },
       {
         "slug": "COMPOSIO_SEARCH_TOOLS",
@@ -5416,7 +5416,7 @@
     ],
     "toolCount": 48,
     "triggerCount": 13,
-    "version": "20260508_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "NOTION_ADD_MULTIPLE_PAGE_CONTENT",
@@ -5812,9 +5812,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 50,
+    "toolCount": 52,
     "triggerCount": 16,
-    "version": "20260506_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "GOOGLESHEETS_ADD_SHEET",
@@ -5962,6 +5962,11 @@
         "description": "Tool to insert new rows or columns into a sheet at a specified location. Use when you need to add empty rows or columns within an existing Google Sheet."
       },
       {
+        "slug": "GOOGLESHEETS_LIST_CHARTS",
+        "name": "List Charts in Google Sheets",
+        "description": "Lists all charts in a Google Sheets spreadsheet across all sheets, returning chart_id, sheet metadata, chart type, title, and position. Use this action when you need to discover what charts exist in a spreadsheet, retrieve chart IDs for update or delete operations, or inspect chart configurations. The default field mask in GOOGLESHEETS_GET_SPREADSHEET_INFO omits chart data, making this dedicated action necessary for chart discovery."
+      },
+      {
         "slug": "GOOGLESHEETS_LIST_TABLES",
         "name": "List Tables in Spreadsheet",
         "description": "DEPRECATED: Use GOOGLESHEETS_GET_SHEET_NAMES for tab discovery and GOOGLESHEETS_GET_SPREADSHEET_INFO for full sheet metadata. This action is used to list all tables in a Google Spreadsheet, call this action to get the list of tables in a spreadsheet. Discover all tables in a Google Spreadsheet by analyzing sheet structure and detecting data patterns. Uses heuristic analysis to find header rows, data boundaries, and table structures."
@@ -5970,6 +5975,11 @@
         "slug": "GOOGLESHEETS_LOOKUP_SPREADSHEET_ROW",
         "name": "Look up spreadsheet row",
         "description": "Finds the first row in a Google Spreadsheet where a cell's entire content exactly matches the query string, searching within a specified A1 notation range or the first sheet by default."
+      },
+      {
+        "slug": "GOOGLESHEETS_MOVE_CHART",
+        "name": "Move or Resize Chart in Google Sheets",
+        "description": "Move or resize an existing chart on a Google Sheets spreadsheet. Use this action when you need to reposition a chart to a different location on the same or different sheet, move it to a brand-new sheet, or change its size. This action wraps the updateEmbeddedObjectPosition batchUpdate request type and supports three positioning modes: moving to a new sheet, moving to an existing sheet, or repositioning via pixel-perfect overlay coordinates."
       },
       {
         "slug": "GOOGLESHEETS_MUTATE_CONDITIONAL_FORMAT_RULES",
@@ -6214,7 +6224,7 @@
     ],
     "toolCount": 150,
     "triggerCount": 8,
-    "version": "20260508_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "SLACK_ADD_CALL_PARTICIPANTS",
@@ -9992,7 +10002,7 @@
     ],
     "toolCount": 89,
     "triggerCount": 7,
-    "version": "20260506_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "GOOGLEDRIVE_ADD_FILE_SHARING_PREFERENCE",
@@ -12115,7 +12125,7 @@
     ],
     "toolCount": 33,
     "triggerCount": 3,
-    "version": "20260430_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "LINEAR_CREATE_ATTACHMENT",
@@ -14249,7 +14259,7 @@
     ],
     "toolCount": 88,
     "triggerCount": 8,
-    "version": "20260508_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "SLACKBOT_ADD_CALL_PARTICIPANTS",
@@ -28059,7 +28069,7 @@
     ],
     "toolCount": 60,
     "triggerCount": 9,
-    "version": "20260429_01",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "ONE_DRIVE_CHECKIN_ITEM",
@@ -28359,7 +28369,7 @@
       {
         "slug": "ONE_DRIVE_UPDATE_FILE_CONTENT",
         "name": "Update File Content",
-        "description": "Tool to create an upload session for updating an existing file's content in OneDrive. Use when you need to overwrite/update an existing DriveItem's content while preserving its item ID, avoiding duplicate copies and maintaining existing share links."
+        "description": "Tool to update an existing file's content in OneDrive. When called without a `file` parameter, creates an upload session and returns its uploadUrl (legacy behavior — caller drives the PUT uploads). When called with a `file` (FileUploadable), the action streams the file's bytes in chunks via the upload session and returns the final updated DriveItem. The item's ID is preserved (existing share links remain valid) unless conflict_behavior=rename causes the server to create a new item."
       }
     ],
     "triggers": [
@@ -35893,7 +35903,7 @@
     ],
     "toolCount": 2,
     "triggerCount": 0,
-    "version": "20260424_00",
+    "version": "20260511_00",
     "tools": [
       {
         "slug": "WEATHERMAP_GEOCODE_LOCATION",
@@ -61825,9 +61835,9 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 440,
+    "toolCount": 442,
     "triggerCount": 20,
-    "version": "20260506_02",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "GOOGLESUPER_ACL_DELETE",
@@ -63140,6 +63150,11 @@
         "description": "Tool to list ChannelGroups on a property. Use when you need to retrieve channel groups that categorize traffic sources in Analytics reports."
       },
       {
+        "slug": "GOOGLESUPER_LIST_CHARTS",
+        "name": "List Charts in Google Sheets",
+        "description": "Lists all charts in a Google Sheets spreadsheet across all sheets, returning chart_id, sheet metadata, chart type, title, and position. Use this action when you need to discover what charts exist in a spreadsheet, retrieve chart IDs for update or delete operations, or inspect chart configurations. The default field mask in GOOGLESHEETS_GET_SPREADSHEET_INFO omits chart data, making this dedicated action necessary for chart discovery."
+      },
+      {
         "slug": "GOOGLESUPER_LIST_CHILDREN_V2",
         "name": "List Folder Children (v2)",
         "description": "Tool to list a folder's children using Google Drive API v2. Use when you need to retrieve all files and folders within a specific folder."
@@ -63433,6 +63448,11 @@
         "slug": "GOOGLESUPER_MODIFY_THREAD_LABELS",
         "name": "Modify thread labels",
         "description": "Adds or removes specified existing label IDs from a Gmail thread, affecting all its messages; ensure the thread ID is valid. To modify a single message only, use a message-level tool instead."
+      },
+      {
+        "slug": "GOOGLESUPER_MOVE_CHART",
+        "name": "Move or Resize Chart in Google Sheets",
+        "description": "Move or resize an existing chart on a Google Sheets spreadsheet. Use this action when you need to reposition a chart to a different location on the same or different sheet, move it to a brand-new sheet, or change its size. This action wraps the updateEmbeddedObjectPosition batchUpdate request type and supports three positioning modes: moving to a new sheet, moving to an existing sheet, or repositioning via pixel-perfect overlay coordinates."
       },
       {
         "slug": "GOOGLESUPER_MOVE_FILE",
@@ -83940,9 +83960,6 @@
     "authSchemes": [
       "API_KEY"
     ],
-    "composioManagedAuthSchemes": [
-      "OAUTH2"
-    ],
     "toolCount": 30,
     "triggerCount": 0,
     "version": "20260506_00",
@@ -88730,7 +88747,7 @@
     ],
     "toolCount": 84,
     "triggerCount": 1,
-    "version": "20260504_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "TODOIST_ADD_WORKSPACE",
@@ -112660,6 +112677,604 @@
                 "displayName": "All-Images.ai API Key",
                 "type": "string",
                 "description": "Your All-Images.ai API key",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "alpaca",
+    "name": "Alpaca",
+    "logo": "https://logos.composio.dev/api/alpaca",
+    "description": "Stock and crypto trading platform with commission-free trading, real-time market data, and algorithmic trading capabilities",
+    "category": "commerce",
+    "authSchemes": [
+      "API_KEY",
+      "OAUTH2"
+    ],
+    "toolCount": 100,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "ALPACA_ADD_ASSET_TO_WATCHLIST",
+        "name": "Add Asset to Watchlist",
+        "description": "Adds a symbol to an existing watchlist in the authenticated account. Use when you need to track a new security in an existing watchlist. This action appends the specified symbol to the end of the watchlist's asset list. The watchlist_id can be obtained from the ALPACA_GET_WATCHLISTS action."
+      },
+      {
+        "slug": "ALPACA_ADD_ASSET_TO_WATCHLIST_BY_NAME",
+        "name": "Add Asset to Watchlist by Name",
+        "description": "Add an asset to a watchlist by name. Use when you need to add a symbol to a specific watchlist identified by its name. If a watchlist with the specified name does not exist, it will be created automatically and the symbol will be added to it. The asset will be appended to the end of the watchlist's asset list."
+      },
+      {
+        "slug": "ALPACA_CREATE_WATCHLIST",
+        "name": "Create Watchlist",
+        "description": "Creates a new watchlist for the authenticated account. Use this action when you need to: - Create a new watchlist to track specific securities - Set up initial symbols for a watchlist at creation time - Organize tracked symbols under a named watchlist Note: This action creates a watchlist at the account level (using v2 API). The name must be unique within the account and contain only alphanumeric characters, spaces, hyphens, and underscores (up to 64 characters)."
+      },
+      {
+        "slug": "ALPACA_CREATE_WATCHLIST_FOR_ACCOUNT",
+        "name": "Create Watchlist",
+        "description": "Create a new watchlist for the authenticated account. Use when you need to create a watchlist to track specific securities. The name must contain only alphanumeric characters (no spaces or special characters)."
+      },
+      {
+        "slug": "ALPACA_DELETE_ALL_OPEN_POSITIONS",
+        "name": "Delete All Open Positions",
+        "description": "Liquidates all open positions by closing them at market price. This action is irreversible and will permanently close all positions in the account. Use when you need to quickly exit all positions, such as before closing an account or in emergency situations. Optionally cancels all open orders before liquidating positions."
+      },
+      {
+        "slug": "ALPACA_DELETE_ALL_ORDERS_FOR_ACCOUNT",
+        "name": "Delete All Orders for Account",
+        "description": "Attempts to cancel all open orders for a specified trading account. A response will be provided for each order that is attempted to be cancelled. This action is irreversible for individual orders that are successfully cancelled."
+      },
+      {
+        "slug": "ALPACA_DELETE_UNSUBSCRIBE_ACCOUNT",
+        "name": "Delete Unsubscribe Account",
+        "description": "Delete a rebalancing subscription to unsubscribe an account. This action permanently removes the specified subscription. Use when you need to unsubscribe an account from rebalancing services. This action is irreversible once executed. Note: If the subscription_id is invalid, a 400 error is returned. If the subscription does not exist, a 404 error is returned."
+      },
+      {
+        "slug": "ALPACA_DELETE_WATCHLIST_BY_ID",
+        "name": "Delete Watchlist By ID",
+        "description": "Delete a watchlist by its unique identifier. Use when you need to remove an entire watchlist that is no longer needed. This action is irreversible once executed — the watchlist and all its contents cannot be recovered. Note: If the watchlist_id is invalid or does not exist, a 404 error is returned."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT",
+        "name": "Get Account",
+        "description": "Retrieves account information for the authenticated Alpaca account. Use this action when you need to check account status, available buying power, cash balance, equity, margin information, day trade count, or other account details. This is a read-only operation that returns the current state of the authenticated account. The response includes important account flags such as trading_blocked, account_blocked, pattern_day_trader, and shorting_enabled which indicate any restrictions on the account's trading capabilities."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_ACTIVITIES",
+        "name": "Get Account Activities",
+        "description": "Retrieves account activities for the authenticated Alpaca account. Use this action when you need to retrieve transaction history, dividend payments, interest payments, fees, transfers, or other account-related activities. Supports filtering by date range, account ID, and sorting direction. Results are paginated using page_token for efficient retrieval of large datasets."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_ACTIVITIES2",
+        "name": "Get Account Activities V2",
+        "description": "Retrieves account activities of one type for the authenticated Alpaca account using the v2 API. Use this action when you need to retrieve transaction history, dividend payments, interest payments, fees, transfers, or order fill activities. Supports filtering by date range, activity types, and sorting direction. Results are paginated using page_token for efficient retrieval of large datasets. This action is read-only and does not modify any data."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_ACTIVITIES_BY_ACTIVITY_TYPE",
+        "name": "Get Account Activities By Activity Type",
+        "description": "Retrieves account activities of a specific type for the authenticated Alpaca account. Use when you need to filter account activities by a specific type such as trade fills, dividends, interest payments, fees, or transfers. Supports date range filtering, pagination, and sorting. This endpoint is useful for retrieving a specific category of account transactions rather than all activities. Note: date parameter cannot be used with 'after' parameter. Use 'date' for a single day or 'until'/'after' for date ranges."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_CONFIG",
+        "name": "Get Account Configurations",
+        "description": "Retrieves the current trading account configuration settings for the authenticated Alpaca account. Use this action when you need to check the current trading account settings such as day-trading margin call (DTMC) checks, fractional trading status, shorting permissions, trade suspension status, and trade confirmation email preferences. This is a read-only operation that returns the current configuration without any modifications. The account is determined from the authentication credentials."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_PORTFOLIO_HISTORY",
+        "name": "Get Account Portfolio History",
+        "description": "Retrieves the portfolio history statistics for an Alpaca trading account. Portfolio history provides a time series of equity values, profit/loss metrics, and other performance data over a specified time period. Use when you need to analyze account performance over time, track equity curves, or review historical P&L. Note: The timeframe parameter auto-selects based on the period: 1Min for <7 days, 15Min for <30 days, or 1D otherwise."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNT_PORTFOLIO_HISTORY1",
+        "name": "Get Account Portfolio History",
+        "description": "Retrieves the portfolio history statistics for a trading account. Portfolio history provides a time series of equity values, profit/loss metrics, and optionally cashflow data over a specified time period. Use when you need to analyze account performance over time, track equity curves, or review historical P&L. Note: The timeframe parameter auto-selects based on the period: 1Min for <7 days, 15Min for <30 days, or 1D otherwise."
+      },
+      {
+        "slug": "ALPACA_GET_ACCOUNTS_POSITIONS",
+        "name": "Get All Account Positions",
+        "description": "Bulk fetches all open positions for the authenticated account. Use when you need to retrieve all current positions, monitor overall portfolio holdings, or check unrealized P&L across the entire account. This action does not require an account_id parameter as it automatically uses the account associated with the API credentials. Note: This action returns positions for the account associated with the authenticated API key. Use this read-only action to get a complete view of the account's open positions."
+      },
+      {
+        "slug": "ALPACA_GET_ALL_OPEN_POSITIONS",
+        "name": "Get All Open Positions",
+        "description": "Retrieves all open positions for the authenticated Alpaca trading account. Use this action when you need to retrieve all current positions, monitor portfolio holdings, or check unrealized P&L across the entire account. This action does not require an account_id parameter as it automatically uses the account associated with the API credentials. Note: This action returns positions for the account associated with the authenticated API key. Use this read-only action to get a complete view of the account's open positions. The response is updated live as price information changes."
+      },
+      {
+        "slug": "ALPACA_GET_ALL_ORDERS",
+        "name": "Get All Orders",
+        "description": "Retrieves all orders for an account based on specified filter criteria. Returns a list of orders with their current status, filled quantity, prices, and any nested legs for complex orders. Use when you need to query historical or current orders for a trading account, such as checking open positions or reviewing trade history. By default, only open orders are returned. Use status='all' to include closed orders, or status='closed' for only closed/canceled orders."
+      },
+      {
+        "slug": "ALPACA_GET_ALPACA_DATA_CRYPTO_US_BARS",
+        "name": "Get Historical Crypto US Bars",
+        "description": "Retrieves historical OHLCV (Open, High, Low, Close, Volume) bars for crypto symbols in a specific US location. Use this action when you need to analyze historical price movements and trading activity for cryptocurrency pairs over a given timeframe. The bars are aggregated based on the specified timeframe (e.g., 1 minute, 5 minutes, 1 hour, 1 day). Results are sorted by symbol first, then by timestamp. Note: This endpoint uses the data.alpaca.markets base URL and requires the 'us' location path parameter."
+      },
+      {
+        "slug": "ALPACA_GET_BARS_FOR_MULTIPLE_CRYPTO_SYMBOLS",
+        "name": "Get Crypto Bars for Multiple Symbols",
+        "description": "Retrieves OHLCV (Open, High, Low, Close, Volume) bars for multiple crypto symbols. Use this action when you need to: - Get historical price data for multiple crypto symbols - Analyze price trends over a specific timeframe - Fetch aggregated bar data for multiple cryptocurrencies Results are sorted by symbol first, then by bar timestamp. If the limit is reached for one symbol, subsequent requests with the next_page_token will retrieve bars for remaining symbols."
+      },
+      {
+        "slug": "ALPACA_GET_BARS_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Stock Bars for Multiple Symbols",
+        "description": "Retrieves OHLCV (Open, High, Low, Close, Volume) bars for multiple stock symbols. Use this action when you need to: - Get historical price data for multiple stock symbols - Analyze price trends over a specific timeframe - Fetch aggregated bar data for stock analysis - Backtest trading strategies on multiple stocks Results are sorted by symbol first, then by bar timestamp. If the limit is reached for one symbol, subsequent requests with the next_page_token will retrieve bars for remaining symbols. Note: This endpoint uses the data.alpaca.markets base URL and requires appropriate data subscriptions for SIP and OTC feeds."
+      },
+      {
+        "slug": "ALPACA_GET_BARS_FOR_STOCK_SYMBOL",
+        "name": "Get Historical Bars for Stock Symbol",
+        "description": "Retrieves historical OHLCV (Open, High, Low, Close, Volume) bars for a single stock symbol. Use this action when you need to analyze historical price movements and trading activity for a specific stock ticker over a given timeframe. The bars are aggregated based on the specified timeframe (e.g., 1 minute, 15 minutes, 1 hour, 1 day). Note: This endpoint uses the data.alpaca.markets base URL."
+      },
+      {
+        "slug": "ALPACA_GET_BARS_STOCKS",
+        "name": "Get Historical Stock Bars",
+        "description": "Retrieves historical OHLCV (Open, High, Low, Close, Volume) bars for a single stock symbol. Use this action when you need to analyze historical price movements and trading activity for a specific stock ticker over a given timeframe. The bars are aggregated based on the specified timeframe (e.g., 1 minute, 15 minutes, 1 hour, 1 day). Results are sorted by timestamp and support pagination via the next_page_token field when the limit is reached and more data is available. Note: This endpoint uses the data.alpaca.markets base URL and requires appropriate data subscriptions for SIP and OTC feeds."
+      },
+      {
+        "slug": "ALPACA_GET_CALENDAR",
+        "name": "Get Calendar",
+        "description": "Retrieves market calendar information for trading days from the Alpaca Trading API. Use this action when you need to: - Get market open and close times for specific dates - Check trading session times - Verify market operating hours for date ranges - Plan trading activities around market hours This is a read-only operation that returns market calendar data."
+      },
+      {
+        "slug": "ALPACA_GET_CLOCK",
+        "name": "Get Clock",
+        "description": "Retrieves the current market clock information from the Alpaca Trading API. Use this action when you need to: - Check if the market is currently open - Determine when the next market open or close will occur - Plan trading activities based on market hours - Verify server time for timestamp-sensitive operations This is a read-only operation that returns the current state of the market clock including whether the market is open and the timestamps for the next open and close."
+      },
+      {
+        "slug": "ALPACA_GET_CONDITIONS",
+        "name": "Get Stock Conditions",
+        "description": "Retrieves the mapping of condition codes to their names from Alpaca Markets API for the specified type (trade or quote conditions) and tape. Use this action when you need to: - Decode condition codes from stock market data - Get the list of all valid condition codes and their meanings for a specific type - Translate raw condition code integers to human-readable names - Understand the meaning of condition codes from trade or quote data This is a read-only action that queries the stocks meta conditions endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_LATEST_QUOTES",
+        "name": "Get Crypto Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified crypto symbols at a specific location. Use when you need real-time quote data for cryptocurrency trading, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERP_LATEST_BARS",
+        "name": "Get Crypto Perp Latest Bars",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bars for crypto perpetual futures symbols. Use this action when you need real-time or near real-time price data for crypto perpetual futures contracts for a specific location (e.g., 'global'). Returns the most recent bar for each requested symbol, including open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERP_LATEST_ORDER_BOOKS",
+        "name": "Get Crypto Perp Latest Orderbooks",
+        "description": "Retrieves the latest bid and ask orderbook data for specified crypto perpetual futures symbols. Use when you need real-time orderbook data for crypto perpetual futures trading, such as checking current market depth before placing orders or analyzing liquidity. Returns the most recent orderbook for each requested symbol, including bid and ask price levels with their sizes."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERP_LATEST_PRICING",
+        "name": "Get Crypto Perp Latest Pricing",
+        "description": "Retrieves the latest pricing data for specified crypto perpetual futures symbols. Use when you need real-time pricing data for crypto perpetual futures trading, such as checking current market prices, index prices, mark prices, funding rates, or open interest before placing orders or analyzing the market. Returns the most recent pricing data for each requested symbol, including timestamp, funding timestamp, open interest, index price, mark price, and funding rate."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERP_LATEST_QUOTES",
+        "name": "Get Crypto Perp Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified crypto perpetual futures symbols for a specific location. Use when you need real-time quote data for crypto perpetual futures trading, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERP_LATEST_TRADES",
+        "name": "Get Crypto Perp Latest Trades",
+        "description": "Retrieves the latest trade data for specified crypto perpetual futures symbols. Use when you need real-time trade data for crypto perpetual futures trading, such as monitoring recent trades, analyzing price movements, or tracking trading volume. Returns the most recent trade for each requested symbol, including price, size, timestamp, and tick direction."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERPS_GLOBAL_LATEST_BARS",
+        "name": "Get Crypto Perps Global Latest Bars",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bars for crypto perpetual futures symbols. Use this action when you need real-time or near real-time price data for crypto perpetual futures contracts. Returns the most recent bar for each requested symbol, including open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERPS_GLOBAL_LATEST_PRICING",
+        "name": "Get Crypto Perps Global Latest Pricing",
+        "description": "Returns the latest pricing data for crypto perpetual futures symbols. Use this action when you need to retrieve current market data for crypto perpetual futures contracts including mark price, index price, open interest, and funding rate."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERPS_GLOBAL_LATEST_QUOTES",
+        "name": "Get Crypto Perps Global Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified crypto perpetual futures symbols. Use when you need real-time quote data for crypto perpetual futures trading, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_PERPS_GLOBAL_LATEST_TRADES",
+        "name": "Get Crypto Perps Global Latest Trades",
+        "description": "Retrieves the latest trade data for specified crypto perpetual futures symbols. Use when you need real-time trade data for crypto perpetual futures trading, such as monitoring recent trades, analyzing price movements, or tracking trading volume."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_SNAPSHOTS",
+        "name": "Get Crypto Snapshots",
+        "description": "Retrieves snapshots (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for multiple cryptocurrency symbols in a specific location. Use this action when you need comprehensive real-time market data for crypto symbols, such as building a crypto dashboard, checking current market conditions across multiple assets, or analyzing price movements before trading. Note: This endpoint uses the data.alpaca.markets base URL for crypto market data."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_LATEST_BARS",
+        "name": "Get Crypto US Latest Bars",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bars for US crypto symbols. Use this action when you need real-time or near real-time price data for multiple crypto trading pairs. Returns the most recent bar for each requested symbol, including open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_LATEST_ORDER_BOOKS",
+        "name": "Get Crypto US Latest Orderbooks",
+        "description": "Retrieves the latest bid and ask orderbook data for specified crypto symbols in the US market. Use when you need real-time orderbook data for cryptocurrency trading in the US market, such as checking current market depth before placing orders or analyzing liquidity. Returns the most recent orderbook for each requested symbol, including bid and ask price levels with their sizes."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_LATEST_QUOTES",
+        "name": "Get Crypto US Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified crypto symbols in the US location. Use when you need real-time quote data for cryptocurrency trading in the US market, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_LATEST_TRADES",
+        "name": "Get Crypto US Latest Trades",
+        "description": "Retrieves the latest trade data for specified crypto symbols in the US location. Use when you need real-time trade data for cryptocurrency trading, such as monitoring recent trades, analyzing price movements, or tracking trading volume."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_QUOTES",
+        "name": "Get Crypto US Historical Quotes",
+        "description": "Retrieves historical quote data (bid/ask prices) for specified crypto symbols on US exchanges. Returns quotes sorted by symbol first, then by timestamp. Use when you need: - Historical bid/ask price data for cryptocurrency pairs - Analyzing spread patterns over time - Backtesting trading strategies with quote data - Studying market microstructure with bid/ask sizes Note: Historical quotes for US-1 location only go back to October 14, 2025."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_SNAPSHOTS",
+        "name": "Get Crypto US Snapshots",
+        "description": "Retrieves snapshots (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for multiple cryptocurrency symbols in the US market location. Use this action when you need comprehensive real-time market data for multiple crypto symbols in the US market, such as building a crypto dashboard, checking current market conditions across multiple assets, or analyzing price movements before trading."
+      },
+      {
+        "slug": "ALPACA_GET_CRYPTO_US_TRADES",
+        "name": "Get Crypto US Trades",
+        "description": "Retrieves historical trade data for specified US crypto symbols. Use when you need to: - Get historical trade data for US crypto symbols at once - Analyze trading volume and price movements over time - Build datasets for backtesting or research - Query trades within a specific time range Results are sorted by symbol first, then by trade timestamp. If the response contains more data than the limit allows, use the next_page_token to continue fetching."
+      },
+      {
+        "slug": "ALPACA_GET_EXCHANGES",
+        "name": "Get Exchanges",
+        "description": "Retrieves a list of supported stock exchanges with their short codes and full names from the Alpaca Market Data API. Use this action when you need to: - Get the mapping between exchange codes and full names - Understand what exchange codes like 'Z', 'V', 'N' mean in market data - Parse exchange identifiers in trading data responses This is a read-only operation that queries the stocks meta exchanges endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_BAR_FOR_STOCK_SYMBOL",
+        "name": "Get Latest Bar for Stock Symbol",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bar for a single stock symbol. Use this action when you need real-time or near real-time price bar data for a specific stock trading symbol. This is useful for dashboards, price monitoring, and triggering alerts based on current market conditions. Returns the most recent bar including open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_BARS_FOR_CRYPTO_SYMBOL",
+        "name": "Get Latest Bars For Crypto Symbol",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bar data for a crypto symbol. Use this action when you need real-time or near real-time price data for a specific cryptocurrency pair. Returns the most recent bar including open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_BARS_FOR_CRYPTO_SYMBOLS",
+        "name": "Get Latest Bars for Crypto Symbols",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bars for multiple crypto symbols. Use this action when you need real-time or near real-time price bar data for multiple cryptocurrency pairs simultaneously. This is useful for dashboards, price monitoring, and triggering alerts based on current market conditions. The response includes the most recent bar for each requested symbol, containing open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_BARS_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Latest Bars for Multiple Stock Symbols",
+        "description": "Retrieves the latest OHLCV (Open, High, Low, Close, Volume) bars for multiple stock symbols. Use this action when you need real-time or near real-time price bar data for multiple stock trading symbols simultaneously. This is useful for dashboards, price monitoring, and triggering alerts based on current market conditions. The response includes the most recent bar for each requested symbol, containing open, high, low, close prices, volume, trade count, and volume-weighted average price."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_ORDER_BOOKS_FOR_CRYPTO",
+        "name": "Get Crypto Latest Orderbooks",
+        "description": "Retrieves the latest bid and ask orderbook data for specified crypto symbols. Use when you need real-time orderbook data for cryptocurrency trading, such as checking current market depth before placing orders or analyzing liquidity. Returns the most recent orderbook for each requested symbol, including bid and ask price levels with their sizes."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_QUOTE_FOR_CRYPTO_SYMBOL",
+        "name": "Get Crypto Latest Quote",
+        "description": "Retrieves the latest bid and ask prices for a specified crypto symbol. Use when you need real-time quote data for a specific cryptocurrency, such as checking current market prices before placing an order or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_QUOTE_FOR_STOCK_SYMBOL",
+        "name": "Get Latest Quote for Stock Symbol",
+        "description": "Retrieves the latest NBBO (National Best Bid and Offer) quote for a single stock symbol. Use this action when you need real-time or near real-time bid and ask prices for a specific stock trading symbol. This is useful for checking market conditions before placing an order or monitoring price movements for a single symbol. Note: This endpoint uses the data.alpaca.markets base URL for stock data."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_QUOTES_FOR_MULTIPLE_CRYPTO_SYMBOLS",
+        "name": "Get Crypto Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified crypto symbols. Use when you need real-time quote data for cryptocurrency trading, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_QUOTES_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Latest Quotes for Multiple Stock Symbols",
+        "description": "Retrieves the latest NBBO (National Best Bid and Offer) quotes for multiple stock symbols. Use this action when you need real-time or near real-time bid and ask prices for multiple stock trading symbols simultaneously. This is useful for checking market conditions before placing orders, monitoring price movements, or evaluating spread opportunities. The response includes the most recent quote for each requested symbol, containing bid price, ask price, bid size, ask size, and exchange information."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_TRADE_FOR_STOCK_SYMBOL",
+        "name": "Get Latest Trade for Stock Symbol",
+        "description": "Retrieves the latest trade data for a single stock symbol. Use this action when you need the most recent trade information for a specific stock ticker, such as checking current market price and volume before placing an order or monitoring real-time price movements for a single symbol. This provides the single most recent trade including price, size, exchange, and timestamp. Note: This endpoint uses the data.alpaca.markets base URL for stock market data."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_TRADES_FOR_MULTIPLE_CRYPTO_SYMBOLS",
+        "name": "Get Latest Crypto Trades",
+        "description": "Retrieves the latest trade data for specified crypto symbols. Use when you need real-time trade data for cryptocurrency trading, such as monitoring recent trades, analyzing price movements, or tracking trading volume."
+      },
+      {
+        "slug": "ALPACA_GET_LATEST_TRADES_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Latest Trades for Multiple Stock Symbols",
+        "description": "Retrieves the latest trade data for multiple stock symbols. Use this action when you need real-time or near real-time trade data for multiple stock trading symbols simultaneously. This is useful for dashboards, trade monitoring, and triggering alerts based on current market conditions. The response includes the most recent trade for each requested symbol, containing price, size, timestamp, exchange, and trade conditions."
+      },
+      {
+        "slug": "ALPACA_GET_MARKET_CALENDAR",
+        "name": "Get Market Calendar",
+        "description": "Retrieves market calendar information for a specific exchange from the Alpaca Trading API. Use this action when you need to: - Get market open and close times for a specific exchange (NYSE, NASDAQ, etc.) - Check trading session times for a particular market - Verify market operating hours for specific date ranges - Plan trading activities around specific market hours This is a read-only operation that returns market calendar data for the specified exchange."
+      },
+      {
+        "slug": "ALPACA_GET_META_EXCHANGES",
+        "name": "Get Meta Exchanges",
+        "description": "Retrieves a list of all US stock exchanges and their identifying information from the Alpaca Market Data API. Use this action when you need to: - Get details about available stock exchanges for order routing - Understand the market structure and exchange types - Map exchange IDs to their names and types - Get participant IDs for market data filtering This is a read-only action that queries the stocks meta exchanges endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_MOST_ACTIVES",
+        "name": "Get Most Active Stocks",
+        "description": "Retrieves the most active stocks by trading volume or trade count. Use this action when you need to: - Fetch top traded stocks for the current period - Monitor market liquidity and activity - Build trading signals based on volume or trade frequency - Analyze market breadth through most active stocks Note: This endpoint uses data.alpaca.markets base URL and provides real-time SIP data for US stock markets."
+      },
+      {
+        "slug": "ALPACA_GET_NEWS",
+        "name": "Get News",
+        "description": "Retrieves news articles for specified crypto symbols from the Alpaca Market Data API. Use this action when you need to: - Fetch the latest news for crypto assets (BTCUSD, ETHUSD, etc.) - Monitor news sentiment for trading decisions - Build news-based signals or alerts - Get historical news for specific time periods Note: The data.alpaca.markets endpoint is used for news API requests."
+      },
+      {
+        "slug": "ALPACA_GET_OPEN_POSITION",
+        "name": "Get Open Position",
+        "description": "Fetches a single open position by symbol or asset ID. Use when you need to retrieve detailed information about a specific position, including cost basis, shares traded, market value, and unrealized P&L. This action is useful for checking the current status of a particular holding, monitoring P&L for a specific symbol, or verifying position details after placing or closing orders. Returns real-time updated information as price data changes. Note: The position must be currently open to be retrieved through this endpoint. Once closed, the position will no longer be queryable."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_BARS",
+        "name": "Get Options Historical Bars",
+        "description": "Retrieves historical OHLCV (Open, High, Low, Close, Volume) bars for options contracts. Use this action when you need to analyze historical price movements and trading activity for specific option contracts over a given timeframe. The bars are aggregated based on the specified timeframe (e.g., 1 minute, 5 minutes, 1 hour, 1 day). Results are sorted by symbol first, then by timestamp."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_CHAIN",
+        "name": "Get Option Chain",
+        "description": "Retrieves the option chain for a specific underlying symbol including quotes and greeks for all available strikes and expirations. Use this action when you need comprehensive option market data for a specific underlying asset, such as analyzing option strategies, comparing strikes/expirations, or viewing real-time quotes and Greeks."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_CONTRACT_SYMBOL_OR_ID",
+        "name": "Get Option Contract",
+        "description": "Get an option contract by its symbol or unique identifier. Use this action when you need to retrieve detailed information about a specific option contract. You can query by either the contract's OCC symbol (e.g., 'AAPL250620C00100000') or its unique Alpaca ID. This endpoint is useful for getting contract specifications before placing orders or for retrieving current market data for a specific option. Note: This is a BETA endpoint and may be subject to changes."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_LATEST_QUOTES",
+        "name": "Get Option Latest Quotes",
+        "description": "Retrieves the latest bid and ask prices for specified option symbols. Use when you need real-time quote data for options trading, such as checking current market prices before placing orders or monitoring price movements."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_META_CONDITIONS",
+        "name": "Get Options Meta Conditions",
+        "description": "Retrieves the mapping of condition codes to their names from Alpaca Markets API for the specified tick type (trade or quote conditions). Use this action when you need to: - Decode condition codes from options market data - Get the list of all valid condition codes and their meanings for a specific tick type - Translate raw condition code integers to human-readable names This is a read-only action that queries the options meta conditions endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_OPTIONS_CONTRACTS",
+        "name": "Get Option Contracts",
+        "description": "Retrieve option contracts from Alpaca Markets API (BETA). Use this action when you need to: - Search for option contracts by underlying symbol - Filter contracts by expiration date, strike price, type (call/put), or style - Get a paginated list of all available option contracts - Find contracts eligible for penny price increments By default, only active contracts expiring before the upcoming weekend are returned."
+      },
+      {
+        "slug": "ALPACA_GET_OPTIONS_LATEST_TRADES",
+        "name": "Get Options Latest Trades",
+        "description": "Retrieves the latest trade for each requested option contract symbol. Use this action when you need to: - Get the most recent trade price and size for specific option contracts - Check the last traded time for option symbols before trading - Monitor real-time trading activity for option positions This endpoint requires market data subscription and uses the data.alpaca.markets base URL."
+      },
+      {
+        "slug": "ALPACA_GET_OPTIONS_META_CONDITIONS_TRADE",
+        "name": "Get Options Meta Conditions Trade",
+        "description": "Retrieves the mapping of trade condition codes to their names from Alpaca Markets API. Use this action when you need to: - Decode trade condition codes from options market data - Get the list of all valid trade condition codes and their meanings - Translate raw condition code integers to human-readable names This is a read-only action that queries the options meta conditions endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_SNAPSHOTS",
+        "name": "Get Options Snapshots",
+        "description": "Retrieves snapshots (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for multiple option contract symbols. Use this action when you need comprehensive real-time market data for option contracts, such as building an option price dashboard, checking current bid/ask prices across multiple option strikes, or analyzing intraday price movements before trading. Note: This endpoint requires market data subscription and uses the data.alpaca.markets base URL."
+      },
+      {
+        "slug": "ALPACA_GET_OPTIONS_SNAPSHOTS_UNDERLYING_SYMBOL",
+        "name": "Get Options Snapshots by Underlying Symbol",
+        "description": "Retrieves the option chain snapshot data for a specific underlying symbol. This endpoint provides the latest trade, quote, and greeks data for all option contracts associated with an underlying symbol. It returns snapshots including delta, gamma, theta, vega, implied volatility, and real-time bid/ask prices. Use when you need to analyze an entire option chain - checking all available strike prices and expiration dates for a given underlying asset, including their Greeks and current market pricing. This is useful for: - Building option chains for analysis - Finding specific strike/expiration combinations - Analyzing Greeks across an entire chain - Detecting unusual option activity"
+      },
+      {
+        "slug": "ALPACA_GET_OPTION_TRADES",
+        "name": "Get Options Historical Trades",
+        "description": "Retrieves historical trade data for option contracts. Use this action when you need to: - Analyze historical trade activity for option contracts - Review past trades for specific option symbols - Calculate volume patterns and trading activity - Track price movements over specific time periods Note: This endpoint uses the data.alpaca.markets base URL and requires market data subscription."
+      },
+      {
+        "slug": "ALPACA_GET_PDT_STATUS",
+        "name": "Get PDT Status",
+        "description": "Retrieves the Pattern Day Trader (PDT) status for a specified Alpaca trading account. Use when you need to check if an account is flagged as a PDT, monitor PDT call counts, or verify day trading buying power status for regulatory compliance. PDT rules apply to accounts that execute more than 3 day trades within 5 business days when holding a cash account or using margin. This endpoint helps monitor and track PDT-related information for accounts."
+      },
+      {
+        "slug": "ALPACA_GET_POSITIONS_FOR_ACCOUNT",
+        "name": "List account positions",
+        "description": "Lists all open positions for a specified trading account. Use when you need to retrieve current positions, monitor portfolio holdings, or check unrealized P&L for an account."
+      },
+      {
+        "slug": "ALPACA_GET_QUOTES_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Quotes for Multiple Stock Symbols",
+        "description": "Retrieves historical quote (bid/ask) data for multiple stock symbols. Use this action when you need historical quote data including bid and ask prices for multiple stock trading symbols. This is useful for trading analysis, backtesting strategies, and monitoring price spreads. Note: Results are sorted by symbol first, then by timestamp. If you hit the limit for one symbol, subsequent symbols won't appear in the response - use next_page_token to get more results."
+      },
+      {
+        "slug": "ALPACA_GET_QUOTES_FOR_STOCK_SYMBOL",
+        "name": "Get Quotes for Stock Symbol",
+        "description": "Retrieves historical NBBO (National Best Bid and Offer) quotes for a specific stock symbol. Use this action when you need historical quote data for a single stock symbol, such as for analysis, backtesting trading strategies, or research purposes. You can filter results by time range using start and end parameters. The response includes an array of quotes with bid/ask prices, sizes, and exchange information. Pagination is supported via the page_token parameter when results exceed the limit."
+      },
+      {
+        "slug": "ALPACA_GET_SNAPSHOT_FOR_STOCK_SYMBOL",
+        "name": "Get Stock Snapshot for Symbol",
+        "description": "Retrieves a snapshot (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for a single stock symbol. Use this action when you need comprehensive real-time market data for a single stock symbol, such as checking current market conditions, displaying price information, or analyzing price movements before trading. This endpoint requires the data.alpaca.markets API."
+      },
+      {
+        "slug": "ALPACA_GET_SNAPSHOTS_FOR_MULTIPLE_CRYPTO_SYMBOLS",
+        "name": "Get Crypto Snapshots",
+        "description": "Retrieves snapshots (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for multiple cryptocurrency symbols. Use this action when you need comprehensive real-time market data for multiple crypto symbols, such as building a crypto dashboard, checking current market conditions across multiple assets, or analyzing price movements before trading."
+      },
+      {
+        "slug": "ALPACA_GET_SNAPSHOTS_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Stock Snapshots for Multiple Symbols",
+        "description": "Retrieves snapshots (latest trade, latest quote, minute bar, daily bar, and previous daily bar) for multiple stock symbols. Use this action when you need comprehensive real-time market data for multiple stock symbols, such as building a stock dashboard, checking current market conditions across multiple stocks, or analyzing price movements before trading. This endpoint requires the data.alpaca.markets API."
+      },
+      {
+        "slug": "ALPACA_GET_SPECIFIC_ANNOUNCEMENT",
+        "name": "Get Specific Announcement",
+        "description": "Retrieves a specific corporate action announcement by its unique identifier. Use this action when you need to fetch detailed information about a corporate action such as dividends, stock splits, mergers, spinoffs, or other corporate events. This is a read-only operation that returns the complete announcement details including the corporate action type, relevant dates (ex-date, record date, payable date), and any associated values (cash amounts, split ratios, etc.). The response includes the announcement ID which can be used for reference or correlation with other systems."
+      },
+      {
+        "slug": "ALPACA_GET_STOCK_AUCTIONS",
+        "name": "Get Stock Auctions",
+        "description": "Retrieves historical auction data for specified stock symbols. Use this action when you need to: - Analyze opening and closing auction prices for stocks - Study pre-market and post-market auction behavior - Understand auction volume and price discovery - Monitor auction-based market data for trading decisions Results are sorted by timestamp in descending order (most recent first). Pagination is supported via the page_token field. Note: This endpoint uses the data.alpaca.markets base URL and requires appropriate data subscriptions for SIP and OTC feeds."
+      },
+      {
+        "slug": "ALPACA_GET_STOCK_AUCTION_SINGLE",
+        "name": "Get Stock Auctions for Symbol",
+        "description": "Retrieves historical auction (opening/closing print) data for a single stock symbol. Use this action when you need to analyze auction-related price and volume data for a specific stock ticker. This is useful for: - Understanding opening and closing auction prices - Analyzing auction volume and liquidity - Studying price discovery at market open and close - Trading strategies based on auction data Note: This endpoint uses the data.alpaca.markets base URL and requires appropriate data subscriptions for SIP and OTC feeds."
+      },
+      {
+        "slug": "ALPACA_GET_STOCKS_META_CONDITIONS_TRADE",
+        "name": "Get Stocks Meta Conditions Trade",
+        "description": "Retrieves the mapping of trade condition codes to their names from Alpaca Markets API. Use this action when you need to: - Decode trade condition codes from stock market data - Get the list of all valid trade condition codes and their meanings - Translate raw condition code integers to human-readable names - Understand the meaning of condition codes from trade data This is a read-only action that queries the stocks meta conditions trade endpoint."
+      },
+      {
+        "slug": "ALPACA_GET_SUBSCRIPTION",
+        "name": "Get Subscription",
+        "description": "Retrieves a rebalancing subscription by its unique ID. Returns complete subscription details including the associated account ID, portfolio ID, creation timestamp, and last rebalancing timestamp. Use when you need to fetch subscription information for an existing rebalancing setup. Note: If the subscription_id is invalid or malformed, a 400 error is returned. If the subscription does not exist, a 404 error is returned."
+      },
+      {
+        "slug": "ALPACA_GET_TOP_MOVERS_BY_MARKET_TYPE",
+        "name": "Get Top Movers By Market Type",
+        "description": "Retrieves the top market movers (gainers and losers) for a specified market type. Use this action when you need to: - Fetch top gainers and losers for stock market analysis - Get cryptocurrency movers for crypto trading strategies - Identify assets with significant price movements - Build market sentiment indicators Note: The screener endpoint uses data.alpaca.markets, not api.alpaca.markets."
+      },
+      {
+        "slug": "ALPACA_GET_TRADES_FOR_MULTIPLE_CRYPTO_SYMBOLS",
+        "name": "Get Trades for Multiple Crypto Symbols",
+        "description": "Retrieves historical trade data for specified crypto symbols. Use when you need to: - Get historical trade data for multiple crypto symbols at once - Analyze trading volume and price movements over time - Build datasets for backtesting or research - Monitor trades across different exchanges Results are sorted by symbol first, then by trade timestamp. If the response contains more data than the limit allows, use the next_page_token to continue fetching."
+      },
+      {
+        "slug": "ALPACA_GET_TRADES_FOR_MULTIPLE_STOCK_SYMBOLS",
+        "name": "Get Trades for Multiple Stock Symbols",
+        "description": "Retrieves historical trade data for multiple stock symbols. Use this action when you need: - Historical trade data for multiple stock symbols at once - Analyze trading volume and price movements over time - Build datasets for backtesting or research - Monitor trades across different exchanges Results are sorted by symbol first, then by trade timestamp. If the response contains more data than the limit allows, use the next_page_token to continue fetching. Note: This endpoint uses the data.alpaca.markets base URL and requires appropriate data subscriptions for SIP and OTC feeds."
+      },
+      {
+        "slug": "ALPACA_GET_TRADES_FOR_STOCK_SYMBOL",
+        "name": "Get Historical Trades for Stock Symbol",
+        "description": "Retrieves historical trade data for a single stock symbol. Use this action when you need to analyze historical trade data for a specific stock ticker, such as reviewing price movements, trading volume patterns, or tick data analysis. Each trade record includes price, size, exchange, timestamp, and trade conditions. Note: This endpoint uses the data.alpaca.markets base URL."
+      },
+      {
+        "slug": "ALPACA_GET_WATCHLIST_BY_ID",
+        "name": "Get Watchlist By ID",
+        "description": "Retrieves a single watchlist by its unique identifier. Use when you need to view the details of a specific watchlist, including its name, associated assets, and timestamps. This endpoint provides direct access to a watchlist using its ID rather than requiring account-level traversal. This is a read-only operation that does not modify any data."
+      },
+      {
+        "slug": "ALPACA_GET_WATCHLIST_BY_NAME",
+        "name": "Get Watchlist By Name",
+        "description": "Retrieves a specific watchlist by its name. Use when you need to find a particular watchlist without knowing its ID, such as when managing watchlists for display or modification. Returns the watchlist details including all contained symbols. If multiple watchlists share the same name, the API may return the first match."
+      },
+      {
+        "slug": "ALPACA_GET_WATCHLISTS",
+        "name": "Get Watchlists",
+        "description": "Retrieves all watchlists associated with the authenticated account. Use this action when you need to: - View all watchlists for an account - Find a specific watchlist by name - Check what symbols are being tracked before adding or removing symbols - Get watchlist IDs for subsequent operations This is a read-only operation that returns the current state of all watchlists including their metadata (ID, name, timestamps) and the assets contained within each."
+      },
+      {
+        "slug": "ALPACA_PATCH_ACCOUNT_CONFIGURATIONS",
+        "name": "Update Account Configurations",
+        "description": "Update the trading account configuration settings for the authenticated account. Use when you need to modify account-level trading settings such as day-trading buying power checks, fractional trading permissions, margin multiplier limits, shorting restrictions, or trade confirmation email preferences. Supports partial updates - only specify the settings you want to change. Settings not included in the request remain unchanged. This action operates on the currently authenticated account and does not require an account_id parameter."
+      },
+      {
+        "slug": "ALPACA_REMOVE_ASSET_FROM_WATCHLIST",
+        "name": "Remove Asset From Watchlist",
+        "description": "Removes a symbol from an existing watchlist in Alpaca. Use this action when you need to delete a ticker symbol from a watchlist that is no longer being tracked. The action returns the updated watchlist after the symbol has been removed. This action is irreversible - once a symbol is removed from a watchlist, it cannot be recovered through this API. You would need to re-add it using a separate add-to-watchlist action if available."
+      },
+      {
+        "slug": "ALPACA_REMOVE_SYMBOL_FROM_WATCHLIST",
+        "name": "Remove Symbol From Watchlist",
+        "description": "Tool to remove a symbol from an existing watchlist in Alpaca. Use when you need to delete a ticker symbol from a watchlist that is no longer being tracked. This action is irreversible - once a symbol is removed from a watchlist, it cannot be recovered through this API. You would need to re-add it using ALPACA_ADD_ASSET_TO_WATCHLIST."
+      },
+      {
+        "slug": "ALPACA_UPDATE_TRADING_CONFIGURATIONS",
+        "name": "Update Trading Configurations",
+        "description": "Updates trading account configurations for an Alpaca trading account. Use when you need to modify account-level trading settings such as day-trading buying power checks, trade confirmation email preferences, or trading restrictions. Supports partial updates - only specify the settings you want to change. Settings not included in the request remain unchanged. This action requires the 'account:write' scope."
+      },
+      {
+        "slug": "ALPACA_UPDATE_WATCHLIST_BY_ID",
+        "name": "Update Watchlist By ID",
+        "description": "Updates an existing watchlist by its unique identifier. Use when you need to modify the name or symbols in a watchlist using its ID rather than name. This action allows partial updates - you can update just the name, just the symbols, or both at once. The watchlist_id identifies which watchlist to update and is provided in the request. Note: The symbols field, if provided, will replace all existing symbols in the watchlist."
+      },
+      {
+        "slug": "ALPACA_UPDATE_WATCHLIST_BY_NAME",
+        "name": "Update Watchlist By Name",
+        "description": "Updates an existing watchlist by its name. Use when you need to modify the symbols in a watchlist or rename it. The action allows partial updates - you can provide only symbols to update the watchlist contents, only a new_name to rename it, or both to update both. At least one of new_name or symbols must be provided. Note: The `name` parameter identifies which watchlist to update (case-insensitive)."
+      },
+      {
+        "slug": "ALPACA_UPDATE_WATCHLIST_BY_NAME2",
+        "name": "Update Watchlist By Name (v2)",
+        "description": "Updates an existing watchlist by its name. Use when you need to modify the symbols in a watchlist or rename it. The action allows partial updates - you can provide only symbols to update the watchlist contents, only a new_name to rename it, or both to update both. At least one of new_name or symbols must be provided. Note: The `name` parameter identifies which watchlist to update (case-insensitive)."
+      },
+      {
+        "slug": "ALPACA_UPLOAD_ACCOUNT_CIP",
+        "name": "Upload Account CIP Information",
+        "description": "Upload CIP (Customer Identification Program) information for an account to complete identity verification. Use when you need to submit identity information for a new Alpaca trading account as part of the account onboarding process. This action is typically called after account creation to provide the required identity verification data including citizenship, tax ID, and name."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "alpaca_oauth",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "account:write,trading,data"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      },
+      {
+        "mode": "API_KEY",
+        "name": "alpaca_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key ID",
+                "type": "string",
+                "description": "Your Alpaca API Key ID (APCA-API-KEY-ID)",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "generic_token",
+                "displayName": "API Secret Key",
+                "type": "string",
+                "description": "Your Alpaca API Secret Key (APCA-API-SECRET-KEY)",
                 "required": true,
                 "default": null
               }
@@ -142202,9 +142817,6 @@
       "API_KEY",
       "BEARER_TOKEN"
     ],
-    "composioManagedAuthSchemes": [
-      "OAUTH2"
-    ],
     "toolCount": 19,
     "triggerCount": 0,
     "version": "20260506_00",
@@ -171315,10 +171927,12 @@
     "logo": "https://logos.composio.dev/api/gagelist",
     "description": "GageList is a user-friendly calibration management platform that simplifies the integration process with intuitive interfaces and straightforward APIs, enabling seamless connection with existing tools and workflows.",
     "category": "developer tools",
-    "authSchemes": [],
+    "authSchemes": [
+      "S2S_OAUTH2"
+    ],
     "toolCount": 21,
     "triggerCount": 0,
-    "version": "20260429_00",
+    "version": "20260512_00",
     "tools": [
       {
         "slug": "GAGELIST_ADD_CALIBRATION_RECORD",
@@ -171426,7 +172040,40 @@
         "description": "Tool to upload an attachment to a gage record. Use when adding files to an existing gage record."
       }
     ],
-    "triggers": []
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "S2S_OAUTH2",
+        "name": "gagelist_s2s_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client ID",
+                "type": "string",
+                "description": "The client ID provided by GageList for API authentication.",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client Secret",
+                "type": "string",
+                "description": "The client secret provided by GageList for API authentication.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [],
+            "optional": []
+          }
+        }
+      }
+    ]
   },
   {
     "slug": "gamma",
@@ -185372,6 +186019,167 @@
                 "displayName": "Hookdeck API Key",
                 "type": "string",
                 "description": "Your Hookdeck API key, found in your workspace settings.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "hostinger",
+    "name": "Hostinger",
+    "logo": "https://logos.composio.dev/api/hostinger",
+    "description": "Web hosting and domain management platform with APIs for billing, domains, DNS, and VPS management",
+    "category": "developer tools",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 24,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "HOSTINGER_CHECK_DOMAIN_AVAILABILITY",
+        "name": "Check Domain Availability",
+        "description": "Check domain availability. Verify if domain names are available for registration across multiple TLDs. Use this endpoint to check domain availability before purchase. Multiple TLDs can be checked at once. TLDs should be provided without leading dot (e.g., 'com', 'net', 'org'). If you want alternative domain suggestions with the response, provide only one TLD and set with_alternatives to true. Note: This endpoint has a rate limit of 10 requests per minute."
+      },
+      {
+        "slug": "HOSTINGER_CREATE_PUBLIC_KEY",
+        "name": "Create VPS Public Key",
+        "description": "Create public key. Add a new public key to your account for VPS SSH authentication. Use this endpoint to register SSH keys that can be used for authenticating to VPS instances. The public key will be associated with your account and can be assigned to VPS during creation or via VPS management endpoints."
+      },
+      {
+        "slug": "HOSTINGER_CREATE_WHOIS_PROFILE",
+        "name": "Create WHOIS Profile",
+        "description": "Create a WHOIS contact profile for domain registration. Use this endpoint to add new contact information that can be used when registering domains. The WHOIS profile is required for domain registration and contains contact details such as name, email, phone, and address. The entity_type determines whether the contact is an individual or an organization. The created profile can be applied to domains matching the specified TLD."
+      },
+      {
+        "slug": "HOSTINGER_DELETE_PUBLIC_KEY",
+        "name": "Delete Public Key",
+        "description": "Delete public key. Use this endpoint to remove unused SSH public keys from your account. Note: Deleting a public key from your account does not remove it from any virtual machines."
+      },
+      {
+        "slug": "HOSTINGER_GENERATE_FREE_SUBDOMAIN",
+        "name": "Generate Free Subdomain",
+        "description": "Generate a free subdomain. Create a unique free subdomain that can be used for hosting services without purchasing custom domains. Free subdomains allow you to start using hosting services immediately, and you can always connect a custom domain to your site later."
+      },
+      {
+        "slug": "HOSTINGER_GET_DNS_RECORDS",
+        "name": "Get DNS Records",
+        "description": "Tool to retrieve DNS records for a domain. Use this endpoint to view current DNS configuration for domain management purposes. Example use cases: - Review current DNS settings before making changes - Check propagation status after DNS updates - Audit DNS configuration for a domain"
+      },
+      {
+        "slug": "HOSTINGER_GET_DOMAIN_FORWARDING",
+        "name": "Get Domain Forwarding",
+        "description": "Tool to retrieve domain forwarding configuration. Use when you need to view the current redirect settings for a domain, including the target URL and redirect type (301/302)."
+      },
+      {
+        "slug": "HOSTINGER_GET_TEMPLATE_DETAILS",
+        "name": "Get VPS Template Details",
+        "description": "Get template details. Retrieve detailed information about a specific OS template for virtual machines. Use this endpoint to view specific template specifications before deployment. Example use cases: - Review template details before VPS deployment - Check OS version and documentation links - Verify template availability and specifications"
+      },
+      {
+        "slug": "HOSTINGER_GET_WHOIS_PROFILE",
+        "name": "Get WHOIS Profile",
+        "description": "Get WHOIS profile. Retrieve a WHOIS contact profile for domain registration contact information. Use this endpoint to view domain registration contact information including registrant, admin, and technical contacts."
+      },
+      {
+        "slug": "HOSTINGER_GET_WHOIS_PROFILE_USAGE",
+        "name": "Get WHOIS Profile Usage",
+        "description": "Tool to retrieve domain list where provided WHOIS contact profile is used. Use this endpoint to view which domains use specific contact profiles."
+      },
+      {
+        "slug": "HOSTINGER_LIST_CATALOG_ITEMS",
+        "name": "List Catalog Items",
+        "description": "Get catalog item list. Retrieve catalog items available for order. Use this endpoint to view available services and pricing before placing orders. Prices in catalog items are displayed as cents (without floating point), e.g., float 17.99 is displayed as integer 1799."
+      },
+      {
+        "slug": "HOSTINGER_LIST_DATA_CENTERS",
+        "name": "List VPS Data Centers",
+        "description": "Get data center list. Retrieve all available data centers. Use this endpoint to view location options before deploying VPS instances. Returns a list of all available data centers with their city, continent, country code, and name information."
+      },
+      {
+        "slug": "HOSTINGER_LIST_DNS_SNAPSHOTS",
+        "name": "List DNS Snapshots",
+        "description": "Tool to retrieve DNS snapshots for a domain. Use when you need to view available DNS backup points for restoration or audit purposes."
+      },
+      {
+        "slug": "HOSTINGER_LIST_DOMAINS",
+        "name": "List Domains",
+        "description": "Get domain list. Retrieve all domains associated with your account. Use this endpoint to view user's domain portfolio."
+      },
+      {
+        "slug": "HOSTINGER_LIST_ORDERS",
+        "name": "List Hosting Orders",
+        "description": "Tool to list hosting orders. Retrieve a paginated list of orders accessible to the authenticated client. This endpoint returns orders of your hosting accounts as well as orders of other client hosting accounts that have shared access with you. Use the available query parameters to filter results by order statuses or specific order IDs for more targeted results."
+      },
+      {
+        "slug": "HOSTINGER_LIST_PAYMENT_METHODS",
+        "name": "List Payment Methods",
+        "description": "Get payment method list. Retrieve available payment methods that can be used for placing new orders. Use this endpoint to view available payment options before creating orders. This action requires no request parameters. Note: To add a new payment method, use hPanel instead: https://hpanel.hostinger.com/billing/payment-methods"
+      },
+      {
+        "slug": "HOSTINGER_LIST_PUBLIC_KEYS",
+        "name": "List Public Keys",
+        "description": "Get public keys. Retrieve public keys associated with your account. Use this endpoint to view available SSH keys for VPS authentication."
+      },
+      {
+        "slug": "HOSTINGER_LIST_SUBSCRIPTIONS",
+        "name": "List Subscriptions",
+        "description": "Get subscription list. Retrieve a list of all subscriptions associated with your account. Use this endpoint to monitor active services and billing status."
+      },
+      {
+        "slug": "HOSTINGER_LIST_TEMPLATES",
+        "name": "List VPS Templates",
+        "description": "Get templates. Retrieve available OS templates for virtual machines. Use this endpoint to view operating system options before creating or recreating VPS instances. Returns a list of all available templates with their ID, name, description, and documentation links."
+      },
+      {
+        "slug": "HOSTINGER_LIST_VIRTUAL_MACHINES",
+        "name": "List Virtual Machines",
+        "description": "Get virtual machines. Retrieve all available virtual machines. Use this endpoint to view available VPS instances. Returns a list of all virtual machines with their configuration details including CPU, memory, disk, IP addresses, and current state."
+      },
+      {
+        "slug": "HOSTINGER_LIST_WEBSITES",
+        "name": "List Websites",
+        "description": "List websites. Retrieve a paginated list of websites (main and addon types) accessible to the authenticated client. This endpoint returns websites from your hosting accounts as well as websites from other client hosting accounts that have shared access with you. Use the available query parameters to filter results by username, order ID, enabled status, or domain name for more targeted results."
+      },
+      {
+        "slug": "HOSTINGER_LIST_WHOIS_PROFILES",
+        "name": "List WHOIS Profiles",
+        "description": "Retrieve WHOIS contact profiles for domain registration. Use this endpoint to view available contact profiles that can be used when registering domains. Optionally filter by TLD to get profiles applicable to specific domain extensions."
+      },
+      {
+        "slug": "HOSTINGER_VALIDATE_DNS_RECORDS",
+        "name": "Validate DNS Records",
+        "description": "Validate DNS records. Validates DNS records prior to update for the selected domain. Use this endpoint to verify DNS record validity before applying changes. If the validation is successful, the response will contain 200 Success code. If there is a validation error, the response will fail with 422 Validation error code."
+      },
+      {
+        "slug": "HOSTINGER_VERIFY_DOMAIN_OWNERSHIP",
+        "name": "Verify Domain Ownership",
+        "description": "Verify ownership of a single domain and return the verification status. Use this endpoint to check if a domain is accessible for you before using it for new websites. If the domain is accessible, the response will have `is_accessible: true`. If not, add the given TXT record to your domain's DNS records and try verifying again. Keep in mind that it may take up to 10 minutes for new TXT DNS records to propagate. Skip this verification when using Hostinger's free subdomains (*.hostingersite.com)."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "hostinger_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "API token created at https://hpanel.hostinger.com/profile/api",
                 "required": true,
                 "default": null
               }
@@ -261741,168 +262549,6 @@
                 "displayName": "Private API Key",
                 "type": "string",
                 "description": "Your Vapi private API key. Get it from dashboard.vapi.ai. Use private key (UUID format) for server-side endpoints, not public key (pbk_live_...).",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "vectorshift",
-    "name": "Vectorshift",
-    "logo": "https://logos.composio.dev/api/vectorshift",
-    "description": "The End-to-End AI Automations Platform for building and deploying AI workflows, pipelines, chatbots, and knowledge bases.",
-    "category": "developer tools",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 11,
-    "triggerCount": 0,
-    "version": "20260429_00",
-    "tools": [
-      {
-        "slug": "VECTORSHIFT_CREATE_CHATBOT",
-        "name": "Create Chatbot",
-        "description": "Tool to create a new chatbot. Chatbots are conversational AI interfaces built on pipelines. Use when you need to create a new chatbot with a specific pipeline configuration."
-      },
-      {
-        "slug": "VECTORSHIFT_DELETE_CHATBOT",
-        "name": "Delete Chatbot",
-        "description": "Tool to delete a chatbot by its ID. Permanently removes the chatbot from the account. Use when you need to remove a chatbot that is no longer needed."
-      },
-      {
-        "slug": "VECTORSHIFT_GET_CHATBOT",
-        "name": "Get Chatbot",
-        "description": "Tool to fetch an existing chatbot by its ID or name. Returns chatbot configuration and metadata. Use when you need to retrieve details about a specific chatbot. Either chatbot ID or name must be provided."
-      },
-      {
-        "slug": "VECTORSHIFT_GET_KNOWLEDGE_BASE",
-        "name": "Get Knowledge Base",
-        "description": "Tool to fetch an existing knowledge base by its ID or name. Returns knowledge base configuration and metadata. Use when you need to retrieve details about a specific knowledge base."
-      },
-      {
-        "slug": "VECTORSHIFT_GET_PIPELINE",
-        "name": "Get Pipeline",
-        "description": "Tool to fetch an existing pipeline by its ID or name. Returns pipeline configuration and metadata. Use when you need to retrieve a specific pipeline's details, configuration, or metadata."
-      },
-      {
-        "slug": "VECTORSHIFT_LIST_CHATBOTS",
-        "name": "List Chatbots",
-        "description": "Tool to list all available chatbots in the account. Use when you need to retrieve chatbot IDs or full chatbot details."
-      },
-      {
-        "slug": "VECTORSHIFT_LIST_PIPELINES",
-        "name": "List Pipelines",
-        "description": "Tool to list all available pipelines in the VectorShift account. Use when you need to retrieve the catalog of pipelines. Supports filtering for shared pipelines and verbose output with full pipeline details."
-      },
-      {
-        "slug": "VECTORSHIFT_LIST_TRANSFORMATIONS",
-        "name": "List Transformations",
-        "description": "Tool to list all available transformations in the account. Use when you need to retrieve transformation IDs or complete transformation objects."
-      },
-      {
-        "slug": "VECTORSHIFT_RUN_PIPELINE",
-        "name": "Run Pipeline",
-        "description": "Tool to run a VectorShift pipeline with the given inputs. Use when you need to execute a pipeline and get its results or run_id for asynchronous execution. Returns the pipeline execution status, run_id, and outputs if execution completed synchronously."
-      },
-      {
-        "slug": "VECTORSHIFT_RUN_PIPELINE_BULK",
-        "name": "Run Pipeline in Bulk",
-        "description": "Tool to run a VectorShift pipeline in bulk with multiple sets of inputs. Use when you need to batch process multiple pipeline executions in a single API call. Returns the overall status and an array of outputs with run_id for each execution."
-      },
-      {
-        "slug": "VECTORSHIFT_TERMINATE_PIPELINE",
-        "name": "Terminate Pipeline Execution",
-        "description": "Tool to terminate a running pipeline execution. Use when you need to stop a pipeline run by its run_id."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "vectorshift_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "API Key",
-                "type": "string",
-                "description": "To get your API Key, sign in to VectorShift, click the User menu on the top left, and go to \"Profile\" > \"API Keys\".",
-                "required": true,
-                "default": null
-              }
-            ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "veo",
-    "name": "Veo",
-    "logo": "https://cdn.jsdelivr.net/gh/ComposioHQ/open-logos@master/gemini.svg",
-    "description": "Veo 3 is Google's state-of-the-art model for generating high-fidelity 8s 720p videos with natively generated audio via the Gemini API.",
-    "category": "artificial intelligence",
-    "authSchemes": [
-      "API_KEY"
-    ],
-    "toolCount": 5,
-    "triggerCount": 0,
-    "version": "20250924_00",
-    "tools": [
-      {
-        "slug": "VEO_DOWNLOAD_VIDEO",
-        "name": "Download Video (Veo)",
-        "description": "Download video (veo)"
-      },
-      {
-        "slug": "VEO_GENERATE_VIDEOS",
-        "name": "Generate Videos (Veo)",
-        "description": "Generate videos (veo)"
-      },
-      {
-        "slug": "VEO_GET_VIDEOS_OPERATION",
-        "name": "Get Videos Operation (Veo)",
-        "description": "Get videos operation (veo)"
-      },
-      {
-        "slug": "VEO_LIST_MODELS",
-        "name": "List Models (Gemini API)",
-        "description": "List models (gemini api)"
-      },
-      {
-        "slug": "VEO_WAIT_FOR_VIDEO",
-        "name": "Wait For Video (Veo)",
-        "description": "Wait for video (veo)"
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "API_KEY",
-        "name": "veo_api_key",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [
-              {
-                "name": "generic_api_key",
-                "displayName": "Gemini API Key",
-                "type": "string",
-                "description": "API key for Google Gemini API (sent as x-goog-api-key header).",
                 "required": true,
                 "default": null
               }

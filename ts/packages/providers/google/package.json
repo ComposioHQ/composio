@@ -1,8 +1,18 @@
 {
   "name": "@composio/google",
-  "version": "0.9.0",
+  "version": "0.9.3",
   "description": "Google GenAI Provider for Composio SDK",
   "main": "src/index.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/providers/google"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/google#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -10,18 +20,8 @@
   },
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
-      "default": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     }
   },
   "files": [
@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [
@@ -42,9 +42,8 @@
   ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
-    "@composio/core": "0.9.0",
+    "@composio/core": ">=0.10.0 <1.0.0",
     "@google/genai": "^1.1.0"
   },
   "devDependencies": {
