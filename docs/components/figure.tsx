@@ -66,6 +66,7 @@ export function Figure({ src, srcDark, alt, caption, size = 'full', className, w
     height: height || dimensions.height,
     sizes: sizesAttr[size],
     priority,
+    loading: priority ? 'eager' as const : undefined,
     onError: handleReady,
   };
 
