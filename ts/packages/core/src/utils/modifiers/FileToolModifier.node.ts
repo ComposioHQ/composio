@@ -13,6 +13,7 @@ import {
   ComposioFileUploadPathNotAllowedError,
   ComposioSensitiveFilePathBlockedError,
 } from '../../errors/FileModifierErrors';
+import { ComposioRequestCancelledError } from '../../errors/SDKErrors';
 import type { beforeFileUploadModifier } from '../../types/modifiers.types';
 import {
   downloadFileFromS3,
@@ -25,6 +26,7 @@ import {
   schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
 import { dereferenceJsonSchema } from '../jsonSchema';
+import { withCancellation } from '../cancellation';
 
 /**
  * Inlines internal `$ref` pointers so the file walkers below can see the
@@ -421,16 +423,21 @@ export class FileToolModifier {
     if (!args || typeof args !== 'object') return params;
 
     try {
-      const newArgs = await hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
-        toolSlug,
-        toolkitSlug,
-        client: this.client,
-        ...this.fileUploadPathOptions,
-        signal,
-      });
+      const newArgs = await withCancellation(
+        () =>
+          hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
+            toolSlug,
+            toolkitSlug,
+            client: this.client,
+            ...this.fileUploadPathOptions,
+            signal,
+          }),
+        signal
+      );
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
       if (
+        error instanceof ComposioRequestCancelledError ||
         error instanceof ComposioSensitiveFilePathBlockedError ||
         error instanceof ComposioFileUploadAbortedError ||
         error instanceof ComposioFileUploadPathNotAllowedError ||
