@@ -1,4 +1,4 @@
 {
-  "title": "Authentication",
+  "title": "Authenticating to Composio",
   "pages": ["index", "project-api-key-permissions"]
 }

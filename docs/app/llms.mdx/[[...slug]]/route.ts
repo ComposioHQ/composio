@@ -797,7 +797,7 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Premium Tools](/toolkits/premium-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
     '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
     '',
     '## All Toolkits',
@@ -908,7 +908,7 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
 
   for (const tool of tools) {
     const tags = tool.tags.length > 0 ? tool.tags.join(', ') : '—';
-    lines.push(`| [\`${tool.slug}\`](/reference/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
+    lines.push(`| [\`${tool.slug}\`](/toolkits/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
   }
 
   return lines.join('\n') + LLM_FOOTER;
@@ -972,8 +972,11 @@ export async function GET(
       notFound();
     }
 
-    // Special handling for meta tools - /reference/meta-tools and /reference/meta-tools/{slug}
-    if (prefix === 'reference' && rest[0] === 'meta-tools') {
+    // Special handling for meta tools - /toolkits/meta-tools and /toolkits/meta-tools/{slug}.
+    // Must run before the generic toolkits page resolution and the JSON toolkit block
+    // below, since the meta-tool MDX is just a <MetaToolDetailServer /> shell that can't
+    // render to useful markdown — the content is generated from the JSON data instead.
+    if (prefix === 'toolkits' && rest[0] === 'meta-tools') {
       if (rest.length === 1) {
         // Index page
         const tools = await getAllMetaTools();

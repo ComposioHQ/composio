@@ -4,10 +4,16 @@ import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
 /**
- * Copy-to-clipboard icon button, designed to live in the dark code header of the
- * @pierre/diffs widgets. A faint chip that lifts on hover, presses on click, and
- * crossfades the copy glyph into a green check on success. Icon-only; the caller
- * positions it (usually absolute top-right).
+ * Copy-to-clipboard icon button for the code header of the @pierre/diffs widgets.
+ * A faint chip that lifts on hover, presses on click, and crossfades the copy
+ * glyph into a green check on success.
+ *
+ * The widget themes itself off the OS `prefers-color-scheme` (its shadow root
+ * pins `color-scheme: light dark`), NOT the site's class-based dark toggle, so
+ * the header can be light even with the docs in dark mode. The chip's colors
+ * live in the `.diff-copy-button` rule in global.css and use `light-dark()` to
+ * track that same signal, staying legible on either header. Icon-only; the
+ * caller positions it (usually absolute top-right).
  */
 export function CopyButton({ text, className }: { text: string; className?: string }) {
   const [copied, setCopied] = useState(false);
@@ -29,11 +35,9 @@ export function CopyButton({ text, className }: { text: string; className?: stri
       aria-label={copied ? 'Copied' : 'Copy code'}
       title={copied ? 'Copied' : 'Copy'}
       className={
-        'inline-flex size-7 items-center justify-center rounded-md border ' +
-        'border-white/10 bg-white/[0.04] text-zinc-400 shadow-sm backdrop-blur-md ' +
+        'diff-copy-button inline-flex size-7 items-center justify-center rounded-md border shadow-sm backdrop-blur-md ' +
         'transition-[transform,background-color,border-color,color] duration-150 ease-out ' +
-        'hover:border-white/20 hover:bg-white/[0.1] hover:text-zinc-100 ' +
-        'active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ' +
+        'active:scale-90 ' +
         (className ?? '')
       }
     >

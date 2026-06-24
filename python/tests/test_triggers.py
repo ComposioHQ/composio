@@ -1214,6 +1214,141 @@ class TestVerifyWebhook:
         assert isinstance(error, exceptions.TriggerError)
 
 
+class TestParseWebhook:
+    """Test cases for the parse() webhook helper."""
+
+    @pytest.fixture
+    def mock_client(self):
+        """Create a mock HTTP client."""
+        client = Mock()
+        client.triggers_types = Mock()
+        client.trigger_instances = Mock()
+        client.trigger_instances.manage = Mock()
+        client.connected_accounts = Mock()
+        return client
+
+    @pytest.fixture
+    def triggers(self, mock_client):
+        """Create a Triggers instance."""
+        return Triggers(client=mock_client)
+
+    @pytest.fixture
+    def test_secret(self):
+        """Test webhook secret."""
+        return "test-webhook-secret-12345"
+
+    @pytest.fixture
+    def test_webhook_id(self):
+        """Test webhook ID."""
+        return "msg_test123"
+
+    @pytest.fixture
+    def test_timestamp(self):
+        """Test webhook timestamp (current time in Unix seconds)."""
+        return str(int(time.time()))
+
+    @pytest.fixture
+    def mock_v3_payload(self):
+        """Create mock V3 webhook payload."""
+        return {
+            "id": "evt-123",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": "composio.trigger.message",
+            "metadata": {
+                "log_id": "log-123",
+                "trigger_slug": "GITHUB_PUSH_EVENT",
+                "trigger_id": "trigger-nano-123",
+                "connected_account_id": "conn-nano-123",
+                "auth_config_id": "auth-nano-123",
+                "user_id": "user-456",
+            },
+            "data": {"action": "push", "repository": "test-repo"},
+        }
+
+    def create_signature(
+        self, webhook_id: str, timestamp: str, payload: str, secret: str
+    ) -> str:
+        """Helper to create a valid v1,base64 signature."""
+        to_sign = f"{webhook_id}.{timestamp}.{payload}"
+        signature_bytes = hmac.new(
+            key=secret.encode("utf-8"),
+            msg=to_sign.encode("utf-8"),
+            digestmod=hashlib.sha256,
+        ).digest()
+        return f"v1,{base64.b64encode(signature_bytes).decode('utf-8')}"
+
+    def test_parse_with_request_object_and_verify(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
+    ):
+        """Parse and verify from a framework-style request object."""
+        payload = json.dumps(mock_v3_payload)
+        signature = self.create_signature(
+            test_webhook_id, test_timestamp, payload, test_secret
+        )
+
+        request = Mock()
+        request.body = payload.encode("utf-8")
+        request.headers = {
+            "webhook-id": test_webhook_id,
+            "webhook-timestamp": test_timestamp,
+            "webhook-signature": signature,
+        }
+        # Avoid Mock auto-creating a callable get_data attribute.
+        del request.get_data
+
+        result = triggers.parse(request, verify_secret=test_secret)
+
+        assert result["version"] == WebhookVersion.V3
+        assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
+        assert result["payload"]["payload"] == {
+            "action": "push",
+            "repository": "test-repo",
+        }
+
+    def test_parse_with_explicit_body_and_headers_no_verify(
+        self, triggers, mock_v3_payload
+    ):
+        """Parse without verifying using explicit body/headers kwargs."""
+        payload = json.dumps(mock_v3_payload)
+
+        result = triggers.parse(body=payload, headers={})
+
+        assert result["version"] == WebhookVersion.V3
+        assert result["payload"]["trigger_slug"] == "GITHUB_PUSH_EVENT"
+        assert result["payload"]["payload"] == {
+            "action": "push",
+            "repository": "test-repo",
+        }
+
+    def test_parse_bad_signature_raises(
+        self, triggers, test_secret, test_webhook_id, test_timestamp, mock_v3_payload
+    ):
+        """A bad signature with verify_secret raises a verification error."""
+        payload = json.dumps(mock_v3_payload)
+
+        with pytest.raises(exceptions.WebhookSignatureVerificationError):
+            triggers.parse(
+                body=payload,
+                headers={
+                    "webhook-id": test_webhook_id,
+                    "webhook-timestamp": test_timestamp,
+                    "webhook-signature": "v1,not-a-valid-signature",
+                },
+                verify_secret=test_secret,
+            )
+
+    def test_parse_missing_headers_with_verify_raises(
+        self, triggers, test_secret, mock_v3_payload
+    ):
+        """verify_secret set but missing signature headers raises InvalidParams."""
+        payload = json.dumps(mock_v3_payload)
+
+        with pytest.raises(exceptions.InvalidParams) as exc_info:
+            triggers.parse(body=payload, headers={}, verify_secret=test_secret)
+
+        assert "missing signature header" in str(exc_info.value)
+
+
 class TestTriggerSubscriptionParsing:
     """Tests for realtime (Pusher) payload parsing in TriggerSubscription."""
 

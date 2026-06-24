@@ -1,6 +1,6 @@
 import { defineTool } from 'eve/tools';
 import { z } from 'zod';
-import { buildIndex, readPageByUrl, toCleanMarkdown } from '../lib/docs';
+import { buildIndex, extractSections, readPageByUrl, toCleanMarkdown } from '../lib/docs';
 
 /**
  * read_doc — read the full content of a Composio docs page.
@@ -13,7 +13,7 @@ const MAX_CHARS = 12000;
 
 export default defineTool({
   description:
-    'Read the full Markdown content of a Composio docs page by its URL (e.g. "/docs/authentication"). Use this on the most relevant pages from search_docs before answering so your answer reflects the actual page content.',
+    'Read the full Markdown content of a Composio docs page by its URL (e.g. "/docs/authentication"). Returns the page content plus its `sections` (with anchors). Use this on the most relevant pages from search_docs before answering, and link the specific section anchor (e.g. /docs/how-composio-works#users) when your answer comes from one.',
   inputSchema: z.object({
     url: z.string().min(1).describe('The page URL, e.g. "/docs/authentication" or "/docs/configuring-sessions".'),
   }),
@@ -27,6 +27,7 @@ export default defineTool({
         found: true,
         url: clean,
         title: page.title,
+        sections: extractSections(markdown),
         truncated,
         content: truncated ? `${markdown.slice(0, MAX_CHARS)}\n\n…(truncated)` : markdown,
       };

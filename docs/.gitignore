@@ -35,3 +35,7 @@ next-env.d.ts.cache
 !/content/reference/api-reference/logs/**
 !/content/reference/v3/api-reference/logs/
 !/content/reference/v3/api-reference/logs/**
+
+# Generated docs snapshot for the Ask AI agent (regenerated on dev/build/typecheck).
+/agent/lib/docs-index.ts
+/agent/lib/docs-index.json

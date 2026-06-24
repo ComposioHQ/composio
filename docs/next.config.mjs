@@ -55,6 +55,17 @@ const config = {
         destination: '/docs',
         permanent: false,
       },
+      // Meta Tools moved from the Reference tab to the Toolkits tab.
+      {
+        source: '/reference/meta-tools',
+        destination: '/toolkits/meta-tools',
+        permanent: true,
+      },
+      {
+        source: '/reference/meta-tools/:path*',
+        destination: '/toolkits/meta-tools/:path*',
+        permanent: true,
+      },
       // Cookbooks were renamed to Examples; the old articles were removed,
       // so send every old /cookbooks URL to the Examples index.
       {
@@ -152,12 +163,12 @@ const config = {
       // Authentication pages moved from tool-router to docs
       {
         source: '/tool-router/using-in-chat-authentication',
-        destination: '/docs/authenticating-users/in-chat-authentication',
+        destination: '/docs/authentication#in-chat-authentication',
         permanent: true,
       },
       {
         source: '/tool-router/manually-authenticating-users',
-        destination: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
         permanent: true,
       },
       {
@@ -295,6 +306,39 @@ const config = {
         destination: '/reference/api-reference/:path*',
         permanent: true,
       },
+      // Programmatic auth configs consolidated into the Customizing auth section
+      {
+        source: '/docs/auth-configuration/programmatic-auth-configs',
+        destination: '/docs/programmatic-auth-configs',
+        permanent: true,
+      },
+      // Authenticating users folder flattened into the Authenticate users section
+      {
+        source: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/managing-multiple-connected-accounts',
+        destination: '/docs/managing-multiple-connected-accounts',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/shared-connections',
+        destination: '/docs/shared-connections',
+        permanent: true,
+      },
+      // Authentication reference renamed to "Authenticating to Composio"
+      {
+        source: '/reference/authentication',
+        destination: '/reference/authenticating-to-composio',
+        permanent: true,
+      },
+      {
+        source: '/reference/authentication/:path*',
+        destination: '/reference/authenticating-to-composio/:path*',
+        permanent: true,
+      },
       // Features section redirects
       {
         source: '/docs/users-and-sessions',
@@ -309,11 +353,6 @@ const config = {
             {
         source: '/docs/using-triggers',
         destination: '/docs/setting-up-triggers/creating-triggers',
-        permanent: true,
-      },
-      {
-        source: '/docs/setting-up-triggers/webhook-verification',
-        destination: '/docs/webhook-verification',
         permanent: true,
       },
       {
@@ -412,11 +451,6 @@ const config = {
       {
         source: '/docs/custom-auth-configs',
         destination: '/docs/auth-configuration/custom-auth-configs',
-        permanent: true,
-      },
-      {
-        source: '/docs/programmatic-auth-configs',
-        destination: '/docs/auth-configuration/programmatic-auth-configs',
         permanent: true,
       },
       {

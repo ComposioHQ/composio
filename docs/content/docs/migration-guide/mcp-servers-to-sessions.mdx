@@ -237,7 +237,7 @@ const result = await session.execute("GITHUB_CREATE_ISSUE", {
   session once and keep using it across calls; see [Configuring Sessions](/docs/configuring-sessions).
 - **Sharing one account across users** — sessions support **shared connections**
   (`account_type:"SHARED"` + an allow/deny ACL), pinned per session. See
-  [Shared connections](/docs/authenticating-users/shared-connections).
+  [Shared connections](/docs/shared-connections).
 - **Tenant-specific params** (SharePoint sub-site, Jira subdomain) — prefill them via shared
   credentials on the auth config.
 - **White-labeling carries over** — pass the same white-labeled auth config IDs; users keep seeing

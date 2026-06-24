@@ -12,7 +12,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 ## Tools and toolkits
 
 - **Toolkit** — a collection of related tools for a service (e.g. `github`, `gmail`). A **tool** is one action, named `{TOOLKIT}_{ACTION}` (e.g. `GITHUB_CREATE_ISSUE`). Every toolkit is discoverable by default; restrict with the `toolkits` config. → [Configuring sessions](/docs/configuring-sessions)
-- **Meta tools** — the fixed set every session exposes (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`). → [Meta tools reference](/reference/meta-tools)
+- **Meta tools** — the fixed set every session exposes (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`). → [Meta tools reference](/toolkits/meta-tools)
 - **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)
 - **Is a toolkit / integration supported?** Composio has 1000+ toolkits, and `search_docs` indexes the catalog. A matching `/toolkits/<slug>` result means **yes, it's supported** — call `read_doc` on that URL for its details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) for an API you already have.
 
@@ -39,6 +39,14 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Sandbox** (previously "workbench") — a persistent Python environment at `/mnt/files/` for bulk operations and large responses; files via `session.experimental.files`. → [Sandbox](/docs/sandbox)
 - **Custom tools and toolkits** — define in-process tools that run alongside Composio tools. → [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits)
 - **Proxy execute** — call any toolkit HTTP endpoint with `session.proxyExecute(...)` and let Composio inject auth. → [Proxy execute](/docs/extending-sessions/proxy-execute)
+
+## Platform API (reference only)
+
+These features are documented **only in the API reference** — there is no `/docs` guide. When asked how to do them programmatically, read and link the reference page (don't say it isn't documented).
+
+- **Projects** — Composio's multi-tenancy primitive. Inside an organization, projects are isolated environments that scope API keys, connected accounts, auth configs, and webhooks. Create, list, update, delete, and regenerate a project's API key via the API (using your **organization API key**). This is the page for "how do I programmatically create projects". → [Projects](/reference/api-reference/projects)
+- **Logs** — individual tool-execution events (one record per call) for debugging and tracing. → [Logs](/reference/api-reference/logs)
+- **Files** — files tools read and write during execution, exchanged via presigned URLs. → [Files](/reference/api-reference/files)
 
 ## Getting started and reference
 
