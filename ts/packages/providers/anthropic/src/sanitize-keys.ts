@@ -17,10 +17,15 @@
  * sent to Anthropic, and records a reverse mapping so the original parameter names
  * can be restored before a tool call is executed against the Composio backend.
  *
- * The reverse mapping mirrors the schema's nesting (object `properties` and array
- * `items`) rather than being a single flat lookup. This matters because an alias
- * generated at one nesting level (e.g. `$top` -> `dollar_top`) must not rewrite a
+ * The reverse mapping mirrors the schema's nesting (object `properties`, array
+ * `items`/`prefixItems`, and the composition keywords `allOf`/`anyOf`/`oneOf` /
+ * `not`/`if`/`then`/`else`, whose renames fold into the value level they share)
+ * rather than being a single flat lookup. This matters because an alias generated
+ * at one nesting level (e.g. `$top` -> `dollar_top`) must not rewrite a
  * legitimately-named `dollar_top` key that happens to exist at a different level.
+ * Keys nested only under dynamic / `$ref` positions (`additionalProperties`,
+ * `patternProperties`, `$defs`/`definitions`, `contains`) are still rewritten so
+ * Anthropic accepts the schema, but are not restored — see the keyword lists below.
  *
  * @packageDocumentation
  * @module providers/anthropic/sanitize-keys
@@ -149,10 +154,102 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Composition/applicator keywords whose sub-schema(s) constrain the *same* value
+ * as the parent. Property-key renames generated inside them are merged into the
+ * parent's value level, because the value carries no extra nesting for these
+ * keywords. `not`/`if`/`then`/`else` hold a single sub-schema; `allOf`/`anyOf`/
+ * `oneOf` hold an array of sub-schemas.
+ */
+const COMPOSITION_SINGLE_KEYWORDS = ['not', 'if', 'then', 'else'] as const;
+const COMPOSITION_LIST_KEYWORDS = ['allOf', 'anyOf', 'oneOf'] as const;
+
+/**
+ * Positions whose nested keys are rewritten so Anthropic accepts the schema, but
+ * which we cannot tie to a concrete value position for restoration: dynamic keys
+ * (`additionalProperties`, `patternProperties`) and `$ref` targets (`$defs`/
+ * `definitions`, unresolved by this provider), plus `contains`. A value filled
+ * via an alias generated here reaches the backend un-restored — strictly better
+ * than the whole `tools` array 400-ing, and documented as a known limitation.
+ */
+const REWRITE_ONLY_SINGLE_KEYWORDS = ['additionalProperties', 'contains'] as const;
+const REWRITE_ONLY_MAP_KEYWORDS = ['patternProperties', '$defs', 'definitions'] as const;
+
+/**
+ * Sanitizes a single sub-schema. Returns the rewritten node and its mapping, or
+ * a `null` mapping when nothing inside it was renamed (keeps mappings sparse).
+ */
+function sanitizeSubschema(
+  value: unknown,
+  depth: number
+): { node: unknown; mapping: KeyMapping | null } {
+  if (!isPlainObject(value)) {
+    return { node: value, mapping: null };
+  }
+  const { node, mapping } = sanitizeNode(value, depth + 1);
+  return { node, mapping: mappingHasRenames(mapping) ? mapping : null };
+}
+
+/** Sanitizes an array of positional sub-schemas (tuple `items` / `prefixItems`). */
+function sanitizeTuple(
+  entries: unknown[],
+  depth: number
+): { nodes: unknown[]; mappings: (KeyMapping | null)[] | undefined } {
+  const nodes: unknown[] = [];
+  const mappings: (KeyMapping | null)[] = [];
+  let anyRenamed = false;
+  for (const entry of entries) {
+    const { node, mapping } = sanitizeSubschema(entry, depth);
+    nodes.push(node);
+    mappings.push(mapping);
+    if (mapping) anyRenamed = true;
+  }
+  return { nodes, mappings: anyRenamed ? mappings : undefined };
+}
+
+/**
+ * Rewrites the nested keys of a `{ name -> sub-schema }` map (e.g. `$defs`,
+ * `patternProperties`). The map's own keys are names/patterns, not value
+ * property keys, so they are left untouched and no restoration mapping is kept.
+ */
+function sanitizeSchemaMap(map: Record<string, unknown>, depth: number): Record<string, unknown> {
+  const out: Record<string, unknown> = Object.create(null);
+  for (const [key, value] of Object.entries(map)) {
+    out[key] = sanitizeSubschema(value, depth).node;
+  }
+  return out;
+}
+
+/**
+ * Merges `source`'s renames into `target`, both describing the same value level
+ * (used to fold composition branches into their parent). `target` wins on
+ * conflict, since it is the more direct (`properties`-level) mapping.
+ */
+function mergeMappingInto(target: KeyMapping, source: KeyMapping): void {
+  for (const [alias, original] of Object.entries(source.renames)) {
+    if (!(alias in target.renames)) {
+      target.renames[alias] = original;
+    }
+  }
+  for (const [key, childSource] of Object.entries(source.children)) {
+    const existing = target.children[key];
+    if (existing) {
+      mergeMappingInto(existing, childSource);
+    } else {
+      target.children[key] = childSource;
+    }
+  }
+  if (target.items === undefined && source.items !== undefined) {
+    target.items = source.items;
+  }
+}
+
+/**
  * Recursively sanitizes the property keys of a JSON-schema node, returning the
- * rewritten node and a {@link KeyMapping} shaped like the node. Both object
- * `properties` and array `items` schemas are traversed, matching how Composio
- * nests its tool parameters.
+ * rewritten node and a {@link KeyMapping} shaped like the node. Traversal covers
+ * object `properties`, array `items`/`prefixItems`, the composition keywords
+ * (`allOf`/`anyOf`/`oneOf`, `not`/`if`/`then`/`else` — whose renames merge into
+ * this level), and the rewrite-only positions in {@link REWRITE_ONLY_SINGLE_KEYWORDS}
+ * / {@link REWRITE_ONLY_MAP_KEYWORDS}, matching how Composio nests tool parameters.
  *
  * The input node is never mutated; a new node is returned.
  */
@@ -176,7 +273,7 @@ function sanitizeNode(
   // inherited member. Mirrors core's `POLLUTING_KEYS` defense in `jsonSchema.ts`.
   const renames: Record<string, string> = Object.create(null);
   const children: Record<string, KeyMapping> = Object.create(null);
-  let items: KeyMapping | (KeyMapping | null)[] | undefined;
+  const mapping: KeyMapping = { renames, children };
 
   const properties = node.properties;
   if (isPlainObject(properties)) {
@@ -221,45 +318,72 @@ function sanitizeNode(
     }
   }
 
-  // Recurse into array element schemas so illegal keys nested inside array items
-  // (e.g. `{ type: 'array', items: { properties: { $top: ... } } }`) are sanitized
-  // too — `properties`-only traversal would let them through and still 400.
+  // Array element schemas: `items` (a single schema applied to every element, or
+  // a positional tuple) and the 2020-12 `prefixItems` tuple. Restoration reaches
+  // array elements through `mapping.items` — a `properties`-only walk would let
+  // illegal keys nested in array elements through and still 400.
   const itemsSchema = node.items;
   if (isPlainObject(itemsSchema)) {
-    const child = sanitizeNode(itemsSchema, depth + 1);
-    result.items = child.node;
-    if (mappingHasRenames(child.mapping)) {
-      items = child.mapping;
+    const { node: childNode, mapping: childMapping } = sanitizeSubschema(itemsSchema, depth);
+    result.items = childNode;
+    if (childMapping) {
+      mapping.items = childMapping;
     }
   } else if (Array.isArray(itemsSchema)) {
-    // Tuple validation: one positional schema per array index.
-    const sanitizedItems: unknown[] = [];
-    const itemMappings: (KeyMapping | null)[] = [];
-    let anyRenamed = false;
-    for (const entry of itemsSchema) {
-      if (isPlainObject(entry)) {
-        const child = sanitizeNode(entry, depth + 1);
-        sanitizedItems.push(child.node);
-        if (mappingHasRenames(child.mapping)) {
-          itemMappings.push(child.mapping);
-          anyRenamed = true;
-        } else {
-          itemMappings.push(null);
-        }
-      } else {
-        sanitizedItems.push(entry);
-        itemMappings.push(null);
-      }
+    const { nodes, mappings } = sanitizeTuple(itemsSchema, depth);
+    result.items = nodes;
+    if (mappings) {
+      mapping.items = mappings;
     }
-    result.items = sanitizedItems;
-    if (anyRenamed) {
-      items = itemMappings;
+  }
+  if (Array.isArray(node.prefixItems)) {
+    const { nodes, mappings } = sanitizeTuple(node.prefixItems, depth);
+    result.prefixItems = nodes;
+    // Only drive restoration from `prefixItems` when `items` didn't already
+    // provide a positional mapping (avoids clobbering a Draft-7 tuple).
+    if (mappings && mapping.items === undefined) {
+      mapping.items = mappings;
     }
   }
 
-  const mapping: KeyMapping = { renames, children };
-  if (items !== undefined) {
-    mapping.items = items;
+  // Composition keywords constrain the *same* value, so renames generated inside
+  // them are merged into this level (the value has no extra nesting for them).
+  for (const keyword of COMPOSITION_SINGLE_KEYWORDS) {
+    const sub = node[keyword];
+    if (isPlainObject(sub)) {
+      const { node: childNode, mapping: childMapping } = sanitizeSubschema(sub, depth);
+      result[keyword] = childNode;
+      if (childMapping) {
+        mergeMappingInto(mapping, childMapping);
+      }
+    }
+  }
+  for (const keyword of COMPOSITION_LIST_KEYWORDS) {
+    const list = node[keyword];
+    if (Array.isArray(list)) {
+      result[keyword] = list.map(entry => {
+        const { node: childNode, mapping: childMapping } = sanitizeSubschema(entry, depth);
+        if (childMapping) {
+          mergeMappingInto(mapping, childMapping);
+        }
+        return childNode;
+      });
+    }
+  }
+
+  // Rewrite-only positions: keys are made Anthropic-compliant, but no restoration
+  // mapping is kept (see the keyword lists above for why).
+  for (const keyword of REWRITE_ONLY_SINGLE_KEYWORDS) {
+    const sub = node[keyword];
+    if (isPlainObject(sub)) {
+      result[keyword] = sanitizeSubschema(sub, depth).node;
+    }
+  }
+  for (const keyword of REWRITE_ONLY_MAP_KEYWORDS) {
+    const sub = node[keyword];
+    if (isPlainObject(sub)) {
+      result[keyword] = sanitizeSchemaMap(sub, depth);
+    }
   }
 
   return { node: result, mapping };
