@@ -136,6 +136,19 @@ export function toCleanMarkdown(raw: string): string {
     .trim();
 }
 
+/**
+ * Extract a page's section anchors from its Markdown headings, so the assistant
+ * can link a specific section (e.g. `/docs/how-composio-works#users`) instead
+ * of just the page. Anchor slugs match the docs' heading-id convention.
+ */
+export function extractSections(markdown: string): { title: string; anchor: string }[] {
+  return [...markdown.matchAll(/^#{2,4}\s+(.+?)\s*$/gm)].map((m) => {
+    const title = m[1].replace(/[`*_]/g, '').trim();
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return { title, anchor: `#${slug}` };
+  });
+}
+
 function makePage(args: {
   collection: Collection;
   title: string;
