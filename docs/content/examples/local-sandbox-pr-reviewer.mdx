@@ -60,7 +60,7 @@ A local sandbox still leans on Composio for auth and tool discovery — only cod
 
 ### Create the local sandbox session
 
-The core of the integration, in one call. `experimental_createLocalWorkbenchSession` opens a Tool Router session with `workbench.enable: false` — Composio will not run code for you — and returns the pieces you run yourself: a `helperSource` (a Python helper with `run_composio_tool`, `invoke_llm`, and `web_search`) and the `env` that helper needs to reach Composio from inside your box.
+The core of the integration. You create a Tool Router session yourself with code execution off — `workbench.enable: false`, so Composio will not run code for you — then hand that session to `experimental_createLocalWorkbenchSession`. The helper validates the session is local (it errors if the session has the remote workbench enabled, because the managed workbench and a local sandbox can't both run for one session) and returns the pieces you run yourself: a `helperSource` (a Python helper with `run_composio_tool`, `invoke_llm`, and `web_search`) and the `env` that helper needs to reach Composio from inside your box.
 
 <FileBuildup name="reviewer" step={3} />
 

@@ -8,7 +8,7 @@
  * (src/runner.ts + src/workbench.ts + src/sandbox/e2b.ts) so each Composio
  * concept reads on its own, the way slack-bot-build.ts simplifies the Slack bot.
  *
- * Source: ComposioHQ/local-pr-reviewer @ 165c3907c3a0101b45f8fc2a46b8422c1544713c
+ * Source: ComposioHQ/local-pr-reviewer @ c3baff810a6b8dbf1e2c1eff45ddc9785998e3e8
  * Refresh this map (and local-workbench-source.json) when that repo changes.
  *
  * This data is rendered via @pierre/diffs, NOT twoslash, so it is not
@@ -44,14 +44,17 @@ async function requireGithubConnection() {
 `;
 
 const stage3 = `${stage2}
-// The local workbench session. This is a normal Tool Router session with
-// \`workbench.enable: false\`: Composio won't run code for you. Instead it hands
-// back the pieces you need to run code yourself — wherever you choose.
+// The local workbench session. Create a normal Tool Router session yourself with
+// \`workbench.enable: false\` — Composio won't run code for you — then hand that
+// session to the helper, which validates it's local and gives you the pieces to
+// run code yourself, wherever you choose.
 async function createWorkbench() {
-  return experimental_createLocalWorkbenchSession(composio, userId, {
+  const session = await composio.create(userId, {
     toolkits: ['github'],
+    workbench: { enable: false },
   });
-  // returns { session, helperSource, env }:
+  return experimental_createLocalWorkbenchSession(composio, session);
+  // returns { helperSource, env }:
   //   helperSource — a Python helper exposing run_composio_tool / invoke_llm / web_search
   //   env          — the variables that helper needs to reach Composio from inside your box
 }
@@ -166,7 +169,7 @@ const STAGES: { title: string; description: string; code: string }[] = [
   {
     title: 'Create the local workbench session',
     description:
-      'The whole idea, in one call. experimental_createLocalWorkbenchSession opens a Tool Router session with workbench.enable: false — Composio will not run code for you — and returns the helper source and env you run yourself.',
+      'The whole idea. Create a Tool Router session yourself with workbench.enable: false — Composio will not run code for you — then hand that session to experimental_createLocalWorkbenchSession, which validates it is local and returns the helper source and env you run yourself.',
     code: stage3,
   },
   {
