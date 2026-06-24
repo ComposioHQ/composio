@@ -165,24 +165,35 @@ function loadKnowledge(): DocPage[] {
  * can answer "do you have <toolkit>?" — individual toolkit pages are generated
  * from this data, not from MDX, so they aren't covered by the content scan.
  */
+interface Toolkit {
+  slug?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  authSchemes?: string[];
+}
+
+let toolkitMap: Map<string, Toolkit> | undefined;
+
+/** Parse `public/data/toolkits.json` once into a slug -> toolkit map. */
+function getToolkitMap(): Map<string, Toolkit> {
+  if (toolkitMap) return toolkitMap;
+  const map = new Map<string, Toolkit>();
+  try {
+    const parsed = JSON.parse(readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8'));
+    const list: Toolkit[] = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
+    for (const tk of list) if (tk?.slug) map.set(tk.slug, tk);
+  } catch {
+    // no catalog available
+  }
+  toolkitMap = map;
+  return map;
+}
+
 function loadToolkits(): DocPage[] {
-  let raw: string;
-  try {
-    raw = readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8');
-  } catch {
-    return [];
-  }
-  let list: Array<{ slug?: string; name?: string; description?: string; category?: string }>;
-  try {
-    const parsed = JSON.parse(raw);
-    list = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
-  } catch {
-    return [];
-  }
   const pages: DocPage[] = [];
-  for (const tk of list) {
-    if (!tk?.slug) continue;
-    const name = tk.name ?? tk.slug;
+  for (const tk of getToolkitMap().values()) {
+    const name = tk.name ?? tk.slug!;
     const body = `${tk.description ?? ''} Category: ${tk.category ?? ''}. Toolkit slug: ${tk.slug}.`;
     pages.push(
       makePage({
@@ -247,6 +258,28 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
   const parts = clean.split('/').filter(Boolean);
   const collection = parts.shift();
   if (!collection || !COLLECTIONS.includes(collection as (typeof COLLECTIONS)[number])) return undefined;
+
+  // Toolkit pages are generated from the catalog, not MDX. Synthesize content
+  // so the assistant can confirm support and describe the toolkit.
+  if (collection === 'toolkits') {
+    const tk = getToolkitMap().get(parts.join('/'));
+    if (tk) {
+      const name = tk.name ?? tk.slug!;
+      const raw = [
+        `# ${name}`,
+        '',
+        tk.description ?? '',
+        '',
+        `- **Supported:** yes, \`${tk.slug}\` is a Composio toolkit.`,
+        `- **Category:** ${tk.category ?? 'n/a'}`,
+        `- **Auth:** ${(tk.authSchemes ?? []).join(', ') || 'n/a'}`,
+        '',
+        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions) and [Authentication](/docs/authentication).`,
+      ].join('\n');
+      return { title: `${name} toolkit`, raw };
+    }
+  }
+
   const base = join(CONTENT_ROOT, collection, ...parts);
   const candidates = [`${base}.mdx`, `${base}.md`, join(base, 'index.mdx'), join(base, 'index.md')];
   for (const candidate of candidates) {
