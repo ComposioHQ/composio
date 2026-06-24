@@ -42,6 +42,7 @@ import { ClaudeMockUI } from '@/components/claude-mock-ui';
 import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
 import { MediaSplit } from '@/components/media-split';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
+import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -135,6 +136,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     InChatAuthTerminal,
     MediaSplit,
     ManageConnectionsVisual,
+    ConnectionRefreshVisual,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

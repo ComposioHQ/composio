@@ -17,7 +17,6 @@
     "white-labeling-authentication",
     "importing-existing-connections",
     "managing-multiple-connected-accounts",
-    "subscribing-to-connection-expiry-events",
     "---Triggers and webhooks---",
     "triggers",
     "setting-up-triggers",

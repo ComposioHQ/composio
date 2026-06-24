@@ -144,7 +144,7 @@ For direct tool execution, use `initiate()` with `allow_multiple: true` and pass
 <Accordion title="How does token refresh work?">
 Composio refreshes OAuth tokens automatically before they expire. You don't need to handle this yourself.
 
-If a refresh fails permanently, for example because the user revoked access or the OAuth app was deleted, the connection status changes to `EXPIRED`. [Subscribe to expiry events](/docs/subscribing-to-connection-expiry-events) to detect this and prompt users to re-authenticate. See [Connection statuses](/docs/tools-direct/authenticating-tools#connection-statuses) for more details.
+If a refresh fails permanently, for example because the user revoked access or the OAuth app was deleted, the connection status changes to `EXPIRED`. [Subscribe to expiry events](/docs/authentication#connection-lifecycle) to detect this and prompt users to re-authenticate. See [Connection statuses](/docs/tools-direct/authenticating-tools#connection-statuses) for more details.
 </Accordion>
 
 <Accordion title="How do I redirect users back to my app after they connect?">
