@@ -10,11 +10,9 @@ experimental: true
 Shared connections are experimental and may change. ACL fields nest under an `experimental` block on the request and response, so the shapes below may shift between SDK versions. Pin a specific SDK version if you depend on the current contract.
 </Callout>
 
-<Callout type="info">
-If you're building an agent, prefer [sessions](/docs/configuring-sessions). Sessions let you pin a shared connection into a session config; see [Using a shared connection in a session](#using-a-shared-connection) below.
-</Callout>
-
 By default, a connected account is **PRIVATE**: only the `userID` that created it can use it. A **SHARED** connection can be reached by other `userID`s, subject to a per-connection access control list (ACL).
+
+You use a shared connection by [pinning it into a session](#using-a-shared-connection): the session's `userID` doesn't own the connection, but the pin makes it available. A SHARED connection is never resolved implicitly, so a session reaches one only when you pin it explicitly.
 
 Typical use cases:
 
@@ -28,12 +26,8 @@ Typical use cases:
 |---|---|---|
 | **Who can use it** | Only the owning `userID` | The creator plus every `userID` permitted by the ACL |
 | **Default access for other users** | Always denied | Deny-by-default (the creator must grant access explicitly) |
-| **How it's used** | Implicit lookup by `userID` | Must be **explicitly pinned** in a session, or referenced by `connectedAccountId` on a direct execute |
+| **How it's used** | Implicit lookup by `userID` | Must be **explicitly pinned** in a session |
 | **ACL fields** | Ignored | `allowAllUsers`, `allowedUserIds`, `notAllowedUserIds` (inside the `experimental` block) |
-
-<Callout type="info">
-Note that SHARED connections are never used implicitly. A session belonging to a non-creator `userID` resolves a SHARED connection only if you explicitly pin it in the session config.
-</Callout>
 
 ## Creating a SHARED connection
 
@@ -98,6 +92,51 @@ The returned `connectedAccountId` (`ca_...`) is the ID you'll pin into other use
 
 <Callout type="warn">
 ACL fields are only valid on SHARED connections. Sending an `experimental.acl_config_for_shared` block on a PRIVATE connection raises `ComposioAclOnlyForSharedError`.
+</Callout>
+
+## Using a shared connection
+
+Pin the SHARED connection into a session through `connectedAccounts`. The session belongs to a *different* `userID` than the creator, and the pin is what makes the SHARED connection visible to that session.
+
+The session config itself is **not** experimental. You pin the connection by ID exactly as you would a PRIVATE one.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+# user_alice starts a session that pins the shared Gmail connection.
+# Gmail tools loaded from this session will resolve to that connection
+# even though user_alice did not create it.
+session = composio.create(
+    user_id="user_alice",
+    connected_accounts={
+        "gmail": ["ca_gmail_shared"],
+    },
+)
+
+tools = session.tools()
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// user_alice starts a session that pins the shared Gmail connection.
+// Gmail tools loaded from this session will resolve to that connection
+// even though user_alice did not create it.
+const session = await composio.create("user_alice", {
+  connectedAccounts: {
+    gmail: ["ca_gmail_shared"],
+  },
+});
+
+const tools = await session.tools();
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+A session may pin **at most one SHARED connection per toolkit**. Pinning two SHARED Gmail connections in the same session is rejected at session create time. Mixing one SHARED with multiple PRIVATE pins is allowed.
 </Callout>
 
 ## ACL resolution rule
@@ -184,84 +223,6 @@ Passing `notAllowedUserIds: []` **clears the deny list**, which silently re-gran
 </Callout>
 
 ACL writes are restricted to the connection's creator or an API key caller. Other callers get a permission error.
-
-## Using a shared connection
-
-### In a session
-
-Pin the SHARED connection into the session through `connectedAccounts`. The session belongs to a *different* `userID` than the creator, and the pin is what makes the SHARED connection visible to that session.
-
-The session config itself is **not** experimental. Only the connection you're pinning is, so you pin by ID exactly as you would a PRIVATE connection.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-# user_alice starts a session that pins the shared Gmail connection.
-# Gmail tools loaded from this session will resolve to that connection
-# even though user_alice did not create it.
-session = composio.create(
-    user_id="user_alice",
-    connected_accounts={
-        "gmail": ["ca_gmail_shared"],
-    },
-)
-
-tools = session.tools()
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-// user_alice starts a session that pins the shared Gmail connection.
-// Gmail tools loaded from this session will resolve to that connection
-// even though user_alice did not create it.
-const session = await composio.create("user_alice", {
-  connectedAccounts: {
-    gmail: ["ca_gmail_shared"],
-  },
-});
-
-const tools = await session.tools();
-```
-  </Tab>
-</Tabs>
-
-<Callout type="info">
-A session may pin **at most one SHARED connection per toolkit**. Pinning two SHARED Gmail connections in the same session is rejected at session create time. Mixing one SHARED with multiple PRIVATE pins is allowed.
-</Callout>
-
-### Direct execution
-
-Pass the SHARED connection's ID explicitly via `connectedAccountId`:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-result = composio.tools.execute(
-    slug="GMAIL_SEND_EMAIL",
-    user_id="user_alice",
-    connected_account_id="ca_gmail_shared",
-    arguments={"to": "person@example.com", "subject": "hi", "body": "..."},
-)
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const result = await composio.tools.execute("GMAIL_SEND_EMAIL", {
-  userId: "user_alice",
-  connectedAccountId: "ca_gmail_shared",
-  arguments: { to: "person@example.com", subject: "hi", body: "..." },
-});
-```
-  </Tab>
-</Tabs>
-
-If `user_alice` isn't permitted by the connection's ACL, the call raises `ComposioSharedAccessDeniedError`.
 
 ## Listing SHARED connections
 
