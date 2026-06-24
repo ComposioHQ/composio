@@ -194,13 +194,13 @@ const tools = provider.createSessionTools({
 
 ```ts
 import { Composio } from '@composio/core';
-import { EveProvider, defineComposioTools } from '@composio/experimental';
+import { EveProvider, defineComposioTools } from '@composio/experimental/eve';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new EveProvider(),
 });
-const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
+const session = composio.sessions.create('user_123', {
   /* toolkits, customToolkits */
 });
 

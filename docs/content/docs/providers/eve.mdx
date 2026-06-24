@@ -41,7 +41,7 @@ COMPOSIO_API_KEY=xxxxxxxxx
 ```typescript
 // @noErrors
 import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -60,7 +60,7 @@ export const session = composio.sessions.create('user_123', {
 
 ```typescript title="agent/tools/composio.ts"
 // @noErrors
-import { defineComposioTools } from '@composio/experimental';
+import { defineComposioTools } from '@composio/experimental/eve';
 import { session } from '../session';
 
 export default defineComposioTools(session);
@@ -85,7 +85,7 @@ Pass a `hooks` object to the constructor to wrap the Tool Router meta-tools. Eac
 
 ```typescript
 // @noErrors
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 
 const provider = new EveProvider({
   hooks: {

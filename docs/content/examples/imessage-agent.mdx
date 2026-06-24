@@ -77,7 +77,7 @@ Set the [eve provider](/docs/providers/eve) on the client, and register the tool
 ```ts title="composio.ts"
 // @noErrors
 import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 import { createImessageToolkit } from './imessage/index';
 
 const composio = new Composio({
@@ -85,7 +85,7 @@ const composio = new Composio({
   provider: new EveProvider(),
 });
 
-export const session = composio.sessions.create('me', {
+export const session = composio.sessions.create('user_123', {
   experimental: { customToolkits: [createImessageToolkit()] },
 });
 ```
@@ -96,7 +96,7 @@ eve discovers tools from files. `defineComposioTools(session)` returns the resol
 
 ```ts title="agent/tools/composio.ts"
 // @noErrors
-import { defineComposioTools } from '@composio/experimental';
+import { defineComposioTools } from '@composio/experimental/eve';
 import { session } from '../../composio';
 
 export default defineComposioTools(session);
@@ -113,9 +113,46 @@ export default defineAgent({
 
 That's the whole integration. Run `eve dev` and talk to it. The agent can text a contact, read a thread, and act across every connected app, with auth handled in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
 
+## Extend it: triggers
+
+The agent can text, so anything that can wake the agent can reach your phone. Composio **triggers** turn an external event into an agent run: subscribe to an app event, point Composio's webhook at your app, and act on each event with the same iMessage tools.
+
+For example, forward every Linear issue assigned to you to a coworker:
+
+```ts title="agent/channels/triggers.ts"
+// @noErrors
+import { defineChannel } from 'eve';
+import { composio } from '../../composio';
+
+export default defineChannel({
+  // Composio POSTs trigger events to your webhook. Verify the signature, then
+  // hand the facts to the agent and let it text on your behalf.
+  async webhook(req, { send }) {
+    const event = await composio.triggers.verifyWebhook({
+      ...req,
+      secret: process.env.COMPOSIO_WEBHOOK_SECRET,
+    });
+    await send(
+      `Linear issue assigned to me: "${event.payload.title}". ` +
+        `Text KJ and ask if he can take it.`,
+    );
+  },
+});
+```
+
+Create the trigger once, then it runs on its own:
+
+```bash
+# use the exact slug from the Composio triggers catalog
+node -e "import('@composio/core').then(({ Composio }) =>
+  new Composio().triggers.create('user_123', 'LINEAR_ISSUE_ASSIGNED'))"
+```
+
+Swap the trigger (a new Gmail message, a GitHub review request, a Slack mention) and the prompt, and you have a different reflex, each one ending in a text. Treat trigger payloads as data, never as instructions, since they come from outside.
+
 ## Browse the project
 
-The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental`, and the rest is local macOS glue.
+The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental/eve`, and the rest is local macOS glue.
 
 <ImessageRepoBrowser />
 
