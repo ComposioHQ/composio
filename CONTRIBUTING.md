@@ -1,359 +1,238 @@
-# Contributing to Composio SDK
+# Contributing to Composio
 
-Thank you for your interest in contributing to Composio SDK! This document provides guidelines and instructions for contributing to the project.
+Thank you for taking the time to contribute to Composio. This guide is meant to get you from a fresh checkout to a focused pull request without guessing which part of the monorepo owns a change.
 
 ## Table of Contents
 
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
-- [Coding Standards](#coding-standards)
-- [Documentation Requirements](#documentation-requirements)
-- [Pull Request Process](#pull-request-process)
-- [Creating New Providers](#creating-new-providers)
+- [Common Commands](#common-commands)
+- [TypeScript SDK Workflow](#typescript-sdk-workflow)
+- [Python SDK Workflow](#python-sdk-workflow)
+- [Documentation Workflow](#documentation-workflow)
+- [Creating Providers and Examples](#creating-providers-and-examples)
 - [Testing Guidelines](#testing-guidelines)
-- [Release Process](#release-process)
+- [Changesets](#changesets)
+- [Pull Request Process](#pull-request-process)
+- [Release Notes](#release-notes)
+- [Questions and Support](#questions-and-support)
 
 ## Development Setup
 
 ### Prerequisites
 
-- Node.js (Latest LTS version recommended)
-- [pnpm](https://pnpm.io/) (v10.8.0 or later)
-- [bun](https://bun.sh) for productivity (optional)
+Composio pins its local and CI toolchain in `mise.toml` and `mise.lock`. Use those files as the source of truth for Node.js, Bun, Deno, Python, uv, and pnpm versions.
+
+Install [mise](https://mise.jdx.dev/installing-mise.html), then run:
+
+```bash
+mise install
+pnpm install
+```
+
+The current toolchain includes:
+
+- Node.js, Bun, Deno, Python, uv, and pnpm from `mise.toml`
+- pnpm installed through mise's npm backend, not through Corepack
+- Python workflows managed with uv
+
+If `pnpm install` fails during the preinstall toolchain check, run `mise install` again and make sure mise is active in your shell.
 
 ### Getting Started
 
-1. Fork and clone the repository:
-
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/composio.git
-   cd composio
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   pnpm install
-   ```
-
-3. Build the project:
-
-   ```bash
-   pnpm build
-   ```
-
-4. Run tests:
-   ```bash
-   pnpm test
-   ```
-
-### Development Commands
-
 ```bash
-# Lint code
-pnpm lint
-
-# Fix linting issues
-pnpm lint:fix
-
-# Format code
-pnpm format
-
-# Create a new provider
-pnpm create:provider <provider-name> [--agentic]
-
-# Create a new example
-pnpm create:example <example-name>
-
-# Check peer dependencies
-pnpm check:peer-deps
-
-# Update peer dependencies
-pnpm update:peer-deps
+git clone https://github.com/YOUR_USERNAME/composio.git
+cd composio
+mise install
+pnpm install
 ```
+
+For most SDK changes, start from the `next` branch unless a maintainer asks you to target another branch.
 
 ## Project Structure
 
-```
+The repository is a monorepo. The main source trees are:
+
+```text
 composio/
-├── packages/                  # Main packages directory
-│   ├── core/                 # Core SDK package
-│   └── providers/            # Provider implementations
-├── examples/                 # Example implementations
-├── docs/                     # Documentation
-├── scripts/                  # Development and build scripts
-└── .github/                  # GitHub configuration
+├── ts/                         # TypeScript SDK, providers, CLI, and E2E tests
+│   ├── packages/core/           # @composio/core
+│   ├── packages/providers/      # TypeScript provider packages
+│   ├── packages/cli/            # Composio CLI
+│   └── e2e-tests/               # Runtime compatibility tests
+├── python/                      # Python SDK and provider packages
+│   ├── composio/                # Core Python package
+│   ├── providers/               # Python provider packages
+│   ├── tests/                   # Python tests
+│   ├── docs/                    # Python development and release notes
+│   └── examples/                # Python examples
+├── docs/                        # Documentation site and generated API data
+├── .github/                     # Actions, issue templates, and repository policy
+├── ts/docs/internal/            # Internal TypeScript release and maintenance docs
+├── mise.toml                    # Toolchain source of truth
+└── toolchain-versions.json      # CI runtime matrices
 ```
 
-## Coding Standards
+Avoid relying on old top-level `packages/` paths. TypeScript packages live under `ts/packages/`, and Python packages live under `python/`.
 
-### File Headers
+## Common Commands
 
-Every source file must include a header comment with:
+From the repository root:
 
-```typescript
-/**
- * @file Description of what this file does/contains
- * @module path/to/module
- * @description Detailed description of the file's purpose
- *
- * @author Original Author <email@example.com>
- * @contributors
- * - Contributor Name <email@example.com>
- *
- * @copyright Composio 2024
- * @license ISC
- *
- * @see {@link https://related.documentation.link}
- * @see {@link https://another.related.link}
- */
+```bash
+pnpm build                  # Build packages through Turborepo
+pnpm test                   # Main TypeScript package tests plus install/release checks
+pnpm typecheck              # TypeScript package type checks
+pnpm lint                   # ESLint for TypeScript packages
+pnpm format                 # Format supported source files
+pnpm test:e2e               # All E2E runtimes
+pnpm test:e2e:node          # Node.js runtime E2E tests
+pnpm test:e2e:deno          # Deno runtime E2E tests
+pnpm test:e2e:cli           # CLI E2E tests
+pnpm test:e2e:cloudflare    # Cloudflare Workers E2E tests
 ```
 
-### Function Documentation
+Prefer the narrowest command that proves your change. For example, run a package-level test for a small SDK fix, then mention that scope in the pull request.
 
-Every user-facing function must include:
+## TypeScript SDK Workflow
 
-1. TSDoc documentation
-2. Example usage
-3. Parameter and return type descriptions
-4. Error cases
+TypeScript packages are under `ts/packages/`.
 
-Example:
+Useful commands include:
 
-````typescript
-/**
- * Executes a tool with the given parameters.
- *
- * @description
- * This function executes a tool with the provided parameters and returns the result.
- * It handles authentication, parameter validation, and error cases automatically.
- *
- * @example
- * ```typescript
- * const result = await executeTool('GMAIL_SEND_EMAIL', {
- *   userId: 'user123',
- *   arguments: {
- *     to: 'recipient@example.com',
- *     subject: 'Hello',
- *     body: 'Message content'
- *   }
- * });
- * ```
- *
- * @param {string} toolId - The unique identifier of the tool to execute
- * @param {ExecuteToolOptions} options - Tool execution options
- * @returns {Promise<ExecuteToolResult>} The result of the tool execution
- *
- * @throws {ToolNotFoundError} When the specified tool doesn't exist
- * @throws {ValidationError} When required parameters are missing
- * @throws {AuthenticationError} When authentication fails
- *
- * @see {@link https://docs.composio.dev/api/tools#execute}
- */
-export async function executeTool(
-  toolId: string,
-  options: ExecuteToolOptions
-): Promise<ExecuteToolResult> {
-  // Implementation
-}
-````
-
-### Code Style
-
-1. Use TypeScript for all new code
-2. Follow the existing code style in the repository
-3. Use ESLint and Prettier for code formatting
-4. Use meaningful variable and function names
-5. Keep functions small and focused
-6. Write unit tests for all new code
-7. Use async/await instead of Promises
-8. Use named exports instead of default exports
-9. Use const assertions for constants
-10. Use type assertions sparingly
-
-### Error Handling
-
-1. Use custom error classes
-2. Include meaningful error messages
-3. Document error cases in TSDoc
-4. Include error codes for API errors
-5. Log errors appropriately
-
-Example:
-
-```typescript
-/**
- * Custom error for tool execution failures.
- */
-export class ToolExecutionError extends ComposioError {
-  constructor(
-    message: string,
-    public readonly toolId: string,
-    public readonly cause?: Error
-  ) {
-    super(message, 'TOOL_EXECUTION_ERROR');
-    this.name = 'ToolExecutionError';
-  }
-}
+```bash
+pnpm --filter @composio/core test
+pnpm --filter @composio/core typecheck
+pnpm --filter @composio/core build
+pnpm --filter @composio/cli test
+pnpm --filter @composio/cli typecheck
 ```
 
-## Documentation Requirements
+When changing provider packages, run the relevant provider tests and type checks rather than the entire monorepo if the change is isolated.
 
-### Package Documentation
+For runtime compatibility changes, check the relevant E2E package under `ts/e2e-tests/`. The root scripts support focused runtime groups such as `test:e2e:node`, `test:e2e:deno`, `test:e2e:cli`, and `test:e2e:cloudflare`.
 
-Each package must include:
+## Python SDK Workflow
 
-1. README.md with:
+Python code is under `python/`. Use uv and the repo-pinned Python version from `mise.toml`.
 
-   - Package description
-   - Installation instructions
-   - Usage examples
-   - API reference
-   - Environment variables
-   - Contributing guidelines
+Useful commands include:
 
-2. API documentation:
+```bash
+uv run --project python pytest python/tests
+uv run --project python ruff check --config python/config/ruff.toml python
+uv run --project python ruff format --check --config python/config/ruff.toml python
+```
 
-   - TSDoc for all public APIs
-   - Example code snippets
-   - Error handling documentation
-   - Type definitions
+For a small Python SDK change, run the affected test file or class first, then expand to the nearest relevant suite. For example:
 
-3. Example implementations:
-   - Basic usage example
-   - Advanced usage examples
-   - Integration examples
+```bash
+uv run --project python pytest python/tests/test_tool_router.py -q
+```
 
-### Provider Documentation
+Python development notes live in `python/docs/`.
 
-Provider packages must additionally include:
+## Documentation Workflow
 
-1. Provider-specific setup instructions
-2. Authentication requirements
-3. Supported features
-4. Limitations and constraints
-5. Integration examples
-6. Streaming support details
-7. Error handling examples
+Documentation lives under `docs/`. Some data files under `docs/public/data/` and `docs/public/openapi*.json` are generated, so check the surrounding scripts before editing generated output by hand.
 
-## Pull Request Process
+Useful references:
 
-1. Create a new branch for your changes:
+- `docs/CLAUDE.md` for docs-specific conventions
+- `docs/scripts/` for documentation data generation
+- `.github/workflows/docs-*.yml` for docs CI coverage
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+When changing docs, run the narrow validation command that matches the touched area. If a generated file changes, explain how it was regenerated in the PR body.
 
-2. Make your changes following the coding standards
+## Creating Providers and Examples
 
-3. Add tests for new functionality
+Use the repository scripts so package layout, README structure, and workspace metadata stay consistent.
 
-4. Update documentation as needed
+```bash
+pnpm create:provider <provider-name> [--agentic]
+pnpm create:example <example-name>
+```
 
-5. Create a changeset:
-
-   ```bash
-   pnpm changeset
-   ```
-
-6. Push your changes and create a pull request
-
-7. Wait for review and address any feedback
-
-## Creating New Providers
-
-1. Use the provider creation script:
-
-   ```bash
-   pnpm create:provider my-provider [--agentic]
-   ```
-
-2. Implement required methods:
-
-   - For non-agentic providers: `wrapTool` and `wrapTools`, and helper functions
-   - For agentic providers: `wrapTool`, `wrapTools`, and execution handlers
-
-3. Add comprehensive tests
-
-4. Add provider documentation
-
-5. Create example implementations
+Provider implementations should include tests, documentation, and examples that match the conventions of nearby providers. Keep provider-specific behavior in the provider package; avoid changing core SDK behavior unless the integration requires it.
 
 ## Testing Guidelines
 
-1. Write unit tests for all new code
-2. Include integration tests for providers
-3. Test error cases
-4. Test edge cases
-5. Use mocks appropriately
-6. Test streaming functionality
-7. Test with different Node.js versions
+Good pull requests include tests that pin the behavior they change.
 
-Example test:
+When possible:
 
-```typescript
-describe('ToolExecution', () => {
-  it('should execute a tool successfully', async () => {
-    const result = await executeTool('TEST_TOOL', {
-      userId: 'user123',
-      arguments: { test: true },
-    });
-    expect(result.successful).toBe(true);
-  });
+1. Add a focused regression test before or with the fix.
+2. Cover the negative path, not only the happy path.
+3. Keep fixtures minimal and local.
+4. Avoid live service calls in unit tests.
+5. Document any test you could not run locally.
+6. Use `git diff --check` before submitting to catch whitespace issues.
 
-  it('should handle errors appropriately', async () => {
-    await expect(
-      executeTool('INVALID_TOOL', {
-        userId: 'user123',
-        arguments: {},
-      })
-    ).rejects.toThrow(ToolNotFoundError);
-  });
-});
-```
+For SDK changes, prefer package-level tests over broad monorepo runs unless the behavior crosses package boundaries. For docs-only changes, code tests are usually not needed, but markdown/link or generated-data checks may apply.
 
-## Release Process
+## Coding Standards
 
-1. Create a release branch:
+Follow the style of the files you edit.
 
-   ```bash
-   git checkout -b release/v1.2.3
-   ```
+General expectations:
 
-2. Update version numbers:
+- Keep changes focused and reviewable.
+- Use clear names and small functions.
+- Add comments only when they explain non-obvious behavior.
+- Prefer typed errors and existing error classes over ad-hoc exceptions.
+- Avoid introducing new public API surface without tests and documentation.
+- Do not add boilerplate file headers unless the surrounding package already uses them.
 
-   ```bash
-   pnpm changeset version
-   ```
+## Changesets
 
-3. Update CHANGELOG.md
+Run `pnpm changeset` when your change affects a published package or user-visible package behavior.
 
-4. Create a release commit:
+A changeset is usually needed for:
 
-   ```bash
-   git commit -am "Release v1.2.3"
-   ```
+- TypeScript or Python SDK runtime behavior changes
+- New provider package behavior
+- Public API additions or removals
+- Bug fixes that should appear in release notes
 
-5. Create a pull request for the release
+A changeset is usually not needed for:
 
-6. After approval, merge and tag:
+- Docs-only changes
+- Tests-only changes
+- Internal CI or repository-maintenance changes with no published package impact
 
-   ```bash
-   git tag v1.2.3
-   git push origin v1.2.3
-   ```
+If you are unsure, mention it in the PR body and ask the maintainer whether a changeset is expected.
 
-7. Publish to npm:
-   ```bash
-   pnpm changeset publish
-   ```
+## Pull Request Process
+
+1. Branch from the appropriate base, usually `next`.
+2. Keep the scope small and explain why the change belongs in that scope.
+3. Add or update tests for behavior changes.
+4. Run the narrowest meaningful validation commands.
+5. Add a changeset when the change affects published package behavior.
+6. Open the PR with a clear summary, test plan, and any known limitations.
+
+A good PR body answers:
+
+- What changed?
+- Why is this the right layer for the fix?
+- How was it tested?
+- What is intentionally out of scope?
+
+## Release Notes
+
+Release processes are maintained in dedicated docs:
+
+- TypeScript and CLI release notes: `ts/docs/internal/release.md`
+- Python release notes: `python/docs/release.md`
+
+Most contributors do not need to run release commands. Add a changeset when needed and let the release workflow handle publishing.
 
 ## Questions and Support
 
-- Join our [Discord Community](https://discord.gg/composio)
-- Check our [Documentation](https://docs.composio.dev)
-- File issues on [GitHub](https://github.com/ComposioHQ/composio/issues)
+- Join the [Discord community](https://discord.gg/composio)
+- Read the [documentation](https://docs.composio.dev)
+- Open or comment on a [GitHub issue](https://github.com/ComposioHQ/composio/issues)
 
 ## License
 
-By contributing to Composio SDK, you agree that your contributions will be licensed under the ISC License.
+By contributing to Composio, you agree that your contributions will be licensed under the ISC License.
