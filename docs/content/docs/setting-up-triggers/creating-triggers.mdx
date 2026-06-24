@@ -6,10 +6,7 @@ keywords: [triggers, create trigger, trigger config]
 
 A trigger watches for one event (like `GITHUB_COMMIT_EVENT`) on one user's connected account. Create one, and events start flowing to your [subscription or webhook URL](/docs/setting-up-triggers/subscribing-to-events). For the bigger picture, see [Triggers](/docs/triggers).
 
-<Callout type="info" title="Prerequisites">
-- An [auth config](/docs/authentication#behind-the-scenes) for the toolkit you want to monitor
-- A [connected account](/docs/authentication) for the user whose events you want to capture
-</Callout>
+The user must already be authenticated for the toolkit you want to monitor. That means an [auth config](/docs/authentication#behind-the-scenes) for the toolkit and a [connected account](/docs/authentication) for that user. See [Authentication](/docs/authentication) if you haven't set these up.
 
 ## Inspect the trigger type
 
@@ -75,25 +72,42 @@ console.log(`Trigger created: ${trigger.triggerId}`);
   </Tab>
 </Tabs>
 
-<Callout>
-Pass a `user_id` and the SDK finds that user's connected account for the toolkit automatically. If the user has more than one, it uses the most recently created account. Pass a `connected_account_id`/`connectedAccountId` to pick a specific one.
-</Callout>
+You only pass a `user_id`. The SDK looks up that user's connected account for the toolkit automatically.
+
+### Targeting a specific connected account
+
+If a user has more than one connected account for the toolkit, the SDK uses the most recently created one. Pass a connected account ID to pick exactly which account the trigger watches.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    connected_account_id="ca_def456",
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const userId = 'user-id-123435';
+// ---cut---
+const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+  connectedAccountId: 'ca_def456',
+  triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
+});
+```
+  </Tab>
+</Tabs>
 
 <Callout>
 Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, pin a version at SDK initialization. See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
 </Callout>
 
 That's it. The trigger is active. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events).
-
-## From the dashboard
-
-1. Go to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) and select the auth config for the toolkit.
-2. Open **Active Triggers** and click **Create Trigger**.
-3. Select the connected account to create the trigger for.
-4. Choose a trigger type and fill in its config.
-5. Click **Create Trigger**.
-
-<Video src="/videos/triggers-creation.mp4" caption="Creating a GitHub Star Added trigger from the dashboard" />
 
 <Callout>
 **Bringing your own OAuth app?** Some realtime triggers need a one-time webhook endpoint registration before they fire. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).

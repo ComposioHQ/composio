@@ -87,19 +87,6 @@ await composio.triggers.enable('ti_abcd123');
   </Tab>
 </Tabs>
 
-You can also toggle triggers from the dashboard:
-
-1. Go to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) and select your auth config
-2. Navigate to **Active Triggers**
-3. Toggle the trigger on or off
-
-<Figure
-  src="/images/trigger-enable-disable.png"
-  alt="Enable/disable triggers from the dashboard"
-  caption="Enable/disable triggers from the dashboard"
-  size="lg"
-/>
-
 ## Deleting triggers
 
 Permanently remove a trigger instance:
@@ -126,4 +113,4 @@ Deleting a trigger is permanent. Use `disable()` instead to temporarily stop rec
 
 ## Next
 
-<Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
+<Card icon={<ShieldCheck />} title="Verifying signatures" href="/docs/setting-up-triggers/subscribing-to-events#verifying-signatures" description="Validate webhook signatures to ensure payloads are authentic" />
