@@ -218,6 +218,10 @@ async function processSlowAction(
 
   if (action?.action_id === ACTION_CONFIRM) {
     const draft = extractDraft(payload.message ?? {});
+    // Swap the buttons out immediately so a double-click can't post twice.
+    const posting = buildLoadingMessage("Posting your standup…");
+    await updateMessage(dmChannel, dmTs, posting.text, posting.blocks);
+
     const name = member ? memberName(member) : ctx.memberEmail;
     const connected = await getConnectedIntegrations(ctx.memberEmail);
 

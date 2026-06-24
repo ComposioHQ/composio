@@ -28,7 +28,7 @@ export async function findChannelId(channelName: string): Promise<string | null>
   let cursor: string | undefined;
   for (let i = 0; i < 10; i++) {
     const qs = new URLSearchParams({
-      types: "public_channel",
+      types: "public_channel,private_channel",
       limit: "200",
       ...(cursor ? { cursor } : {}),
     });
