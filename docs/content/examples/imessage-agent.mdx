@@ -49,6 +49,7 @@ COMPOSIO_USER_ID=me
 A custom toolkit is a named group of custom tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
 
 ```ts title="imessage/send-message.ts"
+// @noErrors
 import { experimental_createTool } from '@composio/core';
 import { z } from 'zod/v3'; // Composio's custom-tool API expects zod/v3
 import { runAppleScript } from './applescript.js';
@@ -86,6 +87,7 @@ export const sendMessage = experimental_createTool('SEND', {
 Group your tools into a toolkit. The full project also ships `FIND_CONTACT` (fuzzy contact lookup over Contacts.app), `READ_MESSAGES` (recent messages from `chat.db`), and `RECALL`/`REMEMBER` (per-contact memory), each built the same way:
 
 ```ts title="imessage/index.ts"
+// @noErrors
 import { experimental_createToolkit } from '@composio/core';
 import { sendMessage } from './send-message.js';
 import { findContact } from './find-contact.js';
@@ -108,6 +110,7 @@ The toolkit depends only on `@composio/core`, so it drops into any Composio agen
 Set the [eve provider](/docs/providers/eve) on the client, and register the toolkit on the session. The session now exposes the catalog meta-tools **and** the local `LOCAL_IMESSAGE_*` tools from one place:
 
 ```ts title="composio.ts"
+// @noErrors
 import { Composio } from '@composio/core';
 import { EveProvider } from '@composio/experimental';
 import { createImessageToolkit } from './imessage/index.js';
@@ -128,6 +131,7 @@ export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
 eve discovers tools from files. `defineComposioTools(session)` returns the resolver that gives eve `session.tools()`, so one line wires up everything:
 
 ```ts title="agent/tools/composio.ts"
+// @noErrors
 import { defineComposioTools } from '@composio/experimental';
 import { session } from '../../composio.js';
 
@@ -135,6 +139,7 @@ export default defineComposioTools(session);
 ```
 
 ```ts title="agent/agent.ts"
+// @noErrors
 import { defineAgent } from 'eve';
 
 export default defineAgent({
