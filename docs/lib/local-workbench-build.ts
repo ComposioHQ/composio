@@ -142,13 +142,22 @@ export async function runReview(repo: string, pr: number) {
   return collector.result() ?? '(no checks ran — nothing posted)';
 }
 
-// The agent emits its final review behind a ::result:: marker on stdout.
+// The agent emits its final review behind a ::result:: marker on stdout,
+// JSON-encoded, so parse it back (falling back to the raw text).
 function collectOutput() {
   let output = '';
   return {
     onStdout: (chunk: string) => { output += chunk; process.stdout.write(chunk); },
     onStderr: (chunk: string) => { output += chunk; process.stderr.write(chunk); },
-    result: () => output.match(/::result::(.*)$/m)?.[1],
+    result: () => {
+      const match = output.match(/::result::(.*)$/m);
+      if (!match) return undefined;
+      try {
+        return JSON.parse(match[1]) as string;
+      } catch {
+        return match[1];
+      }
+    },
   };
 }
 `;
