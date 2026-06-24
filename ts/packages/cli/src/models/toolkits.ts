@@ -10,7 +10,7 @@ import { JSONTransformSchema } from './utils/json-transform-schema';
  */
 export const ToolkitSlug = Schema.Trim.pipe(
   Schema.nonEmptyString(),
-  Schema.pattern(/^[a-z0-9][a-z0-9_-]*$/, {
+  Schema.pattern(/^[a-z0-9_][a-z0-9_-]*$/, {
     identifier: 'ToolkitSlug',
     message: () =>
       'Toolkit slug must contain only lowercase letters, digits, underscores, and hyphens (no path separators)',

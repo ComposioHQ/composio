@@ -1,6 +1,7 @@
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
-import { safeOutputPath } from 'src/generation/safe-output-path';
+import { Effect } from 'effect';
+import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import { generatePythonToolkitSources } from './generate-toolkit-sources';
 
 type GeneratePythonSourcesParams = {
@@ -9,13 +10,15 @@ type GeneratePythonSourcesParams = {
 };
 
 export function generatePythonSources(params: GeneratePythonSourcesParams) {
-  return (index: ToolkitIndex): Array<SourceFile> => {
+  return (index: ToolkitIndex): Effect.Effect<Array<SourceFile>, SafeOutputPathError> => {
     const toolkiteSources = generatePythonToolkitSources(params.banner)(index);
 
-    return [
-      ...toolkiteSources.map(
-        ([filename, content]) => [safeOutputPath(params.outputDir, filename), content] as const
-      ),
-    ] as const;
+    return Effect.all(
+      toolkiteSources.map(([filename, content]) =>
+        safeOutputPath(params.outputDir, filename).pipe(
+          Effect.map(filePath => [filePath, content] as const)
+        )
+      )
+    );
   };
 }

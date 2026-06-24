@@ -1,4 +1,12 @@
 import path from 'node:path';
+import { Data, Effect } from 'effect';
+
+export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutputPathError')<{
+  readonly filename: string;
+  readonly outputDir: string;
+  readonly resolvedPath: string;
+  readonly message: string;
+}> {}
 
 /**
  * Joins a generated filename to the output directory, ensuring the result stays
@@ -9,17 +17,29 @@ import path from 'node:path';
  * filename derived from API-controlled data cannot escape the intended output
  * directory via `..` segments or absolute paths.
  *
- * @throws {Error} if the resolved path is not contained within `outputDir`.
+ * Fails if the resolved path is not contained within `outputDir`.
  */
-export function safeOutputPath(outputDir: string, filename: string): string {
+export function safeOutputPath(
+  outputDir: string,
+  filename: string
+): Effect.Effect<string, SafeOutputPathError> {
   const resolvedDir = path.resolve(outputDir);
   const resolved = path.resolve(resolvedDir, filename);
+  const relative = path.relative(resolvedDir, resolved);
+  const isWithinOutputDir =
+    relative === '' ||
+    (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 
-  if (resolved !== resolvedDir && !resolved.startsWith(resolvedDir + path.sep)) {
-    throw new Error(
-      `Refusing to write file outside of output directory: ${filename} resolves to ${resolved}`
+  if (path.isAbsolute(filename) || !isWithinOutputDir) {
+    return Effect.fail(
+      new SafeOutputPathError({
+        filename,
+        outputDir,
+        resolvedPath: resolved,
+        message: `Refusing unsafe generated filename: ${filename} resolves to ${resolved}`,
+      })
     );
   }
 
-  return resolved;
+  return Effect.succeed(path.join(outputDir, filename));
 }
