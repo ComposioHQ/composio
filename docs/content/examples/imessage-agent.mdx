@@ -1,5 +1,5 @@
 ---
-title: iMessage on eve
+title: iMessage custom toolkit with eve
 description: Build an agent that texts on your behalf from your own Mac. A Composio custom toolkit wraps local iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog. The full project is below.
 keywords: [custom toolkit, imessage, local tools, eve, provider, session, custom tools, macOS, applescript]
 full: true
@@ -35,7 +35,6 @@ npm install @composio/core @composio/experimental eve
 
 ```txt title=".env.local"
 COMPOSIO_API_KEY=xxxxxxxxx
-COMPOSIO_USER_ID=me
 ```
 
 </Step>
@@ -48,51 +47,17 @@ COMPOSIO_USER_ID=me
 
 A custom toolkit is a named group of custom tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
 
-```ts title="imessage/send-message.ts"
-// @noErrors
-import { experimental_createTool } from '@composio/core';
-import { z } from 'zod/v3'; // Composio's custom-tool API expects zod/v3
-import { runAppleScript } from './applescript.js';
-
-const SEND_SCRIPT = `on run {targetBuddy, targetText}
-  tell application "Messages"
-    set targetService to 1st service whose service type = iMessage
-    send targetText to buddy targetBuddy of targetService
-  end tell
-end run`;
-
-// A short "think + type" pause so messages aren't instant.
-function humanDelayMs(text: string): number {
-  const think = 800 + Math.random() * 1700;
-  const typing = text.length * (40 + Math.random() * 40);
-  return Math.min(think + typing, 12_000);
-}
-
-export const sendMessage = experimental_createTool('SEND', {
-  name: 'Send iMessage',
-  description: "Send an iMessage from the user's Mac to a phone number or iMessage email.",
-  preload: true, // surface it in session.tools() without a search step
-  inputParams: z.object({
-    to: z.string().describe('Phone number (e.g. +15551234567) or iMessage email.'),
-    text: z.string().describe('Message body to send.'),
-  }),
-  execute: async ({ to, text }) => {
-    await new Promise(r => setTimeout(r, humanDelayMs(text)));
-    await runAppleScript(SEND_SCRIPT, [to, text]);
-    return { sent: true, to };
-  },
-});
-```
+<ImessageFileBuildup name="send" />
 
 Group your tools into a toolkit. The full project also ships `FIND_CONTACT` (fuzzy contact lookup over Contacts.app), `READ_MESSAGES` (recent messages from `chat.db`), and `RECALL`/`REMEMBER` (per-contact memory), each built the same way:
 
 ```ts title="imessage/index.ts"
 // @noErrors
 import { experimental_createToolkit } from '@composio/core';
-import { sendMessage } from './send-message.js';
-import { findContact } from './find-contact.js';
-import { readMessages } from './read-messages.js';
-import { recallContact, rememberContact } from './memory.js';
+import { sendMessage } from './send-message';
+import { findContact } from './find-contact';
+import { readMessages } from './read-messages';
+import { recallContact, rememberContact } from './memory-tools';
 
 export function createImessageToolkit() {
   return experimental_createToolkit('IMESSAGE', {
@@ -113,15 +78,14 @@ Set the [eve provider](/docs/providers/eve) on the client, and register the tool
 // @noErrors
 import { Composio } from '@composio/core';
 import { EveProvider } from '@composio/experimental';
-import { createImessageToolkit } from './imessage/index.js';
+import { createImessageToolkit } from './imessage/index';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new EveProvider(),
 });
 
-export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
-  workbench: { enable: false }, // a texting agent doesn't need the remote sandbox
+export const session = composio.sessions.create('me', {
   experimental: { customToolkits: [createImessageToolkit()] },
 });
 ```
@@ -133,7 +97,7 @@ eve discovers tools from files. `defineComposioTools(session)` returns the resol
 ```ts title="agent/tools/composio.ts"
 // @noErrors
 import { defineComposioTools } from '@composio/experimental';
-import { session } from '../../composio.js';
+import { session } from '../../composio';
 
 export default defineComposioTools(session);
 ```
@@ -151,7 +115,7 @@ That's the whole integration. Run `eve dev` and talk to it. The agent can text a
 
 ## Browse the project
 
-The key files, in one place. The Composio touch-points (the custom toolkit, the eve provider, the session) carry the integration; everything else is local macOS glue.
+The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental`, and the rest is local macOS glue.
 
 <ImessageRepoBrowser />
 
