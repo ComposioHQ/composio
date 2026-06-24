@@ -134,47 +134,6 @@ export default async function webhookHandler(req: NextApiRequest, res: NextApiRe
   </Tab>
 </Tabs>
 
-### Re-authenticate the user
-
-Use `session.authorize()` to generate a new Connect Link for the expired toolkit. The user completes OAuth again, and the connected account returns to `ACTIVE` status.
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-session = composio.create(user_id="user_123")
-connection_request = session.authorize("gmail")
-
-# Send this URL to the user (email, in-app notification, etc.)
-print(connection_request.redirect_url)
-
-# Optionally wait for completion
-connected_account = connection_request.wait_for_connection(60000)
-print(f"Re-connected: {connected_account.id}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-const session = await composio.create("user_123");
-const connectionRequest = await session.authorize("gmail");
-
-// Send this URL to the user (email, in-app notification, etc.)
-console.log(connectionRequest.redirectUrl);
-
-// Optionally wait for completion
-const connectedAccount = await connectionRequest.waitForConnection(60000);
-console.log(`Re-connected: ${connectedAccount.id}`);
-```
-  </Tab>
-</Tabs>
-
 <Callout>
 Always [verify webhook signatures](/docs/webhook-verification) before processing events in production.
 </Callout>
