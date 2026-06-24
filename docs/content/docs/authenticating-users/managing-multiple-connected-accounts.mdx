@@ -103,29 +103,14 @@ Aliases are human-readable labels for connected accounts (e.g., `"work-gmail"`, 
 
 ### Setting an alias during connection
 
-Pass `alias` to `session.authorize()`, `connectedAccounts.initiate()`, or `connectedAccounts.link()`:
+Pass `alias` to `session.authorize()`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(user_id="user_123")
 
-# Via session.authorize()
 connection_request = session.authorize("gmail", alias="work-gmail")
-
-# Via connectedAccounts.initiate()
-connection_request = composio.connected_accounts.initiate(
-    "user_123",
-    "ac_auth_config_id",
-    alias="work-gmail",
-)
-
-# Via connectedAccounts.link()
-connection_request = composio.connected_accounts.link(
-    "user_123",
-    "ac_auth_config_id",
-    alias="work-gmail",
-)
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -135,25 +120,12 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123");
 // ---cut---
-// Via session.authorize()
 const connectionRequest = await session.authorize("gmail", { alias: "work-gmail" });
-
-// Via connectedAccounts.initiate()
-const connectionRequest2 = await composio.connectedAccounts.initiate(
-  "user_123",
-  "ac_auth_config_id",
-  { alias: "work-gmail" },
-);
-
-// Via connectedAccounts.link()
-const connectionRequest3 = await composio.connectedAccounts.link(
-  "user_123",
-  "ac_auth_config_id",
-  { alias: "work-gmail" },
-);
 ```
 </Tab>
 </Tabs>
+
+The direct-execution methods `connectedAccounts.initiate()` and `connectedAccounts.link()` accept the same `alias` parameter.
 
 ### Updating or clearing an alias
 
@@ -248,4 +220,4 @@ for (const toolkit of toolkits.items) {
 
 ## Next
 
-<Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Pass connectedAccounts, auth configs, and toolkit restrictions to sessions" />
+<Card icon={<Database />} title="Shared connections" href="/docs/authenticating-users/shared-connections" description="Make one connected account usable by multiple users with a per-user access control list" />

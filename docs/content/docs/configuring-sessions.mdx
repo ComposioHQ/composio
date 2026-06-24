@@ -441,7 +441,7 @@ Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
 
 <Callout type="info">
 `preload.tools` is not supported when `multiAccount.enable` is true. See
-[Managing multiple connected accounts](/docs/managing-multiple-connected-accounts).
+[Managing multiple connected accounts](/docs/authenticating-users/managing-multiple-connected-accounts).
 </Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -570,7 +570,7 @@ const session = await composio.create("user_123", {
 </Tabs>
 
 <Callout type="info">
-Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/managing-multiple-connected-accounts) is disabled.
+Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/authenticating-users/managing-multiple-connected-accounts) is disabled.
 </Callout>
 
 ### Precedence

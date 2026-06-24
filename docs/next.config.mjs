@@ -327,6 +327,11 @@ const config = {
         permanent: true,
       },
       {
+        source: '/docs/managing-multiple-connected-accounts',
+        destination: '/docs/authenticating-users/managing-multiple-connected-accounts',
+        permanent: true,
+      },
+      {
         source: '/features/authentication',
         destination: '/docs/authentication',
         permanent: true,
