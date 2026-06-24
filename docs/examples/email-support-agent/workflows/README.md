@@ -1,8 +1,8 @@
 # Workflow Files
 
-This folder is the personalization layer for the email support agent.
+This folder is the personalization layer for the email support workflow.
 
-Edit `support_email.md` before connecting a real inbox. Add the company context, support policy, FAQ, escalation rules, and examples that the draft agent should follow.
+Edit `support_email.md` before connecting a real inbox. Add the company context, support policy, FAQ, escalation rules, and examples that the draft workflow should follow.
 
 The app loads this file through `EMAIL_WORKFLOW_PATH` in `.env`:
 

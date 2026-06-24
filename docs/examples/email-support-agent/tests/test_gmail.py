@@ -23,7 +23,7 @@ class GmailResultTests(unittest.TestCase):
 
         self.assertEqual(messages_from_fetch_result(result), result["data"]["messages"])
 
-    def test_review_draft_uses_reply_subject_without_thread_id(self) -> None:
+    def test_review_draft_replies_in_existing_thread(self) -> None:
         calls: list[dict[str, object]] = []
 
         def fake_invoke(_tool: object, args: dict[str, object]) -> dict[str, object]:
@@ -35,6 +35,34 @@ class GmailResultTests(unittest.TestCase):
             "fetched_email": {
                 "message_id": "msg_123",
                 "thread_id": "thread_123",
+                "subject": "Webhook trigger is not creating drafts",
+                "sender": "Taylor Reed <tester@example.com>",
+                "message_text": "How can I debug webhook events that arrive without visible drafts?",
+            },
+        }
+
+        with (
+            patch.dict("os.environ", {"EMAIL_SUPPORT_DISABLE_LLM_DRAFTS": "true"}, clear=False),
+            patch("email_support_agent.utils.gmail.gmail_tool_map", return_value={DRAFT_TOOL: object()}),
+            patch("email_support_agent.utils.gmail.invoke_tool", side_effect=fake_invoke),
+        ):
+            result = create_gmail_review_draft(state)
+
+        self.assertEqual(result["draft_result"], {"successful": True, "data": {"id": "draft_123"}})
+        self.assertEqual(calls[0]["thread_id"], "thread_123")
+        self.assertEqual(calls[0]["subject"], "")
+
+    def test_review_draft_uses_reply_subject_without_thread_id(self) -> None:
+        calls: list[dict[str, object]] = []
+
+        def fake_invoke(_tool: object, args: dict[str, object]) -> dict[str, object]:
+            calls.append(args)
+            return {"successful": True, "data": {"id": "draft_123"}}
+
+        state = {
+            "user_id": "email_support_user",
+            "fetched_email": {
+                "message_id": "msg_123",
                 "subject": "Webhook trigger is not creating drafts",
                 "sender": "Taylor Reed <tester@example.com>",
                 "message_text": "How can I debug webhook events that arrive without visible drafts?",

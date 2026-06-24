@@ -8,8 +8,8 @@
 - `email_support_agent/utils/tools.py`: scoped Composio Gmail and Notion sessions.
 - `email_support_agent/utils/gmail.py`: Gmail fetch and draft tool execution.
 - `email_support_agent/webhook.py`: Composio webhook verification and routing.
-- `email_support_agent/utils/notion.py`: optional Notion tracking, duplicate message claims, and Notion graph nodes.
-- `scripts/setup_composio.py`: Gmail Connect Link, webhook subscription, and `GMAIL_NEW_GMAIL_MESSAGE` trigger setup.
+- `email_support_agent/utils/notion.py`: Notion tracking, duplicate message claims, and Notion graph nodes.
+- `scripts/setup_composio.py`: Gmail/Notion Connect Links, LangSmith project setup, webhook subscription, and `GMAIL_NEW_GMAIL_MESSAGE` trigger setup.
 
 ## Boundary
 
@@ -24,7 +24,7 @@ LangGraph owns orchestration:
 1. Fetch email context.
 2. Check trust and classify intent.
 3. Create a Gmail draft for human review.
-4. Write optional Notion tracking rows.
+4. Write Notion tracking rows.
 
 ## Draft-Only Contract
 

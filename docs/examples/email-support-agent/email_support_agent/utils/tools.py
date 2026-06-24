@@ -37,11 +37,10 @@ def gmail_tool_map(user_id: str) -> dict[str, Any]:
 
 
 def notion_tool_map(user_id: str) -> dict[str, Any]:
-    """Create a scoped Composio Notion session for optional row logging."""
+    """Create a scoped Composio Notion session for support row tracking."""
     session = Composio(provider=LanggraphProvider()).create(
         user_id=user_id,
-        # Notion is optional row logging, so keep its toolkit and tools scoped
-        # away from the Gmail drafting session.
+        # Keep Notion row tracking scoped away from the Gmail drafting session.
         toolkits=["notion"],
         tools={"notion": {"enable": SAFE_NOTION_TOOLS}},
         preload={"tools": SAFE_NOTION_TOOLS},

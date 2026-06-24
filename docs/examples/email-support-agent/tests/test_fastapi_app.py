@@ -89,5 +89,33 @@ class FastApiWebhookTests(unittest.TestCase):
             event_lines = Path(events_path).read_text(encoding="utf-8").splitlines()
             self.assertEqual(len(event_lines), 1)
 
+    def test_webhook_ignores_gmail_draft_trigger_payloads(self) -> None:
+        client = TestClient(app)
+        payload = _sample_gmail_trigger_payload()
+        data = dict(payload["data"])  # type: ignore[arg-type]
+        data["id"] = "gmail_draft_message"
+        data["message_id"] = "gmail_draft_message"
+        data["label_ids"] = ["DRAFT"]
+        payload["data"] = data
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            events_path = str(Path(tmpdir) / "events.jsonl")
+            env = {
+                "ALLOW_UNVERIFIED_WEBHOOKS": "true",
+                "LANGGRAPH_DRY_RUN": "false",
+                "WEBHOOK_EVENTS_PATH": events_path,
+            }
+            with patch.dict(os.environ, env, clear=False):
+                response = client.post(
+                    "/webhook/composio",
+                    content=json.dumps(payload).encode("utf-8"),
+                    headers={"content-type": "application/json"},
+                )
+
+        body = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(body["action"]["action"], "ignore_gmail_draft_message")
+        self.assertIsNone(body["graph_result"])
+
 if __name__ == "__main__":
     unittest.main()

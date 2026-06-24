@@ -127,6 +127,21 @@ def route_webhook_payload(payload: Mapping[str, Any]) -> WebhookAction:
     connected_account_id = metadata.get("connected_account_id")
 
     if event_type == TRIGGER_MESSAGE and trigger_slug == GMAIL_NEW_MESSAGE_TRIGGER:
+        if "DRAFT" in _label_ids(data):
+            return WebhookAction(
+                status="ignored",
+                event_type=event_type,
+                action="ignore_gmail_draft_message",
+                reason="Gmail trigger payload is a draft message created by this workflow.",
+                trigger_slug=str(trigger_slug) if trigger_slug else None,
+                trigger_id=str(trigger_id) if trigger_id else None,
+                user_id=str(user_id) if user_id else None,
+                connected_account_id=str(connected_account_id) if connected_account_id else None,
+                message_id=str(data.get("id") or data.get("message_id") or "") or None,
+                thread_id=str(data.get("thread_id") or "") or None,
+                subject=str(data.get("subject") or "") or None,
+            )
+
         return WebhookAction(
             status="accepted",
             event_type=event_type,
@@ -146,7 +161,7 @@ def route_webhook_payload(payload: Mapping[str, Any]) -> WebhookAction:
             status="ignored",
             event_type=str(event_type),
             action="ignore_trigger_message",
-            reason="Trigger message is not the Gmail new-message trigger this agent handles.",
+            reason="Trigger message is not the Gmail new-message trigger this workflow handles.",
             trigger_slug=str(trigger_slug) if trigger_slug else None,
             trigger_id=str(trigger_id) if trigger_id else None,
             user_id=str(user_id) if user_id else None,
@@ -179,7 +194,7 @@ def route_webhook_payload(payload: Mapping[str, Any]) -> WebhookAction:
         status="ignored",
         event_type=str(event_type) if event_type else None,
         action="ignore_unknown_event",
-        reason="Webhook event type is not handled by the email support agent.",
+        reason="Webhook event type is not handled by the email support workflow.",
     )
 
 
@@ -215,3 +230,10 @@ def _header(headers: Mapping[str, str], name: str) -> str:
         if key.lower() == target:
             return value
     return ""
+
+
+def _label_ids(data: Mapping[str, Any]) -> set[str]:
+    labels = data.get("label_ids") or data.get("labelIds") or []
+    if not isinstance(labels, list):
+        return set()
+    return {str(label).upper() for label in labels}

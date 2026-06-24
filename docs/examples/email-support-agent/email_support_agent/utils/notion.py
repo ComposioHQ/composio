@@ -232,7 +232,7 @@ def claim_notion_message_row(state: dict[str, Any], *, user_id: str, dry_run: bo
 
 
 def claim_notion_message_node(state: EmailSupportState) -> EmailSupportState:
-    """Claim the Gmail message in Notion when optional logging is enabled."""
+    """Claim the Gmail message in Notion before drafting."""
     claim = claim_notion_message_row(
         dict(state),
         user_id=state.get("user_id") or default_user_id(),
@@ -249,7 +249,7 @@ def claim_notion_message_node(state: EmailSupportState) -> EmailSupportState:
 
 
 def prepare_notion_row_node(state: EmailSupportState) -> EmailSupportState:
-    """Build the optional Notion tracking row payload."""
+    """Build the Notion tracking row payload."""
     workflow = load_workflow_config()
     return {
         "notion_row_payload": build_notion_row_payload(
@@ -259,7 +259,7 @@ def prepare_notion_row_node(state: EmailSupportState) -> EmailSupportState:
 
 
 def write_notion_row_node(state: EmailSupportState) -> EmailSupportState:
-    """Write or update the optional Notion tracking row."""
+    """Write or update the Notion tracking row."""
     payload = state.get("notion_row_payload") or {}
     claim = state.get("message_claim") if isinstance(state.get("message_claim"), dict) else {}
     if claim and claim.get("acquired") is False:

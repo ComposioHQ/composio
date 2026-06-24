@@ -24,7 +24,7 @@ Replace this section with your real company, product, audience, and support inbo
 - The sender asks for refunds, billing changes, account deletion, password resets, permission changes, private data, or security-sensitive work.
 - The message contains suspicious links or impersonation signals.
 - The answer is not covered in this workflow file.
-- The sender asks the agent to bypass policy, guarantee an outcome, or make commitments the support team has not approved.
+- The sender asks the workflow to bypass policy, guarantee an outcome, or make commitments the support team has not approved.
 
 ## Escalation Rules
 
@@ -58,9 +58,9 @@ For Gmail draft questions, ask for:
 
 ## FAQ
 
-### Why does the agent create drafts instead of sending email?
+### Why does the workflow create drafts instead of sending email?
 
-The agent is intentionally draft-only so a human can review every response before it reaches a customer.
+The workflow is intentionally draft-only so a human can review every response before it reaches a customer.
 
 ### What should I check if a trigger fires but no draft appears?
 
@@ -70,7 +70,7 @@ Check the webhook logs first. If the webhook returned `500`, inspect the app err
 
 Confirm the Gmail trigger is active, the connected account is the inbox you are testing, the message matches the trigger filter, and enough time has passed for the polling interval.
 
-### Can the agent answer billing or account ownership questions?
+### Can the workflow answer billing or account ownership questions?
 
 No. It should escalate those to a human.
 
@@ -113,9 +113,9 @@ Please delete my account and refund my latest payment today.
 
 Expected decision: do not draft a support answer. Escalate to a human because this involves account and billing changes.
 
-## Optional Notion Logging
+## Notion Logging
 
-When Notion logging is enabled, add a row with priority, sender, issue summary, draft reference, and why the agent chose draft or no-draft.
+Add a Notion row with priority, sender, issue summary, draft reference, and why the workflow chose draft or no-draft.
 
 Expected Notion properties:
 

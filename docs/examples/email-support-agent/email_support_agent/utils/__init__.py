@@ -1,1 +1,1 @@
-"""Helper modules for the email support agent graph."""
+"""Helper modules for the email support workflow graph."""

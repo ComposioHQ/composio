@@ -27,6 +27,7 @@ NOTION_SETUP_TOOLS = [
     "NOTION_SEARCH_NOTION_PAGE",
     "NOTION_CREATE_NOTION_PAGE",
     "NOTION_CREATE_DATABASE",
+    "NOTION_QUERY_DATABASE",
     "NOTION_INSERT_ROW_DATABASE",
 ]
 NOTION_DATABASE_SCHEMA = [
@@ -46,7 +47,7 @@ WEBHOOK_EVENTS = [
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Set up Composio for the email support agent.")
+    parser = argparse.ArgumentParser(description="Set up Composio for the email support workflow.")
     parser.add_argument("webhook_url", help="Public URL ending in /webhook/composio")
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--replace-webhook", action="store_true", help="Replace the existing project webhook subscription")
@@ -54,12 +55,12 @@ def main() -> None:
     parser.add_argument(
         "--setup-langsmith",
         action="store_true",
-        help="Create or reuse a LangSmith tracing project and enable tracing in the env file",
+        help="Create or reuse a LangSmith tracing project and enable tracing in the env file. This is now part of normal setup.",
     )
     parser.add_argument(
         "--langsmith-project",
         default="",
-        help="LangSmith project name to use with --setup-langsmith",
+        help="LangSmith project name to create or reuse",
     )
     args = parser.parse_args()
 
@@ -94,12 +95,11 @@ def main() -> None:
             replace=args.replace_notion,
         )
     )
-    if args.setup_langsmith:
-        langsmith_project = args.langsmith_project or os.getenv(
-            "LANGSMITH_PROJECT",
-            "email-support-agent",
-        )
-        env_updates.update(_ensure_langsmith_project(project_name=langsmith_project))
+    langsmith_project = args.langsmith_project or os.getenv(
+        "LANGSMITH_PROJECT",
+        "email-support-agent",
+    )
+    env_updates.update(_ensure_langsmith_project(project_name=langsmith_project))
 
     update_env(Path(args.env_file), env_updates)
 
@@ -221,15 +221,17 @@ def _ensure_gmail_trigger(composio: Composio, *, user_id: str) -> dict[str, str]
 
 
 def _ensure_notion_workspace(*, session: Any, user_id: str, replace: bool) -> dict[str, str]:
-    existing_database_id = os.getenv("NOTION_DATABASE_ID", "").strip()
-    if existing_database_id and not replace:
-        print(f"Using existing Notion database {existing_database_id}.")
-        return {"NOTION_LOG_ROWS": "true"}
-
     tools = {getattr(tool, "name", ""): tool for tool in session.tools()}
     missing = [t for t in NOTION_SETUP_TOOLS if t not in tools]
     if missing:
         raise SystemExit(f"Missing Notion setup tools: {', '.join(missing)}")
+
+    existing_database_id = os.getenv("NOTION_DATABASE_ID", "").strip()
+    if existing_database_id and not replace:
+        if _notion_database_is_accessible(tools, existing_database_id):
+            print(f"Using existing Notion database {existing_database_id}.")
+            return {"NOTION_LOG_ROWS": "true"}
+        print(f"Configured Notion database {existing_database_id} is not accessible. Creating a fresh one.")
 
     parent_page_id = os.getenv("NOTION_PARENT_PAGE_ID", "").strip() or _first_accessible_notion_page_id(tools)
     page = _invoke_tool(
@@ -240,7 +242,7 @@ def _ensure_notion_workspace(*, session: Any, user_id: str, replace: bool) -> di
             "markdown": (
                 "# Email Support Agent\n\n"
                 "This page and database were created by `scripts/setup_composio.py`.\n"
-                "Incoming support emails are logged in the database below when Notion logging is enabled.\n"
+                "Incoming support emails are logged in the database below.\n"
             ),
         },
     )
@@ -262,6 +264,37 @@ def _ensure_notion_workspace(*, session: Any, user_id: str, replace: bool) -> di
     if not database_id:
         raise SystemExit(f"Notion database creation did not return a database id: {database}")
 
+    _insert_notion_setup_row(tools, database_id)
+
+    print(f"Created Notion page {page_id}.")
+    print(f"Created Notion database {database_id}.")
+    return {
+        "NOTION_LOG_ROWS": "true",
+        "NOTION_PARENT_PAGE_ID": parent_page_id,
+        "NOTION_PAGE_ID": page_id,
+        "NOTION_DATABASE_ID": database_id,
+    }
+
+
+def _notion_database_is_accessible(tools: dict[str, Any], database_id: str) -> bool:
+    try:
+        result = _invoke_tool(
+            tools["NOTION_QUERY_DATABASE"],
+            {
+                "database_id": database_id,
+                "page_size": 1,
+            },
+        )
+    except Exception as exc:
+        print(f"Notion database check failed: {exc}")
+        return False
+    data = _result_data(result)
+    if isinstance(result, dict) and result.get("successful") is False:
+        return False
+    return bool(result) and not data.get("error")
+
+
+def _insert_notion_setup_row(tools: dict[str, Any], database_id: str) -> None:
     _invoke_tool(
         tools["NOTION_INSERT_ROW_DATABASE"],
         {
@@ -277,17 +310,6 @@ def _ensure_notion_workspace(*, session: Any, user_id: str, replace: bool) -> di
             ],
         },
     )
-
-    print(f"Created Notion page {page_id}.")
-    print(f"Created Notion database {database_id}.")
-    return {
-        "NOTION_LOG_ROWS": "true",
-        "NOTION_PARENT_PAGE_ID": parent_page_id,
-        "NOTION_PAGE_ID": page_id,
-        "NOTION_DATABASE_ID": database_id,
-    }
-
-
 
 def _first_accessible_notion_page_id(tools: dict[str, Any]) -> str:
     result = _invoke_tool(
@@ -309,7 +331,7 @@ def _first_accessible_notion_page_id(tools: dict[str, Any]) -> str:
 def _ensure_langsmith_project(*, project_name: str) -> dict[str, str]:
     api_key = os.getenv("LANGSMITH_API_KEY", "")
     if not api_key:
-        raise SystemExit("LANGSMITH_API_KEY is required when using --setup-langsmith")
+        raise SystemExit("LANGSMITH_API_KEY is required")
 
     from langsmith import Client
 

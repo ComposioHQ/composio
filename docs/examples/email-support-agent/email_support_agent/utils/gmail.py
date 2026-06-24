@@ -84,18 +84,19 @@ def create_gmail_review_draft(state: EmailSupportState) -> EmailSupportState:
     if not draft_tool:
         raise RuntimeError(f"{DRAFT_TOOL} was not available in the scoped session")
 
-    result = invoke_tool(
-        draft_tool,
-        {
-            "user_id": "me",
-            "recipient_email": email_address(facts.sender),
-            "body": draft_body,
-            "is_html": False,
-            "subject": _reply_subject(facts.subject),
-            "cc": [],
-            "bcc": [],
-        },
-    )
+    draft_args = {
+        "user_id": "me",
+        "recipient_email": email_address(facts.sender),
+        "body": draft_body,
+        "is_html": False,
+        "subject": "" if facts.thread_id else _reply_subject(facts.subject),
+        "cc": [],
+        "bcc": [],
+    }
+    if facts.thread_id:
+        draft_args["thread_id"] = facts.thread_id
+
+    result = invoke_tool(draft_tool, draft_args)
     return {"draft_body": draft_body, "draft_result": result if isinstance(result, dict) else {"raw": str(result)}}
 
 

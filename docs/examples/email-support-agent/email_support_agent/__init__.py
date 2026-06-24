@@ -1,1 +1,1 @@
-"""Draft-only email support agent powered by Composio and LangGraph."""
+"""Draft-only email support workflow powered by Composio and LangGraph."""

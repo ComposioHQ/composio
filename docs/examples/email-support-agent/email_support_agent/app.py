@@ -17,7 +17,7 @@ from email_support_agent.webhook import (
 
 load_dotenv()
 
-app = FastAPI(title="Email Support Agent Webhook", version="0.1.0")
+app = FastAPI(title="Email Support Workflow Webhook", version="0.1.0")
 
 
 @app.get("/")
