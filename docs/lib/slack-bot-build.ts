@@ -489,4 +489,26 @@ gmail_trigger_id = trigger.trigger_id
       },
     ],
   },
+  emailTools: {
+    file: 'email_support_agent/utils/tools.py',
+    stages: [
+      {
+        title: 'Declare allowed tools',
+        description:
+          'Define the whole Gmail and Notion tool surface before the graph runs. The graph can fetch, draft, and track rows; it cannot send email.',
+        code: `SAFE_GMAIL_TOOLS = [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+]
+
+SAFE_NOTION_TOOLS = [
+    "NOTION_INSERT_ROW_DATABASE",
+    "NOTION_QUERY_DATABASE",
+    "NOTION_ARCHIVE_NOTION_PAGE",
+    "NOTION_UPDATE_PAGE",
+]
+`,
+      },
+    ],
+  },
 };

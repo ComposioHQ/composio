@@ -158,19 +158,7 @@ The trigger and subscription are separate on purpose. The trigger is the Gmail-s
 
 `email_support_agent/utils/tools.py` is the boundary between Composio and the graph. Define the allowed tool surface once, up front:
 
-```python
-SAFE_GMAIL_TOOLS = [
-    "GMAIL_FETCH_EMAILS",
-    "GMAIL_CREATE_EMAIL_DRAFT",
-]
-
-SAFE_NOTION_TOOLS = [
-    "NOTION_INSERT_ROW_DATABASE",
-    "NOTION_QUERY_DATABASE",
-    "NOTION_ARCHIVE_NOTION_PAGE",
-    "NOTION_UPDATE_PAGE",
-]
-```
+<FileBuildup name="emailTools" />
 
 The graph does not receive the whole Gmail toolkit. It can fetch the triggering message and create a draft. `GMAIL_SEND_EMAIL` is not enabled.
 
