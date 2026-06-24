@@ -13,16 +13,6 @@ Getting the agent to write the draft was the easy part: Composio for the tools, 
 
 ![The Daily Standup Bot avatar](/images/standup-slackbot/bot-avatar.png)
 
-That's where the real work was, and where Composio earns its keep, in two parts:
-
-**The easy part, the draft:**
-1. **Tool-router sessions** scope a session to a member's connected toolkits, so the agent researches and writes as them.
-2. **Active-connection scoping** keeps a draft honest: it only ever pulls from tools the member actually connected, filtered server-side.
-
-**The real work, your bot:**
-3. **A white-labelled Slack app** is your own app, your own name and face, connected through a `slackbot` auth config and a one-time `setup.ts` script. Not a Composio-managed connection.
-4. **The proxy** calls any Slack Web API endpoint as a connected account, no token, so you can extend Composio and build native interactions: a reminder menu, buttons, confirm/edit modals, and posting *as the member*.
-
 <Mermaid chart={`flowchart TD
   cron([Vercel cron]) --> thread[Find or create today's thread]
   thread --> dm[DM each due member: Draft or Connect]
