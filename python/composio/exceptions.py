@@ -79,6 +79,25 @@ class ValidationError(ComposioError):
     pass
 
 
+class JSONSchemaRefResolutionError(ValidationError):
+    """Raised when an internal JSON Schema ``$ref`` cannot be inlined.
+
+    Covers malformed pointers, missing ``$defs``/``definitions`` targets
+    (strict mode only), and ``$ref`` chains or node nesting that exceed the
+    safety caps in :func:`composio.utils.json_schema.dereference_json_schema`.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *args: t.Any,
+        meta: t.Optional[t.Dict[str, t.Any]] = None,
+        delegate: bool = False,
+    ) -> None:
+        super().__init__(message, *args, delegate=delegate)
+        self.meta = meta or {}
+
+
 class ToolkitError(ComposioError):
     pass
 
