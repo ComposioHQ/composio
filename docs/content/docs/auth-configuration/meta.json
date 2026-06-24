@@ -4,7 +4,6 @@
   "pages": [
     "custom-auth-configs",
     "white-labeling",
-    "programmatic-auth-configs",
     "custom-auth-params",
     "connected-accounts",
     "migrating-initiate-to-link"

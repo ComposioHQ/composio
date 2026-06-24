@@ -295,6 +295,12 @@ const config = {
         destination: '/reference/api-reference/:path*',
         permanent: true,
       },
+      // Programmatic auth configs consolidated into the Customizing auth section
+      {
+        source: '/docs/auth-configuration/programmatic-auth-configs',
+        destination: '/docs/programmatic-auth-configs',
+        permanent: true,
+      },
       // Authentication reference renamed to "Authenticating to Composio"
       {
         source: '/reference/authentication',
