@@ -312,6 +312,105 @@ describe('Triggers', () => {
     });
   });
 
+  describe('parse', () => {
+    const webhookSecret = 'test-webhook-secret-12345';
+    const webhookId = 'msg_test123';
+
+    const v3Payload = {
+      id: 'evt-123',
+      timestamp: '2026-01-28T12:00:00Z',
+      type: 'composio.trigger.message',
+      metadata: {
+        log_id: 'log-789',
+        trigger_slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+        trigger_id: 'trigger-456',
+        connected_account_id: 'conn-123',
+        auth_config_id: 'auth-456',
+        user_id: 'user-789',
+      },
+      data: { subject: 'Test email', from: 'test@example.com' },
+    };
+
+    // Mirrors the signing format used by Composio: HMAC-SHA256(id.timestamp.payload).
+    const createSignature = async (timestamp: string, payload: string): Promise<string> => {
+      const { createHmac } = await import('node:crypto');
+      const signature = createHmac('sha256', webhookSecret)
+        .update(`${webhookId}.${timestamp}.${payload}`)
+        .digest('base64');
+      return `v1,${signature}`;
+    };
+
+    it('should parse and verify from a Fetch Request with a valid signature', async () => {
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify(v3Payload);
+      const signature = await createSignature(timestamp, body);
+
+      const request = new Request('https://example.com/webhooks/composio', {
+        method: 'POST',
+        headers: {
+          'webhook-id': webhookId,
+          'webhook-timestamp': timestamp,
+          'webhook-signature': signature,
+        },
+        body,
+      });
+
+      const result = await triggers.parse(request, { verifySecret: webhookSecret });
+
+      expect(result.version).toBe('V3');
+      expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
+      expect(result.payload.payload).toEqual({
+        subject: 'Test email',
+        from: 'test@example.com',
+      });
+    });
+
+    it('should parse from an Express-style { body, headers } without verifying', async () => {
+      const body = JSON.stringify(v3Payload);
+
+      const result = await triggers.parse({
+        body: Buffer.from(body),
+        headers: {},
+      });
+
+      expect(result.version).toBe('V3');
+      expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
+      expect(result.payload.payload).toEqual({
+        subject: 'Test email',
+        from: 'test@example.com',
+      });
+    });
+
+    it('should throw when verifySecret is set but the signature is invalid', async () => {
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify(v3Payload);
+
+      const request = new Request('https://example.com/webhooks/composio', {
+        method: 'POST',
+        headers: {
+          'webhook-id': webhookId,
+          'webhook-timestamp': timestamp,
+          'webhook-signature': 'v1,not-a-valid-signature',
+        },
+        body,
+      });
+
+      await expect(triggers.parse(request, { verifySecret: webhookSecret })).rejects.toThrow();
+    });
+
+    it('should throw a helpful ValidationError when signature headers are missing', async () => {
+      const body = JSON.stringify(v3Payload);
+
+      await expect(
+        triggers.parse({ body, headers: {} }, { verifySecret: webhookSecret })
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        triggers.parse({ body, headers: {} }, { verifySecret: webhookSecret })
+      ).rejects.toThrow(/missing signature header/i);
+    });
+  });
+
   describe('list', () => {
     it('should list active trigger instances', async () => {
       mockClient.triggerInstances.listActive.mockResolvedValue(mockTriggerInstances);
