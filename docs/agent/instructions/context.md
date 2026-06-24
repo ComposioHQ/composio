@@ -19,6 +19,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 ## Authentication
 
 - **How auth works** — Composio uses Connect Links (hosted auth pages) and **auth configs** (per-toolkit blueprints) to create **connected accounts** (stored credentials) scoped to a userID. This is the page for "how does authentication work". → [Authentication](/docs/authentication)
+- **Auth schemes / modes** — a toolkit's auth config uses one of `OAUTH2`, `API_KEY`, `BEARER_TOKEN`, or `BASIC`. When you mention a toolkit's auth mode, link the reference rather than explaining it inline. → [Auth schemes](/reference/api-reference/auth-configs#auth-schemes) for what each mode is and when it's used, [Authentication](/docs/authentication) for how auth works overall, and [Managed vs custom auth](/docs/custom-app-vs-managed-app) for choosing or bringing your own scheme.
 - **In-chat auth** — the agent prompts the user to connect via `COMPOSIO_MANAGE_CONNECTIONS`. → [In-chat authentication](/docs/authenticating-users/in-chat-authentication)
 - **Manual auth** — generate Connect Links yourself with `session.authorize()`. → [Manually authenticating users](/docs/authenticating-users/manually-authenticating)
 - **Managed vs custom auth** — use Composio's managed OAuth apps, or bring your own for branding/scopes. → [Managed vs custom auth](/docs/custom-app-vs-managed-app)

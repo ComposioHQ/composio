@@ -279,6 +279,11 @@ export function buildIndex(): DocPage[] {
 }
 
 /** Resolve a page URL back to its source file and return the raw MDX. */
+function authSchemesMarkdown(schemes: string[] = []): string {
+  if (!schemes.length) return 'n/a';
+  return schemes.map((scheme) => `\`${scheme}\``).join(', ');
+}
+
 export function readPageByUrl(url: string): { title: string; raw: string } | undefined {
   const clean = url.split('#')[0].split('?')[0].replace(/\/$/, '');
   const parts = clean.split('/').filter(Boolean);
@@ -298,9 +303,9 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
         '',
         `- **Supported:** yes, \`${tk.slug}\` is a Composio toolkit.`,
         `- **Category:** ${tk.category ?? 'n/a'}`,
-        `- **Auth:** ${(tk.authSchemes ?? []).join(', ') || 'n/a'}`,
+        `- **Auth:** ${authSchemesMarkdown(tk.authSchemes)}`,
         '',
-        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions) and [Authentication](/docs/authentication).`,
+        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
       ].join('\n');
       return { title: `${name} toolkit`, raw };
     }
