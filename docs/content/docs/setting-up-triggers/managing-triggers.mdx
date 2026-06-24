@@ -22,7 +22,7 @@ active = composio.triggers.list_active(
 )
 
 for trigger in active.items:
-    print(f"{trigger.id} ({trigger.trigger_name}) - disabled_at={trigger.disabled_at}")
+    print(f"{trigger.id} ({trigger.trigger_name}) - disabled: {trigger.disabled_at is not None}")
 
 # Paginate with cursor
 if active.next_cursor:

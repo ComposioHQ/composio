@@ -46,6 +46,6 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
    The token is in `data.webhook_signing_secret`.
 
-4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#using-the-sdk).
+4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
 ---
