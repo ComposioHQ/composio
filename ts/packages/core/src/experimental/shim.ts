@@ -22,6 +22,12 @@ export function experimental_createWorkbenchEnv(env: WorkbenchEnvOptions): Recor
   return {
     BACKEND_URL: trimTrailingSlashes(env.backendUrl),
     COMPOSIO_TOOLROUTER_SESSION_ID: env.sessionId,
+    // SECURITY: this is the developer's full *project* API key, placed in the
+    // sandbox env. Any code or tool output in the sandbox can read it and
+    // exfiltrate it, so treat the sandbox as your security boundary and rotate
+    // this key. The execute endpoint also accepts a session-scoped
+    // `x-session-access-key`; swapping to that (so the project key never enters
+    // the sandbox) is the planned follow-up.
     COMPOSIO_API_KEY: env.apiKey,
   };
 }

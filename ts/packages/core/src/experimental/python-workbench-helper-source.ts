@@ -67,7 +67,14 @@ def _safe_json(text):
 
 
 def _contains_rate_limit_error(payload):
-    text = json.dumps(payload, default=str).lower()
+    # Only inspect the API "error" field, not the whole body — otherwise benign
+    # tool output mentioning "rate limit"/"quota" triggers spurious retries.
+    if not isinstance(payload, dict):
+        return False
+    error = payload.get("error")
+    if not error:
+        return False
+    text = json.dumps(error, default=str).lower()
     return any(pattern in text for pattern in RATE_LIMIT_PATTERNS)
 
 
@@ -75,8 +82,10 @@ def _retry_delay(attempt, delay_ms):
     base_delay = max(delay_ms, 0) / 1000.0
     if base_delay == 0:
         return
-    jitter = random.uniform(0, min(base_delay * 0.2, 0.5))
-    time.sleep(base_delay + jitter + attempt * 0.1)
+    # Exponential backoff: double the delay each attempt (parity with Apollo).
+    backoff = base_delay * (2 ** attempt)
+    jitter = random.uniform(0, min(backoff * 0.2, 0.5))
+    time.sleep(backoff + jitter)
 
 
 def _json_shape(value):
@@ -114,7 +123,7 @@ def run_composio_tool(
         retry_config.update(retry_params)
 
     payload = {
-        "tool_slug": str(tool_slug).upper(),
+        "tool_slug": str(tool_slug).strip().upper(),
         "arguments": arguments or {},
     }
     if account is not None:
@@ -147,6 +156,11 @@ def run_composio_tool(
         if _contains_rate_limit_error(response_data) and attempt < max_retries:
             _retry_delay(attempt, delay_ms)
             continue
+
+        # A failed tool call returns HTTP 200 with a top-level "error" field;
+        # surface it as the error tuple element so callers don't read it as success.
+        if isinstance(response_data, dict) and response_data.get("error"):
+            return response_data, str(response_data["error"])
 
         if print_schema_for_tool:
             print_json_structure(response_data)
