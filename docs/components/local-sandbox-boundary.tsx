@@ -15,7 +15,7 @@ import type { ComponentType, ReactNode } from 'react';
 export function LocalSandboxBoundary() {
   return (
     <div className="not-prose my-6 overflow-hidden rounded-md border border-fd-border bg-fd-background">
-      <div className="border-b border-fd-border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.08em] text-fd-foreground/45">
+      <div className="border-b border-fd-border px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-fd-foreground/45">
         where your code runs, relative to your security boundary
       </div>
 
@@ -44,17 +44,13 @@ export function LocalSandboxBoundary() {
           </Outside>
         </Column>
       </div>
-
-      <div className="border-t border-fd-border px-4 py-2.5 text-center font-mono text-[10px] leading-relaxed text-fd-foreground/45">
-        only the sandbox moves; Composio handles auth and tools either way
-      </div>
     </div>
   );
 }
 
 function Column({ label, accent = false, children }: { label: string; accent?: boolean; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-3 bg-fd-background p-4">
+    <div className="flex flex-col gap-4 bg-fd-background p-5">
       <div className="flex items-center gap-2">
         <span
           className={'size-1.5 rounded-full ' + (accent ? 'bg-[var(--composio-brand)]' : 'bg-fd-foreground/30')}
@@ -78,22 +74,22 @@ function Boundary({ tone, children }: { tone: 'neutral' | 'accent'; children: Re
   const border =
     tone === 'accent' ? 'border-[var(--composio-brand)]/35' : 'border-dashed border-fd-foreground/20';
   return (
-    <div className={'relative rounded-md border bg-fd-foreground/[0.02] px-2.5 pb-2.5 pt-6 ' + border}>
-      <span className="absolute left-2.5 top-1.5 font-mono text-[9px] uppercase tracking-[0.07em] text-fd-foreground/40">
+    <div className={'relative rounded-md border bg-fd-foreground/[0.02] px-3 pb-3 pt-8 ' + border}>
+      <span className="absolute left-3 top-2.5 font-mono text-[9px] uppercase tracking-[0.07em] text-fd-foreground/40">
         your boundary
       </span>
-      <div className="flex flex-col gap-1.5">{children}</div>
+      <div className="flex flex-col gap-2">{children}</div>
     </div>
   );
 }
 
 function Outside({ children }: { children: ReactNode }) {
   return (
-    <div className="px-2.5">
+    <div>
       <span className="font-mono text-[9px] uppercase tracking-[0.07em] text-fd-foreground/40">
         outside your boundary
       </span>
-      <div className="mt-1.5 flex flex-col gap-1.5">{children}</div>
+      <div className="mt-2 flex flex-col gap-2">{children}</div>
     </div>
   );
 }
@@ -112,13 +108,13 @@ function Row({
   return (
     <div
       className={
-        'flex items-center gap-2.5 rounded-sm px-2 py-1.5 ' +
+        'flex items-center gap-3 rounded-md px-2.5 py-2 ' +
         (emphasis ? 'bg-[var(--composio-brand)]/[0.06] ring-1 ring-inset ring-[var(--composio-brand)]/25' : '')
       }
     >
       <span
         className={
-          'flex size-7 shrink-0 items-center justify-center rounded-sm ' +
+          'flex size-8 shrink-0 items-center justify-center rounded-md ' +
           (emphasis
             ? 'bg-[var(--composio-brand)]/10 text-[var(--composio-brand)]'
             : 'bg-fd-foreground/[0.06] text-fd-foreground/65')
@@ -135,7 +131,7 @@ function Row({
         >
           {title}
         </div>
-        {sub && <div className="truncate font-mono text-[10px] text-fd-foreground/45">{sub}</div>}
+        {sub && <div className="mt-0.5 truncate font-mono text-[10px] text-fd-foreground/45">{sub}</div>}
       </div>
     </div>
   );
@@ -145,7 +141,7 @@ function Seam({ accent = false }: { accent?: boolean }) {
   return (
     <div
       className={
-        'flex items-center justify-center gap-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] ' +
+        'flex items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] ' +
         (accent ? 'text-[var(--composio-brand)]' : 'text-fd-foreground/40')
       }
     >
