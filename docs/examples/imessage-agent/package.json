@@ -1,0 +1,38 @@
+{
+  "name": "imessage-composio-eve",
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#*": "./agent/*",
+    "#evals/*": "./evals/*"
+  },
+  "scripts": {
+    "build": "eve build",
+    "dev": "eve dev",
+    "dev:auto": "IMESSAGE_AUTO_REPLY=1 eve dev",
+    "watch:poll": "node scripts/watch-poll.mjs",
+    "start": "eve start",
+    "trace": "tail -f \"$HOME/.imessage-eve/traces.jsonl\"",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@composio/core": "^0.11.0",
+    "ai": "7.0.0-beta.178",
+    "eve": "^0.13.0",
+    "fuse.js": "^7.4.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.x",
+    "typescript": "7.0.1-rc"
+  },
+  "overrides": {
+    "ai": "7.0.0-beta.178"
+  },
+  "resolutions": {
+    "ai": "7.0.0-beta.178"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
