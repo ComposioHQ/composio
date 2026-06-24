@@ -17,6 +17,11 @@
  * sent to Anthropic, and records a reverse mapping so the original parameter names
  * can be restored before a tool call is executed against the Composio backend.
  *
+ * The reverse mapping mirrors the schema's nesting (object `properties` and array
+ * `items`) rather than being a single flat lookup. This matters because an alias
+ * generated at one nesting level (e.g. `$top` -> `dollar_top`) must not rewrite a
+ * legitimately-named `dollar_top` key that happens to exist at a different level.
+ *
  * @packageDocumentation
  * @module providers/anthropic/sanitize-keys
  */
@@ -38,8 +43,34 @@ const ILLEGAL_CHAR_MAP: Record<string, string> = {
   '@': 'at_',
 };
 
-/** Mapping of sanitized key -> original key, used to restore names at execution. */
-export type KeyMapping = Record<string, string>;
+/**
+ * Reverse mapping used to restore original property names at execution time.
+ *
+ * It is shaped like the schema it was derived from so restoration is scoped to
+ * the exact location a rename happened:
+ *  - `renames` — `sanitized -> original` for keys renamed at *this* object level.
+ *  - `children` — restoration mapping for the value under each (sanitized) key,
+ *    keyed by the sanitized key. Only present for children that contain renames.
+ *  - `items` — restoration mapping for array element values. A single mapping
+ *    applies to every element; an array of mappings applies positionally (JSON
+ *    Schema tuple validation). Only present when array elements contain renames.
+ */
+export interface KeyMapping {
+  renames: Record<string, string>;
+  children: Record<string, KeyMapping>;
+  items?: KeyMapping | (KeyMapping | null)[];
+}
+
+/** Whether a mapping (or any of its descendants) actually renames a key. */
+export function mappingHasRenames(mapping: KeyMapping): boolean {
+  // `children` and `items` are only populated when they carry renames (see
+  // `sanitizeNode`), so this stays a shallow check.
+  return (
+    Object.keys(mapping.renames).length > 0 ||
+    Object.keys(mapping.children).length > 0 ||
+    mapping.items != null
+  );
+}
 
 /**
  * Deterministic, dependency-free hash (djb2) rendered as a short base-36 string.
@@ -100,56 +131,107 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Recursively sanitizes the property keys of a JSON-schema node, collecting a
- * sanitized -> original mapping. Only the `properties` of object schemas are
- * traversed, matching how Composio nests its tool parameters.
+ * Recursively sanitizes the property keys of a JSON-schema node, returning the
+ * rewritten node and a {@link KeyMapping} shaped like the node. Both object
+ * `properties` and array `items` schemas are traversed, matching how Composio
+ * nests its tool parameters.
  *
  * The input node is never mutated; a new node is returned.
  */
-function sanitizeNode(node: Record<string, unknown>, mapping: KeyMapping): Record<string, unknown> {
+function sanitizeNode(node: Record<string, unknown>): {
+  node: Record<string, unknown>;
+  mapping: KeyMapping;
+} {
   const result: Record<string, unknown> = { ...node };
+  const renames: Record<string, string> = {};
+  const children: Record<string, KeyMapping> = {};
+  let items: KeyMapping | (KeyMapping | null)[] | undefined;
+
   const properties = node.properties;
+  if (isPlainObject(properties)) {
+    const newProperties: Record<string, unknown> = {};
+    const renamedOriginalToSanitized: Record<string, string> = {};
 
-  if (!isPlainObject(properties)) {
-    return result;
-  }
+    // Reserve all already-valid keys up front so they keep their exact names and
+    // sanitized aliases are generated around them (a valid `dollar_top` must not
+    // be clobbered by a sanitized `$top`).
+    const taken = new Set<string>();
+    for (const key of Object.keys(properties)) {
+      if (isValidKey(key)) {
+        taken.add(key);
+      }
+    }
 
-  const newProperties: Record<string, unknown> = {};
-  const renamed: Record<string, string> = {}; // original -> sanitized (this level)
+    for (const [key, rawValue] of Object.entries(properties)) {
+      const safeKey = isValidKey(key) ? key : uniqueSanitizedKey(key, taken);
+      taken.add(safeKey);
 
-  // Reserve all already-valid keys up front so they keep their exact names and
-  // sanitized aliases are generated around them (a valid `dollar_top` must not be
-  // clobbered by a sanitized `$top`).
-  const taken = new Set<string>();
-  for (const key of Object.keys(properties)) {
-    if (isValidKey(key)) {
-      taken.add(key);
+      const child = isPlainObject(rawValue) ? sanitizeNode(rawValue) : null;
+      newProperties[safeKey] = child ? child.node : rawValue;
+      if (child && mappingHasRenames(child.mapping)) {
+        children[safeKey] = child.mapping;
+      }
+
+      if (safeKey !== key) {
+        renames[safeKey] = key;
+        renamedOriginalToSanitized[key] = safeKey;
+      }
+    }
+
+    result.properties = newProperties;
+
+    // Keep `required` in sync with the renamed keys at this level.
+    if (Array.isArray(node.required)) {
+      result.required = node.required.map(name =>
+        typeof name === 'string' && renamedOriginalToSanitized[name]
+          ? renamedOriginalToSanitized[name]
+          : name
+      );
     }
   }
 
-  for (const [key, rawValue] of Object.entries(properties)) {
-    const value = isPlainObject(rawValue) ? sanitizeNode(rawValue, mapping) : rawValue;
-    const safeKey = isValidKey(key) ? key : uniqueSanitizedKey(key, taken);
-
-    taken.add(safeKey);
-    newProperties[safeKey] = value;
-
-    if (safeKey !== key) {
-      renamed[key] = safeKey;
-      mapping[safeKey] = key;
+  // Recurse into array element schemas so illegal keys nested inside array items
+  // (e.g. `{ type: 'array', items: { properties: { $top: ... } } }`) are sanitized
+  // too — `properties`-only traversal would let them through and still 400.
+  const itemsSchema = node.items;
+  if (isPlainObject(itemsSchema)) {
+    const child = sanitizeNode(itemsSchema);
+    result.items = child.node;
+    if (mappingHasRenames(child.mapping)) {
+      items = child.mapping;
+    }
+  } else if (Array.isArray(itemsSchema)) {
+    // Tuple validation: one positional schema per array index.
+    const sanitizedItems: unknown[] = [];
+    const itemMappings: (KeyMapping | null)[] = [];
+    let anyRenamed = false;
+    for (const entry of itemsSchema) {
+      if (isPlainObject(entry)) {
+        const child = sanitizeNode(entry);
+        sanitizedItems.push(child.node);
+        if (mappingHasRenames(child.mapping)) {
+          itemMappings.push(child.mapping);
+          anyRenamed = true;
+        } else {
+          itemMappings.push(null);
+        }
+      } else {
+        sanitizedItems.push(entry);
+        itemMappings.push(null);
+      }
+    }
+    result.items = sanitizedItems;
+    if (anyRenamed) {
+      items = itemMappings;
     }
   }
 
-  result.properties = newProperties;
-
-  // Keep `required` in sync with the renamed keys at this level.
-  if (Array.isArray(node.required)) {
-    result.required = node.required.map(name =>
-      typeof name === 'string' && renamed[name] ? renamed[name] : name
-    );
+  const mapping: KeyMapping = { renames, children };
+  if (items !== undefined) {
+    mapping.items = items;
   }
 
-  return result;
+  return { node: result, mapping };
 }
 
 /**
@@ -157,32 +239,45 @@ function sanitizeNode(node: Record<string, unknown>, mapping: KeyMapping): Recor
  * pattern.
  *
  * @param schema - The tool input schema to sanitize.
- * @returns The sanitized schema (a copy) and a `sanitized -> original` key mapping.
- *          The mapping is empty when nothing needed rewriting.
+ * @returns The sanitized schema (a copy) and a {@link KeyMapping} for restoring
+ *          the original keys. Use {@link mappingHasRenames} to tell whether
+ *          anything was rewritten.
  */
 export function sanitizeSchemaPropertyKeys<T extends Record<string, unknown>>(
   schema: T
 ): { schema: T; mapping: KeyMapping } {
-  const mapping: KeyMapping = {};
-  const sanitized = sanitizeNode(schema, mapping) as T;
-  return { schema: sanitized, mapping };
+  const { node, mapping } = sanitizeNode(schema);
+  return { schema: node as T, mapping };
 }
 
 /**
  * Restores original property names in a tool-call argument object using the
- * mapping produced by {@link sanitizeSchemaPropertyKeys}. Nested objects and
- * arrays are walked recursively. Returns a new value; the input is not mutated.
+ * mapping produced by {@link sanitizeSchemaPropertyKeys}. The mapping is walked
+ * in lockstep with the value, so a key is only renamed at the nesting level where
+ * its alias was actually generated. Nested objects and arrays are handled
+ * recursively. Returns a new value; the input is not mutated.
  */
 export function restoreOriginalKeys(value: unknown, mapping: KeyMapping): unknown {
   if (Array.isArray(value)) {
-    return value.map(item => restoreOriginalKeys(item, mapping));
+    const { items } = mapping;
+    if (Array.isArray(items)) {
+      return value.map((item, index) => {
+        const itemMapping = items[index];
+        return itemMapping ? restoreOriginalKeys(item, itemMapping) : item;
+      });
+    }
+    if (items) {
+      return value.map(item => restoreOriginalKeys(item, items));
+    }
+    return value;
   }
 
   if (isPlainObject(value)) {
     const restored: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(value)) {
-      const originalKey = mapping[key] ?? key;
-      restored[originalKey] = restoreOriginalKeys(val, mapping);
+      const originalKey = mapping.renames[key] ?? key;
+      const childMapping = mapping.children[key];
+      restored[originalKey] = childMapping ? restoreOriginalKeys(val, childMapping) : val;
     }
     return restored;
   }

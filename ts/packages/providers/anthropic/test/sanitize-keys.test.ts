@@ -2,7 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { AnthropicProvider } from '../src';
 import type { AnthropicTool } from '../src/types';
 import type { Tool } from '@composio/core';
-import { sanitizeSchemaPropertyKeys, restoreOriginalKeys } from '../src/sanitize-keys';
+import {
+  sanitizeSchemaPropertyKeys,
+  restoreOriginalKeys,
+  mappingHasRenames,
+} from '../src/sanitize-keys';
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: vi.fn().mockImplementation(() => ({ messages: { create: vi.fn() } })),
@@ -21,7 +25,7 @@ describe('sanitizeSchemaPropertyKeys', () => {
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
 
     expect(out).toEqual(schema);
-    expect(mapping).toEqual({});
+    expect(mappingHasRenames(mapping)).toBe(false);
   });
 
   it('rewrites OData keys with illegal `$` and `@` characters', () => {
@@ -47,9 +51,9 @@ describe('sanitizeSchemaPropertyKeys', () => {
     expect(props).toHaveProperty('dollar_filter');
     expect(props).toHaveProperty('at_microsoft.graph.conflictBehavior');
 
-    // Mapping points sanitized keys back to the originals.
-    expect(mapping['dollar_top']).toBe('$top');
-    expect(mapping['at_microsoft.graph.conflictBehavior']).toBe(
+    // Mapping points sanitized keys back to the originals (at this level).
+    expect(mapping.renames['dollar_top']).toBe('$top');
+    expect(mapping.renames['at_microsoft.graph.conflictBehavior']).toBe(
       '@microsoft.graph.conflictBehavior'
     );
 
@@ -69,7 +73,7 @@ describe('sanitizeSchemaPropertyKeys', () => {
     const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
 
     expect(out.properties).toHaveProperty('a.b-c');
-    expect(mapping).toEqual({});
+    expect(mappingHasRenames(mapping)).toBe(false);
   });
 
   it('truncates keys longer than 64 characters to a deterministic alias', () => {
@@ -87,7 +91,7 @@ describe('sanitizeSchemaPropertyKeys', () => {
     expect(aliasA).toMatch(ANTHROPIC_KEY_RE);
     expect(aliasA.length).toBeLessThanOrEqual(64);
     expect(aliasA).toBe(aliasB); // deterministic
-    expect(first.mapping[aliasA]).toBe(longKey);
+    expect(first.mapping.renames[aliasA]).toBe(longKey);
   });
 
   it('keeps distinct originals distinct when they would collide', () => {
@@ -121,7 +125,10 @@ describe('sanitizeSchemaPropertyKeys', () => {
 
     expect(nested.properties).toHaveProperty('dollar_skip');
     expect(nested.required).toEqual(['dollar_skip']);
-    expect(mapping['dollar_skip']).toBe('$skip');
+
+    // The rename is recorded at the nested level, not flattened onto the root.
+    expect(mapping.renames).toEqual({});
+    expect(mapping.children['options'].renames['dollar_skip']).toBe('$skip');
   });
 
   it('does not mutate the input schema', () => {
@@ -136,22 +143,115 @@ describe('sanitizeSchemaPropertyKeys', () => {
 
     expect(schema).toEqual(snapshot);
   });
+
+  // P2-2: illegal keys nested inside array element schemas must be sanitized too,
+  // otherwise they slip past a `properties`-only walk and still trigger a 400.
+  it('sanitizes illegal keys nested inside array item schemas', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        rows: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { $top: { type: 'integer' } },
+            required: ['$top'],
+          },
+        },
+      },
+    };
+
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
+    const itemSchema = (out.properties as any).rows.items;
+
+    expect(itemSchema.properties).toHaveProperty('dollar_top');
+    expect(itemSchema.properties).not.toHaveProperty('$top');
+    expect(itemSchema.required).toEqual(['dollar_top']);
+
+    // Restoration walks into array elements via the items mapping.
+    const restored = restoreOriginalKeys({ rows: [{ dollar_top: 1 }, { dollar_top: 2 }] }, mapping);
+    expect(restored).toEqual({ rows: [{ $top: 1 }, { $top: 2 }] });
+  });
+
+  it('sanitizes illegal keys in tuple (positional) array item schemas', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        pair: {
+          type: 'array',
+          items: [
+            { type: 'object', properties: { $top: { type: 'integer' } } },
+            { type: 'object', properties: { plain: { type: 'string' } } },
+          ],
+        },
+      },
+    };
+
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
+    const [first, second] = (out.properties as any).pair.items;
+
+    expect(first.properties).toHaveProperty('dollar_top');
+    expect(second.properties).toHaveProperty('plain');
+
+    const restored = restoreOriginalKeys({ pair: [{ dollar_top: 9 }, { plain: 'x' }] }, mapping);
+    expect(restored).toEqual({ pair: [{ $top: 9 }, { plain: 'x' }] });
+  });
 });
 
 describe('restoreOriginalKeys', () => {
   it('restores sanitized keys back to their originals, including nested values', () => {
-    const mapping = { dollar_top: '$top', dollar_skip: '$skip' };
-    const args = { dollar_top: 10, nested: { dollar_skip: 5, keep: 'x' } };
-
-    expect(restoreOriginalKeys(args, mapping)).toEqual({
-      $top: 10,
-      nested: { $skip: 5, keep: 'x' },
+    const { mapping } = sanitizeSchemaPropertyKeys({
+      type: 'object',
+      properties: {
+        $top: { type: 'integer' },
+        nested: { type: 'object', properties: { $skip: { type: 'integer' } } },
+      },
     });
+
+    expect(
+      restoreOriginalKeys({ dollar_top: 10, nested: { dollar_skip: 5, keep: 'x' } }, mapping)
+    ).toEqual({ $top: 10, nested: { $skip: 5, keep: 'x' } });
   });
 
-  it('passes through values with no mapping entry', () => {
+  it('passes through values when nothing was renamed', () => {
+    const { mapping } = sanitizeSchemaPropertyKeys({
+      type: 'object',
+      properties: { query: { type: 'string' } },
+    });
     const args = { query: 'hello', items: [1, 2, 3] };
-    expect(restoreOriginalKeys(args, {})).toEqual(args);
+    expect(restoreOriginalKeys(args, mapping)).toEqual(args);
+  });
+
+  // P2-1: a sanitized alias generated at one nesting level must not rewrite a
+  // legitimately-named key that equals that alias at a *different* level. The old
+  // flat global map corrupted the nested `dollar_top` into `$top`.
+  it('does not rewrite a legitimate key that collides with an alias at another level', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        $top: { type: 'integer' }, // -> dollar_top at the root
+        filters: {
+          type: 'object',
+          // A genuine, already-valid `dollar_top` that must survive untouched.
+          properties: { dollar_top: { type: 'string' } },
+        },
+      },
+    };
+
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys(schema);
+
+    expect(out.properties).toHaveProperty('dollar_top');
+    expect((out.properties as any).filters.properties).toHaveProperty('dollar_top');
+
+    const restored = restoreOriginalKeys(
+      { dollar_top: 10, filters: { dollar_top: 'keep-me' } },
+      mapping
+    );
+
+    expect(restored).toEqual({
+      $top: 10, // root alias restored to the OData name
+      filters: { dollar_top: 'keep-me' }, // nested genuine key left alone
+    });
   });
 });
 

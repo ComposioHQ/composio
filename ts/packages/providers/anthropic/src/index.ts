@@ -19,7 +19,12 @@ import {
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
-import { sanitizeSchemaPropertyKeys, restoreOriginalKeys, KeyMapping } from './sanitize-keys';
+import {
+  sanitizeSchemaPropertyKeys,
+  restoreOriginalKeys,
+  mappingHasRenames,
+  KeyMapping,
+} from './sanitize-keys';
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -142,7 +147,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       rawSchema as unknown as Record<string, unknown>
     );
 
-    if (Object.keys(mapping).length > 0) {
+    if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
     } else {
       this.toolKeyMappings.delete(tool.slug);
