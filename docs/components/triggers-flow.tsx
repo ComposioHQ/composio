@@ -11,51 +11,125 @@ const SOURCES: { slug: string; name: string; kind: 'realtime' | 'polling' }[] = 
   { slug: 'gmail', name: 'Gmail', kind: 'polling' },
 ];
 
-/**
- * Orthogonal elbow connector (the /dev page shape): leave `from`'s right edge,
- * step vertically at the midpoint, then run into `to`'s left edge, with rounded
- * corners. Measured relative to the container.
- */
-function elbowPath(c: DOMRect, from: DOMRect, to: DOMRect, r = 12): string {
-  const sx = from.right - c.left;
-  const sy = from.top + from.height / 2 - c.top;
-  const ex = to.left - c.left;
-  const ey = to.top + to.height / 2 - c.top;
-  const midX = sx + (ex - sx) * 0.5;
-  const dy = Math.sign(ey - sy) || 1;
-  const rr = Math.min(r, Math.abs(ex - sx) / 2, Math.abs(ey - sy) / 2);
-  if (rr < 1) return `M ${sx} ${sy} L ${ex} ${ey}`;
-  return (
-    `M ${sx} ${sy} L ${midX - rr} ${sy} ` +
-    `Q ${midX} ${sy} ${midX} ${sy + dy * rr} ` +
-    `L ${midX} ${ey - dy * rr} ` +
-    `Q ${midX} ${ey} ${midX + rr} ${ey} ` +
-    `L ${ex} ${ey}`
-  );
+const RT_POOL = 5; // concurrent packets per realtime source
+const POLL_POOL = 6; // packets that pile up in the polling box per batch
+const OUT_POOL = 6; // packets streaming out to your webhook URL
+
+// Polling cadence (seconds): packets fill in, wait, then release together.
+const FILL_GAP = 0.45;
+const T_RELEASE = 3.0;
+const MOVE_DUR = 0.6;
+const CYCLE = 3.9;
+
+type Pt = { x: number; y: number };
+type InGeom = { spawn: Pt; edge: Pt; end: Pt };
+type Geom = { ins: InGeom[]; out: { spawn: Pt; end: Pt } } | null;
+type Line = { x1: number; y1: number; x2: number; y2: number; dashed: boolean };
+
+type RtSlot = { active: boolean; p: number; dur: number; wait: number };
+type RtState = { slots: RtSlot[] };
+type PollState = { t: number; offsets: Pt[] };
+
+const rand = (a: number, b: number) => a + Math.random() * (b - a);
+const easeOut = (p: number) => 1 - (1 - p) * (1 - p);
+
+function makeRt(pool: number): RtState {
+  return {
+    slots: Array.from({ length: pool }, () => ({
+      active: false,
+      p: 0,
+      dur: rand(0.55, 1.0),
+      wait: rand(0, 1.3),
+    })),
+  };
+}
+
+function setCircle(el: SVGCircleElement | null, x: number, y: number, op: number, r: number) {
+  if (!el) return;
+  el.setAttribute('cx', String(x));
+  el.setAttribute('cy', String(y));
+  el.setAttribute('r', String(r));
+  el.style.opacity = String(op);
+}
+
+function stepRealtime(state: RtState, pool: (SVGCircleElement | null)[], from: Pt, to: Pt, dt: number) {
+  state.slots.forEach((s, k) => {
+    if (!s.active) {
+      s.wait -= dt;
+      if (s.wait <= 0) {
+        s.active = true;
+        s.p = 0;
+        s.dur = rand(0.5, 0.95);
+      } else {
+        setCircle(pool[k], 0, 0, 0, 0);
+        return;
+      }
+    }
+    s.p += dt / s.dur;
+    if (s.p >= 1) {
+      s.active = false;
+      s.wait = rand(0.12, 0.85); // jitter between emissions
+      setCircle(pool[k], 0, 0, 0, 0);
+      return;
+    }
+    const e = easeOut(s.p);
+    const op = Math.min(1, s.p * 7) * Math.min(1, (1 - s.p) * 7);
+    setCircle(pool[k], from.x + (to.x - from.x) * e, from.y + (to.y - from.y) * e, op, 2);
+  });
+}
+
+function stepPolling(state: PollState, pool: (SVGCircleElement | null)[], spawn: Pt, end: Pt, dt: number) {
+  state.t += dt;
+  if (state.t > CYCLE) state.t -= CYCLE;
+  for (let k = 0; k < pool.length; k++) {
+    const off = state.offsets[k] ?? { x: 0, y: 0 };
+    const sx = spawn.x + off.x;
+    const sy = spawn.y + off.y;
+    const fillAt = k * FILL_GAP;
+    if (state.t < fillAt) {
+      setCircle(pool[k], 0, 0, 0, 0); // hasn't arrived in the box yet
+    } else if (state.t < T_RELEASE) {
+      setCircle(pool[k], sx, sy, 0.9, 2); // waiting inside the box
+    } else {
+      const mp = (state.t - T_RELEASE) / MOVE_DUR;
+      if (mp >= 1) {
+        setCircle(pool[k], 0, 0, 0, 0);
+      } else {
+        const e = easeOut(mp);
+        setCircle(pool[k], sx + (end.x - sx) * e, sy + (end.y - sy) * e, 1, 2);
+      }
+    }
+  }
 }
 
 /**
- * TriggersFlow — branded replacement for the old `triggers-flow.svg` on the
- * Triggers concept page.
+ * TriggersFlow — branded flow diagram for the Triggers concept page.
  *
- * Connected apps fan into the bare Composio logo (no card, it's the hub), which
- * fans out to the single webhook URL you configure. Realtime sources stream a
- * steady line of packets; the polling source accumulates, then sends a batch.
- * The point the diagram drives home: however an event reaches Composio, there is
- * only *one* destination you configure — your own URL.
+ * Connected apps fan into the bare Composio logo (the hub), which fans out to
+ * the single webhook URL you configure. The animation models the actual
+ * behavior: realtime sources emit a packet that leaves almost as soon as it
+ * appears (with jitter), while the polling source accumulates packets inside
+ * its box and releases the whole batch on each poll tick. The point: however an
+ * event reaches Composio, there is only one destination you configure.
  *
- * Client component: connector paths are measured from live geometry so the
- * fanout stays aligned across breakpoints. Packets animate along the paths with
- * SMIL; honors prefers-reduced-motion.
+ * Client component: geometry is measured from live layout; packets are driven
+ * by requestAnimationFrame. Honors prefers-reduced-motion (rails only).
  */
 export function TriggersFlow() {
   const rootRef = useRef<HTMLDivElement>(null);
   const appRefs = useRef<(HTMLLIElement | null)[]>([]);
   const hubRef = useRef<HTMLSpanElement>(null);
   const targetRef = useRef<HTMLDivElement>(null);
-  const [inPaths, setInPaths] = useState<string[]>([]);
-  const [outPath, setOutPath] = useState<string>('');
+
+  const geomRef = useRef<Geom>(null);
+  const inCircles = useRef<(SVGCircleElement | null)[][]>([[], [], []]);
+  const outCircles = useRef<(SVGCircleElement | null)[]>([]);
+  const simRef = useRef<{ ins: (RtState | PollState)[]; out: RtState } | null>(null);
+
+  const [rails, setRails] = useState<{ ins: Line[]; out: Line | null }>({ ins: [], out: null });
   const [animate, setAnimate] = useState(true);
+
+  const poolSize = (kind: 'realtime' | 'polling') => (kind === 'polling' ? POLL_POOL : RT_POOL);
 
   const calc = useCallback(() => {
     const root = rootRef.current;
@@ -63,28 +137,75 @@ export function TriggersFlow() {
     const target = targetRef.current;
     if (!root || !hub || !target) return;
     const cr = root.getBoundingClientRect();
-    const hubRect = hub.getBoundingClientRect();
-    setInPaths(
-      appRefs.current.map((el) =>
-        el ? elbowPath(cr, el.getBoundingClientRect(), hubRect) : ''
-      )
-    );
-    setOutPath(elbowPath(cr, hubRect, target.getBoundingClientRect()));
+    const hubR = hub.getBoundingClientRect();
+    const tgtR = target.getBoundingClientRect();
+    const hubLeft: Pt = { x: hubR.left - cr.left, y: hubR.top - cr.top + hubR.height / 2 };
+    const hubRight: Pt = { x: hubR.right - cr.left, y: hubLeft.y };
+    const tgtLeft: Pt = { x: tgtR.left - cr.left, y: tgtR.top - cr.top + tgtR.height / 2 };
+
+    const ins: InGeom[] = [];
+    const inLines: Line[] = [];
+    appRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const y = r.top - cr.top + r.height / 2;
+      const spawn: Pt = { x: r.right - cr.left - 26, y };
+      const edge: Pt = { x: r.right - cr.left, y };
+      ins[i] = { spawn, edge, end: hubLeft };
+      inLines[i] = { x1: edge.x, y1: edge.y, x2: hubLeft.x, y2: hubLeft.y, dashed: SOURCES[i]?.kind === 'polling' };
+    });
+
+    geomRef.current = { ins, out: { spawn: hubRight, end: tgtLeft } };
+    setRails({ ins: inLines, out: { x1: hubRight.x, y1: hubRight.y, x2: tgtLeft.x, y2: tgtLeft.y, dashed: false } });
   }, []);
 
   useEffect(() => {
+    simRef.current = {
+      ins: SOURCES.map((s) =>
+        s.kind === 'realtime'
+          ? makeRt(RT_POOL)
+          : { t: 0, offsets: Array.from({ length: POLL_POOL }, () => ({ x: rand(-7, 5), y: rand(-6, 6) })) }
+      ),
+      out: makeRt(OUT_POOL),
+    };
+
     calc();
     const t = setTimeout(calc, 120);
     window.addEventListener('resize', calc);
     const root = rootRef.current;
     const ro = root ? new ResizeObserver(() => calc()) : null;
     if (root && ro) ro.observe(root);
+
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     setAnimate(!mq.matches);
     const onMq = () => setAnimate(!mq.matches);
     mq.addEventListener('change', onMq);
+
+    let raf = 0;
+    let last: number | null = null;
+    const loop = (ts: number) => {
+      if (last === null) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      const geom = geomRef.current;
+      const sim = simRef.current;
+      if (geom && sim && !mq.matches) {
+        SOURCES.forEach((src, i) => {
+          const g = geom.ins[i];
+          const pool = inCircles.current[i];
+          if (!g || !pool) return;
+          if (src.kind === 'realtime') stepRealtime(sim.ins[i] as RtState, pool, g.spawn, g.end, dt);
+          else stepPolling(sim.ins[i] as PollState, pool, g.spawn, g.end, dt);
+        });
+        stepRealtime(sim.out, outCircles.current, geom.out.spawn, geom.out.end, dt);
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+
     return () => {
       clearTimeout(t);
+      cancelAnimationFrame(raf);
       window.removeEventListener('resize', calc);
       ro?.disconnect();
       mq.removeEventListener('change', onMq);
@@ -105,40 +226,61 @@ export function TriggersFlow() {
         </span>
       </div>
 
-      <div
-        ref={rootRef}
-        className="relative flex flex-col gap-5 p-4 md:block md:h-[300px] md:p-6"
-      >
-        {/* ── connector overlay (md and up) ── */}
+      <div ref={rootRef} className="relative flex flex-col gap-5 p-4 md:block md:h-[300px] md:p-6">
+        {/* ── connector + packet overlay (md and up) ── */}
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-0 hidden size-full overflow-visible md:block"
+          className="pointer-events-none absolute inset-0 z-20 hidden size-full overflow-visible md:block"
           fill="none"
           style={{ color: 'var(--composio-brand)' }}
         >
-          {inPaths.map((d, i) => {
-            const src = SOURCES[i];
-            if (!d || !src) return null;
-            const polling = src.kind === 'polling';
-            const id = `tf-in-${i}`;
-            return (
-              <g key={src.slug}>
-                <path
-                  d={d}
-                  id={id}
-                  opacity={polling ? 0.25 : 0.2}
-                  stroke="currentColor"
-                  strokeDasharray={polling ? '3 4' : undefined}
-                  strokeWidth={1.25}
-                />
-                {animate && <Packets pathId={id} kind={src.kind} />}
+          {rails.ins.map((l, i) => (
+            <line
+              key={SOURCES[i]?.slug ?? i}
+              opacity={0.18}
+              stroke="currentColor"
+              strokeDasharray={l.dashed ? '3 4' : undefined}
+              strokeWidth={1.25}
+              x1={l.x1}
+              x2={l.x2}
+              y1={l.y1}
+              y2={l.y2}
+            />
+          ))}
+          {rails.out && (
+            <line opacity={0.18} stroke="currentColor" strokeWidth={1.25} x1={rails.out.x1} x2={rails.out.x2} y1={rails.out.y1} y2={rails.out.y2} />
+          )}
+          {animate &&
+            SOURCES.map((src, i) => (
+              <g key={src.slug} fill="currentColor">
+                {Array.from({ length: poolSize(src.kind) }).map((_, k) => (
+                  <circle
+                    key={k}
+                    cx={0}
+                    cy={0}
+                    r={2}
+                    ref={(el) => {
+                      inCircles.current[i][k] = el;
+                    }}
+                    style={{ opacity: 0 }}
+                  />
+                ))}
               </g>
-            );
-          })}
-          {outPath && (
-            <g>
-              <path d={outPath} id="tf-out" opacity={0.2} stroke="currentColor" strokeWidth={1.25} />
-              {animate && <Packets pathId="tf-out" kind="realtime" />}
+            ))}
+          {animate && (
+            <g fill="currentColor">
+              {Array.from({ length: OUT_POOL }).map((_, k) => (
+                <circle
+                  key={k}
+                  cx={0}
+                  cy={0}
+                  r={2}
+                  ref={(el) => {
+                    outCircles.current[k] = el;
+                  }}
+                  style={{ opacity: 0 }}
+                />
+              ))}
             </g>
           )}
         </svg>
@@ -221,50 +363,9 @@ export function TriggersFlow() {
 
       {/* footer caption */}
       <div className="border-t border-fd-border px-3 py-2 text-center font-mono text-[10px] text-fd-foreground/45">
-        app event <Arrow /> verify, normalize, sign <Arrow /> your one webhook URL
+        app event <Arrow /> Composio <Arrow /> your webhook URL
       </div>
     </div>
-  );
-}
-
-/**
- * Packets traveling along a connector path. Realtime sends a steady stream;
- * polling waits, then fires a single batch (a dot that sits at the source, then
- * zips across).
- */
-function Packets({ pathId, kind }: { pathId: string; kind: 'realtime' | 'polling' }) {
-  if (kind === 'polling') {
-    return (
-      <circle fill="currentColor" r={2.5}>
-        <animateMotion
-          calcMode="linear"
-          dur="3s"
-          keyPoints="0;0;1;1"
-          keyTimes="0;0.72;0.92;1"
-          repeatCount="indefinite"
-        >
-          <mpath href={`#${pathId}`} />
-        </animateMotion>
-        <animate
-          attributeName="r"
-          dur="3s"
-          keyTimes="0;0.6;0.72;0.92;1"
-          repeatCount="indefinite"
-          values="1.2;3.2;3.2;2.4;1.2"
-        />
-      </circle>
-    );
-  }
-  return (
-    <>
-      {[0, 0.66, 1.33].map((begin) => (
-        <circle key={begin} fill="currentColor" r={2}>
-          <animateMotion begin={`${begin}s`} dur="2s" repeatCount="indefinite">
-            <mpath href={`#${pathId}`} />
-          </animateMotion>
-        </circle>
-      ))}
-    </>
   );
 }
 
