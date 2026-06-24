@@ -155,7 +155,13 @@ The key files, in one place. The Composio touch-points (the custom toolkit, the 
 
 <ImessageRepoBrowser />
 
-## Where to go next
+The complete, runnable project will be published in the Composio examples repo.
 
-- **[eve provider](/docs/providers/eve)** covers `EveProvider`, the replay-safe `defineComposioTools` resolver, and the `(ctx, next)` hooks for rewriting, denying, or transforming meta-tool calls.
-- **Reuse the shape**: the custom-toolkit-on-a-shared-session pattern works for any local capability, not just iMessage. Replace the AppleScript calls with your own and keep the rest.
+## Run it
+
+These files drop into an [eve](https://github.com/vercel/eve) app: put the toolkit and the provider wiring under `lib/`, the resolver under `agent/tools/`, set your `.env.local`, then run `eve dev` and talk to it ("text mom i'm running late"). The first send or contact lookup prompts for macOS permission, and the first time the agent needs an app you haven't connected, it returns an auth link in chat through `COMPOSIO_MANAGE_CONNECTIONS`. Reuse the shape for any local capability: replace the AppleScript calls with your own and keep the rest.
+
+<Cards>
+  <Card title="eve provider" href="/docs/providers/eve" description="EveProvider, the defineComposioTools resolver, and the (ctx, next) hooks." />
+  <Card title="Custom tools and toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Build and register your own in-process Composio tools." />
+</Cards>
