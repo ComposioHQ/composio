@@ -7,20 +7,19 @@ import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
-import { source } from '@/lib/source';
+import { source, referenceSource } from '@/lib/source';
 
-const defaultLinkSlugs = [
-  ['quickstart'],
-  ['authentication'],
-  ['configuring-sessions'],
-  ['white-labeling-authentication'],
-  ['glossary'],
-  ['common-faq'],
-  ['troubleshooting'],
+const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
+  { slug: ['quickstart'], source },
+  { slug: ['authentication'], source },
+  { slug: ['configuring-sessions'], source },
+  { slug: ['white-labeling-authentication'], source },
+  { slug: ['glossary'], source: referenceSource },
+  { slug: ['troubleshooting'], source },
 ];
 
-const defaultLinks = defaultLinkSlugs.flatMap((slug) => {
-  const page = source.getPage(slug);
+const defaultLinks = defaultLinkSlugs.flatMap(({ slug, source: pageSource }) => {
+  const page = pageSource.getPage(slug);
   if (!page) return [];
   return [{ title: page.data.title, description: page.data.description ?? '', href: page.url }];
 });

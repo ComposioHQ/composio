@@ -30,6 +30,30 @@ const INTERNAL_CLASSES = new Set([
 // Classes that users instantiate directly (show constructor)
 const USER_INSTANTIATED_CLASSES = new Set(['Composio']);
 
+// Pure-docs presentation overrides. The public class names retain their
+// legacy "ToolRouter*" names in source (renaming them is a breaking change),
+// but the SDK reference presents them under the canonical "Session" naming.
+// Keys are the source class names.
+const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
+  ToolRouterSession: 'Session',
+  ToolRouterSessionFilesMount: 'Session files',
+};
+
+const SLUG_OVERRIDES: Record<string, string> = {
+  ToolRouterSession: 'session',
+  ToolRouterSessionFilesMount: 'session-files',
+};
+
+// Resolve the display title for a class (falls back to the class name).
+function displayNameFor(className: string): string {
+  return DISPLAY_NAME_OVERRIDES[className] ?? className;
+}
+
+// Resolve the URL slug / filename stem for a class (falls back to kebab-case).
+function slugFor(className: string): string {
+  return SLUG_OVERRIDES[className] ?? toKebabCase(className);
+}
+
 // Discover model files automatically
 async function discoverModelFiles(): Promise<string[]> {
   const files = await readdir(MODELS_DIR);
@@ -195,6 +219,9 @@ interface MethodDoc {
   }[];
   examples: string[];
   isAsync: boolean;
+  /** Present when the symbol carries an `@deprecated` JSDoc tag. The string is
+   * the (possibly empty) tag body, e.g. the recommended replacement. */
+  deprecated?: string;
   source?: { file: string; line: number };
 }
 
@@ -212,6 +239,8 @@ interface ClassDoc {
   methods: MethodDoc[];
   properties: PropertyDoc[];
   source?: { file: string; line: number };
+  /** Present when the class carries a class-level `@deprecated` JSDoc tag. */
+  deprecated?: string;
 }
 
 function extractText(content?: Array<{ kind: string; text: string }>): string {
@@ -351,6 +380,10 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
   const primarySig = reflection.signatures[0];
   const description = extractDescription(primarySig.comment);
   const examples = extractTag(primarySig.comment, '@example');
+  // `@deprecated` may live on the signature comment or the reflection comment.
+  const deprecated =
+    extractTag(primarySig.comment, '@deprecated')[0] ??
+    extractTag(reflection.comment, '@deprecated')[0];
 
   return {
     name: reflection.name,
@@ -358,6 +391,7 @@ function extractMethod(reflection: TypeDocReflection): MethodDoc | null {
     signatures,
     examples,
     isAsync: formatType(primarySig.type).startsWith('Promise'),
+    deprecated,
     source: reflection.sources?.[0]
       ? { file: reflection.sources[0].fileName, line: reflection.sources[0].line }
       : undefined,
@@ -373,6 +407,7 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
     source: reflection.sources?.[0]
       ? { file: reflection.sources[0].fileName, line: reflection.sources[0].line }
       : undefined,
+    deprecated: extractTag(reflection.comment, '@deprecated')[0],
   };
 
   if (!reflection.children) return classDoc;
@@ -416,9 +451,20 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
 function generateMethodMdx(method: MethodDoc): string {
   const lines: string[] = [];
 
-  // Method header
-  lines.push(`### ${method.name}()`);
+  // Method header. Flag deprecated methods in the heading so they read clearly
+  // in the sidebar/anchor and at a glance.
+  const deprecatedSuffix = method.deprecated !== undefined ? ' (deprecated)' : '';
+  lines.push(`### ${method.name}()${deprecatedSuffix}`);
   lines.push('');
+
+  // Deprecation callout (rendered as a fumadocs warning callout).
+  if (method.deprecated !== undefined) {
+    const note = method.deprecated.trim();
+    lines.push('<Callout type="warn" title="Deprecated">');
+    lines.push(note.length > 0 ? escapeTextForMdx(note) : 'This method is deprecated.');
+    lines.push('</Callout>');
+    lines.push('');
+  }
 
   // Description
   if (method.description) {
@@ -535,10 +581,19 @@ function generateClassMdx(classDoc: ClassDoc): string {
 
   // Frontmatter - fumadocs renders title and description automatically
   lines.push('---');
-  lines.push(`title: ${formatYamlFrontmatterString(classDoc.name)}`);
+  lines.push(`title: ${formatYamlFrontmatterString(displayNameFor(classDoc.name))}`);
   lines.push(`description: ${formatYamlFrontmatterString(fullDescription)}`);
   lines.push('---');
   lines.push('');
+
+  // Class-level deprecation callout (rendered as a fumadocs warning callout).
+  if (classDoc.deprecated !== undefined) {
+    const note = classDoc.deprecated.trim();
+    lines.push('<Callout type="warn" title="Deprecated">');
+    lines.push(note.length > 0 ? escapeTextForMdx(note) : 'This class is deprecated.');
+    lines.push('</Callout>');
+    lines.push('');
+  }
 
   // Content starts directly with Constructor or Usage (no duplicate title/description)
 
@@ -547,7 +602,10 @@ function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('## Constructor');
     lines.push('');
     lines.push(generateMethodMdx(classDoc.constructor));
-  } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
+  } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name) && !(classDoc.name in SLUG_OVERRIDES)) {
+    // Skip the `composio.<accessor>` Usage block for session-object classes —
+    // they are not accessed as a `composio` sub-client property; the class
+    // description explains how to obtain them (via `composio.sessions`).
     lines.push('## Usage');
     lines.push('');
 
@@ -799,7 +857,7 @@ async function main() {
 
     const classDoc = extractClass(reflection);
     const mdx = generateClassMdx(classDoc);
-    const fileName = toKebabCase(className) + '.mdx';
+    const fileName = slugFor(className) + '.mdx';
     const filePath = join(OUTPUT_DIR, fileName);
 
     await writeFile(filePath, mdx);
@@ -813,7 +871,7 @@ async function main() {
   const classesTable = documented
     .map(
       ({ name, description }) =>
-        `| [\`${name}\`](/reference/sdk-reference/typescript/${toKebabCase(name)}) | ${escapeTextForMdx(description)} |`
+        `| [\`${displayNameFor(name)}\`](/reference/sdk-reference/typescript/${slugFor(name)}) | ${escapeTextForMdx(description)} |`
     )
     .join('\n');
 
@@ -880,7 +938,7 @@ const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   // Generate meta.json for sidebar
   const meta = {
     title: 'TypeScript SDK',
-    pages: documented.map(({ name }) => toKebabCase(name)),
+    pages: documented.map(({ name }) => slugFor(name)),
   };
   await writeFile(join(OUTPUT_DIR, 'meta.json'), JSON.stringify(meta, null, 2));
 

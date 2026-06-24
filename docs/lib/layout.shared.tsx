@@ -50,6 +50,11 @@ export function baseOptions(): BaseLayoutProps {
         active: 'nested-url',
       },
       {
+        text: 'Examples',
+        url: '/examples',
+        active: 'nested-url',
+      },
+      {
         text: 'Toolkits',
         url: '/toolkits',
         active: 'nested-url',
@@ -57,11 +62,6 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: <span className="inline-flex items-center gap-1">Reference <NavVersionSelector /></span>,
         url: '/reference',
-        active: 'nested-url',
-      },
-      {
-        text: 'Cookbooks',
-        url: '/cookbooks',
         active: 'nested-url',
       },
       {

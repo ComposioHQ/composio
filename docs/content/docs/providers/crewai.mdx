@@ -4,7 +4,7 @@ description: Build an agent with CrewAI and enable it to use 1000+ tools with Co
 keywords: [crewai]
 ---
 
-The CrewAI provider transforms Composio tools into CrewAI's [BaseTool](https://docs.crewai.com/concepts/tools) format with built-in execution.
+The CrewAI provider turns Composio tools into CrewAI [`BaseTool`](https://docs.crewai.com/concepts/tools) objects that execute themselves. You connect an account, fetch the tools, pass them to an `Agent`, and CrewAI runs the task end to end.
 
 <Steps>
 <Step>
@@ -62,3 +62,19 @@ print(result)
 ```
 </Step>
 </Steps>
+
+## Provider specifics
+
+Each Composio tool becomes a CrewAI `BaseTool` whose `args_schema` is built from the tool's input schema, so CrewAI validates arguments before running anything.
+
+When validation fails, the tool does not raise. It returns a structured result instead:
+
+```python
+{"successful": False, "error": "<validation message>", "data": None}
+```
+
+Check `successful` in your task output rather than wrapping calls in `try`/`except`.
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

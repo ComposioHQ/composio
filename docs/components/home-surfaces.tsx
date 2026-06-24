@@ -88,7 +88,7 @@ export function HomeSurfaces() {
           eyebrow="For You"
           eyebrowIcon={<Heart aria-hidden="true" className="size-4" />}
           title="Use Composio yourself"
-          description="Plug 1000+ pre-authenticated apps into Claude Code, Cursor, or any MCP client. No build required — connect once and go."
+          description="Plug 1000+ pre-authenticated apps into Claude Code, Cursor, or any MCP client. No build required. Connect once and go."
           href="https://composio.dev/for-you"
           external
           extra={<ClientStrip />}
@@ -106,7 +106,7 @@ export function HomeSurfaces() {
           eyebrow="Agents"
           eyebrowIcon={<Bot aria-hidden="true" className="size-4" />}
           title="Sign up as an agent"
-          description="Agents can create their own Composio identity at agents.composio.dev — no human in the loop — and start running tools in seconds."
+          description="Agents can create their own Composio identity at agents.composio.dev, with no human in the loop, and start running tools in seconds."
           href="https://agents.composio.dev"
           external
         />

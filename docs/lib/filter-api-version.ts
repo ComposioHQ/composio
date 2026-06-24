@@ -21,6 +21,63 @@ interface PageTreeRoot {
   [key: string]: unknown;
 }
 
+/**
+ * API-reference tags that we intentionally hide on our side even though the
+ * upstream OpenAPI spec (from hermes) still includes them. Matched by tag slug.
+ *
+ * Hiding happens in two places that must stay in sync:
+ *  - `scripts/generate-api-index.ts` skips generating (and deletes) their
+ *    `index.mdx` overview pages.
+ *  - `filterHiddenTags` (below) drops their folders/pages from the reference
+ *    page tree so the fumadocs-openapi operation pages disappear from the
+ *    sidebar, llms.txt walk, and search.
+ */
+export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set([
+  'consumer',
+  'invite-codes',
+  'authentication',
+]);
+
+/** True if a URL points at a hidden tag's pages (v3.1 or v3.0). */
+function isHiddenTagUrl(url: string): boolean {
+  for (const tag of HIDDEN_API_TAGS) {
+    if (
+      url.startsWith(`/reference/api-reference/${tag}/`) ||
+      url === `/reference/api-reference/${tag}` ||
+      url.startsWith(`/reference/v3/api-reference/${tag}/`) ||
+      url === `/reference/v3/api-reference/${tag}`
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** True if a node (page or folder) belongs entirely to a hidden tag. */
+function isHiddenTagNode(node: PageTreeNode): boolean {
+  if (node.type === 'page' && typeof node.url === 'string') {
+    return isHiddenTagUrl(node.url);
+  }
+  if (node.type === 'folder') {
+    if (node.index && isHiddenTagNode(node.index)) return true;
+    // A folder whose every child is hidden (and has at least one) is itself hidden.
+    const children = node.children ?? [];
+    if (children.length > 0 && children.every(isHiddenTagNode)) return true;
+  }
+  return false;
+}
+
+/** Recursively drops folders/pages whose tag slug is in HIDDEN_API_TAGS. */
+function filterHiddenTags(nodes: PageTreeNode[]): PageTreeNode[] {
+  return nodes
+    .filter((node) => !isHiddenTagNode(node))
+    .map((node) =>
+      node.type === 'folder' && node.children
+        ? { ...node, children: filterHiddenTags(node.children) }
+        : node,
+    );
+}
+
 function isV3Node(node: PageTreeNode): boolean {
   if (node.type === 'page' && typeof node.url === 'string') {
     return node.url.startsWith('/reference/v3/') || node.url === '/reference/v3';
@@ -50,7 +107,9 @@ function isV31ApiFolder(node: PageTreeNode): boolean {
 }
 
 export function prepareTree<T extends PageTreeRoot>(tree: T, version: string): T {
-  const children = tree.children as PageTreeNode[];
+  // Drop intentionally-hidden tags (consumer, invite-codes) from the whole tree
+  // first, so neither version surfaces their operation pages.
+  const children = filterHiddenTags(tree.children as PageTreeNode[]);
 
   if (version === '3.1') {
     // Just hide the V3 folder

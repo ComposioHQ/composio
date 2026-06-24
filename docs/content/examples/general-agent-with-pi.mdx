@@ -1,0 +1,107 @@
+---
+title: Build a Slack bot that can do work with you and your team
+description: Build a general-purpose agent with Pi and Composio, then drop it into Slack so a whole team can use it. Triggers, per-user sessions, a shared workspace connection, redirected auth links, and raw API access.
+keywords: [general agent, pi, slack bot, triggers, sessions, shared connections, auth links, proxy, slackbot toolkit, webhook]
+full: true
+---
+
+The agent is the easy part. [Pi](https://github.com/earendil-works/pi/tree/main/packages/coding-agent) does the reasoning; Composio gives it 1000+ apps to act on. In three lines you have an agent that can open a PR, check a calendar, or search a Notion workspace for one user.
+
+The work is everything around it: putting that agent in Slack, where a whole team talks to it, and making it act as *each* person while posting as one bot. That's a handful of Composio pieces:
+
+1. **Triggers** deliver every Slack message to your server as a webhook.
+2. **Sessions** give each user their own scoped toolset, so the agent acts as *them*.
+3. **A shared connection** lets the bot speak as the workspace bot, with one install for everyone.
+4. **Redirected auth links** keep OAuth out of the channel: when an app isn't connected, the bot DMs the user a link and resumes on approval.
+5. **The proxy** reaches the Slack Web API endpoints the toolkit doesn't wrap as tools.
+
+<SlackBotFlow />
+
+Below you build the whole thing from scratch: a basic agent first, then a piece at a time up to the full server, then a browse of the real source. You bring a Composio API key and an agent runtime. Composio brings the workspace.
+
+## Setup
+
+You need a [Composio API key](https://dashboard.composio.dev), a publicly reachable URL for your server, and [Bun](https://bun.sh).
+
+<Accordions>
+  <Accordion title="No public URL? Use a Cloudflare tunnel">
+    Composio posts webhooks to your server, so it needs a public URL. In local development, run a [Cloudflare tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) to expose your local port:
+
+    ```bash
+    cloudflared tunnel --url http://localhost:3000
+    ```
+
+    Use the `https://…trycloudflare.com` URL it prints as your `APP_URL`.
+  </Accordion>
+</Accordions>
+
+```bash
+bun add @composio/core @composio/experimental @earendil-works/pi-coding-agent
+```
+
+## Install the bot
+
+A Slack bot needs a Slack app to authenticate as and a stream of events. Composio gives you both, so you never register a webhook with Slack or hold a bot token. The `slackbot` toolkit ships with Composio-managed OAuth, and you install it as one **[shared connection](/docs/shared-connections)** for the whole workspace.
+
+This is `install.ts`, run once, built up three steps at a time:
+
+<FileBuildup name="install" />
+
+A webhook subscription is the *pipe*; each trigger is a *tap*. Together they stream channel messages and DMs to your server. The connected account id that comes back from the OAuth callback is the `SLACK_CONNECTION_ID` the server pins into every session.
+
+## Build the bot
+
+`bot.ts` starts as a bare three-line agent and grows into the server, one Composio concept at a time. Each diff below is exactly what that concept adds.
+
+### Start with a basic agent
+
+The whole idea, before any Slack: create a session for a user, hand the Pi provider the session so it can search and execute, and run a prompt. This already acts across every app that user has connected.
+
+<FileBuildup name="bot" step={1} />
+
+### Put it in a Slack thread
+
+Turn the one-shot agent into a handler. Each Slack thread gets its own [session](/docs/configuring-sessions), reused so the agent keeps context, and the reply goes back with the `SLACKBOT_SEND_MESSAGE` tool. The session is keyed to the Slack user, so when Alice asks for a GitHub issue it opens as *Alice*, against her GitHub connection.
+
+<FileBuildup name="bot" step={2} />
+
+### Share one workspace connection
+
+By default a connected account is **PRIVATE**: only its creator can use it. The install authorized the Slack connection as **SHARED**, so you pin it into every session. Now Alice's session has *her* GitHub connection but *the workspace's* Slack connection. It posts as the bot, and acts everywhere else as Alice.
+
+<FileBuildup name="bot" step={3} />
+
+### Reach the gaps with the proxy
+
+Most Slack actions are `SLACKBOT_*` tools. The few that aren't, like the typing indicator and opening a DM channel, drop down to `session.proxyExecute`, which calls the Slack Web API with the pinned connection's auth so you never touch a token.
+
+<FileBuildup name="bot" step={4} />
+
+### Redirect auth links
+
+The payoff. When the agent reaches for an app the user hasn't connected, the tool result carries a one-time Composio connect URL. You never want it in the channel or in the model's context. The bot extracts it, **redacts** it from the tool output, DMs it to the user privately, and the run resumes the moment they approve, because the session was created with `waitForConnections`.
+
+<FileBuildup name="bot" step={5} />
+
+### Serve the webhook
+
+Verify each trigger's signature with `composio.triggers.verifyWebhook`, then hand the payload to `handleSlackMessage` off the response path so a slow handler doesn't get retried. That's the whole server.
+
+<FileBuildup name="bot" step={6} />
+
+## The whole project
+
+The two files above are the spine. The real project rounds them out with grouped auth-link DMs, per-user routing, message chunking, reaction acks, and durable storage. Here's a slice of the actual source, with the Composio touch-points highlighted. Browse the tree, read the files:
+
+<RepoBrowser />
+
+The complete project lives on GitHub: [composio-slack-bot](https://github.com/ComposioHQ/composio-slack-bot).
+
+## Run it
+
+Run `bun install.ts` once to set up the bot, start the server with `bun bot.ts`, then `@mention` the bot in any channel. It opens a session as you, finds the tool it needs, runs it against your connections, and replies in thread as the workspace bot, usually within a few seconds. Ask it to do something in an app you haven't connected yet and it DMs you a link first, then continues once you approve.
+
+<Cards>
+  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Everything a session can scope: toolkits, tools, connections, and limits" />
+  <Card title="Shared connections" href="/docs/shared-connections" description="SHARED vs PRIVATE accounts and the per-user ACL" />
+</Cards>

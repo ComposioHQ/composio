@@ -28,7 +28,7 @@ Triggered when a changelog file (`docs/content/changelog/*.mdx`) is pushed to `n
 
 ## Rules
 
-- Only modify files in `docs/content/docs/` and `docs/content/cookbooks/`
+- Only modify files in `docs/content/docs/` and `docs/content/examples/`
 - Do NOT create new pages — only update existing ones
 - Do NOT add changelog-style content ("as of v0.6.0...") to docs. Docs should describe current behavior.
 - Do NOT make cosmetic or stylistic changes unrelated to the changelog

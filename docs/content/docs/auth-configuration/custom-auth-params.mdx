@@ -3,10 +3,11 @@ title: Custom Auth Parameters
 description: Inject custom credentials in headers or parameters
 keywords: [inject headers, custom credentials, BYOT, bring your own token, OAuth token, access token]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle authentication automatically via [in-chat authentication](/docs/authenticating-users/in-chat-authentication) or [manual authentication](/docs/authenticating-users/manually-authenticating).
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle authentication automatically via [in-chat authentication](/docs/authentication#in-chat-authentication) or [manual authentication](/docs/manually-authenticating).
 </Callout>
 
 If you already manage OAuth tokens or API keys yourself and want Composio to execute tools using your credentials, you can pass them directly at execution time — no connected account or redirect flow required.
@@ -170,10 +171,6 @@ console.log(JSON.stringify(result, null, 2));
   </Tab>
 </Tabs>
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Wrench />} title="Before execution modifiers" href="/docs/tools-direct/modify-tool-behavior/before-execution-modifiers" description="Modify tool arguments before execution" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
-</Cards>
+<Card icon={<Wrench />} title="Before execution modifiers" href="/docs/tools-direct/modify-tool-behavior/before-execution-modifiers" description="Modify tool arguments before execution" />

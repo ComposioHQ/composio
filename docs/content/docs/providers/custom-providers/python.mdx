@@ -3,23 +3,23 @@ title: Python Custom Provider
 description: Build an agent with any Python framework and enable it to use 1000+ tools with Composio.
 ---
 
-This guide shows how to create custom providers for the Composio Python SDK. Custom providers enable compatibility with different AI frameworks and platforms.
+A **custom provider** adapts Composio tools to the format your AI framework expects, so you can use 1000+ tools with a platform Composio doesn't ship support for. This guide shows you how to build one in Python.
 
 ## Provider architecture
 
-The Composio SDK uses a provider architecture to adapt tools for different AI frameworks. The provider handles:
+A provider does two things:
 
-1. **Tool format transformation**: Converting Composio tools into formats compatible with specific AI platforms
-2. **Platform-specific compatibility**: Providing helper methods for seamless compatibility
+1. **Tool format transformation**: converts Composio tools into the format your AI platform understands.
+2. **Platform-specific compatibility**: adds helper methods for executing tool calls and handling responses.
 
-## Types of providers
+There are two kinds of providers:
 
-There are two types of providers:
+| Type | Use it for | Examples |
+| --- | --- | --- |
+| **Non-agentic** | Platforms that don't have their own agency. You drive the tool-call loop. | OpenAI, Anthropic |
+| **Agentic** | Platforms that run their own agent loop and call tools themselves. | LangChain, CrewAI |
 
-1. **Non-agentic providers**: Transform tools for platforms that don't have their own agency (e.g., OpenAI, Anthropic)
-2. **Agentic providers**: Transform tools for platforms that have their own agency (e.g., LangChain, CrewAI)
-
-## Provider class hierarchy
+Each type extends a different abstract base class:
 
 ```
 BaseProvider (Abstract)
@@ -34,7 +34,7 @@ BaseProvider (Abstract)
 
 ## Quick start
 
-The fastest way to create a new provider is using the provider scaffolding script:
+Scaffold a working provider with the `make create-provider` script:
 
 ```bash
 # Create a non-agentic provider
@@ -43,27 +43,16 @@ make create-provider name=myprovider
 # Create an agentic provider
 make create-provider name=myagent agentic=true
 
-# Create provider with custom output directory
+# Write to a custom output directory
 make create-provider name=myprovider output=/path/to/custom/dir
 
 # Combine options
 make create-provider name=myagent agentic=true output=/my/custom/path
 ```
 
-This will create a new provider in the specified directory (default: `python/providers/<provider-name>/`) with:
-- Complete package structure with `pyproject.toml`
-- Provider implementation template
-- Demo script
-- README with usage examples
-- Type annotations and proper inheritance
+This generates a provider in `python/providers/<provider-name>/` (or your `output` directory) with a `pyproject.toml`, a provider template, a demo script, a `README`, and type annotations. The template runs as-is. You implement the tool transformation for your platform, and you can keep your provider in your own repository.
 
-<Callout>
-The scaffolding script creates a fully functional provider template. You just need to implement the tool transformation logic specific to your platform. You can maintain your provider implementation in your own repository.
-</Callout>
-
-### Generated structure
-
-The create-provider script generates the following structure:
+The generated structure:
 
 ```
 python/providers/<provider-name>/
@@ -77,15 +66,16 @@ python/providers/<provider-name>/
     └── py.typed                # PEP 561 type marker
 ```
 
-After generation, you can:
-1. Navigate to the provider directory: `cd python/providers/<provider-name>`
-2. Install in development mode: `uv pip install -e .`
-3. Implement your provider logic in `composio_<provider-name>/provider.py`
-4. Test with the demo script: `python <provider-name>_demo.py`
+From there:
+
+1. Navigate to the provider directory: `cd python/providers/<provider-name>`.
+2. Install in development mode: `uv pip install -e .`.
+3. Implement your provider logic in `composio_<provider-name>/provider.py`.
+4. Test with the demo script: `python <provider-name>_demo.py`.
 
 ## Creating a non-agentic provider
 
-Non-agentic providers inherit from the `NonAgenticProvider` abstract class:
+A non-agentic provider extends `NonAgenticProvider` and implements two methods: `wrap_tool` (transform one tool) and `wrap_tools` (transform a collection). Add helper methods to execute tool calls in your platform's format.
 
 ```python
 from typing import List, Optional, Sequence, TypeAlias
@@ -148,7 +138,7 @@ class MyAIProvider(NonAgenticProvider[MyAITool, MyAIToolCollection], name="my-ai
 
 ## Creating an agentic provider
 
-Agentic providers inherit from the `AgenticProvider` abstract class:
+An agentic provider extends `AgenticProvider`. Because the platform calls tools itself, `wrap_tool` receives an `execute_tool` function that you wrap into a callable the framework can invoke directly.
 
 ```python
 from typing import Callable, Dict, List, Sequence
@@ -198,9 +188,11 @@ class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agen
 
 ## Using your custom provider
 
-After creating your provider, use it with the Composio SDK:
+Pass an instance of your provider to `Composio`, and every tool you fetch comes back in your format.
 
-### Non-agentic provider example
+### Non-agentic provider
+
+You drive the loop: fetch tools, send them to the platform, then hand the response back to the provider to execute the calls.
 
 ```python
 from composio import Composio
@@ -233,7 +225,9 @@ result = composio.provider.handle_tool_calls(response=response, user_id="default
 print(result)
 ```
 
-### Agentic provider example
+### Agentic provider
+
+The framework runs the loop. Fetch tools, attach them to an agent, and the agent calls them itself.
 
 ```python
 import asyncio
@@ -273,11 +267,11 @@ asyncio.run(main())
 
 ## Best practices
 
-1. **Keep providers focused**: Each provider should integrate with one specific platform
-2. **Handle errors gracefully**: Catch and transform errors from tool execution
-3. **Follow platform conventions**: Adopt naming and structural conventions of the target platform
-4. **Use type annotations**: Leverage Python's typing system for better IDE support and documentation
-5. **Cache transformed tools**: Store transformed tools when appropriate to improve performance
-6. **Add helper methods**: Provide convenient methods for common platform-specific operations
-7. **Document your provider**: Include docstrings and usage examples
-8. **Set meaningful provider names**: Use the name parameter for telemetry and debugging
+- **Keep providers focused**: each provider integrates with one platform.
+- **Handle errors gracefully**: catch and transform errors from tool execution.
+- **Follow platform conventions**: adopt the naming and structure of the target platform.
+- **Use type annotations**: lean on Python's typing for IDE support and documentation.
+- **Cache transformed tools**: store transformed tools when it helps performance.
+- **Add helper methods**: provide convenient methods for common platform operations.
+- **Document your provider**: include docstrings and usage examples.
+- **Set a meaningful provider name**: the `name` parameter is used for telemetry and debugging.

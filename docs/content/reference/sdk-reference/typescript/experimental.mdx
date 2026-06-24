@@ -1,6 +1,6 @@
 ---
 title: "Experimental"
-description: "`composio.experimental` namespace. Mirrors the Python SDK's `composio.experimental` mount, with one method per experimental surface. **Shape may change in future releases.**"
+description: "Experimental class reference"
 ---
 
 ## Usage
@@ -14,8 +14,13 @@ const result = await composio.experimental.list();
 
 ## Methods
 
-### updateAcl()
+### updateAcl() (deprecated)
 
+<Callout type="warn" title="Deprecated">
+Use `composio.connectedAccounts.updateAcl(...)` instead. ACL updates now live on the `connectedAccounts` mount; this experimental alias is kept only for backwards compatibility while the API is experimental and will be removed once it graduates.
+</Callout>
+
+Compatibility alias for `composio.connectedAccounts.updateAcl(...)`.
 Update the per-user ACL on a SHARED connected account.
 **Experimental — shape may change in future releases.**
 
@@ -59,21 +64,21 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: '...' });
 
 // Allow every userId to use this connection
-await composio.experimental.updateAcl('ca_abc', { allowAllUsers: true });
+await composio.connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true });
 
 // Everyone except a specific user
-await composio.experimental.updateAcl('ca_abc', {
+await composio.connectedAccounts.updateAcl('ca_abc', {
   allowAllUsers: true,
   notAllowedUserIds: ['user_bob'],
 });
 
 // Targeted allow
-await composio.experimental.updateAcl('ca_abc', {
+await composio.connectedAccounts.updateAcl('ca_abc', {
   allowedUserIds: ['user_alice', 'user_bob'],
 });
 
 // Revoke a previously-granted allow list (back to deny-by-default)
-await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
+await composio.connectedAccounts.updateAcl('ca_abc', { allowedUserIds: [] });
 ```
 
 **Empty-array semantics — read carefully.** Passing `[]` for either

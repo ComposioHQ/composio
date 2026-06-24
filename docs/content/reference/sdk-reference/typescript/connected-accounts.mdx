@@ -220,6 +220,43 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 
 ### link()
 
+**Overload 1**
+
+```typescript
+async link(userId: string, options: object): Promise<ConnectionRequest>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | \{string\} - The external user ID to create the connected account for. |
+| `options` | `object` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link. |
+
+**Returns**
+
+`Promise<ConnectionRequest>` — Connection request object
+
+**Overload 2**
+
+```typescript
+async link(userId: string, authConfigId: undefined, options: object): Promise<ConnectionRequest>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `userId` | `string` | \{string\} - The external user ID to create the connected account for. |
+| `authConfigId` | `undefined` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default hoisted Tool-Router-compatible auth config for that toolkit. |
+| `options` | `object` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link. |
+
+**Returns**
+
+`Promise<ConnectionRequest>` — Connection request object
+
+**Overload 3**
+
 ```typescript
 async link(userId: string, authConfigId: string, options?: object): Promise<ConnectionRequest>
 ```
@@ -229,8 +266,8 @@ async link(userId: string, authConfigId: string, options?: object): Promise<Conn
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} - The external user ID to create the connected account for. |
-| `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. |
-| `options?` | `object` | \{CreateConnectedAccountOptions\} - Options for creating a new connected account. |
+| `authConfigId` | `string` | \{string\} - The auth config ID to create the connected account for. Omit it and pass `options.toolkit` to use or create the default hoisted Tool-Router-compatible auth config for that toolkit. |
+| `options?` | `object` | \{CreateConnectedAccountLinkOptions\} - Options for creating a new connected account link. |
 
 **Returns**
 
@@ -258,6 +295,15 @@ console.log(`Visit: ${redirectUrl} to authenticate your account`);
 
 // Wait for the connection to be established
 const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequest.id);
+```
+
+```typescript
+// Omit authConfigId and let the SDK use/create a hoisted
+// Tool-Router-compatible Composio-managed auth config for the toolkit.
+const connectionRequest = await composio.connectedAccounts.link('user_123', {
+  toolkit: 'github',
+  callbackUrl: 'https://your-app.com/callback'
+});
 ```
 
 ---
@@ -336,8 +382,7 @@ const refreshedAccount = await composio.connectedAccounts.refresh('conn_abc123')
 
 Enable or disable a connected account. Accepts `{ enabled: boolean }`.
 
-For ACL writes on SHARED connections, see
-`composio.experimental.updateAcl()`.
+Use `updateAcl()` for ACL writes on SHARED connections.
 
 ```typescript
 async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promise<ConnectedAccountUpdateStatusResponse>
@@ -359,6 +404,51 @@ async update(nanoid: string, params: ConnectedAccountUpdateStatusParams): Promis
 ```typescript
 // Disable an account
 await composio.connectedAccounts.update('ca_abc123', { enabled: false });
+```
+
+---
+
+### updateAcl()
+
+Update the per-user ACL on a SHARED connected account.
+**Experimental — shape may change in future releases.**
+
+Only meaningful for SHARED connections — calling this on a PRIVATE
+connection raises `ComposioAclOnlyForSharedError` (400). ACL writes
+require the connection's creator or an API key.
+
+PATCH semantics: omit a field to leave it unchanged; pass an empty
+array to clear an allow/deny list. At least one field must be
+provided.
+
+```typescript
+async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `string` | The unique identifier of the connected account |
+| `params` | `object` | The ACL fields to patch |
+
+**Returns**
+
+`Promise<ConnectedAccountPatchResponse>` — The PATCH response
+
+**Example**
+
+```typescript
+// Allow every userId to use this SHARED connection
+await composio.connectedAccounts.updateAcl('ca_abc123', { allowAllUsers: true });
+
+// Targeted allow list
+await composio.connectedAccounts.updateAcl('ca_abc123', {
+  allowedUserIds: ['user_alice', 'user_bob'],
+});
+
+// Clear the allow list (back to deny-by-default unless allowAllUsers is true)
+await composio.connectedAccounts.updateAcl('ca_abc123', { allowedUserIds: [] });
 ```
 
 ---

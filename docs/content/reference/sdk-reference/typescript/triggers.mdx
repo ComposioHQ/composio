@@ -183,6 +183,37 @@ async listTypes(query?: { cursor?: string; limit?: number | null; toolkits?: str
 
 ---
 
+### setWebhookSubscription()
+
+Create or update the project webhook subscription used for webhook delivery.
+
+If a subscription already exists, the first subscription is updated. Otherwise a new
+subscription is created. By default this subscribes to V3 trigger message events.
+
+```typescript
+async setWebhookSubscription(params: { enabledEvents?: string[]; version?: 'V1' | 'V2' | 'V3'; webhookUrl: string }): Promise<WebhookSubscription>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params` | `object` |
+
+**Returns**
+
+`Promise<WebhookSubscription>`
+
+**Example**
+
+```typescript
+await composio.triggers.setWebhookSubscription({
+  webhookUrl: `${APP_URL}/webhooks/composio`,
+});
+```
+
+---
+
 ### subscribe()
 
 Subscribe to all the triggers

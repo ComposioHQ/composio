@@ -79,12 +79,14 @@ session = composio.create(
     toolkits=["gmail"],
     auth_configs={"gmail": "ac_xyz123"},
     tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}},
+    mcp=True,
 )
 mcp_url = session.mcp.url
 ```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
+// @noErrors
 import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
@@ -102,6 +104,7 @@ const session = await composio.create("user-123", {
   toolkits: ["gmail"],
   authConfigs: { gmail: "ac_xyz123" },
   tools: { gmail: { enable: ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"] } },
+  mcp: true,
 });
 const { mcp } = session;
 const mcpUrl = mcp.url;
@@ -234,7 +237,7 @@ const result = await session.execute("GITHUB_CREATE_ISSUE", {
   session once and keep using it across calls; see [Configuring Sessions](/docs/configuring-sessions).
 - **Sharing one account across users** — sessions support **shared connections**
   (`account_type:"SHARED"` + an allow/deny ACL), pinned per session. See
-  [Shared connections](/docs/authenticating-users/shared-connections).
+  [Shared connections](/docs/shared-connections).
 - **Tenant-specific params** (SharePoint sub-site, Jira subdomain) — prefill them via shared
   credentials on the auth config.
 - **White-labeling carries over** — pass the same white-labeled auth config IDs; users keep seeing
@@ -244,9 +247,6 @@ const result = await session.execute("GITHUB_CREATE_ISSUE", {
 - **Dashboard** — sessions are created via the SDK. For no-code, personal app connections, use
   **Composio For You** — reachable from the product switcher in the top-left of the dashboard.
 
-## Get started
+## Next
 
-<Cards>
-  <Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, account selection, presets, and session methods" />
-  <Card title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools and connected accounts" />
-</Cards>
+<Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, account selection, presets, and session methods" />

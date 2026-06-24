@@ -1,0 +1,8 @@
+{
+  "title": "Examples",
+  "root": true,
+  "pages": [
+    "index",
+    "general-agent-with-pi"
+  ]
+}

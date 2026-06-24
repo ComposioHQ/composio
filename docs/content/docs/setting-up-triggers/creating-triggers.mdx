@@ -1,183 +1,45 @@
 ---
 title: Creating triggers
-description: Create trigger instances via the dashboard or SDK
+description: Activate a trigger for a user so events start flowing
 keywords: [triggers, create trigger, trigger config]
 ---
 
-Create a trigger to start receiving events. A trigger watches for a specific event (e.g., `GITHUB_COMMIT_EVENT`) on a specific user's connected account. For an overview of how triggers work, see [Triggers](/docs/triggers).
+A trigger watches for one event (like `GITHUB_COMMIT_EVENT`) on one user's connected account. Create one, and events start flowing to your [subscription or webhook URL](/docs/setting-up-triggers/subscribing-to-events). For the bigger picture, see [Triggers](/docs/triggers).
 
-<Callout type="info" title="Prerequisites">
-- An [auth config](/docs/authentication#how-composio-manages-authentication) for the toolkit you want to monitor
-- A connected account for the user whose events you want to capture
-- A [webhook subscription](/docs/setting-up-triggers/subscribing-to-events) on the project, so events have somewhere to land
-</Callout>
+The user needs a [connected account](/docs/authentication) for the toolkit you want to monitor. See [Authentication](/docs/authentication) if you haven't set that up.
 
-You can create triggers using the [SDK](#using-the-sdk) or the Composio [dashboard](#using-the-dashboard). Some webhook triggers also need a webhook endpoint configured first — covered in [Configuring the webhook endpoint](#configuring-the-webhook-endpoint) below.
+## Inspect the trigger type
 
-## Configuring the webhook endpoint
+Each trigger type declares the config it needs. Check it before you create, so you pass the right fields.
 
-Some webhook triggers require a webhook endpoint registered with the provider before they can fire. With Composio-managed OAuth, this is already done for you. You only run the steps below when you bring your own OAuth app and the trigger type's `requires_webhook_endpoint_setup` flag is `true`.
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
 
-Each OAuth app you bring gets its own ingress URL within a project:
+composio = Composio()
 
+trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_type.config)
+# {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
 ```
-https://backend.composio.dev/api/v3.1/webhook_ingress/{toolkit_slug}/{we_xxx}/trigger_event
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
+console.log(triggerType.config);
+// {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
 ```
+  </Tab>
+</Tabs>
 
-A single OAuth app can serve at most one Composio project: providers accept only one callback URL per OAuth app, and each ingress URL routes to a single project. In return, every project becomes its own webhook tenant — with:
+## Create the trigger
 
-- **Its own ingress rate limit and backpressure budget**
-- **Project-scoped credentials** — the signing secret and app-level token you provide are stored against this project alone, never shared across projects. Repeat verification handshakes are rejected after the endpoint is verified, so the signing secret can't be silently swapped by a forged challenge.
-- **Clean fan-out** — events reach only that project's trigger instances
-- **Per-project metering**
-
-Every inbound event is signature-checked at ingress before any trigger fires:
-
-- **HMAC-SHA256** for Slack, **Ed25519** or shared-token matching for other providers
-- **Timestamp replay protection** — when the provider signs a request timestamp, requests outside the allowed skew window are rejected
-- **Unsigned or tampered requests** are rejected with `400` at ingress, so third parties can't spoof events onto your triggers
-
-<Callout type="warn">
-**Sharing one OAuth app across projects?** Consolidate to a single project or register separate OAuth apps per project before continuing.
-</Callout>
-
-The walkthrough below uses Slack as the example and walks through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). For setup notes specific to each toolkit, see its FAQ section — e.g., [Slack](/toolkits/slack), [Notion](/toolkits/notion).
-
-### Step 1: Discover what credentials the endpoint needs
-
-Call the schema endpoint for the toolkit. The `setup_fields` in the response tell you exactly what to collect from the provider's app dashboard.
-
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/schema?toolkit_slug=slack" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
-```
-
-Sample response:
-
-```json
-{
-  "toolkit_slug": "slack",
-  "setup_fields": {
-    "webhook_signing_secret": {
-      "display_name": "Signing Secret",
-      "description": "Webhook request signing secret from your Slack app dashboard",
-      "is_required": true,
-      "is_secret": true
-    },
-    "app_token": {
-      "display_name": "App-Level Token",
-      "description": "Slack xapp- token with authorizations:read scope for event authorization",
-      "is_required": true,
-      "is_secret": true
-    }
-  }
-}
-```
-
-### Step 2: Create the endpoint
-
-```bash
-curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "toolkit_slug": "slack",
-    "client_id": "<YOUR_OAUTH_CLIENT_ID>"
-  }'
-```
-
-Sample response:
-
-```json
-{
-  "id": "we_abc123",
-  "toolkit_slug": "slack",
-  "client_id": "<YOUR_OAUTH_CLIENT_ID>",
-  "webhook_url": "https://backend.composio.dev/api/v3.1/webhook_ingress/slack/we_abc123/trigger_event",
-  "data": null,
-  "created_at": "2026-04-24T10:00:00.000Z"
-}
-```
-
-Hold on to two values from the response: `id` (used as `<ENDPOINT_ID>` below) and `webhook_url` (you'll paste this into the provider's app dashboard in step 4). The call is **idempotent per `(toolkit_slug, client_id)` within a project** — calling it again with the same pair returns the existing endpoint without rotating the URL or wiping the secret.
-
-### Step 3: Store the credentials returned by the schema
-
-`PATCH` all the fields the schema returned in a single request. For Slack, that's the signing secret and (when needed) the app-level token together:
-
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data": {
-      "webhook_signing_secret": "<SIGNING_SECRET>",
-      "app_token": "xapp-..."
-    }
-  }'
-```
-
-For Slack, the credentials come from:
-
-- **Signing secret** — Slack app → Basic Information → App Credentials → Signing Secret.
-- **App-level token** — Slack app → Basic Information → App-Level Tokens, with scope `authorizations:read`. Required for direct messages, private channels, and reactions; omit it if you only need public-channel events.
-
-<Callout type="warn">
-**Store the credentials before you switch the provider's callback URL in step 4.** If the provider posts to the URL without a secret on the endpoint, every request fails with `400`, and the provider may auto-disable the endpoint after a window of consecutive failures (Slack: ~36 hours).
-</Callout>
-
-### Step 4: Point the provider's app dashboard at the URL
-
-Paste the `webhook_url` from step 2 into the provider's app dashboard:
-
-- **Slack** → Event Subscriptions → Request URL
-- **Notion** → Webhook Endpoints (in the integration's settings)
-
-For providers that issue a verification challenge on save (Slack `url_verification`, Notion's verification token, and so on), Composio responds automatically — no handshake code on your side. Once the provider accepts the URL, continue to [Using the SDK](#using-the-sdk) to create your trigger.
-
-### Updating an endpoint
-
-To rotate the signing secret or update any single field, `PATCH` it (other fields are preserved):
-
-```bash
-curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "webhook_signing_secret": "<NEW_SECRET>" } }'
-```
-
-To **replace** `data` wholesale (any field you don't include is cleared), `POST` to the same URL:
-
-```bash
-curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{ "data": { "webhook_signing_secret": "<NEW_SECRET>", "app_token": "<NEW_APP_TOKEN>" } }'
-```
-
-The `webhook_url` is immutable for the lifetime of the endpoint — rotating the signing secret on the provider side is a `PATCH` on the existing endpoint, not a new one.
-
-To inspect a single endpoint:
-
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
-```
-
-To list every endpoint in the current project:
-
-```bash
-curl "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
-  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
-```
-
-## Using the SDK
-
-Before creating a trigger, inspect the trigger type to see what configuration it requires. Then create the trigger with the required config.
-
-<Callout>
-When you pass a `user_id`, the SDK automatically finds the user's connected account for the relevant toolkit. If the user has multiple connected accounts for the same toolkit, it uses the most recently created one. You can also pass a `connected_account_id`/`connectedAccountId` directly if you need more control.
-</Callout>
+Pass the user, the trigger slug, and the config the type requires.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -187,12 +49,8 @@ from composio import Composio
 composio = Composio()
 user_id = "user-id-123435"
 
-# Check what configuration is required
-trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
-print(trigger_type.config)
-# Returns: {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
-
-# Create trigger with the required config
+# The user needs a connected account for this toolkit before this runs.
+# Set it up first. See /docs/authentication.
 trigger = composio.triggers.create(
     slug="GITHUB_COMMIT_EVENT",
     user_id=user_id,
@@ -208,45 +66,51 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 const userId = 'user-id-123435';
 
-// Check what configuration is required
-const triggerType = await composio.triggers.getType("GITHUB_COMMIT_EVENT");
-console.log(triggerType.config);
-// Returns: {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
-
-// Create trigger with the required config
-const trigger = await composio.triggers.create(
-    userId,
-    'GITHUB_COMMIT_EVENT',
-    {
-        triggerConfig: {
-            owner: 'your-repo-owner',
-            repo: 'your-repo-name'
-        }
-    }
-);
+// The user needs a connected account for this toolkit before this runs.
+// Set it up first. See /docs/authentication.
+const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+  triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
+});
 console.log(`Trigger created: ${trigger.triggerId}`);
 ```
   </Tab>
 </Tabs>
 
-<Callout>
-Trigger instances default to the `'latest'` toolkit version. If your code parses trigger payloads programmatically against a fixed schema, you can pin a specific version at SDK initialization. See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version) for details.
-</Callout>
+You only pass a `user_id`. The SDK looks up that user's connected account for the toolkit automatically.
 
-## Using the dashboard
+### Targeting a specific connected account
 
-1. Navigate to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) and select the auth config for the relevant toolkit
-2. Navigate to **Active Triggers** and click **Create Trigger**
-3. Select the connected account for which you want to create a trigger
-4. Choose a trigger type and fill in the required configuration
-5. Click **Create Trigger**
+If a user has more than one connected account for the toolkit, the SDK uses the most recently created one. Pass a connected account ID to pick exactly which account the trigger watches.
 
-<Video src="/videos/triggers-creation.mp4" caption="Creating a GitHub Star Added trigger from the dashboard" />
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    connected_account_id="ca_def456",
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
+)
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+const userId = 'user-id-123435';
+// ---cut---
+const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+  connectedAccountId: 'ca_def456',
+  triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
+});
+```
+  </Tab>
+</Tabs>
 
-## What to read next
+Trigger instances default to the `'latest'` toolkit version. If you parse payloads against a fixed schema, [pin a version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version) at SDK initialization.
 
-<Cards>
-  <Card icon={<Plug />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up the webhook subscription URL Composio delivers events to" />
-  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures so you know payloads came from Composio" />
-  <Card icon={<Wrench />} title="Managing triggers" href="/docs/setting-up-triggers/managing-triggers" description="List, enable, disable, and delete trigger instances" />
-</Cards>
+That's it. The trigger is active. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events).
+
+## Next
+
+<Card icon={<Plug />} title="Receiving events" href="/docs/setting-up-triggers/subscribing-to-events" description="Get trigger events locally with the SDK or in production over your webhook URL" />

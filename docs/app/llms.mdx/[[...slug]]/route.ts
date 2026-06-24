@@ -1,7 +1,7 @@
 import {
   source,
   getReferenceSource,
-  cookbooksSource,
+  examplesSource,
   toolkitsSource,
   changelogEntries,
   slugToDate,
@@ -506,7 +506,7 @@ async function openapiPageToMarkdown(
 // Note: 'reference' is handled specially below with async getReferenceSource()
 const sources = [
   { prefix: 'docs', source },
-  { prefix: 'cookbooks', source: cookbooksSource },
+  { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },
 ];
 
@@ -797,7 +797,7 @@ async function generateToolkitsIndex(): Promise<string> {
     '',
     `Composio supports ${toolkits.length} toolkits for building AI agents.`,
     '',
-    '- [Premium Tools](/toolkits/premium-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
+    '- [Pro Tools](/toolkits/pro-tools.md) - Which tools cost extra, how they are priced, and what the limits are',
     '- [Composio Managed Auth](/toolkits/managed-auth.md) - Full list of OAuth toolkits that work out of the box vs ones that need your own credentials',
     '',
     '## All Toolkits',
@@ -824,7 +824,7 @@ async function generateToolkitsIndex(): Promise<string> {
   return lines.join('\n');
 }
 
-const LLM_FOOTER = '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/docs/glossary) | [Cookbooks](https://docs.composio.dev/llms.mdx/cookbooks) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
+const LLM_FOOTER = '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
 
 // Render meta tool parameters as markdown
 function renderMetaToolParams(properties: Record<string, MetaToolParameter>, requiredFields: string[] = [], indent = 0): string[] {
@@ -908,7 +908,7 @@ function metaToolsIndexToMarkdown(tools: MetaTool[]): string {
 
   for (const tool of tools) {
     const tags = tool.tags.length > 0 ? tool.tags.join(', ') : '—';
-    lines.push(`| [\`${tool.slug}\`](/reference/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
+    lines.push(`| [\`${tool.slug}\`](/toolkits/meta-tools/${tool.slug.toLowerCase().replace('composio_', '')}.md) | ${tags} |`);
   }
 
   return lines.join('\n') + LLM_FOOTER;
@@ -972,8 +972,11 @@ export async function GET(
       notFound();
     }
 
-    // Special handling for meta tools - /reference/meta-tools and /reference/meta-tools/{slug}
-    if (prefix === 'reference' && rest[0] === 'meta-tools') {
+    // Special handling for meta tools - /toolkits/meta-tools and /toolkits/meta-tools/{slug}.
+    // Must run before the generic toolkits page resolution and the JSON toolkit block
+    // below, since the meta-tool MDX is just a <MetaToolDetailServer /> shell that can't
+    // render to useful markdown — the content is generated from the JSON data instead.
+    if (prefix === 'toolkits' && rest[0] === 'meta-tools') {
       if (rest.length === 1) {
         // Index page
         const tools = await getAllMetaTools();

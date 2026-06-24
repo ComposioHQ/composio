@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { href: '/docs', label: 'Docs' },
+  { href: '/examples', label: 'Examples' },
   { href: '/docs/api', label: 'API' },
-  { href: '/cookbooks', label: 'Cookbooks' },
 ];
 
 export function TopNav() {

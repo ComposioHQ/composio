@@ -57,21 +57,31 @@ const composio = new Composio({
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`. |
 | `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
-Houses stateful operations like Experimental.updateAcl that
-take a client and perform I/O. Stateless experimental factories
-(e.g. `experimental_createTool`) stay at the top level. |
+Prefer domain-specific mounts (for example
+`composio.connectedAccounts.updateAcl(...)`) when available; this
+namespace keeps compatibility aliases while APIs are experimental.
+Stateless experimental factories (e.g. `experimental_createTool`) stay
+at the top level. |
 | `files` | `Files` | Upload and download files |
-| `mcp` | `MCP` | Model Context Protocol server management |
+| `mcp` | `MCP` | Model Context Protocol server management. |
 | `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
+| `sessions` | `Sessions` | Create and reuse Composio sessions.
+
+Prefer `composio.sessions.create(...)` for new code. The top-level
+`composio.create(...)` method is kept as an alias. |
 | `toolkits` | `Toolkits` | Retrieve toolkit metadata and authorize user connections |
-| `toolRouter` | `ToolRouter` | Experimental feature, use with caution |
+| `toolRouter` | `ToolRouter` | Legacy alias for `composio.sessions`. |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
 | `use` | `object` | Use an existing tool router session |
 
 ## Methods
 
-### createSession()
+### createSession() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+DEPRECATED: This method will be removed in a future version of the SDK.
+</Callout>
 
 Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
 This method is particularly useful when you need to:

@@ -1,6 +1,7 @@
 ---
 title: Migrating from initiate() to link()
 description: Move Composio-managed OAuth flows off the legacy POST /api/v3/connected_accounts endpoint and onto link() before the 2026-05-08 / 2026-07-03 cutover.
+legacy: true
 ---
 
 `composio.connected_accounts.initiate()` (Python) and `composio.connectedAccounts.initiate()` (TypeScript) wrap `POST /api/v3/connected_accounts`. That endpoint is being retired for **Composio-managed auth configs on redirectable OAuth schemes** (OAuth1, OAuth2, DCR_OAUTH):

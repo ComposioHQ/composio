@@ -5,6 +5,36 @@ description: "Triggers (instance) class"
 
 ## Methods
 
+### set_webhook_subscription()
+
+Create or update the project webhook subscription used for webhook delivery.  If a subscription already exists, the first subscription is updated. Otherwise a new subscription is created. By default this subscribes to V3 trigger message events.
+
+```python
+def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | None] = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `webhook_url` | `str` |
+| `enabled_events?` | `Sequence[str \| None]` |
+| `version?` | `Union[WebhookVersion, str]` |
+
+**Returns**
+
+`WebhookSubscription`
+
+**Example**
+
+```python
+composio.triggers.set_webhook_subscription(
+        webhook_url=f"{APP_URL}/webhooks/composio",
+    )
+```
+
+---
+
 ### get_type()
 
 Get a trigger type by its slug Uses the global toolkit version provided when initializing composio instance to fetch trigger for specific toolkit version
@@ -156,4 +186,4 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L865)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L881)

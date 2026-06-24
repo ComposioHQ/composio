@@ -9,7 +9,7 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, relative } from "path";
 
 const DOCS_DIR = join(import.meta.dir, "../../content/docs");
-const COOKBOOKS_DIR = join(import.meta.dir, "../../content/cookbooks");
+const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
 
 /** Recursively find all .mdx files */
@@ -66,15 +66,15 @@ describe("Content - frontmatter validation", () => {
     expect(missingTitle).toEqual([]);
   });
 
-  test("all cookbooks pages have a title", async () => {
-    const files = await findMdxFiles(COOKBOOKS_DIR);
+  test("all examples pages have a title", async () => {
+    const files = await findMdxFiles(EXAMPLES_DIR);
     const missingTitle: string[] = [];
 
     for (const file of files) {
       const content = await readFile(file, "utf-8");
       const fm = parseFrontmatter(content);
       if (!fm || !fm.title) {
-        missingTitle.push(relative(COOKBOOKS_DIR, file));
+        missingTitle.push(relative(EXAMPLES_DIR, file));
       }
     }
 

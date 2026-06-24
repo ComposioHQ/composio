@@ -4,9 +4,9 @@ description: Use the Composio CLI inside Claude Code for knowledge work, debuggi
 keywords: [cli, claude code, command line, terminal, composio for you, knowledge work, dev commands]
 ---
 
-The Composio CLI is primarily the command-line surface for [Composio for You](https://composio.dev/for-you). It is meant to be installed in your terminal and used from inside **Claude Code**, so Claude can connect apps, execute tools, inspect schemas, call authenticated APIs, and debug Composio projects while it works with you.
+The Composio CLI gives Claude Code a local tool surface. From your terminal, Claude can connect apps, execute tools, inspect schemas, call authenticated APIs, and debug Composio projects while it works with you. It's the command-line side of [Composio for You](https://composio.dev/for-you).
 
-Use the CLI directly when you want to give Claude Code a reliable local tool surface instead of copying API keys, schemas, and one-off scripts into chat.
+Reach for it when you want Claude to act in your connected apps directly, instead of pasting API keys, schemas, and one-off scripts into the chat.
 
 ## Install
 
@@ -15,7 +15,7 @@ curl -fsSL https://composio.dev/install | bash
 composio login
 ```
 
-Then open Claude Code in the project where you want to work. `composio login` installs the `composio-cli` skill for Claude Code by default. To install the skill manually:
+Open Claude Code in the project you want to work in. `composio login` installs the `composio-cli` skill for Claude Code by default. To install it manually:
 
 ```bash
 composio --install-skill composio-cli claude
@@ -29,11 +29,11 @@ composio --version
 composio upgrade
 ```
 
-## 1. Using Composio CLI for knowledge work
+## Knowledge work in Claude Code
 
-This is the recommended way to use Composio from inside Claude Code. The CLI can execute tools for you, connect accounts, script workflows, call authenticated APIs, and inspect trigger events without you wiring a custom integration first.
+This is the recommended way to use Composio from inside Claude Code. The CLI executes tools, connects accounts, scripts workflows, calls authenticated APIs, and inspects trigger events, all without you wiring up a custom integration first.
 
-### 1.1 Search, connect, and execute tools
+### Search, connect, and execute tools
 
 Use this flow when Claude needs to act in one of your connected apps:
 
@@ -52,7 +52,7 @@ composio execute GMAIL_FETCH_EMAILS \
   -d '{ query: "is:unread newer_than:1d", max_results: 10 }'
 ```
 
-Useful commands:
+The commands you'll reach for most:
 
 | Command | Use it for |
 |---------|------------|
@@ -61,15 +61,15 @@ Useful commands:
 | `composio link` | Connect an app account |
 | `composio proxy` | Call provider APIs with Composio-managed auth |
 
-Use `composio proxy` when Claude already knows the provider API endpoint and wants Composio to inject auth from your connected account:
+Use `composio proxy` when Claude already knows the provider's API endpoint and just needs Composio to inject auth from your connected account:
 
 ```bash
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
-### 1.2 Run scripts and sub-agents
+### Run scripts and sub-agents
 
-Use `composio run` when Claude needs a multi-step workflow, loops, parallel fan-out, data transformation, or LLM-assisted summarization. It runs inline TS/JS or a file with `execute()`, `search()`, `proxy()`, `experimental_subAgent()`, `result.prompt()`, and `z` injected.
+Reach for `composio run` when Claude needs a multi-step workflow: loops, parallel fan-out, data transformation, or LLM-assisted summarization. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `experimental_subAgent()`, `result.prompt()`, and `z` injected.
 
 Run a single scripted workflow:
 
@@ -126,9 +126,9 @@ Run a checked-in script:
 composio run --file ./workflow.ts -- --repo composiohq/composio
 ```
 
-### 1.3 Listen to trigger events
+### Listen to trigger events
 
-Use trigger listening when Claude needs to wait for new events, inspect incoming payloads, or forward events while debugging. In the current CLI, trigger event streaming is exposed through the developer namespace:
+Use trigger listening when Claude needs to wait for new events, inspect incoming payloads, or forward events while debugging. Event streaming lives in the developer namespace:
 
 ```bash
 # Compact table view for matching events
@@ -144,11 +144,11 @@ composio dev listen --toolkits github --forward https://example.com/webhook
 composio dev listen --toolkits slack --out ./events.jsonl
 ```
 
-Filter by toolkit, trigger slug, trigger ID, connected account ID, or user ID when you want Claude to focus on one event source.
+Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source.
 
-## 2. Using Composio CLI to build on Composio
+## Build on the Composio platform
 
-Use the CLI while building on the Composio developer platform. These commands help initialize local project context, create auth configs, manage connected accounts, test tool execution, inspect logs, and debug trigger flows.
+Use these commands while building on the Composio developer platform. They initialize local project context, create auth configs, manage connected accounts, test tool execution, inspect logs, and debug trigger flows.
 
 ### Initialize project context
 
@@ -192,7 +192,7 @@ composio dev auth-configs create "GitHub OAuth" \
 
 ### Manage connected accounts
 
-Top-level `composio link` is the fastest path for personal knowledge work. Use developer connected-account commands when you are building against project users, auth configs, and playground flows.
+Top-level `composio link` is the fastest path for personal knowledge work. Use the developer connected-account commands when you're building against project users, auth configs, and playground flows.
 
 ```bash
 composio dev connected-accounts list
@@ -237,17 +237,16 @@ composio generate ts --toolkits github,gmail
 composio generate py --toolkits github,gmail
 ```
 
-Use this section when you are debugging auth configs, connected accounts, trigger delivery, or tool execution in a Composio project. For general user-facing app development, prefer the SDK/session docs first and use the CLI as a local debugging companion.
+Reach for this section when you're debugging auth configs, connected accounts, trigger delivery, or tool execution in a Composio project. For user-facing app development, start with the SDK and session docs and keep the CLI as a local debugging companion.
 
-## 3. Building directly on top of the CLI
+## Building on top of the CLI
 
-Building products directly on top of the CLI is **not recommended**. The CLI is in constant development and Composio does not provide CLI-level SLAs as an application runtime contract.
+<Callout type="warning">
+Don't build a production integration on top of the CLI. It's in constant development, and Composio doesn't offer CLI-level SLAs as an application runtime contract. For a stable integration, build on the Composio SDKs and APIs instead.
+</Callout>
 
-If you need a stable production integration, build on top of the Composio SDKs and APIs instead.
+That said, the CLI works well as a bootstrap or helper layer for agent-native products:
 
-That said, the CLI can be useful as a bootstrap or helper layer for agent-native products:
-
-- Use [Signing up as an agent](/docs/signing-up-as-an-agent) when an agent needs to programmatically create or reuse a Composio identity.
 - Use `composio connections list` to inspect which connected accounts are available locally.
 - Use `composio run` or `composio proxy` for internal automations where CLI churn is acceptable.
 

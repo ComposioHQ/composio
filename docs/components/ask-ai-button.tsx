@@ -5,20 +5,7 @@ import { Search, MessageSquare } from 'lucide-react';
 import { useSearchContext } from '@fumadocs/ui/contexts/search';
 import { useI18n } from '@fumadocs/ui/contexts/i18n';
 
-import {
-  closeDecimalWidget,
-  getDecimal,
-  isDecimalWidgetVisible,
-  loadDecimalWidget,
-  openDecimalWidget,
-} from './decimal-widget';
-
-export async function toggleDecimalWidget() {
-  const decimal = getDecimal() ?? (await loadDecimalWidget());
-  if (!decimal) return;
-
-  isDecimalWidgetVisible() ? closeDecimalWidget() : openDecimalWidget(decimal);
-}
+import { toggleEveChat } from './eve-chat-store';
 
 export function detectMac(): boolean {
   try {
@@ -45,7 +32,7 @@ function useIsMac() {
 const handleKeyDown = (e: KeyboardEvent) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
     e.preventDefault();
-    void toggleDecimalWidget();
+    toggleEveChat();
   }
 };
 
@@ -86,7 +73,7 @@ export function SearchAndAskAI() {
       <button
         type="button"
         onClick={() => {
-          void toggleDecimalWidget();
+          toggleEveChat();
         }}
         className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0"
       >
@@ -121,7 +108,7 @@ export function SearchAndAskAIMobile() {
         type="button"
         aria-label="Ask AI"
         onClick={() => {
-          void toggleDecimalWidget();
+          toggleEveChat();
         }}
         className="inline-flex items-center justify-center rounded-md p-2 text-sm font-medium transition-colors duration-100 hover:bg-fd-accent hover:text-fd-accent-foreground"
       >

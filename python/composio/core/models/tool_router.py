@@ -22,6 +22,7 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
+from composio.exceptions import InvalidParams
 from composio.core.models.base import Resource
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
@@ -40,6 +41,7 @@ from composio.core.models.custom_tool_types import (
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
+    ToolRouterSessionWithMcp,
 )
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
 from composio.core.models.tool_router_constants import (
@@ -57,7 +59,7 @@ ToolRouterTag = t.Literal[
     "readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"
 ]
 
-# Type alias for sandbox compute tier on the workbench
+# Type alias for sandbox compute tier on the session sandbox
 # +----------+------+------+
 # | Tier     | vCPU | RAM  |
 # +----------+------+------+
@@ -166,18 +168,18 @@ def _is_tools_tags_config(
     return isinstance(config, dict) and "tags" in config
 
 
-class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
-    """Configuration for workbench settings in tool router session.
+class ToolRouterSandboxConfig(te.TypedDict, total=False):
+    """Configuration for session sandbox settings.
 
     Attributes:
-        enable: Whether to enable the workbench entirely. Defaults to True.
+        enable: Whether to enable the sandbox entirely. Defaults to True.
                 When set to False, no code execution tools
                 (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
-                available in the session, workbench-related prompt lines are
-                stripped, and direct workbench calls are rejected.
-        enable_proxy_execution: Whether to allow proxy execute calls in the workbench.
+                available in the session, sandbox-related prompt lines are
+                stripped, and direct sandbox calls are rejected.
+        enable_proxy_execution: Whether to allow proxy execute calls in the sandbox.
                                 If False, prevents arbitrary HTTP requests.
-        auto_offload_threshold: Maximum execution payload size to offload to workbench.
+        auto_offload_threshold: Maximum execution payload size to offload to the sandbox.
         sandbox_size: Sandbox compute tier. One of ``"standard"`` (1 vCPU / 1 GB),
                       ``"medium"`` (2 vCPU / 2 GB), ``"large"`` (4 vCPU / 4 GB), or
                       ``"xlarge"`` (8 vCPU / 8 GB). Defaults to ``"standard"``
@@ -190,6 +192,14 @@ class ToolRouterWorkbenchConfig(te.TypedDict, total=False):
     enable_proxy_execution: bool
     auto_offload_threshold: int
     sandbox_size: SandboxSize
+
+
+class ToolRouterWorkbenchConfig(ToolRouterSandboxConfig, total=False):
+    """Deprecated alias for :class:`ToolRouterSandboxConfig`.
+
+    ``workbench`` is still accepted for backwards compatibility; prefer
+    ``sandbox`` in new code.
+    """
 
 
 class ToolRouterManageConnectionsConfig(te.TypedDict, total=False):
@@ -270,11 +280,11 @@ def _preloads_all_custom_tools(
 def _apply_session_preset_defaults(
     session_preset: t.Optional[SessionPreset],
     manage_connections: t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]],
-    workbench: t.Optional[ToolRouterWorkbenchConfig],
+    workbench: t.Optional[ToolRouterSandboxConfig],
     preload: t.Optional[ToolRouterPreloadConfig],
 ) -> t.Tuple[
     t.Optional[t.Union[bool, ToolRouterManageConnectionsConfig]],
-    t.Optional[ToolRouterWorkbenchConfig],
+    t.Optional[ToolRouterSandboxConfig],
     t.Optional[ToolRouterPreloadConfig],
 ]:
     if session_preset != SESSION_PRESET_DIRECT_TOOLS:
@@ -579,6 +589,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             else:
                 return None
 
+    # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
+    # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
+    # every session regardless. See https://docs.composio.dev/docs/sessions-via-mcp
+    @t.overload
     def create(
         self,
         *,
@@ -597,11 +611,68 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         ] = None,
         auth_configs: t.Optional[t.Dict[str, str]] = None,
         connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
         workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
         multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
         preload: t.Optional[ToolRouterPreloadConfig] = None,
         session_preset: t.Optional[SessionPreset] = None,
         experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def create(
+        self,
+        *,
+        user_id: str,
+        toolkits: t.Optional[
+            t.Union[
+                t.List[str],
+                ToolRouterToolkitsEnableConfig,
+                ToolRouterToolkitsDisableConfig,
+            ]
+        ] = None,
+        tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+        tags: t.Optional[ToolRouterConfigTags] = None,
+        manage_connections: t.Optional[
+            t.Union[bool, ToolRouterManageConnectionsConfig]
+        ] = None,
+        auth_configs: t.Optional[t.Dict[str, str]] = None,
+        connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+        sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+        workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+        multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+        preload: t.Optional[ToolRouterPreloadConfig] = None,
+        session_preset: t.Optional[SessionPreset] = None,
+        experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+        mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Create a new tool router session for a user.
@@ -660,21 +731,22 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                                   Only one account per toolkit is allowed when multi-account
                                   mode is disabled.
                                   Example: {'github': 'ca_xxx', 'slack': ['ca_yyy']}
-        :param workbench: Optional workbench configuration. Dict with:
-                         - 'enable' (bool): Whether to enable the workbench entirely.
-                           Defaults to True. When set to False, no code execution tools
-                           (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
-                           available in the session.
-                         - 'enable_proxy_execution' (bool): Whether to allow proxy execute
-                           calls in the workbench. If False, prevents arbitrary HTTP requests.
-                         - 'auto_offload_threshold' (int): Maximum execution payload size to
-                           offload to workbench.
-                         - 'sandbox_size' (SandboxSize): Sandbox compute tier. One of
-                           'standard' (1 vCPU / 1 GB, default), 'medium' (2 vCPU / 2 GB),
-                           'large' (4 vCPU / 4 GB), or 'xlarge' (8 vCPU / 8 GB).
-                         Example: {'enable': False}
-                         Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
-                         Example: {'sandbox_size': 'large'}
+        :param sandbox: Optional sandbox configuration. Dict with:
+                       - 'enable' (bool): Whether to enable the sandbox entirely.
+                         Defaults to True. When set to False, no code execution tools
+                         (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are
+                         available in the session.
+                       - 'enable_proxy_execution' (bool): Whether to allow proxy execute
+                         calls in the sandbox. If False, prevents arbitrary HTTP requests.
+                       - 'auto_offload_threshold' (int): Maximum execution payload size to
+                         offload to the sandbox.
+                       - 'sandbox_size' (SandboxSize): Sandbox compute tier. One of
+                         'standard' (1 vCPU / 1 GB, default), 'medium' (2 vCPU / 2 GB),
+                         'large' (4 vCPU / 4 GB), or 'xlarge' (8 vCPU / 8 GB).
+                       Example: {'enable': False}
+                       Example: {'enable_proxy_execution': False, 'auto_offload_threshold': 300}
+                       Example: {'sandbox_size': 'large'}
+        :param workbench: Deprecated alias for sandbox. Accepted for backwards compatibility.
         :param multi_account: Optional multi-account configuration (ToolRouterMultiAccountConfig).
                             Dict with:
                             - 'enable' (bool): When True, enables multi-account mode.
@@ -707,6 +779,12 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                               it directly from session.tools(); otherwise custom tools
                               remain search-only.
                             Example: {'assistive_prompt': {'user_timezone': 'America/New_York'}}
+        :param mcp: When True, the returned session surfaces its hosted MCP
+                    endpoint (``session.mcp.url`` / ``session.mcp.headers``) in
+                    the type (returns ToolRouterSessionWithMcp). The endpoint
+                    exists on every session at runtime regardless of this flag;
+                    native tools (``session.tools()``) are unaffected.
+                    See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
 
         Example:
@@ -771,18 +849,18 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 }
             )
 
-            # Create a session with workbench disabled
+            # Create a session with sandbox disabled
             session = tool_router.create(
                 user_id='user_123',
-                workbench={
+                sandbox={
                     'enable': False
                 }
             )
 
-            # Create a session with workbench config
+            # Create a session with sandbox config
             session = tool_router.create(
                 user_id='user_123',
-                workbench={
+                sandbox={
                     'enable_proxy_execution': False,
                     'auto_offload_threshold': 300
                 }
@@ -795,11 +873,21 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             ```
         """
 
+        if sandbox is not None and workbench is not None:
+            raise InvalidParams(
+                "Pass either `sandbox` or `workbench`, not both. "
+                "`workbench` is a backwards-compatible alias for `sandbox`."
+            )
+
+        sandbox_config: t.Optional[ToolRouterSandboxConfig] = (
+            sandbox if sandbox is not None else workbench
+        )
+
         direct_tools_preset = session_preset == SESSION_PRESET_DIRECT_TOOLS
-        manage_connections, workbench, preload = _apply_session_preset_defaults(
+        manage_connections, sandbox_config, preload = _apply_session_preset_defaults(
             session_preset=session_preset,
             manage_connections=manage_connections,
-            workbench=workbench,
+            workbench=sandbox_config,
             preload=preload,
         )
         default_custom_preload = _preloads_all_custom_tools(preload)
@@ -908,20 +996,20 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         if tags_payload is not None:
             create_params["tags"] = tags_payload
 
-        if workbench is not None:
+        if sandbox_config is not None:
             execution_payload: t.Dict[str, t.Any] = {
-                "enable": workbench.get("enable", True),
+                "enable": sandbox_config.get("enable", True),
             }
-            if "enable_proxy_execution" in workbench:
-                execution_payload["enable_proxy_execution"] = workbench[
+            if "enable_proxy_execution" in sandbox_config:
+                execution_payload["enable_proxy_execution"] = sandbox_config[
                     "enable_proxy_execution"
                 ]
-            if "auto_offload_threshold" in workbench:
+            if "auto_offload_threshold" in sandbox_config:
                 execution_payload["auto_offload_threshold"] = int(
-                    workbench["auto_offload_threshold"]
+                    sandbox_config["auto_offload_threshold"]
                 )
-            if "sandbox_size" in workbench:
-                execution_payload["sandbox_size"] = workbench["sandbox_size"]
+            if "sandbox_size" in sandbox_config:
+                execution_payload["sandbox_size"] = sandbox_config["sandbox_size"]
 
             if execution_payload:
                 create_params["workbench"] = execution_payload
@@ -1012,8 +1100,13 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             ),
         )
 
-        # Create and return the session
-        return ToolRouterSession(
+        # Create and return the session. `mcp=True` returns the subclass that
+        # surfaces `session.mcp` in the type; the runtime object is otherwise
+        # identical (the base always stores the MCP endpoint).
+        session_cls: t.Type[ToolRouterSession[TTool, TToolCollection]] = (
+            ToolRouterSessionWithMcp if mcp else ToolRouterSession
+        )
+        return session_cls(
             client=self._client,
             provider=self._provider,
             dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
@@ -1033,12 +1126,35 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             inline_custom_tools_payload=inline_custom_tools_payload,
         )
 
+    # Overloads mirror create(): pass ``mcp=True`` to surface ``session.mcp`` in
+    # the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
+    @t.overload
     def use(
         self,
         session_id: str,
         *,
         custom_tools: t.Optional[t.List[CustomTool]] = None,
         custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[True],
+    ) -> ToolRouterSessionWithMcp[TTool, TToolCollection]: ...
+
+    @t.overload
+    def use(
+        self,
+        session_id: str,
+        *,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: t.Literal[False] = False,
+    ) -> ToolRouterSession[TTool, TToolCollection]: ...
+
+    def use(
+        self,
+        session_id: str,
+        *,
+        custom_tools: t.Optional[t.List[CustomTool]] = None,
+        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None,
+        mcp: bool = False,
     ) -> ToolRouterSession[TTool, TToolCollection]:
         """
         Use an existing tool router session.
@@ -1054,6 +1170,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param session_id: The session ID to use.
         :param custom_tools: Optional custom tools to bind to the session.
         :param custom_toolkits: Optional custom toolkits to bind to the session.
+        :param mcp: When True, the returned session surfaces its hosted MCP
+                    endpoint in the type (returns ToolRouterSessionWithMcp).
+                    See https://docs.composio.dev/docs/sessions-via-mcp
         :return: Tool router session object
 
         Example:
@@ -1132,7 +1251,10 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             assistive_prompt=None,
         )
 
-        return ToolRouterSession(
+        session_cls: t.Type[ToolRouterSession[TTool, TToolCollection]] = (
+            ToolRouterSessionWithMcp if mcp else ToolRouterSession
+        )
+        return session_cls(
             client=self._client,
             provider=self._provider,
             dangerously_allow_auto_upload_download_files=self._auto_upload_download_files,
@@ -1156,6 +1278,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
+    "ToolRouterSessionWithMcp",
     "ToolRouterSessionExperimental",
     "ToolRouterToolkitsEnableConfig",
     "ToolRouterToolkitsDisableConfig",
@@ -1167,6 +1290,7 @@ __all__ = [
     "ToolRouterTagsEnableDisableConfig",
     "ToolRouterConfigTags",
     "ToolRouterManageConnectionsConfig",
+    "ToolRouterSandboxConfig",
     "ToolRouterWorkbenchConfig",
     "SandboxSize",
     "SessionPreset",

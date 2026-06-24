@@ -4,7 +4,7 @@ description: Build an agent with Mastra and enable it to use 1000+ tools with Co
 keywords: [mastra]
 ---
 
-The Mastra provider transforms Composio tools into [Mastra's tool format](https://mastra.ai/en/docs/tools-mcp/overview#creating-tools) with built-in execution.
+The Mastra provider transforms Composio tools into [Mastra's tool format](https://mastra.ai/en/docs/tools-mcp/overview#creating-tools) with built-in execution. Pass the wrapped tools to a Mastra `Agent`, and the agent calls them automatically. Each tool gets both an input and an output schema, so Mastra can validate tool results as well as arguments.
 
 <Steps>
 <Step>
@@ -61,3 +61,23 @@ console.log(text);
 ```
 </Step>
 </Steps>
+
+## Provider specifics
+
+**Strict mode.** Pass `strict: true` to drop every non-required property from each tool's input schema before Mastra compiles it:
+
+```typescript
+// @noErrors
+import { Composio } from "@composio/core";
+import { MastraProvider } from "@composio/mastra";
+
+const composio = new Composio({ provider: new MastraProvider({ strict: true }) });
+```
+
+<Callout type="info">
+The provider runs each tool's JSON Schema through Mastra's schema-compat layer and inlines internal `$ref` pointers first. A few Composio tools reference `$defs` entries that the upstream API does not emit. Rather than crash `tools.get`, the provider falls back to a permissive object schema for that property and logs one warning per tool, so the affected field validates loosely.
+</Callout>
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { docs, reference, cookbooks, toolkits } from 'fumadocs-mdx:collections/server';
+import { docs, reference, examples, toolkits } from 'fumadocs-mdx:collections/server';
 import { loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -29,9 +29,9 @@ const docsSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-const cookbooksSource = loader({
-  baseUrl: '/cookbooks',
-  source: cookbooks.toFumadocsSource(),
+const examplesSource = loader({
+  baseUrl: '/examples',
+  source: examples.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
@@ -171,8 +171,8 @@ function urlFromContentPath(path: string): { url: string; type: string } | undef
   if (collection === 'docs') {
     return { url: `/docs/${parts.join('/')}`.replace(/\/index$/, ''), type: 'docs' };
   }
-  if (collection === 'cookbooks') {
-    return { url: `/cookbooks/${parts.join('/')}`.replace(/\/index$/, ''), type: 'cookbooks' };
+  if (collection === 'examples') {
+    return { url: `/examples/${parts.join('/')}`.replace(/\/index$/, ''), type: 'examples' };
   }
   if (collection === 'reference') {
     const url = `/reference/${parts.join('/')}`.replace(/\/index$/, '');
@@ -198,7 +198,7 @@ function slugTokens(url: string): string {
 
 const typeLabels: Record<string, string> = {
   docs: 'Docs',
-  cookbooks: 'Cookbook',
+  examples: 'Example',
   reference: 'Reference',
   'v3-reference': 'Legacy v3 Reference',
   toolkits: 'Toolkit',
@@ -221,7 +221,7 @@ function titleizeSlug(value: string): string {
 function breadcrumbsForUrl(url: string, type: string): string[] {
   const label = typeLabels[type] ?? titleizeSlug(type);
 
-  if (type === 'toolkits' || type === 'cookbooks' || type === 'changelog') {
+  if (type === 'toolkits' || type === 'examples' || type === 'changelog') {
     return [label];
   }
 
@@ -281,7 +281,7 @@ function pageRank(url: string, type: string): number {
     return 2_000;
   }
 
-  if (type === 'cookbooks') return 1_500;
+  if (type === 'examples') return 1_500;
   if (type === 'toolkits') return 1_250;
   // Current v3.1 reference should be available, but conceptual docs should
   // win whenever both match. Legacy v3 reference is only a last-resort result.
@@ -558,7 +558,7 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
 
   const mdxIndexes = [
     ...docsSource.getPages(),
-    ...cookbooksSource.getPages(),
+    ...examplesSource.getPages(),
     ...toolkitsSource.getPages(),
     ...fullReferenceSource.getPages(),
   ].map((page) => ({

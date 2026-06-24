@@ -17,6 +17,12 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  /** When true, the page shows an "Experimental" badge in the sidebar. */
+  experimental: z.boolean().optional(),
+  /** When true, the page shows a "New" badge in the sidebar. */
+  isNew: z.boolean().optional(),
+  /** When true, the page shows a "Legacy" badge at the top of the page. */
+  legacy: z.boolean().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.
    *  - undefined / omitted → default session-based guardrails
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
@@ -47,6 +53,9 @@ export const reference = defineDocs({
       includeProcessedMarkdown: true,
     },
     mdxOptions: applyMdxPreset({
+      // Match the global remark plugins so mermaid diagrams in merged
+      // api-overviews render (applyMdxPreset replaces, not merges).
+      remarkPlugins: [remarkMdxMermaid],
       rehypeCodeOptions: {
         themes: {
           light: 'github-light',
@@ -61,8 +70,8 @@ export const reference = defineDocs({
   },
 });
 
-export const cookbooks = defineDocs({
-  dir: 'content/cookbooks',
+export const examples = defineDocs({
+  dir: 'content/examples',
   docs: {
     schema: docsSchema,
     postprocess: {
