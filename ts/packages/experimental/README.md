@@ -2,7 +2,10 @@
 
 Experimental Composio integrations and helpers.
 
-This package currently includes a Pi provider for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). It lets Composio tools be passed to Pi SDK sessions as `customTools` and includes a dynamic Tool Router session toolset modeled after the Slack bot integration in `~/composio/slack-bot`.
+This package currently includes two framework providers:
+
+- A **Pi provider** for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). It lets Composio tools be passed to Pi SDK sessions as `customTools` and includes a dynamic Tool Router session toolset modeled after the Slack bot integration in `~/composio/slack-bot`.
+- An **eve provider** for the [eve](https://github.com/vercel/eve) agent framework (see [eve provider](#eve-provider) below).
 
 ## Install
 
@@ -184,6 +187,30 @@ const tools = provider.createSessionTools({
   },
 });
 ```
+
+## eve provider
+
+`EveProvider` is a Composio provider for the [eve](https://github.com/vercel/eve) agent framework. It makes `session.tools()` return eve-native `defineTool`s, so an eve agent gets the Tool Router meta-tools and any preloaded custom toolkits from one call.
+
+```ts
+import { Composio } from '@composio/core';
+import { EveProvider, defineComposioTools } from '@composio/experimental';
+
+const composio = new Composio({
+  apiKey: process.env.COMPOSIO_API_KEY,
+  provider: new EveProvider(),
+});
+const session = composio.create(process.env.COMPOSIO_USER_ID, {
+  /* toolkits, customToolkits */
+});
+
+// Expose the tools to eve from agent/tools/<name>.ts:
+export default defineComposioTools(session);
+```
+
+`defineComposioTools(session)` returns a `step.started` dynamic resolver and memoizes `session.tools()`, because the wrapped tools carry live `execute` closures that eve keeps only for step-scoped tools.
+
+The provider also takes `(ctx, next)` hooks (`new EveProvider({ hooks })`) around the meta-tools, with the same rewrite, `deny`, transform, and `onAuthLink` semantics as the Pi hooks above.
 
 ## Status
 
