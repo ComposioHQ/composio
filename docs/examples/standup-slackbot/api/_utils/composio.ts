@@ -54,6 +54,19 @@ export async function slackApi<T = unknown>(
   return ((res as { data?: unknown }).data ?? res) as T;
 }
 
+/** Run a named Composio tool as a user (the bot by default). This is the normal
+ *  path for actions a SLACKBOT or SLACK tool covers (sending a message, even
+ *  one with Block Kit buttons, updating one, posting as a member). Returns the
+ *  tool's `data`, which is the Slack API response. */
+export async function slackTool<T = Record<string, unknown>>(
+  slug: string,
+  args: Record<string, unknown>,
+  userId: string = BOT_USER
+): Promise<T> {
+  const res = await composio.tools.execute(slug, { userId, arguments: args });
+  return (res.data ?? {}) as T;
+}
+
 /** Which catalogue toolkits the member has actively connected. */
 export async function getConnectedIntegrations(
   memberEmail: string

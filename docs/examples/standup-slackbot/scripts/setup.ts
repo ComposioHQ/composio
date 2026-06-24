@@ -28,8 +28,6 @@ function errMessage(err: unknown): string {
   return String(err);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 async function main() {
   const RECONNECT = process.argv.includes("--reconnect");
 
@@ -111,32 +109,21 @@ async function main() {
     log.ok("Bot is already connected to Slack.");
   } else {
     log.info("Bot is not connected yet. Generating an authorization link…");
-    const redirectUrl = (await session.authorize(TOOLKIT_SLUG)).redirectUrl;
-    if (!redirectUrl) {
+    // Manual authentication: authorize() returns a Connect Link, then
+    // waitForConnection() resolves once the bot finishes OAuth in the browser.
+    // https://docs.composio.dev/docs/authenticating-users/manually-authenticating
+    const connectionRequest = await session.authorize(TOOLKIT_SLUG);
+    if (!connectionRequest.redirectUrl) {
       throw new Error("Composio did not return an authorization link.");
     }
 
     console.log("\n  Open this URL in your browser to authorize the bot:\n");
-    console.log(`    ${redirectUrl}\n`);
+    console.log(`    ${connectionRequest.redirectUrl}\n`);
     console.log("  Waiting for you to complete the OAuth flow (Ctrl+C to abort)…");
 
-    const startedAt = Date.now();
     const TIMEOUT_MS = 5 * 60 * 1000;
-    while (true) {
-      await sleep(3000);
-      const check = await session.toolkits({ toolkits: [TOOLKIT_SLUG] });
-      if (check.items.find((t) => t.slug === TOOLKIT_SLUG)?.connection?.isActive) {
-        console.log("");
-        log.ok("Bot connected to Slack.");
-        break;
-      }
-      if (Date.now() - startedAt > TIMEOUT_MS) {
-        throw new Error(
-          "Timed out waiting for the bot's Slack authorization. Re-run and complete the OAuth flow in the browser."
-        );
-      }
-      process.stdout.write(".");
-    }
+    const account = await connectionRequest.waitForConnection(TIMEOUT_MS);
+    log.ok(`Bot connected to Slack (${account.id}).`);
   }
 
   console.log(`\n${"─".repeat(70)}`);

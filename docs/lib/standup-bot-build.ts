@@ -57,109 +57,79 @@ async function main() {
     return;
   }
 
-  // Not connected: print the OAuth link, then poll until it goes active.
-  const { redirectUrl } = await session.authorize('slackbot');
-  console.log('Authorize the bot:', redirectUrl);
+  // Not connected: print the Connect Link, then wait for the user to finish.
+  const connectionRequest = await session.authorize('slackbot');
+  console.log('Authorize the bot:', connectionRequest.redirectUrl);
 
-  while (true) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const check = await session.toolkits({ toolkits: ['slackbot'] });
-    if (check.items.find((t) => t.slug === 'slackbot')?.connection?.isActive) {
-      console.log('Bot connected.');
-      break;
-    }
-  }
+  const account = await connectionRequest.waitForConnection();
+  console.log('Bot connected:', account.id);
 }
 
 main();
 `;
 
-// ── slack.ts: talk to the Slack Web API through the proxy ───────────────────
+// ── slack.ts: send with tools, open the modal through the proxy ─────────────
 
 const proxy1 = `import { composio } from './composio';
 
-// The bot's slackbot connected account. proxyExecute authenticates as it, so we
-// never hold a Slack token: Composio signs each request with the connection.
-async function botAccountId() {
-  const res = await composio.connectedAccounts.list({
-    userIds: ['default'],
-    toolkitSlugs: ['slackbot'],
-    statuses: ['ACTIVE'],
+const BOT_USER = 'default';
+
+// Sending a message is a named tool, even when it carries interactive buttons:
+// SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
+export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
+  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
+    userId: BOT_USER,
+    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
   });
-  return res.items[0]?.id;
+  return res.data as { ts?: string };
 }
 
-// Call any Slack Web API endpoint as the bot. The proxy reaches endpoints the
-// named SLACKBOT_* tools don't wrap, and returns Slack's JSON under \`data\`.
-async function slackApi(endpoint: string, body: Record<string, unknown>) {
-  const connectedAccountId = await botAccountId();
-  const res = await composio.tools.proxyExecute({
-    endpoint,
-    method: 'POST',
-    body,
-    connectedAccountId,
+// Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
+export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
+  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
+    userId: BOT_USER,
+    arguments: { channel, ts, blocks },
   });
-  return (res as { data?: unknown }).data ?? res;
-}
-
-// Post a message into a channel, as the bot.
-export function postMessage(channel: string, text: string) {
-  return slackApi('/chat.postMessage', { channel, text });
 }
 `;
 
 const proxy2 = `import { composio } from './composio';
 
-async function botAccountId() {
-  const res = await composio.connectedAccounts.list({
-    userIds: ['default'],
+const BOT_USER = 'default';
+
+// Sending a message is a named tool, even when it carries interactive buttons:
+// SLACKBOT_SEND_MESSAGE takes markdown_text for prose, or Block Kit \`blocks\`.
+export async function postMessage(channel: string, text: string, blocks?: unknown[]) {
+  const res = await composio.tools.execute('SLACKBOT_SEND_MESSAGE', {
+    userId: BOT_USER,
+    arguments: blocks ? { channel, blocks } : { channel, markdown_text: text },
+  });
+  return res.data as { ts?: string };
+}
+
+// Updating the draft after an edit is a tool too: SLACKBOT_UPDATES_A_MESSAGE.
+export async function updateMessage(channel: string, ts: string, blocks: unknown[]) {
+  await composio.tools.execute('SLACKBOT_UPDATES_A_MESSAGE', {
+    userId: BOT_USER,
+    arguments: { channel, ts, blocks },
+  });
+}
+
+// Opening a modal (views.open) has no Composio tool, so it drops to the proxy.
+// proxyExecute hits the raw endpoint as the bot's connected account, the escape
+// hatch for anything the named tools don't cover.
+export async function openModal(triggerId: string, view: unknown) {
+  const { items } = await composio.connectedAccounts.list({
+    userIds: [BOT_USER],
     toolkitSlugs: ['slackbot'],
     statuses: ['ACTIVE'],
   });
-  return res.items[0]?.id;
-}
-
-// Same proxy call, but the connected account is a parameter, so we can post as
-// the bot OR as an individual member.
-async function slackApi(
-  endpoint: string,
-  body: Record<string, unknown>,
-  accountId?: string,
-) {
-  const connectedAccountId = accountId ?? (await botAccountId());
-  const res = await composio.tools.proxyExecute({
-    endpoint,
+  await composio.tools.proxyExecute({
+    endpoint: '/views.open',
     method: 'POST',
-    body,
-    connectedAccountId,
+    body: { trigger_id: triggerId, view },
+    connectedAccountId: items[0]?.id,
   });
-  return (res as { data?: unknown }).data ?? res;
-}
-
-export function postMessage(channel: string, text: string) {
-  return slackApi('/chat.postMessage', { channel, text });
-}
-
-// A member's own active Slack account, so the standup posts under THEIR name.
-async function memberAccountId(memberEmail: string) {
-  const res = await composio.connectedAccounts.list({
-    userIds: [memberEmail],
-    toolkitSlugs: ['slack'],
-    statuses: ['ACTIVE'],
-  });
-  return res.items[0]?.id;
-}
-
-export async function postAsMember(
-  memberEmail: string,
-  channel: string,
-  text: string,
-  threadTs: string,
-) {
-  const accountId = await memberAccountId(memberEmail);
-  if (!accountId) return false;
-  await slackApi('/chat.postMessage', { channel, text, thread_ts: threadTs }, accountId);
-  return true;
 }
 `;
 
@@ -174,11 +144,15 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-// Spin up a tool-router session for one member, scoped to some toolkits, and let
-// the agent research and write their standup. session.tools() returns Composio's
-// research meta-tools (search / execute / workbench), limited to those toolkits.
-export async function generateDraft(memberEmail: string, toolkits: string[]) {
-  const session = await composio.create(memberEmail, { toolkits });
+// The toolkits the bot can draft from. A member only has some of these connected,
+// and that's fine: the session just uses whatever they've actually authorized.
+const TOOLKITS = ['github', 'linear', 'notion', 'googlecalendar', 'slack'];
+
+// Spin up a tool-router session for one member and let the agent research and
+// write their standup. session.tools() returns Composio's research meta-tools
+// (search / execute / workbench), scoped to those toolkits.
+export async function generateDraft(memberEmail: string) {
+  const session = await composio.create(memberEmail, { toolkits: TOOLKITS });
   const tools = await session.tools();
 
   const { text } = await generateText({
@@ -201,24 +175,21 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-// The toolkits a member can connect. We only ever draft from what they actually
-// connected, so first ask Composio which of these are ACTIVE (filtered server-side).
-const CATALOGUE = ['github', 'linear', 'notion', 'googlecalendar', 'slack'];
+// The toolkits the bot can draft from. A member only has some of these connected,
+// and that's fine: the session just uses whatever they've actually authorized.
+const TOOLKITS = ['github', 'linear', 'notion', 'googlecalendar', 'slack'];
 
-async function connectedToolkits(memberEmail: string) {
-  const res = await composio.connectedAccounts.list({
-    userIds: [memberEmail],
-    statuses: ['ACTIVE'],
-  });
-  const active = new Set(res.items.map((a) => a.toolkit.slug));
-  return CATALOGUE.filter((slug) => active.has(slug));
-}
-
+// Spin up a tool-router session for one member and let the agent research and
+// write their standup. session.tools() returns Composio's research meta-tools
+// (search / execute / workbench), scoped to those toolkits.
 export async function generateDraft(memberEmail: string) {
-  const toolkits = await connectedToolkits(memberEmail);
-  if (toolkits.length === 0) return '';
-
-  const session = await composio.create(memberEmail, { toolkits });
+  // manageConnections:false strips the connection meta-tools. The agent drafts
+  // from whatever the member already connected and never starts an OAuth flow
+  // mid-draft: if a tool needs auth, it's simply not in the session.
+  const session = await composio.create(memberEmail, {
+    toolkits: TOOLKITS,
+    manageConnections: false,
+  });
   const tools = await session.tools();
 
   const { text } = await generateText({
@@ -232,46 +203,51 @@ export async function generateDraft(memberEmail: string) {
 }
 `;
 
-const agent3 = `import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel';
-import { generateText, stepCountIs } from 'ai';
+// ── api/interactivity.ts: route button clicks ──────────────────────────────
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
+const buttons1 = `import { verifySlackSignature, readRawBody } from './_utils/slack';
 
-const CATALOGUE = ['github', 'linear', 'notion', 'googlecalendar', 'slack'];
+// Slack POSTs here every time someone clicks a button. Verify it really came
+// from Slack, then ack within 3 seconds (Slack retries if you're slow).
+export default async function handler(req: Request, res: Response) {
+  const body = await readRawBody(req);
+  if (!verifySlackSignature(body, req.headers)) return res.status(401).end();
 
-async function connectedToolkits(memberEmail: string) {
-  const res = await composio.connectedAccounts.list({
-    userIds: [memberEmail],
-    statuses: ['ACTIVE'],
-  });
-  const active = new Set(res.items.map((a) => a.toolkit.slug));
-  return CATALOGUE.filter((slug) => active.has(slug));
+  const payload = JSON.parse(new URLSearchParams(body).get('payload') ?? '{}');
+  res.status(200).end();        // ack immediately
+  await handleClick(payload);   // then do the slow work
+}
+`;
+
+const buttons2 = `import { verifySlackSignature, readRawBody, updateMessage, postAsMember } from './_utils/slack';
+import { generateDraft } from './_utils/agent';
+import { draftMessage, connectMenu } from './_utils/blocks';
+
+// Slack POSTs here every time someone clicks a button. Verify it really came
+// from Slack, then ack within 3 seconds (Slack retries if you're slow).
+export default async function handler(req: Request, res: Response) {
+  const body = await readRawBody(req);
+  if (!verifySlackSignature(body, req.headers)) return res.status(401).end();
+
+  const payload = JSON.parse(new URLSearchParams(body).get('payload') ?? '{}');
+  res.status(200).end();        // ack immediately
+  await handleClick(payload);   // then do the slow work
 }
 
-export async function generateDraft(memberEmail: string) {
-  const toolkits = await connectedToolkits(memberEmail);
-  if (toolkits.length === 0) return '';
+// Each button carried its context in \`value\`, so the handler knows exactly what
+// to do. No model decides anything here: the flow is fixed.
+async function handleClick(payload: any) {
+  const action = payload.actions?.[0];
+  const ctx = JSON.parse(action?.value ?? '{}');
 
-  // manageConnections:false strips the connection meta-tools, so the agent can
-  // research the member's activity but never start an OAuth flow mid-draft.
-  const session = await composio.create(memberEmail, {
-    toolkits,
-    manageConnections: false,
-  });
-  const tools = await session.tools();
-
-  const { text } = await generateText({
-    model: 'anthropic/claude-sonnet-4-5',
-    system: "Write a concise daily standup from the member's recent activity.",
-    prompt: 'Research and write the standup update.',
-    tools,
-    stopWhen: stepCountIs(40),
-  });
-  return text.trim();
+  if (action?.action_id === 'draft') {
+    const draft = await generateDraft(ctx.memberEmail);   // launch the subagent
+    await updateMessage(ctx.dmChannel, ctx.dmTs, draftMessage(draft, ctx));
+  } else if (action?.action_id === 'connect') {
+    await updateMessage(ctx.dmChannel, ctx.dmTs, connectMenu(ctx));
+  } else if (action?.action_id === 'confirm') {
+    await postAsMember(ctx.memberEmail, ctx.channel, ctx.draft, ctx.threadTs);
+  }
 }
 `;
 
@@ -288,7 +264,7 @@ export const FILE_BUILDS: Record<string, { file: string; stages: BuildStage[] }>
       {
         title: 'Authorize and wait',
         description:
-          'If not connected, Composio hands back an OAuth link. Print it, then poll until the connection goes active. That one connected account is what the bot posts as.',
+          'If not connected, `session.authorize()` returns a Connect Link. Print it, then `waitForConnection()` resolves once the bot finishes OAuth. That connected account is the identity the bot posts as.',
         code: setup2,
       },
     ],
@@ -297,16 +273,33 @@ export const FILE_BUILDS: Record<string, { file: string; stages: BuildStage[] }>
     file: 'api/_utils/slack.ts',
     stages: [
       {
-        title: 'Call the Slack API as the bot',
+        title: 'Send and update with named tools',
         description:
-          "Resolve the bot's slackbot connected account, then proxyExecute any Slack Web API endpoint with it. No token: Composio signs the request with the connection.",
+          'Sending and updating are tools: SLACKBOT_SEND_MESSAGE and SLACKBOT_UPDATES_A_MESSAGE both take Block Kit `blocks`, so even the interactive button menus go through tools, not the proxy.',
         code: proxy1,
       },
       {
-        title: 'Post as a member, not just the bot',
+        title: 'The proxy for the one thing without a tool',
         description:
-          'Make the connected account a parameter. Pass the bot account to post as the bot, or a member’s own Slack account to post the standup under their name.',
+          "Opening a modal (views.open) has no Composio tool, so it drops to proxyExecute as the bot's connected account: the escape hatch for anything the named tools don't cover.",
         code: proxy2,
+      },
+    ],
+  },
+  buttons: {
+    file: 'api/interactivity.ts',
+    stages: [
+      {
+        title: 'Verify the request and ack fast',
+        description:
+          "Slack POSTs to this endpoint on every click. Verify the signature, then respond within 3 seconds so Slack doesn't retry, and handle the click after.",
+        code: buttons1,
+      },
+      {
+        title: 'Route on the action',
+        description:
+          'The button carried its context in `value`. Switch on the `action_id` and call the right function. Draft launches the subagent; the rest post through the proxy. The flow is deterministic, no model in the loop.',
+        code: buttons2,
       },
     ],
   },
@@ -316,20 +309,14 @@ export const FILE_BUILDS: Record<string, { file: string; stages: BuildStage[] }>
       {
         title: 'A tool-router session writes the draft',
         description:
-          'Create a session scoped to some toolkits, hand its research tools to the model, and let it investigate and write. This is the whole agent.',
+          "Create a session for the member, scoped to the toolkit catalogue, hand its research tools to the model, and let it investigate and write. You don't list what they connected: the session just uses whatever they've authorized.",
         code: agent1,
-      },
-      {
-        title: 'Only draft from connected tools',
-        description:
-          'Ask Composio which toolkits the member has ACTIVE (filtered server-side), and scope the session to exactly those. No connection, no hallucinated activity.',
-        code: agent2,
       },
       {
         title: 'Keep the agent from connecting mid-draft',
         description:
-          'manageConnections:false removes the connection meta-tools from the session, so the agent researches but can never kick off an OAuth flow while drafting.',
-        code: agent3,
+          'manageConnections:false removes the connection meta-tools, so the agent drafts from what the member already connected and never starts an OAuth flow while drafting.',
+        code: agent2,
       },
     ],
   },
