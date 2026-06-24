@@ -55,6 +55,17 @@ const config = {
         destination: '/docs',
         permanent: false,
       },
+      // Meta Tools moved from the Reference tab to the Toolkits tab.
+      {
+        source: '/reference/meta-tools',
+        destination: '/toolkits/meta-tools',
+        permanent: true,
+      },
+      {
+        source: '/reference/meta-tools/:path*',
+        destination: '/toolkits/meta-tools/:path*',
+        permanent: true,
+      },
       // Cookbooks were renamed to Examples; the old articles were removed,
       // so send every old /cookbooks URL to the Examples index.
       {

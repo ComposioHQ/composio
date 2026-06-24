@@ -44,21 +44,33 @@ function folderPageUrls(folder: Folder): string[] {
   return urls;
 }
 
-function decorateNode(node: Node, experimental: Set<string>, isNew: Set<string>, legacy: Set<string>): Node {
+function decorateNode(
+  node: Node,
+  experimental: Set<string>,
+  isNew: Set<string>,
+  legacy: Set<string>,
+  insideLegacy = false,
+): Node {
   if (node.type === 'folder') {
-    const decorated: Folder = {
-      ...node,
-      children: node.children.map((child) => decorateNode(child, experimental, isNew, legacy)),
-    };
     // A folder is legacy when every page under it is legacy.
     const urls = folderPageUrls(node);
-    if (urls.length > 0 && urls.every((u) => legacy.has(u))) {
+    const isLegacyFolder = urls.length > 0 && urls.every((u) => legacy.has(u));
+    // Only badge the outermost legacy folder; a nested legacy folder inside an
+    // already-legacy folder is redundant.
+    const childInsideLegacy = insideLegacy || isLegacyFolder;
+    const decorated: Folder = {
+      ...node,
+      children: node.children.map((child) =>
+        decorateNode(child, experimental, isNew, legacy, childInsideLegacy),
+      ),
+    };
+    if (isLegacyFolder && !insideLegacy) {
       return { ...decorated, name: withBadge(decorated.name, <SidebarBadge label="Legacy" tone="legacy" />) };
     }
     return decorated;
   }
   if (node.type === 'page' && experimental.has(node.url)) {
-    return { ...node, name: withBadge(node.name, <SidebarBadge label="Experimental" tone="experimental" />) } as Item;
+    return { ...node, name: withBadge(node.name, <SidebarBadge label="Exp" tone="experimental" />) } as Item;
   }
   if (node.type === 'page' && isNew.has(node.url)) {
     return { ...node, name: withBadge(node.name, <SidebarBadge label="New" tone="new" />) } as Item;

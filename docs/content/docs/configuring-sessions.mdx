@@ -429,7 +429,7 @@ const session = await composio.create("user_123", {
 
 Return a known set of tools directly from `session.tools()` and the session MCP tool list, without the agent searching for them first.
 
-By default, sessions expose [meta tools](/reference/meta-tools) that let the agent discover app tools at runtime. Use `preload.tools` when you already know which tools the agent needs, so it can call them without going through search each time.
+By default, sessions expose [meta tools](/toolkits/meta-tools) that let the agent discover app tools at runtime. Use `preload.tools` when you already know which tools the agent needs, so it can call them without going through search each time.
 
 Keep the preloaded set small, generally fewer than 20 tools, to avoid context bloat.
 
@@ -681,7 +681,7 @@ For framework examples, see provider-specific documentation like [OpenAI](/docs/
 
 ### tools()
 
-Get the tools the session exposes for your AI framework. By default these are the session's [meta tools](/reference/meta-tools), formatted for your configured provider.
+Get the tools the session exposes for your AI framework. By default these are the session's [meta tools](/toolkits/meta-tools), formatted for your configured provider.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">

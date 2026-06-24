@@ -3,9 +3,9 @@
  *
  * Fetches meta tool definitions from the Composio Tool Router API and generates:
  * - /public/data/meta-tools.json (complete meta tool schemas from API)
- * - /content/reference/meta-tools/meta.json (sidebar navigation)
- * - /content/reference/meta-tools/index.mdx (overview page)
- * - /content/reference/meta-tools/{name}.mdx (individual tool pages)
+ * - /content/toolkits/meta-tools/meta.json (sidebar navigation)
+ * - /content/toolkits/meta-tools/index.mdx (overview page)
+ * - /content/toolkits/meta-tools/{name}.mdx (individual tool pages)
  *
  * All output is derived from the API response — no hardcoded tool definitions.
  *
@@ -30,7 +30,7 @@ if (!API_KEY) {
 }
 
 const DATA_DIR = join(process.cwd(), 'public/data');
-const CONTENT_DIR = join(process.cwd(), 'content/reference/meta-tools');
+const CONTENT_DIR = join(process.cwd(), 'content/toolkits/meta-tools');
 
 async function createSession(): Promise<string> {
   console.log('Creating session...');
@@ -158,7 +158,7 @@ A typical workflow runs in order: call \`COMPOSIO_SEARCH_TOOLS\` to discover too
 `;
 
   for (const tool of tools) {
-    content += `| [\`${tool.slug}\`](/reference/meta-tools/${pageSlug(tool.slug)}) | ${indexLine(tool)} |\n`;
+    content += `| [\`${tool.slug}\`](/toolkits/meta-tools/${pageSlug(tool.slug)}) | ${indexLine(tool)} |\n`;
   }
 
   content += `
@@ -229,17 +229,17 @@ async function main() {
 
   // 3. Write meta.json
   await writeFile(join(CONTENT_DIR, 'meta.json'), generateMetaJson(metaTools));
-  console.log('Wrote content/reference/meta-tools/meta.json');
+  console.log('Wrote content/toolkits/meta-tools/meta.json');
 
   // 4. Write index.mdx
   await writeFile(join(CONTENT_DIR, 'index.mdx'), generateIndexMdx(metaTools));
-  console.log('Wrote content/reference/meta-tools/index.mdx');
+  console.log('Wrote content/toolkits/meta-tools/index.mdx');
 
   // 5. Write individual tool pages
   for (const tool of metaTools) {
     const filename = `${pageSlug(tool.slug)}.mdx`;
     await writeFile(join(CONTENT_DIR, filename), generateToolMdx(tool));
-    console.log(`Wrote content/reference/meta-tools/${filename}`);
+    console.log(`Wrote content/toolkits/meta-tools/${filename}`);
   }
 
   console.log(`\nGeneration complete! ${metaTools.length} meta tools.`);

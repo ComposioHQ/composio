@@ -66,7 +66,7 @@ A session gives your agent meta tools, a small fixed set that discover, authenti
 
 <SessionFlow />
 
-The agent searches for relevant tools, authenticates if needed, and executes them through the same session. Meta-tool calls share context, so the agent searches in one call and executes in the next without losing state. See the [Meta Tools reference](/reference/meta-tools) for each tool's input and output schema.
+The agent searches for relevant tools, authenticates if needed, and executes them through the same session. Meta-tool calls share context, so the agent searches in one call and executes in the next without losing state. See the [Meta Tools reference](/toolkits/meta-tools) for each tool's input and output schema.
 
 Know the exact tools upfront? The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) returns them directly from `session.tools()` with no search step, while keeping session auth, connected accounts, and the workbench.
 

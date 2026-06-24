@@ -84,7 +84,7 @@ v3.0 has its own complete page tree under `content/reference/v3/`:
 - `v3/api-reference/` — Auto-generated index pages + OpenAPI endpoint pages
 - `v3/meta.json` — Sidebar ordering
 
-SDK Reference and Meta Tools are version-independent and shared across both trees.
+SDK Reference is version-independent and shared across both trees. Meta Tools moved out of the reference tree entirely — they now live under the Toolkits tab at `/toolkits/meta-tools`.
 
 ### Version selector behavior
 - On an API page: swaps `/reference/` ↔ `/reference/v3/` (stays on same endpoint/category)
