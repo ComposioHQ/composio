@@ -26,7 +26,7 @@ function StepCard({
   title: string;
   file: string;
   description?: string;
-   
+
   fileDiff: any;
   prerenderedHTML: string;
   code: string;
@@ -59,6 +59,9 @@ function StepCard({
  * Pass `step` (1-indexed) to render just that one step's diff, so the prose for
  * a concept can sit right next to the code that adds it. Without `step`, renders
  * every step with its built-in description.
+ *
+ * `name` keys into the merged FILE_BUILDS registry (see lib/file-builds.ts),
+ * which carries every example's stages under unique keys.
  */
 export async function FileBuildup({
   name,
@@ -68,6 +71,7 @@ export async function FileBuildup({
   step?: number;
 }) {
   const build = FILE_BUILDS[name];
+  if (!build) return null;
 
   if (typeof step === 'number') {
     const i = step - 1;

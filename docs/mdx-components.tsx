@@ -31,6 +31,7 @@ import { SlackBotFlow } from '@/components/slack-bot-flow';
 import { LocalWorkbenchFlow } from '@/components/local-workbench-flow';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
+import { AppLogo } from '@/components/standup-example';
 import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
@@ -125,6 +126,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     LocalWorkbenchFlow,
     FileBuildup,
     RepoBrowser,
+    AppLogo,
     WorkbenchFlow,
     AuthConfigFlow,
     WhiteLabelFlow,
