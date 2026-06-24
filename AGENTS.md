@@ -135,7 +135,7 @@ COMPOSIO_DISABLE_TELEMETRY  # Optional: Set to "true" to disable telemetry
 - **Type Definitions**: `ts/packages/core/src/types/`
 - **Error Classes**: `ts/packages/core/src/errors/`
 - **Documentation**: `docs/`
-- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.js`
+- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
 
 ## Common Patterns
 

@@ -52,7 +52,7 @@ COPY package.json \
      pnpm-workspace.yaml \
      .pnpmfile.cjs \
      tsconfig.base.json \
-     tsdown.config.base.js \
+     tsdown.config.base.ts \
      toolchain-versions.json \
      ./
 

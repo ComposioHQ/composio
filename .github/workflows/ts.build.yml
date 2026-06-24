@@ -12,7 +12,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
-      - 'tsdown.config.base.js'
+      - 'tsdown.config.base.ts'
   pull_request:
     paths:
       - 'ts/**'
@@ -23,7 +23,7 @@ on:
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
-      - 'tsdown.config.base.js'
+      - 'tsdown.config.base.ts'
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:

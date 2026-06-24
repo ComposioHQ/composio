@@ -84,7 +84,7 @@ EOL
 # Create tsdown.config.ts
 cat > "$TOOLSET_PATH/tsdown.config.ts" << EOL
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../../tsdown.config.base.js';
+import { baseConfig } from '../../../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...baseConfig,
