@@ -1,6 +1,6 @@
 import { defineTool } from 'eve/tools';
 import { z } from 'zod';
-import { readPageByUrl, toCleanMarkdown } from '../lib/docs';
+import { buildIndex, readPageByUrl, toCleanMarkdown } from '../lib/docs';
 
 /**
  * read_doc — read the full content of a Composio docs page.
@@ -18,18 +18,32 @@ export default defineTool({
     url: z.string().min(1).describe('The page URL, e.g. "/docs/authentication" or "/docs/configuring-sessions".'),
   }),
   async execute({ url }) {
+    const clean = url.split('#')[0].split('?')[0].replace(/\/$/, '');
     const page = readPageByUrl(url);
-    if (!page) {
-      return { found: false, url, message: `No docs page found for "${url}". Use search_docs to find a valid URL.` };
+    if (page) {
+      const markdown = toCleanMarkdown(page.raw);
+      const truncated = markdown.length > MAX_CHARS;
+      return {
+        found: true,
+        url: clean,
+        title: page.title,
+        truncated,
+        content: truncated ? `${markdown.slice(0, MAX_CHARS)}\n\n…(truncated)` : markdown,
+      };
     }
-    const markdown = toCleanMarkdown(page.raw);
-    const truncated = markdown.length > MAX_CHARS;
-    return {
-      found: true,
-      url: url.split('#')[0],
-      title: page.title,
-      truncated,
-      content: truncated ? `${markdown.slice(0, MAX_CHARS)}\n\n…(truncated)` : markdown,
-    };
+    // Fallback: the page may be indexed even if its source file can't be read
+    // directly (e.g. a different runtime layout). Return the indexed text.
+    const indexed = buildIndex().find((p) => p.url === clean);
+    if (indexed && indexed.text) {
+      const truncated = indexed.text.length > MAX_CHARS;
+      return {
+        found: true,
+        url: clean,
+        title: indexed.title,
+        truncated,
+        content: truncated ? `${indexed.text.slice(0, MAX_CHARS)}\n\n…(truncated)` : indexed.text,
+      };
+    }
+    return { found: false, url, message: `No docs page found for "${url}". Use search_docs to find a valid URL.` };
   },
 });

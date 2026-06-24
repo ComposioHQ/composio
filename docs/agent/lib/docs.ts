@@ -6,10 +6,36 @@
  * search tool can heavily downrank them.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const APP_ROOT = process.cwd();
+/**
+ * Resolve the docs app root (the directory containing `content/docs`) without
+ * assuming the runtime's `process.cwd()`. In a deployed eve function the cwd may
+ * not be `docs/`, so we probe the cwd, `cwd/docs`, and the ancestors of this
+ * module until we find the content tree.
+ */
+function resolveAppRoot(): string {
+  const candidates: string[] = [process.cwd(), join(process.cwd(), 'docs')];
+  try {
+    let dir = dirname(fileURLToPath(import.meta.url));
+    for (let i = 0; i < 10; i++) {
+      candidates.push(dir);
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  } catch {
+    // import.meta.url unavailable (e.g. CJS) — rely on the cwd candidates.
+  }
+  for (const candidate of candidates) {
+    if (existsSync(join(candidate, 'content', 'docs'))) return candidate;
+  }
+  return process.cwd();
+}
+
+const APP_ROOT = resolveAppRoot();
 const CONTENT_ROOT = join(APP_ROOT, 'content');
 const KNOWLEDGE_FILE = join(APP_ROOT, 'agent', 'knowledge.md');
 const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits'] as const;
