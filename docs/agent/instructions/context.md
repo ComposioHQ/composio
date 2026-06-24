@@ -40,6 +40,14 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Custom tools and toolkits** — define in-process tools that run alongside Composio tools. → [Custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits)
 - **Proxy execute** — call any toolkit HTTP endpoint with `session.proxyExecute(...)` and let Composio inject auth. → [Proxy execute](/docs/extending-sessions/proxy-execute)
 
+## Platform API (reference only)
+
+These features are documented **only in the API reference** — there is no `/docs` guide. When asked how to do them programmatically, read and link the reference page (don't say it isn't documented).
+
+- **Projects** — Composio's multi-tenancy primitive. Inside an organization, projects are isolated environments that scope API keys, connected accounts, auth configs, and webhooks. Create, list, update, delete, and regenerate a project's API key via the API (using your **organization API key**). This is the page for "how do I programmatically create projects". → [Projects](/reference/api-reference/projects)
+- **Logs** — individual tool-execution events (one record per call) for debugging and tracing. → [Logs](/reference/api-reference/logs)
+- **Files** — files tools read and write during execution, exchanged via presigned URLs. → [Files](/reference/api-reference/files)
+
 ## Getting started and reference
 
 - **Quickstart** → [Quickstart](/docs/quickstart)
