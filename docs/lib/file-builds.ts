@@ -4,7 +4,7 @@
  * contributes its own keys; they must not collide.
  *
  * - slack-bot-build: `bot`, `install`  (general-agent-with-pi)
- * - local-workbench-build: `reviewer`  (local-workbench-pr-reviewer)
+ * - local-workbench-build: `reviewer`  (local-sandbox-pr-reviewer)
  */
 import { FILE_BUILDS as slackBot } from './slack-bot-build';
 import { FILE_BUILDS as localWorkbench } from './local-workbench-build';

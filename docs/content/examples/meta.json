@@ -4,6 +4,6 @@
   "pages": [
     "index",
     "general-agent-with-pi",
-    "local-workbench-pr-reviewer"
+    "local-sandbox-pr-reviewer"
   ]
 }

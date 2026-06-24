@@ -21,7 +21,7 @@ export function LocalWorkbenchFlow() {
     <div className="not-prose my-6 overflow-hidden rounded-sm border border-fd-border bg-fd-background">
       {/* header strip — mono, matches the other branded flow visuals */}
       <div className="flex items-center justify-between border-b border-fd-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-fd-foreground/45">
-        <span>local-workbench.runtime</span>
+        <span>local-sandbox.runtime</span>
         <span className="inline-flex items-center gap-1.5 text-fd-foreground/55">
           <span className="relative inline-flex">
             <span className="size-1.5 rounded-full bg-[var(--composio-brand)]" />
@@ -132,7 +132,7 @@ export function LocalWorkbenchFlow() {
 
       {/* footer caption */}
       <div className="border-t border-fd-border px-3 py-2 text-center font-mono text-[10px] text-fd-foreground/45">
-        host (session, workbench off) <Arrow /> your sandbox (runs checks) <Arrow /> run_composio_tool{' '}
+        host (session, execution off) <Arrow /> your sandbox (runs checks) <Arrow /> run_composio_tool{' '}
         <Arrow /> Composio (resolve + execute) <Arrow /> grounded PR comment
       </div>
     </div>

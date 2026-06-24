@@ -1,17 +1,17 @@
 ---
-title: Local workbench PR reviewer
-description: Composio usually runs your tools for you. A local workbench is for when you need to run them yourself — your filesystem, your shell, your security boundary. Build a GitHub PR reviewer that runs checks in a sandbox you own and posts one grounded comment.
-keywords: [local workbench, sandbox, github, pull request review, tool router, e2b, code execution, run_composio_tool, security boundary]
+title: Local sandbox PR reviewer
+description: Composio usually runs your tools for you. A local sandbox is for when you need to run them yourself — your filesystem, your shell, your security boundary. Build a GitHub PR reviewer that runs checks in a sandbox you own and posts one grounded comment.
+keywords: [local sandbox, sandbox, github, pull request review, tool router, e2b, code execution, run_composio_tool, security boundary]
 full: true
 ---
 
-Composio usually runs your tools for you. A **local workbench** is for the times you need to run them yourself — your filesystem, your shell, your security boundary. You still get managed auth and 1000+ apps; you just keep the code execution.
+Composio usually runs your tools for you. A **local sandbox** is for the times you need to run them yourself — your filesystem, your shell, your security boundary. You still get managed auth and 1000+ apps; you just keep the code execution.
 
 This example builds a GitHub PR reviewer that does exactly that: it clones a pull request into a sandbox *you* own, runs the repo's real checks there, and posts one grounded comment — only if those checks actually ran. The sandbox here is E2B, but E2B is just the sample. The same pattern works with your own VM, container, Kubernetes job, or internal sandbox service.
 
 It comes down to a handful of Composio pieces:
 
-1. **A local workbench session** is a Tool Router session with code execution turned off. Composio still does discovery and auth; it just won't run code for you.
+1. **A local sandbox session** is a Tool Router session with code execution turned off. Composio still does discovery and auth; it just won't run code for you.
 2. **The helper contract** is what comes back: a Python helper exposing the same [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox) tools Composio's managed sandbox runs for you, plus the `env` it needs. You inject it into your sandbox and the agent calls it.
 3. **Your sandbox is the boundary.** Tool *execution* happens in a box you control. E2B is the replaceable sample runner; the contract it honors is the real interface.
 4. **Only post when checks ran.** The reviewer is instructed never to post an unverified review, so a repo it can't build produces no comment at all.
@@ -19,10 +19,6 @@ It comes down to a handful of Composio pieces:
 <LocalWorkbenchFlow />
 
 Below you build the host orchestration from scratch — a bare client first, then a piece at a time up to the full run loop, then a browse of the real source. You bring a Composio API key and a place to run code. Composio brings the tools.
-
-<Callout type="warn">
-  This example uses the experimental `experimental_createLocalWorkbenchSession` API. Until the release containing it ships, the example pins a local build of `@composio/core`. Switch the dependency back to the published package once it's released.
-</Callout>
 
 ## Setup
 
@@ -58,11 +54,11 @@ The whole thing acts as one stable user, against the connections they own. Start
 
 ### Check the GitHub connection
 
-A local workbench still leans on Composio for auth and tool discovery — only code execution moves to your side. So before booting any infrastructure, confirm this user actually has GitHub connected, and hand them a connect link if not.
+A local sandbox still leans on Composio for auth and tool discovery — only code execution moves to your side. So before booting any infrastructure, confirm this user actually has GitHub connected, and hand them a connect link if not.
 
 <FileBuildup name="reviewer" step={2} />
 
-### Create the local workbench session
+### Create the local sandbox session
 
 The core of the integration, in one call. `experimental_createLocalWorkbenchSession` opens a Tool Router session with `workbench.enable: false` — Composio will not run code for you — and returns the pieces you run yourself: a `helperSource` (a Python helper with `run_composio_tool`, `invoke_llm`, and `web_search`) and the `env` that helper needs to reach Composio from inside your box.
 
@@ -102,13 +98,13 @@ Start with the dry run — it validates your CLI input and prints the planned fl
 bun run review -- --repo ComposioHQ/composio --pr 123 --dry-run
 ```
 
-Then run it for real. The host checks your GitHub connection, opens a local workbench session, boots the E2B sandbox, and drops the reviewer in. The agent searches Composio for the right GitHub actions, downloads the PR through managed auth, installs dependencies, and runs whatever checks the repo actually defines — `test`, `lint`, `typecheck`, then `build` — all inside your sandbox. If those checks run, it posts one grounded PR comment citing what passed or failed. If the repo can't be built, it posts nothing and tells you why.
+Then run it for real. The host checks your GitHub connection, opens a local sandbox session, boots the E2B sandbox, and drops the reviewer in. The agent searches Composio for the right GitHub actions, downloads the PR through managed auth, installs dependencies, and runs whatever checks the repo actually defines — `test`, `lint`, `typecheck`, then `build` — all inside your sandbox. If those checks run, it posts one grounded PR comment citing what passed or failed. If the repo can't be built, it posts nothing and tells you why.
 
 ```bash
 bun run review -- --repo ComposioHQ/composio --pr 123
 ```
 
-Want a different boundary? Point `createE2bSandbox` at your own VM or container, allow more toolkits in the workbench session, or rewrite `agent/instructions.md` to change the review policy. The Composio side doesn't change.
+Want a different boundary? Point `createE2bSandbox` at your own VM or container, allow more toolkits in the sandbox session, or rewrite `agent/instructions.md` to change the review policy. The Composio side doesn't change.
 
 ## Environment variables
 
