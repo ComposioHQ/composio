@@ -29,15 +29,16 @@ composio/
 ## TypeScript Commands
 
 ```bash
-pnpm install                # First-time setup. Use BYPASS_BUN_VERSION_CHECK=1 if .bun-version mismatch
+mise install                # Installs Node, Bun, Deno, pnpm, Python, uv from mise.toml (one-time per machine)
+pnpm install                # First-time setup
 pnpm build                  # Build all packages (Turbo)
 pnpm build:packages         # TS packages only
 pnpm lint / lint:fix
 pnpm format
 pnpm typecheck              # MANDATORY before pushing CLI changes
 pnpm test                   # Vitest, all packages
-pnpm test:e2e               # All runtimes (Node CJS+ESM, Deno, Cloudflare Workers) via Docker
-pnpm test:e2e:node          # Override with COMPOSIO_E2E_NODE_VERSION=22.12.0
+pnpm test:e2e               # All runtimes (Node ESM + require(esm), Deno, Cloudflare Workers) via Docker
+pnpm test:e2e:node          # Override with COMPOSIO_E2E_NODE_VERSION=22.22.3
 pnpm test:e2e:deno          # Override with COMPOSIO_E2E_DENO_VERSION=2.6.7
 pnpm test:e2e:cloudflare
 pnpm changeset              # Create release changeset (required for stable CLI/SDK releases)
@@ -45,7 +46,7 @@ pnpm create:provider <name> [--agentic]
 pnpm create:example <name>
 ```
 
-Pinned tool versions: Node `.nvmrc` (20.20.2), Bun `.bun-version` (1.3.10), pnpm via `packageManager` in `package.json`. CI sets `BYPASS_BUN_VERSION_CHECK=1`; local sandboxes often need it too.
+Toolchain versions are pinned in `mise.toml` (Node, Bun, Deno, pnpm, Python, uv). Install mise once with `brew install mise` (macOS), `winget install jdx.mise` (Windows), or `curl https://mise.run | sh` (any), then activate it in your shell — see https://mise.jdx.dev/installing-mise.html. CI can set `BYPASS_TOOLCHAIN_CHECK=1` only when using prebuilt toolchain images.
 
 ## Python Commands
 
@@ -75,7 +76,7 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 
 - **Default branch is `next`**, not `main`/`master`. Branch from `next` and target `next` for PRs.
 - **Docs PRs also target `next`** (see `docs/CLAUDE.md` rule).
-- `pnpm install` hard-fails on Bun version mismatch — use `BYPASS_BUN_VERSION_CHECK=1`.
+- `pnpm install` checks Bun against `mise.toml`; run `mise install` when it fails.
 - `ts/vendor/effect/` and `ts/vendor/clack/` are **read-only reference submodules** — npm provides the actual deps.
 - The CLI is **Effect.ts + Bun**, not plain Node — see `ts/packages/cli/AGENTS.md` (CLI's `CLAUDE.md` is a symlink to it).
 - E2E tests run in **Docker** and require Docker daemon access; skip them in restricted sandboxes.
@@ -87,7 +88,8 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - Core Composio class: `ts/packages/core/src/composio.ts`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
 - Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-- CI release docs to update when bumping toolchain: `ts/docs/internal/release.md` (Node/Bun/pnpm versions)
+- Toolchain pins: `mise.toml` (Node, Bun, Deno, pnpm, Python, uv), `mise.lock`, `toolchain-versions.json` (test matrices)
+- CI release docs to update when bumping toolchain: `ts/docs/internal/release.md`
 - Python config: `python/Makefile`, `python/noxfile.py`, `python/config/{pytest.ini,ruff.toml}`
 
 ## See Also

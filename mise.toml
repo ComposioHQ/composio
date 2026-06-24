@@ -1,0 +1,25 @@
+# Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
+#
+# Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
+# CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
+#
+# pnpm is pinned through mise's npm backend so mise owns the full local and CI
+# toolchain. We do not rely on Corepack because Node.js no longer distributes it
+# starting with v25.
+
+min_version = "2026.1.0"
+
+[tools]
+"npm:pnpm" = "11.8.0"
+node = "24.17.0"
+bun = "1.3.10"
+deno = "2.6.7"
+python = "3.12"
+uv = "0.8.19"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[settings]
+lockfile = true
+locked = true

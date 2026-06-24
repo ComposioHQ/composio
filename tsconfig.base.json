@@ -5,6 +5,7 @@
       "@composio/core": ["./ts/packages/core/src"] // or wherever your core is
     },
     "lib": ["es2022", "DOM"],
+    "types": ["node"],
     "target": "es2022",
     "module": "esnext",
     "moduleResolution": "bundler",

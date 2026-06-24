@@ -9,7 +9,10 @@
     "version": true,
     "tag": true
   },
-  "baseBranch": "main",
+  "baseBranch": "next",
   "updateInternalDependencies": "patch",
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true
+  },
   "ignore": []
 }

@@ -6,20 +6,22 @@ import { OpenAI } from 'openai';
 // Mock the openai modules
 vi.mock('openai', () => {
   return {
-    OpenAI: vi.fn().mockImplementation(() => ({
-      beta: {
-        threads: {
-          runs: {
-            retrieve: vi.fn().mockImplementation((runId, options) => {
-              return { id: runId, status: 'completed' };
-            }),
-            submitToolOutputs: vi.fn().mockImplementation((runId, options) => {
-              return { id: runId, status: 'completed' };
-            }),
+    OpenAI: vi.fn().mockImplementation(function () {
+      return {
+        beta: {
+          threads: {
+            runs: {
+              retrieve: vi.fn().mockImplementation((runId, options) => {
+                return { id: runId, status: 'completed' };
+              }),
+              submitToolOutputs: vi.fn().mockImplementation((runId, options) => {
+                return { id: runId, status: 'completed' };
+              }),
+            },
           },
         },
-      },
-    })),
+      };
+    }),
   };
 });
 

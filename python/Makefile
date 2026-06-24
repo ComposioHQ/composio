@@ -31,7 +31,7 @@ env:
 	@echo "* creating new environment"
 	@if [ -z "$$VIRTUAL_ENV" ];\
 	then\
-		uv venv --seed --prompt composio --python 3.11;\
+		uv venv --seed --prompt composio --python 3.12;\
 		uv sync;\
 		uv sync --dev;\
 		make provider;\

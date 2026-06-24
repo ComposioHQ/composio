@@ -4,37 +4,59 @@ on:
   push:
     branches: [master, next]
     paths:
-      - "python/**/*.py"
-      - ".github/workflows/py.test.yml"
-      - "python/pyproject.toml"
-      - "python/requirements*.txt"
+      - 'python/**/*.py'
+      - '.github/workflows/py.test.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'toolchain-versions.json'
+      - 'python/pyproject.toml'
+      - 'python/requirements*.txt'
   pull_request:
     branches: [master, next]
     paths:
-      - "python/**/*.py"
-      - ".github/workflows/py.test.yml"
-      - "python/pyproject.toml"
-      - "python/requirements*.txt"
+      - 'python/**/*.py'
+      - '.github/workflows/py.test.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'toolchain-versions.json'
+      - 'python/pyproject.toml'
+      - 'python/requirements*.txt'
 
 jobs:
+  toolchain-versions:
+    name: Read toolchain test matrix
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.versions.outputs.python }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Read versions
+        id: versions
+        run: echo "python=$(jq -c '.python' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
+
   test:
     name: Test Python SDK
+    needs: toolchain-versions
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ${{ fromJSON(needs.toolchain-versions.outputs.python) }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/pip
           key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
@@ -42,7 +64,9 @@ jobs:
             pip-${{ matrix.python-version }}-
 
       - name: Install UV
-        run: pip install uv
+        run: |
+          UV_VERSION="$(sed -n 's/^uv[[:space:]]*=[[:space:]]*"\([^"]*\)"/\1/p' mise.toml)"
+          pip install "uv==${UV_VERSION}"
 
       - name: Install Dependencies
         run: |
@@ -85,7 +109,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -104,30 +128,30 @@ jobs:
           python -c "
           # Test various import combinations that previously caused circular imports
           import sys
-          
+
           # Test 1: Basic imports
           from composio import Composio
           print('✓ Basic Composio import')
-          
+
           # Test 2: Import toolkit version types
           from composio import ToolkitVersionParam
           from composio.core.types import ToolkitVersion
           print('✓ Toolkit version types import')
-          
+
           # Test 3: Import from types module
           from composio.types import Modifiers
           print('✓ Types module import')
-          
+
           # Test 4: Import core models
           from composio.core.models.tools import Tools
           print('✓ Core models import')
-          
+
           # Test 5: Cross-module imports that caused the original circular import
           from composio.core.models.tools import Modifiers as CoreModifiers
           from composio.types import Modifiers as TypesModifiers
           assert CoreModifiers is TypesModifiers
           print('✓ Cross-module import consistency')
-          
+
           print('✓ All circular import prevention tests passed!')
           "
 
@@ -137,7 +161,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -164,27 +188,27 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    runs-on: ubuntu-22.04  # Use Ubuntu 22.04 for stability
+    runs-on: ubuntu-22.04 # Use Ubuntu 22.04 for stability
     permissions: read-all
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install UV
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: '0.8.19'
+        id: setup-python
+        uses: ./.github/actions/setup-python-uv
 
       - name: Cache UV dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/uv
-          key: uv-0.8.19-py3.12-${{ hashFiles('python/pyproject.toml') }}
+          key: uv-${{ hashFiles('mise.lock') }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('python/pyproject.toml') }}
           restore-keys: |
-            uv-0.8.19-py3.12-
+            uv-${{ hashFiles('mise.lock') }}-py${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install Python Dependencies
         working-directory: ./python
@@ -211,7 +235,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integration-test-results
           path: |

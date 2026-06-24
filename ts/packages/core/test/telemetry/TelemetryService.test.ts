@@ -5,6 +5,11 @@ import { TelemetryService } from '../../src/services/telemetry/TelemetryService'
 import type { TelemetryPayload } from '../../src/services/telemetry/TelemetryService.types';
 import { TelemetryMetadata } from '../../src/types/telemetry.types';
 
+const flushMicrotasks = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
 // Helper to create a mock telemetry payload
 const createPayload = (overrides: Partial<TelemetryPayload> = {}): TelemetryPayload => ({
   functionName: 'TestClass.testMethod',
@@ -35,9 +40,13 @@ describe('BatchProcessor', () => {
     vi.useRealTimers();
   });
 
-  it('should batch items and call callback when batch size is reached', () => {
+  it('should batch items and defer callback when batch size is reached', async () => {
     const payloads = [createPayload(), createPayload(), createPayload()];
     payloads.forEach(p => processor.pushItem(p));
+    expect(callback).not.toHaveBeenCalled();
+
+    await flushMicrotasks();
+
     expect(callback).toHaveBeenCalledOnce();
     expect(callback).toHaveBeenCalledWith(payloads);
   });
@@ -48,6 +57,8 @@ describe('BatchProcessor', () => {
     payloads.forEach(p => processor.pushItem(p));
     expect(callback).not.toHaveBeenCalled();
     vi.advanceTimersByTime(60);
+    await flushMicrotasks();
+
     expect(callback).toHaveBeenCalledOnce();
     expect(callback).toHaveBeenCalledWith(payloads);
   });
@@ -75,6 +86,8 @@ describe('BatchProcessor', () => {
       const payloads = [createPayload(), createPayload()];
       payloads.forEach(p => asyncProcessor.pushItem(p));
 
+      await flushMicrotasks();
+
       expect(asyncCallback).toHaveBeenCalledOnce();
       expect(asyncCallback).toHaveBeenCalledWith(payloads);
 
@@ -98,6 +111,7 @@ describe('BatchProcessor', () => {
       // @ts-expect-error: private access for test
       expect(asyncProcessor.pendingBatches.size).toBe(1);
 
+      await flushMicrotasks();
       resolveCallback!();
       await asyncProcessor.flush();
 
@@ -132,6 +146,7 @@ describe('BatchProcessor', () => {
       // @ts-expect-error: private access for test
       expect(asyncProcessor.batch).toEqual([]);
 
+      await flushMicrotasks();
       resolveCallback!();
       await asyncProcessor.flush();
     });
@@ -172,6 +187,7 @@ describe('BatchProcessor', () => {
       const flushPromise = asyncProcessor.flush();
       expect(callbackCompleted).toBe(false);
 
+      await flushMicrotasks();
       resolveCallback!();
       await flushPromise;
 
@@ -231,6 +247,8 @@ describe('BatchProcessor', () => {
       asyncProcessor.pushItem(createPayload());
       asyncProcessor.pushItem(createPayload());
 
+      await flushMicrotasks();
+
       expect(asyncCallback).toHaveBeenCalledTimes(2);
 
       // @ts-expect-error: private access for test
@@ -278,6 +296,8 @@ describe('BatchProcessor', () => {
       asyncProcessor.pushItem(createPayload({ functionName: 'batch2' }));
       asyncProcessor.pushItem(createPayload({ functionName: 'batch3' }));
 
+      await flushMicrotasks();
+
       expect(asyncCallback).toHaveBeenCalledTimes(3);
 
       // @ts-expect-error: private access for test
@@ -308,11 +328,12 @@ describe('TelemetryTransport', () => {
     provider: 'test',
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     sendMetricSpy = vi.spyOn(TelemetryService, 'sendMetric').mockResolvedValue({} as any);
     sendErrorLogSpy = vi.spyOn(TelemetryService, 'sendErrorLog').mockResolvedValue({} as any);
     transport = new TelemetryTransport();
     transport.setup(metadata);
+    await transport.flush();
   });
 
   afterEach(() => {
@@ -361,7 +382,42 @@ describe('TelemetryTransport', () => {
     const instance = new TestClass();
     const instrumented = transport.instrument(instance);
     await expect(instrumented.fail()).rejects.toThrow('fail!');
+    await transport.flush();
     expect(sendErrorLogSpy).toHaveBeenCalled();
+  });
+
+  it('should not wait for deferred error telemetry before rejecting instrumented errors', async () => {
+    let resolveTelemetry: (() => void) | undefined;
+    sendErrorLogSpy.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveTelemetry = () => resolve({} as any);
+        })
+    );
+
+    class TestClass {
+      async fail() {
+        throw new Error('fail!');
+      }
+    }
+    const instance = new TestClass();
+    const instrumented = transport.instrument(instance);
+
+    await expect(
+      Promise.race([
+        instrumented.fail().then(
+          () => 'resolved',
+          () => 'rejected'
+        ),
+        new Promise(resolve => setTimeout(() => resolve('timeout'), 20)),
+      ])
+    ).resolves.toBe('rejected');
+
+    await flushMicrotasks();
+    expect(sendErrorLogSpy).toHaveBeenCalled();
+
+    resolveTelemetry?.();
+    await transport.flush();
   });
 
   it('should flush pending telemetry when flush is called', async () => {

@@ -146,7 +146,7 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             environment=kwargs.get("environment", "production"),
             provider=actual_provider.name,
             api_key=api_key,
-            base_url=kwargs.get("base_url"),
+            base_url=kwargs.get("base_url") or os.environ.get("COMPOSIO_BASE_URL"),
             timeout=kwargs.get("timeout"),
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),
         )

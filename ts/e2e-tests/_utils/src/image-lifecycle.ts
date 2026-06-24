@@ -158,9 +158,7 @@ async function exec(cmd: string, args: string[], options: ExecOptions = {}): Pro
   const { cwd, env } = options;
   const escapedArgs = args.map(escapeShellArg).join(' ');
 
-  let shell = $`${{ raw: cmd }} ${{ raw: escapedArgs }}`
-    .nothrow()
-    .quiet();
+  let shell = $`${{ raw: cmd }} ${{ raw: escapedArgs }}`.nothrow().quiet();
 
   if (cwd) {
     shell = shell.cwd(cwd);
@@ -185,6 +183,23 @@ async function exec(cmd: string, args: string[], options: ExecOptions = {}): Pro
 export async function checkDocker(options: CheckDockerOptions = {}): Promise<ExecResult> {
   const repoRoot = options.repoRoot ?? getRepoRoot();
   return exec('docker', ['info'], { cwd: repoRoot });
+}
+
+// bun and pnpm are installed inside the images from mise.toml/mise.lock, so only the
+// matrixed runtimes (node, deno) need to be resolved on the host and threaded as build args.
+async function getMiseVersion(tool: 'node' | 'deno', repoRoot: string): Promise<string> {
+  const result = await exec('mise', ['current', tool], { cwd: repoRoot });
+  const version = result.stdout.trim();
+  if (result.exitCode !== 0 || !version) {
+    throw new Error(
+      `Failed to resolve ${tool} version from mise.toml: ${result.stderr || result.stdout}`
+    );
+  }
+  return version;
+}
+
+function getMajorVersion(version: string): string {
+  return version.split('.')[0] ?? version;
 }
 
 /**
@@ -214,7 +229,8 @@ export async function ensureNodeImage(
   }
 
   const repoRoot = options.repoRoot ?? getRepoRoot();
-  const dockerfilePath = options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.node');
+  const dockerfilePath =
+    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.node');
   const imageTag = imageTagForNodeVersion(nodeVersion);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
@@ -329,7 +345,7 @@ export async function runNodeContainer(options: RunNodeContainerOptions): Promis
   // Handle cmd as array for direct execution without shell interpretation.
   if (Array.isArray(cmd)) {
     dockerArgs.push(...cmd.map(String));
-  // Handle cmd as string by wrapping in login shell for proper environment setup.
+    // Handle cmd as string by wrapping in login shell for proper environment setup.
   } else if (typeof cmd === 'string' && cmd.length > 0) {
     dockerArgs.push('sh', '-lc', cmd);
   } else {
@@ -395,8 +411,10 @@ export async function ensureDenoImage(
   }
 
   const repoRoot = options.repoRoot ?? getRepoRoot();
-  const dockerfilePath = options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.deno');
+  const dockerfilePath =
+    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.deno');
   const imageTag = imageTagForDenoVersion(denoVersion);
+  const nodeVersion = await getMiseVersion('node', repoRoot);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
   if (inspect.exitCode === 0) {
@@ -409,6 +427,8 @@ export async function ensureDenoImage(
     dockerfilePath,
     '--build-arg',
     `DENO_VERSION=${denoVersion}`,
+    '--build-arg',
+    `NODE_MAJOR=${getMajorVersion(nodeVersion)}`,
     ...labelsToArgs(defaultDenoLabels(denoVersion)),
     '-t',
     imageTag,
@@ -510,8 +530,8 @@ export async function runDenoContainer(options: RunDenoContainerOptions): Promis
   // Handle cmd as array for direct execution without shell interpretation.
   if (Array.isArray(cmd)) {
     dockerArgs.push(...cmd.map(String));
-  // Handle cmd as string by wrapping in login shell for proper environment setup.
-  // Callers must explicitly use 'deno run --allow-all <file>' when running Deno scripts.
+    // Handle cmd as string by wrapping in login shell for proper environment setup.
+    // Callers must explicitly use 'deno run --allow-all <file>' when running Deno scripts.
   } else if (typeof cmd === 'string' && cmd.length > 0) {
     dockerArgs.push('sh', '-lc', cmd);
   } else {
@@ -577,8 +597,10 @@ export async function ensureCliImage(
   }
 
   const repoRoot = options.repoRoot ?? getRepoRoot();
-  const dockerfilePath = options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
+  const dockerfilePath =
+    options.dockerfilePath ?? resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.cli');
   const imageTag = imageTagForCliVersion(cliVersion);
+  const nodeVersion = await getMiseVersion('node', repoRoot);
 
   const inspect = await exec('docker', ['image', 'inspect', imageTag], { cwd: repoRoot });
   if (inspect.exitCode === 0) {
@@ -591,6 +613,8 @@ export async function ensureCliImage(
     dockerfilePath,
     '--build-arg',
     `CLI_VERSION=${cliVersion}`,
+    '--build-arg',
+    `NODE_VERSION=${nodeVersion}`,
     ...labelsToArgs(defaultCliLabels(cliVersion)),
     '-t',
     imageTag,

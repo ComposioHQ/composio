@@ -2,6 +2,7 @@
 Tests for Claude Code Agents Provider
 """
 
+import asyncio
 import json
 from unittest.mock import MagicMock, patch
 
@@ -234,8 +235,7 @@ class TestCreateMcpServer:
 class TestToolHandlerExecution:
     """Tests for tool handler execution."""
 
-    @pytest.mark.asyncio
-    async def test_tool_handler_success(self, provider, mock_tool):
+    def test_tool_handler_success(self, provider, mock_tool):
         """Test successful tool execution."""
         mock_execute = MagicMock(return_value={"data": "success", "successful": True})
 
@@ -256,13 +256,12 @@ class TestToolHandlerExecution:
             provider.wrap_tool(mock_tool, mock_execute)
 
             # Execute the captured handler
-            result = await captured_handler({"to": "test@example.com"})
+            result = asyncio.run(captured_handler({"to": "test@example.com"}))
 
             assert result["content"][0]["type"] == "text"
             assert "success" in result["content"][0]["text"]
 
-    @pytest.mark.asyncio
-    async def test_tool_handler_error(self, provider, mock_tool):
+    def test_tool_handler_error(self, provider, mock_tool):
         """Test tool execution with error."""
         mock_execute = MagicMock(side_effect=Exception("Test error"))
 
@@ -280,15 +279,14 @@ class TestToolHandlerExecution:
             mock_sdk_tool.side_effect = capture_decorator
             provider.wrap_tool(mock_tool, mock_execute)
 
-            result = await captured_handler({"to": "test@example.com"})
+            result = asyncio.run(captured_handler({"to": "test@example.com"}))
 
             assert result["content"][0]["type"] == "text"
             response = json.loads(result["content"][0]["text"])
             assert response["successful"] is False
             assert "Test error" in response["error"]
 
-    @pytest.mark.asyncio
-    async def test_tool_handler_string_result(self, provider, mock_tool):
+    def test_tool_handler_string_result(self, provider, mock_tool):
         """Test tool execution returning string result."""
         mock_execute = MagicMock(return_value="Simple string result")
 
@@ -306,7 +304,7 @@ class TestToolHandlerExecution:
             mock_sdk_tool.side_effect = capture_decorator
             provider.wrap_tool(mock_tool, mock_execute)
 
-            result = await captured_handler({})
+            result = asyncio.run(captured_handler({}))
 
             assert result["content"][0]["type"] == "text"
             assert result["content"][0]["text"] == "Simple string result"

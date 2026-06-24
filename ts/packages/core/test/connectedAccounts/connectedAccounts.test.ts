@@ -63,7 +63,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.list(query);
 
-      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(query);
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(query, undefined);
       expect(result).toEqual({
         items: [],
         nextCursor: null,
@@ -78,7 +78,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.list();
 
-      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(undefined);
+      expect(extendedMockClient.connectedAccounts.list).toHaveBeenCalledWith(undefined, undefined);
       expect(result).toEqual({
         items: [],
         nextCursor: null,
@@ -123,19 +123,23 @@ describe('ConnectedAccounts', () => {
           user_ids: [userId],
           auth_config_ids: [authConfigId],
           statuses: [ConnectedAccountStatuses.ACTIVE],
-        })
+        }),
+        undefined
       );
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: options.callbackUrl,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: options.callbackUrl,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -168,16 +172,19 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId);
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: undefined,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: undefined,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -215,7 +222,8 @@ describe('ConnectedAccounts', () => {
         expect.objectContaining({
           auth_config: { id: authConfigId },
           connection: expect.objectContaining({ user_id: userId, alias: 'work-gmail' }),
-        })
+        }),
+        undefined
       );
     });
 
@@ -336,7 +344,8 @@ describe('ConnectedAccounts', () => {
           user_ids: [userId],
           auth_config_ids: [authConfigId],
           statuses: [ConnectedAccountStatuses.ACTIVE],
-        })
+        }),
+        undefined
       );
     });
 
@@ -407,16 +416,19 @@ describe('ConnectedAccounts', () => {
         allowMultiple: true,
       });
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: undefined,
+            state: undefined,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: undefined,
-          state: undefined,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('waitForConnection');
@@ -455,16 +467,19 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.initiate(userId, authConfigId, options);
 
-      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith({
-        auth_config: {
-          id: authConfigId,
+      expect(extendedMockClient.connectedAccounts.create).toHaveBeenCalledWith(
+        {
+          auth_config: {
+            id: authConfigId,
+          },
+          connection: {
+            user_id: userId,
+            callback_url: options.callbackUrl,
+            state: options.config,
+          },
         },
-        connection: {
-          user_id: userId,
-          callback_url: options.callbackUrl,
-          state: options.config,
-        },
-      });
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_123');
       expect(connectionRequest).toHaveProperty('status', ConnectionStatuses.ACTIVE);
@@ -652,7 +667,7 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.get(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.retrieve).toHaveBeenCalledWith(nanoid, undefined);
       expect(result).toEqual({
         id: 'nanoid',
         status: 'ACTIVE',
@@ -750,7 +765,11 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.delete(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(nanoid);
+      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(
+        nanoid,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -764,7 +783,11 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, undefined);
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -777,10 +800,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, { redirectUrl });
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: redirectUrl,
-        validate_credentials: undefined,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: redirectUrl,
+          validate_credentials: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -792,10 +819,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, { validateCredentials: true });
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: undefined,
-        validate_credentials: true,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: undefined,
+          validate_credentials: true,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -811,10 +842,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, options);
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: options.redirectUrl,
-        validate_credentials: options.validateCredentials,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: options.redirectUrl,
+          validate_credentials: options.validateCredentials,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
 
@@ -837,10 +872,14 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.refresh(nanoid, {});
 
-      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(nanoid, {
-        query_redirect_url: undefined,
-        validate_credentials: undefined,
-      });
+      expect(extendedMockClient.connectedAccounts.refresh).toHaveBeenCalledWith(
+        nanoid,
+        {
+          query_redirect_url: undefined,
+          validate_credentials: undefined,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -857,7 +896,8 @@ describe('ConnectedAccounts', () => {
 
       expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
         nanoid,
-        params
+        params,
+        undefined
       );
       expect(result).toEqual(mockResponse);
     });
@@ -872,9 +912,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.enable(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: true,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: true,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -888,9 +932,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.disable(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: false,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: false,
+        },
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });
@@ -1089,9 +1137,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.update(nanoid, { enabled: true });
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: true,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: true,
+        },
+        undefined
+      );
       expect(result).toEqual({ success: true, id: nanoid, status: 'ACTIVE' });
     });
 
@@ -1103,9 +1155,13 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.update(nanoid, { enabled: false });
 
-      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(nanoid, {
-        enabled: false,
-      });
+      expect(extendedMockClient.connectedAccounts.updateStatus).toHaveBeenCalledWith(
+        nanoid,
+        {
+          enabled: false,
+        },
+        undefined
+      );
       expect(result).toEqual({ success: true });
     });
 
@@ -1142,10 +1198,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1175,11 +1234,14 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        callback_url: options.callbackUrl,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          callback_url: options.callbackUrl,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1219,10 +1281,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, undefined);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1248,10 +1313,13 @@ describe('ConnectedAccounts', () => {
 
       const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       expect(connectionRequest).toHaveProperty('id', 'conn_456def');
       expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1329,11 +1397,14 @@ describe('ConnectedAccounts', () => {
         const options = { callbackUrl };
         const connectionRequest = await connectedAccounts.link(userId, authConfigId, options);
 
-        expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-          auth_config_id: authConfigId,
-          user_id: userId,
-          callback_url: callbackUrl,
-        });
+        expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+          {
+            auth_config_id: authConfigId,
+            user_id: userId,
+            callback_url: callbackUrl,
+          },
+          undefined
+        );
 
         expect(connectionRequest).toHaveProperty('id', 'conn_456def');
         expect(connectionRequest).toHaveProperty('status', ConnectedAccountStatuses.INITIATED);
@@ -1407,10 +1478,13 @@ describe('ConnectedAccounts', () => {
         'Failed to create connected account link'
       );
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
     });
 
     it('should not include callback_url in API call when callbackUrl is not provided', async () => {
@@ -1428,10 +1502,13 @@ describe('ConnectedAccounts', () => {
       await connectedAccounts.link(userId, authConfigId, options);
 
       // Verify that callback_url is not included in the API call
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+        },
+        undefined
+      );
 
       // Ensure callback_url key is not present at all
       const callArgs = extendedMockClient.link.create.mock.calls[0][0];
@@ -1454,11 +1531,14 @@ describe('ConnectedAccounts', () => {
 
       await connectedAccounts.link(userId, authConfigId, options);
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        callback_url: 'https://example.com/callback',
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          callback_url: 'https://example.com/callback',
+        },
+        undefined
+      );
     });
 
     it('throws ComposioMultipleConnectedAccountsError when an active connection exists and allowMultiple is false', async () => {
@@ -1513,11 +1593,14 @@ describe('ConnectedAccounts', () => {
         alias: 'work-gmail',
       });
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: authConfigId,
-        user_id: userId,
-        alias: 'work-gmail',
-      });
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: authConfigId,
+          user_id: userId,
+          alias: 'work-gmail',
+        },
+        undefined
+      );
       expect(connectionRequest).toHaveProperty('id', 'conn_new');
     });
   });
@@ -1546,17 +1629,20 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: 'auth_config_123',
-        user_id: 'user_123',
-        experimental: {
-          account_type: 'SHARED',
-          acl_config_for_shared: {
-            allow_all_users: true,
-            not_allowed_user_ids: ['user_bob'],
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: {
+              allow_all_users: true,
+              not_allowed_user_ids: ['user_bob'],
+            },
           },
         },
-      });
+        undefined
+      );
     });
 
     it('omits the inner acl block when aclConfigForShared is undefined', async () => {
@@ -1584,14 +1670,17 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: 'auth_config_123',
-        user_id: 'user_123',
-        experimental: {
-          account_type: 'SHARED',
-          acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: { allowed_user_ids: ['user_alice'] },
+          },
         },
-      });
+        undefined
+      );
     });
 
     it('preserves explicit empty arrays in the serialized body', async () => {
@@ -1602,17 +1691,20 @@ describe('ConnectedAccounts', () => {
         },
       });
 
-      expect(extendedMockClient.link.create).toHaveBeenCalledWith({
-        auth_config_id: 'auth_config_123',
-        user_id: 'user_123',
-        experimental: {
-          account_type: 'SHARED',
-          acl_config_for_shared: {
-            allowed_user_ids: [],
-            not_allowed_user_ids: [],
+      expect(extendedMockClient.link.create).toHaveBeenCalledWith(
+        {
+          auth_config_id: 'auth_config_123',
+          user_id: 'user_123',
+          experimental: {
+            account_type: 'SHARED',
+            acl_config_for_shared: {
+              allowed_user_ids: [],
+              not_allowed_user_ids: [],
+            },
           },
         },
-      });
+        undefined
+      );
     });
 
     it('maps 400 AclOnlyForShared to ComposioAclOnlyForSharedError', async () => {
