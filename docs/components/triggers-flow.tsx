@@ -149,10 +149,12 @@ export function TriggersFlow() {
       if (!el) return;
       const r = el.getBoundingClientRect();
       const y = r.top - cr.top + r.height / 2;
-      const spawn: Pt = { x: r.right - cr.left - 26, y };
-      const edge: Pt = { x: r.right - cr.left, y };
-      ins[i] = { spawn, edge, end: hubLeft };
-      inLines[i] = { x1: edge.x, y1: edge.y, x2: hubLeft.x, y2: hubLeft.y, dashed: SOURCES[i]?.kind === 'polling' };
+      // Spawn just OUTSIDE the card, in the gap, so packets never overlap the row content.
+      const spawn: Pt = { x: r.right - cr.left + 18, y };
+      // Fan the convergence points slightly so the lines don't knot at the logo.
+      const end: Pt = { x: hubLeft.x - 2, y: hubLeft.y + (i - 1) * 5 };
+      ins[i] = { spawn, edge: spawn, end };
+      inLines[i] = { x1: spawn.x, y1: spawn.y, x2: end.x, y2: end.y, dashed: SOURCES[i]?.kind === 'polling' };
     });
 
     geomRef.current = { ins, out: { spawn: hubRight, end: tgtLeft } };
