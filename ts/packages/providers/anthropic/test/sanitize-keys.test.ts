@@ -380,6 +380,31 @@ describe('sanitizeSchemaPropertyKeys composition coverage', () => {
       pair: [{ $top: 9 }, { plain: 'x' }],
     });
   });
+
+  it('restores a `prefixItems` tuple and a trailing `items` rest schema independently', () => {
+    // 2020-12: `prefixItems` pins positions 0..n-1; a sibling single `items` schema
+    // applies to every element past the tuple. Both carry illegal keys that must
+    // round-trip at their own positions — the prefix rename must not be dropped,
+    // and the rest mapping must not bleed onto the prefix position.
+    const { schema: out, mapping } = sanitizeSchemaPropertyKeys({
+      type: 'object',
+      properties: {
+        tuple: {
+          type: 'array',
+          prefixItems: [{ type: 'object', properties: { $top: { type: 'integer' } } }],
+          items: { type: 'object', properties: { '@odata.type': { type: 'string' } } },
+        },
+      },
+    });
+
+    expectNoIllegalPropertyKeys(out);
+    expect(
+      restoreOriginalKeys(
+        { tuple: [{ dollar_top: 5 }, { 'at_odata.type': 'a' }, { 'at_odata.type': 'b' }] },
+        mapping
+      )
+    ).toEqual({ tuple: [{ $top: 5 }, { '@odata.type': 'a' }, { '@odata.type': 'b' }] });
+  });
 });
 
 describe('restoreOriginalKeys', () => {

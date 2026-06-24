@@ -65,11 +65,15 @@ export interface KeySanitizationPolicy {
  *    applies to every element; an array of mappings applies positionally (JSON
  *    Schema tuple validation / `prefixItems`). Only present when array elements
  *    contain renames.
+ *  - `restItems` — restoration mapping for array elements *past* a positional
+ *    `items`/`prefixItems` tuple (a 2020-12 single `items` schema sitting next to
+ *    `prefixItems`). Only present when those trailing elements contain renames.
  */
 export interface KeyMapping {
   renames: Record<string, string>;
   children: Record<string, KeyMapping>;
   items?: KeyMapping | (KeyMapping | null)[];
+  restItems?: KeyMapping;
 }
 
 /** Whether a mapping (or any of its descendants) actually renames a key. */
@@ -79,7 +83,8 @@ export function mappingHasRenames(mapping: KeyMapping): boolean {
   return (
     Object.keys(mapping.renames).length > 0 ||
     Object.keys(mapping.children).length > 0 ||
-    mapping.items != null
+    mapping.items != null ||
+    mapping.restItems != null
   );
 }
 
@@ -159,6 +164,16 @@ function sanitizeSchemaMap(
  * Merges `source`'s renames into `target`, both describing the same value level
  * (used to fold composition branches into their parent). `target` wins on
  * conflict, since it is the more direct (`properties`-level) mapping.
+ *
+ * Known limitation: folding sibling `allOf`/`anyOf`/`oneOf` branches into one
+ * value level is lossy when two branches disagree on an alias. If branch A aliases
+ * an illegal key to `X` while branch B has a distinct illegal key that also aliases
+ * to `X` — or a *legitimate* property literally named `X` — only the first-seen
+ * entry survives, so an argument that satisfied the other branch restores to the
+ * wrong original name. Which branch a runtime value matched can't be recovered from
+ * the value alone (that needs full schema evaluation against the value), so these
+ * cross-branch collisions stay effectively rewrite-only — still strictly better
+ * than the whole `tools` array being rejected. They are rare in practice.
  */
 function mergeMappingInto(target: KeyMapping, source: KeyMapping): void {
   for (const [alias, original] of Object.entries(source.renames)) {
@@ -176,6 +191,9 @@ function mergeMappingInto(target: KeyMapping, source: KeyMapping): void {
   }
   if (target.items === undefined && source.items !== undefined) {
     target.items = source.items;
+    if (source.restItems !== undefined) {
+      target.restItems = source.restItems;
+    }
   }
 }
 
@@ -197,7 +215,7 @@ function sanitizeNode(
   node: Record<string, unknown>;
   mapping: KeyMapping;
 } {
-  if (depth > MAX_SCHEMA_DEPTH) {
+  if (depth >= MAX_SCHEMA_DEPTH) {
     throw new Error(
       `Tool schema nesting exceeded the maximum supported depth (${MAX_SCHEMA_DEPTH})`
     );
@@ -255,11 +273,18 @@ function sanitizeNode(
     }
   }
 
-  // Array element schemas: `items` (a single schema applied to every element, or
-  // a positional tuple) and the 2020-12 `prefixItems` tuple. Restoration reaches
-  // array elements through `mapping.items` — a `properties`-only walk would let
-  // illegal keys nested in array elements through and still be rejected.
+  // Array element schemas come from up to two positional sources — a Draft-7
+  // `items` tuple and the 2020-12 `prefixItems` tuple — plus one "applies to every
+  // element" source, a single `items` schema. When `prefixItems` provides the
+  // positional mapping, a sibling single `items` schema constrains the elements
+  // *past* the tuple (2020-12 semantics); its renames are kept separately as
+  // `restItems` so those tail elements restore too instead of being dropped (or
+  // the rest mapping bleeding onto the tuple positions). Restoration reaches array
+  // elements through `mapping.items`/`mapping.restItems` — a `properties`-only walk
+  // would let illegal keys nested in elements through and still be rejected.
   const itemsSchema = node.items;
+  let positionalItems: (KeyMapping | null)[] | undefined;
+  let uniformItems: KeyMapping | undefined;
   if (isPlainObject(itemsSchema)) {
     const { node: childNode, mapping: childMapping } = sanitizeSubschema(
       itemsSchema,
@@ -268,23 +293,31 @@ function sanitizeNode(
     );
     result.items = childNode;
     if (childMapping) {
-      mapping.items = childMapping;
+      uniformItems = childMapping;
     }
   } else if (Array.isArray(itemsSchema)) {
     const { nodes, mappings } = sanitizeTuple(itemsSchema, policy, depth);
     result.items = nodes;
-    if (mappings) {
-      mapping.items = mappings;
-    }
+    positionalItems = mappings;
   }
   if (Array.isArray(node.prefixItems)) {
     const { nodes, mappings } = sanitizeTuple(node.prefixItems, policy, depth);
     result.prefixItems = nodes;
-    // Only drive restoration from `prefixItems` when `items` didn't already
-    // provide a positional mapping (avoids clobbering a Draft-7 tuple).
-    if (mappings && mapping.items === undefined) {
-      mapping.items = mappings;
+    // `prefixItems` is the 2020-12 positional keyword; use it for the positional
+    // mapping when a Draft-7 `items` tuple didn't already provide one.
+    if (positionalItems === undefined) {
+      positionalItems = mappings;
     }
+  }
+  if (positionalItems) {
+    mapping.items = positionalItems;
+    // A single `items` schema sitting next to a `prefixItems` tuple describes the
+    // elements after the tuple; keep its mapping so they restore positionally.
+    if (uniformItems && Array.isArray(node.prefixItems)) {
+      mapping.restItems = uniformItems;
+    }
+  } else if (uniformItems) {
+    mapping.items = uniformItems;
   }
 
   // Composition keywords constrain the *same* value, so renames generated inside
@@ -356,17 +389,19 @@ export function sanitizeSchemaPropertyKeys<T extends Record<string, unknown>>(
  * recursively. Returns a new value; the input is not mutated.
  */
 export function restoreOriginalKeys(value: unknown, mapping: KeyMapping, depth = 0): unknown {
-  if (depth > MAX_SCHEMA_DEPTH) {
+  if (depth >= MAX_SCHEMA_DEPTH) {
     throw new Error(
       `Tool arguments nesting exceeded the maximum supported depth (${MAX_SCHEMA_DEPTH})`
     );
   }
 
   if (Array.isArray(value)) {
-    const { items } = mapping;
+    const { items, restItems } = mapping;
     if (Array.isArray(items)) {
       return value.map((item, index) => {
-        const itemMapping = items[index];
+        // Elements inside the tuple use their positional mapping; elements past it
+        // use the trailing single-`items` rest mapping (2020-12), if any.
+        const itemMapping = index < items.length ? items[index] : restItems;
         return itemMapping ? restoreOriginalKeys(item, itemMapping, depth + 1) : item;
       });
     }
