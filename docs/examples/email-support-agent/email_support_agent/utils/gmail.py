@@ -13,6 +13,14 @@ from email_support_agent.utils.state import (
 from email_support_agent.utils.tools import DRAFT_TOOL, FETCH_TOOL, gmail_tool_map, invoke_tool
 
 
+def _subject_query(subject: str) -> str:
+    """Build a Gmail search query, escaping quotes so the phrase stays valid."""
+    if not subject:
+        return "in:inbox newer_than:7d"
+    escaped = subject.replace("\\", "\\\\").replace('"', '\\"')
+    return f'subject:"{escaped}"'
+
+
 def fetch_gmail_trigger_message(state: EmailSupportState) -> EmailSupportState:
     """Fetch the Gmail message that triggered the workflow."""
     subject = state.get("subject") or ""
@@ -39,7 +47,7 @@ def fetch_gmail_trigger_message(state: EmailSupportState) -> EmailSupportState:
         fetch_tool,
         {
             "user_id": "me",
-            "query": f'subject:"{subject}"' if subject else "in:inbox newer_than:7d",
+            "query": _subject_query(subject),
             "label_ids": ["INBOX"],
             "max_results": 10,
             "include_payload": True,

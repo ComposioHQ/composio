@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from email_support_agent.webhook import (
     InvalidWebhookError,
@@ -35,7 +36,13 @@ async def composio_webhook(request: Request) -> JSONResponse:
     raw_body = await request.body()
 
     try:
-        record = build_webhook_record(headers=request.headers, raw_body=raw_body)
+        # build_webhook_record runs the full LangGraph workflow (including
+        # multi-second OpenAI calls) synchronously, so offload it to a worker
+        # thread to keep the event loop free for health checks and concurrent
+        # webhook deliveries.
+        record = await run_in_threadpool(
+            build_webhook_record, headers=request.headers, raw_body=raw_body
+        )
     except InvalidWebhookError as exc:
         return JSONResponse(
             status_code=401,
