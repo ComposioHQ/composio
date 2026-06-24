@@ -626,4 +626,42 @@ describe('AnthropicProvider key sanitization', () => {
     const [, payload] = executeToolFn.mock.calls[0];
     expect(payload.arguments).toEqual({ dollar_top: 7 });
   });
+
+  // `wrapTool` dereferences `$ref`/`$defs` before sanitizing, so an illegal key
+  // reachable only through a reference is both made compliant for Anthropic and
+  // restored to its original name at execution time.
+  it('dereferences $ref so $ref-nested illegal keys round-trip', async () => {
+    const provider = new AnthropicProvider();
+    const executeToolFn = vi
+      .fn()
+      .mockResolvedValue({ data: { ok: true }, error: null, successful: true });
+    provider._setExecuteToolFn(executeToolFn);
+
+    const refTool: Tool = {
+      slug: 'ref-tool',
+      name: 'Ref',
+      description: 'uses $ref into $defs',
+      inputParameters: {
+        type: 'object',
+        properties: { filter: { $ref: '#/$defs/Filter' } },
+        $defs: { Filter: { type: 'object', properties: { $top: { type: 'integer' } } } },
+      },
+      tags: [],
+    } as unknown as Tool;
+
+    const wrapped = provider.wrapTool(refTool) as AnthropicTool;
+    // The $ref is inlined, `$defs` removed, and the nested `$top` sanitized.
+    expect((wrapped.input_schema.properties as any).filter.properties).toHaveProperty('dollar_top');
+    expect((wrapped.input_schema as any).$defs).toBeUndefined();
+
+    await provider.executeToolCall('user-1', {
+      type: 'tool_use',
+      id: 'tu_ref',
+      name: 'ref-tool',
+      input: { filter: { dollar_top: 3 } },
+    });
+
+    const [, payload] = executeToolFn.mock.calls[0];
+    expect(payload.arguments).toEqual({ filter: { $top: 3 } });
+  });
 });

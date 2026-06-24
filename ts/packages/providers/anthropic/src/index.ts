@@ -16,6 +16,7 @@ import {
   logger,
   McpUrlResponse,
   normalizeToolArguments,
+  dereferenceJsonSchema,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -154,10 +155,23 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       required: [],
     }) as InputSchema;
 
+    // Inline internal `$ref` / `$defs` first so keys reachable only through a
+    // reference become ordinary value positions that can be both sanitized and
+    // restored. Lenient mode keeps an upstream schema with a dangling ref usable
+    // (it degrades the branch to a permissive object) instead of throwing.
+    const dereferenced = dereferenceJsonSchema(rawSchema, {
+      onUnresolved: 'sentinel',
+      onReplace: ref =>
+        logger.debug(
+          `AnthropicProvider: unresolved $ref "${ref}" in tool "${tool.slug}" replaced ` +
+            `with a permissive schema`
+        ),
+    });
+
     // Anthropic rejects the whole `tools` array if any property key falls outside
     // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
     // over-long flattened keys). Rewrite offending keys and remember how to undo it.
-    const { schema, mapping } = sanitizeSchemaPropertyKeys(rawSchema);
+    const { schema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
 
     if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
