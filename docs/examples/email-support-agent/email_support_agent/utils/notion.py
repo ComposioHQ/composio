@@ -531,17 +531,25 @@ def _find_row_by_page_id(payload: dict[str, Any], tools: dict[str, Any], page_id
     query_tool = tools.get(NOTION_QUERY_DATABASE_TOOL)
     if not query_tool:
         return None
-    result = invoke_tool(
-        query_tool,
-        {
+    # Sort newest-first and paginate: a just-created claim row is among the
+    # newest entries, so a single oldest-first page would miss it once the
+    # database grows past one page.
+    start_cursor: str | None = None
+    for _ in range(int(os.getenv("NOTION_QUERY_MAX_PAGES", "50"))):
+        query: dict[str, Any] = {
             "database_id": payload["database_id"],
             "page_size": 100,
-            "sorts": [{"property_name": "created_time", "ascending": True}],
-        },
-    )
-    for row in _result_rows(result):
-        if row.get("id") == page_id:
-            return row
+            "sorts": [{"property_name": "created_time", "ascending": False}],
+        }
+        if start_cursor:
+            query["start_cursor"] = start_cursor
+        result = invoke_tool(query_tool, query)
+        for row in _result_rows(result):
+            if row.get("id") == page_id:
+                return row
+        start_cursor = _result_next_cursor(result)
+        if not start_cursor:
+            break
     return None
 
 
