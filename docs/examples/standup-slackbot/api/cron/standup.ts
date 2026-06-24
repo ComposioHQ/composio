@@ -42,7 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const parentText = `📅 *Daily Standup: ${today}*\n_Standups are posted in this thread as folks confirm._`;
-    const recent = await getRecentMessages(channelId, 50);
+    // Scan a generous window for today's parent. A high-volume channel could push
+    // it past this; a production bot would paginate or persist the thread ts.
+    const recent = await getRecentMessages(channelId, 200);
     const threadTs =
       recent.find((m) => m.text.includes("Daily Standup") && m.text.includes(today))
         ?.ts ?? (await postMessage(channelId, parentText))?.ts;
