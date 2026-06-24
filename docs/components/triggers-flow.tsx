@@ -128,6 +128,8 @@ export function TriggersFlow() {
 
   const [rails, setRails] = useState<{ ins: Line[]; out: Line | null }>({ ins: [], out: null });
   const [animate, setAnimate] = useState(true);
+  const [pollFiring, setPollFiring] = useState(false);
+  const firingRef = useRef(false);
 
   const poolSize = (kind: 'realtime' | 'polling') => (kind === 'polling' ? POLL_POOL : RT_POOL);
 
@@ -149,12 +151,14 @@ export function TriggersFlow() {
       if (!el) return;
       const r = el.getBoundingClientRect();
       const y = r.top - cr.top + r.height / 2;
-      // Spawn just OUTSIDE the card, in the gap, so packets never overlap the row content.
-      const spawn: Pt = { x: r.right - cr.left + 18, y };
+      const edge: Pt = { x: r.right - cr.left, y };
+      // Spawn inside the card, in the clear right-hand lane (the extra pr on each
+      // row), so packets read as coming from the app without covering its label.
+      const spawn: Pt = { x: edge.x - 13, y };
       // Fan the convergence points slightly so the lines don't knot at the logo.
       const end: Pt = { x: hubLeft.x - 2, y: hubLeft.y + (i - 1) * 5 };
-      ins[i] = { spawn, edge: spawn, end };
-      inLines[i] = { x1: spawn.x, y1: spawn.y, x2: end.x, y2: end.y, dashed: SOURCES[i]?.kind === 'polling' };
+      ins[i] = { spawn, edge, end };
+      inLines[i] = { x1: edge.x, y1: edge.y, x2: end.x, y2: end.y, dashed: SOURCES[i]?.kind === 'polling' };
     });
 
     geomRef.current = { ins, out: { spawn: hubRight, end: tgtLeft } };
@@ -166,7 +170,7 @@ export function TriggersFlow() {
       ins: SOURCES.map((s) =>
         s.kind === 'realtime'
           ? makeRt(RT_POOL)
-          : { t: 0, offsets: Array.from({ length: POLL_POOL }, () => ({ x: rand(-7, 5), y: rand(-6, 6) })) }
+          : { t: 0, offsets: Array.from({ length: POLL_POOL }, () => ({ x: rand(-6, 3), y: rand(-7, 7) })) }
       ),
       out: makeRt(OUT_POOL),
     };
@@ -200,6 +204,18 @@ export function TriggersFlow() {
           else stepPolling(sim.ins[i] as PollState, pool, g.spawn, g.end, dt);
         });
         stepRealtime(sim.out, outCircles.current, geom.out.spawn, geom.out.end, dt);
+
+        // Light the polling tag while the batch is firing, with a buffer either side.
+        const pollIdx = SOURCES.findIndex((s) => s.kind === 'polling');
+        if (pollIdx >= 0) {
+          const ps = sim.ins[pollIdx] as PollState;
+          const BUF = 0.3;
+          const firing = ps.t >= T_RELEASE - BUF && ps.t <= T_RELEASE + MOVE_DUR + BUF;
+          if (firing !== firingRef.current) {
+            firingRef.current = firing;
+            setPollFiring(firing);
+          }
+        }
       }
       raf = requestAnimationFrame(loop);
     };
@@ -300,7 +316,7 @@ export function TriggersFlow() {
                   appRefs.current[i] = el;
                 }}
                 className={
-                  'flex items-center gap-2 px-2.5 py-2.5' +
+                  'flex items-center gap-2 py-2.5 pl-2.5 pr-6' +
                   (i < SOURCES.length - 1 ? ' border-b border-fd-border' : '')
                 }
               >
@@ -312,7 +328,7 @@ export function TriggersFlow() {
                   src={`${LOGO_CDN}/${app.slug}`}
                 />
                 <span className="text-[12px] text-fd-foreground/80">{app.name}</span>
-                <KindTag kind={app.kind} />
+                <KindTag kind={app.kind} active={app.kind === 'polling' && pollFiring} />
               </li>
             ))}
           </ul>
@@ -371,19 +387,20 @@ export function TriggersFlow() {
   );
 }
 
-function KindTag({ kind }: { kind: 'realtime' | 'polling' }) {
+function KindTag({ kind, active = false }: { kind: 'realtime' | 'polling'; active?: boolean }) {
   const realtime = kind === 'realtime';
+  const lit = realtime || active;
   return (
     <span
       className={
-        'ml-auto inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.05em] ' +
-        (realtime ? 'text-[var(--composio-brand)]' : 'text-fd-foreground/40')
+        'ml-auto inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-[0.05em] transition-colors duration-300 ' +
+        (lit ? 'text-[var(--composio-brand)]' : 'text-fd-foreground/40')
       }
     >
       {realtime ? (
         <Radio className="size-2.5" aria-hidden="true" />
       ) : (
-        <RefreshCw className="size-2.5" aria-hidden="true" />
+        <RefreshCw className={'size-2.5' + (active ? ' animate-spin' : '')} aria-hidden="true" />
       )}
       {kind}
     </span>
