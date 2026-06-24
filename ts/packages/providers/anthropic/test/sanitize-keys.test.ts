@@ -593,4 +593,37 @@ describe('AnthropicProvider key sanitization', () => {
     const [, payload] = executeToolFn.mock.calls[0];
     expect(payload.arguments).toEqual({ query: 'hello' });
   });
+
+  // Re-wrapping the same slug with a schema that no longer needs rewriting must
+  // clear the stale mapping, so a later execution does not restore keys that the
+  // current schema never sanitized.
+  it('clears a stale key mapping when a slug is re-wrapped with a clean schema', async () => {
+    const provider = new AnthropicProvider();
+    const executeToolFn = vi
+      .fn()
+      .mockResolvedValue({ data: { ok: true }, error: null, successful: true });
+    provider._setExecuteToolFn(executeToolFn);
+
+    // First wrap registers a `dollar_top -> $top` mapping for this slug.
+    provider.wrapTool(odataTool);
+
+    // Re-wrap the SAME slug with a schema that has no illegal keys.
+    const cleanedTool: Tool = {
+      ...odataTool,
+      inputParameters: { type: 'object', properties: { dollar_top: { type: 'integer' } } },
+    } as unknown as Tool;
+    provider.wrapTool(cleanedTool);
+
+    // The model now legitimately sends `dollar_top`; it must reach the backend
+    // unchanged rather than being restored to `$top` by the stale mapping.
+    await provider.executeToolCall('user-1', {
+      type: 'tool_use',
+      id: 'tu_5',
+      name: odataTool.slug,
+      input: { dollar_top: 7 },
+    });
+
+    const [, payload] = executeToolFn.mock.calls[0];
+    expect(payload.arguments).toEqual({ dollar_top: 7 });
+  });
 });

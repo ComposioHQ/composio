@@ -9,3 +9,4 @@ Harden the Anthropic tool property-key sanitizer:
 - **Depth cap.** Schema sanitization and key restoration now bound recursion (matching core's JSON-schema walker) so a pathologically deep schema or argument object fails with a clear error instead of overflowing the stack.
 - **Empty / all-illegal keys.** A property key that is empty (or made entirely of stripped characters) now becomes a deterministic non-empty alias instead of an empty string, which would itself have violated Anthropic's `{1,64}` length bound.
 - **Collision loop.** Replaced a latent non-terminating fixed point in the alias collision resolver with a counter that always makes progress.
+- **Observability.** The provider now emits `debug` logs when it rewrites a tool's schema keys and when it restores them at execution time, and the wrap-then-execute (same provider instance) contract for key restoration is documented.
