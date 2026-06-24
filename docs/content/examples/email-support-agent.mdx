@@ -20,6 +20,7 @@ This example uses Composio as the app layer and LangGraph as the deterministic w
   src="/images/examples/email-support-agent/architecture.png"
   alt="Email support agent architecture with Gmail, Composio triggers and tools, FastAPI, and LangGraph"
   caption="A new Gmail message becomes a signed Composio webhook, then a LangGraph run that calls scoped Composio tools."
+  priority
 />
 
 Use this shape when the process is prescribed. Email support draft creation should *not* discover arbitrary tools or improvise actions at runtime. If you are building an open-ended agent that should choose among many tools dynamically, start with Composio sessions and Tool Router instead.
