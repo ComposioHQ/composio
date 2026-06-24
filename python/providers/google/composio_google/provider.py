@@ -14,6 +14,7 @@ from vertexai.generative_models import (
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
+from composio.utils.shared import normalize_tool_arguments
 
 
 def _convert_map_composite(obj):
@@ -69,13 +70,12 @@ class GoogleProvider(
         :param user_id: User ID to use for executing the function call.
         :return: Object containing output data from the function call.
         """
+        # Gemini returns args as a MapComposite; normalize after converting to a
+        # plain dict so a stringified payload is handled uniformly too (issue #2406).
         return self.execute_tool(
             slug=function_call.name,
-            arguments=t.cast(
-                dict,
-                _convert_map_composite(
-                    function_call.args,
-                ),
+            arguments=normalize_tool_arguments(
+                _convert_map_composite(function_call.args)
             ),
             modifiers=modifiers,
             user_id=user_id,

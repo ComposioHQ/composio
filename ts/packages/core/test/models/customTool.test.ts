@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { z as z4 } from 'zod';
 import { z } from 'zod/v3';
 import {
   createCustomTool,
@@ -67,6 +68,80 @@ describe('createCustomTool', () => {
         count: { type: 'number' },
       },
       required: ['result', 'count'],
+    });
+  });
+
+  it('should convert Zod v4 input and output schemas correctly', () => {
+    const tool = createCustomTool('ZOD4_TOOL', {
+      name: 'Zod 4 tool',
+      description: 'Tool using Zod 4 schemas',
+      inputParams: z4.object({
+        repository: z4.string().describe('Repository name'),
+        limit: z4.number().optional(),
+        category: z4.string().default('all'),
+      }),
+      outputParams: z4.object({
+        starred: z4.boolean(),
+      }),
+      execute: vi.fn().mockImplementation(async input => ({
+        repository: input.repository.toUpperCase(),
+      })),
+    });
+
+    expect(tool.inputSchema).toMatchObject({
+      type: 'object',
+      properties: {
+        repository: { type: 'string', description: 'Repository name' },
+        limit: { type: 'number' },
+        category: expect.objectContaining({ type: 'string', default: 'all' }),
+      },
+      required: ['repository'],
+    });
+    expect(tool.outputSchema).toMatchObject({
+      type: 'object',
+      properties: {
+        starred: { type: 'boolean' },
+      },
+      required: ['starred'],
+    });
+  });
+
+  it('should keep v3 and v4 input schemas in parity for defaulted fields (input mode)', () => {
+    const v3Tool = createCustomTool('ZOD3_DEFAULT', {
+      ...baseOptions,
+      inputParams: z.object({
+        query: z.string(),
+        category: z.string().default('all'),
+      }),
+    });
+    const v4Tool = createCustomTool('ZOD4_DEFAULT', {
+      ...baseOptions,
+      inputParams: z4.object({
+        query: z4.string(),
+        category: z4.string().default('all'),
+      }),
+    });
+
+    // In input mode a defaulted field is optional in both runtimes: only `query` is required.
+    expect(v3Tool.inputSchema).toMatchObject({ type: 'object', required: ['query'] });
+    expect(v4Tool.inputSchema).toMatchObject({ type: 'object', required: ['query'] });
+  });
+
+  it('should convert a Zod v3 array output schema without misrouting it through the v4 converter', () => {
+    // Regression: a v3 z.array()/z.promise() stores its element schema on `_def.type`, which used
+    // to be mistaken for a v4 schema and crash inside z4.toJSONSchema().
+    const tool = createCustomTool('ZOD3_ARRAY_OUTPUT', {
+      ...baseOptions,
+      outputParams: z.array(z.object({ id: z.string() })),
+    });
+
+    expect(tool.outputSchema).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+      },
     });
   });
 
@@ -161,6 +236,12 @@ describe('createCustomTool', () => {
       expect(() => createCustomTool('SLUG', { ...baseOptions, execute: 'not-fn' as any })).toThrow(
         'execute must be a function'
       );
+    });
+
+    it('should throw if a Zod v4 input schema is not an object', () => {
+      expect(() =>
+        createCustomTool('SLUG', { ...baseOptions, inputParams: z4.string() as any })
+      ).toThrow('inputParams must be a z.object() schema');
     });
   });
 

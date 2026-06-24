@@ -24,6 +24,22 @@ import {
   transformProperties,
   schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
+import { dereferenceJsonSchema } from '../jsonSchema';
+
+/**
+ * Inlines internal `$ref` pointers so the file walkers below can see the
+ * `file_uploadable` / `file_downloadable` flags that live behind a
+ * `$ref`/`$defs` indirection (e.g. `GMAIL_GET_ATTACHMENT`). The walkers only
+ * recurse `properties`/`anyOf`/`oneOf`/`allOf`/`items` and never dereference,
+ * so without this a flagged field reachable only through a `$ref` is silently
+ * missed — the file is never staged/downloaded. `'sentinel'` mode keeps tools
+ * whose schema omits the `$defs` target working (see
+ * https://github.com/ComposioHQ/composio/issues/3307) instead of throwing.
+ */
+const resolveFileSchema = (
+  schema: JSONSchemaProperty | undefined
+): JSONSchemaProperty | undefined =>
+  schema ? dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' }) : schema;
 
 const getSchemaVariants = (schema: JSONSchemaProperty | undefined): JSONSchemaProperty[] => [
   ...(schema?.anyOf ?? []),
@@ -377,12 +393,14 @@ export class FileToolModifier {
       return schema;
     }
 
-    const properties = transformProperties(schema.inputParameters.properties);
+    const inputParameters = resolveFileSchema(schema.inputParameters)!;
+    const properties = transformProperties(inputParameters.properties!);
 
     return {
       ...schema,
       inputParameters: {
-        ...schema.inputParameters,
+        ...inputParameters,
+        type: 'object',
         properties,
       },
     };
@@ -403,7 +421,7 @@ export class FileToolModifier {
     if (!args || typeof args !== 'object') return params;
 
     try {
-      const newArgs = await hydrateFiles(args, tool.inputParameters, {
+      const newArgs = await hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
         toolSlug,
         toolkitSlug,
         client: this.client,
@@ -437,11 +455,15 @@ export class FileToolModifier {
   ): Promise<ToolExecuteResponse> {
     const { result, toolSlug, signal } = options;
 
-    const dataWithDownloads = await hydrateDownloads(result.data, tool.outputParameters, {
-      toolSlug,
-      fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
-      signal,
-    });
+    const dataWithDownloads = await hydrateDownloads(
+      result.data,
+      resolveFileSchema(tool.outputParameters),
+      {
+        toolSlug,
+        fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
+        signal,
+      }
+    );
 
     return { ...result, data: dataWithDownloads as typeof result.data };
   }

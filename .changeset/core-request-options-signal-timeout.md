@@ -4,7 +4,7 @@
 
 Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
 
-Without this, a slow `tools.list` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
+Without this, a slow `tools.get` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
 
 ```typescript
 try {
@@ -38,18 +38,20 @@ Wired through on:
 Native tool execution is cancelled by the SDK (the underlying `fetch` is aborted). Custom tools are different — the SDK can't preempt user-supplied JavaScript. Two affordances are added so callers get sensible behavior anyway:
 
 1. **Pre-execute signal check**: if `signal.aborted` is true before the user's `execute` runs, the SDK throws `ComposioRequestCancelledError` and never invokes user code.
-2. **Cooperative signal forwarding**: the same `AbortSignal` is exposed to the user's `execute` function — as the trailing `ctx` argument (`(input, connectionConfig, executeToolRequest, ctx?) => ...`) for toolkit-based tools, and via `SessionContext.signal` for ToolRouter custom tools. Long-running implementations can wire `ctx.signal` into their own `fetch` (or any abortable IO) to abort mid-execution; the resulting `AbortError` is normalized to `ComposioRequestCancelledError` by the SDK.
+2. **Cooperative signal forwarding**: the same `AbortSignal` is exposed via `SessionContext.signal` for Tool Router custom tools. Long-running implementations can wire `ctx.signal` into their own `fetch` (or any abortable IO) to abort mid-execution; the resulting `AbortError` is normalized to `ComposioRequestCancelledError` by the SDK.
 
 ```typescript
-composio.tools.createCustomTool({
-  slug: 'LONG_RUNNING_FETCH',
-  toolkitSlug: 'http',
-  inputParameters: z.object({ url: z.string() }),
-  execute: async (input, _conn, _proxy, ctx) => {
+import { experimental_createTool } from '@composio/core';
+
+const longRunningFetch = experimental_createTool('LONG_RUNNING_FETCH', {
+  name: 'Long-running fetch',
+  description: 'Fetches a URL with cooperative cancellation',
+  inputParams: z.object({ url: z.string() }),
+  execute: async (input, ctx) => {
     // Pass ctx.signal into fetch so a session.execute(...) abort cancels
     // the in-flight HTTP request mid-flight.
-    const resp = await fetch(input.url, { signal: ctx?.signal });
-    return { data: await resp.json() };
+    const resp = await fetch(input.url, { signal: ctx.signal });
+    return { result: await resp.json() };
   },
 });
 ```

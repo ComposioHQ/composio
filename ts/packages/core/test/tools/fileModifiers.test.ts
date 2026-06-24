@@ -1713,6 +1713,126 @@ describe('FileToolModifier', () => {
       expect(modifiedResult.data.fileOutput).toBeNull();
     });
   });
+
+  // The schema walkers recurse properties/anyOf/oneOf/allOf/items but never
+  // dereference `$ref`. Composio toolkits express file flags through a
+  // `$ref`/`$defs` indirection (e.g. GMAIL_GET_ATTACHMENT), so without
+  // dereferencing the flag is invisible and the file is silently skipped.
+  // See https://github.com/ComposioHQ/composio/issues/3506.
+  describe('$ref / $defs indirection', () => {
+    it('marks a file_uploadable behind a $ref/$defs as format: "path" in modifyToolSchema', async () => {
+      const schema: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Attachment' },
+            legacyAttachment: { $ref: '#/definitions/LegacyAttachment' },
+            text: { type: 'string' },
+          },
+          $defs: {
+            Attachment: {
+              type: 'string',
+              file_uploadable: true,
+              description: 'Local path to attach',
+            },
+          },
+          definitions: {
+            LegacyAttachment: {
+              type: 'string',
+              file_uploadable: true,
+              description: 'Legacy local path to attach',
+            },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.modifyToolSchema(schema);
+
+      expect(result.inputParameters?.properties?.attachment).toHaveProperty('format', 'path');
+      expect(result.inputParameters?.properties?.attachment).toHaveProperty(
+        'file_uploadable',
+        true
+      );
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty('format', 'path');
+      expect(result.inputParameters?.properties?.legacyAttachment).toHaveProperty(
+        'file_uploadable',
+        true
+      );
+      expect(result.inputParameters?.properties?.text).not.toHaveProperty('format');
+    });
+
+    it('uploads a file whose file_uploadable flag is reachable only via $ref/$defs', async () => {
+      const mockFileData = {
+        name: 'doc.pdf',
+        mimetype: 'application/pdf',
+        s3key: 'uploads/doc.pdf',
+      };
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockResolvedValue(mockFileData);
+
+      const toolWithRef: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Attachment' },
+          },
+          $defs: {
+            Attachment: { type: 'string', file_uploadable: true },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.fileUploadModifier(toolWithRef, {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        params: {
+          arguments: { attachment: '/path/to/doc.pdf' },
+          userId: 'test-user',
+        },
+      });
+
+      expect(fileUtils.getFileDataAfterUploadingToS3).toHaveBeenCalledWith('/path/to/doc.pdf', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+      expect(result.arguments?.attachment).toEqual(mockFileData);
+    });
+
+    it('degrades gracefully when a $ref has no matching $defs target', async () => {
+      // Some toolkits ship a `$ref` without ever declaring `$defs`
+      // (https://github.com/ComposioHQ/composio/issues/3307). The modifier
+      // must not throw; the unresolved branch simply carries no file flag.
+      const schema: Tool = {
+        slug: 'test-tool',
+        name: 'Test Tool',
+        description: 'A test tool',
+        tags: ['test'],
+        version: '20251201_01',
+        availableVersions: ['20251201_01'],
+        inputParameters: {
+          type: 'object',
+          properties: {
+            attachment: { $ref: '#/$defs/Missing' },
+          },
+        },
+      };
+
+      const result = await fileToolModifier.modifyToolSchema(schema);
+      expect(result.inputParameters?.properties?.attachment).not.toHaveProperty('format');
+    });
+  });
 });
 
 describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {

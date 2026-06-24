@@ -16,18 +16,11 @@ const mockComposioAuthConfigResponse: ComposioAuthConfigRetrieveResponse = {
   name: 'Test Auth Config',
   no_of_connections: 5,
   status: 'ENABLED',
-  deprecated_params: {
-    default_connector_id: null,
-    expected_input_fields: [],
-    member_uuid: 'member_123',
-    toolkit_id: 'toolkit_123',
-  },
   type: 'custom',
   toolkit: {
     logo: 'https://example.com/logo.png',
     slug: 'github',
   },
-  uuid: 'uuid-12345',
   auth_scheme: 'OAUTH2',
   credentials: {
     client_id: 'test_client_id',
@@ -55,7 +48,6 @@ const mockTransformedAuthConfigResponse = {
     logo: 'https://example.com/logo.png',
     slug: 'github',
   },
-  uuid: 'uuid-12345',
   authScheme: 'OAUTH2',
   credentials: {
     client_id: 'test_client_id',
@@ -132,15 +124,11 @@ describe('AuthConfigs', () => {
         name: 'Test Auth Config',
         no_of_connections: 5,
         status: 'ENABLED',
-        deprecated_params: {
-          default_connector_id: null,
-        },
         type: 'default',
         toolkit: {
           logo: 'https://example.com/logo.png',
           slug: 'github',
         },
-        uuid: 'uuid-12345',
         // Optional fields omitted
       } as ComposioAuthConfigRetrieveResponse;
 
@@ -154,7 +142,6 @@ describe('AuthConfigs', () => {
           logo: 'https://example.com/logo.png',
           slug: 'github',
         },
-        uuid: 'uuid-12345',
       });
     });
   });
@@ -176,6 +163,8 @@ describe('AuthConfigs', () => {
           cursor: undefined,
           is_composio_managed: undefined,
           limit: undefined,
+          search: undefined,
+          show_disabled: undefined,
           toolkit_slug: undefined,
         },
         undefined
@@ -195,6 +184,8 @@ describe('AuthConfigs', () => {
         cursor: 'cursor_123',
         isComposioManaged: true,
         limit: 10,
+        search: 'github config',
+        showDisabled: true,
         toolkit: 'github',
       };
 
@@ -205,6 +196,8 @@ describe('AuthConfigs', () => {
           cursor: 'cursor_123',
           is_composio_managed: true,
           limit: 10,
+          search: 'github config',
+          show_disabled: true,
           toolkit_slug: 'github',
         },
         undefined
@@ -579,7 +572,11 @@ describe('AuthConfigs', () => {
 
       const result = await authConfigs.delete('auth_12345');
 
-      expect(mockClient.authConfigs.delete).toHaveBeenCalledWith('auth_12345', undefined);
+      expect(mockClient.authConfigs.delete).toHaveBeenCalledWith(
+        'auth_12345',
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockDeleteResponse);
     });
 
@@ -750,15 +747,11 @@ describe('AuthConfigs', () => {
         name: 'Minimal Config',
         no_of_connections: 0,
         status: 'DISABLED',
-        deprecated_params: {
-          default_connector_id: null,
-        },
         type: 'default',
         toolkit: {
           logo: '',
           slug: 'minimal-toolkit',
         },
-        uuid: 'uuid-minimal',
       } as ComposioAuthConfigRetrieveResponse;
 
       const result = transformAuthConfigRetrieveResponse(minimalResponse);
@@ -772,7 +765,6 @@ describe('AuthConfigs', () => {
           logo: '',
           slug: 'minimal-toolkit',
         },
-        uuid: 'uuid-minimal',
       });
     });
 

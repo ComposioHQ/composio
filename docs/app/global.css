@@ -133,15 +133,20 @@ html {
 }
 
 .dark {
+  /* Lift the brand blue on dark backgrounds — `#0007cd` is too dark
+     against `#0f0f0f`. */
+  --composio-brand: #5B8BF0;
+  --composio-orange: var(--composio-brand);
+
   --composio-sidebar: #0f0f0f;
 
   /* Fumadocs overrides - Dark */
   --color-fd-background: #0f0f0f;
   --color-fd-foreground: #fbfbfb;
-  --color-fd-muted: #1a1a1a;
+  --color-fd-muted: #1f1f1f;
   --color-fd-muted-foreground: #b4b4b4;
-  --color-fd-border: rgba(255, 255, 255, 0.10);
-  --color-fd-card: #141414;
+  --color-fd-border: rgba(255, 255, 255, 0.06);
+  --color-fd-card: #1c1c1c;
   --color-fd-card-foreground: #fbfbfb;
   --color-fd-popover: #1a1a1a;
   --color-fd-popover-foreground: #fbfbfb;
@@ -167,7 +172,7 @@ html {
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.637 0.208 25.3);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 6%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.745 0.128 275);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -181,7 +186,7 @@ html {
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 6%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 
@@ -637,5 +642,139 @@ body {
 
 .animate-glitch-404 {
   animation: glitch-404 2.6s ease-out infinite;
+}
+
+/* ==========================================================================
+   Hero demo — fade-in for prompts, traces, and responses
+   ========================================================================== */
+@keyframes hero-demo-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: hero-demo-fade-in 280ms ease-out both;
+}
+
+/* ==========================================================================
+   Landing-hero theme tokens — keep chat / card skins legible in both
+   light and dark mode. Skins reference these via `var(--hero-*)`.
+   ========================================================================== */
+:root {
+  --hero-surface: #ffffff;
+  --hero-surface-2: #f6f5f3;
+  --hero-bubble: #f3f3f1;
+  --hero-text: rgba(15, 15, 15, 0.9);
+  --hero-text-muted: rgba(15, 15, 15, 0.45);
+  --hero-border: rgba(15, 15, 15, 0.12);
+  --hero-border-soft: rgba(15, 15, 15, 0.06);
+  --hero-shimmer: #0a0a0a;
+}
+.dark {
+  /* Aligned with --color-fd-card / --color-fd-muted so the hero chat
+     panel sits at the same grey as the feature cards below it; the
+     darker `#141416` chat surface used to read as a shadow patch
+     against the page bg. */
+  --hero-surface: #1c1c1c;
+  --hero-surface-2: #222222;
+  --hero-bubble: #262626;
+  --hero-text: rgba(245, 245, 247, 0.92);
+  --hero-text-muted: rgba(245, 245, 247, 0.5);
+  --hero-border: rgba(255, 255, 255, 0.08);
+  --hero-border-soft: rgba(255, 255, 255, 0.04);
+  --hero-shimmer: #f5f5f7;
+}
+
+/* ==========================================================================
+   Hero "active card" drop shadow — neutral black blur around any card
+   that lights up in the agent loop. Lives in plain CSS because Tailwind
+   v4's arbitrary `shadow-[...rgba(...)...]` doesn't parse the commas
+   inside `rgba()` cleanly.
+   ========================================================================== */
+.hero-card-shadow {
+  /* `!important` needed because Tailwind v4's `transition-shadow` chains
+     `box-shadow` through several CSS variables (`--tw-shadow`, etc.) that
+     default to `0 0 #0000`, which otherwise overrides this declaration. */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.18) !important;
+}
+.dark .hero-card-shadow {
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Latest tool-call name in the mock chat — shimmer effect on a dark
+   gradient (light mode) / light gradient (dark mode). Defined in CSS
+   instead of inline so the gradient stops can reference theme tokens
+   without breaking on `var(...) + hex-alpha` concatenation. */
+.hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(15, 15, 15, 0.35) 0%,
+    rgba(15, 15, 15, 0.7) 40%,
+    rgba(15, 15, 15, 1) 50%,
+    rgba(15, 15, 15, 0.7) 60%,
+    rgba(15, 15, 15, 0.35) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer-text 2s ease-in-out infinite;
+}
+.dark .hero-tool-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    rgba(245, 245, 247, 0.35) 0%,
+    rgba(245, 245, 247, 0.7) 40%,
+    rgba(245, 245, 247, 1) 50%,
+    rgba(245, 245, 247, 0.7) 60%,
+    rgba(245, 245, 247, 0.35) 100%
+  );
+}
+
+/* ==========================================================================
+   Landing-hero keyframes (ported from landing-new)
+   ========================================================================== */
+@keyframes hero-cpu-pulse {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes shimmer-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Square the navbar theme toggle (and its inner icons) to match the
+   zero-radius search input. Fumadocs hard-codes `rounded-full` via
+   Tailwind utilities, so the override needs !important to beat the
+   utility layer's specificity. */
+[data-theme-toggle],
+[data-theme-toggle] > * {
+  border-radius: 0 !important;
 }
 

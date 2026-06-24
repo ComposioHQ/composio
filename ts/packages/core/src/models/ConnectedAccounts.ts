@@ -527,7 +527,7 @@ export class ConnectedAccounts {
     requestOptions?: ComposioRequestOptions
   ): Promise<ConnectedAccountDeleteResponse> {
     return withCancellation(
-      () => this.client.connectedAccounts.delete(nanoid, requestOptions),
+      () => this.client.connectedAccounts.delete(nanoid, undefined, requestOptions),
       requestOptions?.signal
     );
   }

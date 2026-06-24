@@ -40,6 +40,24 @@ vi.mock('@mastra/schema-compat', async () => {
   };
 });
 
+// Expected `originalSchema` for the standard mockTool output after the
+// leniency relaxation applied in wrapTool (issue #3047): typed nodes become
+// nullable and the object allows extra keys. All tools below spread `mockTool`,
+// so they share this output shape.
+const RELAXED_MOCK_OUTPUT_SCHEMA = {
+  type: 'mock-zod-schema',
+  originalSchema: {
+    type: ['object', 'null'],
+    additionalProperties: true,
+    properties: {
+      result: {
+        type: ['string', 'null'],
+        description: 'Test result',
+      },
+    },
+  },
+};
+
 describe('MastraProvider', () => {
   let provider: MastraProvider;
   let mockTool: Tool;
@@ -113,11 +131,29 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
       expect(wrapped._isMockedMastraTool).toBe(true);
+    });
+
+    it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
+      const params = { input: 'test-value' };
+
+      await wrapped.execute(params, {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+
+      vi.clearAllMocks();
+      await wrapped.execute(JSON.stringify(params), {});
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, params);
+    });
+
+    it('should throw a typed error for a malformed-JSON string input (issue #2406)', async () => {
+      const wrapped = provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
+
+      await expect(wrapped.execute('{"input":', {})).rejects.toThrow(/not valid JSON/);
     });
 
     it('should handle tools without input parameters', () => {
@@ -135,7 +171,7 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
@@ -179,7 +215,7 @@ describe('MastraProvider', () => {
         id: toolWithoutDescription.slug,
         description: '',
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
@@ -255,10 +291,11 @@ describe('MastraProvider', () => {
       // Extract the execute function from the call to createTool()
       const executeFunction = (createTool as any).mock.calls[0][0].execute;
 
-      // Test the execute function without any parameters
+      // Test the execute function without any parameters: a missing payload is
+      // normalized to an empty object rather than forwarded as undefined (issue #2406).
       const result = await executeFunction(undefined);
 
-      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, undefined);
+      expect(mockExecuteToolFn).toHaveBeenCalledWith(mockTool.slug, {});
       expect(result).toEqual({
         data: { result: 'success' },
         error: null,
@@ -289,14 +326,14 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
       expect(createTool).toHaveBeenCalledWith({
         id: anotherTool.slug,
         description: anotherTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -540,7 +577,7 @@ describe('MastraProvider', () => {
             additionalProperties: false,
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -589,7 +626,7 @@ describe('MastraProvider', () => {
             required: ['required_field'],
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -618,7 +655,7 @@ describe('MastraProvider', () => {
             description: 'A string parameter',
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -638,7 +675,7 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });

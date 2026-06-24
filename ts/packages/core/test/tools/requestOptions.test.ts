@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tools } from '../../src/models/Tools';
-import { ConnectedAccounts } from '../../src/models/ConnectedAccounts';
 import ComposioClient, { APIUserAbortError } from '@composio/client';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
@@ -111,7 +110,6 @@ describe('Cancellation — error normalization', () => {
       err.name = 'APIUserAbortError';
       throw err;
     });
-    vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValueOnce(undefined);
 
     await expect(
       tools.getRawComposioToolBySlug('GITHUB_GET_REPOS', undefined, {
@@ -187,35 +185,6 @@ describe('Cancellation — execute signal forwarding', () => {
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
 
-  it('forwards signal through the custom-tool branch', async () => {
-    const controller = new AbortController();
-
-    vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValue({
-      slug: 'CUSTOM_TOOL',
-      name: 'Custom Tool',
-      description: 'test',
-      inputParameters: { type: 'object', properties: {} },
-      outputParameters: undefined,
-      availableVersions: undefined,
-      isDeprecated: false,
-      isNoAuth: undefined,
-      toolkit: { slug: 'github', name: 'GitHub', logo: 'x' },
-    } as never);
-    const executeCustomToolSpy = vi
-      .spyOn(tools['customTools'], 'executeCustomTool')
-      .mockResolvedValueOnce({ data: {}, error: null, successful: true });
-
-    await tools.execute(
-      'CUSTOM_TOOL',
-      { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
-      { signal: controller.signal }
-    );
-
-    expect(executeCustomToolSpy).toHaveBeenCalledWith('CUSTOM_TOOL', expect.any(Object), {
-      signal: controller.signal,
-    });
-  });
-
   it('runs afterExecute to completion when the signal fires after the tool already executed', async () => {
     const controller = new AbortController();
 
@@ -245,21 +214,14 @@ describe('Cancellation — execute signal forwarding', () => {
 });
 
 describe('Cancellation — custom-tool AbortError classification', () => {
-  let tools: Tools<unknown, unknown, MockProvider>;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    tools = new Tools(mockClient as unknown as ComposioClient, { provider: new MockProvider() });
-  });
-
   it('AbortError from tool internal abort (signal NOT fired) is NOT misclassified as cancellation', async () => {
     const { z } = await import('zod');
-    await tools.createCustomTool({
-      slug: 'OWN_ABORT_TOOL',
+    const { createCustomTool } = await import('../../src/models/CustomTool');
+    const { executeCustomTool } = await import('../../src/models/customToolExecution');
+    const customTool = createCustomTool('OWN_ABORT_TOOL', {
       name: 'Own abort',
       description: 'test',
       inputParams: z.object({}),
-      toolkitSlug: 'custom',
       execute: async () => {
         const err = new Error('Tool internal timeout');
         err.name = 'AbortError';
@@ -268,29 +230,27 @@ describe('Cancellation — custom-tool AbortError classification', () => {
     });
 
     const controller = new AbortController();
+    const result = await executeCustomTool(
+      { handle: customTool, finalSlug: 'LOCAL_OWN_ABORT_TOOL' } as never,
+      {},
+      createSessionContext(),
+      { signal: controller.signal }
+    );
 
-    try {
-      await tools.execute(
-        'OWN_ABORT_TOOL',
-        { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
-        { signal: controller.signal }
-      );
-    } catch (err) {
-      expect(err).not.toBeInstanceOf(ComposioRequestCancelledError);
-      expect(err).toMatchObject({ name: 'AbortError' });
-    }
+    expect(result.successful).toBe(false);
+    expect(result.error).toBe('Tool internal timeout');
   });
 
   it('AbortError after caller abort IS classified as cancellation', async () => {
     const { z } = await import('zod');
+    const { createCustomTool } = await import('../../src/models/CustomTool');
+    const { executeCustomTool } = await import('../../src/models/customToolExecution');
     const controller = new AbortController();
 
-    await tools.createCustomTool({
-      slug: 'COOP_CANCEL_TOOL',
+    const customTool = createCustomTool('COOP_CANCEL_TOOL', {
       name: 'Coop cancel',
       description: 'test',
       inputParams: z.object({}),
-      toolkitSlug: 'custom',
       execute: async () => {
         controller.abort();
         const err = new Error('The operation was aborted');
@@ -300,50 +260,52 @@ describe('Cancellation — custom-tool AbortError classification', () => {
     });
 
     await expect(
-      tools.execute(
-        'COOP_CANCEL_TOOL',
-        { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+      executeCustomTool(
+        { handle: customTool, finalSlug: 'LOCAL_COOP_CANCEL_TOOL' } as never,
+        {},
+        createSessionContext(),
         { signal: controller.signal }
       )
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
   });
 
   it('pre-aborted signal short-circuits before custom-tool user code runs', async () => {
+    const { z } = await import('zod');
+    const { createCustomTool } = await import('../../src/models/CustomTool');
+    const { executeCustomTool } = await import('../../src/models/customToolExecution');
     const userExecute = vi.fn();
-    vi.spyOn(tools['customTools'], 'getCustomToolBySlug').mockResolvedValue({
-      slug: 'CUSTOM_TOOL',
-      name: 'Custom Tool',
+    const customTool = createCustomTool('CUSTOM_TOOL', {
+      name: 'Custom tool',
       description: 'test',
-      inputParameters: { type: 'object', properties: {} },
-      outputParameters: undefined,
-      availableVersions: undefined,
-      isDeprecated: false,
-      isNoAuth: undefined,
-      toolkit: { slug: 'github', name: 'GitHub', logo: 'x' },
-    } as never);
-    vi.spyOn(tools['customTools'], 'executeCustomTool').mockImplementation(
-      async (slug, body, requestOptions) => {
-        if (requestOptions?.signal?.aborted) {
-          throw new ComposioRequestCancelledError();
-        }
+      inputParams: z.object({}),
+      execute: async () => {
         await userExecute();
-        return { data: {}, error: null, successful: true };
-      }
-    );
+        return {};
+      },
+    });
 
     const controller = new AbortController();
     controller.abort();
 
     await expect(
-      tools.execute(
-        'CUSTOM_TOOL',
-        { userId: 'user_1', arguments: {}, dangerouslySkipVersionCheck: true },
+      executeCustomTool(
+        { handle: customTool, finalSlug: 'LOCAL_CUSTOM_TOOL' } as never,
+        {},
+        createSessionContext(),
         { signal: controller.signal }
       )
     ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     expect(userExecute).not.toHaveBeenCalled();
   });
 });
+
+function createSessionContext(): SessionContext {
+  return {
+    userId: 'user_1',
+    execute: vi.fn(),
+    proxyExecute: vi.fn(),
+  };
+}
 
 describe('Cancellation — SessionContext signal forwarding', () => {
   it('ctx.execute aborts are normalized so in-tool try/catch detects ComposioRequestCancelledError', async () => {

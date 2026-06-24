@@ -9,7 +9,13 @@ export {
   jsonSchemaToZodSchema,
   removeNonRequiredProperties,
 } from './utils/jsonSchema';
+export type {
+  DereferenceJsonSchemaOptions,
+  UnresolvedRefReason,
+  UnresolvedRefStrategy,
+} from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
+export { normalizeToolArguments } from './utils/toolArguments';
 export { AuthScheme } from './models/AuthScheme';
 export { MCP } from './models/MCP';
 export { RemoteFile } from './models/RemoteFile';
@@ -34,6 +40,7 @@ export * from './types/requestOptions.types';
 export * as constants from './utils/constants';
 
 export { default as logger } from './utils/logger';
+export { telemetry } from './telemetry/Telemetry';
 
 // Experimental custom tools — exported with experimental_ prefix for top-level import
 export { createCustomTool as experimental_createTool } from './models/CustomTool';

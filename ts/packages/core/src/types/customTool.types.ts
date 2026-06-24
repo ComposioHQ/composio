@@ -1,87 +1,21 @@
 import { z } from 'zod/v3';
-import { Tool, ToolProxyParams } from './tool.types';
+import type { z as z4 } from 'zod/v4';
 import type {
   SessionProxyExecuteParams,
   ToolRouterSessionExecuteResponse,
   ToolRouterSessionProxyExecuteResponse,
 } from './toolRouter.types';
-import { ToolExecuteResponse } from '@composio/client/resources/tools';
-import { ConnectionData } from './connectedAccountAuthStates.types';
 import type {
   SessionCreateParams,
   SessionCreateResponse,
 } from '@composio/client/resources/tool-router/session/session.mjs';
 
-// ────────────────────────────────────────────────────────────────
-// Legacy custom tool types (used by composio.tools.createCustomTool)
-// ────────────────────────────────────────────────────────────────
-
-type BaseCustomToolOptions<T extends z.ZodType> = {
-  name: string;
-  description?: string;
-  slug: string;
-  inputParams: T;
-};
-
-/**
- * Cooperative-cancellation context passed as the trailing optional argument
- * to {@link CustomToolOptions.execute}. When the caller of `tools.execute`
- * supplies `{ signal }`, the same `AbortSignal` is forwarded here so
- * long-running custom-tool implementations can wire it into their own
- * fetch / IO and abort mid-execution. Throwing — or letting fetch reject
- * with `AbortError` — surfaces as `ComposioRequestCancelledError`.
- *
- * Backward compatible: existing custom tools ignore the new arg and keep
- * working unchanged.
- */
-export type CustomToolExecuteContext = {
-  signal?: AbortSignal | undefined;
-};
-
-type ToolkitBasedExecute<T extends z.ZodType> = {
-  execute: (
-    input: z.infer<T>,
-    connectionConfig: ConnectionData | null,
-    executeToolRequest: (data: ToolProxyParams) => Promise<ToolExecuteResponse>,
-    ctx?: CustomToolExecuteContext
-  ) => Promise<ToolExecuteResponse>;
-  toolkitSlug: string;
-};
-
-type StandaloneExecute<T extends z.ZodType> = {
-  execute: (input: z.infer<T>) => Promise<ToolExecuteResponse>;
-  toolkitSlug?: never;
-};
-
-export type CustomToolOptions<T extends z.ZodType> = BaseCustomToolOptions<T> &
-  (ToolkitBasedExecute<T> | StandaloneExecute<T>);
-
-export type CustomToolRegistry = Map<
-  string,
-  { options: CustomToolOptions<CustomToolInputParameter>; schema: Tool }
->;
-
-export type InputParamsSchema = {
-  definitions: {
-    input: {
-      type: string;
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
-};
-
-export type CustomToolInputParameter = z.ZodType;
-
-export interface CustomToolRegistryItem {
-  options: CustomToolOptions<CustomToolInputParameter>;
-  schema: Tool;
-}
-
-export interface ExecuteMetadata {
-  userId: string;
-  connectedAccountId?: string;
-}
+export type AnyZodSchema = z.ZodType | z4.ZodType;
+export type InferZodSchema<T extends AnyZodSchema> = T extends z.ZodType
+  ? z.infer<T>
+  : T extends z4.ZodType
+    ? z4.infer<T>
+    : never;
 
 // ────────────────────────────────────────────────────────────────
 // New custom tool types (for tool router integration via createCustomTool())
@@ -119,8 +53,8 @@ export interface SessionContext {
  * - `(input) => data` — for tools that don't need session context
  * - `(input, ctx) => data` — for tools that need to call other tools or proxy APIs
  */
-export type CustomToolExecuteFn<T extends z.ZodType> = (
-  input: z.infer<T>,
+export type CustomToolExecuteFn<T extends AnyZodSchema> = (
+  input: InferZodSchema<T>,
   ctx: SessionContext
 ) => Promise<Record<string, unknown>>;
 
@@ -168,13 +102,13 @@ export const CreateCustomToolBaseSchema = z.object({
 });
 
 /** Options for creating a custom tool via `createCustomTool()`. */
-export type CreateCustomToolParams<T extends z.ZodType> = z.infer<
+export type CreateCustomToolParams<T extends AnyZodSchema> = z.infer<
   typeof CreateCustomToolBaseSchema
 > & {
   /** Zod schema for input parameters */
   inputParams: T;
   /** Optional Zod schema for output parameters (sent to backend for documentation) */
-  outputParams?: z.ZodType;
+  outputParams?: AnyZodSchema;
   /** The function that executes the tool */
   execute: CustomToolExecuteFn<T>;
 };
@@ -202,9 +136,9 @@ export interface CustomTool {
   /** JSON Schema representation of the output (for backend documentation) */
   readonly outputSchema?: Record<string, unknown>;
   /** @internal Original Zod schema — used for runtime input validation (defaults, coercions, transforms) */
-  readonly inputParams: z.ZodType;
+  readonly inputParams: AnyZodSchema;
   /** Direct reference to the execute function — useful for testing */
-  readonly execute: CustomToolExecuteFn<z.ZodType>;
+  readonly execute: CustomToolExecuteFn<AnyZodSchema>;
 }
 
 /** Serialized tool definition sent to backend for search indexing. Uses official client type. */

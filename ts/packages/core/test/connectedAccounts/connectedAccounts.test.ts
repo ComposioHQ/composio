@@ -765,7 +765,11 @@ describe('ConnectedAccounts', () => {
 
       const result = await connectedAccounts.delete(nanoid);
 
-      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(nanoid, undefined);
+      expect(extendedMockClient.connectedAccounts.delete).toHaveBeenCalledWith(
+        nanoid,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(mockResponse);
     });
   });

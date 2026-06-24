@@ -3,6 +3,7 @@ Shared utils.
 """
 
 import copy
+import json
 import keyword
 import typing as t
 import uuid
@@ -11,6 +12,7 @@ from inspect import Parameter
 from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
 
+from composio.exceptions import InvalidParams
 from composio.utils.logging import get as get_logger
 from composio.utils.schema_converter import (
     CONTAINER_TYPE,
@@ -36,11 +38,58 @@ __all__ = [
     "generate_request_id",
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
+    "normalize_tool_arguments",
 ]
 
 reserved_names = ["validate"]
 
 _OBJ_MARKER = "-_object_-"
+
+
+def normalize_tool_arguments(arguments: t.Any) -> t.Dict[str, t.Any]:
+    """Coerce model-supplied tool arguments into a dict.
+
+    Models (and some MCP transports) occasionally emit tool-call arguments as a
+    JSON string instead of a dict, which breaks execution with errors such as
+    ``tool_use.input: Input should be a valid dictionary``. This is the single
+    coercion every provider routes through so behaviour is identical everywhere.
+
+    See https://github.com/ComposioHQ/composio/issues/2406.
+
+    - ``None`` becomes ``{}`` (some models send no arguments for no-arg tools).
+    - A dict is returned unchanged.
+    - A string is JSON-parsed; an empty / whitespace-only string becomes ``{}``.
+    - Anything that does not resolve to a dict (lists, primitives, unparseable
+      strings, JSON that parses to a non-object) raises :class:`InvalidParams`.
+
+    :param arguments: Raw arguments as received from the model / framework.
+    :return: The normalized arguments as a dict.
+    :raises InvalidParams: If the arguments cannot be resolved to a dict.
+    """
+    if arguments is None:
+        return {}
+
+    if isinstance(arguments, str):
+        stripped = arguments.strip()
+        if not stripped:
+            return {}
+        try:
+            parsed = json.loads(stripped)
+        except json.JSONDecodeError as e:
+            raise InvalidParams(
+                f"Tool arguments were provided as a string that is not valid JSON: {e}"
+            ) from e
+        return _as_dict(parsed)
+
+    return _as_dict(arguments)
+
+
+def _as_dict(value: t.Any) -> t.Dict[str, t.Any]:
+    if isinstance(value, dict):
+        return value
+    raise InvalidParams(
+        f"Tool arguments must resolve to an object, received {type(value).__name__}"
+    )
 
 
 def _make_safe_name(name: str) -> str:
