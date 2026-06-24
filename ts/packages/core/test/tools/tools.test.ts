@@ -573,6 +573,76 @@ describe('Tools', () => {
     });
   });
 
+  // `ParametersSchema` is a strict `z.object`, so any key it doesn't declare is
+  // dropped on parse. It previously omitted `$defs`/`definitions`, so a tool
+  // whose parameters root carries those blocks (the `$ref` targets) lost them —
+  // leaving every nested `$ref` dangling and unresolvable for providers and the
+  // file modifier. See https://github.com/ComposioHQ/composio/issues/3506.
+  describe('$ref / $defs preservation on tool parameters', () => {
+    const rawToolWithDefs = {
+      slug: 'GMAIL_GET_ATTACHMENT',
+      name: 'Get Attachment',
+      description: 'Fetch a Gmail attachment',
+      input_parameters: {
+        type: 'object',
+        properties: {
+          message_id: { type: 'string' },
+        },
+      },
+      output_parameters: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/$defs/GetAttachmentResponse' },
+          legacy_data: { $ref: '#/definitions/LegacyAttachmentResponse' },
+        },
+        $defs: {
+          GetAttachmentResponse: {
+            type: 'object',
+            properties: { file: { $ref: '#/$defs/FileDownloadable' } },
+          },
+          FileDownloadable: {
+            type: 'object',
+            file_downloadable: true,
+            properties: { s3url: { type: 'string' } },
+          },
+        },
+        definitions: {
+          LegacyAttachmentResponse: {
+            type: 'object',
+            properties: { file: { $ref: '#/definitions/LegacyFileDownloadable' } },
+          },
+          LegacyFileDownloadable: {
+            type: 'object',
+            file_downloadable: true,
+            properties: { s3url: { type: 'string' } },
+          },
+        },
+      },
+      toolkit: { logo: 'https://example.com/gmail.png', slug: 'gmail', name: 'Gmail' },
+      version: '20260515_00',
+    };
+
+    it('keeps the root $defs block so nested $ref pointers stay resolvable', async () => {
+      mockClient.tools.retrieve.mockResolvedValueOnce(rawToolWithDefs);
+
+      const tool = await context.tools.getRawComposioToolBySlug('GMAIL_GET_ATTACHMENT');
+
+      expect(tool.outputParameters?.$defs).toBeDefined();
+      expect(tool.outputParameters?.$defs?.FileDownloadable).toMatchObject({
+        file_downloadable: true,
+      });
+      expect(tool.outputParameters?.definitions?.LegacyFileDownloadable).toMatchObject({
+        file_downloadable: true,
+      });
+      expect(tool.outputParameters?.properties?.data).toEqual({
+        $ref: '#/$defs/GetAttachmentResponse',
+      });
+      expect(tool.outputParameters?.properties?.legacy_data).toEqual({
+        $ref: '#/definitions/LegacyAttachmentResponse',
+      });
+    });
+  });
+
   describe('get', () => {
     it('should get a single tool by slug and wrap it with provider as a collection', async () => {
       const userId = 'test-user';

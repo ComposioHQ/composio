@@ -72,6 +72,12 @@ export class AuthConfigs {
    *   toolkit: 'github'
    * });
    *
+   * // Search auth configs by name or id
+   * const searchedConfigs = await composio.authConfigs.list({
+   *   search: 'github',
+   *   showDisabled: true
+   * });
+   *
    * // List Composio-managed auth configs
    * const managedConfigs = await composio.authConfigs.list({
    *   isComposioManaged: true
@@ -84,6 +90,8 @@ export class AuthConfigs {
       cursor: parsedQuery?.cursor,
       is_composio_managed: parsedQuery?.isComposioManaged,
       limit: parsedQuery?.limit,
+      search: parsedQuery?.search,
+      show_disabled: parsedQuery?.showDisabled,
       toolkit_slug: parsedQuery?.toolkit,
     });
     return transformAuthConfigListResponse(result);

@@ -4,6 +4,7 @@ import toolchainVersions from '../../../../toolchain-versions.json' with { type:
  * Environment variables to automatically pass through to Docker containers.
  */
 export const WELL_KNOWN_ENV_VARS = [
+  'ANTHROPIC_API_KEY',
   'COMPOSIO_API_KEY',
   'COMPOSIO_BASE_URL',
   'OPENAI_API_KEY',

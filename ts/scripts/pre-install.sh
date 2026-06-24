@@ -17,5 +17,5 @@ if ! command -v bun &> /dev/null; then
 fi
 
 echo "Bun is installed."
-echo "Checking if Bun version matches mise.toml..."
+echo "Checking if toolchain versions match mise.toml..."
 bun run "$SCRIPT_DIR/pre-install/check-toolchain.ts"

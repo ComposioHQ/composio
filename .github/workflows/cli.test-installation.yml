@@ -97,8 +97,10 @@ jobs:
       - name: Resolve and validate target release
         id: release_target
         shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
         run: |
-          raw_input="${{ inputs.version }}"
+          raw_input="$VERSION_INPUT"
           if [[ -z "$raw_input" || "$raw_input" == "latest" ]]; then
             echo "use_latest=true" >> "$GITHUB_OUTPUT"
             echo "release_tag=" >> "$GITHUB_OUTPUT"
@@ -194,8 +196,9 @@ jobs:
       - name: Test install script (specific version)
         if: steps.release_target.outputs.use_latest != 'true'
         shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release_target.outputs.release_tag }}
         run: |
-          RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
           echo "Testing installation with version: ${RELEASE_TAG}"
 
           # Test the install script with specific version
@@ -370,6 +373,9 @@ jobs:
 
       - name: Test custom install directory
         shell: bash
+        env:
+          USE_LATEST: ${{ steps.release_target.outputs.use_latest }}
+          RELEASE_TAG: ${{ steps.release_target.outputs.release_tag }}
         run: |
           echo "Testing custom install directory..."
 
@@ -378,10 +384,9 @@ jobs:
 
           # Test with custom directory using the same version as the workflow
           export COMPOSIO_INSTALL_DIR="/tmp/custom-composio"
-          if [[ "${{ steps.release_target.outputs.use_latest }}" == "true" ]]; then
+          if [[ "$USE_LATEST" == "true" ]]; then
             bash install.sh
           else
-            RELEASE_TAG="${{ steps.release_target.outputs.release_tag }}"
             bash install.sh "${RELEASE_TAG}"
           fi
 

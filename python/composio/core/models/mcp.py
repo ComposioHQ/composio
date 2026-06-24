@@ -10,7 +10,6 @@ import typing as t
 
 import typing_extensions as te
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
-from composio_client.types.tool_router_create_session_params import ConfigToolkit
 
 from composio.client import HttpClient
 from composio.core.models.base import Resource
@@ -18,6 +17,23 @@ from composio.exceptions import ValidationError
 from composio.utils.pydantic import none_to_omit
 
 # Data Types (matching TypeScript specification)
+
+
+class ConfigToolkit(te.TypedDict, total=False):
+    """Toolkit configuration for an MCP server.
+
+    Defined locally rather than imported from ``composio_client``: the generated
+    client removed ``types.tool_router_create_session_params.ConfigToolkit`` in
+    1.41.0 when the tool-router session schema was redesigned. The MCP surface
+    only needs the toolkit slug and optional auth config, so we keep our own
+    minimal shape and stay decoupled from tool-router regen churn.
+    """
+
+    toolkit: te.Required[str]
+    """Toolkit identifier (e.g., gmail, slack, github)."""
+
+    auth_config_id: str
+    """Specific auth configuration ID for this toolkit."""
 
 
 class MCPCreateResponse(CustomCreateResponse):

@@ -21,12 +21,6 @@ type PusherClient = {
   };
 };
 
-type AuthOptions = {
-  endpoint: string;
-  headers: Record<string, string>;
-  params?: Record<string, string>;
-};
-
 type TChunkedTriggerData = {
   id: string;
   index: number;
@@ -62,40 +56,41 @@ export class PusherUtils {
   static async getPusherClient(baseURL: string, apiKey: string): Promise<PusherClient> {
     try {
       if (!PusherUtils.pusherClient) {
-        // Dynamic import not available, using require for now
-        // TODO: Update to use dynamic import when available
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const PusherClient = require('pusher-js');
+        const { default: PusherClient } = await import('pusher-js');
+        const authEndpoint = `${baseURL}/api/v3/internal/sdk/realtime/auth`;
         PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
           cluster: PUSHER_CLUSTER,
           channelAuthorization: {
-            endpoint: `${baseURL}/api/v3/internal/sdk/realtime/auth`,
-            headers: {
-              'x-api-key': apiKey,
-            },
+            // `transport` and `endpoint` are required by pusher-js's types but are
+            // unused at runtime: `customHandler` fully owns the auth request below.
             transport: 'ajax',
-            customHandler: async (authOptions: AuthOptions) => {
-              try {
-                const response = await fetch(authOptions.endpoint, {
-                  method: 'POST',
-                  headers: {
-                    ...authOptions.headers,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(authOptions.params),
+            endpoint: authEndpoint,
+            customHandler: (params, callback) => {
+              fetch(authEndpoint, {
+                method: 'POST',
+                headers: {
+                  'x-api-key': apiKey,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  socket_id: params.socketId,
+                  channel_name: params.channelName,
+                }),
+              })
+                .then(async response => {
+                  const data = await response.text();
+                  logger.debug('Pusher auth response:', data);
+                  try {
+                    callback(null, JSON.parse(data));
+                  } catch (e) {
+                    logger.error('Failed to parse auth response:', e);
+                    callback(new Error('Invalid auth response format'), null);
+                  }
+                })
+                .catch((error: unknown) => {
+                  logger.error('Pusher auth request failed:', error);
+                  callback(error instanceof Error ? error : new Error(String(error)), null);
                 });
-                const data = await response.text();
-                logger.debug('Pusher auth response:', data);
-                try {
-                  return JSON.parse(data);
-                } catch (e) {
-                  logger.error('Failed to parse auth response:', e);
-                  throw new Error('Invalid auth response format');
-                }
-              } catch (error) {
-                logger.error('Pusher auth request failed:', error);
-                throw error;
-              }
             },
           },
         });

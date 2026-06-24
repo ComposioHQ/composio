@@ -5,7 +5,9 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/core/src/**'
+      - 'ts/packages/core/scripts/generate-docs.ts'
       - 'python/composio/**'
+      - 'python/scripts/generate-docs.py'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/generate-sdk-docs.yml'

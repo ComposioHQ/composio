@@ -155,7 +155,7 @@ export function generatePythonTypeStubs({
         const index = createToolkitIndex({ toolkits, typeableTools, triggerTypes, versionMap });
 
         // Generate Python sources
-        const sources = generatePythonSources({
+        const sources = yield* generatePythonSources({
           banner: BANNER,
           outputDir,
         })(index);

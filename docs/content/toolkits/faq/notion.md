@@ -14,15 +14,11 @@ No. Notion controls access by granting integrations access to specific pages and
 
 It depends on the integration type. OAuth apps (public) let users select which pages to share during authorization. Internal integrations (API key) have page access managed in the integration settings.
 
-## Why am I seeing Notion connections expire for my users?
+## Reasons for Notion Connection expiry
 
-This can happen when the same Notion user connects the same workspace more than once through the same Notion OAuth app.
+- **The user disconnects the integration from Notion.** Notion documents that OAuth-installed public connections appear under `Settings` -> `Connections` and can be disconnected from the workspace. If a user removes the Composio-managed or custom Notion app there, the existing token set should be treated as revoked, and the user should reconnect Notion. See Notion's official guide to [adding and managing workspace connections](https://www.notion.com/help/add-and-manage-connections-with-the-api).
 
-For example, if your product creates a separate Notion connection for each agent, project, or workflow, a newer connection can invalidate the older connection's refresh token. The older connection may keep working for a short time because its access token is still valid, but it expires once Composio can no longer refresh it.
-
-Reuse one active Notion connection for each Notion user, workspace, and OAuth app instead of asking the same user to connect Notion repeatedly.
-
-Using your own Notion OAuth app can isolate your product from Composio-managed app usage across other products, but it does not let the same Notion user keep multiple active connections for the same workspace and OAuth app.
+- **The same Notion user connects again through the same Notion app.** When a Notion user connects to a Notion app, Notion issues a new `access_token` and `refresh_token` pair for that connection. If the same user connects to the same Notion app again, whether it is Composio-managed or custom, Notion can issue a new token pair and invalidate the older `refresh_token`. The older `access_token` may continue working for some time, but once it expires, the older connection can no longer refresh and should be treated as expired. To avoid this, keep one active Notion connection per real user for a given Notion app, reuse that existing connection in your product, and avoid asking users to reconnect repeatedly. For production Notion integrations, we strongly recommend using your own Notion app so your users' tokens are isolated to your product. Follow the [Notion OAuth setup guide](https://composio.dev/auth/notion).
 
 ## How do I set up the Notion webhook ingress endpoint?
 

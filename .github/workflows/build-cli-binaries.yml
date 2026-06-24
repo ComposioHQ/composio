@@ -30,6 +30,10 @@ on:
 permissions:
   contents: read
 
+# Print Turborepo telemetry events to the logs instead of sending them.
+env:
+  TURBO_TELEMETRY_DEBUG: 1
+
 jobs:
   prepare:
     name: Resolve Release Metadata

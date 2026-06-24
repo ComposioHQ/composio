@@ -1,9 +1,25 @@
 import { Brand, Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 
+/**
+ * A toolkit slug used to derive generated source filenames.
+ *
+ * Restricted to a single, safe path segment (no `/`, `\`, or `..`) to prevent
+ * path traversal / arbitrary file write when the slug is interpolated into a
+ * filename and joined to the generator's output directory. See CWE-22.
+ */
+export const ToolkitSlug = Schema.Trim.pipe(
+  Schema.nonEmptyString(),
+  Schema.pattern(/^[a-z0-9_][a-z0-9_-]*$/, {
+    identifier: 'ToolkitSlug',
+    message: () =>
+      'Toolkit slug must contain only lowercase letters, digits, underscores, and hyphens (no path separators)',
+  })
+);
+
 export const Toolkit = Schema.Struct({
   name: Schema.String, // "Gmail"
-  slug: Schema.Trim.pipe(Schema.nonEmptyString()), // "gmail"
+  slug: ToolkitSlug, // "gmail"
   auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2", "BEARER_TOKEN" ]
   composio_managed_auth_schemes: Schema.Array(Schema.String), // [ "OAUTH2" ]
   is_local_toolkit: Schema.Boolean,
@@ -67,7 +83,7 @@ export type AuthConfigDetail = Schema.Schema.Type<typeof AuthConfigDetail>;
  */
 export const ToolkitDetailed = Schema.Struct({
   name: Schema.String,
-  slug: Schema.Trim.pipe(Schema.nonEmptyString()),
+  slug: ToolkitSlug,
   is_local_toolkit: Schema.Boolean,
   composio_managed_auth_schemes: Schema.optionalWith(Schema.Array(Schema.String), {
     default: () => [],

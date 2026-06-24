@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import pc from 'picocolors';
 import { getEnvVariable } from './env';
 import { COMPOSIO_LOG_LEVEL } from './constants';
 
@@ -47,7 +47,7 @@ class Logger {
         } else {
           if (index === 0) {
             if (args.length > 1) {
-              return chalk.yellow(`${arg}`);
+              return pc.yellow(`${arg}`);
             } else {
               return String(arg);
             }
@@ -62,7 +62,7 @@ class Logger {
     }
 
     const timestamp = new Date().toISOString();
-    return `${chalk.gray(timestamp)} - ${formattedArgs}`;
+    return `${pc.gray(timestamp)} - ${formattedArgs}`;
   }
 
   private shouldLog(level: LogLevel): boolean {
