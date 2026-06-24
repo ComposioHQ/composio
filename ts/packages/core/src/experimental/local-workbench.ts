@@ -1,53 +1,40 @@
 import type { Composio } from '../composio';
-import { COMPOSIO_WORKBENCH_HELPER_PATH, experimental_createWorkbenchHelperSource } from './shim';
+import {
+  experimental_createPythonWorkbenchHelperSource,
+  experimental_createWorkbenchEnv,
+} from './shim';
 import type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
 
-async function disableWorkbench(session: LocalWorkbenchSession['session']): Promise<void> {
-  await session.update({ workbench: { enable: false } });
-}
-
-export async function experimental_createLocalWorkbenchSession<THandle = unknown>(
+export async function experimental_createLocalWorkbenchSession(
   composio: Composio,
   userId: string,
-  config: LocalWorkbenchConfig<THandle>
-): Promise<LocalWorkbenchSession<THandle>> {
-  const { experimentalProvider: provider, ...workbench } = config.workbench;
+  config: LocalWorkbenchConfig = {}
+): Promise<LocalWorkbenchSession> {
   const composioConfig = composio.getConfig();
-  const backendUrl = composioConfig.baseURL ?? 'https://backend.composio.dev';
-  const apiKey = composioConfig.apiKey ?? undefined;
+  const backendUrl = (composioConfig.baseURL ?? 'https://backend.composio.dev').replace(/\/+$/, '');
+  const apiKey = composioConfig.apiKey;
 
-  const sandbox = await provider.provision({
+  if (!apiKey) {
+    throw new Error('A Composio project API key is required to create a local workbench session');
+  }
+
+  const session = await composio.create(userId, {
+    ...config,
+    workbench: {
+      ...config.workbench,
+      enable: false,
+    },
+  });
+
+  const env = experimental_createWorkbenchEnv({
+    sessionId: session.sessionId,
     backendUrl,
     apiKey,
   });
 
-  let session: LocalWorkbenchSession['session'] | undefined;
-  try {
-    session = await composio.create(userId, {
-      ...config,
-      workbench,
-    });
-    await provider.writeFile(
-      sandbox,
-      COMPOSIO_WORKBENCH_HELPER_PATH,
-      experimental_createWorkbenchHelperSource({
-        sessionId: session.sessionId,
-        backendUrl,
-        apiKey,
-      })
-    );
-  } catch (error) {
-    await Promise.allSettled([
-      provider.teardown(sandbox),
-      ...(session ? [disableWorkbench(session)] : []),
-    ]);
-    throw error;
-  }
-
   return {
     session,
-    provider,
-    sandbox,
-    teardown: () => provider.teardown(sandbox),
+    env,
+    helperSource: experimental_createPythonWorkbenchHelperSource(),
   };
 }

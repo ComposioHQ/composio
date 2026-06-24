@@ -1,11 +1,10 @@
 /**
  * Experimental APIs for @composio/core.
  *
- * @deprecated Import from '@composio/core' instead:
- *   import { experimental_createTool, experimental_createToolkit } from '@composio/core';
+ * These APIs may change without a major version bump.
  */
 
-// Re-export for backward compatibility with existing code
+// Custom tool helpers remain available here for backward compatibility.
 export {
   createCustomTool as experimental_createTool,
   createCustomToolkit as experimental_createToolkit,
@@ -18,19 +17,11 @@ export type {
   CustomToolkit,
   CreateCustomToolkitParams,
 } from '../types/customTool.types';
-export type {
-  LocalWorkbenchConfig,
-  LocalWorkbenchSession,
-  SandboxExecutionOptions,
-  SandboxExecutionResult,
-  SandboxProvider,
-  SandboxProviderName,
-  SandboxProvisionContext,
-} from './types';
+export type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
 export {
   COMPOSIO_WORKBENCH_HELPER_PATH,
+  experimental_createPythonWorkbenchHelperSource,
   experimental_createWorkbenchEnv,
-  experimental_createWorkbenchHelperSource,
 } from './shim';
-export type { WorkbenchEnvOptions, WorkbenchHelperSourceOptions } from './shim';
+export type { PythonWorkbenchHelperSourceOptions, WorkbenchEnvOptions } from './shim';
 export { experimental_createLocalWorkbenchSession } from './local-workbench';

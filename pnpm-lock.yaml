@@ -437,10 +437,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+        version: 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@mastra/mcp':
         specifier: ^1.0.0
-        version: 1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)
+        version: 1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)
       ai:
         specifier: 'catalog:'
         version: 6.0.207(zod@3.25.76)
@@ -465,10 +465,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)
+        version: 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)
       '@mastra/mcp':
         specifier: ^1.0.0
-        version: 1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6))(@types/json-schema@7.0.15)(zod@4.3.6)
+        version: 1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6))(@types/json-schema@7.0.15)(zod@4.3.6)
       ai:
         specifier: 'catalog:'
         version: 6.0.207(zod@4.3.6)
@@ -537,7 +537,7 @@ importers:
         version: link:../../packages/core
       '@mastra/mcp':
         specifier: ^0.14.4
-        version: 0.14.5(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)
+        version: 0.14.5(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -719,16 +719,16 @@ importers:
         version: link:../../packages/providers/llamaindex
       '@llamaindex/openai':
         specifier: ^0.4.20
-        version: 0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.4.3)
+        version: 0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.3.6)
       '@llamaindex/workflow':
         specifier: ^1.1.24
-        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)
+        version: 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.3.6)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1343,7 +1343,7 @@ importers:
         version: 0.52.0
       '@mastra/mcp':
         specifier: ^0.12.0
-        version: 0.12.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(@types/json-schema@7.0.15)(zod@4.4.3)
+        version: 0.12.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(@types/json-schema@7.0.15)(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1440,7 +1440,7 @@ importers:
     dependencies:
       llamaindex:
         specifier: ^0.12.0
-        version: 0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
+        version: 0.12.1(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1463,7 +1463,7 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
         version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
@@ -1816,9 +1816,6 @@ packages:
 
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
-
-  '@bufbuild/protobuf@2.12.0':
-    resolution: {integrity: sha512-B/XlCaFIP8LOwzo+bz5uFzATYokcwCKQcghqnlfwSmM5eX/qTkvDBnDPs+gXtX/RyjxJ4DRikECcPJbyALA8FA==}
 
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
@@ -2610,7 +2607,6 @@ packages:
 
   '@finom/zod-to-json-schema@3.24.11':
     resolution: {integrity: sha512-fL656yBPiWebtfGItvtXLWrFNGlF1NcDFS0WdMQXMs9LluVg0CfT5E2oXYp0pidl0vVG53XkW55ysijNkU5/hA==}
-    deprecated: 'Use https://www.npmjs.com/package/zod-v3-to-json-schema instead. See issue comment for details: https://github.com/StefanTerdell/zod-to-json-schema/issues/178#issuecomment-3533122539'
     peerDependencies:
       zod: ^4.0.14
 
@@ -4097,54 +4093,46 @@ packages:
 
   '@zed-industries/claude-code-acp@0.16.2':
     resolution: {integrity: sha512-D8BJe6CCD49RtNFbZYPsfZOpQI8Z/EzhyYC9zAGMwN/HVunEtVY2sXqYl1iDSkkayzhqABfaDkDZfeqDM1T/aA==}
-    deprecated: This package has been renamed to @agentclientprotocol/claude-agent-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-darwin-arm64@0.10.0':
     resolution: {integrity: sha512-zlIZH+X2aEfxC5UgnIoYbX0cG3/MpRUsQAGJbrcBbgKp0mhuBFtMJHZ426JC5rb3pv8amo1MmDeARZUQ99U/CQ==}
     cpu: [arm64]
     os: [darwin]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-darwin-x64@0.10.0':
     resolution: {integrity: sha512-TFMF9YqfWplnYpWRaUauRbtps1ow1S47MVcBv21/Sd55gRMWWYWSogRLDyAcoMC4y9pdI2bYhx33u7jYhJnj5w==}
     cpu: [x64]
     os: [darwin]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-linux-arm64@0.10.0':
     resolution: {integrity: sha512-tIm0uGKZuirZyqx9KAgIgh6cimVXdh+BMTFyUfH1xnez5Y3B6oFxzup/ZIP34OZ/W59Cnfi4wcIL3No0VV6Kmw==}
     cpu: [arm64]
     os: [linux]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-linux-x64@0.10.0':
     resolution: {integrity: sha512-oiiN35wsecX1OwesV/KIu72o1OSw+OWFL86vQUUZTdfMXr9eyYFP1uZYLMxIx+tkhlJnm7KHC5L4raDg/MLVtA==}
     cpu: [x64]
     os: [linux]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-win32-arm64@0.10.0':
     resolution: {integrity: sha512-dfybabjibQQpXUs9TjwLjg+mrj8tGSopVcwkFy8u3XG4hrBZVCri91dtVhm7hs98lZlawxwiiPuj4Pmg+4hHyQ==}
     cpu: [arm64]
     os: [win32]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp-win32-x64@0.10.0':
     resolution: {integrity: sha512-xCm3xsE3lD66DlbaLKBqHahPY1Lhb+rGu2IIq60qUsBGiYcSXtpRjQ1LXI/Sym6iCKrPo+eQP0j6rg7CPh1AGw==}
     cpu: [x64]
     os: [win32]
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   '@zed-industries/codex-acp@0.10.0':
     resolution: {integrity: sha512-vzwAUSHR7TaJh62JoE+6UD/HVm8fJbmMGsMBBMcHrKBIL7MF8yevlPDWVdoaDaGOsgqVZYRv9KhdT8ari0I4mg==}
-    deprecated: This package has been replaced by @agentclientprotocol/codex-acp. Please migrate to continue receiving updates.
     hasBin: true
 
   accepts@1.3.8:
@@ -5090,7 +5078,6 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
-    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   globals@14.0.0:
@@ -7125,11 +7112,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@a2a-js/sdk@0.3.13(@bufbuild/protobuf@2.12.0)(express@5.2.1)':
+  '@a2a-js/sdk@0.3.13(express@5.2.1)':
     dependencies:
       uuid: 11.1.1
     optionalDependencies:
-      '@bufbuild/protobuf': 2.12.0
       express: 5.2.1
 
   '@agentclientprotocol/sdk@0.14.1(zod@4.4.3)':
@@ -7476,9 +7462,6 @@ snapshots:
       '@babel/helper-validator-identifier': 8.0.0
 
   '@braidai/lang@1.1.2': {}
-
-  '@bufbuild/protobuf@2.12.0':
-    optional: true
 
   '@cfworker/json-schema@4.1.1': {}
 
@@ -8119,9 +8102,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@finom/zod-to-json-schema@3.24.11(zod@4.4.3)':
+  '@finom/zod-to-json-schema@3.24.11(zod@4.3.6)':
     dependencies:
-      zod: 4.4.3
+      zod: 4.3.6
 
   '@gerrit0/mini-shiki@3.23.0':
     dependencies:
@@ -8516,11 +8499,11 @@ snapshots:
 
   '@llamaindex/core@0.6.22':
     dependencies:
-      '@finom/zod-to-json-schema': 3.24.11(zod@4.4.3)
+      '@finom/zod-to-json-schema': 3.24.11(zod@4.3.6)
       '@llamaindex/env': 0.1.30
       '@types/node': 24.10.13
       magic-bytes.js: 1.13.0
-      zod: 4.4.3
+      zod: 4.3.6
     transitivePeerDependencies:
       - '@huggingface/transformers'
       - gpt-tokenizer
@@ -8539,26 +8522,43 @@ snapshots:
       tree-sitter: 0.22.4
       web-tree-sitter: 0.24.7
 
-  '@llamaindex/openai@0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.4.3)':
+  '@llamaindex/openai@0.4.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(ws@8.20.1)(zod@4.3.6)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      openai: 5.23.2(ws@8.20.1)(zod@4.4.3)
+      openai: 5.23.2(ws@8.20.1)(zod@4.3.6)
     transitivePeerDependencies:
       - ws
       - zod
 
-  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)':
+  '@llamaindex/workflow-core@1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)':
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
       hono: 4.12.25
+      zod: 4.3.6
+
+  '@llamaindex/workflow-core@1.3.3(zod@4.4.3)':
+    optionalDependencies:
       zod: 4.4.3
 
-  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)':
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)':
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
-      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)
+      '@llamaindex/workflow-core': 1.3.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
+    transitivePeerDependencies:
+      - '@modelcontextprotocol/sdk'
+      - hono
+      - next
+      - p-retry
+      - rxjs
+      - zod
+
+  '@llamaindex/workflow@1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(zod@4.4.3)':
+    dependencies:
+      '@llamaindex/core': 0.6.22
+      '@llamaindex/env': 0.1.30
+      '@llamaindex/workflow-core': 1.3.3(zod@4.4.3)
     transitivePeerDependencies:
       - '@modelcontextprotocol/sdk'
       - hono
@@ -8627,9 +8627,9 @@ snapshots:
       - openapi-types
       - supports-color
 
-  '@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
+  '@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
     dependencies:
-      '@a2a-js/sdk': 0.3.13(@bufbuild/protobuf@2.12.0)(express@5.2.1)
+      '@a2a-js/sdk': 0.3.13(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@3.25.76)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
@@ -8670,9 +8670,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)':
+  '@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)':
     dependencies:
-      '@a2a-js/sdk': 0.3.13(@bufbuild/protobuf@2.12.0)(express@5.2.1)
+      '@a2a-js/sdk': 0.3.13(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@4.3.6)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@4.3.6)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
@@ -8713,9 +8713,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
+  '@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
     dependencies:
-      '@a2a-js/sdk': 0.3.13(@bufbuild/protobuf@2.12.0)(express@5.2.1)
+      '@a2a-js/sdk': 0.3.13(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.25(zod@4.4.3)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)'
       '@ai-sdk/provider-v5': '@ai-sdk/provider@2.0.3'
@@ -8756,10 +8756,10 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/mcp@0.12.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(@types/json-schema@7.0.15)(zod@4.4.3)':
+  '@mastra/mcp@0.12.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(@types/json-schema@7.0.15)(zod@4.4.3)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 14.2.1(@types/json-schema@7.0.15)
-      '@mastra/core': 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      '@mastra/core': 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       date-fns: 4.1.0
       exit-hook: 4.0.0
@@ -8773,10 +8773,10 @@ snapshots:
       - '@types/json-schema'
       - supports-color
 
-  '@mastra/mcp@0.14.5(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)':
+  '@mastra/mcp@0.14.5(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 14.2.1(@types/json-schema@7.0.15)
-      '@mastra/core': 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+      '@mastra/core': 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       date-fns: 4.1.0
       exit-hook: 4.0.0
@@ -8790,10 +8790,10 @@ snapshots:
       - '@types/json-schema'
       - supports-color
 
-  '@mastra/mcp@1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)':
+  '@mastra/mcp@1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(@types/json-schema@7.0.15)(zod@3.25.76)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 14.2.1(@types/json-schema@7.0.15)
-      '@mastra/core': 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+      '@mastra/core': 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       exit-hook: 5.1.0
       fast-deep-equal: 3.1.3
@@ -8806,10 +8806,10 @@ snapshots:
       - '@types/json-schema'
       - supports-color
 
-  '@mastra/mcp@1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6))(@types/json-schema@7.0.15)(zod@4.3.6)':
+  '@mastra/mcp@1.0.1(@cfworker/json-schema@4.1.1)(@mastra/core@1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6))(@types/json-schema@7.0.15)(zod@4.3.6)':
     dependencies:
       '@apidevtools/json-schema-ref-parser': 14.2.1(@types/json-schema@7.0.15)
-      '@mastra/core': 1.43.0(@bufbuild/protobuf@2.12.0)(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)
+      '@mastra/core': 1.43.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.3.6))(express@5.2.1)(zod@4.3.6)
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
       exit-hook: 5.1.0
       fast-deep-equal: 3.1.3
@@ -10618,7 +10618,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.9
+      '@types/estree': 1.0.8
 
   esutils@2.0.3: {}
 
@@ -11372,12 +11372,34 @@ snapshots:
       rfdc: 1.4.1
       wrap-ansi: 9.0.2
 
-  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
+  llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.3.6):
     dependencies:
       '@llamaindex/core': 0.6.22
       '@llamaindex/env': 0.1.30
       '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
-      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.25)(zod@4.4.3)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(hono@4.12.25)(zod@4.3.6)
+      '@types/lodash': 4.17.23
+      '@types/node': 24.10.13
+      lodash: 4.17.23
+      magic-bytes.js: 1.13.0
+    transitivePeerDependencies:
+      - '@huggingface/transformers'
+      - '@modelcontextprotocol/sdk'
+      - gpt-tokenizer
+      - hono
+      - next
+      - p-retry
+      - rxjs
+      - tree-sitter
+      - web-tree-sitter
+      - zod
+
+  llamaindex@0.12.1(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
+    dependencies:
+      '@llamaindex/core': 0.6.22
+      '@llamaindex/env': 0.1.30
+      '@llamaindex/node-parser': 2.0.22(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)
+      '@llamaindex/workflow': 1.1.24(@llamaindex/core@0.6.22)(@llamaindex/env@0.1.30)(zod@4.4.3)
       '@types/lodash': 4.17.23
       '@types/node': 24.10.13
       lodash: 4.17.23
@@ -11954,6 +11976,11 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
+
+  openai@5.23.2(ws@8.20.1)(zod@4.3.6):
+    optionalDependencies:
+      ws: 8.20.1
+      zod: 4.3.6
 
   openai@5.23.2(ws@8.20.1)(zod@4.4.3):
     optionalDependencies:
