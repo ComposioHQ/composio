@@ -12,6 +12,7 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { LegacyBadge } from '@/components/legacy-badge';
 import { ExperimentalBadge } from '@/components/experimental-badge';
+import { RelatedLinks } from '@/components/related-links';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -29,6 +30,9 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       full={isLanding ? true : data.full}
       footer={{ enabled: false }}
       tableOfContentPopover={{ enabled: false }}
+      tableOfContent={
+        data.related?.length ? { footer: <RelatedLinks items={data.related} /> } : undefined
+      }
     >
       {!isLanding && (
         <>

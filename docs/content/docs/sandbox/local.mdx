@@ -1,27 +1,29 @@
 ---
 title: Local sandbox
 experimental: true
-description: Run Composio tools in a sandbox you own — your filesystem, your shell, your security boundary — while Composio keeps managed auth and tool discovery.
+description: Run Composio tools in a sandbox you own (your filesystem, your shell, your security boundary), while Composio keeps managed auth and tool discovery.
 keywords: [local sandbox, sandbox, workbench, bring your own runtime, code execution, security boundary, run_composio_tool, experimental_createLocalWorkbenchSession]
+related:
+  - title: Local sandbox PR reviewer
+    href: /examples/local-sandbox-pr-reviewer
+    description: "A worked example: clone a PR into a sandbox you own and post one grounded review."
 ---
 
-A **local sandbox** runs your agent's code in an execution environment *you* own: your VM, container, Kubernetes job, or internal sandbox service. It's the [remote sandbox](/docs/sandbox/remote) split at the execution boundary. With the remote sandbox, Composio runs the agent's code for you in a hosted Python environment. With a local sandbox, you run that code yourself, and Composio still does tool discovery and auth and hands the agent the same core helpers to call tools with.
+A **local sandbox** runs your agent's code in an environment you already own: your VM, container, Kubernetes job, or CI worker. Code execution stays inside your boundary, and Composio still handles tool discovery and auth from outside it.
 
-## Where it fits
+It's the [remote sandbox](/docs/sandbox/remote) split at the execution boundary. The remote sandbox runs your agent's code for you in a hosted environment, so execution lives outside your infrastructure. When that boundary has to be yours, run the sandbox locally: the agent still calls the same core helpers, but the code runs in your box.
 
-Use a local sandbox when the execution boundary has to be yours. Composio keeps the managed parts (tool discovery and auth through the [Tool Router](/docs/how-composio-works)); you keep the box the code runs in.
-
-<LocalWorkbenchFlow />
+<LocalSandboxBoundary />
 
 ## When to use it
 
 Reach for a local sandbox when:
 
-- **You need to own the security boundary.** The agent clones a repo, runs untrusted code, or touches data that can't leave your infrastructure. You decide what the box can reach and when it's torn down.
-- **You already run sandboxes.** You have a VM pool, a container platform, or a CI worker, and you'd rather run agent code there than hand it to a managed runtime.
-- **You need a filesystem and shell you own.** The task installs packages, runs the repo's real build, or shells out to tools that have to live next to your code.
+- **The execution boundary has to be yours.** The agent clones a repo, runs untrusted code, or touches data that can't leave your infrastructure. You decide what the box can reach and when it's torn down.
+- **You already run sandboxes.** You have a VM pool, a container platform, or a CI worker, and you'd rather run agent code there than hand it to a hosted runtime.
+- **You need a filesystem and shell you own.** The task installs packages, runs a real build, or shells out to tools that live next to your code.
 
-If none of that applies, use the [remote sandbox](/docs/sandbox/remote) instead. It's the same helper surface with no infrastructure to run.
+If none of that applies, use the [remote sandbox](/docs/sandbox/remote). It's the same helper surface with no infrastructure to run.
 
 ## Create a local sandbox session
 
@@ -89,4 +91,4 @@ A session-scoped key, narrowing what the in-sandbox credential can do down to ju
 
 ## Next
 
-<Card icon={<Terminal />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a pull request into a sandbox you own, run the repo's real checks, and post one grounded comment." />
+<Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools, auth, and sandbox state to a user" />
