@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 // service. The deployed runtime has the agent/ dir but NOT content/, so we fall
 // back to this bundle whenever the content tree isn't on disk. Regenerate with
 // `bun scripts/build-agent-index.ts` (runs automatically on dev/build).
-import bundledIndex from './docs-index.json';
+import bundledIndex from './docs-index';
 
 /**
  * Resolve the docs app root (the directory containing `content/docs`) without
