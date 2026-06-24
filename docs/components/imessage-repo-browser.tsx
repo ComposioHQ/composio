@@ -29,7 +29,7 @@ export async function ImessageRepoBrowser() {
         <span className="size-1.5 rounded-full bg-[var(--composio-brand)]" aria-hidden="true" />
         a slice of the real project; the Composio files do the work
       </div>
-      <RepoBrowserClient files={files} />
+      <RepoBrowserClient files={files} heightClass="min-h-[420px] max-h-[640px]" />
     </div>
   );
 }
