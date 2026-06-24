@@ -94,8 +94,8 @@ The setup script will:
 - create an `Email Support Inbox` Notion database under that page
 - insert a smoke-test row
 - save `NOTION_PAGE_ID`, `NOTION_DATABASE_ID`, and `NOTION_LOG_ROWS=true` to `.env`
-- create or reuse the LangSmith project
-- save `LANGSMITH_TRACING=true` and `LANGSMITH_PROJECT` to `.env`
+- with `--setup-langsmith`: create or reuse the LangSmith project
+- with `--setup-langsmith`: save `LANGSMITH_TRACING=true` and `LANGSMITH_PROJECT` to `.env`
 
 The script opens Gmail and Notion Connect Links automatically when either toolkit still needs authorization.
 
@@ -111,7 +111,7 @@ Send an email to the connected Gmail inbox. Composio delivers the trigger event 
 
 Gmail triggers are polling-based. With Composio-managed auth, expect delivery in about 1-2 minutes.
 
-Composio may deliver the same Gmail trigger payload more than once. The workflow claims each message in Notion before drafting, so duplicate deliveries do not create duplicate drafts. The webhook also ignores Gmail trigger payloads labeled `DRAFT`, because creating the Gmail draft can produce its own Gmail event.
+Composio may deliver the same Gmail trigger payload more than once. The workflow claims each message in Notion before drafting, so redelivered events are skipped instead of producing duplicate drafts. This Notion claim is best-effort: Notion has no atomic upsert, so two perfectly concurrent deliveries of the same message could still both draft. Gmail polling triggers redeliver sequentially, so this is rare in practice; for a hard guarantee, back the claim with a store that supports unique keys. The webhook also ignores Gmail trigger payloads labeled `DRAFT`, because creating the Gmail draft can produce its own Gmail event.
 
 ## Personalize The Support Rules
 

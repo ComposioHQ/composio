@@ -180,6 +180,17 @@ def insert_notion_row_payload(payload: dict[str, Any], *, user_id: str, dry_run:
 
 
 def claim_notion_message_row(state: dict[str, Any], *, user_id: str, dry_run: bool = False) -> dict[str, Any]:
+    """Best-effort claim of a Gmail message in Notion before drafting.
+
+    Notion has no unique constraint or transaction, so this guard cannot be
+    fully race-proof: two truly concurrent deliveries of the same message id
+    can each insert a row before the other becomes queryable and both acquire
+    the claim. We narrow that window by re-querying with backoff and letting
+    the earliest created row win, which is sufficient for Gmail polling
+    triggers (effectively sequential redeliveries). For a hard guarantee under
+    real concurrency, back the claim with a store that supports atomic upserts
+    or unique keys.
+    """
     if not notion_logging_enabled():
         return {"acquired": True, "skipped": True, "reason": "NOTION_LOG_ROWS is not enabled."}
 
@@ -236,8 +247,17 @@ def claim_notion_message_row(state: dict[str, Any], *, user_id: str, dry_run: bo
             "insert_result": result if isinstance(result, dict) else {"raw": str(result)},
         }
 
-    time.sleep(float(os.getenv("NOTION_CLAIM_SETTLE_SECONDS", "2")))
-    rows = _find_rows_by_message_id(payload, tools, message_id)
+    # Re-query with backoff so a concurrent competitor's row has time to become
+    # visible; this lets the earliest-created row arbitrate the claim instead of
+    # each worker only ever seeing its own insert.
+    settle_seconds = float(os.getenv("NOTION_CLAIM_SETTLE_SECONDS", "2"))
+    claim_attempts = max(1, int(os.getenv("NOTION_CLAIM_QUERY_ATTEMPTS", "3")))
+    rows: list[dict[str, Any]] = []
+    for _ in range(claim_attempts):
+        time.sleep(settle_seconds)
+        rows = _find_rows_by_message_id(payload, tools, message_id)
+        if any(row.get("id") == row_id for row in rows):
+            break
     if not any(row.get("id") == row_id for row in rows):
         # Our own insert is not yet queryable (eventual consistency). Trust the insert rather
         # than archiving it and dropping the message as a false duplicate.

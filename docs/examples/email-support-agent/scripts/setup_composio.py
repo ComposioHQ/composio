@@ -55,7 +55,7 @@ def main() -> None:
     parser.add_argument(
         "--setup-langsmith",
         action="store_true",
-        help="Create or reuse a LangSmith tracing project and enable tracing in the env file. This is now part of normal setup.",
+        help="Create or reuse a LangSmith tracing project and enable tracing in the env file. Optional; omit to skip LangSmith setup.",
     )
     parser.add_argument(
         "--langsmith-project",
@@ -95,11 +95,12 @@ def main() -> None:
             replace=args.replace_notion,
         )
     )
-    langsmith_project = args.langsmith_project or os.getenv(
-        "LANGSMITH_PROJECT",
-        "email-support-agent",
-    )
-    env_updates.update(_ensure_langsmith_project(project_name=langsmith_project))
+    if args.setup_langsmith:
+        langsmith_project = args.langsmith_project or os.getenv(
+            "LANGSMITH_PROJECT",
+            "email-support-agent",
+        )
+        env_updates.update(_ensure_langsmith_project(project_name=langsmith_project))
 
     update_env(Path(args.env_file), env_updates)
 

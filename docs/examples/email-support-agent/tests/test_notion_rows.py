@@ -308,7 +308,8 @@ class ClaimNotionMessageRowTests(unittest.TestCase):
     @patch("email_support_agent.utils.tools.Composio")
     def test_claim_trusts_own_insert_when_not_yet_queryable(self, composio_cls: MagicMock, _sleep: MagicMock) -> None:
         query_tool, insert_tool, archive_tool = MagicMock(), MagicMock(), MagicMock()
-        query_tool.invoke.side_effect = [{"results": []}, {"results": []}]
+        # Insert never becomes queryable across all retry attempts.
+        query_tool.invoke.return_value = {"results": []}
         insert_tool.invoke.return_value = {"successful": True, "data": {"id": "page_new"}}
         query_tool.name = "NOTION_QUERY_DATABASE"
         insert_tool.name = "NOTION_INSERT_ROW_DATABASE"
