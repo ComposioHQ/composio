@@ -12,6 +12,7 @@ import { Check, Copy, FileText, Search, Wrench } from 'lucide-react';
  * pages it read — so you can see its "thinking". Returns null for non-tool parts.
  */
 export function ToolActivity({ part }: { part: unknown }) {
+  const router = useRouter();
   const p = part as { type?: string; toolName?: string; input?: Record<string, unknown> };
   const type = p.type ?? '';
   const toolName = type === 'dynamic-tool' ? p.toolName : type.startsWith('tool-') ? type.slice(5) : undefined;
@@ -20,6 +21,7 @@ export function ToolActivity({ part }: { part: unknown }) {
 
   let icon = <Wrench className="size-3" aria-hidden="true" />;
   let label = `Running ${toolName}`;
+  let href: string | undefined;
   if (toolName === 'search_docs') {
     icon = <Search className="size-3" aria-hidden="true" />;
     const query = typeof input.query === 'string' ? input.query : '';
@@ -28,14 +30,34 @@ export function ToolActivity({ part }: { part: unknown }) {
     icon = <FileText className="size-3" aria-hidden="true" />;
     const url = typeof input.url === 'string' ? input.url : '';
     label = url ? `Read ${url}` : 'Read a page';
+    if (url.startsWith('/')) href = url;
   }
 
-  return (
-    <div className="flex items-center gap-1.5 py-0.5 text-[11px] text-fd-muted-foreground">
+  const base = 'flex items-center gap-1.5 py-0.5 text-[11px] text-fd-muted-foreground';
+  const inner = (
+    <>
       <span className="shrink-0 text-[var(--composio-brand)]/70">{icon}</span>
-      <span className="truncate">{label}</span>
-    </div>
+      <span className="truncate group-hover:underline">{label}</span>
+    </>
   );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        title={href}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+          event.preventDefault();
+          router.push(href);
+        }}
+        className={`${base} group cursor-pointer underline-offset-2 transition-colors hover:text-fd-foreground`}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return <div className={base}>{inner}</div>;
 }
 
 function isInternalHref(url: string): boolean {
