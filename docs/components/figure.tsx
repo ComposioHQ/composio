@@ -89,7 +89,7 @@ export function Figure({ src, srcDark, alt, caption, size = 'full', className, w
 
   return (
     <figure className={cn('my-8', isConstrained && 'flex flex-col items-center', className)}>
-      {isLoaded && srcDark ? (
+      {srcDark ? (
         <>
           <Zoom zoomImg={{ src }}>
             {lightImage}
@@ -98,13 +98,8 @@ export function Figure({ src, srcDark, alt, caption, size = 'full', className, w
             {darkImage}
           </Zoom>
         </>
-      ) : isLoaded ? (
-        <Zoom zoomImg={{ src }}>{lightImage}</Zoom>
       ) : (
-        <>
-          {lightImage}
-          {darkImage}
-        </>
+        <Zoom zoomImg={{ src }}>{lightImage}</Zoom>
       )}
       {caption && (
         <figcaption className="mt-3 text-sm text-fd-muted-foreground text-center">
