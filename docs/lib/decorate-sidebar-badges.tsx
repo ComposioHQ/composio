@@ -2,19 +2,19 @@
  * Adds badges to sidebar entries, frontmatter-driven:
  * - pages with `experimental: true` get an amber "Experimental" badge
  * - pages with `isNew: true` get a green "New" badge
- * - folders whose pages are all `legacy: true` get a gray "Legacy" badge
- *   (e.g. the Direct Tool Execution "Tools" and "Authentication" dropdowns)
+ *
+ * Legacy pages are NOT badged here: the sidebar already groups them under a
+ * "...(Legacy)" section header, so a per-item "Legacy" pill is redundant
+ * (and stacked right under that header it reads as a double "Legacy").
  */
 import type { ReactNode } from 'react';
-import type { Root, Node, Item, Folder } from 'fumadocs-core/page-tree';
+import type { Root, Node, Item } from 'fumadocs-core/page-tree';
 
-function SidebarBadge({ label, tone }: { label: string; tone: 'experimental' | 'new' | 'legacy' }) {
+function SidebarBadge({ label, tone }: { label: string; tone: 'experimental' | 'new' }) {
   const toneClass =
     tone === 'experimental'
       ? 'bg-amber-100 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/25'
-      : tone === 'new'
-        ? 'bg-emerald-100 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/25'
-        : 'bg-fd-muted text-fd-muted-foreground ring-fd-border';
+      : 'bg-emerald-100 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/25';
   return (
     <span
       className={`ml-2 inline-flex shrink-0 items-center rounded px-1.5 py-px text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset ${toneClass}`}
@@ -33,41 +33,12 @@ function withBadge(name: ReactNode, badge: ReactNode): ReactNode {
   );
 }
 
-/** All page URLs under a folder, including its index. */
-function folderPageUrls(folder: Folder): string[] {
-  const urls: string[] = [];
-  if (folder.index) urls.push(folder.index.url);
-  for (const child of folder.children) {
-    if (child.type === 'page') urls.push(child.url);
-    else if (child.type === 'folder') urls.push(...folderPageUrls(child));
-  }
-  return urls;
-}
-
-function decorateNode(
-  node: Node,
-  experimental: Set<string>,
-  isNew: Set<string>,
-  legacy: Set<string>,
-  insideLegacy = false,
-): Node {
+function decorateNode(node: Node, experimental: Set<string>, isNew: Set<string>): Node {
   if (node.type === 'folder') {
-    // A folder is legacy when every page under it is legacy.
-    const urls = folderPageUrls(node);
-    const isLegacyFolder = urls.length > 0 && urls.every((u) => legacy.has(u));
-    // Only badge the outermost legacy folder; a nested legacy folder inside an
-    // already-legacy folder is redundant.
-    const childInsideLegacy = insideLegacy || isLegacyFolder;
-    const decorated: Folder = {
+    return {
       ...node,
-      children: node.children.map((child) =>
-        decorateNode(child, experimental, isNew, legacy, childInsideLegacy),
-      ),
+      children: node.children.map((child) => decorateNode(child, experimental, isNew)),
     };
-    if (isLegacyFolder && !insideLegacy) {
-      return { ...decorated, name: withBadge(decorated.name, <SidebarBadge label="Legacy" tone="legacy" />) };
-    }
-    return decorated;
   }
   if (node.type === 'page' && experimental.has(node.url)) {
     return { ...node, name: withBadge(node.name, <SidebarBadge label="Exp" tone="experimental" />) } as Item;
@@ -79,18 +50,17 @@ function decorateNode(
 }
 
 /**
- * Returns a new page tree with experimental/new/legacy sidebar badges applied.
+ * Returns a new page tree with experimental/new sidebar badges applied.
  * No-op when all sets are empty so the original tree is reused.
  */
 export function decorateSidebarBadges(
   tree: Root,
   experimentalUrls: Set<string>,
   newUrls: Set<string>,
-  legacyUrls: Set<string>,
 ): Root {
-  if (experimentalUrls.size === 0 && newUrls.size === 0 && legacyUrls.size === 0) return tree;
+  if (experimentalUrls.size === 0 && newUrls.size === 0) return tree;
   return {
     ...tree,
-    children: tree.children.map((node) => decorateNode(node, experimentalUrls, newUrls, legacyUrls)),
+    children: tree.children.map((node) => decorateNode(node, experimentalUrls, newUrls)),
   };
 }

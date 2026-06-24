@@ -5,7 +5,6 @@ import { decorateSidebarBadges } from '@/lib/decorate-sidebar-badges';
 interface BadgeFrontmatter {
   experimental?: boolean;
   isNew?: boolean;
-  legacy?: boolean;
 }
 
 const pages = source.getPages();
@@ -15,11 +14,8 @@ const experimentalUrls = new Set(
 const newUrls = new Set(
   pages.filter((page) => (page.data as BadgeFrontmatter).isNew).map((page) => page.url),
 );
-const legacyUrls = new Set(
-  pages.filter((page) => (page.data as BadgeFrontmatter).legacy).map((page) => page.url),
-);
 
-const tree = decorateSidebarBadges(source.pageTree, experimentalUrls, newUrls, legacyUrls);
+const tree = decorateSidebarBadges(source.pageTree, experimentalUrls, newUrls);
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
