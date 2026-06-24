@@ -16,9 +16,13 @@
  *
  *  - every typed node is made nullable (`type: 'string'` → `['string', 'null']`)
  *  - objects with `additionalProperties: false` (or unset) allow extra keys
+ *  - `enum`/`const` are widened to also admit `null` — they constrain the
+ *    *value* independently of `type`, so making the type nullable is not enough
+ *  - `required` is dropped, since real APIs omit unset fields entirely rather
+ *    than returning `null` for them, so requiring any field rejects good output
  *
- * Both changes only *widen* what validates, so any payload that passed before
- * still passes — there is no behavioural change for already-valid output.
+ * All four changes only *widen* what validates, so any payload that passed
+ * before still passes — there is no behavioural change for already-valid output.
  *
  * See https://github.com/ComposioHQ/composio/issues/3047.
  */
@@ -64,6 +68,22 @@ export function relaxOutputSchema<T>(schema: T): T {
   // Make any typed node nullable so a `null` from the upstream API validates.
   if ('type' in result) {
     result.type = addNullToType(result.type);
+  }
+
+  // `enum`/`const` restrict the value regardless of `type`, so a nullable type
+  // alone would still reject a `null`. Widen them to admit `null` too; `const`
+  // (a single allowed value) becomes a two-member nullable `enum`.
+  if ('const' in result) {
+    result.enum = [result.const, null];
+    delete result.const;
+  } else if (Array.isArray(result.enum) && !result.enum.includes(null)) {
+    result.enum = [...result.enum, null];
+  }
+
+  // Drop `required`: third-party APIs omit unset fields entirely (not just
+  // return `null`), so requiring any field would reject otherwise-valid output.
+  if ('required' in result) {
+    delete result.required;
   }
 
   // Allow extra keys on objects that forbid (or omit) additional properties.

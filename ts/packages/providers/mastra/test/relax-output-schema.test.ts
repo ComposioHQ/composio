@@ -15,7 +15,7 @@ describe('relaxOutputSchema (issue #3047)', () => {
     });
   });
 
-  it('relaxes nested object properties and flips additionalProperties false → true', () => {
+  it('relaxes nested object properties, flips additionalProperties false → true, and drops required', () => {
     const input = {
       type: 'object',
       additionalProperties: false,
@@ -30,6 +30,8 @@ describe('relaxOutputSchema (issue #3047)', () => {
       required: ['avatarUrl'],
     };
 
+    // `required` is dropped (API may omit `avatarUrl` entirely), nested objects
+    // are relaxed the same way, and nothing else is altered.
     expect(relaxOutputSchema(input)).toEqual({
       type: ['object', 'null'],
       additionalProperties: true,
@@ -41,8 +43,37 @@ describe('relaxOutputSchema (issue #3047)', () => {
           properties: { name: { type: ['string', 'null'] } },
         },
       },
-      required: ['avatarUrl'],
     });
+  });
+
+  it('drops required so an omitted field still validates (issue #3047 gap)', () => {
+    const input = {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'name'],
+      properties: { id: { type: 'string' }, name: { type: 'string' } },
+    };
+    expect(relaxOutputSchema(input)).toEqual({
+      type: ['object', 'null'],
+      additionalProperties: true,
+      properties: { id: { type: ['string', 'null'] }, name: { type: ['string', 'null'] } },
+    });
+  });
+
+  it('widens an enum to also admit null without dropping the other members', () => {
+    expect(relaxOutputSchema({ type: 'string', enum: ['open', 'closed'] })).toEqual({
+      type: ['string', 'null'],
+      enum: ['open', 'closed', null],
+    });
+    // idempotent: an enum that already allows null is left as-is
+    expect(relaxOutputSchema({ type: 'string', enum: ['open', null] })).toEqual({
+      type: ['string', 'null'],
+      enum: ['open', null],
+    });
+  });
+
+  it('converts const into a nullable two-member enum', () => {
+    expect(relaxOutputSchema({ const: 'fixed' })).toEqual({ enum: ['fixed', null] });
   });
 
   it('adds additionalProperties: true to an object that omits it', () => {
@@ -107,11 +138,15 @@ describe('relaxOutputSchema (issue #3047)', () => {
     expect(relaxOutputSchema({})).toEqual({});
   });
 
-  it('does not mutate the input schema', () => {
+  it('does not mutate the input schema (including required/enum/const paths)', () => {
     const input = {
       type: 'object',
       additionalProperties: false,
-      properties: { a: { type: 'string' } },
+      required: ['a'],
+      properties: {
+        a: { type: 'string', enum: ['x', 'y'] },
+        b: { const: 'z' },
+      },
     };
     const snapshot = JSON.parse(JSON.stringify(input));
     relaxOutputSchema(input);

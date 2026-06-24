@@ -81,4 +81,33 @@ describe('Mastra output validation against real schema-compat (issue #3047)', ()
     // Nothing is truncated: nulls and the extra key survive untouched.
     expect(result.data).toEqual(REAL_API_PAYLOAD);
   });
+
+  it('relaxed schema lets an enum field return null, but still rejects bogus values', () => {
+    const schema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: { status: { type: 'string', enum: ['open', 'closed'] } },
+    };
+    const strict = compileForValidation(schema);
+    const relaxed = compileForValidation(relaxOutputSchema(schema));
+
+    expect(strict.safeParse({ status: null }).success).toBe(false); // the gap
+    expect(relaxed.safeParse({ status: null }).success).toBe(true); // fixed
+    expect(relaxed.safeParse({ status: 'open' }).success).toBe(true); // still valid
+    expect(relaxed.safeParse({ status: 'nope' }).success).toBe(false); // still constrained
+  });
+
+  it('relaxed schema accepts a response that omits a required field', () => {
+    const schema = {
+      type: 'object',
+      additionalProperties: false,
+      required: ['id', 'title'],
+      properties: { id: { type: 'string' }, title: { type: 'string' } },
+    };
+    const strict = compileForValidation(schema);
+    const relaxed = compileForValidation(relaxOutputSchema(schema));
+
+    expect(strict.safeParse({ id: 'iss_1' }).success).toBe(false); // the gap
+    expect(relaxed.safeParse({ id: 'iss_1' }).success).toBe(true); // fixed
+  });
 });
