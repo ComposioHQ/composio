@@ -6,7 +6,10 @@
     "node": ">=24"
   },
   "scripts": {
+    "build:agent-index": "bun scripts/build-agent-index.ts",
+    "prebuild": "bun scripts/build-agent-index.ts",
     "build": "next build",
+    "predev": "bun scripts/build-agent-index.ts",
     "dev": "next dev",
     "start": "next start",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
