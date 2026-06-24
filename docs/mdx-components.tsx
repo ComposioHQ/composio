@@ -26,7 +26,9 @@ import { AIToolsBanner } from '@/components/ai-tools-banner';
 import { DocsHero } from '@/components/docs-hero';
 import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
+import { TriggersFlow } from '@/components/triggers-flow';
 import { SlackBotFlow } from '@/components/slack-bot-flow';
+import { LocalWorkbenchFlow } from '@/components/local-workbench-flow';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
 import { AppLogo } from '@/components/standup-example';
@@ -43,6 +45,7 @@ import { ClaudeMockUI } from '@/components/claude-mock-ui';
 import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
 import { MediaSplit } from '@/components/media-split';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
+import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -118,7 +121,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     DocsHero,
     HomeFeatures,
     SessionFlow,
+    TriggersFlow,
     SlackBotFlow,
+    LocalWorkbenchFlow,
     FileBuildup,
     RepoBrowser,
     AppLogo,
@@ -137,6 +142,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     InChatAuthTerminal,
     MediaSplit,
     ManageConnectionsVisual,
+    ConnectionRefreshVisual,
     // Lucide icons
     ShieldCheck,
     RouteIcon,

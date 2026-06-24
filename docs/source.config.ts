@@ -19,6 +19,8 @@ const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
   /** When true, the page shows an "Experimental" badge in the sidebar. */
   experimental: z.boolean().optional(),
+  /** When true, the page shows a "New" badge in the sidebar. */
+  isNew: z.boolean().optional(),
   /** When true, the page shows a "Legacy" badge at the top of the page. */
   legacy: z.boolean().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.

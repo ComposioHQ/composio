@@ -1165,12 +1165,9 @@ html:not(.dark) .terminal-theme-claude {
 	}
 }
 
-/* @pierre/diffs: hide the +/- stat in the file header on the example build-ups.
-   The filename ([data-title]) stays; only the addition/deletion counts go. */
-[data-diffs-header] [data-additions-count],
-[data-diffs-header] [data-deletions-count] {
-  display: none;
-}
+/* @pierre/diffs: the +/- stat counts in the file header are hidden via the
+   `unsafeCSS` option in components/diff-view.tsx, NOT here — the header renders
+   inside an open shadow root that global CSS can't pierce. */
 
 /* Copy-to-clipboard button in the @pierre/diffs code header. The widget themes
    itself off the OS prefers-color-scheme (its shadow root pins

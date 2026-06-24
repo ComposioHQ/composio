@@ -80,10 +80,11 @@ export function EveChat() {
               aria-label="New chat"
               title="New chat"
               onClick={() => {
+                if (isBusy) agent.stop();
                 agent.reset();
                 inputRef.current?.focus();
               }}
-              disabled={isBusy || agent.data.messages.length === 0}
+              disabled={agent.data.messages.length === 0}
               className="inline-flex size-7 items-center justify-center rounded-md text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground disabled:opacity-40 disabled:hover:bg-transparent"
             >
               <SquarePen className="size-4" />

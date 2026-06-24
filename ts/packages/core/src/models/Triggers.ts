@@ -24,6 +24,8 @@ import {
   VerifyWebhookParams,
   VerifyWebhookParamsSchema,
   VerifyWebhookResult,
+  ParseWebhookOptions,
+  WebhookRequestLike,
   WebhookPayload,
   WebhookPayloadV1Schema,
   WebhookPayloadV2Schema,
@@ -124,6 +126,77 @@ const firstWebhookSubscriptionId = (
 ): string | undefined => {
   const firstItem = Array.isArray(response.items) ? response.items[0] : undefined;
   return firstString(asRecord(firstItem).id);
+};
+
+/**
+ * The signature header names Composio sends with every webhook delivery.
+ * @private
+ */
+const WEBHOOK_HEADERS = {
+  id: 'webhook-id',
+  timestamp: 'webhook-timestamp',
+  signature: 'webhook-signature',
+} as const;
+
+/**
+ * Returns true if the value is a Fetch API `Request`.
+ * @private
+ */
+const isFetchRequest = (request: WebhookRequestLike): request is Request =>
+  typeof Request !== 'undefined' && request instanceof Request;
+
+/**
+ * Reads a single header value case-insensitively from either a `Headers`
+ * instance or a plain record (where values may be `string | string[]`).
+ * Returns `undefined` when the header is missing.
+ * @private
+ */
+const getHeader = (headers: unknown, name: string): string | undefined => {
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return headers.get(name) ?? undefined;
+  }
+
+  if (headers === null || typeof headers !== 'object') {
+    return undefined;
+  }
+
+  // Plain record: match the header name case-insensitively.
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+    if (key.toLowerCase() !== target) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const first = value.find((item): item is string => typeof item === 'string');
+      return first;
+    }
+    return typeof value === 'string' ? value : undefined;
+  }
+  return undefined;
+};
+
+/**
+ * Coerces an object request body (string, Buffer/Uint8Array, or already-parsed
+ * value) into the raw string form expected by signature verification.
+ * @private
+ */
+const bodyToString = (body: unknown): string => {
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (body instanceof Uint8Array) {
+    return new TextDecoder().decode(body);
+  }
+  if (body === null || body === undefined) {
+    return '';
+  }
+  // Already-parsed object (e.g. Next.js Pages Router with the JSON body parser).
+  // Note: re-stringifying cannot reproduce the exact bytes Composio signed, so
+  // signature verification on a pre-parsed body is best-effort only.
+  if (typeof body === 'object') {
+    return JSON.stringify(body);
+  }
+  return String(body);
 };
 
 /**
@@ -718,6 +791,134 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async unsubscribe() {
     await this.pusherService.unsubscribe();
+  }
+
+  /**
+   * Parse an incoming webhook HTTP request into a typed, normalized trigger payload.
+   *
+   * Dump the incoming request in and get back the parsed Composio trigger event.
+   * When `verifySecret` is provided, the request signature is verified before the
+   * payload is returned (delegating to {@link verifyWebhook}); without it, the body
+   * is parsed without verification.
+   *
+   * The `request` may be either a Fetch API `Request` (Next.js App Router, Hono,
+   * Remix) or a plain `{ body, headers }` object (Express with `express.raw`,
+   * Next.js Pages Router `req`). The signature headers (`webhook-id`,
+   * `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
+   *
+   * @param {WebhookRequestLike} request - The incoming webhook HTTP request
+   * @param {ParseWebhookOptions} [options] - Parse options
+   * @param {string} [options.verifySecret] - Webhook secret; when set, the signature is verified
+   * @param {number} [options.tolerance=300] - Max webhook age in seconds (only used when verifying)
+   * @returns {Promise<VerifyWebhookResult>} The parsed (and optionally verified) webhook payload
+   *
+   * @throws {ValidationError} If `verifySecret` is set but the signature headers are missing
+   * @throws {ComposioWebhookSignatureVerificationError} If signature verification fails
+   * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed
+   *
+   * @example
+   * ```ts
+   * // Express with express.raw (verify the signature)
+   * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
+   *   try {
+   *     const result = await composio.triggers.parse(req, {
+   *       verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+   *     });
+   *     console.log('Trigger:', result.payload.triggerSlug);
+   *     console.log('Event data:', result.payload.payload);
+   *     res.sendStatus(200);
+   *   } catch (error) {
+   *     res.sendStatus(401);
+   *   }
+   * });
+   *
+   * // Express without verifying (parse only)
+   * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
+   *   const result = await composio.triggers.parse(req);
+   *   console.log('Trigger:', result.payload.triggerSlug);
+   *   res.sendStatus(200);
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Next.js App Router (Request) — verify the signature
+   * export async function POST(request: Request) {
+   *   try {
+   *     const result = await composio.triggers.parse(request, {
+   *       verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+   *     });
+   *     console.log('Trigger:', result.payload.triggerSlug);
+   *     console.log('Event data:', result.payload.payload);
+   *     return new Response('OK', { status: 200 });
+   *   } catch (error) {
+   *     return new Response('Unauthorized', { status: 401 });
+   *   }
+   * }
+   *
+   * // Next.js App Router — parse only (no verification)
+   * export async function POST(request: Request) {
+   *   const result = await composio.triggers.parse(request);
+   *   console.log('Trigger:', result.payload.triggerSlug);
+   *   return new Response('OK', { status: 200 });
+   * }
+   * ```
+   */
+  async parse(
+    request: WebhookRequestLike,
+    options?: ParseWebhookOptions
+  ): Promise<VerifyWebhookResult> {
+    // Extract the raw body and signature headers from either request shape.
+    let body: string;
+    let headers: unknown;
+    if (isFetchRequest(request)) {
+      body = await request.text();
+      headers = request.headers;
+    } else {
+      body = bodyToString(request.body);
+      headers = request.headers;
+    }
+
+    const verifySecret = options?.verifySecret;
+
+    // No secret: parse without verifying the signature.
+    if (verifySecret === undefined) {
+      const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(body);
+      return {
+        version,
+        payload: normalizedPayload,
+        rawPayload,
+      };
+    }
+
+    // Secret provided: signature headers are required to verify.
+    const id = getHeader(headers, WEBHOOK_HEADERS.id);
+    const timestamp = getHeader(headers, WEBHOOK_HEADERS.timestamp);
+    const signature = getHeader(headers, WEBHOOK_HEADERS.signature);
+
+    if (!id || !timestamp || !signature) {
+      const missing = [
+        !id ? `'${WEBHOOK_HEADERS.id}'` : undefined,
+        !timestamp ? `'${WEBHOOK_HEADERS.timestamp}'` : undefined,
+        !signature ? `'${WEBHOOK_HEADERS.signature}'` : undefined,
+      ].filter((header): header is string => header !== undefined);
+
+      throw new ValidationError(
+        `Cannot verify webhook: missing signature header(s) ${missing.join(', ')}. ` +
+          `Pass the raw, unparsed request body and ensure the Composio signature headers ` +
+          `(${WEBHOOK_HEADERS.id}, ${WEBHOOK_HEADERS.timestamp}, ${WEBHOOK_HEADERS.signature}) ` +
+          `are forwarded to triggers.parse(). To parse without verifying, omit 'verifySecret'.`
+      );
+    }
+
+    return this.verifyWebhook({
+      payload: body,
+      signature,
+      id,
+      timestamp,
+      secret: verifySecret,
+      tolerance: options?.tolerance,
+    });
   }
 
   /**

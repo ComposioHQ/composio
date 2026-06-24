@@ -6,7 +6,6 @@ import {
   History,
   Blocks,
   Wrench,
-  LifeBuoy,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SectionHeading } from './home-features';
@@ -41,12 +40,6 @@ const RESOURCES = [
     title: 'Toolkits',
     description: 'Browse the 1000+ apps your agent can act on.',
     href: '/toolkits',
-  },
-  {
-    icon: <LifeBuoy aria-hidden="true" className="size-4" />,
-    title: 'Common FAQ',
-    description: 'Answers to frequent questions and errors.',
-    href: '/docs/common-faq',
   },
 ];
 

@@ -4,6 +4,7 @@
   "pages": [
     "index",
     "general-agent-with-pi",
-    "standup-slackbot"
+    "standup-slackbot",
+    "local-sandbox-pr-reviewer"
   ]
 }

@@ -16,12 +16,12 @@ A typical workflow runs in order: call `COMPOSIO_SEARCH_TOOLS` to discover tools
 
 | Tool | What it does |
 |------|--------------|
-| [`COMPOSIO_GET_TOOL_SCHEMAS`](/reference/meta-tools/get_tool_schemas) | Returns the full input schema for tools you already know the slug for, so you can build schema-compliant arguments before executing |
-| [`COMPOSIO_MANAGE_CONNECTIONS`](/reference/meta-tools/manage_connections) | Checks connection status for a toolkit and returns a branded authentication link when the user needs to connect, covering OAuth, API keys, and every other auth type |
-| [`COMPOSIO_MULTI_EXECUTE_TOOL`](/reference/meta-tools/multi_execute_tool) | Executes up to 50 tools in parallel and returns structured outputs ready for immediate analysis |
-| [`COMPOSIO_REMOTE_BASH_TOOL`](/reference/meta-tools/remote_bash_tool) | Runs bash commands in a remote sandbox for file operations, data processing, and system tasks |
-| [`COMPOSIO_REMOTE_WORKBENCH`](/reference/meta-tools/remote_workbench) | Runs Python in a persistent remote sandbox to process large remote files and script bulk or repeated tool executions |
-| [`COMPOSIO_SEARCH_TOOLS`](/reference/meta-tools/search_tools) | Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together |
+| [`COMPOSIO_GET_TOOL_SCHEMAS`](/toolkits/meta-tools/get_tool_schemas) | Returns the full input schema for tools you already know the slug for, so you can build schema-compliant arguments before executing |
+| [`COMPOSIO_MANAGE_CONNECTIONS`](/toolkits/meta-tools/manage_connections) | Checks connection status for a toolkit and returns a branded authentication link when the user needs to connect, covering OAuth, API keys, and every other auth type |
+| [`COMPOSIO_MULTI_EXECUTE_TOOL`](/toolkits/meta-tools/multi_execute_tool) | Executes up to 50 tools in parallel and returns structured outputs ready for immediate analysis |
+| [`COMPOSIO_REMOTE_BASH_TOOL`](/toolkits/meta-tools/remote_bash_tool) | Runs bash commands in a remote sandbox for file operations, data processing, and system tasks |
+| [`COMPOSIO_REMOTE_WORKBENCH`](/toolkits/meta-tools/remote_workbench) | Runs Python in a persistent remote sandbox to process large remote files and script bulk or repeated tool executions |
+| [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools) | Discovers the right tools across 500+ apps for a task and returns them with an execution plan, connection status, and the `session_id` that ties the rest of the workflow together |
 
 <Callout type="warn">
 These schemas are for reference only. We do not guarantee backward compatibility for parameter names or response shapes, so do not rely on them as structured type definitions in your code.

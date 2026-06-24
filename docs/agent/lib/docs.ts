@@ -9,6 +9,11 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Build-time snapshot of content/, imported so eve bundles it into the deployed
+// service. The deployed runtime has the agent/ dir but NOT content/, so we fall
+// back to this bundle whenever the content tree isn't on disk. Regenerate with
+// `bun scripts/build-agent-index.ts` (runs automatically on dev/build).
+import bundledIndex from './docs-index';
 
 /**
  * Resolve the docs app root (the directory containing `content/docs`) without
@@ -71,6 +76,32 @@ export interface DocPage {
   lowerText: string;
 }
 
+interface BundlePage {
+  collection: Collection;
+  url: string;
+  title: string;
+  description: string;
+  legacy: boolean;
+  /** Cleaned Markdown body (no frontmatter), enough for search + read_doc. */
+  markdown: string;
+}
+interface BundleToolkit {
+  slug?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  authSchemes?: string[];
+}
+const BUNDLE = bundledIndex as { pages: BundlePage[]; toolkits: BundleToolkit[] };
+
+/**
+ * Whether the live content tree is on disk. True in dev / local (read fresh
+ * files); false in the deployed eve service (use the bundled snapshot). Set
+ * `EVE_FORCE_BUNDLE=1` to exercise the bundle path locally.
+ */
+const CONTENT_AVAILABLE =
+  process.env.EVE_FORCE_BUNDLE !== '1' && existsSync(join(CONTENT_ROOT, 'docs'));
+
 /** Mirror of lib/search-index.ts `urlFromContentPath` so links match real routes. */
 export function urlFromContentPath(absPath: string): string | undefined {
   const rel = relative(CONTENT_ROOT, absPath).replace(/\\/g, '/');
@@ -99,7 +130,7 @@ export function tokenize(query: string): string[] {
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));
 }
 
-function parseFrontmatter(raw: string): {
+export function parseFrontmatter(raw: string): {
   title: string;
   description: string;
   legacy: boolean;
@@ -134,6 +165,19 @@ export function toCleanMarkdown(raw: string): string {
     .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/**
+ * Extract a page's section anchors from its Markdown headings, so the assistant
+ * can link a specific section (e.g. `/docs/how-composio-works#users`) instead
+ * of just the page. Anchor slugs match the docs' heading-id convention.
+ */
+export function extractSections(markdown: string): { title: string; anchor: string }[] {
+  return [...markdown.matchAll(/^#{2,4}\s+(.+?)\s*$/gm)].map((m) => {
+    const title = m[1].replace(/[`*_]/g, '').trim();
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return { title, anchor: `#${slug}` };
+  });
 }
 
 function makePage(args: {
@@ -205,13 +249,17 @@ let toolkitMap: Map<string, Toolkit> | undefined;
 function getToolkitMap(): Map<string, Toolkit> {
   if (toolkitMap) return toolkitMap;
   const map = new Map<string, Toolkit>();
-  try {
-    const parsed = JSON.parse(readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8'));
-    const list: Toolkit[] = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
-    for (const tk of list) if (tk?.slug) map.set(tk.slug, tk);
-  } catch {
-    // no catalog available
+  if (CONTENT_AVAILABLE) {
+    try {
+      const parsed = JSON.parse(readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8'));
+      const list: Toolkit[] = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
+      for (const tk of list) if (tk?.slug) map.set(tk.slug, tk);
+    } catch {
+      // no catalog available
+    }
   }
+  // Deployed runtime (or missing catalog): use the bundled toolkit snapshot.
+  if (map.size === 0) for (const tk of BUNDLE.toolkits) if (tk?.slug) map.set(tk.slug, tk);
   toolkitMap = map;
   return map;
 }
@@ -240,34 +288,50 @@ let indexCache: DocPage[] | undefined;
 export function buildIndex(): DocPage[] {
   if (indexCache) return indexCache;
   const pages: DocPage[] = [];
-  for (const collection of COLLECTIONS) {
-    const dir = join(CONTENT_ROOT, collection);
-    let entries: string[];
-    try {
-      entries = readdirSync(dir, { recursive: true }) as string[];
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (!/\.mdx?$/.test(entry)) continue;
-      const absPath = join(dir, entry);
-      const url = urlFromContentPath(absPath);
-      if (!url) continue;
-      let raw: string;
+  if (CONTENT_AVAILABLE) {
+    for (const collection of COLLECTIONS) {
+      const dir = join(CONTENT_ROOT, collection);
+      let entries: string[];
       try {
-        raw = readFileSync(absPath, 'utf8');
+        entries = readdirSync(dir, { recursive: true }) as string[];
       } catch {
         continue;
       }
-      const { title, description, legacy, body } = parseFrontmatter(raw);
+      for (const entry of entries) {
+        if (!/\.mdx?$/.test(entry)) continue;
+        const absPath = join(dir, entry);
+        const url = urlFromContentPath(absPath);
+        if (!url) continue;
+        let raw: string;
+        try {
+          raw = readFileSync(absPath, 'utf8');
+        } catch {
+          continue;
+        }
+        const { title, description, legacy, body } = parseFrontmatter(raw);
+        pages.push(
+          makePage({
+            collection: collection as Collection,
+            title,
+            description,
+            url,
+            legacy: legacy || isLegacyUrl(url),
+            body,
+          }),
+        );
+      }
+    }
+  } else {
+    // Deployed runtime: content/ isn't on disk, so index the bundled snapshot.
+    for (const p of BUNDLE.pages) {
       pages.push(
         makePage({
-          collection: collection as Collection,
-          title,
-          description,
-          url,
-          legacy: legacy || isLegacyUrl(url),
-          body,
+          collection: p.collection,
+          title: p.title,
+          description: p.description,
+          url: p.url,
+          legacy: p.legacy || isLegacyUrl(p.url),
+          body: p.markdown,
         }),
       );
     }
@@ -279,6 +343,11 @@ export function buildIndex(): DocPage[] {
 }
 
 /** Resolve a page URL back to its source file and return the raw MDX. */
+function authSchemesMarkdown(schemes: string[] = []): string {
+  if (!schemes.length) return 'n/a';
+  return schemes.map((scheme) => `\`${scheme}\``).join(', ');
+}
+
 export function readPageByUrl(url: string): { title: string; raw: string } | undefined {
   const clean = url.split('#')[0].split('?')[0].replace(/\/$/, '');
   const parts = clean.split('/').filter(Boolean);
@@ -298,24 +367,31 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
         '',
         `- **Supported:** yes, \`${tk.slug}\` is a Composio toolkit.`,
         `- **Category:** ${tk.category ?? 'n/a'}`,
-        `- **Auth:** ${(tk.authSchemes ?? []).join(', ') || 'n/a'}`,
+        `- **Auth:** ${authSchemesMarkdown(tk.authSchemes)}`,
         '',
-        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions) and [Authentication](/docs/authentication).`,
+        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
       ].join('\n');
       return { title: `${name} toolkit`, raw };
     }
   }
 
-  const base = join(CONTENT_ROOT, collection, ...parts);
-  const candidates = [`${base}.mdx`, `${base}.md`, join(base, 'index.mdx'), join(base, 'index.md')];
-  for (const candidate of candidates) {
-    try {
-      const raw = readFileSync(candidate, 'utf8');
-      const { title } = parseFrontmatter(raw);
-      return { title: title || url, raw };
-    } catch {
-      // try next candidate
+  if (CONTENT_AVAILABLE) {
+    const base = join(CONTENT_ROOT, collection, ...parts);
+    const candidates = [`${base}.mdx`, `${base}.md`, join(base, 'index.mdx'), join(base, 'index.md')];
+    for (const candidate of candidates) {
+      try {
+        const raw = readFileSync(candidate, 'utf8');
+        const { title } = parseFrontmatter(raw);
+        return { title: title || url, raw };
+      } catch {
+        // try next candidate
+      }
     }
+    return undefined;
   }
+
+  // Deployed runtime: serve the page from the bundled snapshot.
+  const page = BUNDLE.pages.find((p) => p.url === clean);
+  if (page) return { title: page.title || url, raw: page.markdown };
   return undefined;
 }

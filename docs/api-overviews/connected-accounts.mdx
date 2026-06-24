@@ -9,6 +9,10 @@ Composio creates a connected account when a user completes the flow defined by a
 
 Each account is addressed by its `nanoid`. List endpoints accept filters so you can find accounts by user, toolkit, or auth config.
 
+## Link auth (Composio Connect Links)
+
+A Composio Connect Link is a hosted, secure sign-in page. You create one with the create auth link session endpoint, redirect the user to the returned URL, and Composio handles the rest: the user signs in, Composio creates the connected account, and Composio stores and refreshes its tokens. Credentials never pass through your app. This works for all Composio managed connections, with no OAuth credentials to set up.
+
 By default a connected account is `PRIVATE` and usable only by its owning user. Mark one `SHARED` to let other users reach it through a per-connection access control list. See [shared connections](/docs/authenticating-users/shared-connections).
 
 These endpoints use your project API key in the `x-api-key` header.

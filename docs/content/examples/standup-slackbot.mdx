@@ -118,7 +118,7 @@ Rule of thumb: posting *as the bot* uses `slackbot`; doing something *as a perso
 <Step>
 **Run the setup script to connect the bot.** For this bot, we first need to connect the bot itself to Composio, which only needs to be done once. The script creates an OAuth link for you to connect your *Slack bot* to Composio, which lets you use Composio to send messages on behalf of your bot.
 
-<FileBuildup name="setup" source="standup" />
+<FileBuildup name="setup" />
 
 The first run prints a link and waits:
 
@@ -157,11 +157,11 @@ The script is idempotent and repeatable. Forgot a scope, or hit an issue? No str
 
 To send and update messages in our deterministic bot workflow, we use Composio's `SLACKBOT_SEND_MESSAGE` and `SLACKBOT_UPDATES_A_MESSAGE` tools via [manual tool execution](/docs/tools-direct/executing-tools). `SLACKBOT_SEND_MESSAGE` takes Block Kit `blocks`, so a message with interactive buttons can go through a tool too.
 
-<FileBuildup name="proxy" source="standup" step={1} />
+<FileBuildup name="proxy" step={1} />
 
 When a Slack action has no tool, like opening a modal (`views.open`), it drops to [`proxyExecute`](/docs/extending-sessions/proxy-execute): the escape hatch for anything the named tools don't cover, hitting any Slack Web API endpoint as a connected account with no token in your code.
 
-<FileBuildup name="proxy" source="standup" step={2} />
+<FileBuildup name="proxy" step={2} />
 
 ## Make the buttons work
 
@@ -184,7 +184,7 @@ const draftButton = {
 
 When it's clicked, Slack POSTs to your `/api/interactivity` handler. Verify the request, ack within Slack's 3-second window, then route on the `action_id`:
 
-<FileBuildup name="buttons" source="standup" />
+<FileBuildup name="buttons" />
 
 **Connect more tools** generates a per-member OAuth link for each toolkit the member hasn't connected, so they can add a source without leaving Slack:
 
@@ -200,13 +200,13 @@ Now this is the cool and magical part, and the easy part: all the background age
 
 A [tool-router session](/docs/configuring-sessions) gives the agent its tools. Pass the member's email and your full list of toolkits, hand the tools to the model, and let it investigate and write. You don't have to check which ones the member set up: the session only exposes tools for the accounts they've actually connected, and ignores the rest.
 
-<FileBuildup name="draft" source="standup" step={1} />
+<FileBuildup name="draft" step={1} />
 
 ### Use what's connected, nothing more
 
 The router can also *manage* connections, asking the user to authorize any toolkits they haven't connected yet. During a draft you don't want that: if the agent reaches for a tool the member hasn't connected, it should skip it, not prompt them to log in. `manageConnections: false` removes those meta-tools, so the agent drafts from exactly what's already connected.
 
-<FileBuildup name="draft" source="standup" step={2} />
+<FileBuildup name="draft" step={2} />
 
 The bot posts the result back as a draft the member can confirm or edit:
 

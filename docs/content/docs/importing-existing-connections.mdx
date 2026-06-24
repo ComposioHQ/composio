@@ -17,7 +17,7 @@ This is useful when:
 
 ## Prerequisites
 
-1. **An [auth config](/docs/auth-configuration/programmatic-auth-configs)** for the toolkit you're importing into
+1. **An [auth config](/docs/programmatic-auth-configs)** for the toolkit you're importing into
 2. **The existing credentials** for each user (API keys, bearer tokens, username/password, etc.)
 3. **A userID** for each user. Any string that uniquely identifies them in your system.
 
@@ -74,7 +74,7 @@ If you manage your own OAuth flow and already have an access token for a service
 
 Since you're providing your own token, Composio won't handle OAuth refresh. You're responsible for refreshing the token on your end and pushing the updated value to Composio via the [PATCH method](#updating-credentials) whenever it changes.
 
-After [creating an auth config](/docs/auth-configuration/programmatic-auth-configs) with `authScheme: "BEARER_TOKEN"`, use the snippet below to create a connected account:
+After [creating an auth config](/docs/programmatic-auth-configs) with `authScheme: "BEARER_TOKEN"`, use the snippet below to create a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">

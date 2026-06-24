@@ -44,7 +44,7 @@ A tool you define yourself and use alongside Composio's built-in tools. Add loca
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
-A flow in which the agent handles authentication itself by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation. See [In-chat authentication](/docs/authenticating-users/in-chat-authentication).
+A flow in which the agent handles authentication itself by calling `COMPOSIO_MANAGE_CONNECTIONS` to generate a Connect Link and send it to the user in the conversation. See [In-chat authentication](/docs/authentication#in-chat-authentication).
 </GlossaryTerm>
 
 <GlossaryTerm name="MCP (Model Context Protocol)">
@@ -52,11 +52,11 @@ An open protocol for connecting AI models to external tools. Create a session wi
 </GlossaryTerm>
 
 <GlossaryTerm name="Manual Authentication">
-Authenticating users from your own code with `session.authorize()` or `connectedAccounts.link()`, rather than letting the agent handle it through in-chat authentication. See [Manual authentication](/docs/authenticating-users/manually-authenticating).
+Authenticating users from your own code with `session.authorize()` or `connectedAccounts.link()`, rather than letting the agent handle it through in-chat authentication. See [Manual authentication](/docs/manually-authenticating).
 </GlossaryTerm>
 
 <GlossaryTerm name="Meta Tools">
-A set of tools included in every session: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, and `COMPOSIO_REMOTE_BASH_TOOL`. They let the agent discover tools, manage auth, execute in parallel, and run code without loading hundreds of tool definitions upfront. See [Meta Tools Reference](/reference/meta-tools).
+A set of tools included in every session: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, and `COMPOSIO_REMOTE_BASH_TOOL`. They let the agent discover tools, manage auth, execute in parallel, and run code without loading hundreds of tool definitions upfront. See [Meta Tools Reference](/toolkits/meta-tools).
 </GlossaryTerm>
 
 <GlossaryTerm name="Modifiers">
@@ -116,7 +116,7 @@ Pinning a toolkit to a specific version so your integration keeps a consistent s
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger">
-A source that sends structured payloads to your application when something happens in a connected app. It uses one of two delivery types: webhook (the provider pushes events in real time, for example Slack, GitHub, or Asana) and polling (Composio polls the provider on a schedule, for example Gmail). See [Triggers](/docs/triggers).
+A source that sends structured payloads to your application when something happens in a connected app. Triggers come in two kinds: realtime (the provider pushes events the moment they happen, for example Slack, GitHub, or Asana) and polling (Composio checks the provider on a schedule, for example Gmail). Either way, events arrive at your subscription or webhook URL. See [Triggers](/docs/triggers).
 </GlossaryTerm>
 
 <GlossaryTerm name="Trigger Instance">
@@ -124,7 +124,7 @@ A specific, active trigger scoped to a user's connected account.
 </GlossaryTerm>
 
 <GlossaryTerm name="Webhook Endpoint">
-The ingress URL Composio issues per OAuth app for webhook triggers, plus the signing secret used to verify each inbound request. Composio configures it for you in most cases. When a trigger type's `requires_webhook_endpoint_setup` flag is `true`, you configure it yourself once per OAuth app through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). See [Configuring the webhook endpoint](/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint).
+The ingress URL Composio issues per OAuth app for webhook triggers, plus the signing secret used to verify each inbound request. Composio configures it for you in most cases. When a trigger type's `requires_webhook_endpoint_setup` flag is `true`, you configure it yourself once per OAuth app through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
 </GlossaryTerm>
 
 <GlossaryTerm name="Webhook Subscription">
