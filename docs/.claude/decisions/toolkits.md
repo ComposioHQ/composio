@@ -34,7 +34,7 @@
 
 ```
 /toolkits                   → Landing page (search + filter + cards)
-/toolkits/premium-tools     → Premium tools pricing/limits info
+/toolkits/pro-tools         → Pro tools pricing/limits info
 /toolkits/{slug}            → Individual toolkit page
 ```
 
@@ -59,7 +59,7 @@
 │ │ 🔧37 ⚡2 │ │ 🔧130 ⚡9│ │ 🔧829 ⚡6│                         │
 │ └─────────┘ └─────────┘ └─────────┘                         │
 │                                                              │
-│ ⭐ Some tools are premium. [Learn about pricing →]           │
+│ ⭐ Some tools are pro tools. [Learn about pricing →]         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -185,7 +185,7 @@ Run: `bun run generate:toolkits`
 1. [x] Generator script (`scripts/generate-toolkits.ts`)
 2. [x] Landing page + components (category grouping, alphabet sections)
 3. [x] Individual toolkit page (version display, auth badges, tool/trigger list with copy)
-4. [x] Premium tools page (`/toolkits/premium-tools`)
+4. [x] Pro tools page (`/toolkits/pro-tools`)
 5. [x] Hybrid architecture (static index + server-side API fetch)
 6. [ ] Polish/styling
 7. [ ] CI hooks for auto-regeneration
