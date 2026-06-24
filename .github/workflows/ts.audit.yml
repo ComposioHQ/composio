@@ -4,11 +4,19 @@ on:
   push:
     branches: [master, next]
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.audit.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   pull_request:
     branches: [master, next]
     paths:
-      - "ts/**"
+      - 'ts/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.audit.yml'
+      - 'mise.toml'
+      - 'mise.lock'
 
 jobs:
   audit:
@@ -19,12 +27,17 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
           enable-caching: 'false'
+
+      - name: Verify mise.lock is fresh
+        run: |
+          mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
+          git diff --exit-code mise.lock
 
       - name: Run pnpm audit (production dependencies only)
         id: audit
@@ -55,8 +68,8 @@ jobs:
           } > audit-comment.txt
 
       - name: Post audit comment to PR
-        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # 3.0.1
+        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           file-path: audit-comment.txt
           comment-tag: pnpm-audit-security-warning

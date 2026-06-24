@@ -363,6 +363,7 @@ const runToolsSearch = (params: {
             resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId
               ? {
                   orgId: resolvedProject.orgId,
+                  projectId: resolvedProject.projectId,
                   consumerUserId: resolvedProject.consumerUserId,
                 }
               : undefined,

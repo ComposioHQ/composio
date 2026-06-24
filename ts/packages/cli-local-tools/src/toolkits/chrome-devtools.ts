@@ -169,7 +169,7 @@ const commandTool = <TInput extends z.ZodTypeAny>(definition: {
   slug: definition.slug,
   name: definition.name,
   description: definition.description,
-  platforms: ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64', 'win32-arm64', 'win32-x64'],
+  platforms: ['darwin-arm64', 'linux-arm64', 'linux-x64', 'win32-arm64', 'win32-x64'],
   inputParams: definition.inputParams,
   outputParams: cliOutput,
   execution: {
@@ -194,7 +194,7 @@ export const chromeDevtoolsToolkit: LocalToolkitDeclaration = {
   name: 'Chrome DevTools (local)',
   description:
     'Local Chrome automation and debugging tools backed by the official chrome-devtools-mcp package and its chrome-devtools CLI daemon.',
-  platforms: ['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64', 'win32-arm64', 'win32-x64'],
+  platforms: ['darwin-arm64', 'linux-arm64', 'linux-x64', 'win32-arm64', 'win32-x64'],
   source: {
     type: 'mcp',
     package: `chrome-devtools-mcp@${CHROME_DEVTOOLS_MCP_VERSION}`,

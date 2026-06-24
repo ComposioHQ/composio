@@ -115,7 +115,7 @@ const layers = Layer.mergeAll(
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
-  Logger.pretty
+  Logger.replace(Logger.defaultLogger, Logger.prettyLogger({ stderr: true }))
 ) satisfies RequiredLayer;
 
 export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {

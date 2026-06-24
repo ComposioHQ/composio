@@ -5,6 +5,7 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { commandHintStep } from 'src/services/command-hints';
 import { readStoredAgentIdentity } from 'src/services/agents';
+import { getOrgEnhancedControlsStatus } from 'src/services/tool-permissions';
 
 /**
  * CLI command to display your account information.
@@ -27,8 +28,6 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
           onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
           onSome: apiKey =>
             Effect.gen(function* () {
-              const defaultOrgId = Option.getOrUndefined(ctx.data.orgId);
-              const testUserId = Option.getOrUndefined(ctx.data.testUserId);
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
@@ -39,6 +38,14 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               const orgName = Option.map(sessionInfo, info => info.project.org.name).pipe(
                 Option.getOrUndefined
               );
+              const enhancedControls = yield* Option.match(sessionInfo, {
+                onNone: () => Effect.succeed(undefined),
+                onSome: info =>
+                  getOrgEnhancedControlsStatus({
+                    orgId: info.project.org.id,
+                    projectId: info.project.nano_id,
+                  }),
+              });
               const storedAgent = yield* readStoredAgentIdentity;
               const isStoredAgentKey = Option.match(storedAgent, {
                 onNone: () => false,
@@ -51,9 +58,8 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
                 [
                   `Type: ${accountType}`,
                   `Email: ${email ?? 'unknown'}`,
-                  `Default Org: ${orgName ?? 'unknown'}`,
-                  `Default Org ID: ${defaultOrgId ?? 'not set'}`,
-                  `Test User ID: ${testUserId ?? 'not set'}`,
+                  `Current Org: ${orgName ?? 'unknown'}`,
+                  `Enhanced Controls: ${enhancedControls?.remoteEnabled ? 'on' : 'off'}`,
                 ].join('\n'),
                 'Global User Context'
               );
@@ -67,9 +73,8 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
                 JSON.stringify({
                   account_type: accountType,
                   email: email ?? null,
-                  default_org_name: orgName ?? null,
-                  default_org_id: defaultOrgId ?? null,
-                  test_user_id: testUserId ?? null,
+                  current_org_name: orgName ?? null,
+                  enhanced_controls_enabled: enhancedControls?.remoteEnabled ?? null,
                 })
               );
             }),

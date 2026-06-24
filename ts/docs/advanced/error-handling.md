@@ -172,52 +172,28 @@ try {
 }
 ```
 
-## Error Handling in Custom Tools
+## Error Handling in Session Custom Tools
 
-When creating custom tools, implement proper error handling in your handler function:
+When creating Tool Router custom tools, throw ordinary errors from the handler when execution cannot continue. The SDK wraps thrown errors into the standard session execution response.
 
 ```typescript
+import { experimental_createTool } from '@composio/core';
 import { z } from 'zod';
 
-const customTool = await composio.tools.createCustomTool({
+const customTool = experimental_createTool('MY_CUSTOM_TOOL', {
   name: 'My Custom Tool',
   description: 'A custom tool with error handling',
-  slug: 'MY_CUSTOM_TOOL',
   inputParams: z.object({
-    param1: z.string().describe('Required parameter')
+    param1: z.string().describe('Required parameter'),
   }),
   execute: async (input) => {
-    try {
-      // Input is already validated by zod
-      const { param1 } = input;
-      if (!param1 || param1.trim() === '') {
-        return {
-          data: {},
-          successful: false,
-          error: 'param1 cannot be empty',
-        };
-      }
-
-      // Process the request
-      // This could throw various errors
-      const result = await someExternalService(param1);
-
-      return {
-        data: { result },
-        successful: true,
-        error: null,
-      };
-    } catch (error) {
-      // Log the error for debugging
-      console.error('Error in custom tool:', error);
-
-      // Return a user-friendly error message
-      return {
-        data: {},
-        successful: false,
-        error: error.message || 'An unexpected error occurred',
-      };
+    const { param1 } = input;
+    if (param1.trim() === '') {
+      throw new Error('param1 cannot be empty');
     }
+
+    const result = await someExternalService(param1);
+    return { result };
   },
 });
 ```

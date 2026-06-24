@@ -31,6 +31,7 @@ function makeConfig(overrides?: Partial<UpdateCheckConfig>): UpdateCheckConfig {
     binaryAssetName: 'composio-darwin-aarch64.zip',
     accessToken: undefined,
     fetchFn: () => Promise.reject(new Error('fetch not configured')),
+    isInteractive: () => true,
     ...overrides,
   };
 }
@@ -182,6 +183,16 @@ describe('showUpdateNotice', () => {
     expect(output).toContain('Update available');
     expect(output).toContain('0.3.0');
     expect(output).toContain('composio upgrade');
+  });
+
+  it('does not print upgrade hint in non-interactive environments', () => {
+    const config = makeConfig({ currentVersion: '0.2.0', isInteractive: () => false });
+    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+    const { showUpdateNotice } = createUpdateChecker(config);
+
+    showUpdateNotice();
+
+    expect(stderrSpy).not.toHaveBeenCalled();
   });
 
   it('silently ignores corrupt state file', () => {

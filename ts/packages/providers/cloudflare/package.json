@@ -1,8 +1,18 @@
 {
   "name": "@composio/cloudflare",
-  "version": "0.8.1",
+  "version": "0.9.3",
   "description": "",
   "main": "src/index.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/providers/cloudflare"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/cloudflare#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -10,18 +20,8 @@
   },
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
-      "default": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     }
   },
   "files": [
@@ -36,10 +36,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.28.0",
   "peerDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@composio/core": "0.8.1"
+    "@composio/core": ">=0.10.0 <1.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",

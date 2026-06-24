@@ -8,7 +8,7 @@ export class BatchProcessor {
   private time: number;
   private batchSize: number;
   private processBatchCallback: (data: TelemetryMetricPayloadBody) => Promise<void>;
-  private timer: NodeJS.Timeout | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
   private pendingBatches: Set<Promise<void>> = new Set();
 
   constructor(
@@ -35,15 +35,28 @@ export class BatchProcessor {
     if (this.batch.length > 0) {
       const batchToProcess = this.batch;
       this.batch = [];
-      const pending = this.processBatchCallback(batchToProcess)
-        .catch(() => {
-          // Silently ignore errors - they should be handled by the callback
-        })
-        .finally(() => {
-          this.pendingBatches.delete(pending);
-        });
+
+      const pending = new Promise<void>(resolve => {
+        const run = () => {
+          Promise.resolve()
+            .then(() => this.processBatchCallback(batchToProcess))
+            .catch(() => {
+              // Silently ignore errors - they should be handled by the callback
+            })
+            .finally(resolve);
+        };
+
+        if (typeof queueMicrotask === 'function') {
+          queueMicrotask(run);
+        } else {
+          setTimeout(run, 0);
+        }
+      });
 
       this.pendingBatches.add(pending);
+      pending.finally(() => {
+        this.pendingBatches.delete(pending);
+      });
     }
     if (this.timer) {
       clearTimeout(this.timer);

@@ -192,8 +192,8 @@ Pin a session to specific accounts by passing their IDs in the session config. T
 session = composio.create(
     user_id="user_123",
     connected_accounts={
-        "gmail": "ca_work_gmail_id",
-        "github": "ca_personal_github_id",
+        "gmail": ["ca_work_gmail_id"],
+        "github": ["ca_personal_github_id"],
     },
 )
 ```
@@ -206,8 +206,8 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
   connectedAccounts: {
-    gmail: "ca_work_gmail_id",
-    github: "ca_personal_github_id",
+    gmail: ["ca_work_gmail_id"],
+    github: ["ca_personal_github_id"],
   },
 });
 ```

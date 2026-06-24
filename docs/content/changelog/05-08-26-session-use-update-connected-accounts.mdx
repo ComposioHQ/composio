@@ -1,0 +1,111 @@
+---
+title: "Session reuse, update, and connected accounts as arrays"
+description: "composio.use() rehydrates sessions for multi-turn chat, session.update() patches config in-place, and connectedAccounts now accepts arrays."
+date: "2026-05-08"
+---
+
+### Session reuse with `composio.use()`
+
+`composio.create()` now returns a new session ID on every call, even for identical configs, for better isolation and observability. For multi-turn conversations, store the session ID and reuse it with `composio.use()`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# First request
+session = composio.create(user_id="user_123")
+session_id = session.session_id
+
+# Subsequent requests
+session = composio.use(session_id)
+tools = session.tools()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// First request
+const session = await composio.create("user_123");
+const sessionId = session.sessionId;
+
+// Subsequent requests
+const session = await composio.use(sessionId);
+const tools = await session.tools();
+```
+</Tab>
+</Tabs>
+
+Custom tools can also be attached when reusing a session. See [Reusing a session](/docs/how-composio-works#how-sessions-behave) and [Custom tools](/docs/toolkits/custom-tools-and-toolkits#reusing-a-session-with-custom-tools).
+
+### Update session config with `session.update()`
+
+Modify a session's toolkits, auth configs, connected accounts, and other settings without creating a new session. Only the fields you pass are changed:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session.update(
+    toolkits=["gmail", "slack"],
+    auth_configs={"gmail": "ac_new_config"},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+await session.update({
+  toolkits: ["gmail", "slack"],
+  authConfigs: { gmail: "ac_new_config" },
+});
+```
+</Tab>
+</Tabs>
+
+See [Updating a session](/docs/how-composio-works#how-sessions-behave).
+
+### `connectedAccounts` accepts arrays
+
+`connectedAccounts` (TypeScript) and `connected_accounts` (Python) now accept an array of connected account IDs per toolkit. A single string is still accepted for backwards compatibility and is automatically coerced to an array.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": ["ca_work_gmail"],
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: ["ca_work_gmail"],
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Only one account per toolkit is allowed when [multi-account mode](/docs/managing-multiple-connected-accounts) is disabled.
+
+### SDK versions
+
+| SDK | Minimum version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.9.1` |
+| Python `composio` | `0.13.0` |

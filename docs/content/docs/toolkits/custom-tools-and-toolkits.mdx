@@ -49,7 +49,6 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -73,7 +72,6 @@ A standalone tool handles internal app logic that doesn't need Composio auth. `c
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -100,8 +98,12 @@ const getUserProfile = experimental_createTool("GET_USER_PROFILE", {
 from pydantic import BaseModel, Field
 
 from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
 
-composio = Composio(api_key="your_api_key")
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
 
 
 class UserLookupInput(BaseModel):
@@ -134,7 +136,6 @@ Pass custom tools via the `experimental` option. `session.tools()` returns both 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -197,7 +198,6 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -223,7 +223,6 @@ Prefer relative `endpoint` values in proxy calls. They resolve against the toolk
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
@@ -303,7 +302,6 @@ Pass custom tools via the `experimental` option. Extension tools inherit auth fr
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, experimental_createTool } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -368,7 +366,6 @@ pip install composio
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ apiKey: "your_api_key" });
@@ -392,13 +389,16 @@ A custom toolkit groups related standalone tools under a namespace. Tools inside
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
-import { Composio, experimental_createTool, experimental_createToolkit } from "@composio/core";
+import {
+  Composio,
+  experimental_createTool,
+  experimental_createToolkit,
+} from "@composio/core";
 import { z } from "zod/v3";
 // ---cut---
 
 const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
-  name: "User management",
+  name: "User scoping",
   description: "Manage user roles and permissions",
   tools: [
     experimental_createTool("ASSIGN_ROLE", {
@@ -424,7 +424,7 @@ composio = Composio(api_key="your_api_key")
 
 user_management = composio.experimental.Toolkit(
     slug="USER_MANAGEMENT",
-    name="User management",
+    name="User scoping",
     description="Manage user roles and permissions",
 )
 
@@ -451,7 +451,6 @@ Pass custom toolkits via the `experimental` option. `session.tools()` returns bo
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio, experimental_createToolkit } from "@composio/core";
 import { z } from "zod/v3";
 
@@ -490,6 +489,87 @@ tools = session.tools()
 </IntegrationContent>
 
 </IntegrationTabs>
+
+## Preloading custom tools
+
+Custom tools are searchable by default. Set `preload: true` / `preload=True` on a
+custom tool when it should be returned directly from `session.tools()`. Toolkit
+preload applies to all tools in that toolkit; set `preload: false` /
+`preload=False` on one tool to opt it out.
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
+import { OpenAIAgentsProvider } from "@composio/openai-agents";
+import { z } from "zod/v3";
+
+const composio = new Composio({
+  apiKey: "your_api_key",
+  provider: new OpenAIAgentsProvider(),
+});
+
+const replyGuide = experimental_createTool("GET_REPLY_STYLE_GUIDE", {
+  name: "Get reply style guide",
+  description: "Return the team's email reply style guide",
+  preload: true,
+  inputParams: z.object({
+    topic: z.string().describe("Email topic"),
+  }),
+  execute: async ({ topic }) => ({ topic, tone: "concise and helpful" }),
+});
+
+const session = await composio.create("user_1", {
+  experimental: {
+    customTools: [replyGuide],
+  },
+});
+
+const tools = await session.tools();
+console.log(tools.map((tool) => tool.name));
+// LOCAL_GET_REPLY_STYLE_GUIDE
+// COMPOSIO_SEARCH_TOOLS
+// ... other default meta tools
+```
+</Tab>
+<Tab value="Python">
+```python
+from pydantic import BaseModel, Field
+
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
+
+composio = Composio(
+    api_key="your_api_key",
+    provider=OpenAIAgentsProvider(),
+)
+
+
+class ReplyGuideInput(BaseModel):
+    topic: str = Field(description="Email topic")
+
+
+@composio.experimental.tool(preload=True)
+def get_reply_style_guide(input: ReplyGuideInput, ctx):
+    """Return the team's email reply style guide."""
+    return {"topic": input.topic, "tone": "concise and helpful"}
+
+
+session = composio.create(
+    user_id="user_1",
+    experimental={
+        "custom_tools": [get_reply_style_guide],
+    },
+)
+
+tools = session.tools()
+print([tool.name for tool in tools])
+# LOCAL_GET_REPLY_STYLE_GUIDE
+# COMPOSIO_SEARCH_TOOLS
+# ... other default meta tools
+```
+</Tab>
+</Tabs>
 
 ## Meta tools integration
 
@@ -540,7 +620,6 @@ Use these methods to list registered tools and toolkits. Slugs include their fin
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
 const session = await composio.create("user_1");
@@ -557,6 +636,39 @@ custom_toolkits = session.custom_toolkits()
 </Tab>
 </Tabs>
 
+## Reusing a session with custom tools
+
+When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach custom tools at the same time:
+
+<Tabs groupId="language" items={['TypeScript', 'Python']} persist>
+<Tab value="TypeScript">
+```typescript
+import { Composio, experimental_createTool } from "@composio/core";
+import { z } from "zod/v3";
+
+declare const getUserProfile: ReturnType<typeof experimental_createTool>;
+const composio = new Composio({ apiKey: "your_api_key" });
+// ---cut---
+
+const session = await composio.use("session_id", {
+  customTools: [getUserProfile],
+});
+```
+</Tab>
+<Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio(api_key="your_api_key")
+
+session = composio.use(
+    "session_id",
+    custom_tools=[get_user_profile],
+)
+```
+</Tab>
+</Tabs>
+
 ## Programmatic execution
 
 Use `session.execute()` to run custom tools directly, outside of an agent loop. Custom tools execute in-process; remote tools are sent to the backend automatically.
@@ -564,7 +676,6 @@ Use `session.execute()` to run custom tools directly, outside of an agent loop. 
 <Tabs groupId="language" items={['TypeScript', 'Python']} persist>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
 const session = await composio.create("user_1");

@@ -9,13 +9,20 @@ import {
   resolveCommandProject,
 } from 'src/services/command-project';
 import { TerminalUI } from 'src/services/terminal-ui';
+import {
+  getConnectedAccountPermissionGroup,
+  getConsumerPermissionSnapshot,
+} from 'src/services/tool-permissions';
 
 const toolkit = Options.text('toolkit').pipe(
   Options.withDescription('Filter by toolkit slug (e.g. "gmail")'),
   Options.optional
 );
 
-const formatConnectionsJson = (items: ReadonlyArray<ConnectedAccountItem>): string => {
+const formatConnectionsJson = (
+  items: ReadonlyArray<ConnectedAccountItem>,
+  permissionGroups: ReadonlyMap<string, string | undefined> = new Map()
+): string => {
   const toolkitCounts = items.reduce<Map<string, number>>((acc, item) => {
     acc.set(item.toolkit.slug, (acc.get(item.toolkit.slug) ?? 0) + 1);
     return acc;
@@ -30,6 +37,7 @@ const formatConnectionsJson = (items: ReadonlyArray<ConnectedAccountItem>): stri
       status: item.status,
       ...(includeAlias ? { alias: item.alias ?? null } : {}),
       ...(item.word_id != null ? { word_id: item.word_id } : {}),
+      permission_group: permissionGroups.get(item.id) ?? null,
     };
 
     if (!acc[toolkit]) {
@@ -72,8 +80,23 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       })
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
+    const permissionSnapshot = yield* getConsumerPermissionSnapshot({
+      orgId: resolvedProject.orgId,
+      projectId: resolvedProject.projectId,
+      consumerUserId,
+      connectedAccountIds: result.items.map(item => item.id),
+    });
+    const permissionGroups = new Map(
+      result.items.map(item => [
+        item.id,
+        getConnectedAccountPermissionGroup({
+          snapshot: permissionSnapshot,
+          connectedAccountId: item.id,
+        }),
+      ])
+    );
 
-    yield* ui.output(formatConnectionsJson(result.items), { force: true });
+    yield* ui.output(formatConnectionsJson(result.items, permissionGroups), { force: true });
   })
 ).pipe(
   Command.withDescription(

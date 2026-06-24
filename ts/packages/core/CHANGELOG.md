@@ -1,5 +1,179 @@
 # @composio/core
 
+## 0.11.0
+
+### Minor Changes
+
+- a94715f: Forward `userId` when creating trigger instances so trigger 2FA flows can verify connected account ownership.
+- 44e5458: Remove the legacy `composio.tools.createCustomTool(...)` in-memory registry API. Use Tool Router custom tools via `experimental_createTool`, `experimental_createToolkit`, and `composio.create(..., { experimental: { customTools, customToolkits } })` instead.
+
+### Patch Changes
+
+- 22a9171: Defer telemetry batch and error sends so instrumentation does not wait for telemetry network requests before returning SDK results or rethrowing SDK errors.
+- 93b67e8: Fix automatic file upload/download substitution for file schemas that accept either a single file or a list of files.
+
+  The file modifier now selects composed-schema branches by runtime value shape, so `anyOf(file, array<file>)` uploads or downloads each file when the tool receives a list while preserving existing single-file behavior.
+
+- b69cef1: Tolerate dangling `$ref` pointers in tool schemas the Composio API ships without a matching `$defs` entry. Some toolkits (e.g. `GMAIL_FETCH_EMAILS`) emit `outputParameters` with `"$ref": "#/$defs/FetchEmailsResponse"` while never declaring a top-level `$defs` block. After the strict resolver shipped with the previous Mastra fix, this caused `composio.tools.get(...)` to throw `JsonSchemaRefResolutionError` upfront, making every Gmail / Slack / Google-Calendar tool unusable through `MastraProvider`. The SDK now degrades the unresolvable branch to a permissive object schema and surfaces a single observability warning per `(toolSlug, ref)` pair instead of crashing.
+  - `dereferenceJsonSchema` accepts a new optional second argument `{ onUnresolved?: 'throw' | 'sentinel'; onReplace?: (ref, reason) => void }`. Default behavior is unchanged (`'throw'`) — first-party / custom-tool schemas with a typo'd `$ref` still surface as a hard error. Pass `'sentinel'` to replace unresolved branches with the cycle-break sentinel (`{ type: 'object', additionalProperties: true }`) that the resolver already uses for `$ref` cycles. The replaced sentinel carries a default `description` hint so LLMs consuming the wrapped tool's schema get an in-band signal that the branch is opaque; a caller-provided `description` sibling overrides the default (Draft 2020-12 sibling-keyword merge). Safety caps (`MAX_REF_CHAIN_DEPTH`, `MAX_NODE_DEPTH`) keep throwing in both modes. New `UnresolvedRefStrategy`, `UnresolvedRefReason`, and `DereferenceJsonSchemaOptions` type exports.
+  - `MastraProvider.wrapTool` opts both `inputParameters` and `outputParameters` into `'sentinel'` mode and emits one `logger.warn` per `(toolSlug, ref)` pair via the provider-scoped dedup `Set`. User-controlled segments in the warning (`tool.slug`, `toolkit.slug`, `ref`) are `JSON.stringify`d to neutralize embedded newlines / ANSI escapes / control bytes that could otherwise forge log lines (CWE-117). A matching one-shot telemetry event (`composio.mastra.wrapTool.danglingRef`) fires next to the warn so the Composio team has aggregate visibility into which toolkits are affected; the event respects `COMPOSIO_DISABLE_TELEMETRY=true`.
+  - The `telemetry` instance from `@composio/core` is now publicly re-exported alongside `logger`, so providers can emit aggregate signals without reaching into the package's internals.
+  - Resolvable `$defs` / `definitions` continue to be inlined exactly as before — no regression in the type-info preservation contract introduced by the previous Mastra fix.
+
+- 1ba66ca: Fix `tools.execute` (and `tools.get` / `tools.list`) failing with a `ZodError` for every tool from an MCP-backed toolkit (e.g. `granola_mcp`, `apify_mcp`, `tavily_mcp`).
+
+  MCP toolkits don't declare an output schema, and the Composio API serializes that as `output_parameters: {}`. The SDK's `ParametersSchema` required `{ type: 'object', properties: {...} }`, so `transformToolCases` rejected the response and `getRawComposioToolBySlug` — called by `execute` and the list path — threw.
+
+  The SDK now normalizes empty (`{}`), `null`, and missing `input_parameters` / `output_parameters` payloads to `undefined` before validation. `outputParameters` was already declared `.optional()` in the public `Tool` type, so this preserves the contract: "undefined means no declared schema." Tools that _do_ declare a schema continue to be validated strictly.
+
+  No public API change; no toolkit allow-list.
+
+- ce4b213: fix(providers): normalize string tool-call arguments across all providers
+
+  Models occasionally emit tool-call arguments as a JSON string instead of an
+  object (most visibly with `COMPOSIO_MULTI_EXECUTE_TOOL` on the Vercel AI SDK),
+  which broke downstream validation with errors like
+  `tool_use.input: Input should be a valid dictionary`.
+
+  `@composio/core` now exposes a single `normalizeToolArguments` helper, and every
+  provider routes model-supplied arguments through it. Object payloads pass
+  through unchanged, JSON strings are parsed, empty/`null` payloads become `{}`,
+  and anything that cannot resolve to an object throws a typed
+  `ComposioInvalidToolArgumentsError` instead of a raw `SyntaxError` or a silently
+  forwarded malformed string. This replaces the inconsistent per-provider guards
+  that previously existed only in vercel, cloudflare and openai-agents.
+
+## 0.10.0
+
+### Minor Changes
+
+- 42ebff3: feat(connected-accounts): namespace SHARED-connection surface under `experimental`
+
+  Aligns the TypeScript SDK with the experimental wire shape used by Shared Connections. The flat `accountType` / `aclConfigForShared` options on `connectedAccounts.link()` and `session.authorize()` have moved under a single `experimental` block, and `connectedAccounts.updateAcl()` has moved off the class onto a top-level `experimental_updateAcl(composio, id, opts)` export — same precedent as `experimental_createTool` / `experimental_createToolkit`.
+
+  The `experimental` namespace is the signal that the shape may change in future releases. Pinning a SHARED connection in a session config (`connectedAccounts: { gmail: [...] }`) and direct execute by `connectedAccountId` are unchanged — only the connection-create / patch / authorize surfaces are namespaced.
+
+  Also surfaces the `accountType` filter on `connectedAccounts.list()` so SHARED connections can be listed without dropping to the raw client. The wire keeps this as a flat query param, so the SDK keeps it flat too.
+
+  `@composio/client` bumped from `0.1.0-alpha.71` → `0.1.0-alpha.72` so the generated typed client carries the `Experimental` namespaces for `link.create`, `toolRouter.session.link`, and `connectedAccounts.patch`.
+
+  Caller migration:
+
+  ```typescript
+  // before
+  await composio.connectedAccounts.link('user_id', 'auth_config_id', {
+    accountType: 'SHARED',
+    aclConfigForShared: { allowAllUsers: true },
+  });
+  await composio.connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true });
+  await session.authorize('github', {
+    accountType: 'SHARED',
+    aclConfigForShared: { allowAllUsers: true },
+  });
+
+  // after
+  await composio.connectedAccounts.link('user_id', 'auth_config_id', {
+    experimental: {
+      accountType: 'SHARED',
+      aclConfigForShared: { allowAllUsers: true },
+    },
+  });
+  await experimental_updateAcl(composio, 'ca_abc', { allowAllUsers: true });
+  await session.authorize('github', {
+    experimental: {
+      accountType: 'SHARED',
+      aclConfigForShared: { allowAllUsers: true },
+    },
+  });
+
+  // new — list SHARED connections
+  const shared = await composio.connectedAccounts.list({
+    accountType: 'SHARED',
+    userIds: ['user_creator'],
+  });
+  ```
+
+## 0.9.1
+
+### Patch Changes
+
+- 84a3a07: Add `accountType` and per-user ACL support for SHARED connected accounts.
+  - **`accountType` on create**: `composio.connectedAccounts.link(userId, authConfigId, { accountType: 'SHARED' })` creates a SHARED connection. Default remains `PRIVATE`. A SHARED connection can be used by other `userId`s, but only when the connection is explicitly pinned in a tool-router session's config and only when the requesting `userId` passes the connection's ACL.
+  - **`accountType` on retrieve**: `get()` and `list()` responses now include `accountType` (`'PRIVATE' | 'SHARED'`).
+  - **`aclConfigForShared` on create + retrieve**: per-user ACL block — `{ allowAllUsers, allowedUserIds, notAllowedUserIds }`. On responses the field is `undefined` when the caller isn't authorised to see the ACL, so callers can distinguish _"I can't see the ACL"_ from _"ACL is the default deny-by-default state"_.
+  - **`updateAcl()` method** (new): `composio.connectedAccounts.updateAcl(nanoid, { allowAllUsers, allowedUserIds, notAllowedUserIds })` writes the ACL via `PATCH`. PATCH semantics — omit a field to leave it unchanged; pass an empty array to clear an allow/deny list. At least one field required. Calling on a PRIVATE connection raises `ComposioAclOnlyForSharedError` (400).
+  - **`ToolRouterSession.authorize()` options gain `accountType` + `aclConfigForShared`**, so a SHARED connection with an ACL can be created in one call from inside a tool-router session.
+
+  ACL resolution rule (deny wins):
+  1. requesting `userId` ∈ `notAllowedUserIds` → DENY
+  2. `allowAllUsers === true` → ALLOW
+  3. requesting `userId` ∈ `allowedUserIds` → ALLOW
+  4. otherwise → DENY (deny-by-default)
+
+  Limits: each ACL list accepts up to 1000 entries; each `userId` is 1..256 characters. The SDK enforces these caps at the input boundary.
+
+  New error classes:
+  - `ComposioSharedAccessDeniedError` (403) — surfaces from direct `connectedAccountId` execution paths when the requesting user fails the ACL.
+  - `ComposioAclOnlyForSharedError` (400) — ACL fields sent on a PRIVATE connection.
+  - `ComposioSharedConnectionNotAccessibleError` (400) — tool-router session create / PATCH with a pinned SHARED connection the session user cannot use.
+
+  No breaking changes. Existing `link()` callers without the new options get a `PRIVATE` connection exactly as today; existing `get()` / `list()` callers see new optional fields.
+
+  The Python SDK mirror ships in a separate PR.
+
+- c358ffa: Fix false-positive `initiate()` deprecation warning for custom auth configs (SEC-339 follow-up).
+
+  `composio.connectedAccounts.initiate()` previously emitted a one-time `console.warn` on every redirectable-OAuth response, regardless of whether the auth config was Composio-managed (subject to the 2026-07-03 cutover) or custom (unaffected). The wording was conditional ("If this auth config is Composio-managed…") so callers using their own OAuth apps could ignore it, but the warning still printed and caused noise in logs.
+
+  Apollo already emits the SEC-339 `Deprecation` / `Sunset` / `Link rel="deprecation"` headers (RFC 9745 / RFC 8594) **only** on the retiring branch — managed + redirectable OAuth. The SDK now reads the `Deprecation` header from the response (via `APIPromise.withResponse()`) and gates the warning on its presence. Custom auth configs and non-OAuth schemes get a clean response from the server and now stay silent in the SDK as well.
+  - **Behavior change:** No warning is emitted for `initiate()` calls against custom OAuth auth configs or non-OAuth schemes (API key, bearer, basic). Managed-OAuth callers continue to get exactly one warning per process, now with revised wording that points at the response's `Sunset` header for the precise cutover date.
+  - **No public API change:** `initiate()` returns the same `ConnectionRequest` shape and respects the same `allowMultiple` guard. `ComposioLegacyConnectedAccountsEndpointRetiredError` continues to surface from the 400 retired-path response.
+  - **Test scaffolding:** new mock helper `mockApiPromiseWithHeaders()` in `connectedAccounts.test.ts` wraps a value as an `APIPromise`-shaped thenable so the new tests can simulate apollo's header behavior. Pre-existing initiate tests using `mockResolvedValueOnce` continue to pass via the SDK's defensive fallback when `withResponse` is absent on the mock.
+
+  Python SDK gets the matching change in the same release train.
+
+## 0.9.0
+
+### Minor Changes
+
+- 9f14971: Add migration tooling for the [link auth migration](https://docs.composio.dev/docs/changelog/2026/04/24): callers using `composio.connectedAccounts.initiate()` for Composio-managed auth configs on redirectable OAuth schemes (OAuth1, OAuth2, DCR_OAUTH) now get a typed error and a one-time deprecation warning ahead of the **2026-07-03** all-orgs cutover.
+  - **Added:** `ComposioLegacyConnectedAccountsEndpointRetiredError`, exported from `@composio/core`. Thrown by `initiate()` when the underlying `POST /api/v3/connected_accounts` returns a 400 indicating the retiring path. Carries the migration message and a `possibleFixes` block pointing at `link()` and the migration guide.
+  - **Added:** one-time-per-process `console.warn` from `initiate()` when the response indicates a redirectable OAuth scheme. Wording is conditional ("If this auth config is Composio-managed…") so callers using custom OAuth apps or non-OAuth schemes can ignore it without ambiguity.
+  - **JSDoc:** `initiate()` now flags the retirement explicitly and points at `link()` for the affected combination. Custom auth configs and non-OAuth schemes (API key, bearer, basic) are unaffected.
+
+  No behavior change for any caller outside the Composio-managed-OAuth combination — `initiate()` continues to call the legacy endpoint, return the same `ConnectionRequest` shape, and respect the `allowMultiple` guard.
+
+- 81f8027: Add `session.update()` method for partially updating session configuration after creation. Accepts the same config shape as `create()` and mutates the session in-place. Available in both TypeScript and Python SDKs.
+- 711a703: Add expanded ToolRouter session controls for agent workflows. `composio.create()`
+  now creates a fresh session on each call for better isolation and observability,
+  while `composio.use()` can resume an existing session for multi-turn
+  conversations. Sessions can preload frequently used tools, expose custom tools
+  directly from `session.tools()`, use a direct-tools preset for agents that know
+  their tool set upfront, and update session config mid-session with
+  `session.update()`.
+- 07c9bab: `connectedAccounts` now accepts both `string` and `string[]` per toolkit.
+
+  A single string is automatically coerced to an array to match the v3.1 API wire format. Existing callers passing `{ gmail: "ca_xxx" }` continue to work without changes. Only one account per toolkit is allowed when multi-account mode is disabled.
+
+- 3ece424: Add custom tools support to `composio.use()`.
+  - **`composio.use(id, { customTools, customToolkits })`**: Reuse an existing session and optionally bind SDK-local custom tools for search and execution.
+  - **Inline custom tools payload**: `use()` now correctly passes `inlineCustomToolsPayload` and `preloadedCustomToolSlugs` to the session, enabling custom tool execution and preloading on rehydrated sessions.
+  - **`CustomToolsMap.tools`**: The map now caches the raw `CustomTool[]` array for future inline re-injection on v3.1 search/execute requests.
+
+### Patch Changes
+
+- c9b6525: Fix `connectedAccounts` TypeScript type so a single `string` per toolkit is actually accepted by the public API.
+
+  Previously the schema's `.transform()` made `ToolRouterCreateSessionConfig['connectedAccounts']` resolve to `Record<string, string[]>` (the post-transform output), so TypeScript users still got `Type 'string' is not assignable to type 'string[]'` even though the runtime accepted strings. Coercion now happens inside `ToolRouter.create`, mirroring the Python implementation, and the public type is `Record<string, string | string[]>`.
+
+- cc673b6: Resolve internal JSON Schema `$ref` pointers (`#/$defs/...` and `#/definitions/...`) before handing tool parameters to `@mastra/schema-compat`. Composio tools whose schemas use `$defs`/`definitions` — legal under Draft 7 and 2020-12 — no longer trigger the AJV `can't resolve reference …` error, and the resolved type information from `$defs` survives the JSON-Schema → Zod → JSON-Schema round-trip instead of being silently degraded to a permissive `anyOf`.
+  - New `dereferenceJsonSchema` helper exported from `@composio/core` performs the inline expansion. It deep-clones the input, walks every applicator reflectively (so future JSON Schema keywords are covered), shallow-merges sibling keywords next to `$ref` per Draft 2020-12 semantics, breaks cycles with `{ type: 'object', additionalProperties: true }` (matching the upstream guidance in [mastra-ai/mastra#15341](https://github.com/mastra-ai/mastra/issues/15341)), and strips `$defs`/`definitions` once everything reachable is inlined. External (`http://`/`https://`) `$ref` pointers are left untouched.
+  - `@composio/mastra` calls the helper inside `wrapTool` for both `inputParameters` and `outputParameters`.
+  - `@mastra/schema-compat` dependency floor raised to `^1.2.9` so users automatically receive [PR #15400](https://github.com/mastra-ai/mastra/pull/15400)'s recursive-`$ref` handling.
+
+- bccd32b: Expose and document the Tool Router direct-tools preset via `SessionPreset.DIRECT_TOOLS`, with Python parity through `SESSION_PRESET_DIRECT_TOOLS`. Direct-tools examples now use the constants and keep the agent prompt generic while still asserting that only direct tools are exposed.
+- bccd32b: Document and tighten Tool Router preload behavior for app tools, `preload.tools = "all"`, and SDK custom tools. Custom tool and toolkit preload hints now have clearer user-facing comments, direct custom tool descriptions now only state that search is not needed beforehand, examples assert the normalized `LOCAL_*` tool slugs exposed by `session.tools()`, and `composio.use(..., customTools/customToolkits)` reuses the same custom preload preparation path as session creation.
+
 ## 0.8.1
 
 ### Patch Changes

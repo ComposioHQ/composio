@@ -28,6 +28,7 @@ import {
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import * as constants from 'src/constants';
+import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
@@ -1325,6 +1326,7 @@ const buildDefaultHeaders = (params: {
   orgId?: string;
   projectId?: string;
 }): Record<string, string> | undefined => {
+  const cliSessionId = getCurrentCwdSessionId();
   const defaultHeaders = {
     'x-framework': 'cli',
     'x-source': 'CLI',
@@ -1338,6 +1340,9 @@ const buildDefaultHeaders = (params: {
           'x-org-id': params.orgId,
           'x-project-id': params.projectId,
         } satisfies Record<string, string>)
+      : {}),
+    ...(cliSessionId
+      ? ({ 'x-cli-session-id': cliSessionId } satisfies Record<string, string>)
       : {}),
   };
 

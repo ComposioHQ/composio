@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 
 type Bindings = {
   COMPOSIO_API_KEY: string;
+  COMPOSIO_BASE_URL: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -59,6 +60,7 @@ app.get('/test/files/upload', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     // Attempt to call files.upload - should throw an error
@@ -98,6 +100,7 @@ app.get('/test/files/download', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     // Attempt to call files.download - should throw an error
@@ -138,6 +141,7 @@ app.get('/test/hackernews', async c => {
   try {
     const composio = new Composio({
       apiKey: c.env.COMPOSIO_API_KEY,
+      baseURL: c.env.COMPOSIO_BASE_URL,
     });
 
     const userDetails = await composio.tools.execute('HACKERNEWS_GET_USER', {

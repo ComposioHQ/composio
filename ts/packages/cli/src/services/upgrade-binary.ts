@@ -103,11 +103,13 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       platformArch: PlatformArch,
       options: {
         prerelease?: boolean;
+        tag?: string;
       } = {}
     ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         const prerelease = options.prerelease ?? false;
-        const release = yield* githubConfig.TAG.pipe(
+        const explicitTag = options.tag ? Option.some(options.tag) : githubConfig.TAG;
+        const release = yield* explicitTag.pipe(
           Option.match({
             onNone: Effect.fn(function* () {
               yield* Effect.logDebug(
@@ -536,6 +538,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     const upgrade = (
       options: {
         prerelease?: boolean;
+        tag?: string;
       } = {}
     ) =>
       Effect.gen(function* () {
@@ -543,6 +546,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const upgradeTargetOpt = yield* DEBUG_OVERRIDE_CONFIG['UPGRADE_TARGET'];
         const currentPath = yield* getCurrentExecutablePath();
         const prerelease = options.prerelease ?? false;
+        const explicitTag = options.tag;
         const currentReleaseIdentifier = resolveCurrentReleaseIdentifier(currentPath);
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
         yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);
@@ -560,15 +564,26 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const didUpgrade = yield* ui.useMakeSpinner('Checking for updates...', spinner =>
           Effect.gen(function* () {
             const platformArch = yield* detectPlatform;
-            const release = yield* fetchLatestRelease(platformArch, { prerelease });
-            const updateAvailable = yield* isUpdateAvailable(release, currentReleaseIdentifier);
-            if (!updateAvailable) {
-              yield* spinner.stop('You are already running the latest version!');
-              return false;
+            const release = yield* fetchLatestRelease(platformArch, {
+              prerelease,
+              tag: explicitTag,
+            });
+            if (!explicitTag) {
+              const updateAvailable = yield* isUpdateAvailable(release, currentReleaseIdentifier);
+              if (!updateAvailable) {
+                yield* spinner.stop('You are already running the latest version!');
+                return false;
+              }
+            } else if (release.tag_name === currentReleaseIdentifier) {
+              yield* Effect.logDebug(
+                `Already running ${release.tag_name}; re-installing as requested`
+              );
             }
 
             yield* spinner.message(
-              `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
+              explicitTag
+                ? `Installing ${release.tag_name} (current: ${currentReleaseIdentifier})...`
+                : `New version available: ${release.tag_name} (current: ${currentReleaseIdentifier}). Downloading...`
             );
 
             const { name, data } = yield* downloadBinary(release, platformArch);

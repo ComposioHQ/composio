@@ -23,11 +23,15 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 
 vi.mock('../../src/models/Tools', () => {
   return {
-    Tools: vi.fn().mockImplementation(() => ({
-      getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-      getRawToolRouterSessionTools: vi.fn().mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-      wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-    })),
+    Tools: vi.fn().mockImplementation(function () {
+      return {
+        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+        getRawToolRouterSessionTools: vi
+          .fn()
+          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+      };
+    }),
   };
 });
 
@@ -1848,6 +1852,91 @@ describe('ToolRouter', () => {
       expect(connectionRequest).toHaveProperty('toString');
       expect(typeof connectionRequest.waitForConnection).toBe('function');
     });
+
+    // authorize() validates experimental.aclConfigForShared at the SDK
+    // boundary — same caps as link() (1000-entry list, 256-char user_id).
+    it('forwards the experimental block to the wire', async () => {
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.authorize(toolkit, {
+        experimental: {
+          accountType: 'SHARED',
+          aclConfigForShared: {
+            allowAllUsers: true,
+            notAllowedUserIds: ['user_bob'],
+          },
+        },
+      });
+
+      expect(mockClient.toolRouter.session.link).toHaveBeenCalledWith(sessionId, {
+        toolkit,
+        experimental: {
+          account_type: 'SHARED',
+          acl_config_for_shared: {
+            allow_all_users: true,
+            not_allowed_user_ids: ['user_bob'],
+          },
+        },
+      });
+    });
+
+    it('omits the experimental block entirely when not provided', async () => {
+      mockClient.toolRouter.session.link.mockResolvedValueOnce(mockLinkResponse);
+
+      const session = await toolRouter.create(userId);
+      await session.authorize(toolkit);
+
+      const body = mockClient.toolRouter.session.link.mock.calls[0][1];
+      expect('experimental' in body).toBe(false);
+    });
+
+    it('throws ValidationError when allowedUserIds exceeds the 1000-entry cap', async () => {
+      const session = await toolRouter.create(userId);
+      const oversizedList = Array.from({ length: 1001 }, (_, i) => `user_${i}`);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: oversizedList },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when a user_id exceeds the 256-char length cap', async () => {
+      const session = await toolRouter.create(userId);
+      const tooLongUserId = 'u'.repeat(257);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { allowedUserIds: [tooLongUserId] },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
+
+    it('throws ValidationError when a user_id is empty', async () => {
+      const session = await toolRouter.create(userId);
+
+      await expect(
+        session.authorize(toolkit, {
+          experimental: {
+            accountType: 'SHARED',
+            aclConfigForShared: { notAllowedUserIds: [''] },
+          },
+        })
+      ).rejects.toMatchObject({ name: 'ValidationError' });
+
+      expect(mockClient.toolRouter.session.link).not.toHaveBeenCalled();
+    });
   });
 
   describe('toolkits function', () => {
@@ -2384,13 +2473,15 @@ describe('ToolRouter', () => {
     beforeEach(() => {
       // Reset the Tools mock before each test
       vi.clearAllMocks();
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
     });
 
     it('should fetch and wrap tools without modifiers', async () => {
@@ -2450,16 +2541,18 @@ describe('ToolRouter', () => {
         },
       });
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_FETCH_EMAILS', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId, {
         toolkits: ['gmail'],
@@ -2550,15 +2643,17 @@ describe('ToolRouter', () => {
         error: null,
         successful: true,
       });
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([
-            { slug: 'COMPOSIO_SEARCH_TOOLS' },
-            { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
-          ]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([
+              { slug: 'COMPOSIO_SEARCH_TOOLS' },
+              { slug: 'GMAIL_SEND_EMAIL', toolkit: { slug: 'gmail', name: 'Gmail' } },
+            ]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2609,12 +2704,14 @@ describe('ToolRouter', () => {
         successful: true,
       });
       const multiExecuteTool = { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' };
-      (Tools as any).mockImplementation(() => ({
-        getRawToolRouterSessionTools: vi
-          .fn()
-          .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
-        executeSessionTool,
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockResolvedValue([{ slug: 'COMPOSIO_SEARCH_TOOLS' }, multiExecuteTool]),
+          executeSessionTool,
+        };
+      });
       mockClient.toolRouter.session.create.mockResolvedValueOnce({
         ...mockSessionCreateResponse,
         experimental: {
@@ -2725,11 +2822,15 @@ describe('ToolRouter', () => {
     it('should handle tools fetching errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-      (Tools as any).mockImplementation(() => ({
-        getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        getRawToolRouterSessionTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
-        wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
-      }));
+      (Tools as any).mockImplementation(function () {
+        return {
+          getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
+          getRawToolRouterSessionTools: vi
+            .fn()
+            .mockRejectedValue(new Error('Failed to fetch tools')),
+          wrapToolsForToolRouter: vi.fn().mockReturnValue('mocked-wrapped-tools'),
+        };
+      });
 
       const session = await toolRouter.create(userId);
 

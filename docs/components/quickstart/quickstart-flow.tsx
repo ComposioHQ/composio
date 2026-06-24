@@ -79,7 +79,7 @@ function FrameworkCard({ name, logo, logoDark, selected, onSelect }: FrameworkCa
       onClick={onSelect}
       className={`
         flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
         ${selected
           ? 'border-[var(--composio-orange)] bg-fd-accent/30'
           : 'border-fd-border bg-fd-card hover:bg-fd-accent/50 hover:border-[color-mix(in_srgb,var(--composio-orange)_50%,transparent)]'

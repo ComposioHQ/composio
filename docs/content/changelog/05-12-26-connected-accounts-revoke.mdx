@@ -1,0 +1,58 @@
+---
+title: "New Endpoint: Revoke OAuth 2.0 Tokens for a Connected Account"
+description: "Programmatically revoke a connected account's tokens at the upstream provider"
+date: "2026-05-12"
+---
+
+You can now programmatically revoke a connected account's OAuth 2.0 tokens at the upstream provider, giving you explicit control over when credentials are killed at the third-party — instead of relying on deletion or natural token expiry.
+
+### The Endpoint
+
+```http
+POST /api/v3.1/connected_accounts/{nanoid}/revoke
+```
+
+On success, the connection transitions to `REVOKED` and the response reports which token subjects were killed at the provider on this call.
+
+**Example request:**
+
+```bash
+curl -X POST 'https://backend.composio.dev/api/v3.1/connected_accounts/ca_1a2b3c4d5e6f/revoke' \
+  --header 'x-api-key: <YOUR_API_KEY>'
+```
+
+**Example response (`200 OK`):**
+
+```json
+{
+  "revoked_tokens": ["access_token", "refresh_token"],
+  "connected_account": {
+    "id": "ca_1a2b3c4d5e6f",
+    "status": "REVOKED"
+  }
+}
+```
+
+The `revoked_tokens` array lists the subjects revoked at the provider during this call. An empty array means the connection was already in a revoked state and no upstream dispatch was issued.
+
+### Status Codes
+
+| Code | Meaning |
+|------|---------|
+| `200` | Connection revoked (or already revoked — see `revoked_tokens`) |
+| `400` | Revoke is not supported for this toolkit |
+| `404` | Connected account does not exist |
+| `409` | Connection is not in a revokable state (only `ACTIVE` and already-`REVOKED` are accepted) |
+| `500` | Server error — revocation could not be completed |
+
+### Revoke Is Not Automatic on Delete
+
+Deleting a connected account or a project does **not** revoke tokens at the upstream provider — the credentials are removed from Composio but may remain live at the third-party until they expire naturally. If you need credentials killed at the provider, follow **revoke-then-delete** semantics: call `POST /revoke` first, then issue the delete.
+
+### Revoke Is Best-Effort
+
+Some providers do not expose a programmatic way to revoke one or both token subjects (for example, an access token but no refresh-token revoke route, or no revoke endpoint at all). In those cases, Composio revokes whatever the provider supports and the `revoked_tokens` array reflects exactly what was killed. Always read `revoked_tokens` to confirm which subjects were affected — do not assume both `access_token` and `refresh_token` were revoked on every call.
+
+### Externally Revoked Tokens
+
+If a user revokes the connection directly with the provider (for example, removing the app from their account on the provider's website), the upstream revoke call from this endpoint may return an error. Handle this case by treating the connection as already revoked on your side.

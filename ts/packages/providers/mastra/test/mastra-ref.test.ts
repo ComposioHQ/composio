@@ -13,6 +13,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Tool } from '@composio/core';
 import { MastraProvider } from '../src';
 
+// `@mastra/core`'s `createTool` (>= 1.43) wraps JSON Schemas in a
+// `JsonSchemaWrapper` (a Standard Schema), so a wrapped tool's `inputSchema` /
+// `outputSchema` is no longer the raw JSON Schema. Reach through `getSchema()`
+// to inspect the resolved JSON Schema the compat layer produced.
+const unwrapSchema = (schema: unknown): unknown =>
+  (schema as { getSchema?: () => unknown }).getSchema?.() ?? schema;
+
 const containsRef = (value: unknown): boolean => {
   if (value === null || typeof value !== 'object') return false;
   if (Array.isArray(value)) return value.some(containsRef);
@@ -76,19 +83,19 @@ describe('MastraProvider regression: $ref in JSON Schema', () => {
   });
 
   it('preserves type info from $defs (no degraded permissive anyOf)', () => {
-    const idProp = findProperty(wrapped.inputSchema, 'id');
+    const idProp = findProperty(unwrapSchema(wrapped.inputSchema), 'id');
     expect(idProp).toBeDefined();
     expect(idProp?.type).toBe('string');
   });
 
   it('preserves type info from Draft-7 `definitions` on the output schema', () => {
-    const skuProp = findProperty(wrapped.outputSchema, 'sku');
+    const skuProp = findProperty(unwrapSchema(wrapped.outputSchema), 'sku');
     expect(skuProp).toBeDefined();
     expect(skuProp?.type).toBe('string');
   });
 
   it('leaves no $ref in the produced schemas', () => {
-    expect(containsRef(wrapped.inputSchema)).toBe(false);
-    expect(containsRef(wrapped.outputSchema)).toBe(false);
+    expect(containsRef(unwrapSchema(wrapped.inputSchema))).toBe(false);
+    expect(containsRef(unwrapSchema(wrapped.outputSchema))).toBe(false);
   });
 });
