@@ -21,7 +21,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 type DockerToolchain = {
   nodeVersion: string;
   nodeMajorVersion: string;
-  bunVersion: string;
 };
 
 function getRepoRoot(): string {
@@ -29,7 +28,9 @@ function getRepoRoot(): string {
   return resolve(__dirname, '../../../..');
 }
 
-function getMiseVersion(repoRoot: string, tool: 'node' | 'bun' | 'deno'): string {
+// bun and pnpm are installed inside the images from mise.toml/mise.lock, so only the
+// matrixed runtimes (node, deno) need to be resolved on the host and threaded as build args.
+function getMiseVersion(repoRoot: string, tool: 'node' | 'deno'): string {
   try {
     return execFileSync('mise', ['current', tool], { cwd: repoRoot, encoding: 'utf-8' }).trim();
   } catch (err) {
@@ -46,7 +47,6 @@ function getDockerToolchain(repoRoot: string): DockerToolchain {
   return {
     nodeVersion,
     nodeMajorVersion: getMajorVersion(nodeVersion),
-    bunVersion: getMiseVersion(repoRoot, 'bun'),
   };
 }
 
@@ -75,11 +75,7 @@ function defaultNodeLabels(nodeVersion: string): Record<string, string> {
   };
 }
 
-async function buildNodeImage(
-  nodeVersion: string,
-  toolchain: DockerToolchain,
-  repoRoot: string
-): Promise<boolean> {
+async function buildNodeImage(nodeVersion: string, repoRoot: string): Promise<boolean> {
   const dockerfilePath = resolve(repoRoot, 'ts/e2e-tests/_utils/Dockerfile.node');
   const imageTag = imageTagForNodeVersion(nodeVersion);
   const labels = defaultNodeLabels(nodeVersion);
@@ -90,7 +86,7 @@ async function buildNodeImage(
   console.log(`\nBuilding image for Node.js ${nodeVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg NODE_VERSION=${nodeVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -135,7 +131,7 @@ async function buildDenoImage(
   console.log(`\nBuilding image for Deno ${denoVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} --build-arg NODE_MAJOR=${toolchain.nodeMajorVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg DENO_VERSION=${denoVersion} --build-arg NODE_MAJOR=${toolchain.nodeMajorVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -180,7 +176,7 @@ async function buildCliImage(
   console.log(`\nBuilding image for CLI ${cliVersion}...`);
 
   const result =
-    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} --build-arg BUN_VERSION=${toolchain.bunVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
+    await $`docker build -f ${dockerfilePath} --build-arg CLI_VERSION=${cliVersion} --build-arg NODE_VERSION=${toolchain.nodeVersion} ${{ raw: labelArgs }} -t ${imageTag} ${repoRoot}`
       .cwd(repoRoot)
       .nothrow();
 
@@ -271,7 +267,7 @@ async function main() {
   // Build Node.js images
   for (const version of nodeVersions) {
     total++;
-    const success = await buildNodeImage(version, dockerToolchain, repoRoot);
+    const success = await buildNodeImage(version, repoRoot);
     if (!success) {
       failed++;
     }

@@ -28,8 +28,7 @@ pnpm test               # Run tests
 ### Package Management
 
 ```bash
-mise install            # Install Node, Bun, Deno, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
-corepack enable         # Activate pnpm from package.json#packageManager
+mise install            # Install Node, Bun, Deno, pnpm, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
 pnpm install            # Install dependencies
 pnpm check:peer-deps    # Check peer dependencies
 pnpm update:peer-deps   # Update peer dependencies
@@ -115,7 +114,7 @@ composio/
 
 ```bash
 pnpm test:e2e              # All (Node.js + Deno + Cloudflare)
-pnpm test:e2e:node         # Node.js CJS/ESM compatibility (Docker)
+pnpm test:e2e:node         # Node.js ESM and require(esm) interop (Docker)
 pnpm test:e2e:deno         # Deno npm: specifier compatibility (Docker)
 pnpm test:e2e:cloudflare   # Cloudflare Workers
 ```
@@ -227,14 +226,34 @@ Toolchain versions are coalesced in `mise.toml`. To check the current values:
 - **Deno**: `mise current deno`
 - **Python**: `mise current python`
 - **uv**: `mise current uv`
-- **pnpm**: `node -p "require('./package.json').packageManager"`
+- **pnpm**: `mise current npm:pnpm`
 
-To bump, edit `mise.toml` (or `package.json#packageManager` for pnpm), then run:
+To bump, edit `mise.toml`, then run:
 
 ```bash
 mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
 ```
 
 Commit `mise.lock` with the version bump. The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
+
+### When Bumping the Generated SDK Client (`@composio/client` / `composio-client`)
+
+The Stainless-generated clients are published from separate repos (`ComposioHQ/composio-base-ts` → `@composio/client` on npm; `ComposioHQ/composio-base-py` → `composio-client` on PyPI). **Nothing auto-bumps them here** — there is no Stainless→consumer bot, and Dependabot does not touch the pnpm `catalog:` pin (TS) or the exact `composio-client==` pin (Python). Bumping is manual, and the pin lives in **multiple files that must move together**:
+
+1. **Confirm the version is actually published first.** Check `npm view @composio/client version` / `pip index versions composio-client`. The Python PyPI publish in `composio-base-py` can fail silently (e.g. `403 Forbidden` from a stale `PYPI_TOKEN`) even when the GitHub release/tag exists — verify the package resolves before bumping.
+
+2. **TypeScript** — edit the catalog pin, refresh the lockfile, add a changeset:
+   ```bash
+   # edit pnpm-workspace.yaml -> catalog: '@composio/client'
+   pnpm install --lockfile-only          # updates pnpm-lock.yaml
+   # add a patch changeset for @composio/core and @composio/cli (both consume it)
+   ```
+
+3. **Python** — the pin lives in **three** places; update all of them or `uv sync` / published metadata will be inconsistent:
+   - `python/pyproject.toml` (`dependencies`)
+   - `python/setup.py` (`install_requires`) — easy to miss; setuptools fallback metadata
+   - root `uv.lock` — regenerate from the workspace root: `uv lock --upgrade-package composio-client`
+
+4. **A version bump is not enough across a breaking regen.** The generated client can remove or restructure modules between releases (e.g. `composio-client` 1.41.0 deleted `types.tool_router_create_session_params`), which surfaces as an *import-time* `ModuleNotFoundError` that reds every job importing the SDK. After bumping, actually import/typecheck the consuming code (`uv run --package composio python -c "import composio"`, `pnpm typecheck`) and migrate any references the new client dropped. Prefer decoupling from churny generated types — define small local TypedDicts instead of importing internal client submodules.
 
 This monorepo uses pnpm workspaces and Turbo for efficient builds and development.

@@ -19,16 +19,28 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+const hackerNewsUserOutputSchema = z
+  .union([
+    z.object({
+      username: z.string().optional(),
+      karma: z.number(),
+    }),
+    z.object({
+      data: z.object({
+        username: z.string().optional(),
+        karma: z.number(),
+      }),
+    }),
+  ])
+  .transform(output => ('data' in output ? output.data : output));
+
 /**
  * Default route - lists available test endpoints
  */
 app.get('/', c => {
   return c.json({
     message: 'Tool Router AI E2E Test Worker',
-    endpoints: [
-      '/test/mcp-client',
-      '/test/agent',
-    ],
+    endpoints: ['/test/mcp-client', '/test/agent'],
   });
 });
 
@@ -55,15 +67,15 @@ app.get('/test/mcp-client', async c => {
 
   const { mcp } = session;
 
-  const mcpClient = await createMCPClient({
+  await createMCPClient({
     transport: {
       type: 'http',
       url: mcp.url,
       headers: mcp.headers,
     },
   });
-
-  c.executionCtx.waitUntil(mcpClient.close());
+  // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
+  // aborts the pending stream and Vitest reports it as an unhandled rejection.
 
   return c.json({
     message: 'MCP client connected successfully',
@@ -74,7 +86,7 @@ app.get('/test/mcp-client', async c => {
 /**
  * Test: Agent Execution
  * Tests the full workflow: create session, get tools, run agent with generateText.
- * 
+ *
  * Note: this takes ~40s locally.
  */
 app.get('/test/agent', async c => {
@@ -87,6 +99,7 @@ app.get('/test/agent', async c => {
   const session = await composio.create('default', {
     toolkits: ['hackernews'],
     manageConnections: true,
+    preload: { tools: ['HACKERNEWS_GET_USER'] },
     tools: {
       hackernews: {
         enable: ['HACKERNEWS_GET_USER'],
@@ -103,37 +116,51 @@ app.get('/test/agent', async c => {
       headers: mcp.headers,
     },
   });
+  // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
+  // aborts the pending stream and Vitest reports it as an unhandled rejection.
 
-  try {
-    const tools = await mcpClient.tools();
-    const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
-  
-    const result = await generateText({
-      model: openai('gpt-5.1-codex'),
-      prompt: `Look up the HackerNews user "pg", and tell me their karma score.`,
-      output: Output.object({
-        schema: z.object({
-          karma: z.number(),
+  const tools = await mcpClient.tools({
+    schemas: {
+      HACKERNEWS_GET_USER: {
+        inputSchema: z.object({
+          username: z.string(),
         }),
-      }),
-      stopWhen: stepCountIs(10),
-      tools,
-    });
-  
-    const toolCalls = result.steps.flatMap(step =>
-      step.toolCalls.map(tc => ({ toolName: tc.toolName }))
-    );
+        outputSchema: hackerNewsUserOutputSchema,
+      },
+    },
+  });
+  const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
 
-    return c.json({
-      message: 'Agent executed successfully',
-      sessionId,
-      toolCount: Object.keys(tools).length,
-      toolCalls,
-      response: result.output,
-    });
-  } finally {
-    c.executionCtx.waitUntil(mcpClient.close());
-  }
+  const result = await generateText({
+    model: openai('gpt-5.1-codex'),
+    prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER, then return the exact karma value from that tool result.`,
+    output: Output.object({
+      schema: z.object({
+        karma: z.number(),
+      }),
+    }),
+    stopWhen: stepCountIs(10),
+    tools,
+  });
+
+  const toolCalls = result.steps.flatMap(step =>
+    step.toolCalls.map(toolCall => ({ toolName: toolCall.toolName }))
+  );
+  const toolResults = result.steps.flatMap(step =>
+    step.toolResults.map(toolResult => ({
+      toolName: toolResult.toolName,
+      output: toolResult.output,
+    }))
+  );
+
+  return c.json({
+    message: 'Agent executed successfully',
+    sessionId,
+    toolCount: Object.keys(tools).length,
+    toolCalls,
+    toolResults,
+    response: result.output,
+  });
 });
 
 export default app;

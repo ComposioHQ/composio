@@ -61,24 +61,24 @@ checksum = "sha256:fae025e69cada67fb57affdda26abbe72991b02b515c3221e92c58aa8a642
 url = "https://dl.deno.land/release/v2.6.7/deno-x86_64-apple-darwin.zip"
 
 [[tools.node]]
-version = "20.20.2"
+version = "22.22.3"
 backend = "core:node"
 
 [tools.node."platforms.linux-arm64"]
-checksum = "sha256:47ef73d543ecf6eb19435f6c03a0ac4809b3bf0dd6b26c7c571efc2a6572a74d"
-url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-linux-arm64.tar.gz"
+checksum = "sha256:cc8bc82b2dd0b595c3b95a4c3c9c8c350907cff011afbdee3d1379e812e1e3e3"
+url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-linux-arm64.tar.gz"
 
 [tools.node."platforms.linux-x64"]
-checksum = "sha256:19e56f0825510207dd904f087fe52faa0a4eb6b2aab5f0ea7a33830d04888b8b"
-url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-linux-x64.tar.gz"
+checksum = "sha256:c7a10d6816da8eaaa7534dd73c71c6e2b2c391dbbf845e364902d156615dd1b8"
+url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-linux-x64.tar.gz"
 
 [tools.node."platforms.macos-arm64"]
-checksum = "sha256:466e05f3477c20dfb723054dfebffe55bc74660ee77f612166fca121dacb65b6"
-url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-darwin-arm64.tar.gz"
+checksum = "sha256:0da7ff74ef8611328c8212f17943368713a2ad953fb7d89a8c8a0eae87c23207"
+url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-darwin-arm64.tar.gz"
 
 [tools.node."platforms.macos-x64"]
-checksum = "sha256:8be6f5e4bb128c82774f8a0b8d7a1cc1365a7977d9657cece0ca647b3fe04e61"
-url = "https://nodejs.org/dist/v20.20.2/node-v20.20.2-darwin-x64.tar.gz"
+checksum = "sha256:45830ba752fa0d892c6dcd640946669801293cac820a33591ded40ac075198ec"
+url = "https://nodejs.org/dist/v22.22.3/node-v22.22.3-darwin-x64.tar.gz"
 
 [[tools."npm:pnpm"]]
 version = "10.28.2"

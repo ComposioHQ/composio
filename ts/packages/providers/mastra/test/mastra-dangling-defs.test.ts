@@ -26,6 +26,13 @@ import {
 } from '@composio/core';
 import { MastraProvider } from '../src';
 
+// `@mastra/core`'s `createTool` (>= 1.43) wraps JSON Schemas in a
+// `JsonSchemaWrapper` (a Standard Schema), so a wrapped tool's `inputSchema` /
+// `outputSchema` is no longer the raw JSON Schema. Reach through `getSchema()`
+// to inspect the resolved JSON Schema the compat layer produced.
+const unwrapSchema = (schema: unknown): unknown =>
+  (schema as { getSchema?: () => unknown }).getSchema?.() ?? schema;
+
 // The fixtures below deliberately build `Tool`-shaped objects whose
 // `inputParameters` / `outputParameters` carry `$ref` properties — a shape
 // `ParametersSchema` admits via `JSONSchemaPropertySchema` but that does not
@@ -149,7 +156,7 @@ describe('MastraProvider: dangling $ref tolerance', () => {
     // The wrapped schema went through applyCompatLayer (JSON Schema → Zod →
     // JSON Schema). All we can guarantee at this level is no surviving
     // $ref string anywhere in the structure.
-    expect(JSON.stringify(wrapped.outputSchema)).not.toContain('$ref');
+    expect(JSON.stringify(unwrapSchema(wrapped.outputSchema))).not.toContain('$ref');
   });
 
   it('emits exactly one logger.warn per (toolSlug, ref) pair, even when the same tool is wrapped multiple times', () => {
@@ -249,7 +256,7 @@ describe('MastraProvider: dangling $ref tolerance', () => {
   it('preserves resolvable $defs (regression guard — no degraded permissive anyOf)', () => {
     const wrapped = provider.wrapTool(resolvableRefTool, exec) as { inputSchema: unknown };
     // Resolvable $ref should produce a real schema with the User shape inlined.
-    const inputJson = JSON.stringify(wrapped.inputSchema);
+    const inputJson = JSON.stringify(unwrapSchema(wrapped.inputSchema));
     expect(inputJson).toContain('id');
     expect(inputJson).not.toContain('$ref');
     // No warning should be emitted for resolvable refs.
