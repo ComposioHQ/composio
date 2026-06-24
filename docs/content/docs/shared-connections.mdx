@@ -7,7 +7,7 @@ experimental: true
 ---
 
 <Callout type="warn">
-Shared connections are experimental and may change. ACL fields nest under an `experimental` block on the request and response, so the shapes below may shift between SDK versions. Pin a specific SDK version if you depend on the current contract.
+ACL fields nest under an `experimental` block on the request and response, so the shapes below may shift between SDK versions. Pin a specific SDK version if you depend on the current contract.
 </Callout>
 
 By default, a connected account is **PRIVATE**: only the `userID` that created it can use it. A **SHARED** connection can be reached by other `userID`s, subject to a per-connection access control list (ACL).
