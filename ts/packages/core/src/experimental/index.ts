@@ -1,10 +1,11 @@
 /**
  * Experimental APIs for @composio/core.
  *
- * These APIs may change without a major version bump.
+ * @deprecated Import from '@composio/core' instead:
+ *   import { experimental_createTool, experimental_createToolkit } from '@composio/core';
  */
 
-// Custom tool helpers remain available here for backward compatibility.
+// Re-export for backward compatibility with existing code
 export {
   createCustomTool as experimental_createTool,
   createCustomToolkit as experimental_createToolkit,

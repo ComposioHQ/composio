@@ -11,7 +11,7 @@ export async function experimental_createLocalWorkbenchSession(
   config: LocalWorkbenchConfig = {}
 ): Promise<LocalWorkbenchSession> {
   const composioConfig = composio.getConfig();
-  const backendUrl = (composioConfig.baseURL ?? 'https://backend.composio.dev').replace(/\/+$/, '');
+  const backendUrl = composioConfig.baseURL ?? 'https://backend.composio.dev';
   const apiKey = composioConfig.apiKey;
 
   if (!apiKey) {

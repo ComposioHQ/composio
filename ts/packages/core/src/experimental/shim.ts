@@ -10,9 +10,17 @@ export interface PythonWorkbenchHelperSourceOptions {
   invokeLlmModel?: string;
 }
 
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
 export function experimental_createWorkbenchEnv(env: WorkbenchEnvOptions): Record<string, string> {
   return {
-    BACKEND_URL: env.backendUrl.replace(/\/+$/, ''),
+    BACKEND_URL: trimTrailingSlashes(env.backendUrl),
     COMPOSIO_TOOLROUTER_SESSION_ID: env.sessionId,
     COMPOSIO_API_KEY: env.apiKey,
   };
