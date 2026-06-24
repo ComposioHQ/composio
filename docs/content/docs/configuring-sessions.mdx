@@ -587,7 +587,7 @@ When a user has multiple connected accounts for a toolkit, the session uses the 
 
 ## Disabling the sandbox
 
-By default, sessions include the [sandbox](/docs/sandbox), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
+By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -673,7 +673,7 @@ const session = await composio.create("user_123", {
 **Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload, but expect future pricing to track actual usage.
 </Callout>
 
-Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox#files-and-mounts) survives the restart.
+Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts) survives the restart.
 
 ## Session methods
 

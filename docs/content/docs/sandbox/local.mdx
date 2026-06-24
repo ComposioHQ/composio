@@ -1,0 +1,87 @@
+---
+title: Local sandbox
+description: Run Composio tools in a sandbox you own — your filesystem, your shell, your security boundary — while Composio keeps managed auth and tool discovery.
+keywords: [local sandbox, sandbox, workbench, bring your own runtime, code execution, security boundary, run_composio_tool, experimental_createLocalWorkbenchSession]
+---
+
+A **local sandbox** runs your agent's code in an execution environment *you* own: your VM, container, Kubernetes job, or internal sandbox service. It's the [remote sandbox](/docs/sandbox/remote) split at the execution boundary. With the remote sandbox, Composio runs the agent's code for you in a hosted Python environment. With a local sandbox, you run that code yourself, and Composio still does tool discovery and auth and hands the agent the same helpers to call tools with.
+
+## Where it fits
+
+Use a local sandbox when the execution boundary has to be yours. Composio keeps the managed parts (tool discovery and auth through the [Tool Router](/docs/how-composio-works)); you keep the box the code runs in.
+
+<LocalWorkbenchFlow />
+
+## When to use it
+
+Reach for a local sandbox when:
+
+- **You need to own the security boundary.** The agent clones a repo, runs untrusted code, or touches data that can't leave your infrastructure. You decide what the box can reach and when it's torn down.
+- **You already run sandboxes.** You have a VM pool, a container platform, or a CI worker, and you'd rather run agent code there than hand it to a managed runtime.
+- **You need a filesystem and shell you own.** The task installs packages, runs the repo's real build, or shells out to tools that have to live next to your code.
+
+If none of that applies, use the [remote sandbox](/docs/sandbox/remote) instead. It's the same helper surface with no infrastructure to run.
+
+## Create a local sandbox session
+
+A local sandbox session is a [session](/docs/how-composio-works) created with the remote sandbox turned off. Set `workbench.enable: false`, then pass the session to `experimental_createLocalWorkbenchSession`, which returns the two pieces you run yourself.
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+import { experimental_createLocalWorkbenchSession } from '@composio/core/experimental';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+// Create the session with the remote sandbox disabled, so code runs in your box.
+const session = await composio.create('user_123', {
+  toolkits: ['github'],
+  workbench: { enable: false },
+});
+
+const { helperSource, env } = await experimental_createLocalWorkbenchSession(composio, session);
+```
+
+You get back two things:
+
+| Field | What it is |
+|---|---|
+| `helperSource` | A Python helper, as source you write into your sandbox (for example as `composio_helper.py`). It exposes the in-sandbox tool surface the agent calls. |
+| `env` | The environment variables that helper needs to reach Composio from inside your box. Pass them to the process you run the agent in. |
+
+`experimental_createLocalWorkbenchSession` validates that the session is local: it throws if the session has the remote workbench enabled, because the remote sandbox and a local one can't both run for a single session. The session you pass in must have `workbench.enable: false`.
+
+<Callout>
+The API ships under the `experimental_` prefix and the `@composio/core/experimental` entry point, so the surface may change in a future release.
+</Callout>
+
+## The helper contract
+
+`helperSource` exposes the same in-sandbox helpers the remote sandbox runs for you: [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox/remote#built-in-helpers). The agent imports them and calls tools without knowing that execution is local:
+
+```python
+from composio_helper import run_composio_tool, invoke_llm, web_search
+
+response, error = run_composio_tool(
+    "GITHUB_GET_A_PULL_REQUEST",
+    {"owner": "composiohq", "repo": "composio", "pull_number": 1},
+)
+```
+
+Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed. The [remote sandbox page](/docs/sandbox/remote#built-in-helpers) documents what each helper does; a local sandbox honors the same contract, so your agent code is portable between the two.
+
+The helper is the *only* Composio-specific thing your sandbox carries. Anything that can create a directory, write `helperSource` into it, and run a process with `env` set can host a local sandbox.
+
+## Security: the sandbox is your boundary
+
+The project API key reaches the helper through `env` as `COMPOSIO_API_KEY`, so it lives inside the sandbox. Any code or output in the sandbox can read it. **Treat the sandbox as your security boundary**: it has the same blast radius as that key, which can act across every connection on the project.
+
+<Callout type="warn">
+Scope and isolate the box the way you would any environment holding a project credential. Run untrusted code with the network, filesystem, and lifetime limits you'd apply to code you don't fully trust, and rotate `COMPOSIO_API_KEY` if a run could have exposed it.
+</Callout>
+
+A session-scoped key, narrowing what the in-sandbox credential can do down to just that session, is the planned follow-up. Until then, the project key is what the helper carries.
+
+## Next
+
+<Card icon={<Terminal />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a pull request into a sandbox you own, run the repo's real checks, and post one grounded comment." />

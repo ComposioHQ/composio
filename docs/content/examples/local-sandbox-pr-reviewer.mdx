@@ -12,7 +12,7 @@ This example builds a GitHub PR reviewer that does exactly that: it clones a pul
 It comes down to a handful of Composio pieces:
 
 1. **A local sandbox session** is a Tool Router session with code execution turned off. Composio still does discovery and auth; it just won't run code for you.
-2. **The helper contract** is what comes back: a Python helper exposing the same [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox) tools Composio's managed sandbox runs for you, plus the `env` it needs. You inject it into your sandbox and the agent calls it.
+2. **The helper contract** is what comes back: a Python helper exposing the same [`run_composio_tool`, `invoke_llm`, and `web_search`](/docs/sandbox/remote) tools Composio's managed sandbox runs for you, plus the `env` it needs. You inject it into your sandbox and the agent calls it.
 3. **Your sandbox is the boundary.** Tool *execution* happens in a box you control. E2B is the replaceable sample runner; the contract it honors is the real interface.
 4. **Only post when checks ran.** The reviewer is instructed never to post an unverified review, so a repo it can't build produces no comment at all.
 
