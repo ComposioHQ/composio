@@ -2,7 +2,7 @@ import { createPatch } from 'diff';
 import { getSingularPatch } from '@pierre/diffs';
 import { preloadFileDiff } from '@pierre/diffs/ssr';
 import { DiffView } from './diff-view';
-import { FILE_BUILDS } from '@/lib/slack-bot-build';
+import { FILE_BUILDS } from '@/lib/file-builds';
 
 async function diffFor(file: string, prev: string, code: string) {
   const fileDiff = getSingularPatch(createPatch(file, prev, code, '', ''));

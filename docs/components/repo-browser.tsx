@@ -1,6 +1,7 @@
 import { preloadFile } from '@pierre/diffs/ssr';
 import { RepoBrowserClient, type RepoFile } from './repo-browser-client';
-import sourceData from '@/lib/slack-bot-source.json';
+import slackBot from '@/lib/slack-bot-source.json';
+import localWorkbench from '@/lib/local-workbench-source.json';
 
 interface SourceFile {
   path: string;
@@ -8,17 +9,20 @@ interface SourceFile {
   composio: boolean;
 }
 
+// JSON imports must be static, so map each example's committed snapshot here and
+// pick one with the `source` prop. The default keeps the Slack bot page working.
+const SOURCES = { 'slack-bot': slackBot, 'local-workbench': localWorkbench } as const;
+
 /**
- * RepoBrowser — a real slice of the composio-slack-bot project as a browsable
- * tree + code viewer. The Composio touch-points (triggers, sessions, shared
- * connection, proxy) are bundled with the full project on GitHub. Each file's
- * code is prerendered on the server with @pierre/diffs.
+ * RepoBrowser — a real slice of an example project as a browsable tree + code
+ * viewer. The Composio touch-points are highlighted; each file's code is
+ * prerendered on the server with @pierre/diffs.
  */
-export async function RepoBrowser() {
-  const source = sourceData as SourceFile[];
+export async function RepoBrowser({ source = 'slack-bot' }: { source?: keyof typeof SOURCES }) {
+  const data = SOURCES[source] as SourceFile[];
 
   const files: RepoFile[] = [];
-  for (const f of source) {
+  for (const f of data) {
     const { prerenderedHTML } = await preloadFile({ file: { name: f.path, contents: f.contents } });
     files.push({ ...f, prerenderedHTML });
   }
