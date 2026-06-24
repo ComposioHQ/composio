@@ -1,12 +1,15 @@
 import { createPatch } from 'diff';
 import { getSingularPatch } from '@pierre/diffs';
 import { preloadFileDiff } from '@pierre/diffs/ssr';
-import { DiffView } from './diff-view';
+import { DiffView, HIDE_DIFF_STATS_CSS } from './diff-view';
 import { FILE_BUILDS } from '@/lib/slack-bot-build';
 
 async function diffFor(file: string, prev: string, code: string) {
   const fileDiff = getSingularPatch(createPatch(file, prev, code, '', ''));
-  const { prerenderedHTML } = await preloadFileDiff({ fileDiff, options: { diffStyle: 'unified' } });
+  const { prerenderedHTML } = await preloadFileDiff({
+    fileDiff,
+    options: { diffStyle: 'unified', unsafeCSS: HIDE_DIFF_STATS_CSS },
+  });
   return { fileDiff, prerenderedHTML };
 }
 
