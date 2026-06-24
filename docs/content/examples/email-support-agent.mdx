@@ -7,7 +7,7 @@ full: true
 
 A good email support workflow does not need to send mail. It needs to catch the right inbox event, fetch the message, decide whether a reply is safe to draft, create the draft in the original Gmail thread, and leave a review trail.
 
-This example uses Composio as the app layer and LangGraph as the deterministic workflow. That split is the point:
+This example uses Composio as the app layer and [LangGraph](https://github.com/langchain-ai/langgraph) as the deterministic workflow. That split is the point:
 
 1. **Composio Triggers** watch Gmail for new messages.
 2. **A webhook subscription** posts signed trigger events to your FastAPI server.
@@ -23,7 +23,13 @@ This example uses Composio as the app layer and LangGraph as the deterministic w
   priority
 />
 
-Use this shape when the process is prescribed. Email support draft creation should *not* discover arbitrary tools or improvise actions at runtime. If you are building an open-ended agent that should choose among many tools dynamically, start with Composio sessions and Tool Router instead.
+Use this shape when the process is prescribed. Email support draft creation should *not* discover arbitrary tools or improvise actions at runtime. If you are building an open-ended agent that should choose among many tools dynamically, use [Composio sessions](/docs/configuring-sessions) with meta tools enabled so the agent can search, request auth, and execute tools at runtime.
+
+## Why LangGraph?
+
+LangGraph is useful when you want low-level infrastructure for a long-running, stateful workflow: durable execution, human-in-the-loop checkpoints, memory, and observable state transitions. In this example, we use the smallest version of that idea: a fixed graph where each node has one job and tool access stays tightly scoped.
+
+[LangSmith](https://docs.langchain.com/langsmith/home) is separate. LangGraph runs the workflow; LangSmith traces it. Setup enables LangSmith so you can see the webhook input, graph path, node outputs, latency, and draft decision while dogfooding.
 
 ## Setup
 
@@ -65,9 +71,12 @@ COMPOSIO_API_KEY=
 OPENAI_API_KEY=
 LANGSMITH_API_KEY=
 COMPOSIO_USER_ID=email_support_user
+NOTION_PARENT_PAGE_ID=
 ```
 
 `COMPOSIO_USER_ID` is your stable user key for this example. Composio uses it to scope connected accounts, triggers, and tool calls.
+
+`NOTION_PARENT_PAGE_ID` is the Notion page where setup should create the `Email Support Agent` page and `Email Support Inbox` database. Notion requires a parent page for page creation; the script does not guess one.
 
 ## Build the workflow
 
@@ -108,14 +117,19 @@ if event_type == TRIGGER_MESSAGE and trigger_slug == GMAIL_NEW_MESSAGE_TRIGGER:
     return WebhookAction(action="enqueue_langgraph_email_support", ...)
 ```
 
-### Create the Composio app layer
+### Install the app layer
 
-Run the setup script once with your public webhook URL:
+The email workflow needs connected Gmail, connected Notion, a stream of Gmail events, and a place to deliver those events. Composio provides those pieces, so you do not register a Gmail webhook yourself or hold Gmail OAuth tokens.
+
+This is `scripts/setup_composio.py`, run once, built up three steps at a time:
+
+<FileBuildup name="emailSetup" />
+
+Run it with your public webhook URL:
 
 ```bash
 uv run --env-file .env python scripts/setup_composio.py \
-  https://YOUR-NGROK.ngrok-free.app/webhook/composio \
-  --setup-langsmith
+  https://YOUR-NGROK.ngrok-free.app/webhook/composio
 ```
 
 This script creates the app layer around the graph:
@@ -140,39 +154,17 @@ After setup, the Composio Triggers page should show an active Gmail trigger and 
 
 The trigger and subscription are separate on purpose. The trigger is the Gmail-specific tap. The webhook subscription is the project-level pipe that tells Composio where to deliver trigger events.
 
-### Keep the tools scoped
+### Build the graph
 
-The graph does not receive the whole Gmail toolkit. `email_support_agent/utils/tools.py` creates a Gmail session with only fetch and draft enabled:
+`email_support_agent/utils/tools.py` and `email_support_agent/agent.py` are where the boundary gets sharp: Composio owns app access, and LangGraph owns the prescribed workflow. The files grow in three steps:
 
-```python
-SAFE_GMAIL_TOOLS = [
-    "GMAIL_FETCH_EMAILS",
-    "GMAIL_CREATE_EMAIL_DRAFT",
-]
-```
+<FileBuildup name="emailGraph" />
 
-`GMAIL_SEND_EMAIL` is not enabled.
+The graph does not receive the whole Gmail toolkit. It can fetch the triggering message and create a draft. `GMAIL_SEND_EMAIL` is not enabled.
 
 Notion gets a separate scoped session for the database tools used by the review queue. The runtime session filter limits which Composio tools this workflow can call.
 
 You can also restrict OAuth permissions at the app level. Create a Gmail or Notion Auth Config with narrower scopes in the Dashboard, or create it programmatically with `credentials.scopes`, then pass that auth config into the session.
-
-### Run the deterministic graph
-
-LangGraph owns the support decision. Each node has one job:
-
-```text
-fetch_context
-trust_check
-classify_intent
-claim_message
-draft_reply
-review_pending
-prepare_notion_row
-write_notion_row
-```
-
-The graph is built in `email_support_agent/agent.py`. The helper functions live under `email_support_agent/utils`, so `agent.py` stays focused on graph construction.
 
 ### Write the review artifacts
 
@@ -196,6 +188,18 @@ Composio may deliver the same Gmail trigger payload more than once. The workflow
   caption="LangSmith shows webhook and graph behavior while you dogfood."
 />
 
+<Figure
+  src="/images/examples/email-support-agent/gmail-drafts.png"
+  alt="Gmail inbox showing clean support email threads with draft replies"
+  caption="The workflow creates Gmail drafts for review. It does not send replies."
+/>
+
+<Figure
+  src="/images/examples/email-support-agent/notion-inbox.png"
+  alt="Notion Email Support Inbox database with clean support rows"
+  caption="Notion stores the review queue and duplicate-delivery guard."
+/>
+
 ## Verify
 
 Run the tests from the example directory:
@@ -205,8 +209,3 @@ uv run --env-file .env python -m unittest discover -s tests -p 'test_*.py'
 ```
 
 The tests disable LangSmith tracing at import time, even if your local `.env` has tracing enabled. That keeps dry-run graph traces out of your LangSmith project.
-
-<Cards>
-  <Card title="Triggers" href="/docs/triggers" description="How Composio trigger events move from connected apps to your webhook" />
-  <Card title="Webhook subscriptions" href="/reference/api-reference/webhook-subscriptions" description="Create the project-level URL Composio posts trigger events to" />
-</Cards>

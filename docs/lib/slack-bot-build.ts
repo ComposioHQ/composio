@@ -395,4 +395,206 @@ export const INSTALL_BUILD_STAGES: BuildStage[] = INSTALL_STAGES.map((s) => ({
 export const FILE_BUILDS: Record<string, { file: string; stages: BuildStage[] }> = {
   install: { file: 'install.ts', stages: INSTALL_BUILD_STAGES },
   bot: { file: 'bot.ts', stages: BOT_BUILD_STAGES },
+  emailSetup: {
+    file: 'scripts/setup_composio.py',
+    stages: [
+      {
+        title: 'Create a scoped user session',
+        description:
+          'One stable Composio user owns the Gmail and Notion connections for the demo. Production apps would use their real user id here.',
+        code: `from composio import Composio
+from composio_langgraph import LanggraphProvider
+
+USER_ID = "email_support_user"
+
+composio = Composio(provider=LanggraphProvider())
+session = composio.create(
+    user_id=USER_ID,
+    toolkits=["gmail", "notion"],
+    preload={"tools": ["NOTION_CREATE_NOTION_PAGE", "NOTION_CREATE_DATABASE"]},
+    workbench={"enable": False},
+)
+`,
+      },
+      {
+        title: 'Subscribe the webhook',
+        description:
+          'The webhook subscription is project-level. It tells Composio where to deliver signed trigger events.',
+        code: `from composio import Composio
+from composio_langgraph import LanggraphProvider
+import os
+import requests
+
+USER_ID = "email_support_user"
+WEBHOOK_URL = "https://YOUR-NGROK.ngrok-free.app/webhook/composio"
+
+composio = Composio(provider=LanggraphProvider())
+session = composio.create(
+    user_id=USER_ID,
+    toolkits=["gmail", "notion"],
+    preload={"tools": ["NOTION_CREATE_NOTION_PAGE", "NOTION_CREATE_DATABASE"]},
+    workbench={"enable": False},
+)
+
+response = requests.post(
+    "https://backend.composio.dev/api/v3.1/webhook_subscriptions",
+    headers={"x-api-key": os.environ["COMPOSIO_API_KEY"]},
+    json={
+        "webhook_url": WEBHOOK_URL,
+        "enabled_events": ["composio.trigger.message"],
+        "version": "V3",
+    },
+)
+webhook_secret = response.json()["secret"]
+`,
+      },
+      {
+        title: 'Create the Gmail trigger',
+        description:
+          'The trigger is user-level. It watches the connected Gmail account for new inbox messages and emits events to the project webhook.',
+        code: `from composio import Composio
+from composio_langgraph import LanggraphProvider
+import os
+import requests
+
+USER_ID = "email_support_user"
+WEBHOOK_URL = "https://YOUR-NGROK.ngrok-free.app/webhook/composio"
+
+composio = Composio(provider=LanggraphProvider())
+session = composio.create(
+    user_id=USER_ID,
+    toolkits=["gmail", "notion"],
+    preload={"tools": ["NOTION_CREATE_NOTION_PAGE", "NOTION_CREATE_DATABASE"]},
+    workbench={"enable": False},
+)
+
+response = requests.post(
+    "https://backend.composio.dev/api/v3.1/webhook_subscriptions",
+    headers={"x-api-key": os.environ["COMPOSIO_API_KEY"]},
+    json={
+        "webhook_url": WEBHOOK_URL,
+        "enabled_events": ["composio.trigger.message"],
+        "version": "V3",
+    },
+)
+webhook_secret = response.json()["secret"]
+
+trigger = composio.triggers.create(
+    slug="GMAIL_NEW_GMAIL_MESSAGE",
+    user_id=USER_ID,
+    trigger_config={},
+)
+gmail_trigger_id = trigger.trigger_id
+`,
+      },
+    ],
+  },
+  emailGraph: {
+    file: 'email_support_agent/utils/tools.py',
+    stages: [
+      {
+        title: 'Expose only safe Gmail tools',
+        description:
+          'The graph can fetch the triggering message and create a draft. It cannot send email.',
+        code: `from composio import Composio
+from composio_langgraph import LanggraphProvider
+
+SAFE_GMAIL_TOOLS = [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+]
+
+def gmail_tool_map(user_id: str):
+    session = Composio(provider=LanggraphProvider()).create(
+        user_id=user_id,
+        toolkits=["gmail"],
+        tools={"gmail": {"enable": SAFE_GMAIL_TOOLS}},
+        preload={"tools": SAFE_GMAIL_TOOLS},
+        workbench={"enable": False},
+    )
+    return {tool.name: tool for tool in session.tools()}
+`,
+      },
+      {
+        title: 'Keep Notion separate',
+        description:
+          'Notion gets its own small session for row tracking and duplicate protection.',
+        code: `from composio import Composio
+from composio_langgraph import LanggraphProvider
+
+SAFE_GMAIL_TOOLS = [
+    "GMAIL_FETCH_EMAILS",
+    "GMAIL_CREATE_EMAIL_DRAFT",
+]
+SAFE_NOTION_TOOLS = [
+    "NOTION_INSERT_ROW_DATABASE",
+    "NOTION_QUERY_DATABASE",
+    "NOTION_ARCHIVE_NOTION_PAGE",
+    "NOTION_UPDATE_PAGE",
+]
+
+def gmail_tool_map(user_id: str):
+    session = Composio(provider=LanggraphProvider()).create(
+        user_id=user_id,
+        toolkits=["gmail"],
+        tools={"gmail": {"enable": SAFE_GMAIL_TOOLS}},
+        preload={"tools": SAFE_GMAIL_TOOLS},
+        workbench={"enable": False},
+    )
+    return {tool.name: tool for tool in session.tools()}
+
+def notion_tool_map(user_id: str):
+    session = Composio(provider=LanggraphProvider()).create(
+        user_id=user_id,
+        toolkits=["notion"],
+        tools={"notion": {"enable": SAFE_NOTION_TOOLS}},
+        preload={"tools": SAFE_NOTION_TOOLS},
+        workbench={"enable": False},
+    )
+    return {tool.name: tool for tool in session.tools()}
+`,
+      },
+      {
+        title: 'Run a fixed graph',
+        description:
+          'LangGraph wires the prescribed path. The LLM writes the draft, but the workflow decides which tools can run and when.',
+        code: `from langgraph.graph import END, StateGraph
+
+from email_support_agent.utils.nodes import (
+    classify_intent_node,
+    claim_notion_message_node,
+    draft_reply_node,
+    fetch_context_node,
+    prepare_notion_row_node,
+    review_pending_node,
+    trust_check_node,
+    write_notion_row_node,
+)
+from email_support_agent.utils.state import EmailSupportState
+
+builder = StateGraph(EmailSupportState)
+builder.add_node("fetch_context", fetch_context_node)
+builder.add_node("trust_check", trust_check_node)
+builder.add_node("classify_intent", classify_intent_node)
+builder.add_node("claim_message", claim_notion_message_node)
+builder.add_node("draft_reply", draft_reply_node)
+builder.add_node("review_pending", review_pending_node)
+builder.add_node("prepare_notion_row", prepare_notion_row_node)
+builder.add_node("write_notion_row", write_notion_row_node)
+
+builder.set_entry_point("fetch_context")
+builder.add_edge("fetch_context", "trust_check")
+builder.add_edge("trust_check", "classify_intent")
+builder.add_edge("classify_intent", "claim_message")
+builder.add_edge("claim_message", "draft_reply")
+builder.add_edge("draft_reply", "review_pending")
+builder.add_edge("review_pending", "prepare_notion_row")
+builder.add_edge("prepare_notion_row", "write_notion_row")
+builder.add_edge("write_notion_row", END)
+
+graph = builder.compile()
+`,
+      },
+    ],
+  },
 };
