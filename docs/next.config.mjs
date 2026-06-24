@@ -295,6 +295,17 @@ const config = {
         destination: '/reference/api-reference/:path*',
         permanent: true,
       },
+      // Authentication reference renamed to "Authenticating to Composio"
+      {
+        source: '/reference/authentication',
+        destination: '/reference/authenticating-to-composio',
+        permanent: true,
+      },
+      {
+        source: '/reference/authentication/:path*',
+        destination: '/reference/authenticating-to-composio/:path*',
+        permanent: true,
+      },
       // Features section redirects
       {
         source: '/docs/users-and-sessions',

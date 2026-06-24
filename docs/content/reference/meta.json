@@ -2,7 +2,7 @@
   "title": "Reference",
   "pages": [
     "index",
-    "authentication",
+    "authenticating-to-composio",
     "rate-limits",
     "errors",
     "glossary",
