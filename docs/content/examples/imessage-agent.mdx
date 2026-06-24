@@ -149,6 +149,12 @@ export default defineAgent({
 
 That's the whole integration. Run `eve dev` and talk to it. The agent can text a contact, read a thread, and act across every connected app, with auth handled in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
 
+## Browse the project
+
+The key files, in one place. The Composio touch-points (the custom toolkit, the eve provider, the session) carry the integration; everything else is local macOS glue.
+
+<ImessageRepoBrowser />
+
 ## Where to go next
 
 - **[eve provider](/docs/providers/eve)** covers `EveProvider`, the replay-safe `defineComposioTools` resolver, and the `(ctx, next)` hooks for rewriting, denying, or transforming meta-tool calls.
