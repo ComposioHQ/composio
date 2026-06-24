@@ -136,6 +136,10 @@ class ClaudeAgentSDKProvider(
 
         return tool_handler
 
+    def _json_schema_to_simple_schema(self, schema: dict) -> dict:
+        """Return the provider-visible schema for a Composio JSON schema."""
+        return alias_tool_input_schema(schema or {}).schema
+
     def wrap_tools(
         self,
         tools: t.Sequence[Tool],
