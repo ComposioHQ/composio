@@ -16,6 +16,10 @@ const result = await composio.sessionContextImpl.list();
 
 | Name | Type | Description |
 |------|------|-------------|
+| `signal` | `AbortSignal` | Per-execution AbortSignal. Never set on the base instance; `executeCustomTool`
+grafts it onto a per-call `Object.create` child so concurrent executions
+sharing this context don't observe each other's signal. Declared here (rather
+than read via a cast) so the contract is explicit. |
 | `userId` | `string` | The user ID for this session |
 
 ## Methods

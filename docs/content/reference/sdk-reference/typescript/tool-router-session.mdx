@@ -42,7 +42,7 @@ Experimental — shape may change in future releases.
 at the SDK boundary.
 
 ```typescript
-async authorize(toolkit: string, options?: object): Promise<ConnectionRequest>
+async authorize(toolkit: string, options?: object, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
 **Parameters**
@@ -51,6 +51,7 @@ async authorize(toolkit: string, options?: object): Promise<ConnectionRequest>
 |------|------|
 | `toolkit` | `string` |
 | `options?` | `object` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
@@ -103,7 +104,7 @@ full slug (e.g. "LOCAL_GREP"). Custom tools are executed in-process;
 remote tools are sent to the Composio backend.
 
 ```typescript
-async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions): Promise<{ data: Record<string, unknown>; error: string | null; logId: string }>
+async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<{ data: Record<string, unknown>; error: string | null; logId: string }>
 ```
 
 **Parameters**
@@ -113,6 +114,7 @@ async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: 
 | `toolSlug` | `string` | The tool slug to execute |
 | `arguments_?` | `Record<string, unknown>` | Optional tool arguments |
 | `options?` | `ToolRouterSessionExecuteOptions` | Optional execution options |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -126,7 +128,7 @@ Proxy an API call through Composio's auth layer using the session's connected ac
 The backend resolves the connected account from the toolkit within the session.
 
 ```typescript
-async proxyExecute(params: object): Promise<ToolRouterSessionProxyExecuteResponse>
+async proxyExecute(params: object, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
 ```
 
 **Parameters**
@@ -134,6 +136,7 @@ async proxyExecute(params: object): Promise<ToolRouterSessionProxyExecuteRespons
 | Name | Type | Description |
 |------|------|-------------|
 | `params` | `object` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -147,7 +150,7 @@ Search for tools by semantic use case.
 Returns relevant tools for the given query with schemas and guidance.
 
 ```typescript
-async search(params: { query: string; toolkits?: string[] }): Promise<...>
+async search(params: { query: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -155,6 +158,7 @@ async search(params: { query: string; toolkits?: string[] }): Promise<...>
 | Name | Type |
 |------|------|
 | `params` | `object` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
@@ -168,7 +172,7 @@ Query the connection state of toolkits in the session.
 Supports pagination and filtering by toolkit slugs.
 
 ```typescript
-async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] }): Promise<...>
+async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: number; search?: string; toolkits?: string[] }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -176,6 +180,7 @@ async toolkits(options?: { cursor?: string; isConnected?: boolean; limit?: numbe
 | Name | Type |
 |------|------|
 | `options?` | `object` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
@@ -192,7 +197,7 @@ When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_
 is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
 ```typescript
-async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType>
+async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType>
 ```
 
 **Parameters**
@@ -200,6 +205,7 @@ async tools(modifiers?: SessionMetaToolOptions): Promise<ReturnType>
 | Name | Type |
 |------|------|
 | `modifiers?` | `SessionMetaToolOptions` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
@@ -214,7 +220,7 @@ Only the fields provided will be changed; omitted fields are preserved.
 Mutates this session's `configVersion`, `preload`, and `warnings` in-place.
 
 ```typescript
-async update(config: object): Promise<void>
+async update(config: object, requestOptions?: ComposioRequestOptions): Promise<void>
 ```
 
 **Parameters**
@@ -222,6 +228,7 @@ async update(config: object): Promise<void>
 | Name | Type |
 |------|------|
 | `config` | `object` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 

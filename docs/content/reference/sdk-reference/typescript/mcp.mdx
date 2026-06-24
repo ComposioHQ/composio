@@ -25,7 +25,7 @@ const result = await composio.mcp.list();
 Create a new MCP configuration.
 
 ```typescript
-async create(name: string, mcpConfig: object): Promise<MCPConfigCreateResponse>
+async create(name: string, mcpConfig: object, requestOptions?: ComposioRequestOptions): Promise<MCPConfigCreateResponse>
 ```
 
 **Parameters**
@@ -34,6 +34,7 @@ async create(name: string, mcpConfig: object): Promise<MCPConfigCreateResponse>
 |------|------|
 | `name` | `string` |
 | `mcpConfig` | `object` |
+| `requestOptions?` | `ComposioRequestOptions` |
 
 **Returns**
 
@@ -64,7 +65,7 @@ const server = await composio.mcpConfig.create("personal-mcp-server", {
 Delete an MCP server configuration permanently
 
 ```typescript
-async delete(serverId: string): Promise<{ deleted: boolean; id: string }>
+async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise<{ deleted: boolean; id: string }>
 ```
 
 **Parameters**
@@ -72,6 +73,7 @@ async delete(serverId: string): Promise<{ deleted: boolean; id: string }>
 | Name | Type | Description |
 |------|------|-------------|
 | `serverId` | `string` | The unique identifier of the MCP server to delete |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -112,7 +114,7 @@ Get server URLs for an existing MCP server.
 The response is wrapped according to the provider's specifications.
 
 ```typescript
-async generate(userId: string, mcpConfigId: string, options?: { manuallyManageConnections?: boolean }): Promise<...>
+async generate(userId: string, mcpConfigId: string, options?: { manuallyManageConnections?: boolean }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -122,6 +124,7 @@ async generate(userId: string, mcpConfigId: string, options?: { manuallyManageCo
 | `userId` | `string` | \{string\} external user id from your database for whom you want the server for |
 | `mcpConfigId` | `string` | \{string\} config id of the MCPConfig for which you want to create a server for |
 | `options?` | `object` | \{object\} additional options |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -143,7 +146,7 @@ const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>
 Retrieve detailed information about a specific MCP server by its ID
 
 ```typescript
-async get(serverId: string): Promise<...>
+async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -151,6 +154,7 @@ async get(serverId: string): Promise<...>
 | Name | Type | Description |
 |------|------|-------------|
 | `serverId` | `string` | The unique identifier of the MCP server to retrieve |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -183,7 +187,7 @@ const mcpUrl = server.MCPUrl;
 List the MCP servers with optional filtering and pagination
 
 ```typescript
-async list(options: { authConfigs: string[]; limit: number; name?: string; page: number; toolkits: string[] }): Promise<...>
+async list(options: { authConfigs: string[]; limit: number; name?: string; page: number; toolkits: string[] }, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -191,6 +195,7 @@ async list(options: { authConfigs: string[]; limit: number; name?: string; page:
 | Name | Type | Description |
 |------|------|-------------|
 | `options` | `object` | Filtering and pagination options |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -226,7 +231,7 @@ const namedServers = await composio.experimental.mcp.list({
 Update an existing MCP server configuration with new settings
 
 ```typescript
-async update(serverId: string, config: object): Promise<...>
+async update(serverId: string, config: object, requestOptions?: ComposioRequestOptions): Promise<...>
 ```
 
 **Parameters**
@@ -235,6 +240,7 @@ async update(serverId: string, config: object): Promise<...>
 |------|------|-------------|
 | `serverId` | `string` | The unique identifier of the MCP server to update |
 | `config` | `object` | Update configuration parameters |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
