@@ -91,7 +91,10 @@ describe('MastraProvider regression: $ref in JSON Schema', () => {
   it('preserves type info from Draft-7 `definitions` on the output schema', () => {
     const skuProp = findProperty(unwrapSchema(wrapped.outputSchema), 'sku');
     expect(skuProp).toBeDefined();
-    expect(skuProp?.type).toBe('string');
+    // The output schema is relaxed to be nullable (issue #3047), so the
+    // dereferenced `string` becomes `['string', 'null']` — the type info from
+    // `definitions` is still preserved (not degraded to a permissive anyOf).
+    expect(skuProp?.type).toEqual(['string', 'null']);
   });
 
   it('leaves no $ref in the produced schemas', () => {
