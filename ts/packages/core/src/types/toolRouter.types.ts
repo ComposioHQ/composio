@@ -575,10 +575,13 @@ export interface ToolRouterSessionExecuteOptions {
 
 export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
 
+export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
+
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
 export interface ToolRouterSessionMetadata {
   preload?: ToolRouterSessionPreloadConfig;
+  workbench?: ToolRouterSessionWorkbenchConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
   preloadedCustomToolSlugs?: string[];
@@ -679,6 +682,8 @@ export interface Session<
   mcp: ToolRouterMCPServerConfig;
   /** Stored preload configuration for this session. */
   preload: ToolRouterSessionPreloadConfig;
+  /** Resolved workbench config returned by the API (enable defaults to true server-side). */
+  workbench?: ToolRouterSessionWorkbenchConfig;
   /** Server-side config version when returned by the API. */
   configVersion?: number;
   /** Non-blocking session creation warnings returned by the API. */

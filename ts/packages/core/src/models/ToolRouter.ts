@@ -67,6 +67,7 @@ function getSessionMetadata(
 ) {
   const metadata: ToolRouterSessionMetadata = {
     preload: session.config.preload,
+    workbench: session.config.workbench,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
   };

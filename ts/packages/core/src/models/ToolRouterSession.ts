@@ -15,6 +15,7 @@ import {
   ToolRouterSessionExecuteOptions,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
+  ToolRouterSessionWorkbenchConfig,
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
@@ -95,6 +96,7 @@ export class ToolRouterSession<
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   public preload: ToolRouterSessionPreloadConfig;
+  public workbench?: ToolRouterSessionWorkbenchConfig;
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];
@@ -123,6 +125,7 @@ export class ToolRouterSession<
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
     this.preload = metadata?.preload ?? { tools: [] };
+    this.workbench = metadata?.workbench;
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
@@ -564,6 +567,7 @@ export class ToolRouterSession<
     const response = await this.client.toolRouter.session.patch(this.sessionId, params);
     this.configVersion = response.config_version;
     this.preload = response.config.preload;
+    this.workbench = response.config.workbench;
     this.warnings = response.warnings ?? [];
   }
 

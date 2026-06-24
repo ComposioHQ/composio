@@ -1,39 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
 import { experimental_createLocalWorkbenchSession } from '../../src/experimental';
 
+function makeComposio(config: { apiKey?: string; baseURL?: string }) {
+  return {
+    getConfig: vi.fn().mockReturnValue(config),
+  };
+}
+
 describe('experimental_createLocalWorkbenchSession', () => {
-  it('creates a Tool Router session with remote workbench disabled', async () => {
+  it('returns helperSource + env for a session with the remote workbench disabled', async () => {
     const session = {
       sessionId: 'session_123',
+      workbench: { enable: false },
     };
-    const composio = {
-      create: vi.fn().mockResolvedValue(session),
-      getConfig: vi.fn().mockReturnValue({
-        apiKey: 'project_key',
-        baseURL: 'https://backend.test/',
-      }),
-    };
+    const composio = makeComposio({
+      apiKey: 'project_key',
+      baseURL: 'https://backend.test/',
+    });
 
     const workbench = await experimental_createLocalWorkbenchSession(
       composio as never,
-      'user_123',
-      {
-        toolkits: ['github'],
-        workbench: {
-          enable: true,
-          sandboxSize: 'large',
-        },
-      }
+      session as never
     );
 
-    expect(composio.create).toHaveBeenCalledWith('user_123', {
-      toolkits: ['github'],
-      workbench: {
-        enable: false,
-        sandboxSize: 'large',
-      },
-    });
-    expect(workbench.session).toBe(session);
     expect(workbench.env).toEqual({
       BACKEND_URL: 'https://backend.test',
       COMPOSIO_TOOLROUTER_SESSION_ID: 'session_123',
@@ -41,45 +30,50 @@ describe('experimental_createLocalWorkbenchSession', () => {
     });
     expect(workbench.helperSource).toContain('def run_composio_tool(');
     expect(workbench.helperSource).not.toContain('project_key');
+    // The breaking change: no `session` is returned anymore.
+    expect('session' in workbench).toBe(false);
   });
 
-  it('adds disabled workbench config when omitted by the caller', async () => {
+  it('throws when the session has the remote workbench enabled', async () => {
+    const session = {
+      sessionId: 'session_123',
+      workbench: { enable: true },
+    };
+    const composio = makeComposio({
+      apiKey: 'project_key',
+      baseURL: 'https://backend.test',
+    });
+
+    await expect(
+      experimental_createLocalWorkbenchSession(composio as never, session as never)
+    ).rejects.toThrow('requires a session created with workbench.enable: false');
+  });
+
+  it('throws when the session has no workbench config (defaults to remote)', async () => {
     const session = {
       sessionId: 'session_123',
     };
-    const composio = {
-      create: vi.fn().mockResolvedValue(session),
-      getConfig: vi.fn().mockReturnValue({
-        apiKey: 'project_key',
-        baseURL: 'https://backend.test',
-      }),
-    };
-
-    await experimental_createLocalWorkbenchSession(composio as never, 'user_123', {
-      toolkits: ['github'],
+    const composio = makeComposio({
+      apiKey: 'project_key',
+      baseURL: 'https://backend.test',
     });
-
-    expect(composio.create).toHaveBeenCalledWith('user_123', {
-      toolkits: ['github'],
-      workbench: {
-        enable: false,
-      },
-    });
-  });
-
-  it('requires a project API key before creating the Tool Router session', async () => {
-    const composio = {
-      create: vi.fn(),
-      getConfig: vi.fn().mockReturnValue({
-        baseURL: 'https://backend.test',
-      }),
-    };
 
     await expect(
-      experimental_createLocalWorkbenchSession(composio as never, 'user_123', {
-        toolkits: ['github'],
-      })
+      experimental_createLocalWorkbenchSession(composio as never, session as never)
+    ).rejects.toThrow('requires a session created with workbench.enable: false');
+  });
+
+  it('requires a project API key', async () => {
+    const session = {
+      sessionId: 'session_123',
+      workbench: { enable: false },
+    };
+    const composio = makeComposio({
+      baseURL: 'https://backend.test',
+    });
+
+    await expect(
+      experimental_createLocalWorkbenchSession(composio as never, session as never)
     ).rejects.toThrow('A Composio project API key is required');
-    expect(composio.create).not.toHaveBeenCalled();
   });
 });

@@ -18,7 +18,7 @@ export type {
   CustomToolkit,
   CreateCustomToolkitParams,
 } from '../types/customTool.types';
-export type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
+export type { LocalWorkbenchSession } from './types';
 export {
   experimental_createPythonWorkbenchHelperSource,
   experimental_createWorkbenchEnv,

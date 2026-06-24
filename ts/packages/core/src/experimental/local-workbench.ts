@@ -1,39 +1,34 @@
 import type { Composio } from '../composio';
+import type { Session } from '../types/toolRouter.types';
 import {
   experimental_createPythonWorkbenchHelperSource,
   experimental_createWorkbenchEnv,
 } from './shim';
-import type { LocalWorkbenchConfig, LocalWorkbenchSession } from './types';
+import type { LocalWorkbenchSession } from './types';
 
 export async function experimental_createLocalWorkbenchSession(
   composio: Composio,
-  userId: string,
-  config: LocalWorkbenchConfig = {}
+  session: Session<unknown, unknown, never>
 ): Promise<LocalWorkbenchSession> {
-  const composioConfig = composio.getConfig();
-  const backendUrl = composioConfig.baseURL ?? 'https://backend.composio.dev';
-  const apiKey = composioConfig.apiKey;
+  if (session.workbench?.enable !== false) {
+    throw new Error(
+      'experimental_createLocalWorkbenchSession requires a session created with workbench.enable: false. ' +
+        'The remote workbench and a local sandbox cannot both run for one session.'
+    );
+  }
 
+  const { apiKey, baseURL } = composio.getConfig();
   if (!apiKey) {
     throw new Error('A Composio project API key is required to create a local workbench session');
   }
 
-  const session = await composio.create(userId, {
-    ...config,
-    workbench: {
-      ...config.workbench,
-      enable: false,
-    },
-  });
-
   const env = experimental_createWorkbenchEnv({
     sessionId: session.sessionId,
-    backendUrl,
+    backendUrl: baseURL ?? 'https://backend.composio.dev',
     apiKey,
   });
 
   return {
-    session,
     env,
     helperSource: experimental_createPythonWorkbenchHelperSource(),
   };
