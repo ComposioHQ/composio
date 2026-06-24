@@ -87,7 +87,7 @@ COMPOSIO_DISABLE_TELEMETRY  # "true" to disable
 - Main SDK entry: `ts/packages/core/src/index.ts`
 - Core Composio class: `ts/packages/core/src/composio.ts`
 - Types: `ts/packages/core/src/types/`, errors: `ts/packages/core/src/errors/`
-- Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
+- Build configs: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.js`
 - Toolchain pins: `mise.toml` (Node, Bun, Deno, pnpm, Python, uv), `mise.lock`, `toolchain-versions.json` (test matrices)
 - CI release docs to update when bumping toolchain: `ts/docs/internal/release.md`
 - Python config: `python/Makefile`, `python/noxfile.py`, `python/config/{pytest.ini,ruff.toml}`

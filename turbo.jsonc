@@ -12,9 +12,9 @@
         "$TURBO_DEFAULT$",
         "tsdown.config.ts",
         // for core
-        "../../../tsdown.config.base.ts",
+        "../../../tsdown.config.base.js",
         // for providers
-        "../../../../tsdown.config.base.ts"
+        "../../../../tsdown.config.base.js"
       ],
       "outputs": ["dist/"]
     },

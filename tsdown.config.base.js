@@ -1,5 +1,3 @@
-import type { UserConfig } from 'tsdown';
-
 // Turbo task execution triggers a tsdown ATTW tarball path bug for scoped packages.
 // Keep ATTW for direct package builds, but disable it for workspace builds.
 const isTurboTask = Boolean(process.env.TURBO_HASH);
@@ -8,8 +6,10 @@ const isTurboTask = Boolean(process.env.TURBO_HASH);
  * tsdown config with shared defaults.
  * Package-specific options (e.g., entry, outDir, outExtensions) can be overridden by the caller.
  * Paths are relative to the closest `tsdown.config.ts` file that imports this config.
+ *
+ * @type {import('tsdown').UserConfig}
  */
-export const baseConfig = {
+const baseConfig = {
   /**
    * Entry points for the build.
    */
@@ -92,4 +92,6 @@ export const baseConfig = {
     level: 'error',
     pack: 'pnpm',
   },
-} satisfies UserConfig;
+};
+
+exports.baseConfig = baseConfig;

@@ -69,6 +69,13 @@ runs:
       shell: bash
       run: mise install npm:pnpm
 
+    - name: Prefer mise-managed pnpm
+      shell: bash
+      run: |
+        # Node.js distributions can expose their own pnpm. Keep mise.toml's
+        # npm:pnpm pin ahead of the Node install, especially for Node overrides.
+        echo "$(mise where npm:pnpm)/bin" >> "$GITHUB_PATH"
+
     - name: Resolve pnpm store path and Node version
       if: inputs.enable-caching == 'true'
       id: pnpm-store

@@ -44,7 +44,7 @@ cat > "$TOOLSET_PATH/package.json" << EOL
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": ["composio", "provider", "${TOOLSET_NAME}"],
@@ -84,7 +84,7 @@ EOL
 # Create tsdown.config.ts
 cat > "$TOOLSET_PATH/tsdown.config.ts" << EOL
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../../tsdown.config.base.ts';
+import { baseConfig } from '../../../../tsdown.config.base.js';
 
 export default defineConfig({
   ...baseConfig,

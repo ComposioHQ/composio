@@ -23,8 +23,12 @@ env:
 
 jobs:
   build:
-    name: Build Typescript SDK
+    name: Build Typescript SDK (Node.js ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22.22.3', '24.17.0']
 
     steps:
       - name: Checkout Code
@@ -32,6 +36,8 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
