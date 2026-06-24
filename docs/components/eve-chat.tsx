@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
 import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
-import { AssistantMessage } from './eve-message';
+import { AssistantMessage, ToolActivity } from './eve-message';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
 
 const SUGGESTIONS = [
@@ -130,17 +130,20 @@ export function EveChat() {
                         : 'max-w-full text-[13px] leading-relaxed text-fd-foreground/90'
                     }
                   >
-                    {message.parts.map((part, i) =>
-                      part.type === 'text' ? (
-                        message.role === 'assistant' ? (
+                    {message.parts.map((part, i) => {
+                      if (part.type === 'text') {
+                        return message.role === 'assistant' ? (
                           <AssistantMessage key={i} text={part.text} />
                         ) : (
                           <p key={i} className="whitespace-pre-wrap break-words">
                             {part.text}
                           </p>
-                        )
-                      ) : null,
-                    )}
+                        );
+                      }
+                      return message.role === 'assistant' ? (
+                        <ToolActivity key={i} part={part} />
+                      ) : null;
+                    })}
                   </div>
                 </li>
               ))}

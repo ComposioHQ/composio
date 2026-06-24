@@ -5,7 +5,38 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import hljs from 'highlight.js';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, FileText, Search, Wrench } from 'lucide-react';
+
+/**
+ * Renders the agent's tool activity inline — which docs it searched and which
+ * pages it read — so you can see its "thinking". Returns null for non-tool parts.
+ */
+export function ToolActivity({ part }: { part: unknown }) {
+  const p = part as { type?: string; toolName?: string; input?: Record<string, unknown> };
+  const type = p.type ?? '';
+  const toolName = type === 'dynamic-tool' ? p.toolName : type.startsWith('tool-') ? type.slice(5) : undefined;
+  if (!toolName) return null;
+  const input = p.input ?? {};
+
+  let icon = <Wrench className="size-3" aria-hidden="true" />;
+  let label = `Running ${toolName}`;
+  if (toolName === 'search_docs') {
+    icon = <Search className="size-3" aria-hidden="true" />;
+    const query = typeof input.query === 'string' ? input.query : '';
+    label = query ? `Searched the docs for “${query}”` : 'Searched the docs';
+  } else if (toolName === 'read_doc') {
+    icon = <FileText className="size-3" aria-hidden="true" />;
+    const url = typeof input.url === 'string' ? input.url : '';
+    label = url ? `Read ${url}` : 'Read a page';
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 py-0.5 text-[11px] text-fd-muted-foreground">
+      <span className="shrink-0 text-[var(--composio-brand)]/70">{icon}</span>
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
 
 function isInternalHref(url: string): boolean {
   if (url.startsWith('/') || url.startsWith('#')) return true;
