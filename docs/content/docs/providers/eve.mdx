@@ -31,7 +31,6 @@ npm install @composio/core @composio/experimental eve
 
 ```txt title=".env.local"
 COMPOSIO_API_KEY=xxxxxxxxx
-COMPOSIO_USER_ID=user_123
 ```
 
 </Step>
@@ -49,9 +48,8 @@ const composio = new Composio({
   provider: new EveProvider(),
 });
 
-export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
-  // optional: preload custom toolkits alongside the catalog
-  // experimental: { customToolkits: [myToolkit] },
+export const session = composio.sessions.create('user_123', {
+  toolkits: ['github', 'gmail'], // optional: scope the session to specific apps
 });
 ```
 
