@@ -1,16 +1,13 @@
 ---
-title: iMessage on eve — a custom toolkit and a provider
-description: Build an agent that texts on your behalf from your own Mac. Two reusable pieces: a Composio custom toolkit that wraps local iMessage in-process, and an eve provider that makes any Composio session eve-native (the seed of @composio/eve).
-keywords: [custom toolkit, imessage, local tools, eve, provider, BaseAgenticProvider, session, custom tools, hooks, macOS]
+title: iMessage on eve
+description: Build an agent that texts on your behalf from your own Mac. A Composio custom toolkit wraps local iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog. The full project is below.
+keywords: [custom toolkit, imessage, local tools, eve, provider, session, custom tools, macOS, applescript]
 full: true
 ---
 
-This example has two reusable parts, and both are worth stealing:
+Most Composio toolkits call a remote API. Some capabilities only exist on one machine, and iMessage is the classic case: there's no iMessage cloud API, so the agent has to run on your Mac and drive Messages.app directly.
 
-1. **A custom toolkit** that wraps a *local* capability (iMessage on your Mac) and runs in-process, registered on the same session as the remote catalog.
-2. **An eve provider** that turns any Composio session into eve-native tools, the same way Composio ships providers for the Vercel AI SDK and LangChain. This is the seed of a future `@composio/eve`.
-
-Put together, you get a terminal agent that **texts on your behalf from your own Mac** and reaches the rest of your apps (Gmail, Calendar, GitHub, Slack) in the same breath.
+This example builds exactly that, a terminal agent that **texts on your behalf from your own Mac** and reaches the rest of your apps (Gmail, Calendar, GitHub, Slack) through the Composio catalog in the same breath.
 
 ```
 you  ›  read my last email and text KJ a summary
@@ -18,104 +15,102 @@ you  ›  text mom i'm running 10 min late
 you  ›  what did Sarah and I last text about?
 ```
 
-The full, runnable project lives at [ComposioHQ/imessage-composio-eve](https://github.com/ComposioHQ/imessage-composio-eve). This page walks the two pieces.
-
-## How it works
-
-One Composio session carries everything. The catalog tools are remote; the iMessage toolkit is a **custom toolkit** that runs in your own process. You register both on one `composio.sessions.create(...)` call.
-
-The agent runtime is [eve](https://github.com/vercel/eve). eve owns the agent loop and discovers tools from files, so it needs Composio tools in *its* shape. That's the provider's job: `session.tools()` returns eve-native `defineTool`s. Local and remote tools then travel one path.
+The pattern is the takeaway, not iMessage specifically: **a Composio custom toolkit that executes in-process**, registered on the same session as the catalog, surfaced to [eve](https://github.com/vercel/eve) through the [eve provider](/docs/providers/eve). Swap the iMessage internals for any local capability and everything else stays. Every file you need is on this page.
 
 ## Setup
 
 You need a [Composio API key](https://dashboard.composio.dev) and macOS (the iMessage tools drive Messages.app, Contacts.app, and the local `chat.db`).
 
+<Steps>
+<Step>
+**Install**
+
 ```bash
-npm install
+npm install @composio/core @composio/experimental eve
 ```
 
-```bash title=".env.local"
-COMPOSIO_API_KEY=your_key
+</Step>
+<Step>
+**Configure**
+
+```txt title=".env.local"
+COMPOSIO_API_KEY=xxxxxxxxx
 COMPOSIO_USER_ID=me
 ```
 
-macOS asks for permission the first time the agent sends a text or reads contacts and messages: Automation for Messages, Contacts access, and Full Disk Access for `chat.db`. These prompt once.
+</Step>
+<Step>
+**Grant macOS permissions** (prompted on first use): Automation for Messages, Contacts access, and Full Disk Access to read `chat.db`.
+</Step>
+</Steps>
 
-## Part 1: the custom toolkit
+## The custom toolkit
 
-A custom toolkit is a named group of custom tools. Each tool declares its input schema and an `execute` that runs locally. Here `SEND` shells out to AppleScript to drive Messages.app:
+A custom toolkit is a named group of custom tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
 
-```ts title="imessage.ts"
-import { experimental_createToolkit, experimental_createTool } from "@composio/core";
-import { z } from "zod/v3"; // Composio's custom-tool API expects zod/v3
+```ts title="imessage/send-message.ts"
+import { experimental_createTool } from '@composio/core';
+import { z } from 'zod/v3'; // Composio's custom-tool API expects zod/v3
+import { runAppleScript } from './applescript.js';
 
-const sendMessage = experimental_createTool("SEND", {
-  name: "Send iMessage",
+const SEND_SCRIPT = `on run {targetBuddy, targetText}
+  tell application "Messages"
+    set targetService to 1st service whose service type = iMessage
+    send targetText to buddy targetBuddy of targetService
+  end tell
+end run`;
+
+// A short "think + type" pause so messages aren't instant.
+function humanDelayMs(text: string): number {
+  const think = 800 + Math.random() * 1700;
+  const typing = text.length * (40 + Math.random() * 40);
+  return Math.min(think + typing, 12_000);
+}
+
+export const sendMessage = experimental_createTool('SEND', {
+  name: 'Send iMessage',
   description: "Send an iMessage from the user's Mac to a phone number or iMessage email.",
   preload: true, // surface it in session.tools() without a search step
   inputParams: z.object({
-    to: z.string().describe("Phone number (e.g. +15551234567) or iMessage email."),
-    text: z.string().describe("Message body to send."),
+    to: z.string().describe('Phone number (e.g. +15551234567) or iMessage email.'),
+    text: z.string().describe('Message body to send.'),
   }),
   execute: async ({ to, text }) => {
-    await runAppleScript(SEND_SCRIPT, [to, text]); // osascript → Messages.app
+    await new Promise(r => setTimeout(r, humanDelayMs(text)));
+    await runAppleScript(SEND_SCRIPT, [to, text]);
     return { sent: true, to };
   },
 });
-
-export const imessageToolkit = experimental_createToolkit("IMESSAGE", {
-  name: "iMessage",
-  description: "Send and read iMessages, look up contacts, and remember people, locally on the user's Mac.",
-  tools: [sendMessage /* findContact, readMessages, recall, remember */],
-});
 ```
 
-The toolkit is framework-agnostic. It depends only on `@composio/core`, so it drops into any Composio agent. Custom tools execute in-process through `session.execute`, which is why they aren't on the MCP URL yet.
+Group your tools into a toolkit. The full project also ships `FIND_CONTACT` (fuzzy contact lookup over Contacts.app), `READ_MESSAGES` (recent messages from `chat.db`), and `RECALL`/`REMEMBER` (per-contact memory), each built the same way:
 
-## Part 2: the eve provider
+```ts title="imessage/index.ts"
+import { experimental_createToolkit } from '@composio/core';
+import { sendMessage } from './send-message.js';
+import { findContact } from './find-contact.js';
+import { readMessages } from './read-messages.js';
+import { recallContact, rememberContact } from './memory.js';
 
-A Composio **provider** adapts catalog tools into a target framework's tool shape. `EveProvider` does it for eve. It extends `BaseAgenticProvider` and implements the two hooks every agentic provider implements, so `session.tools()` returns eve `defineTool`s:
-
-```ts title="eve-provider/provider.ts"
-export class EveProvider extends BaseAgenticProvider<EveToolCollection, EveTool, McpServerGetResponse> {
-  readonly name = "eve";
-
-  wrapTool(tool: Tool, executeTool: ExecuteToolFn): EveTool {
-    return defineTool({
-      description: tool.description ?? tool.name,
-      inputSchema: tool.inputParameters, // eve takes JSON Schema directly
-      execute: (input) => executeTool(tool.slug, normalizeToolArguments(input, tool.slug)),
-    });
-  }
-
-  wrapTools(tools: Tool[], executeTool: ExecuteToolFn) {
-    return Object.fromEntries(tools.map((t) => [t.slug, this.wrapTool(t, executeTool)]));
-  }
+export function createImessageToolkit() {
+  return experimental_createToolkit('IMESSAGE', {
+    name: 'iMessage',
+    description: "Send and read iMessages, look up contacts, and remember people, locally on the user's Mac.",
+    tools: [sendMessage, findContact, readMessages, recallContact, rememberContact],
+  });
 }
 ```
 
-Two details make it eve-correct:
+The toolkit depends only on `@composio/core`, so it drops into any Composio agent. Custom tools execute in-process through `session.execute`, which is why they aren't on the MCP URL yet.
 
-- **Pass JSON Schema straight through.** eve's `defineTool` takes plain JSON Schema. Converting to a zod schema (as some providers do) trips eve's normalizer, which expects a `jsonSchema` method `zod/v3` doesn't expose.
-- **Resolve tools per step, and cache.** The provider's `execute` closes over a live function, and eve only keeps live closures for step-scoped dynamic tools. So the repo ships `defineComposioTools(session)`, a `step.started` resolver that hands eve `session.tools()` and memoizes the call:
+## Register the provider and toolkit
 
-```ts title="agent/tools/composio.ts"
-import { defineComposioTools } from "./eve-provider/index.js";
-import { session } from "./session.js";
+Set the [eve provider](/docs/providers/eve) on the client, and register the toolkit on the session. The session now exposes the catalog meta-tools **and** the local `LOCAL_IMESSAGE_*` tools from one place:
 
-export default defineComposioTools(session); // replay-safe, fetched once per session
-```
-
-The provider also supports **hooks**: `(ctx, next)` middleware around the Tool Router meta-tools that can rewrite a call, `ctx.deny(reason)` it, or transform its result. Modeled on the [Pi provider's hooks](/docs/providers/pi#hooks).
-
-## Wire it up
-
-Register the provider on the client and the toolkit on the session. From there, one line exposes the whole set to eve:
-
-```ts title="session.ts"
-import { Composio } from "@composio/core";
-import { EveProvider } from "./eve-provider/index.js";
-import { imessageToolkit } from "./imessage.js";
+```ts title="composio.ts"
+import { Composio } from '@composio/core';
+import { EveProvider } from '@composio/experimental';
+import { createImessageToolkit } from './imessage/index.js';
 
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -123,14 +118,33 @@ const composio = new Composio({
 });
 
 export const session = composio.sessions.create(process.env.COMPOSIO_USER_ID, {
-  experimental: { customToolkits: [imessageToolkit] },
+  workbench: { enable: false }, // a texting agent doesn't need the remote sandbox
+  experimental: { customToolkits: [createImessageToolkit()] },
 });
 ```
 
-The agent can now text a contact, read a thread, and act across every connected app, with auth handled in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
+## Hand the tools to eve
 
-## Take it further
+eve discovers tools from files. `defineComposioTools(session)` returns the resolver that gives eve `session.tools()`, so one line wires up everything:
 
-- **Read the full project**: [ComposioHQ/imessage-composio-eve](https://github.com/ComposioHQ/imessage-composio-eve) has the complete toolkit (send, find-contact, read-messages, per-contact memory), the eve provider with hooks, an opt-in auto-responder, and a Composio triggers webhook channel.
-- **Reuse the eve provider**: it's self-contained under `lib/composio/eve-provider/`, ready to graduate into `@composio/eve`.
-- **Reuse the toolkit shape**: the custom-toolkit-on-a-shared-session pattern works for any local capability, not just iMessage.
+```ts title="agent/tools/composio.ts"
+import { defineComposioTools } from '@composio/experimental';
+import { session } from '../../composio.js';
+
+export default defineComposioTools(session);
+```
+
+```ts title="agent/agent.ts"
+import { defineAgent } from 'eve';
+
+export default defineAgent({
+  model: 'google/gemini-2.5-flash',
+});
+```
+
+That's the whole integration. Run `eve dev` and talk to it. The agent can text a contact, read a thread, and act across every connected app, with auth handled in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+## Where to go next
+
+- **[eve provider](/docs/providers/eve)** covers `EveProvider`, the replay-safe `defineComposioTools` resolver, and the `(ctx, next)` hooks for rewriting, denying, or transforming meta-tool calls.
+- **Reuse the shape**: the custom-toolkit-on-a-shared-session pattern works for any local capability, not just iMessage. Replace the AppleScript calls with your own and keep the rest.
