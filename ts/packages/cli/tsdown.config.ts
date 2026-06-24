@@ -11,6 +11,7 @@ export default defineConfig({
     'src/services/run-subagent-output-mcp.ts',
   ],
   format: ['esm'],
+  shims: true,
   tsconfig: './tsconfig.src.json',
   external: [/^bun:/],
   noExternal: [

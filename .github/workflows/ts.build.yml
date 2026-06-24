@@ -9,6 +9,10 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.js'
   pull_request:
     paths:
       - 'ts/**'
@@ -16,6 +20,10 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsdown.config.base.js'
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
@@ -23,12 +31,8 @@ env:
 
 jobs:
   build:
-    name: Build Typescript SDK (Node.js ${{ matrix.node-version }})
+    name: Build Typescript SDK
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ['22.22.3', '24.17.0']
 
     steps:
       - name: Checkout Code
@@ -36,8 +40,6 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
-        with:
-          node-version: ${{ matrix.node-version }}
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
