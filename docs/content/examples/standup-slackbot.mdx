@@ -168,14 +168,16 @@ When a Slack action has no tool, like opening a modal (`views.open`), it drops t
 Our StandUp bot gives the user two options every morning: **Draft** or **Connect more tools**. Each message uses [Block Kit](https://api.slack.com/block-kit) to create those buttons. For each button we define an `action_id` that lets us recognise which button was clicked.
 
 ```ts
+declare const memberEmail: string, dmChannel: string, dmTs: string;
+// ---cut---
 // the reminder's Draft button
-{
+const draftButton = {
   type: 'button',
   style: 'primary',
   text: { type: 'plain_text', text: '📝 Draft' },
   action_id: 'draft',
   value: JSON.stringify({ memberEmail, dmChannel, dmTs }),
-}
+};
 ```
 
 <Figure src="/images/standup-slackbot/slack-reminder.png" alt="The daily standup reminder in Slack" caption="The daily reminder, with Draft and Connect more tools buttons" size="md" />
