@@ -331,4 +331,54 @@ describe('AnthropicProvider key sanitization', () => {
     const [, payload] = executeToolFn.mock.calls[0];
     expect(payload.arguments).toEqual({ query: 'hello' });
   });
+
+  // Models occasionally emit tool input as a JSON *string* (issue #2406). The
+  // provider normalizes it to an object before restoring keys; restoring a raw
+  // string would be a no-op, so this guards the normalize-then-restore ordering.
+  it('normalizes a JSON-string input before restoring sanitized keys', async () => {
+    const provider = new AnthropicProvider();
+    const executeToolFn = vi
+      .fn()
+      .mockResolvedValue({ data: { ok: true }, error: null, successful: true });
+    provider._setExecuteToolFn(executeToolFn);
+
+    provider.wrapTool(odataTool);
+
+    await provider.executeToolCall('user-1', {
+      type: 'tool_use',
+      id: 'tu_3',
+      name: 'list_drive_item_activities',
+      input: '{"dollar_top": 25}' as unknown as Record<string, unknown>,
+    });
+
+    const [, payload] = executeToolFn.mock.calls[0];
+    expect(payload.arguments).toEqual({ $top: 25 });
+  });
+
+  it('normalizes a JSON-string input for tools without sanitized keys (issue #2406)', async () => {
+    const provider = new AnthropicProvider();
+    const executeToolFn = vi
+      .fn()
+      .mockResolvedValue({ data: { ok: true }, error: null, successful: true });
+    provider._setExecuteToolFn(executeToolFn);
+
+    const plainTool: Tool = {
+      slug: 'plain-tool',
+      name: 'Plain',
+      description: 'no illegal keys',
+      inputParameters: { type: 'object', properties: { query: { type: 'string' } } },
+      tags: [],
+    } as unknown as Tool;
+
+    provider.wrapTool(plainTool);
+    await provider.executeToolCall('user-1', {
+      type: 'tool_use',
+      id: 'tu_4',
+      name: 'plain-tool',
+      input: '{"query":"hello"}' as unknown as Record<string, unknown>,
+    });
+
+    const [, payload] = executeToolFn.mock.calls[0];
+    expect(payload.arguments).toEqual({ query: 'hello' });
+  });
 });
