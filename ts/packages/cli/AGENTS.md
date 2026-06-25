@@ -148,7 +148,7 @@ Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from
 
 ## CLI Design Guidelines
 
-Principles for arguments, flags, help, output, errors, interactivity, config precedence:
+Principles for arguments, flags, help, output, errors, interactivity, configuration, and exit codes:
 
 - Use the repo-local `cli-command` skill for command design, implementation, Effect patterns, output conventions, and source-reference guidance.
 - Use the repo-local `cli-e2e` skill for Docker-based CLI end-to-end tests under `ts/e2e-tests/cli/`.

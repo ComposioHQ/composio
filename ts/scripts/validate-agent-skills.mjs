@@ -6,6 +6,10 @@ import process from 'node:process';
 
 const repoRoot = process.cwd();
 
+// Canonical taxonomy gate. Keep in sync with the skill-routing list in `AGENTS.md`
+// and the taxonomy in `GOAL.md`; adding/removing a skill means editing all three.
+// This list is used ONLY to assert the on-disk taxonomy — the command scan below
+// derives its file set from disk so it cannot drift from this literal.
 const expectedSkills = [
   'bug-fixing',
   'cli-command',
@@ -29,6 +33,7 @@ const requiredAgentFiles = [
   'ts/AGENTS.md',
   'ts/packages/core/AGENTS.md',
   'ts/packages/providers/AGENTS.md',
+  'ts/packages/cli/AGENTS.md',
   'ts/e2e-tests/AGENTS.md',
   'python/AGENTS.md',
   'python/providers/AGENTS.md',
@@ -366,8 +371,17 @@ const validateNoxCommands = (relativePath, text) => {
   }
 };
 
+// Derive the command-scan file set from the skills actually on disk so it can never
+// drift from `expectedSkills` (which serves only as the taxonomy gate above).
+const skillDirNames = fs.existsSync(skillsRoot)
+  ? fs
+      .readdirSync(skillsRoot, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+  : [];
+
 const commandFiles = [
-  ...expectedSkills.flatMap(skillName => {
+  ...skillDirNames.flatMap(skillName => {
     const skillDir = path.join(skillsRoot, skillName);
     if (!fs.existsSync(skillDir)) {
       return [];

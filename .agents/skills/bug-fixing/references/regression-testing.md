@@ -32,7 +32,7 @@ pnpm test
 make chk
 make tst
 make snt
-pytest -m core
+pytest tests/test_<feature>.py
 ```
 
 ## PR Notes
