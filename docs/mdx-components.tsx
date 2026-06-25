@@ -29,6 +29,7 @@ import { SessionFlow } from '@/components/session-flow';
 import { TriggersFlow } from '@/components/triggers-flow';
 import { SlackBotFlow } from '@/components/slack-bot-flow';
 import { LocalWorkbenchFlow } from '@/components/local-workbench-flow';
+import { LocalSandboxBoundary } from '@/components/local-sandbox-boundary';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
 import { AppLogo } from '@/components/standup-example';
@@ -124,6 +125,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     TriggersFlow,
     SlackBotFlow,
     LocalWorkbenchFlow,
+    LocalSandboxBoundary,
     FileBuildup,
     RepoBrowser,
     AppLogo,

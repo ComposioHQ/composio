@@ -1,0 +1,8 @@
+{
+  "title": "Sandbox (prev Workbench)",
+  "defaultOpen": true,
+  "pages": [
+    "remote",
+    "local"
+  ]
+}
