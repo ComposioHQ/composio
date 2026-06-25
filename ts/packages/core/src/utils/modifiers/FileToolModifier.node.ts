@@ -13,6 +13,7 @@ import {
   ComposioFileUploadPathNotAllowedError,
   ComposioSensitiveFilePathBlockedError,
 } from '../../errors/FileModifierErrors';
+import { ComposioRequestCancelledError } from '../../errors/SDKErrors';
 import type { beforeFileUploadModifier } from '../../types/modifiers.types';
 import {
   downloadFileFromS3,
@@ -25,6 +26,7 @@ import {
   schemaHasFileProperty,
 } from './FileToolModifier.utils.neutral';
 import { dereferenceJsonSchema } from '../jsonSchema';
+import { withCancellation } from '../cancellation';
 
 /**
  * Inlines internal `$ref` pointers so the file walkers below can see the
@@ -109,7 +111,10 @@ const hydrateFiles = async (
     client: ComposioClient;
   } & Pick<
     GetFileDataAfterUploadingToS3Options,
-    'sensitiveFileUploadProtection' | 'fileUploadPathDenySegments' | 'fileUploadAllowlist'
+    | 'sensitiveFileUploadProtection'
+    | 'fileUploadPathDenySegments'
+    | 'fileUploadAllowlist'
+    | 'signal'
   > & {
       beforeFileUpload?: beforeFileUploadModifier;
     }
@@ -155,6 +160,7 @@ const hydrateFiles = async (
         sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
         fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
         fileUploadAllowlist: ctx.fileUploadAllowlist,
+        signal: ctx.signal,
       });
     }
 
@@ -181,6 +187,7 @@ const hydrateFiles = async (
           sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
           fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
           fileUploadAllowlist: ctx.fileUploadAllowlist,
+          signal: ctx.signal,
         });
       }
     }
@@ -192,6 +199,7 @@ const hydrateFiles = async (
       client: ctx.client,
       sensitiveFileUploadProtection: ctx.sensitiveFileUploadProtection,
       fileUploadPathDenySegments: ctx.fileUploadPathDenySegments,
+      signal: ctx.signal,
     });
   }
 
@@ -245,7 +253,7 @@ const hydrateFiles = async (
  */
 const downloadS3File = async (
   value: Record<string, unknown>,
-  ctx: { toolSlug: string; fileDownloadDir?: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string; signal?: AbortSignal }
 ): Promise<unknown> => {
   const { s3url, mimetype } = value as {
     s3url: string;
@@ -260,6 +268,7 @@ const downloadS3File = async (
       s3Url: s3url,
       mimeType: mimetype ?? 'application/octet-stream',
       fileDownloadDir: ctx.fileDownloadDir,
+      signal: ctx.signal,
     });
 
     logger.debug(`Downloaded → ${dl.filePath}`);
@@ -297,7 +306,7 @@ const downloadS3File = async (
 const hydrateDownloads = async (
   value: unknown,
   schema: JSONSchemaProperty | undefined,
-  ctx: { toolSlug: string; fileDownloadDir?: string }
+  ctx: { toolSlug: string; fileDownloadDir?: string; signal?: AbortSignal }
 ): Promise<unknown> => {
   // ──────────────────────────────────────────────────────────────────────────
   // 1. Direct S3 reference (data-driven detection)
@@ -405,24 +414,30 @@ export class FileToolModifier {
       toolSlug: string;
       toolkitSlug?: string;
       params: ToolExecuteParams;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteParams> {
-    const { params, toolSlug, toolkitSlug = 'unknown' } = options;
+    const { params, toolSlug, toolkitSlug = 'unknown', signal } = options;
     const { arguments: args } = params;
 
     if (!args || typeof args !== 'object') return params;
 
-    // Recursively transform the arguments tree without mutating the caller’s copy
     try {
-      const newArgs = await hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
-        toolSlug,
-        toolkitSlug,
-        client: this.client,
-        ...this.fileUploadPathOptions,
-      });
+      const newArgs = await withCancellation(
+        () =>
+          hydrateFiles(args, resolveFileSchema(tool.inputParameters), {
+            toolSlug,
+            toolkitSlug,
+            client: this.client,
+            ...this.fileUploadPathOptions,
+            signal,
+          }),
+        signal
+      );
       return { ...params, arguments: newArgs as ToolExecuteParams['arguments'] };
     } catch (error) {
       if (
+        error instanceof ComposioRequestCancelledError ||
         error instanceof ComposioSensitiveFilePathBlockedError ||
         error instanceof ComposioFileUploadAbortedError ||
         error instanceof ComposioFileUploadPathNotAllowedError ||
@@ -440,19 +455,20 @@ export class FileToolModifier {
     tool: Tool,
     options: {
       toolSlug: string;
-      toolkitSlug: string; // kept for API parity, unused here
+      toolkitSlug: string;
       result: ToolExecuteResponse;
+      signal?: AbortSignal;
     }
   ): Promise<ToolExecuteResponse> {
-    const { result, toolSlug } = options;
+    const { result, toolSlug, signal } = options;
 
-    // Walk result.data without mutating the original, using output schema for guidance
     const dataWithDownloads = await hydrateDownloads(
       result.data,
       resolveFileSchema(tool.outputParameters),
       {
         toolSlug,
         fileDownloadDir: this.fileUploadPathOptions.fileDownloadDir,
+        signal,
       }
     );
 

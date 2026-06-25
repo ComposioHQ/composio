@@ -640,10 +640,14 @@ describe('SessionContextImpl', () => {
     const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1');
     const result = await ctx.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' });
 
-    expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_1', {
-      tool_slug: 'GMAIL_SEND_EMAIL',
-      arguments: { to: 'test@test.com' },
-    });
+    expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+      'sess_1',
+      {
+        tool_slug: 'GMAIL_SEND_EMAIL',
+        arguments: { to: 'test@test.com' },
+      },
+      undefined
+    );
     expect(result).toEqual({
       data: { result: 'ok' },
       error: null,
@@ -670,13 +674,17 @@ describe('SessionContextImpl', () => {
     });
     await ctx.execute('GMAIL_SEND_EMAIL', { to: 'test@test.com' });
 
-    expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_1', {
-      tool_slug: 'GMAIL_SEND_EMAIL',
-      arguments: { to: 'test@test.com' },
-      experimental: {
-        custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+    expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+      'sess_1',
+      {
+        tool_slug: 'GMAIL_SEND_EMAIL',
+        arguments: { to: 'test@test.com' },
+        experimental: {
+          custom_tools: [expect.objectContaining({ slug: 'GREP' })],
+        },
       },
-    });
+      undefined
+    );
   });
 
   it('should preserve logId and error when execute() returns an error', async () => {
@@ -707,12 +715,16 @@ describe('SessionContextImpl', () => {
       parameters: [{ in: 'header' as const, name: 'X-Custom', value: 'val' }],
     });
 
-    expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith('sess_1', {
-      toolkit_slug: 'github',
-      endpoint: 'https://api.github.com/user',
-      method: 'GET',
-      parameters: [{ name: 'X-Custom', type: 'header', value: 'val' }],
-    });
+    expect(mockClient.toolRouter.session.proxyExecute).toHaveBeenCalledWith(
+      'sess_1',
+      {
+        toolkit_slug: 'github',
+        endpoint: 'https://api.github.com/user',
+        method: 'GET',
+        parameters: [{ name: 'X-Custom', type: 'header', value: 'val' }],
+      },
+      undefined
+    );
     expect(result).toEqual({
       status: 200,
       data: { proxy_result: true },
@@ -765,10 +777,14 @@ describe('SessionContextImpl', () => {
       const ctx = new SessionContextImpl(mockClient as any, 'user_1', 'sess_1', customToolsMap);
       const result = await ctx.execute('REMOTE_TOOL', { key: 'val' });
 
-      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith('sess_1', {
-        tool_slug: 'REMOTE_TOOL',
-        arguments: { key: 'val' },
-      });
+      expect(mockClient.toolRouter.session.execute).toHaveBeenCalledWith(
+        'sess_1',
+        {
+          tool_slug: 'REMOTE_TOOL',
+          arguments: { key: 'val' },
+        },
+        undefined
+      );
       expect(result).toEqual({ data: { remote: true }, error: null, logId: 'log_3' });
     });
 

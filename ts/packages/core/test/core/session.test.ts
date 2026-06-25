@@ -132,11 +132,13 @@ describe('Composio Session Management', () => {
 
     expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ user_id: 'user_123' })
+      expect.objectContaining({ user_id: 'user_123' }),
+      undefined
     );
     expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ user_id: 'user_456' })
+      expect.objectContaining({ user_id: 'user_456' }),
+      undefined
     );
     expect(sessionFromCanonicalApi.sessionId).toBe('session_123');
     expect(sessionFromAlias.sessionId).toBe('session_123');

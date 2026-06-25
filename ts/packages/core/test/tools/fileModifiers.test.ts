@@ -6,6 +6,7 @@ import {
   ComposioFileUploadAbortedError,
   ComposioFileUploadError,
 } from '../../src/errors/FileModifierErrors';
+import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import * as fileUtils from '../../src/utils/fileUtils.node';
 import { Tools } from '../../src/models/Tools';
 import { createTestContext, setupTest, mockToolExecution } from '../utils/toolExecuteUtils';
@@ -479,6 +480,32 @@ describe('FileToolModifier', () => {
           params,
         })
       ).rejects.toThrow(ComposioFileUploadError);
+    });
+
+    it('should throw ComposioRequestCancelledError on caller-aborted upload', async () => {
+      const controller = new AbortController();
+      vi.mocked(fileUtils.getFileDataAfterUploadingToS3).mockImplementationOnce(async () => {
+        controller.abort();
+        const error = new Error('The operation was aborted');
+        error.name = 'AbortError';
+        throw error;
+      });
+
+      const params = {
+        arguments: {
+          file: '/path/to/file.txt',
+        },
+        userId: 'test-user',
+      };
+
+      await expect(
+        fileToolModifier.fileUploadModifier(mockTool, {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          params,
+          signal: controller.signal,
+        })
+      ).rejects.toBeInstanceOf(ComposioRequestCancelledError);
     });
 
     it('should handle File object for file_uploadable parameters', async () => {
@@ -1982,18 +2009,22 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
       });
 
       expect(fileUtils.getFileDataAfterUploadingToS3).not.toHaveBeenCalled();
-      expect(mockClient.tools.execute).toHaveBeenCalledWith('COMPOSIO_TOOL', {
-        arguments: {
-          file: '/path/to/file.txt',
+      expect(mockClient.tools.execute).toHaveBeenCalledWith(
+        'COMPOSIO_TOOL',
+        {
+          arguments: {
+            file: '/path/to/file.txt',
+          },
+          allow_tracing: undefined,
+          connected_account_id: undefined,
+          custom_auth_params: undefined,
+          custom_connection_data: undefined,
+          text: undefined,
+          user_id: 'test-user',
+          version: 'latest',
         },
-        allow_tracing: undefined,
-        connected_account_id: undefined,
-        custom_auth_params: undefined,
-        custom_connection_data: undefined,
-        text: undefined,
-        user_id: 'test-user',
-        version: 'latest',
-      });
+        undefined
+      );
     });
 
     it('warns once per tool when auto-upload is off and the tool has a file-uploadable input', async () => {

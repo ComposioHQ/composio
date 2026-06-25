@@ -35,6 +35,14 @@ export interface SessionContext {
   ): Promise<ToolRouterSessionExecuteResponse>;
   /** Proxy API calls through Composio's auth layer (resolved from session toolkit). */
   proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse>;
+  /**
+   * Caller-supplied AbortSignal forwarded from `session.execute(..., { signal })`.
+   * Custom-tool execution is cooperative: long-running user code that respects
+   * this signal (e.g. by passing it into `fetch`) can abort mid-execution and
+   * surface as `ComposioRequestCancelledError`. Undefined when the caller did
+   * not pass `requestOptions`.
+   */
+  readonly signal?: AbortSignal;
 }
 
 /**

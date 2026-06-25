@@ -26,6 +26,7 @@ import {
 import { transformExecuteResponse } from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';
 import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
+import { withCancellation } from '../utils/cancellation';
 
 /**
  * Concrete implementation of SessionContext.
@@ -43,6 +44,14 @@ import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
  */
 export class SessionContextImpl implements SessionContext {
   public readonly userId: string;
+
+  /**
+   * Per-execution AbortSignal. Never set on the base instance; `executeCustomTool`
+   * grafts it onto a per-call `Object.create` child so concurrent executions
+   * sharing this context don't observe each other's signal. Declared here (rather
+   * than read via a cast) so the contract is explicit.
+   */
+  public readonly signal?: AbortSignal;
 
   constructor(
     private readonly client: ComposioClient,
@@ -65,10 +74,12 @@ export class SessionContextImpl implements SessionContext {
     toolSlug: string,
     arguments_: Record<string, unknown>
   ): Promise<ToolRouterSessionExecuteResponse> {
-    // Try local tool first (sibling routing)
+    const signal = this.signal;
+    const requestOptions = signal ? { signal } : undefined;
+
     const entry = findCustomTool(this.customToolsMap, toolSlug);
     if (entry) {
-      const result = await executeCustomTool(entry, arguments_, this);
+      const result = await executeCustomTool(entry, arguments_, this, { signal });
       return ToolRouterSessionExecuteResponseSchema.parse({
         data: result.data,
         error: result.error,
@@ -77,7 +88,6 @@ export class SessionContextImpl implements SessionContext {
     }
     assertUnambiguousCustomToolSlug(this.customToolsMap, toolSlug);
 
-    // Fall back to remote execution
     const executeParams: SessionExecuteParams = {
       tool_slug: toolSlug,
       arguments: arguments_,
@@ -89,7 +99,10 @@ export class SessionContextImpl implements SessionContext {
       executeParams.experimental = experimental;
     }
 
-    const response = await this.client.toolRouter.session.execute(this.sessionId, executeParams);
+    const response = await withCancellation(
+      () => this.client.toolRouter.session.execute(this.sessionId, executeParams, requestOptions),
+      requestOptions?.signal
+    );
     return ToolRouterSessionExecuteResponseSchema.parse(transformExecuteResponse(response));
   }
 
@@ -105,10 +118,14 @@ export class SessionContextImpl implements SessionContext {
       throw new ValidationError('Invalid proxy execute parameters', { cause: validated.error });
     }
 
+    const signal = this.signal;
+    const requestOptions = signal ? { signal } : undefined;
+
     const clientParams = transformProxyParams(validated.data);
-    const response = await this.client.toolRouter.session.proxyExecute(
-      this.sessionId,
-      clientParams
+    const response = await withCancellation(
+      () =>
+        this.client.toolRouter.session.proxyExecute(this.sessionId, clientParams, requestOptions),
+      requestOptions?.signal
     );
 
     return {

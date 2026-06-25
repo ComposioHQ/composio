@@ -417,7 +417,7 @@ describe('Triggers', () => {
 
       const result = await triggers.listActive();
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined);
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined, undefined);
       expect(result).toEqual({
         items: mockTriggerInstances.items.map(item => ({
           id: item.id,
@@ -450,15 +450,18 @@ describe('Triggers', () => {
 
       await triggers.listActive(query);
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith({
-        auth_config_ids: query.authConfigIds,
-        connected_account_ids: query.connectedAccountIds,
-        limit: query.limit,
-        cursor: query.cursor,
-        show_disabled: query.showDisabled,
-        trigger_ids: query.triggerIds,
-        trigger_names: query.triggerNames,
-      });
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(
+        {
+          auth_config_ids: query.authConfigIds,
+          connected_account_ids: query.connectedAccountIds,
+          limit: query.limit,
+          cursor: query.cursor,
+          show_disabled: query.showDisabled,
+          trigger_ids: query.triggerIds,
+          trigger_names: query.triggerNames,
+        },
+        undefined
+      );
     });
   });
 
@@ -482,19 +485,30 @@ describe('Triggers', () => {
 
       const result = await triggers.create(userId, slug, body);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest',
-      });
-      expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith({
-        user_ids: [userId],
-        toolkit_slugs: [mockTriggerType.toolkit.slug],
-      });
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
-        connected_account_id: body.connectedAccountId,
-        trigger_config: body.triggerConfig,
-        toolkit_versions: 'latest',
-        user_id: userId,
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
+      expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        {
+          user_ids: [userId],
+          toolkit_slugs: [mockTriggerType.toolkit.slug],
+        },
+        undefined
+      );
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
+        slug,
+        {
+          connected_account_id: body.connectedAccountId,
+          trigger_config: body.triggerConfig,
+          toolkit_versions: 'latest',
+          user_id: userId,
+        },
+        undefined
+      );
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
     });
 
@@ -508,12 +522,16 @@ describe('Triggers', () => {
 
       const result = await triggers.create(userId, slug, bodyWithoutConnectedAccount);
 
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
-        connected_account_id: 'conn-456',
-        trigger_config: bodyWithoutConnectedAccount.triggerConfig,
-        toolkit_versions: 'latest',
-        user_id: userId,
-      });
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
+        slug,
+        {
+          connected_account_id: 'conn-456',
+          trigger_config: bodyWithoutConnectedAccount.triggerConfig,
+          toolkit_versions: 'latest',
+          user_id: userId,
+        },
+        undefined
+      );
       expect(logger.warn).toHaveBeenCalledWith(
         `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`
       );
@@ -585,7 +603,11 @@ describe('Triggers', () => {
 
       const result = await triggers.update(triggerId, body);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, body);
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        body,
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -597,7 +619,7 @@ describe('Triggers', () => {
 
       const result = await triggers.delete(triggerId);
 
-      expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId);
+      expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId, undefined);
       expect(result).toEqual({ triggerId: mockTriggerDeleteResponse.trigger_id });
     });
   });
@@ -609,9 +631,13 @@ describe('Triggers', () => {
 
       const result = await triggers.disable(triggerId);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
-        status: 'disable',
-      });
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        {
+          status: 'disable',
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -623,9 +649,13 @@ describe('Triggers', () => {
 
       const result = await triggers.enable(triggerId);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
-        status: 'enable',
-      });
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        {
+          status: 'enable',
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -636,12 +666,15 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes();
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
-        cursor: undefined,
-        limit: undefined,
-        toolkit_slugs: undefined,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkit_slugs: undefined,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       expect(result).toEqual({
         items: mockTriggerTypes.items.map(item => ({
           ...item,
@@ -658,12 +691,15 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes(query);
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
-        cursor: undefined,
-        limit: query.limit,
-        toolkit_slugs: query.toolkits,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(
+        {
+          cursor: undefined,
+          limit: query.limit,
+          toolkit_slugs: query.toolkits,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       expect(result).toEqual({
         items: mockTriggerTypes.items,
         nextCursor: mockTriggerTypes.next_cursor,
@@ -679,9 +715,13 @@ describe('Triggers', () => {
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest', // Uses global default
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest', // Uses global default
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
 
@@ -696,9 +736,13 @@ describe('Triggers', () => {
 
       const result = await customTriggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: customToolkitVersions, // Uses configured global versions
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: customToolkitVersions, // Uses configured global versions
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
 
@@ -708,9 +752,13 @@ describe('Triggers', () => {
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest', // Default to latest
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest', // Default to latest
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
   });

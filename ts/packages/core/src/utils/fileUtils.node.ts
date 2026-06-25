@@ -36,6 +36,7 @@ export type GetFileDataAfterUploadingToS3Options = {
    * An empty array means "no paths are allowed" (fail-closed).
    */
   fileUploadAllowlist?: string[];
+  signal?: AbortSignal;
 };
 
 // Helper function to get file extension from MIME type
@@ -146,9 +147,10 @@ const readFileContent = async (
 };
 
 const readFileContentFromURL = async (
-  path: string
+  path: string,
+  signal?: AbortSignal
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
-  const response = await fetch(path);
+  const response = await fetch(path, { signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
@@ -188,16 +190,20 @@ const uploadFileToS3 = async (
   toolSlug: string,
   toolkitSlug: string,
   mimeType: string,
-  client: ComposioClient
+  client: ComposioClient,
+  signal?: AbortSignal
 ): Promise<string> => {
   const contentBytes = base64ToUint8Array(content);
-  const response = await client.files.createPresignedURL({
-    filename: fileName,
-    mimetype: mimeType,
-    md5: crypto.createHash('md5').update(contentBytes).digest('hex'),
-    tool_slug: toolSlug,
-    toolkit_slug: toolkitSlug,
-  });
+  const response = await client.files.createPresignedURL(
+    {
+      filename: fileName,
+      mimetype: mimeType,
+      md5: crypto.createHash('md5').update(contentBytes).digest('hex'),
+      tool_slug: toolSlug,
+      toolkit_slug: toolkitSlug,
+    },
+    { signal }
+  );
 
   const { key, new_presigned_url: signedURL } = response;
 
@@ -217,6 +223,7 @@ const uploadFileToS3 = async (
   const uploadResponse = await fetch(signedURL, {
     method: 'PUT',
     body: uploadBuffer,
+    signal,
     headers: {
       'Content-Type': mimeType,
     },
@@ -230,10 +237,10 @@ const uploadFileToS3 = async (
 };
 
 const readFile = async (
-  file: File | string
+  file: File | string,
+  signal?: AbortSignal
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
   if (file instanceof File) {
-    // if file is a File, read the content from the file
     const content = await file.arrayBuffer();
     return {
       fileName: file.name,
@@ -242,7 +249,7 @@ const readFile = async (
     };
   } else if (typeof file === 'string') {
     if (file.startsWith('http')) {
-      return await readFileContentFromURL(file);
+      return await readFileContentFromURL(file, signal);
     } else {
       return await readFileContent(file);
     }
@@ -259,6 +266,7 @@ export const getFileDataAfterUploadingToS3 = async (
     sensitiveFileUploadProtection,
     fileUploadPathDenySegments,
     fileUploadAllowlist,
+    signal,
   }: GetFileDataAfterUploadingToS3Options
 ): Promise<FileUploadData> => {
   if (!file) {
@@ -277,7 +285,7 @@ export const getFileDataAfterUploadingToS3 = async (
     });
   }
 
-  const fileData = await readFile(file);
+  const fileData = await readFile(file, signal);
   logger.debug(`Uploading file to S3...`);
   const s3key = await uploadFileToS3(
     platform.basename(fileData.fileName),
@@ -285,7 +293,8 @@ export const getFileDataAfterUploadingToS3 = async (
     toolSlug,
     toolkitSlug,
     fileData.mimeType,
-    client
+    client,
+    signal
   );
 
   logger.debug(`Done! File uploaded to S3: ${s3key}`, JSON.stringify(fileData, null, 2));
@@ -301,6 +310,7 @@ export const downloadFileFromS3 = async ({
   s3Url,
   mimeType,
   fileDownloadDir,
+  signal,
 }: {
   toolSlug: string;
   s3Url: string;
@@ -310,8 +320,9 @@ export const downloadFileFromS3 = async ({
    * back to `<home>/.composio/files` (the legacy default).
    */
   fileDownloadDir?: string;
+  signal?: AbortSignal;
 }): Promise<FileDownloadData> => {
-  const response = await fetch(s3Url);
+  const response = await fetch(s3Url, { signal });
   if (!response.ok) {
     throw new Error(`Failed to download file: ${response.statusText}`);
   }
