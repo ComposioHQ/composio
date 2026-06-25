@@ -11,7 +11,7 @@ This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `pyth
 1. Read the nearest nested `AGENTS.md` before editing a subtree.
 2. Preserve unrelated dirty work. Do not revert, delete, or reformat files outside the requested scope.
 3. Treat `.agents/skills` as the canonical local skill tree. `.claude/skills` is a compatibility symlink and must not be edited as a separate copy.
-4. Do not edit vendor reference trees under `ts/vendor/`.
+4. Do not edit generated SDK surfaces or vendor trees — see [Generated And Vendored Paths](#generated-and-vendored-paths).
 5. Verify every command you write against the current `package.json`, `Makefile`, `noxfile.py`, or workflow file.
 
 ## Skill Routing
@@ -41,6 +41,15 @@ docs/                       Fumadocs documentation site
 docs/agent-guidance/        Neutral docs-agent context and workflow instructions
 docs/decisions/             Neutral docs decisions and ADR-style records
 ```
+
+## Generated And Vendored Paths
+
+Do not hand-edit these. They are regenerated or vendored, and edits will be overwritten. They are also marked `linguist-generated`/`linguist-vendored` in `.gitattributes`.
+
+- `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
+- `ts/packages/cli-local-tools/vendor/**` — vendored local-tool sources (git submodules).
+- `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
+- `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
 
 ## Common Commands
 

@@ -1,0 +1,16 @@
+# Generated and vendored paths. Do not hand-edit; see AGENTS.md ("Generated And Vendored Paths").
+# linguist-generated / linguist-vendored keeps these out of language stats and
+# collapses their diffs by default on GitHub.
+
+# Vendored, read-only reference snapshots (git submodules)
+ts/vendor/** linguist-vendored=true
+ts/packages/cli-local-tools/vendor/** linguist-vendored=true
+
+# Generated SDK surfaces (produced by `composio generate` / the build pipeline)
+ts/packages/core/generated/** linguist-generated=true
+ts/packages/core/pack/generated/** linguist-generated=true
+
+# Package-manager lockfiles (regenerate via the package manager, never hand-edit)
+pnpm-lock.yaml linguist-generated=true
+uv.lock linguist-generated=true
+**/bun.lock linguist-generated=true
