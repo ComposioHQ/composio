@@ -474,6 +474,49 @@ describe('fileUtils', () => {
       ).rejects.toThrow('Failed to upload file to S3: Upload Failed');
     });
 
+    it('should retry S3 upload without Content-Type after auth header rejection', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+        headers: new Map([['content-type', 'application/pdf']]),
+      });
+
+      (mockClient.files.createPresignedURL as any).mockResolvedValue({
+        key: 'test-key',
+        type: 'new',
+        new_presigned_url: 'https://s3.example.com/upload',
+      });
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+        })
+        .mockResolvedValueOnce({ ok: true });
+
+      const result = await getFileDataAfterUploadingToS3('https://example.com/file.pdf', {
+        toolSlug: 'test-tool',
+        toolkitSlug: 'test-toolkit',
+        client: mockClient,
+      });
+
+      expect(result.s3key).toBe('test-key');
+      expect(mockFetch).toHaveBeenNthCalledWith(2, 'https://s3.example.com/upload', {
+        method: 'PUT',
+        body: expect.any(Uint8Array),
+        signal: undefined,
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+      expect(mockFetch).toHaveBeenNthCalledWith(3, 'https://s3.example.com/upload', {
+        method: 'PUT',
+        body: expect.any(Uint8Array),
+        signal: undefined,
+      });
+    });
+
     it('should handle invalid file types', async () => {
       await expect(
         getFileDataAfterUploadingToS3(123 as any, {
