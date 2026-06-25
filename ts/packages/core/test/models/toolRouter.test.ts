@@ -40,6 +40,7 @@ const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
   post: vi.fn(),
+  delete: vi.fn(),
   toolRouter: {
     session: {
       create: vi.fn(),
@@ -3219,6 +3220,41 @@ describe('ToolRouter', () => {
     });
   });
 
+  describe('delete method', () => {
+    it('should delete a session by ID and return a camelCase response', async () => {
+      mockClient.delete.mockResolvedValueOnce({
+        session_id: 'trs_delete_123',
+        deleted: true,
+      });
+
+      const result = await toolRouter.delete('trs_delete_123');
+
+      expect(mockClient.delete).toHaveBeenCalledWith(
+        '/api/v3.1/tool_router/session/trs_delete_123',
+        undefined
+      );
+      expect(result).toEqual({
+        sessionId: 'trs_delete_123',
+        deleted: true,
+      });
+    });
+
+    it('should forward request options when deleting by ID', async () => {
+      const requestOptions = { signal: new AbortController().signal };
+      mockClient.delete.mockResolvedValueOnce({
+        session_id: 'trs_delete_123',
+        deleted: true,
+      });
+
+      await toolRouter.delete('trs_delete_123', requestOptions);
+
+      expect(mockClient.delete).toHaveBeenCalledWith(
+        '/api/v3.1/tool_router/session/trs_delete_123',
+        requestOptions
+      );
+    });
+  });
+
   describe('use method', () => {
     const sessionId = 'session_123';
 
@@ -3242,6 +3278,7 @@ describe('ToolRouter', () => {
       expect(session).toHaveProperty('tools');
       expect(session).toHaveProperty('authorize');
       expect(session).toHaveProperty('toolkits');
+      expect(session).toHaveProperty('delete');
       expect(session.preload.tools).toEqual(['GMAIL_FETCH_EMAILS']);
       expect(session.configVersion).toBe(7);
     });
@@ -3371,6 +3408,26 @@ describe('ToolRouter', () => {
       );
       expect(toolkitsResult.items).toHaveLength(3);
       expect(toolkitsResult.items[0].slug).toBe('gmail');
+    });
+
+    it('should return a session with working delete function', async () => {
+      mockClient.toolRouter.session.retrieve.mockResolvedValueOnce(mockSessionRetrieveResponse);
+      mockClient.delete.mockResolvedValueOnce({
+        session_id: sessionId,
+        deleted: true,
+      });
+
+      const session = await toolRouter.use(sessionId);
+      const result = await session.delete();
+
+      expect(mockClient.delete).toHaveBeenCalledWith(
+        '/api/v3.1/tool_router/session/session_123',
+        undefined
+      );
+      expect(result).toEqual({
+        sessionId,
+        deleted: true,
+      });
     });
 
     it('should attach custom tools and expose SDK-preloaded custom schemas', async () => {

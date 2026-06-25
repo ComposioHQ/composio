@@ -29,6 +29,7 @@ import {
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
   SessionPreset,
+  type ToolRouterSessionDeleteResponse,
 } from '../types/toolRouter.types';
 import { ToolRouterCreateSessionConfigSchema } from '../types/toolRouter.types';
 import {
@@ -54,6 +55,7 @@ import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { ToolRouterSession } from './ToolRouterSession';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
+import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
 import {
   assertNoCustomToolSlugsInPreload,
   buildCustomToolsMap,
@@ -357,5 +359,18 @@ export class ToolRouter<
       userId,
       metadata
     );
+  }
+
+  /**
+   * Delete a tool router session by ID.
+   *
+   * Deleted sessions immediately stop being retrievable or executable. Deleting
+   * a missing or already-deleted session surfaces the backend 404.
+   */
+  async delete(
+    id: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolRouterSessionDeleteResponse> {
+    return deleteToolRouterSession(this.client, id, requestOptions);
   }
 }
