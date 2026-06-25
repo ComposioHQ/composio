@@ -116,7 +116,10 @@ class TestStainlessCopyContract:
     def test_with_options_is_aliased_to_our_copy_override(self) -> None:
         # The base binds `with_options = copy` at class-definition time, so the
         # subclass must re-alias it to the override that re-injects `provider`.
-        assert HttpClient.with_options is HttpClient.copy
+        # (Accessing these bound methods via the generic class trips mypy's
+        # "generic instance variable via class" check; the identity assert is
+        # intentional.)
+        assert HttpClient.with_options is HttpClient.copy  # type: ignore[misc]
 
 
 class TestWritePathDoesNotRetry:
