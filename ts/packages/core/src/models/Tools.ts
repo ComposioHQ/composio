@@ -37,7 +37,7 @@ import {
   ProviderOptions,
   TransformToolSchemaModifier,
 } from '../types/modifiers.types';
-import { BaseComposioProvider } from '../provider/BaseProvider';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
 import logger from '../utils/logger';
 import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
@@ -48,7 +48,7 @@ import {
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
 import { telemetry } from '../telemetry/Telemetry';
-import { ComposioConfig } from '../composio';
+import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session/session.mjs';

@@ -223,6 +223,15 @@ describe('transformToolRouterUpdateParams', () => {
     });
   });
 
+  it('should handle null for sandbox (clearing)', () => {
+    const result = transformToolRouterUpdateParams({
+      sandbox: null,
+    });
+    expect(result).toEqual({
+      workbench: null,
+    });
+  });
+
   it('should handle null for workbench (clearing)', () => {
     const result = transformToolRouterUpdateParams({
       workbench: null,
@@ -274,6 +283,15 @@ describe('transformToolRouterUpdateParams', () => {
     const mc = result.manage_connections as Record<string, unknown>;
     expect(mc).not.toHaveProperty('enable');
     expect(mc).toHaveProperty('callback_url', 'https://example.com/callback');
+  });
+
+  it('should NOT apply default enable:true for sandbox when only enableProxyExecution is provided', () => {
+    const result = transformToolRouterUpdateParams({
+      sandbox: { enableProxyExecution: true },
+    });
+    const wb = result.workbench as Record<string, unknown>;
+    expect(wb).not.toHaveProperty('enable');
+    expect(wb).toHaveProperty('enable_proxy_execution', true);
   });
 
   it('should NOT apply default enable:true for workbench when only enableProxyExecution is provided', () => {

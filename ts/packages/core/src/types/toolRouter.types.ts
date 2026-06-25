@@ -22,7 +22,7 @@ export const MCPServerTypeSchema = z.enum(['http', 'sse']);
 export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
 
 /**
- * Sandbox compute tier for the tool router workbench.
+ * Sandbox compute tier for the session sandbox.
  *
  * | Tier     | vCPU | RAM   |
  * | -------- | ---- | ----- |
@@ -35,6 +35,29 @@ export type MCPServerType = z.infer<typeof MCPServerTypeSchema>;
  */
 export const SandboxSizeSchema = z.enum(['standard', 'medium', 'large', 'xlarge']);
 export type SandboxSize = z.infer<typeof SandboxSizeSchema>;
+
+export const ToolRouterSandboxConfigSchema = z.object({
+  enable: z
+    .boolean()
+    .default(true)
+    .describe(
+      'Whether to enable the sandbox entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session.'
+    ),
+  enableProxyExecution: z
+    .boolean()
+    .optional()
+    .describe('Whether to enable proxy execution in the session sandbox'),
+  autoOffloadThreshold: z
+    .number()
+    .optional()
+    .describe(
+      'The auto offload threshold in characters for tool execution to move into the sandbox'
+    ),
+  sandboxSize: SandboxSizeSchema.optional().describe(
+    'Sandbox compute tier. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists.'
+  ),
+});
+export type ToolRouterSandboxConfig = z.infer<typeof ToolRouterSandboxConfigSchema>;
 
 // manage connections
 export const ToolRouterConfigManageConnectionsSchema = z
@@ -185,6 +208,13 @@ const ToolRouterCreateSessionConfigBaseSchema = z
         'Shortcut to expose every tool allowed by the session filters directly in session.tools() and the MCP tool list. This disables meta tools by default (search, multi-execute, manage-connections, and workbench). Use when all tools are known upfront and helper/meta tools are not needed. Without this preset, ToolRouter uses its default configuration with meta tools enabled.'
       ),
 
+    mcp: z
+      .boolean()
+      .optional()
+      .describe(
+        'When true, the returned session surfaces its hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`) in the type. The endpoint exists on every session at runtime regardless of this flag, but is only typed when `mcp: true` is passed. Default native tools (`session.tools()`) are unaffected. See https://docs.composio.dev/docs/sessions-via-mcp'
+      ),
+
     tools: z
       .record(z.string(), z.union([ToolRouterToolsParamSchema, ToolRouterConfigToolsSchema]))
       .optional()
@@ -220,30 +250,12 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .describe(
         'The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.'
       ),
-    workbench: z
-      .object({
-        enable: z
-          .boolean()
-          .default(true)
-          .describe(
-            'Whether to enable the workbench entirely. Defaults to true. When set to false, no code execution tools (COMPOSIO_REMOTE_WORKBENCH, COMPOSIO_REMOTE_BASH_TOOL) are available in the session.'
-          ),
-        enableProxyExecution: z
-          .boolean()
-          .optional()
-          .describe('Whether to enable proxy execution in the tool router session'),
-        autoOffloadThreshold: z
-          .number()
-          .optional()
-          .describe(
-            'The auto offload threshold in characters for the tool execution to be moved into workbench'
-          ),
-        sandboxSize: SandboxSizeSchema.optional().describe(
-          'Sandbox compute tier for the workbench. One of "standard" (1 vCPU / 1 GB), "medium" (2 vCPU / 2 GB), "large" (4 vCPU / 4 GB), or "xlarge" (8 vCPU / 8 GB). Defaults to "standard" server-side. Changing this on an existing session recreates the session\'s workbench sandbox on next access; the in-memory FS is lost, but /mnt/files/ persists.'
-        ),
-      })
-      .optional()
-      .describe('The workbench config for the tool router session'),
+    sandbox: ToolRouterSandboxConfigSchema.optional().describe(
+      'The sandbox config for this session. Prefer this over workbench.'
+    ),
+    workbench: ToolRouterSandboxConfigSchema.optional().describe(
+      'Deprecated alias for sandbox. Accepted for backwards compatibility.'
+    ),
     multiAccount: z
       .object({
         enable: z
@@ -312,6 +324,16 @@ const ToolRouterCreateSessionConfigBaseSchema = z
       .describe('Experimental features configuration - not stable, may be modified or removed'),
   })
   .partial()
+  .superRefine((config, ctx) => {
+    if (config.sandbox !== undefined && config.workbench !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.',
+        path: ['sandbox'],
+      });
+    }
+  })
   .describe('The config for the tool router session');
 
 const applyDirectToolsPresetDefaults = (value: unknown): unknown => {
@@ -324,10 +346,12 @@ const applyDirectToolsPresetDefaults = (value: unknown): unknown => {
     return value;
   }
 
+  const hasSandboxConfig = config.sandbox !== undefined || config.workbench !== undefined;
+
   return {
     ...config,
     manageConnections: config.manageConnections === undefined ? false : config.manageConnections,
-    workbench: config.workbench === undefined ? { enable: false } : config.workbench,
+    ...(hasSandboxConfig ? {} : { sandbox: { enable: false } }),
     preload: config.preload === undefined ? { tools: PRELOAD_TOOLS_ALL } : config.preload,
   };
 };
@@ -338,7 +362,7 @@ export const ToolRouterCreateSessionConfigSchema = z
 /**
  * The config for the tool router session.
  *
- * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and workbench by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
+ * @param {SessionPreset} [sessionPreset] - Shortcut that exposes every tool allowed by the session filters directly in session.tools() and the MCP tool list. Disables search, multi-execute, manage-connections, and sandbox by default; explicit overrides for supported fields still win. Without this preset, ToolRouter uses the default configuration with meta tools enabled.
  * @param {ToolRouterToolkitsParamSchema | ToolRouterToolkitsDisabledConfigSchema | ToolRouterToolkitsEnabledConfigSchema} toolkits - The toolkits to use in the tool router session
  * @param {Record<string, ToolRouterToolsParam | ToolRouterConfigTools>} tools - The tools to configure per toolkit (key is toolkit slug)
  * @param {Array<'readOnlyHint' | 'destructiveHint' | 'idempotentHint' | 'openWorldHint'>} tags - Global tags to filter tools by behavior
@@ -347,11 +371,12 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {ToolRouterConfigManageConnectionsSchema | boolean} manageConnections - The config for the manage connections in the tool router session. Defaults to true, if set to false, you need to manage connections manually. If set to an object, you can configure the manage connections settings.
  * @param {boolean} [manageConnections.enable] - Whether to use tools to manage connections in the tool router session @default true
  * @param {string} [manageConnections.callbackUrl] - The callback url to use in the tool router session
- * @param {object} workbench - Workbench configuration for tool execution
- * @param {boolean} [workbench.enable] - Whether to enable the workbench entirely. Defaults to true. When false, no code execution tools are available.
- * @param {boolean} [workbench.enableProxyExecution] - Whether to enable proxy execution
- * @param {number} [workbench.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to workbench
- * @param {SandboxSize} [workbench.sandboxSize] - Sandbox compute tier: 'standard' (1 vCPU/1 GB, default), 'medium' (2 vCPU/2 GB), 'large' (4 vCPU/4 GB), or 'xlarge' (8 vCPU/8 GB)
+ * @param {object} sandbox - Sandbox configuration for code execution. Preferred over workbench.
+ * @param {boolean} [sandbox.enable] - Whether to enable the sandbox entirely. Defaults to true. When false, no code execution tools are available.
+ * @param {boolean} [sandbox.enableProxyExecution] - Whether to enable proxy execution
+ * @param {number} [sandbox.autoOffloadThreshold] - Auto offload threshold in characters for moving execution to the sandbox
+ * @param {SandboxSize} [sandbox.sandboxSize] - Sandbox compute tier: 'standard' (1 vCPU/1 GB, default), 'medium' (2 vCPU/2 GB), 'large' (4 vCPU/4 GB), or 'xlarge' (8 vCPU/8 GB)
+ * @param {object} workbench - Deprecated alias for sandbox. Accepted for backwards compatibility.
  * @param {object} [multiAccount] - Multi-account configuration for this session
  * @param {boolean} [multiAccount.enable] - When true, enables multi-account mode. Falls back to org/project-level config when not set.
  * @param {number} [multiAccount.maxAccountsPerToolkit] - Max connected accounts per toolkit (2-10, default 5)
@@ -575,10 +600,13 @@ export interface ToolRouterSessionExecuteOptions {
 
 export type ToolRouterSessionPreloadConfig = SessionCreateResponse.Config.Preload;
 
+export type ToolRouterSessionWorkbenchConfig = SessionCreateResponse.Config.Workbench;
+
 export type ToolRouterSessionWarning = SessionCreateResponse.Warning;
 
 export interface ToolRouterSessionMetadata {
   preload?: ToolRouterSessionPreloadConfig;
+  workbench?: ToolRouterSessionWorkbenchConfig;
   configVersion?: number;
   warnings?: ToolRouterSessionWarning[];
   preloadedCustomToolSlugs?: string[];
@@ -627,7 +655,7 @@ export const ToolRouterUpdateSessionConfigSchema = z
     authConfigs: z.record(z.string(), z.string()).optional(),
     connectedAccounts: z
       .record(z.string(), z.union([z.string(), z.array(z.string())]))
-      .transform((rec) => {
+      .transform(rec => {
         const out: Record<string, string[]> = {};
         for (const [k, v] of Object.entries(rec)) {
           out[k] = typeof v === 'string' ? [v] : v;
@@ -639,15 +667,8 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .union([z.boolean(), ToolRouterConfigManageConnectionsSchema])
       .nullable()
       .optional(),
-    workbench: z
-      .object({
-        enable: z.boolean().optional(),
-        enableProxyExecution: z.boolean().optional(),
-        autoOffloadThreshold: z.number().optional(),
-        sandboxSize: SandboxSizeSchema.optional(),
-      })
-      .nullable()
-      .optional(),
+    sandbox: ToolRouterSandboxConfigSchema.partial().nullable().optional(),
+    workbench: ToolRouterSandboxConfigSchema.partial().nullable().optional(),
     multiAccount: z
       .object({
         enable: z.boolean().optional(),
@@ -663,7 +684,17 @@ export const ToolRouterUpdateSessionConfigSchema = z
       .strict()
       .optional(),
   })
-  .partial();
+  .partial()
+  .superRefine((config, ctx) => {
+    if (config.sandbox !== undefined && config.workbench !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.',
+        path: ['sandbox'],
+      });
+    }
+  });
 
 export type ToolRouterUpdateSessionConfig = z.infer<typeof ToolRouterUpdateSessionConfigSchema>;
 
@@ -679,6 +710,8 @@ export interface Session<
   mcp: ToolRouterMCPServerConfig;
   /** Stored preload configuration for this session. */
   preload: ToolRouterSessionPreloadConfig;
+  /** Resolved workbench config returned by the API (enable defaults to true server-side). */
+  workbench?: ToolRouterSessionWorkbenchConfig;
   /** Server-side config version when returned by the API. */
   configVersion?: number;
   /** Non-blocking session creation warnings returned by the API. */
@@ -701,3 +734,18 @@ export interface Session<
   /** Experimental features (files, assistive prompt, etc.) */
   experimental: SessionExperimental;
 }
+
+/**
+ * Session type without the typed `mcp` endpoint.
+ *
+ * Returned by `create()` / `use()` when `{ mcp: true }` is not passed. The
+ * hosted MCP endpoint still exists on the underlying session at runtime — this
+ * only hides it from the type so MCP is an explicit opt-in. Pass `{ mcp: true }`
+ * to get a `Session` with `session.mcp` surfaced. See
+ * https://docs.composio.dev/docs/sessions-via-mcp
+ */
+export type SessionWithoutMcp<
+  TToolCollection,
+  TTool,
+  TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
+> = Omit<Session<TToolCollection, TTool, TProvider>, 'mcp'>;

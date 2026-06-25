@@ -1,8 +1,8 @@
 import { telemetry } from '../telemetry/Telemetry';
 import { Composio as ComposioClient, BadRequestError } from '@composio/client';
-import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ComposioConfig } from '../composio';
-import { ComposioRequestOptions } from '../types/requestOptions.types';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
+import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 import {
@@ -18,6 +18,7 @@ import {
   ToolRouterSessionExecuteOptions,
   ToolRouterSessionMetadata,
   ToolRouterSessionPreloadConfig,
+  ToolRouterSessionWorkbenchConfig,
   ToolRouterSessionWarning,
   ToolRouterUpdateSessionConfig,
   ToolRouterUpdateSessionConfigSchema,
@@ -89,15 +90,28 @@ const AuthorizeOptionsSchema = z.object({
   experimental: ConnectedAccountExperimentalSchema.optional(),
 });
 
+/**
+ * A Composio session — the object returned by `composio.sessions.create(...)`
+ * and `composio.sessions.use(...)` (also reachable via the top-level
+ * `composio.create(...)` / `composio.use(...)` aliases).
+ *
+ * This is the canonical session surface. Use it to fetch session-scoped tools,
+ * authorize toolkits, search, and execute tools. The public return type is
+ * `Session` / `SessionWithMcp`; this class is its concrete runtime form.
+ *
+ * @see {@link Sessions} for the `composio.sessions` factory.
+ */
 export class ToolRouterSession<
   TToolCollection,
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   public readonly sessionId: string;
+  /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (`SessionWithMcp`); the default `Session` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   public preload: ToolRouterSessionPreloadConfig;
+  public workbench?: ToolRouterSessionWorkbenchConfig;
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];
@@ -126,6 +140,7 @@ export class ToolRouterSession<
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
     this.preload = metadata?.preload ?? { tools: [] };
+    this.workbench = metadata?.workbench;
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
@@ -612,6 +627,7 @@ export class ToolRouterSession<
     );
     this.configVersion = response.config_version;
     this.preload = response.config.preload;
+    this.workbench = response.config.workbench;
     this.warnings = response.warnings ?? [];
   }
 

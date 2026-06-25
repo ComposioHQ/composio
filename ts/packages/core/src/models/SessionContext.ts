@@ -36,6 +36,11 @@ import { withCancellation } from '../utils/cancellation';
  * When `customToolsMap` is provided, `execute()` checks local tools first
  * before falling back to the backend API. This allows tool A to call tool B
  * via `session.execute('B', ...)` without hitting the network.
+ *
+ * @internal Internal implementation detail. Not exported from `@composio/core`
+ * and not part of the public API surface — custom tools receive a
+ * `SessionContext` instance via their execute function; they never reference
+ * this class directly. Excluded from the generated SDK reference.
  */
 export class SessionContextImpl implements SessionContext {
   public readonly userId: string;

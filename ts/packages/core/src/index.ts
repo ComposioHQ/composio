@@ -27,6 +27,7 @@ export { MCP } from './models/MCP';
 export { RemoteFile } from './models/RemoteFile';
 export { createConnectionRequest } from './models/ConnectionRequest';
 export { ToolRouterSession } from './models/ToolRouterSession';
+export { Sessions } from './models/Sessions';
 export * from './types/provider.types';
 export * from './types/customTool.types';
 export * from './types/tool.types';
@@ -53,10 +54,10 @@ export { createCustomTool as experimental_createTool } from './models/CustomTool
 export { createCustomToolkit as experimental_createToolkit } from './models/CustomTool';
 
 // Experimental shared connected accounts — shape may change in future releases.
-// `updateAcl` is mounted as a method on `composio.experimental.updateAcl(...)`
-// because it takes a client and performs I/O. The `Experimental` class
-// itself is re-exported so callers can type their own composio handles
-// (e.g. in test helpers).
+// Prefer `composio.connectedAccounts.updateAcl(...)`; the experimental
+// namespace keeps `composio.experimental.updateAcl(...)` as an alias while
+// the API is experimental. The `Experimental` class itself is re-exported
+// so callers can type their own composio handles (e.g. in test helpers).
 export { Experimental } from './models/Experimental';
 
 // Error handling exports

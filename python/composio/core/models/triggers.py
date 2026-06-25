@@ -187,6 +187,22 @@ class VerifyWebhookResult(t.TypedDict):
     raw_payload: WebhookPayload  # The original parsed payload
 
 
+class WebhookSubscription(t.TypedDict, total=False):
+    """Webhook subscription returned by the Composio API."""
+
+    id: str
+    webhook_url: str
+    version: str
+    enabled_events: t.List[str]
+    secret: str
+    created_at: str
+    updated_at: str
+
+
+DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS = ("composio.trigger.message",)
+WEBHOOK_SUBSCRIPTIONS_PATH = "/api/v3.1/webhook_subscriptions"
+
+
 _ = {
     "appName": "github",
     "payload": {
@@ -895,6 +911,87 @@ class Triggers(Resource):
             status="disable",
         )
 
+    def set_webhook_subscription(
+        self,
+        *,
+        webhook_url: str,
+        enabled_events: t.Optional[t.Sequence[str]] = None,
+        version: t.Union[WebhookVersion, str] = WebhookVersion.V3,
+    ) -> WebhookSubscription:
+        """
+        Create or update the project webhook subscription used for webhook delivery.
+
+        If a subscription already exists, the first subscription is updated. Otherwise a
+        new subscription is created. By default this subscribes to V3 trigger message
+        events.
+
+        Example:
+            composio.triggers.set_webhook_subscription(
+                webhook_url=f"{APP_URL}/webhooks/composio",
+            )
+        """
+        if not webhook_url:
+            raise exceptions.InvalidParams("please provide a valid `webhook_url`")
+
+        events = list(
+            DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS
+            if enabled_events is None
+            else enabled_events
+        )
+        if len(events) == 0:
+            raise exceptions.InvalidParams("please provide at least one enabled event")
+
+        version_value = (
+            version.value if isinstance(version, WebhookVersion) else version
+        )
+        body = {
+            "webhook_url": webhook_url,
+            "enabled_events": events,
+            "version": version_value,
+        }
+
+        existing = self._client.get(
+            WEBHOOK_SUBSCRIPTIONS_PATH,
+            cast_to=object,
+            options={"params": {"limit": 1}},
+        )
+        subscription_id = self._first_webhook_subscription_id(existing)
+
+        if subscription_id:
+            return t.cast(
+                WebhookSubscription,
+                self._client.patch(
+                    f"{WEBHOOK_SUBSCRIPTIONS_PATH}/{subscription_id}",
+                    cast_to=object,
+                    body=body,
+                ),
+            )
+
+        return t.cast(
+            WebhookSubscription,
+            self._client.post(
+                WEBHOOK_SUBSCRIPTIONS_PATH,
+                cast_to=object,
+                body=body,
+            ),
+        )
+
+    @staticmethod
+    def _first_webhook_subscription_id(response: object) -> t.Optional[str]:
+        if not isinstance(response, dict):
+            return None
+
+        items = response.get("items")
+        if not isinstance(items, list) or len(items) == 0:
+            return None
+
+        first = items[0]
+        if not isinstance(first, dict):
+            return None
+
+        subscription_id = first.get("id")
+        return subscription_id if isinstance(subscription_id, str) else None
+
     def get_type(self, slug: str) -> TriggersTypeRetrieveResponse:
         """
         Get a trigger type by its slug
@@ -1118,6 +1215,183 @@ class Triggers(Resource):
             "payload": normalized_payload,
             "raw_payload": raw_payload,
         }
+
+    def parse(
+        self,
+        request: t.Any = None,
+        *,
+        body: t.Union[str, bytes, t.Mapping[str, t.Any], None] = None,
+        headers: t.Union[t.Mapping[str, t.Any], None] = None,
+        verify_secret: t.Optional[str] = None,
+        tolerance: int = 300,
+    ) -> VerifyWebhookResult:
+        """
+        Parse an incoming webhook request into a typed, normalized trigger payload.
+
+        Dump the incoming request in and get back the parsed Composio trigger
+        event. When ``verify_secret`` is provided, the request signature is
+        verified before the payload is returned (delegating to
+        :meth:`verify_webhook`); without it, the body is parsed without
+        verification.
+
+        ``request`` may be any object exposing the request body and headers, such
+        as a Flask/Django/FastAPI request. The body is read from ``.body`` (or
+        ``.data`` / ``.get_data()``) and the headers from ``.headers``. Because
+        this SDK is synchronous, the caller must pass an already-read raw body for
+        async frameworks (e.g. FastAPI ``await request.body()``) — either via the
+        ``body`` keyword or by reading it first.
+
+        Alternatively, pass ``body=`` and ``headers=`` explicitly instead of a
+        ``request`` object.
+
+        :param request: The incoming webhook request object (Flask/Django/FastAPI)
+        :param body: The raw request body (str/bytes/parsed mapping); overrides ``request``
+        :param headers: The request headers as a mapping; overrides ``request``
+        :param verify_secret: Webhook secret; when set, the signature is verified
+        :param tolerance: Max webhook age in seconds (only used when verifying)
+        :return: VerifyWebhookResult containing version, normalized payload, and raw payload
+        :raises InvalidParams: If ``verify_secret`` is set but signature headers are missing
+        :raises WebhookSignatureVerificationError: If signature verification fails
+        :raises WebhookPayloadError: If the payload cannot be parsed
+
+        Example:
+            # Flask — verify the signature
+            @app.route('/webhooks/composio', methods=['POST'])
+            def webhook():
+                try:
+                    result = composio.triggers.parse(
+                        request,
+                        verify_secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+                    )
+                    print(f"Trigger: {result['payload']['trigger_slug']}")
+                    print(f"Event data: {result['payload']['payload']}")
+                    return 'OK', 200
+                except exceptions.WebhookSignatureVerificationError:
+                    return 'Unauthorized', 401
+
+            # FastAPI — parse without verifying (read the async body first)
+            @app.post('/webhooks/composio')
+            async def webhook(request: Request):
+                raw = await request.body()
+                result = composio.triggers.parse(body=raw, headers=request.headers)
+                return {'trigger': result['payload']['trigger_slug']}
+        """
+        raw_body = body if body is not None else self._extract_request_body(request)
+        raw_headers = (
+            headers if headers is not None else getattr(request, "headers", None)
+        )
+
+        payload = self._body_to_str(raw_body)
+
+        # No secret: parse without verifying the signature.
+        if verify_secret is None:
+            version, raw_payload, normalized_payload = self._parse_webhook_payload(
+                payload
+            )
+            return {
+                "version": version,
+                "payload": normalized_payload,
+                "raw_payload": raw_payload,
+            }
+
+        # Secret provided: signature headers are required to verify.
+        webhook_id = self._get_header(raw_headers, "webhook-id")
+        timestamp = self._get_header(raw_headers, "webhook-timestamp")
+        signature = self._get_header(raw_headers, "webhook-signature")
+
+        missing = [
+            name
+            for name, value in (
+                ("webhook-id", webhook_id),
+                ("webhook-timestamp", timestamp),
+                ("webhook-signature", signature),
+            )
+            if not value
+        ]
+        if missing:
+            raise exceptions.InvalidParams(
+                "Cannot verify webhook: missing signature header(s) "
+                f"{', '.join(repr(name) for name in missing)}. "
+                "Pass the raw, unparsed request body and ensure the Composio "
+                "signature headers (webhook-id, webhook-timestamp, "
+                "webhook-signature) are forwarded to triggers.parse(). "
+                "To parse without verifying, omit `verify_secret`."
+            )
+
+        return self.verify_webhook(
+            id=t.cast(str, webhook_id),
+            payload=payload,
+            secret=verify_secret,
+            signature=t.cast(str, signature),
+            timestamp=t.cast(str, timestamp),
+            tolerance=tolerance,
+        )
+
+    @staticmethod
+    def _extract_request_body(request: t.Any) -> t.Union[str, bytes, None]:
+        """Read the raw body from a framework request object.
+
+        Tries the common attributes used by Flask (``get_data``/``data``),
+        Django (``body``) and similar. Returns ``None`` when nothing usable is
+        found so the caller surfaces a clear parse error.
+        """
+        if request is None:
+            return None
+
+        # Flask: request.get_data() returns the raw body bytes.
+        get_data = getattr(request, "get_data", None)
+        if callable(get_data):
+            return get_data()
+
+        for attr in ("body", "data"):
+            value = getattr(request, attr, None)
+            if value is not None and not callable(value):
+                return value
+
+        return None
+
+    @staticmethod
+    def _body_to_str(body: t.Union[str, bytes, t.Mapping[str, t.Any], None]) -> str:
+        """Coerce a body (str, bytes, parsed mapping, or None) into a raw string."""
+        if body is None:
+            return ""
+        if isinstance(body, str):
+            return body
+        if isinstance(body, (bytes, bytearray)):
+            return bytes(body).decode("utf-8")
+        # Already-parsed mapping (e.g. a framework that pre-parsed JSON). Note:
+        # re-serializing cannot reproduce the exact signed bytes, so signature
+        # verification on a pre-parsed body is best-effort only.
+        return json.dumps(body)
+
+    @staticmethod
+    def _get_header(headers: t.Any, name: str) -> t.Optional[str]:
+        """Read a header value case-insensitively from a headers mapping.
+
+        Supports both plain ``dict`` headers and framework header objects
+        (Werkzeug/Django ``HttpHeaders``) that expose a ``get`` method, which is
+        already case-insensitive.
+        """
+        if headers is None:
+            return None
+
+        get = getattr(headers, "get", None)
+        if callable(get):
+            value = get(name)
+            if value is not None:
+                return str(value)
+
+        # Fall back to a manual case-insensitive scan for plain mappings.
+        try:
+            items = headers.items()
+        except AttributeError:
+            return None
+
+        target = name.lower()
+        for key, value in items:
+            if isinstance(key, str) and key.lower() == target:
+                return str(value) if value is not None else None
+        return None
 
     def _verify_webhook_signature(
         self,

@@ -306,6 +306,12 @@ export type ConnectedAccountListResponse = z.infer<typeof ConnectedAccountListRe
 
 export const CreateConnectedAccountLinkOptionsSchema = z.object({
   /**
+   * Toolkit slug to connect when `authConfigId` is omitted from
+   * `connectedAccounts.link()`. The SDK will reuse an existing Composio-managed,
+   * Tool-Router-enabled auth config for this toolkit, or create one if needed.
+   */
+  toolkit: z.string().optional(),
+  /**
    * The url to redirect the user to post connecting their account.
    *
    * For successful connections, you will get a query param called status=success

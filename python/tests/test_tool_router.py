@@ -23,7 +23,7 @@ from composio.core.models.tool_router import (
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
 )
-from composio.exceptions import ValidationError
+from composio.exceptions import InvalidParams, ValidationError
 
 experimental_api = ExperimentalAPI()
 
@@ -516,8 +516,44 @@ class TestToolRouter:
             "slack": ["ca_yyy"],
         }
 
+    def test_create_session_with_sandbox_config(self, tool_router, mock_client):
+        """Test creating a session with preferred sandbox configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            sandbox={
+                "enable_proxy_execution": False,
+                "auto_offload_threshold": 300,
+                "sandbox_size": "large",
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"] == {
+            "enable": True,
+            "enable_proxy_execution": False,
+            "auto_offload_threshold": 300,
+            "sandbox_size": "large",
+        }
+
+    def test_create_session_rejects_sandbox_and_workbench(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session rejects both sandbox and workbench."""
+        with pytest.raises(InvalidParams):
+            tool_router.create(
+                user_id="user_123",
+                sandbox={"enable": True},
+                workbench={"enable": True},
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
     def test_create_session_with_workbench_config(self, tool_router, mock_client):
-        """Test creating a session with workbench configuration."""
+        """Test creating a session with backwards-compatible workbench configuration."""
         session = tool_router.create(
             user_id="user_123",
             workbench={"enable_proxy_execution": False, "auto_offload_threshold": 300},

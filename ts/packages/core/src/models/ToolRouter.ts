@@ -9,7 +9,7 @@
  * const composio = new Composio();
  * const userId = 'user_123';
  *
- * const session = await composio.experimental.create(userId, {
+ * const session = await composio.sessions.create(userId, {
  *   toolkits: ['gmail'],
  *   manageConnections: true
  * });
@@ -19,12 +19,12 @@
  */
 import { Composio as ComposioClient } from '@composio/client';
 import { telemetry } from '../telemetry/Telemetry';
-import { BaseComposioProvider } from '../provider/BaseProvider';
-import { ComposioConfig } from '../composio';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
 import {
   ToolRouterCreateSessionConfig,
   Session,
-  SessionExperimental,
+  SessionWithoutMcp,
   MCPServerType,
   ToolRouterMCPServerConfig,
   ToolRouterSessionMetadata,
@@ -46,9 +46,10 @@ import {
   transformToolRouterTagsParams,
   transformToolRouterToolsParams,
   transformToolRouterManageConnectionsParams,
-  transformToolRouterWorkbenchParams,
+  transformToolRouterSandboxParams,
   transformToolRouterToolkitsParams,
   transformToolRouterMultiAccountParams,
+  resolveToolRouterSandboxConfig,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { ToolRouterSession } from './ToolRouterSession';
@@ -69,6 +70,7 @@ function getSessionMetadata(
 ) {
   const metadata: ToolRouterSessionMetadata = {
     preload: session.config.preload,
+    workbench: session.config.workbench,
     configVersion: session.config_version,
     warnings: 'warnings' in session ? (session.warnings ?? []) : [],
   };
@@ -157,7 +159,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    *
-   * const session = await composio.create('user_123', {
+   * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
    *   manageConnections: true,
    *   experimental: {
@@ -167,6 +169,17 @@ export class ToolRouter<
    * });
    * ```
    */
+  // Overloads: passing `{ mcp: true }` surfaces `session.mcp` in the returned
+  // type. Otherwise the MCP endpoint is omitted from the type (it still exists
+  // at runtime). See https://docs.composio.dev/docs/sessions-via-mcp
+  async create(
+    userId: string,
+    config: ToolRouterCreateSessionConfig & { mcp: true }
+  ): Promise<Session<TToolCollection, TTool, TProvider>>;
+  async create(
+    userId: string,
+    config?: ToolRouterCreateSessionConfig
+  ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
   async create(
     userId: string,
     config?: ToolRouterCreateSessionConfig,
@@ -203,6 +216,9 @@ export class ToolRouter<
     }
 
     const multiAccountPayload = transformToolRouterMultiAccountParams(routerConfig.multiAccount);
+    const sandboxPayload = transformToolRouterSandboxParams(
+      resolveToolRouterSandboxConfig(routerConfig)
+    );
 
     const connectedAccountsPayload =
       routerConfig.connectedAccounts === undefined
@@ -224,7 +240,7 @@ export class ToolRouter<
       manage_connections: transformToolRouterManageConnectionsParams(
         routerConfig.manageConnections
       ),
-      workbench: transformToolRouterWorkbenchParams(routerConfig.workbench),
+      workbench: sandboxPayload,
       multi_account: multiAccountPayload,
       preload: routerConfig.preload,
       ...(isDirectToolsPreset && {
@@ -280,15 +296,27 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.toolRouter.use(id);
+   * const session = await composio.sessions.use(id);
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);
    * ```
    */
+  // Overloads mirror `create()`: pass `{ mcp: true }` to surface `session.mcp`
+  // in the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] },
+    options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true },
+    requestOptions?: ComposioRequestOptions
+  ): Promise<Session<TToolCollection, TTool, TProvider>>;
+  async use(
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
+    requestOptions?: ComposioRequestOptions
+  ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
+  async use(
+    id: string,
+    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
     const customTools = options?.customTools;

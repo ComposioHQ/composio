@@ -44,6 +44,11 @@ function transformMCPItemResponse(response: McpUpdateResponse | McpRetrieveRespo
  * MCP (Model Control Protocol) class
  * Handles MCP server operations.
  * When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`.
+ *
+ * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`
+ * returns a session that exposes `session.mcp.url` / `session.mcp.headers`. The standalone
+ * `composio.mcp` server-management API is kept for backwards compatibility.
+ * See https://docs.composio.dev/docs/sessions-via-mcp
  */
 export class MCP {
   client: ComposioClient;

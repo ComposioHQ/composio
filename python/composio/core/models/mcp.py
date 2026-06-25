@@ -107,6 +107,13 @@ class MCP(Resource):
     Provides enhanced MCP server operations
 
     This matches the TypeScript ExperimentalMCP class functionality.
+
+    .. deprecated::
+        Use a session's MCP endpoint instead:
+        ``composio.create(user_id, mcp=True)`` returns a session that exposes
+        ``session.mcp.url`` / ``session.mcp.headers``. The standalone
+        ``composio.mcp`` server-management API is kept for backwards
+        compatibility. See https://docs.composio.dev/docs/sessions-via-mcp
     """
 
     def __init__(self, client: HttpClient):

@@ -1358,6 +1358,22 @@ describe('ToolRouter', () => {
         );
       });
 
+      it('forwards sandbox config to the existing workbench wire field', async () => {
+        mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+
+        await toolRouter.create(userId, {
+          sandbox: { enableProxyExecution: false, autoOffloadThreshold: 300, sandboxSize: 'large' },
+        });
+
+        const payload = mockClient.toolRouter.session.create.mock.calls[0]?.[0];
+        expect(payload?.workbench).toEqual({
+          enable: true,
+          enable_proxy_execution: false,
+          auto_offload_threshold: 300,
+          sandbox_size: 'large',
+        });
+      });
+
       it('forwards sandboxSize as snake_case sandbox_size on the wire', async () => {
         mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
@@ -1367,6 +1383,15 @@ describe('ToolRouter', () => {
 
         const payload = mockClient.toolRouter.session.create.mock.calls[0]?.[0];
         expect(payload?.workbench?.sandbox_size).toBe('large');
+      });
+
+      it('rejects create config that passes both sandbox and workbench', async () => {
+        await expect(
+          toolRouter.create(userId, {
+            sandbox: { enable: true },
+            workbench: { enable: true },
+          })
+        ).rejects.toThrow('Pass either sandbox or workbench');
       });
 
       it('rejects an invalid sandboxSize value via the zod schema', async () => {
