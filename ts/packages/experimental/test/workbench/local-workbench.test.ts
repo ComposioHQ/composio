@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { experimental_createLocalWorkbenchSession } from '../../src/experimental';
+import { experimental_createLocalWorkbenchSession } from '../../src/workbench';
 
 function makeComposio(config: { apiKey?: string; baseURL?: string }) {
   return {

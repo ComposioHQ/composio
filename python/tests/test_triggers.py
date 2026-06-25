@@ -173,7 +173,7 @@ class TestTriggers:
 
     def test_set_webhook_subscription_rejects_empty_events(self, triggers):
         """Test set_webhook_subscription rejects empty enabled_events."""
-        with pytest.raises(exceptions.InvalidParams):
+        with pytest.raises(exceptions.ValidationError):
             triggers.set_webhook_subscription(
                 webhook_url="https://example.com/webhooks/composio",
                 enabled_events=[],
@@ -1340,10 +1340,10 @@ class TestParseWebhook:
     def test_parse_missing_headers_with_verify_raises(
         self, triggers, test_secret, mock_v3_payload
     ):
-        """verify_secret set but missing signature headers raises InvalidParams."""
+        """verify_secret set but missing signature headers raises ValidationError."""
         payload = json.dumps(mock_v3_payload)
 
-        with pytest.raises(exceptions.InvalidParams) as exc_info:
+        with pytest.raises(exceptions.ValidationError) as exc_info:
             triggers.parse(body=payload, headers={}, verify_secret=test_secret)
 
         assert "missing signature header" in str(exc_info.value)

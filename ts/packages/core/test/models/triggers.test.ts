@@ -14,6 +14,7 @@ import { PusherService } from '../../src/services/pusher/Pusher';
 import {
   ComposioFailedToSubscribeToPusherChannelError,
   ComposioTriggerTypeNotFoundError,
+  ComposioWebhookSignatureVerificationError,
 } from '../../src/errors/TriggerErrors';
 
 // Mock dependencies
@@ -272,8 +273,8 @@ describe('Triggers', () => {
         },
       });
       expect(mockClient.patch).not.toHaveBeenCalled();
+      // Only camelCase keys — the snake_case wire fields must not leak through.
       expect(result).toEqual({
-        ...rawSubscription,
         id: 'sub_123',
         webhookUrl,
         version: 'V3',
@@ -369,7 +370,7 @@ describe('Triggers', () => {
       const body = JSON.stringify(v3Payload);
 
       const result = await triggers.parse({
-        body: Buffer.from(body),
+        body: new TextEncoder().encode(body),
         headers: {},
       });
 
@@ -395,7 +396,9 @@ describe('Triggers', () => {
         body,
       });
 
-      await expect(triggers.parse(request, { verifySecret: webhookSecret })).rejects.toThrow();
+      await expect(triggers.parse(request, { verifySecret: webhookSecret })).rejects.toThrow(
+        ComposioWebhookSignatureVerificationError
+      );
     });
 
     it('should throw a helpful ValidationError when signature headers are missing', async () => {

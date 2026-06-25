@@ -53,7 +53,7 @@ const composio = new Composio({
 |------|------|-------------|
 | `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
 | `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
-| `create` | `object` | Creates a new tool router session for a user.
+| `create` | `(userId: string, config: \{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| ...[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: ...[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: ... \| ... \| ... \| ...[] \| \{ disable?: ...[]; enable?: ...[] \}; toolkits?: string[] \| \{ disable: ...[] \} \| \{ enable: ...[] \}; tools?: Record<string, ...[] \| \{ enable: ... \} \| \{ disable: ... \} \| \{ tags: ... \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \} & \{ mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Creates a new tool router session for a user.
 Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
 should be exposed directly; see `ToolRouterCreateSessionConfig`. |
 | `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
@@ -73,14 +73,16 @@ Prefer `composio.sessions.create(...)` for new code. The top-level
 | `toolRouter` | `ToolRouter` | Legacy alias for `composio.sessions`. |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
-| `use` | `object` | Use an existing tool router session |
+| `use` | `(id: string, options: \{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Use an existing tool router session |
 
 ## Methods
 
 ### createSession() (deprecated)
 
 <Callout type="warn" title="Deprecated">
-DEPRECATED: This method will be removed in a future version of the SDK.
+Will be removed in a future version of the SDK. Instead, construct a new
+  instance directly with the headers you need: `new Composio(\{ ...existingConfig, defaultHeaders \})`.
+  For one-off overrides, pass per-call `requestOptions` where supported.
 </Callout>
 
 Creates a new instance of the Composio SDK with custom request options while preserving the existing configuration.
@@ -100,7 +102,7 @@ createSession(options?: { headers?: ComposioRequestHeaders }): Composio
 
 | Name | Type |
 |------|------|
-| `options?` | `object` |
+| `options?` | `\{ headers?: ComposioRequestHeaders \}` |
 
 **Returns**
 
@@ -171,12 +173,12 @@ export default {
 Get the Composio SDK client.
 
 ```typescript
-getClient(): Composio
+getClient(): ComposioClient
 ```
 
 **Returns**
 
-`Composio` — The Composio API client.
+`ComposioClient` — The Composio API client.
 
 ---
 

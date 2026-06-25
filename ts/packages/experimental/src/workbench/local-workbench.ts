@@ -1,5 +1,4 @@
-import type { Composio } from '../composio';
-import type { Session } from '../types/toolRouter.types';
+import type { Composio, Session } from '@composio/core';
 import {
   experimental_createPythonWorkbenchHelperSource,
   experimental_createWorkbenchEnv,

@@ -97,7 +97,9 @@ const AuthorizeOptionsSchema = z.object({
  *
  * This is the canonical session surface. Use it to fetch session-scoped tools,
  * authorize toolkits, search, and execute tools. The public return type is
- * `Session` / `SessionWithMcp`; this class is its concrete runtime form.
+ * `Session` (with `mcp` surfaced, returned when `{ mcp: true }` is passed) or
+ * `SessionWithoutMcp` (the default, with `mcp` omitted from the type); this
+ * class is the concrete runtime form behind both.
  *
  * @see {@link Sessions} for the `composio.sessions` factory.
  */
@@ -107,11 +109,12 @@ export class ToolRouterSession<
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
   public readonly sessionId: string;
-  /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (`SessionWithMcp`); the default `Session` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
+  /** Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `{ mcp: true }` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp */
   public readonly mcp: ToolRouterMCPServerConfig;
   public readonly experimental: SessionExperimental;
   public preload: ToolRouterSessionPreloadConfig;
-  public workbench?: ToolRouterSessionWorkbenchConfig;
+  /** Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. */
+  public sandbox?: ToolRouterSessionWorkbenchConfig;
   public configVersion?: number;
   public warnings: ToolRouterSessionWarning[];
   private readonly preloadedCustomToolSlugs: string[];
@@ -140,7 +143,7 @@ export class ToolRouterSession<
       files: new ToolRouterSessionFilesMount(client, sessionId),
     };
     this.preload = metadata?.preload ?? { tools: [] };
-    this.workbench = metadata?.workbench;
+    this.sandbox = metadata?.workbench;
     this.configVersion = metadata?.configVersion;
     this.warnings = metadata?.warnings ?? [];
     this.preloadedCustomToolSlugs = metadata?.preloadedCustomToolSlugs ?? [];
@@ -158,6 +161,19 @@ export class ToolRouterSession<
     }
 
     telemetry.instrument(this, 'ToolRouterSession');
+  }
+
+  /**
+   * Resolved sandbox config for the session.
+   *
+   * @deprecated Use `session.sandbox` instead. `workbench` is a backwards-compatible alias and will be removed in a future release.
+   */
+  public get workbench(): ToolRouterSessionWorkbenchConfig | undefined {
+    return this.sandbox;
+  }
+
+  public set workbench(value: ToolRouterSessionWorkbenchConfig | undefined) {
+    this.sandbox = value;
   }
 
   /**
@@ -627,7 +643,7 @@ export class ToolRouterSession<
     );
     this.configVersion = response.config_version;
     this.preload = response.config.preload;
-    this.workbench = response.config.workbench;
+    this.sandbox = response.config.workbench;
     this.warnings = response.warnings ?? [];
   }
 

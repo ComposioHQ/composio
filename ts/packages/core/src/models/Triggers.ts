@@ -109,8 +109,10 @@ const stringArray = (value: unknown): string[] =>
 const transformWebhookSubscription = (subscription: unknown): WebhookSubscription => {
   const raw = asRecord(subscription) as RawWebhookSubscription;
 
+  // Map to camelCase explicitly — do NOT spread `...raw`, or the response's
+  // snake_case keys (webhook_url, enabled_events, created_at, ...) leak into the
+  // public object alongside their camelCase counterparts.
   return {
-    ...raw,
     id: firstString(raw.id) ?? '',
     webhookUrl: firstString(raw.webhook_url) ?? firstString(raw.webhookUrl) ?? '',
     version: (firstString(raw.version) ?? WebhookVersions.V3) as WebhookVersion,
@@ -926,14 +928,28 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
 
     const verifySecret = options?.verifySecret;
 
-    // No secret: parse without verifying the signature.
-    if (verifySecret === undefined) {
+    // Distinguish "caller omitted verifySecret" (explicit opt-out) from
+    // "caller passed verifySecret but it resolved to empty" (almost always an
+    // unset COMPOSIO_WEBHOOK_SECRET). The latter must fail loudly rather than
+    // silently skip verification and accept forged events.
+    const optedOutOfVerification = options === undefined || !('verifySecret' in options);
+
+    if (optedOutOfVerification) {
+      // No secret requested: parse without verifying the signature.
       const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(body);
       return {
         version,
         payload: normalizedPayload,
         rawPayload,
       };
+    }
+
+    if (!verifySecret) {
+      throw new ValidationError(
+        `Cannot verify webhook: 'verifySecret' was provided but is empty — your ` +
+          `COMPOSIO_WEBHOOK_SECRET is likely unset. Set the secret, or omit 'verifySecret' ` +
+          `entirely to parse without verification.`
+      );
     }
 
     // Secret provided: signature headers are required to verify.

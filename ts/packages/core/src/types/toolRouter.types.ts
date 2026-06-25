@@ -710,7 +710,17 @@ export interface Session<
   mcp: ToolRouterMCPServerConfig;
   /** Stored preload configuration for this session. */
   preload: ToolRouterSessionPreloadConfig;
-  /** Resolved workbench config returned by the API (enable defaults to true server-side). */
+  /**
+   * Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side.
+   *
+   * This is the read-side counterpart to the `sandbox` key you pass into `create()`.
+   */
+  sandbox?: ToolRouterSessionWorkbenchConfig;
+  /**
+   * Resolved sandbox config for the session.
+   *
+   * @deprecated Use `sandbox` instead. `workbench` is a backwards-compatible alias and will be removed in a future release.
+   */
   workbench?: ToolRouterSessionWorkbenchConfig;
   /** Server-side config version when returned by the API. */
   configVersion?: number;

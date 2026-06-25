@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { experimental_createPythonWorkbenchHelperSource } from '../../src/experimental';
+import { experimental_createPythonWorkbenchHelperSource } from '../../src/workbench';
 
 describe('experimental_createPythonWorkbenchHelperSource', () => {
   it('emits the Apollo-parity Python helpers without remote workbench-only helpers', () => {

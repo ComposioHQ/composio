@@ -142,7 +142,7 @@ export const transformToolRouterSandboxParams = (
   };
 };
 
-/** @deprecated Use transformToolRouterSandboxParams instead. */
+/** @deprecated Renamed — use `transformToolRouterSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
 export const transformToolRouterWorkbenchParams = transformToolRouterSandboxParams;
 
 /**
@@ -200,7 +200,7 @@ export const transformToolRouterUpdateSandboxParams = (
   return result as SessionPatchParams.Workbench;
 };
 
-/** @deprecated Use transformToolRouterUpdateSandboxParams instead. */
+/** @deprecated Renamed — use `transformToolRouterUpdateSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
 export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdateSandboxParams;
 
 export const transformToolRouterMultiAccountParams = (

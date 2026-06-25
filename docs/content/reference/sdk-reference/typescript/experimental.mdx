@@ -17,7 +17,7 @@ const result = await composio.experimental.list();
 ### updateAcl() (deprecated)
 
 <Callout type="warn" title="Deprecated">
-Use `composio.connectedAccounts.updateAcl(...)` instead. ACL updates now live on the `connectedAccounts` mount; this experimental alias is kept only for backwards compatibility while the API is experimental and will be removed once it graduates.
+Use `composio.connectedAccounts.updateAcl(...)` instead — ACL updates graduated onto the `connectedAccounts` mount. This experimental alias is kept only for backwards compatibility and will be removed once the API graduates. Prefer the `connectedAccounts` mount; do not generate new code against this alias.
 </Callout>
 
 Compatibility alias for `composio.connectedAccounts.updateAcl(...)`.
@@ -39,7 +39,7 @@ Resolution rule (deny wins):
  4. otherwise → DENY
 
 ```typescript
-async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserIds?: string[]; notAllowedUserIds?: string[] }): Promise<ConnectedAccountPatchResponse>
+async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
 **Parameters**
@@ -47,7 +47,7 @@ async updateAcl(nanoid: string, params: { allowAllUsers?: boolean; allowedUserId
 | Name | Type |
 |------|------|
 | `nanoid` | `string` |
-| `params` | `object` |
+| `params` | `UpdateConnectedAccountAclParams` |
 
 **Returns**
 

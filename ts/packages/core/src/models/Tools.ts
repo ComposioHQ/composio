@@ -908,11 +908,8 @@ export class Tools<
             }
           : undefined,
         /**
-         * @deprecated: customConnectionData
-         * @description
-         * This parameter is deprecated and will be removed in the future.
-         * Please use custom_connection_data instead.
-         *
+         * @deprecated The `customConnectionData` execute param is deprecated and will be
+         * removed in a future release. Use `customAuthParams` instead.
          */
         custom_connection_data:
           body.customConnectionData as ComposioToolExecuteParams['custom_connection_data'],
@@ -1249,11 +1246,8 @@ export class Tools<
       connected_account_id: toolProxyParams.data.connectedAccountId,
       parameters: parameters,
       /**
-       * @deprecated: customConnectionData
-       * @description
-       * This parameter is deprecated and will be removed in the future.
-       * Please use custom_auth_params instead.
-       *
+       * @deprecated The `customConnectionData` proxy param is deprecated and will be
+       * removed in a future release. Use `customAuthParams` instead.
        */
       // @ts-ignore
       custom_connection_data: toolProxyParams.data.customConnectionData,

@@ -80,9 +80,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build:python-helpers": "tsx scripts/build-python-helpers.ts",
-    "check:python-helpers": "tsx scripts/build-python-helpers.ts && git diff --exit-code -- src/experimental/python-helpers.generated.ts",
-    "build": "pnpm run build:python-helpers && pnpm exec tsdown",
+    "build": "pnpm exec tsdown",
     "test": "vitest run",
     "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck && pnpm exec tsgo --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",

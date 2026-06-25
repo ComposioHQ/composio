@@ -26,6 +26,10 @@
     "./pi": {
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./workbench": {
+      "types": "./dist/workbench/index.d.mts",
+      "default": "./dist/workbench/index.mjs"
     }
   },
   "files": [
@@ -34,7 +38,9 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build:python-helpers": "tsx scripts/build-python-helpers.ts",
+    "check:python-helpers": "tsx scripts/build-python-helpers.ts && git diff --exit-code -- src/workbench/python-helpers.generated.ts",
+    "build": "pnpm run build:python-helpers && pnpm exec tsdown",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
@@ -59,6 +65,7 @@
     "@composio/core": "workspace:*",
     "@earendil-works/pi-coding-agent": "0.79.8",
     "tsdown": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

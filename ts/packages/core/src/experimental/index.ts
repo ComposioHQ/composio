@@ -1,8 +1,16 @@
 /**
- * Experimental APIs for @composio/core.
+ * Experimental APIs for `@composio/core`, exposed on the
+ * `@composio/core/experimental` subpath. **Experimental — shape may change in
+ * future releases.**
  *
- * @deprecated Import from '@composio/core' instead:
- *   import { experimental_createTool, experimental_createToolkit } from '@composio/core';
+ * The stateless tool/toolkit factories (`experimental_createTool`,
+ * `experimental_createToolkit`) are ALSO re-exported from the package root, so
+ * for those prefer the shorter import:
+ *   `import { experimental_createTool, experimental_createToolkit } from '@composio/core';`
+ *
+ * The experimental local workbench helpers now live in the standalone
+ * `@composio/experimental` package, on the `@composio/experimental/workbench`
+ * subpath — they are no longer part of `@composio/core`.
  */
 
 // Re-export for backward compatibility with existing code
@@ -18,10 +26,3 @@ export type {
   CustomToolkit,
   CreateCustomToolkitParams,
 } from '../types/customTool.types';
-export type { LocalWorkbenchSession } from './types';
-export {
-  experimental_createPythonWorkbenchHelperSource,
-  experimental_createWorkbenchEnv,
-} from './shim';
-export type { PythonWorkbenchHelperSourceOptions, WorkbenchEnvOptions } from './shim';
-export { experimental_createLocalWorkbenchSession } from './local-workbench';

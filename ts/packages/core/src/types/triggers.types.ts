@@ -295,7 +295,6 @@ export type WebhookSubscription = {
   secret?: string;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: unknown;
 };
 
 /**

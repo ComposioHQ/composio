@@ -1,6 +1,6 @@
 ---
 title: "Session"
-description: "A Composio session — the object returned by `composio.sessions.create(...)` and `composio.sessions.use(...)` (also reachable via the top-level `composio.create(...)` / `composio.use(...)` aliases).  This is the canonical session surface. Use it to fetch session-scoped tools, authorize toolkits, search, and execute tools. The public return type is `Session` / `SessionWithMcp`; this class is its concrete runtime form."
+description: "A Composio session — the object returned by `composio.sessions.create(...)` and `composio.sessions.use(...)` (also reachable via the top-level `composio.create(...)` / `composio.use(...)` aliases).  This is the canonical session surface. Use it to fetch session-scoped tools, authorize toolkits, search, and execute tools. The public return type is `Session` (with `mcp` surfaced, returned when `{ mcp: true }` is passed) or `SessionWithoutMcp` (the default, with `mcp` omitted from the type); this class is the concrete runtime form behind both."
 ---
 
 ## Properties
@@ -9,8 +9,9 @@ description: "A Composio session — the object returned by `composio.sessions.c
 |------|------|-------------|
 | `configVersion` | `number` |  |
 | `experimental` | `SessionExperimental` |  |
-| `mcp` | `object` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (`SessionWithMcp`); the default `Session` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
+| `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
 | `preload` | `Preload` |  |
+| `sandbox` | `Workbench` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
 | `sessionId` | `string` |  |
 | `warnings` | `Warning[]` |  |
 

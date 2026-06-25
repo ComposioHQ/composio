@@ -207,7 +207,10 @@ export class Composio<
   experimental: Experimental;
   /**
    * Model Context Protocol server management.
-   * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`.
+   * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`
+   * returns a session that exposes `session.mcp.url` / `session.mcp.headers`. MCP is now opt-in
+   * per session; this standalone server-management API is kept only for backwards compatibility.
+   * Prefer the session MCP endpoint; do not generate new code against `composio.mcp`.
    * See https://docs.composio.dev/docs/sessions-via-mcp
    */
   mcp: MCP;
@@ -220,7 +223,7 @@ export class Composio<
   sessions: Sessions<unknown, unknown, TProvider>;
   /**
    * Legacy alias for `composio.sessions`.
-   * @deprecated Use `composio.sessions` instead.
+   * @deprecated Use `composio.sessions` instead — `toolRouter` was renamed to `sessions` and is kept only for backwards compatibility. Prefer `composio.sessions`; do not generate new code against `composio.toolRouter`.
    */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
   /**
@@ -437,7 +440,9 @@ export class Composio<
    * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
    * but allows you to specify custom request options that will be used for all API calls made through this session.
    *
-   * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
+   * @deprecated Will be removed in a future version of the SDK. Instead, construct a new
+   *   instance directly with the headers you need: `new Composio({ ...existingConfig, defaultHeaders })`.
+   *   For one-off overrides, pass per-call `requestOptions` where supported.
    *
    * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
    *                                          This follows the Fetch API RequestInit interface with additional options.

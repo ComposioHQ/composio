@@ -18,7 +18,7 @@
 import type { BuildStage } from './slack-bot-build';
 
 const imports = `import { Composio } from '@composio/core';
-import { experimental_createLocalWorkbenchSession } from '@composio/core/experimental';
+import { experimental_createLocalWorkbenchSession } from '@composio/experimental/workbench';
 import { createE2bSandbox } from './sandbox/e2b';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });

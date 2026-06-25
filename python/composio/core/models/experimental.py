@@ -78,8 +78,11 @@ class ExperimentalAPI:
         :return: Response with ``id``, ``status``, and ``success``.
 
         .. deprecated::
-            Use :meth:`composio.connected_accounts.update_acl` instead. This
-            alias is kept for backwards compatibility and delegates to it.
+            Use :meth:`composio.connected_accounts.update_acl` instead — ACL
+            updates graduated onto the ``connected_accounts`` model. This
+            experimental alias is kept only for backwards compatibility and
+            delegates to it. Prefer the ``connected_accounts`` model; do not
+            generate new code against this alias.
 
         Example:
             composio.connected_accounts.update_acl(

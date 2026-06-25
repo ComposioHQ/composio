@@ -191,7 +191,7 @@ export class Experimental {
    *   `composio.connectedAccounts.get(nanoid)` after the promise
    *   resolves and inspect `account.experimental?.aclConfigForShared`.
    *
-   * @deprecated Use `composio.connectedAccounts.updateAcl(...)` instead. ACL updates now live on the `connectedAccounts` mount; this experimental alias is kept only for backwards compatibility while the API is experimental and will be removed once it graduates.
+   * @deprecated Use `composio.connectedAccounts.updateAcl(...)` instead — ACL updates graduated onto the `connectedAccounts` mount. This experimental alias is kept only for backwards compatibility and will be removed once the API graduates. Prefer the `connectedAccounts` mount; do not generate new code against this alias.
    */
   async updateAcl(
     nanoid: string,

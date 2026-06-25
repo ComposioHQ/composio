@@ -23,7 +23,7 @@ should be exposed directly; see `ToolRouterCreateSessionConfig`.
 **Overload 1**
 
 ```typescript
-async create(userId: string, config: object): Promise<Session<TToolCollection, TTool, TProvider>>
+async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -31,7 +31,8 @@ async create(userId: string, config: object): Promise<Session<TToolCollection, T
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config` | `object` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config` | `ToolRouterCreateSessionConfig & \{ mcp: true \}` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -40,7 +41,7 @@ async create(userId: string, config: object): Promise<Session<TToolCollection, T
 **Overload 2**
 
 ```typescript
-async create(userId: string, config?: object): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -48,7 +49,8 @@ async create(userId: string, config?: object): Promise<SessionWithoutMcp<TToolCo
 | Name | Type | Description |
 |------|------|-------------|
 | `userId` | `string` | \{string\} The user id to create the session for |
-| `config?` | `object` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `config?` | `ToolRouterCreateSessionConfig` | \{ToolRouterCreateSessionConfig\} The config for the tool router session |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -80,7 +82,7 @@ Use an existing session
 **Overload 1**
 
 ```typescript
-async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true }): Promise<Session<TToolCollection, TTool, TProvider>>
+async use(id: string, options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -88,7 +90,8 @@ async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?:
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options` | `object` |  |
+| `options` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true \}` |  |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 
@@ -97,7 +100,7 @@ async use(id: string, options: { customToolkits?: CustomToolkit[]; customTools?:
 **Overload 2**
 
 ```typescript
-async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp?: boolean }): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
+async use(id: string, options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
 **Parameters**
@@ -105,7 +108,8 @@ async use(id: string, options?: { customToolkits?: CustomToolkit[]; customTools?
 | Name | Type | Description |
 |------|------|-------------|
 | `id` | `string` | \{string\} The id of the session to use |
-| `options?` | `object` |  |
+| `options?` | `\{ customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean \}` |  |
+| `requestOptions?` | `ComposioRequestOptions` |  |
 
 **Returns**
 

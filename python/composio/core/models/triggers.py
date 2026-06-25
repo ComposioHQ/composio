@@ -14,7 +14,7 @@ from enum import Enum
 from unittest import mock
 
 import typing_extensions as te
-from composio_client import omit
+from composio_client import Omit, omit
 from composio_client.types import TriggersTypeRetrieveResponse
 from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
@@ -931,7 +931,7 @@ class Triggers(Resource):
             )
         """
         if not webhook_url:
-            raise exceptions.InvalidParams("please provide a valid `webhook_url`")
+            raise exceptions.ValidationError("please provide a valid `webhook_url`")
 
         events = list(
             DEFAULT_WEBHOOK_SUBSCRIPTION_EVENTS
@@ -939,7 +939,9 @@ class Triggers(Resource):
             else enabled_events
         )
         if len(events) == 0:
-            raise exceptions.InvalidParams("please provide at least one enabled event")
+            raise exceptions.ValidationError(
+                "please provide at least one enabled event"
+            )
 
         version_value = (
             version.value if isinstance(version, WebhookVersion) else version
@@ -958,23 +960,63 @@ class Triggers(Resource):
         subscription_id = self._first_webhook_subscription_id(existing)
 
         if subscription_id:
-            return t.cast(
-                WebhookSubscription,
+            return self._normalize_webhook_subscription(
                 self._client.patch(
                     f"{WEBHOOK_SUBSCRIPTIONS_PATH}/{subscription_id}",
                     cast_to=object,
                     body=body,
-                ),
+                )
             )
 
-        return t.cast(
-            WebhookSubscription,
+        return self._normalize_webhook_subscription(
             self._client.post(
                 WEBHOOK_SUBSCRIPTIONS_PATH,
                 cast_to=object,
                 body=body,
             ),
         )
+
+    @staticmethod
+    def _normalize_webhook_subscription(raw: object) -> WebhookSubscription:
+        """Build a typed :class:`WebhookSubscription` from the raw API response.
+
+        Maps explicitly (accepting either snake_case or camelCase wire keys)
+        instead of ``cast``-ing the raw object, so the returned dict always
+        matches the declared shape and a shift in the wire format surfaces as a
+        normalized field rather than a ``KeyError`` at the call site.
+        """
+        data = raw if isinstance(raw, dict) else {}
+
+        def _first_str(*keys: str) -> t.Optional[str]:
+            for key in keys:
+                value = data.get(key)
+                if isinstance(value, str) and value:
+                    return value
+            return None
+
+        def _str_list(*keys: str) -> t.List[str]:
+            for key in keys:
+                value = data.get(key)
+                if isinstance(value, list):
+                    return [item for item in value if isinstance(item, str)]
+            return []
+
+        result: WebhookSubscription = {
+            "id": _first_str("id") or "",
+            "webhook_url": _first_str("webhook_url", "webhookUrl") or "",
+            "version": _first_str("version") or WebhookVersion.V3.value,
+            "enabled_events": _str_list("enabled_events", "enabledEvents"),
+        }
+        secret = _first_str("secret")
+        if secret is not None:
+            result["secret"] = secret
+        created_at = _first_str("created_at", "createdAt")
+        if created_at is not None:
+            result["created_at"] = created_at
+        updated_at = _first_str("updated_at", "updatedAt")
+        if updated_at is not None:
+            result["updated_at"] = updated_at
+        return result
 
     @staticmethod
     def _first_webhook_subscription_id(response: object) -> t.Optional[str]:
@@ -1222,7 +1264,7 @@ class Triggers(Resource):
         *,
         body: t.Union[str, bytes, t.Mapping[str, t.Any], None] = None,
         headers: t.Union[t.Mapping[str, t.Any], None] = None,
-        verify_secret: t.Optional[str] = None,
+        verify_secret: t.Union[str, None, Omit] = omit,
         tolerance: int = 300,
     ) -> VerifyWebhookResult:
         """
@@ -1247,10 +1289,13 @@ class Triggers(Resource):
         :param request: The incoming webhook request object (Flask/Django/FastAPI)
         :param body: The raw request body (str/bytes/parsed mapping); overrides ``request``
         :param headers: The request headers as a mapping; overrides ``request``
-        :param verify_secret: Webhook secret; when set, the signature is verified
+        :param verify_secret: Webhook secret; when set, the signature is verified.
+            Omit it entirely to parse without verification. Passing a present-but-empty
+            value (e.g. an unset ``COMPOSIO_WEBHOOK_SECRET``) raises rather than
+            silently skipping verification.
         :param tolerance: Max webhook age in seconds (only used when verifying)
         :return: VerifyWebhookResult containing version, normalized payload, and raw payload
-        :raises InvalidParams: If ``verify_secret`` is set but signature headers are missing
+        :raises ValidationError: If ``verify_secret`` is empty, or is set but signature headers are missing
         :raises WebhookSignatureVerificationError: If signature verification fails
         :raises WebhookPayloadError: If the payload cannot be parsed
 
@@ -1283,8 +1328,11 @@ class Triggers(Resource):
 
         payload = self._body_to_str(raw_body)
 
-        # No secret: parse without verifying the signature.
-        if verify_secret is None:
+        # Distinguish "caller omitted verify_secret" (explicit opt-out) from
+        # "caller passed verify_secret but it resolved to empty" (almost always
+        # an unset COMPOSIO_WEBHOOK_SECRET). The latter must fail loudly rather
+        # than silently skip verification and accept forged events.
+        if isinstance(verify_secret, Omit):
             version, raw_payload, normalized_payload = self._parse_webhook_payload(
                 payload
             )
@@ -1293,6 +1341,13 @@ class Triggers(Resource):
                 "payload": normalized_payload,
                 "raw_payload": raw_payload,
             }
+
+        if not verify_secret:
+            raise exceptions.ValidationError(
+                "Cannot verify webhook: `verify_secret` was provided but is empty — "
+                "your COMPOSIO_WEBHOOK_SECRET is likely unset. Set the secret, or omit "
+                "`verify_secret` entirely to parse without verification."
+            )
 
         # Secret provided: signature headers are required to verify.
         webhook_id = self._get_header(raw_headers, "webhook-id")
@@ -1309,7 +1364,7 @@ class Triggers(Resource):
             if not value
         ]
         if missing:
-            raise exceptions.InvalidParams(
+            raise exceptions.ValidationError(
                 "Cannot verify webhook: missing signature header(s) "
                 f"{', '.join(repr(name) for name in missing)}. "
                 "Pass the raw, unparsed request body and ensure the Composio "
