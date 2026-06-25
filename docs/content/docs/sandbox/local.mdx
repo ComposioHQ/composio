@@ -71,18 +71,18 @@ response, error = run_composio_tool(
 
 Every `run_composio_tool` call routes back through the Tool Router under the session's connections, so auth and discovery stay managed.
 
-Three helpers are available in a local sandbox today. The file and proxy helpers are still remote-only:
+Most of the workbench helpers run in a local sandbox today. Only the file helpers, which depend on the managed `/mnt/files` mount, are remote-only:
 
 | Helper | What it does | Local sandbox |
 | --- | --- | --- |
 | `run_composio_tool` | Execute any Composio tool | ✅ |
 | `invoke_llm` | Call an LLM | ✅ |
 | `web_search` | Search the web | ✅ |
+| `proxy_execute` | Call a toolkit API directly when no tool exists | ✅ |
 | `upload_local_file` | Upload generated files to storage | ❌ |
-| `proxy_execute` | Call an API directly when no tool exists | ❌ |
 | `smart_file_extract` | Extract text from PDFs and images | ❌ |
 
-If your agent needs one of the remote-only helpers, use the [remote sandbox](/docs/sandbox/remote) for now.
+If your agent needs one of the file helpers, use the [remote sandbox](/docs/sandbox/remote) for now.
 
 ## Security: the sandbox is your boundary
 
