@@ -2,6 +2,7 @@
   "name": "@composio/ts-builders",
   "version": "0.2.0",
   "description": "Fork of @prisma/ts-builders",
+  "private": true,
   "main": "dist/index.mjs",
   "type": "module",
   "module": "dist/index.mjs",
