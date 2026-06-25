@@ -66,6 +66,7 @@ pnpm test
 pnpm test:e2e
 pnpm test:e2e:cli
 pnpm validate:agent-skills
+pnpm validate:skill-routing
 ```
 
 Python commands run from `python/` unless otherwise noted:
