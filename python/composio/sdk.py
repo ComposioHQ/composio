@@ -68,7 +68,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
     """
 
     tools: "Tools[TTool, TToolCollection]"
-    tool_router: "ToolRouter[TTool, TToolCollection]"
 
     @t.overload
     def __init__(

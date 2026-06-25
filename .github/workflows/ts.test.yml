@@ -36,7 +36,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check Python helpers codegen is up to date
-        run: pnpm --filter @composio/core run check:python-helpers
+        run: pnpm --filter @composio/experimental run check:python-helpers
 
       - name: Run Tests
         run: pnpm run test
