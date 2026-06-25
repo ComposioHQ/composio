@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
-## [0.16.0] - 2026-06-22
+## [0.16.0] - 2026-06-25
+
+### Fixed
+- **Auto file upload/download behind `$ref`/`$defs`**: tool schemas that express their file fields through a `$ref`/`$defs` indirection are now resolved before file handling, so `file_uploadable` inputs and `file_downloadable` outputs reachable only through a reference are no longer silently skipped when `dangerously_allow_auto_upload_download_files=True`. `GMAIL_GET_ATTACHMENT` (whose `file_downloadable` flag sits two `$ref` hops deep) is the canonical case. Adds a cycle-safe, depth-capped `dereference_json_schema` utility with Draft 2020-12 sibling-keyword merge, mirroring the TypeScript SDK's `dereferenceJsonSchema`.
+- **No retries on non-idempotent tool writes**: `tools.execute()` and `tools.proxy()` are non-idempotent POST writes, but the Stainless-generated client retried them by default (on read timeouts, 429s, and 5xx), which could duplicate side effects — e.g. send an email twice. Both paths now route through a cached `client.without_retries` clone (`max_retries=0`); idempotent reads and lists keep the default retries. This is an interim fix ahead of backend idempotency keys.
+- **Bounded timeouts on file transfers**: session file uploads/downloads and the presigned S3 `PUT`/`GET` paths now use bounded `(connect, read)` timeouts, and timeout or request failures surface as the SDK's typed file errors instead of hanging.
+- **Provider-visible tool schema aliasing**: centralized aliasing via `alias_tool_input_schema` / `restore_tool_arguments`, applied across the Anthropic, Claude Agent SDK, Gemini, Google ADK, and OpenAI Agents providers. Aliases invalid Python parameter names (e.g. `$top`), preserves the existing `from` → `from_rs` style, avoids leading-underscore aliases so Pydantic-backed providers can build models, caps aliases at 64 characters for Anthropic-style validators, and dereferences internal `$ref`/`$defs` before aliasing. Original backend argument names are restored before execution.
+- **OpenAI Agents schema mutation**: the tool schema is now deep-copied before its `examples`/`default` fields are stripped, so the source schema is no longer mutated in place.
 
 ### Changed
+- Bumped the `composio-client` dependency from `1.39.0` → `1.41.0`.
 - Bumped the Python SDK and provider packages from `0.15.0` to `0.16.0`.
 - Refreshed Python core and provider dependency ranges, plus root and provider uv locks, to the newest compatible versions.
 
