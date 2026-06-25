@@ -29,9 +29,11 @@ You'll need to customize the auth config when you want to use different values t
 
 <Tabs items={['Example: PostHog', 'Example: Hubspot']}>
   <Tab value="Example: PostHog">
-You may change the subdomain for the PostHog toolkit to match your own instance.
+PostHog uses API key auth. The auth config can define the default data region, and each
+connected account can set `region` to `us` or `eu` when it connects.
 
-<Figure src="/images/custom-auth-posthog.png" alt="PostHog Auth Config Settings" caption="PostHog Auth Config Settings" size="sm" />
+Use only the region code. Composio builds the PostHog host as `<region>.posthog.com`;
+full URLs and self-hosted PostHog hosts are not supported.
   </Tab>
   <Tab value="Example: Hubspot">
 For Hubspot you may customize everything here. For each auth scheme there is a different set of fields.

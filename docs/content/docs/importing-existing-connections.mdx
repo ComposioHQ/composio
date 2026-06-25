@@ -73,6 +73,12 @@ console.log('Connected:', connection.id);
 </Tab>
 </Tabs>
 
+<Callout type="info" title="PostHog region">
+For PostHog API key connections, set `region` on each connection to `us` or `eu`
+alongside the `api_key`. Composio builds the host as `<region>.posthog.com`; pass only
+the region code, not a full URL. Self-hosted PostHog hosts are not supported.
+</Callout>
+
 ## Bearer tokens
 
 If you manage your own OAuth flow and already have an access token for a service, you can import it into Composio as a bearer token. This lets you bring existing OAuth connections into Composio without re-authenticating your users. It works with **all toolkits that support OAuth2 or S2S auth** — Gmail, GitHub, Slack, Google Docs, and more. Any additional parameters the toolkit supports (e.g., `subdomain`, `base_url`) work the same way.
