@@ -53,11 +53,11 @@ jobs:
         uses: anthropics/claude-code-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Read,Write,Edit,Glob,Grep,Bash(curl *)"
+          allowed_tools: 'Read,Write,Edit,Glob,Grep,Bash(curl *)'
           prompt: |
             Sync the Composio Connect clients page from the dashboard repo.
 
-            1. Read docs/.claude/agents/connect-clients-sync.md for full instructions
+            1. Read docs/agent-guidance/agents/connect-clients-sync.md for full instructions
             2. The client definitions have already been fetched to /tmp/client-definitions.ts — read that file
             3. Read the current docs/content/docs/composio-connect.mdx
             4. Compare and update if there are any differences (new clients, changed steps, updated descriptions)

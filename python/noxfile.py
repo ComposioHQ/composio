@@ -74,6 +74,23 @@ def fix(session: Session):
 
 
 @nox.session
+def tst(session: Session):
+    """Run the Python unit test suite."""
+    session.install(".", "--group", "dev")
+    session.install("./providers/langchain")
+    test_paths = session.posargs or ["tests/"]
+    session.run("pytest", *test_paths, "-v", "--tb=short")
+
+
+@nox.session
+def snt(session: Session):
+    """Run fast sanity tests for imports and SDK initialization."""
+    session.install(".", "--group", "dev")
+    test_paths = session.posargs or ["tests/test_imports.py", "tests/test_sdk.py"]
+    session.run("pytest", *test_paths, "-v", "--tb=short")
+
+
+@nox.session
 def type_inference(session: Session):
     """Type check provider return type inference tests.
 

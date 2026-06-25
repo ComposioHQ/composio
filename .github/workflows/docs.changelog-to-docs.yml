@@ -51,7 +51,7 @@ jobs:
           prompt: |
             New changelog entries were merged to next. Read the agent instructions and update documentation accordingly.
 
-            1. Read docs/.claude/agents/changelog-docs-updater.md for full instructions
+            1. Read docs/agent-guidance/agents/changelog-docs-updater.md for full instructions
             2. Read each of these changelog files:
             ${{ steps.detect.outputs.files }}
             3. For each change, search docs/content/docs/ for pages that need updating
