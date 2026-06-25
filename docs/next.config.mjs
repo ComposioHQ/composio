@@ -205,7 +205,13 @@ const config = {
       // The workbench was renamed to the sandbox; keep old links working.
       {
         source: '/docs/workbench',
-        destination: '/docs/sandbox',
+        destination: '/docs/sandbox/remote',
+        permanent: true,
+      },
+      // The sandbox page became a section (remote + local); keep the old URL working.
+      {
+        source: '/docs/sandbox',
+        destination: '/docs/sandbox/remote',
         permanent: true,
       },
       {

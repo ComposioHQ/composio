@@ -28,6 +28,16 @@ const docsSchema = frontmatterSchema.extend({
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
    *  - "none" → no guardrails appended */
   llmGuardrails: z.enum(['direct-execution', 'none']).optional(),
+  /** Links rendered in the right-hand "Related" rail under the table of contents. */
+  related: z
+    .array(
+      z.object({
+        title: z.string(),
+        href: z.string(),
+        description: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const docs = defineDocs({
