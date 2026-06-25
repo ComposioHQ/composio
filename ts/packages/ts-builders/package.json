@@ -12,6 +12,9 @@
       "default": "./dist/index.mjs"
     }
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ComposioHQ/composio.git",
