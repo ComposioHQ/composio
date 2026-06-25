@@ -50,6 +50,125 @@ const config = {
   },
   async redirects() {
     return [
+      // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
+      // Renamed/moved pages -> new location
+      {
+        source: '/docs/observability/logs',
+        destination: '/reference/api-reference/logs',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/python/tool-router-session',
+        destination: '/reference/sdk-reference/python/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/tool-router-session-files-mount',
+        destination: '/reference/sdk-reference/typescript/session-files',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/tool-router-session',
+        destination: '/reference/sdk-reference/typescript/session',
+        permanent: true,
+      },
+      {
+        source: '/toolkits/premium-tools',
+        destination: '/toolkits/pro-tools',
+        permanent: true,
+      },
+      // Deleted/merged pages -> closest surviving page (semantically resolved + verified)
+      {
+        source: '/docs/authenticating-users/in-chat-authentication',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/common-faq',
+        destination: '/docs',
+        permanent: true,
+      },
+      {
+        source: '/docs/debugging-info',
+        destination: '/reference/errors',
+        permanent: true,
+      },
+      {
+        source: '/docs/glossary',
+        destination: '/reference/glossary',
+        permanent: true,
+      },
+      {
+        source: '/docs/native-tools-vs-mcp',
+        destination: '/docs/sessions-via-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/observability',
+        destination: '/reference/api-reference/logs',
+        permanent: true,
+      },
+      {
+        source: '/docs/observability/usage',
+        destination: '/reference/api-reference/organization',
+        permanent: true,
+      },
+      {
+        source: '/docs/projects',
+        destination: '/reference/api-reference/projects',
+        permanent: true,
+      },
+      {
+        source: '/docs/signing-up-as-an-agent',
+        destination: '/docs/cli',
+        permanent: true,
+      },
+      {
+        source: '/docs/subscribing-to-connection-expiry-events',
+        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/enable-and-disable-toolkits',
+        destination: '/docs/configuring-sessions',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/fetching-tools-and-toolkits',
+        destination: '/docs/configuring-sessions',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
+        permanent: true,
+      },
+      {
+        source: '/docs/webhook-verification',
+        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        permanent: true,
+      },
+      {
+        source: '/reference/api-reference/authentication',
+        destination: '/reference/authenticating-to-composio',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/python/session-context-impl',
+        destination: '/reference/sdk-reference/python/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/session-context-impl',
+        destination: '/reference/sdk-reference/typescript/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/v3/api-reference/authentication',
+        destination: '/reference/v3/authentication',
+        permanent: true,
+      },
+      // === end docs v3 reorganization redirects ===
       {
         source: '/',
         destination: '/docs',
@@ -157,7 +276,7 @@ const config = {
       },
       {
         source: '/tool-router/tools-and-toolkits',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       // Authentication pages moved from tool-router to docs
@@ -362,7 +481,7 @@ const config = {
       },
       {
         source: '/docs/how-tools-work',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -483,7 +602,7 @@ const config = {
       },
       {
         source: '/toolkits/introduction',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -541,12 +660,12 @@ const config = {
       },
       {
         source: '/tool-calling/introduction',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
         source: '/tool-calling/:path*',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       // Old framework pages
@@ -649,7 +768,7 @@ const config = {
       },
       {
         source: '/docs/tools',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -779,11 +898,6 @@ const config = {
       {
         source: '/docs/tools/modify/:path*',
         destination: '/docs/tools-direct/modify-tool-behavior',
-        permanent: true,
-      },
-      {
-        source: '/docs/troubleshooting/overview',
-        destination: '/docs/troubleshooting',
         permanent: true,
       },
       {
