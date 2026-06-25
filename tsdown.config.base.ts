@@ -7,6 +7,8 @@ import type { UserConfig } from 'tsdown';
 // under Turbo. Keep both checks for direct package builds; disable them for workspace builds.
 const isTurboTask = Boolean(process.env.TURBO_HASH);
 
+export const baseNeverBundle: Array<string | RegExp> = ['zod', '@composio/core', /^node:/];
+
 /**
  * tsdown config with shared defaults.
  * Package-specific options (e.g., entry, outDir, outExtensions) can be overridden by the caller.
@@ -60,16 +62,28 @@ export const baseConfig = {
     console.info('🙏 Build succeeded!');
   },
 
-  /**
-   * External dependencies that should not be bundled, but provided by the consumer.
-   */
-  external: ['zod', '@composio/core', /^node:/],
+  deps: {
+    /**
+     * Dependencies that should not be bundled, but provided by the consumer.
+     */
+    neverBundle: baseNeverBundle,
+    /**
+     * Workspace packages intentionally bundle selected dependencies today. Keep
+     * that behavior explicit without emitting per-package hint noise.
+     */
+    onlyBundle: false,
+  },
 
   /**
    * Control how Node.js built-in module imports are handled.
    * When true, imports like `fs` are transformed to `node:fs`.
    */
   nodeProtocol: true,
+
+  checks: {
+    pluginTimings: false,
+    ineffectiveDynamicImport: false,
+  },
 
   /**
    * Configuration for @arethetypeswrong/cli.

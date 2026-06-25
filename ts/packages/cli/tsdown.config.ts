@@ -13,14 +13,17 @@ export default defineConfig({
   format: ['esm'],
   shims: true,
   tsconfig: './tsconfig.src.json',
-  external: [/^bun:/],
-  noExternal: [
-    '@composio/core',
-    '@composio/cli-local-tools',
-    /^zod(?:\/.*)?$/,
-    /^@agentclientprotocol\/sdk(?:\/.*)?$/,
-    /^@modelcontextprotocol\/sdk(?:\/.*)?$/,
-  ],
+  deps: {
+    ...baseConfig.deps,
+    neverBundle: [/^bun:/, /^node:/],
+    alwaysBundle: [
+      '@composio/core',
+      '@composio/cli-local-tools',
+      /^zod(?:\/.*)?$/,
+      /^@agentclientprotocol\/sdk(?:\/.*)?$/,
+      /^@modelcontextprotocol\/sdk(?:\/.*)?$/,
+    ],
+  },
   publint: undefined,
   attw: undefined,
 });

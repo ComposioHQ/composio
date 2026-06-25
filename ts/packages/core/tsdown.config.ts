@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../tsdown.config.base.ts';
+import { baseConfig, baseNeverBundle } from '../../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...baseConfig,
@@ -28,15 +28,18 @@ export default defineConfig({
     // public utility subpaths
     'src/utils/json-schema.ts',
   ],
-  /**
-   * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
-   * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
-   */
-  external: [
-    ...(baseConfig.external ?? []),
-    '#platform',
-    '#files',
-    '#file_tool_modifier',
-    '#config_defaults',
-  ],
+  deps: {
+    ...baseConfig.deps,
+    /**
+     * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
+     * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
+     */
+    neverBundle: [
+      ...baseNeverBundle,
+      '#platform',
+      '#files',
+      '#file_tool_modifier',
+      '#config_defaults',
+    ],
+  },
 });
