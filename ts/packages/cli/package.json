@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli",
-  "version": "0.2.32",
+  "version": "0.3.0",
   "description": "Composio CLI",
   "main": "./dist/bin.mjs",
   "private": true,
@@ -37,7 +37,7 @@
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
     "prebuild": "pnpm run typecheck",
-    "build": "pnpm exec tsdown && bun run ./scripts/copy-local-tools-assets.ts ./dist",
+    "build": "tsdown && bun run ./scripts/copy-local-tools-assets.ts ./dist",
     "bin": "./dist/composio",
     "test": "pnpm run validate:skills && vitest run",
     "prepublishOnly": "pnpm run build && pnpm run build:binary",

@@ -204,7 +204,8 @@ class TestWrapTool:
         provider.wrap_tool(tool, execute_tool)
 
         assert "GITHUB_STAR_REPO" in provider._executors
-        assert provider._executors["GITHUB_STAR_REPO"] is execute_tool
+        stored_execute_tool, _aliases = provider._executors["GITHUB_STAR_REPO"]
+        assert stored_execute_tool is execute_tool
 
     def test_callable_executes_correctly(self):
         from composio_gemini import GeminiProvider

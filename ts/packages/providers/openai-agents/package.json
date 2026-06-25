@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai-agents",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "description": "",
   "main": "src/index.ts",
   "type": "module",
@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [],

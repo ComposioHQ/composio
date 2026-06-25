@@ -40,6 +40,24 @@ vi.mock('@mastra/schema-compat', async () => {
   };
 });
 
+// Expected `originalSchema` for the standard mockTool output after the
+// leniency relaxation applied in wrapTool (issue #3047): typed nodes become
+// nullable and the object allows extra keys. All tools below spread `mockTool`,
+// so they share this output shape.
+const RELAXED_MOCK_OUTPUT_SCHEMA = {
+  type: 'mock-zod-schema',
+  originalSchema: {
+    type: ['object', 'null'],
+    additionalProperties: true,
+    properties: {
+      result: {
+        type: ['string', 'null'],
+        description: 'Test result',
+      },
+    },
+  },
+};
+
 describe('MastraProvider', () => {
   let provider: MastraProvider;
   let mockTool: Tool;
@@ -113,7 +131,7 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
@@ -153,7 +171,7 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
@@ -197,7 +215,7 @@ describe('MastraProvider', () => {
         id: toolWithoutDescription.slug,
         description: '',
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
 
@@ -308,14 +326,14 @@ describe('MastraProvider', () => {
         id: mockTool.slug,
         description: mockTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
       expect(createTool).toHaveBeenCalledWith({
         id: anotherTool.slug,
         description: anotherTool.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.inputParameters },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: anotherTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -559,7 +577,7 @@ describe('MastraProvider', () => {
             additionalProperties: false,
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -608,7 +626,7 @@ describe('MastraProvider', () => {
             required: ['required_field'],
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -637,7 +655,7 @@ describe('MastraProvider', () => {
             description: 'A string parameter',
           },
         },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });
@@ -657,7 +675,7 @@ describe('MastraProvider', () => {
         id: toolWithoutInputParams.slug,
         description: toolWithoutInputParams.description,
         inputSchema: { type: 'mock-zod-schema', originalSchema: {} },
-        outputSchema: { type: 'mock-zod-schema', originalSchema: mockTool.outputParameters },
+        outputSchema: RELAXED_MOCK_OUTPUT_SCHEMA,
         execute: expect.any(Function),
       });
     });

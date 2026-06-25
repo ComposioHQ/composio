@@ -25,7 +25,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.16.0', '25.9.0'], // optional, defaults to mise.toml
+    node: ['22.22.3', '24.17.0', '25.9.0'], // optional, defaults to mise.toml
     deno: ['2.6.7'], // optional, defaults to mise.toml
     cli: ['current'], // optional, defaults to CLI package.json version
   },
@@ -193,7 +193,7 @@ Node.js versions to test are resolved in this order:
 The following versions are pre-defined in `const.ts`:
 
 - `22.22.3`
-- `24.16.0`
+- `24.17.0`
 - `25.9.0`
 - `current` (resolves to `mise.toml` version)
 
@@ -281,7 +281,7 @@ Each test suite generates a `DEBUG.log` file with structured output grouped by r
 E2E Test: openai-zod4-compat
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/openai-zod4-compat/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.16.0, Node.js 25.9.0
+Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
 ================================================================================
 
 ################################################################################
@@ -319,7 +319,7 @@ All packages work together!
 Summary
 ================================================================================
 Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.16.0: PASS (2 phases, 3.09s total)
+Node.js 24.17.0: PASS (2 phases, 3.09s total)
 Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z

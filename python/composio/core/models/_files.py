@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import typing as t
 from pathlib import Path
@@ -23,6 +24,7 @@ from composio.exceptions import (
     SDKFileNotFoundError,
 )
 from composio.utils import mimetypes
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -49,6 +51,8 @@ _MAX_RESPONSE_SIZE = 100 * 1024 * 1024  # 100 MB default limit
 Maximum response size in bytes when fetching files from URLs.
 Prevents memory exhaustion attacks from malicious URLs pointing to large files.
 """
+
+_logger = logging.getLogger(__name__)
 
 _CONNECT_TIMEOUT = 5  # seconds
 _READ_TIMEOUT = 60  # seconds
@@ -145,7 +149,19 @@ def upload(url: str, file: Path) -> bool:
         True if upload succeeded (HTTP 200), False otherwise
     """
     with file.open("rb") as data:
-        response = requests.put(url=url, data=data)
+        try:
+            response = requests.put(
+                url=url,
+                data=data,
+                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+            )
+        except requests.exceptions.RequestException as e:
+            _logger.debug(
+                "Upload to %s failed: %s",
+                _sanitize_url_for_logging(url),
+                type(e).__name__,
+            )
+            return False
         return response.status_code == 200
 
 
@@ -378,11 +394,19 @@ def _upload_bytes_to_s3(
     )
 
     # Upload the content directly to S3
-    upload_response = requests.put(
-        url=s3meta.new_presigned_url,
-        data=content,
-        headers={"Content-Type": mimetype},
-    )
+    try:
+        upload_response = requests.put(
+            url=s3meta.new_presigned_url,
+            data=content,
+            headers={"Content-Type": mimetype},
+            timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+        )
+    except requests.exceptions.RequestException as e:
+        raise ErrorUploadingFile(
+            "Failed to upload to S3: "
+            f"{_sanitize_url_for_logging(s3meta.new_presigned_url)}. "
+            f"Error: {type(e).__name__}"
+        ) from e
 
     if upload_response.status_code != 200:
         raise ErrorUploadingFile(
@@ -567,13 +591,34 @@ class FileDownloadable(BaseModel):
                 "outside the intended output directory."
             )
         outdir.mkdir(exist_ok=True, parents=True)
-        response = requests.get(url=self.s3url, stream=True)
+        try:
+            response = requests.get(
+                url=self.s3url,
+                stream=True,
+                timeout=(_CONNECT_TIMEOUT, _READ_TIMEOUT),
+            )
+        except requests.exceptions.RequestException as e:
+            raise ErrorDownloadingFile(
+                "Error downloading file: "
+                f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
+            ) from e
         if response.status_code != 200:
-            raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
+            response.close()
+            raise ErrorDownloadingFile(
+                f"Error downloading file: {_sanitize_url_for_logging(self.s3url)}"
+            )
 
-        with outfile.open("wb") as fd:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                fd.write(chunk)
+        try:
+            with outfile.open("wb") as fd:
+                for chunk in response.iter_content(chunk_size=chunk_size):
+                    fd.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ErrorDownloadingFile(
+                "Error downloading file: "
+                f"{_sanitize_url_for_logging(self.s3url)}. Error: {type(e).__name__}"
+            ) from e
+        finally:
+            response.close()
         return outfile
 
 
@@ -769,10 +814,23 @@ class FileHelper(WithLogger):
         Should only be called when the caller opted in via
         `dangerously_allow_auto_upload_download_files=True`.
         Recursively handles anyOf, oneOf, allOf, nested properties, and array items.
+
+        ``$ref``/``$defs`` indirection is inlined first so file_uploadable flags
+        reachable only through a reference are visible to the transform below
+        (https://github.com/ComposioHQ/composio/issues/3506). Tool schemas come
+        from the API, which may emit a ``$ref`` without a ``$defs`` block
+        (https://github.com/ComposioHQ/composio/issues/3307); ``"sentinel"``
+        degrades that gracefully instead of raising.
         """
-        if "properties" not in schema:
+        resolved = dereference_json_schema(schema, on_unresolved="sentinel")
+        if "properties" not in resolved:
             return schema
 
+        # Preserve the original object's identity (callers such as
+        # ``process_schema_recursively`` mutate in place) while adopting the
+        # dereferenced, ``$defs``-stripped shape.
+        schema.clear()
+        schema.update(resolved)
         schema["properties"] = {
             key: self._transform_schema_for_file_upload(prop)
             for key, prop in schema["properties"].items()
@@ -998,7 +1056,12 @@ class FileHelper(WithLogger):
         """
         return self._substitute_file_uploads_recursively(
             tool=tool,
-            schema=tool.input_parameters,
+            # Inline $ref/$defs once at the boundary so the walker sees
+            # file_uploadable flags hidden behind a reference. Non-mutating:
+            # ``tool.input_parameters`` is left untouched.
+            schema=dereference_json_schema(
+                tool.input_parameters, on_unresolved="sentinel"
+            ),
             request=request,
             before_file_upload=before_file_upload,
         )
@@ -1116,7 +1179,13 @@ class FileHelper(WithLogger):
             "ToolExecutionResponse",
             self._substitute_file_downloads_recursively(
                 tool=tool,
-                schema=tool.output_parameters,
+                # Inline $ref/$defs once at the boundary so the walker sees
+                # file_downloadable flags hidden behind a reference (e.g.
+                # GMAIL_GET_ATTACHMENT). Non-mutating: ``tool.output_parameters``
+                # is left untouched.
+                schema=dereference_json_schema(
+                    tool.output_parameters, on_unresolved="sentinel"
+                ),
                 request=t.cast(dict, response),
             ),
         )

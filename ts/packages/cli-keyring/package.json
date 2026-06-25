@@ -1,6 +1,6 @@
 {
   "name": "@composio/cli-keyring",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Cross-platform OS credential store access for the Composio CLI (macOS Keychain, Linux Secret Service).",
   "main": "src/index.ts",
   "private": true,
@@ -31,7 +31,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run",
     "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",

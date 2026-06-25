@@ -1,6 +1,6 @@
 {
   "name": "@composio/llamaindex",
-  "version": "0.9.3",
+  "version": "0.10.0",
   "description": "Agentic Provider for llamaindex in Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -29,7 +29,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "keywords": [

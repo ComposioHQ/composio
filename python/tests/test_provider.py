@@ -15,6 +15,7 @@ from composio.client.types import Tool, tool_list_response
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
 from composio.core.provider import AgenticProvider, NonAgenticProvider
+from tests.conftest import mock_http_client
 
 
 @pytest.fixture(autouse=True)
@@ -98,7 +99,7 @@ class TestProviderExecuteToolSetup:
 
     def test_execute_tool_set_during_tools_initialization_non_agentic(self):
         """Test that execute_tool is set during Tools initialization for non-agentic providers."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -117,7 +118,7 @@ class TestProviderExecuteToolSetup:
 
     def test_execute_tool_set_during_tools_initialization_agentic(self):
         """Test that execute_tool is set during Tools initialization for agentic providers."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):
@@ -142,7 +143,7 @@ class TestProviderExecuteToolSetup:
 
     def test_execute_tool_available_immediately_after_initialization(self):
         """Test that execute_tool is available immediately after initialization, before get() is called."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -160,7 +161,7 @@ class TestProviderExecuteToolSetup:
 
     def test_execute_tool_signature_matches_protocol(self):
         """Test that execute_tool has the correct signature matching ExecuteToolFn protocol."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -202,7 +203,7 @@ class TestProviderExecuteToolFunctionality:
 
     def test_execute_tool_executes_composio_tool(self):
         """Test that provider.execute_tool executes Composio tools correctly."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -236,7 +237,7 @@ class TestProviderExecuteToolFunctionality:
 
     def test_execute_tool_uses_dangerously_skip_version_check(self):
         """Test that execute_tool automatically sets dangerously_skip_version_check=True."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -269,7 +270,7 @@ class TestProviderExecuteToolFunctionality:
 
     def test_execute_tool_passes_user_id(self):
         """Test that execute_tool correctly passes user_id parameter."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -306,7 +307,7 @@ class TestProviderExecuteToolFunctionality:
         """Test that execute_tool correctly passes modifiers."""
         from composio.core.models._modifiers import before_execute
 
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -347,7 +348,7 @@ class TestProviderExecuteToolFunctionality:
 
     def test_execute_tool_with_toolkit_versions(self):
         """Test that execute_tool uses configured toolkit versions."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -390,7 +391,7 @@ class TestNonAgenticProviderHelperMethods:
             Function,
         )
 
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -439,7 +440,7 @@ class TestNonAgenticProviderHelperMethods:
             Function,
         )
 
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -523,7 +524,7 @@ class TestAgenticProviderFunctionality:
 
     def test_agentic_provider_has_execute_tool_after_initialization(self):
         """Test that agentic providers have execute_tool after Tools initialization."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):
@@ -545,7 +546,7 @@ class TestAgenticProviderFunctionality:
 
     def test_agentic_provider_execute_tool_works(self):
         """Test that agentic provider's execute_tool executes tools correctly."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):
@@ -583,7 +584,7 @@ class TestAgenticProviderFunctionality:
 
     def test_agentic_provider_wrapped_tools_receive_execute_function(self):
         """Test that wrapped tools from agentic providers receive the execute function."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):
@@ -640,7 +641,7 @@ class TestAgenticProviderFunctionality:
 
     def test_agentic_provider_wrap_tools_receives_execute_function(self):
         """Test that wrap_tools method receives the execute_tool function."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):
@@ -838,7 +839,7 @@ class TestProviderEdgeCases:
 
     def test_execute_tool_with_none_parameters(self):
         """Test that execute_tool works when optional parameters are None."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -871,7 +872,7 @@ class TestProviderEdgeCases:
 
     def test_execute_tool_with_multiple_toolkit_versions(self):
         """Test execute_tool with multiple configured toolkit versions."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -917,7 +918,7 @@ class TestProviderIntegration:
 
     def test_provider_workflow_non_agentic(self):
         """Test complete workflow with non-agentic provider."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         from composio.core.provider._openai import OpenAIProvider
 
         provider = OpenAIProvider()
@@ -969,7 +970,7 @@ class TestProviderIntegration:
 
     def test_provider_workflow_agentic(self):
         """Test complete workflow with agentic provider."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
 
         class TestAgenticProvider(AgenticProvider, name="test_agentic"):
             def wrap_tool(self, tool, execute_tool):

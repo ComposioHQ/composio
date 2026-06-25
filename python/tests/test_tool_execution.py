@@ -12,6 +12,8 @@ from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools, _serialize_arguments, _needs_serialization
 from composio.exceptions import ToolVersionRequiredError
 
+from tests.conftest import mock_http_client
+
 
 @pytest.fixture(autouse=True)
 def disable_telemetry():
@@ -52,7 +54,7 @@ class TestToolExecution:
 
     def test_get_raw_tool_router_meta_tools_fetches_all_pages(self):
         """Test that ToolRouter session tools are fetched across all pages."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         tools = Tools(client=mock_client, provider=mock_provider)
 
@@ -82,7 +84,7 @@ class TestToolExecution:
     def test_tool_execution_uses_toolkit_version(self):
         """Test that tool execution resolves toolkit version correctly."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -128,7 +130,7 @@ class TestToolExecution:
     def test_tool_execution_with_explicit_version(self):
         """Test that explicit version overrides toolkit version."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -177,7 +179,7 @@ class TestToolExecution:
     def test_tool_execution_unknown_toolkit_fallback(self):
         """Test that unknown toolkit falls back to 'latest'."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -226,7 +228,7 @@ class TestToolExecution:
     def test_tool_execution_with_global_version_string(self):
         """Test that global version string is used for all toolkits."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -275,7 +277,7 @@ class TestToolExecution:
         # version: body.version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions)
 
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -353,7 +355,7 @@ class TestToolExecution:
     def test_execute_raises_error_when_version_is_latest_without_skip_flag(self):
         """Test that execute raises ToolVersionRequiredError when version is 'latest' without skip flag."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -382,7 +384,7 @@ class TestToolExecution:
     def test_execute_allows_latest_with_dangerously_skip_version_check(self):
         """Test that execute allows 'latest' version when dangerously_skip_version_check is True."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -429,7 +431,7 @@ class TestToolExecution:
     def test_execute_with_specific_version_no_error(self):
         """Test that execute works with specific version without raising error."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -475,7 +477,7 @@ class TestToolExecution:
     def test_execute_uses_instance_toolkit_versions(self):
         """Test that execute method uses instance-level toolkit versions."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -524,7 +526,7 @@ class TestToolExecution:
     def test_execute_version_parameter_overrides_toolkit_versions(self):
         """Test that explicit version parameter overrides instance toolkit versions."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -574,7 +576,7 @@ class TestToolExecution:
     def test_execute_with_connected_account_id(self):
         """Test that execute passes connected_account_id correctly."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -621,7 +623,7 @@ class TestToolExecution:
     def test_execute_with_custom_auth_params(self):
         """Test that execute passes custom_auth_params correctly."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -669,7 +671,7 @@ class TestToolExecution:
     def test_execute_with_user_id_and_text(self):
         """Test that execute passes user_id and text parameters correctly."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -720,7 +722,7 @@ class TestToolExecution:
         from composio.core.models._modifiers import before_execute
 
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -776,7 +778,7 @@ class TestToolExecution:
         from composio.core.models._modifiers import after_execute
 
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -958,7 +960,7 @@ class TestToolExecution:
         """``before_file_upload`` in ``modifiers`` is composed into substitute_file_uploads."""
         from composio.core.models._modifiers import before_file_upload
 
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -1019,7 +1021,7 @@ class TestToolExecution:
         import os
 
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -1074,7 +1076,7 @@ class TestToolExecution:
         import os
 
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -1109,7 +1111,7 @@ class TestToolExecution:
     def test_execute_with_custom_connection_data(self):
         """Test that execute passes custom_connection_data correctly."""
         # Mock client and provider
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 
@@ -1213,7 +1215,7 @@ class TestSerializeArguments:
     def test_execute_tool_serializes_pydantic_arguments(self):
         """Regression test for PLEN-1514: Pydantic models in arguments must be
         serialized to plain dicts before being sent to the API."""
-        mock_client = Mock()
+        mock_client = mock_http_client()
         mock_provider = Mock()
         mock_provider.name = "test_provider"
 

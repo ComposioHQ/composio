@@ -1,13 +1,28 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Effect, Stream, String } from 'effect';
 import { Command } from '@effect/platform';
 import ts from 'typescript';
+import {
+  buildVirtualFileMap,
+  formatDiagnostic,
+  patchCompilerHostWithVirtualFiles,
+} from 'src/generation/typescript/virtual-compiler-host';
 
 interface AssertTypeScriptIsValidInput {
   files: {
     [filename: string]: string;
   };
 }
+
+const VALIDATION_TYPE_STUBS = /* typescript */ `
+  type Record<K extends keyof any, T> = {
+    [P in K]: T;
+  };
+
+  declare module "@composio/core" {
+    export type TriggerEvent<TPayload> = { payload: TPayload };
+  }
+`;
 
 /**
  * Asserts that the provided TypeScript code is syntactically and semantically valid.
@@ -28,29 +43,17 @@ export function assertTypeScriptIsValid({ files }: AssertTypeScriptIsValidInput)
     allowImportingTsExtensions: true,
   } satisfies ts.CompilerOptions;
 
-  const virtualFileMap = new Map(
-    Object.entries(files).map(
-      ([filename, code]) =>
-        [
-          filename,
-          ts.createSourceFile(filename, code, compilerOptions.target, true, ts.ScriptKind.TS),
-        ] as const
-    )
+  const virtualFileMap = buildVirtualFileMap(
+    Object.entries({
+      './__validation-stubs.d.ts': VALIDATION_TYPE_STUBS,
+      ...files,
+    }),
+    compilerOptions.target
   );
   const virtualFileNames = Array.from(virtualFileMap.keys());
 
   const tsHost = ts.createCompilerHost(compilerOptions);
-  tsHost.getSourceFile = (filename, _languageVersion) => {
-    if (virtualFileMap.has(filename)) {
-      return virtualFileMap.get(filename);
-    }
-
-    if (virtualFileMap.has(`./${filename}`)) {
-      return virtualFileMap.get(filename);
-    }
-
-    throw new Error(`Unexpected filename ${filename}`);
-  };
+  patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'throw');
 
   const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
 
@@ -58,7 +61,7 @@ export function assertTypeScriptIsValid({ files }: AssertTypeScriptIsValidInput)
   const diagnostics = [...program.getSyntacticDiagnostics(), ...program.getSemanticDiagnostics()];
 
   // Assert that there are no TypeScript errors
-  expect(diagnostics).toEqual([]);
+  expect(diagnostics.map(formatDiagnostic)).toEqual([]);
 }
 
 type AssertTranspiledTypeScriptIsValidInput = {
@@ -121,6 +124,16 @@ if (import.meta.vitest) {
       });
     });
 
+    it('[Given] generated code imports Composio core types [Then] no errors are found', () => {
+      const code = /* typescript */ `
+        import { type TriggerEvent } from '@composio/core';
+
+        export type Event = TriggerEvent<{ id: string }>;
+      `;
+
+      assertTypeScriptIsValid({ files: { 'index.ts': code } });
+    });
+
     it('[Given] invalid TypeScript code [Then] errors are found', () => {
       const code = /* typescript */ `
         export const id<T> = (x: T) => T: x;
@@ -128,6 +141,35 @@ if (import.meta.vitest) {
       expect(() => {
         assertTypeScriptIsValid({ files: { 'index.ts': code } });
       }).toThrowError();
+    });
+
+    it('[Given] throw fallback [Then] the virtual host does not delegate misses to disk', () => {
+      const compilerOptions = {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.ES2022,
+      } satisfies ts.CompilerOptions;
+      const virtualFileMap = buildVirtualFileMap(
+        [['index.ts', 'export const ok = true;']],
+        compilerOptions.target
+      );
+      const tsHost = ts.createCompilerHost(compilerOptions);
+      const getSourceFile = vi.fn(() => {
+        throw new Error('delegated getSourceFile');
+      });
+      const fileExists = vi.fn(() => {
+        throw new Error('delegated fileExists');
+      });
+
+      tsHost.getSourceFile = getSourceFile;
+      tsHost.fileExists = fileExists;
+      patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'throw');
+
+      expect(tsHost.fileExists('node_modules/@composio/core/index.d.ts')).toBe(false);
+      expect(() =>
+        tsHost.getSourceFile('node_modules/@composio/core/index.d.ts', compilerOptions.target)
+      ).toThrowError('Unexpected filename node_modules/@composio/core/index.d.ts');
+      expect(fileExists).not.toHaveBeenCalled();
+      expect(getSourceFile).not.toHaveBeenCalled();
     });
   });
 }

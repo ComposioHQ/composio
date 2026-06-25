@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import json
 import typing as t
 
@@ -110,8 +111,12 @@ class OpenAIAgentsProvider(
                 )
 
         # Ensure the schema has additionalProperties set to false
-        # this is required by OpenAI's function validation
-        modified_schema = tool.input_parameters.copy()
+        # this is required by OpenAI's function validation.
+        # Deep-copy so the in-place edits below (additionalProperties + the
+        # examples/pattern/default removal) never mutate the caller's
+        # Tool.input_parameters, matching the deepcopy contract in
+        # composio.utils.shared.
+        modified_schema = copy.deepcopy(tool.input_parameters)
         modified_schema["additionalProperties"] = False
 
         # Apply the example removal function. This is done to optimize the

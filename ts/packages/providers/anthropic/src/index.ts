@@ -16,9 +16,16 @@ import {
   logger,
   McpUrlResponse,
   normalizeToolArguments,
+  dereferenceJsonSchema,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
+import {
+  sanitizeSchemaPropertyKeys,
+  restoreOriginalKeys,
+  mappingHasRenames,
+  KeyMapping,
+} from './sanitize-keys';
 
 export type AnthropicMcpServerGetResponse = {
   type: 'url';
@@ -59,6 +66,29 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
 > {
   readonly name = 'anthropic';
   private chacheTools: boolean = false;
+
+  /**
+   * Per-tool reverse key mappings (`sanitized -> original`, shaped like the
+   * schema), keyed by tool slug. Populated by {@link wrapTool} whenever a tool's
+   * schema contains keys that violate Anthropic's `^[a-zA-Z0-9_.-]{1,64}$`
+   * constraint, and read by {@link executeToolCall} to restore the original
+   * parameter names before the call reaches the Composio backend.
+   *
+   * **Contract:** a tool must be wrapped and executed through the *same* provider
+   * instance. This holds for the standard Composio flow — the model can only call
+   * tools previously emitted by {@link wrapTools}/{@link wrapTool} on this
+   * instance, and that wrapping registers the mapping. If a tool is somehow
+   * executed on an instance that never wrapped it, no mapping is found and the
+   * model's (already sanitized) argument keys are forwarded unchanged, so the
+   * backend would see e.g. `dollar_top` instead of `$top`. {@link executeToolCall}
+   * emits a `debug` log on the path that actually restores keys so this is
+   * diagnosable.
+   *
+   * Re-wrapping a slug refreshes its entry (or clears it when the new schema
+   * needs no rewriting), so the map stays consistent and its size is bounded by
+   * the number of distinct sanitized tool slugs this instance has wrapped.
+   */
+  private toolKeyMappings: Map<string, KeyMapping> = new Map();
 
   /**
    * Creates a new instance of the AnthropicProvider.
@@ -119,14 +149,46 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: ComposioTool): AnthropicTool {
+    const rawSchema = (tool.inputParameters || {
+      type: 'object',
+      properties: {},
+      required: [],
+    }) as InputSchema;
+
+    // Inline internal `$ref` / `$defs` first so keys reachable only through a
+    // reference become ordinary value positions that can be both sanitized and
+    // restored. Lenient mode keeps an upstream schema with a dangling ref usable
+    // (it degrades the branch to a permissive object) instead of throwing.
+    const dereferenced = dereferenceJsonSchema(rawSchema, {
+      onUnresolved: 'sentinel',
+      onReplace: ref =>
+        logger.debug(
+          `AnthropicProvider: unresolved $ref "${ref}" in tool "${tool.slug}" replaced ` +
+            `with a permissive schema`
+        ),
+    });
+
+    // Anthropic rejects the whole `tools` array if any property key falls outside
+    // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
+    // over-long flattened keys). Rewrite offending keys and remember how to undo it.
+    const { schema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
+
+    if (mappingHasRenames(mapping)) {
+      this.toolKeyMappings.set(tool.slug, mapping);
+      logger.debug(
+        `AnthropicProvider rewrote non-conforming schema keys for tool "${tool.slug}"; ` +
+          `original parameter names will be restored at execution time`
+      );
+    } else {
+      // Clear any stale mapping from a previous wrap of the same slug whose
+      // schema no longer needs rewriting, so restoration stays consistent.
+      this.toolKeyMappings.delete(tool.slug);
+    }
+
     return {
       name: tool.slug,
       description: tool.description || '',
-      input_schema: (tool.inputParameters || {
-        type: 'object',
-        properties: {},
-        required: [],
-      }) as InputSchema,
+      input_schema: schema,
       cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
@@ -211,9 +273,24 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     options?: ExecuteToolFnOptions,
     modifiers?: ExecuteToolModifiers
   ): Promise<string> {
+    // Models occasionally emit tool input as a JSON string rather than an object
+    // (issue #2406). Normalize to a plain object first so key restoration below can
+    // walk it; restoring before normalizing would no-op on a raw string.
+    const normalizedInput = normalizeToolArguments(toolUse.input, toolUse.name);
+
+    // Undo any key sanitization applied in `wrapTool` so the backend receives the
+    // tool's original parameter names (e.g. `dollar_top` -> `$top`). The mapping
+    // is only present when this same instance wrapped the tool and rewrote keys
+    // (see `toolKeyMappings`); otherwise the arguments pass through untouched.
+    const mapping = this.toolKeyMappings.get(toolUse.name);
+    let toolArguments = normalizedInput;
+    if (mapping) {
+      toolArguments = restoreOriginalKeys(normalizedInput, mapping) as Record<string, unknown>;
+      logger.debug(`AnthropicProvider restored original argument keys for tool "${toolUse.name}"`);
+    }
+
     const payload: ToolExecuteParams = {
-      // Models occasionally emit tool input as a JSON string rather than an object (issue #2406).
-      arguments: normalizeToolArguments(toolUse.input, toolUse.name),
+      arguments: toolArguments,
       connectedAccountId: options?.connectedAccountId,
       customAuthParams: options?.customAuthParams,
       customConnectionData: options?.customConnectionData,

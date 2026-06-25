@@ -1,7 +1,10 @@
 import type { UserConfig } from 'tsdown';
 
-// Turbo task execution triggers a tsdown ATTW tarball path bug for scoped packages.
-// Keep ATTW for direct package builds, but disable it for workspace builds.
+// Turbo task execution triggers a tsdown tarball-pack path bug for scoped packages:
+// an intermittent ENOENT while reading the packed `.tgz` (e.g. composio-anthropic-*.tgz).
+// tsdown packs the tarball once and shares it between ATTW and publint, and only runs the
+// pack when at least one of them is enabled — so BOTH must be disabled to skip the pack
+// under Turbo. Keep both checks for direct package builds; disable them for workspace builds.
 const isTurboTask = Boolean(process.env.TURBO_HASH);
 
 /**
@@ -88,7 +91,7 @@ export const baseConfig = {
    * Configuration for publint.
    */
   publint: {
-    enabled: true,
+    enabled: !isTurboTask,
     level: 'error',
     pack: 'pnpm',
   },

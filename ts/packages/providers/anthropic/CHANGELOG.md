@@ -1,5 +1,28 @@
 # @composio/anthropic
 
+## 0.10.0
+
+### Minor Changes
+
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+
+### Patch Changes
+
+- 507318d: Harden the Anthropic tool property-key sanitizer:
+
+  - **Broader schema coverage.** Illegal keys are now sanitized wherever they appear in a tool schema — under the composition keywords (`allOf`/`anyOf`/`oneOf`, `not`/`if`/`then`/`else`), `prefixItems` tuples, `additionalProperties`/`patternProperties`, and `$defs`/`definitions` — not just top-level `properties` and array `items`. Previously a single illegal key under one of these would still 400 the entire request. Renames inside composition keywords are restored correctly (they fold into the value level they share).
+  - **`$ref` keys restored.** `wrapTool` now dereferences internal `$ref`/`$defs` (leniently — a dangling ref degrades to a permissive schema instead of throwing) before sanitizing, so keys reachable only through a reference are both made compliant and restored. Only genuinely dynamic positions (`additionalProperties`, `patternProperties`, `contains`) remain rewrite-only.
+  - **Shared core implementation.** The traversal/restoration mechanism now lives in `@composio/core` (`sanitizeSchemaPropertyKeys` / `restoreOriginalKeys`); this provider supplies only the Anthropic key constraint as a policy, reusing core's prototype-pollution guard and depth cap.
+  - **Prototype-safe key restoration.** Reverse-mapping lookups and the rebuilt argument object are now prototype-free, so a tool call whose arguments use a key matching an `Object.prototype` member (`__proto__`, `constructor`, `toString`, `hasOwnProperty`, …) no longer throws or silently corrupts the payload sent to the backend. `Object.prototype` is never mutated.
+  - **Depth cap.** Schema sanitization and key restoration now bound recursion (matching core's JSON-schema walker) so a pathologically deep schema or argument object fails with a clear error instead of overflowing the stack.
+  - **Empty / all-illegal keys.** A property key that is empty (or made entirely of stripped characters) now becomes a deterministic non-empty alias instead of an empty string, which would itself have violated Anthropic's `{1,64}` length bound.
+  - **Collision loop.** Replaced a latent non-terminating fixed point in the alias collision resolver with a counter that always makes progress.
+  - **Observability.** The provider now emits `debug` logs when it rewrites a tool's schema keys and when it restores them at execution time, and the wrap-then-execute (same provider instance) contract for key restoration is documented.
+
+- c90ae95: Sanitize tool `input_schema` property keys that violate Anthropic's `^[a-zA-Z0-9_.-]{1,64}$` constraint before sending tools to the Messages API, then restore the original names when the tool is executed.
+
+  A single non-conforming key previously made Anthropic reject the entire `tools` array with HTTP 400, taking down every other tool in the same request. This commonly happened with OneDrive's Microsoft Graph OData parameters (`$top`, `$filter`, `@microsoft.graph.conflictBehavior`) and with over-long flattened keys from tools such as Zoom. Offending keys are now rewritten to conforming aliases (`$` → `dollar_`, `@` → `at_`, any other illegal character → `_`, keys longer than 64 characters truncated with a deterministic suffix), recursing through nested object `properties` and array `items` schemas. The original parameter names are restored before the call reaches the Composio backend, so the model sees `dollar_top` while the backend still receives `$top`. Schemas whose keys already conform are left unchanged.
+
 ## 0.9.3
 
 ### Patch Changes

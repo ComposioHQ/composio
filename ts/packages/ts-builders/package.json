@@ -1,7 +1,8 @@
 {
   "name": "@composio/ts-builders",
-  "version": "0.1.24",
+  "version": "0.2.0",
   "description": "Fork of @prisma/ts-builders",
+  "private": true,
   "main": "dist/index.mjs",
   "type": "module",
   "module": "dist/index.mjs",
@@ -26,7 +27,7 @@
   },
   "scripts": {
     "clean": "git clean -xdf node_modules",
-    "build": "pnpm exec tsdown",
+    "build": "tsdown",
     "test": "vitest run"
   },
   "files": [

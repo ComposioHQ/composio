@@ -3,6 +3,8 @@ Shared utils.
 """
 
 import copy
+import dataclasses
+import hashlib
 import json
 import keyword
 import typing as t
@@ -12,7 +14,8 @@ from inspect import Parameter
 from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
 
-from composio.exceptions import InvalidParams
+from composio.exceptions import InvalidParams, InvalidSchemaError
+from composio.utils.json_schema import dereference_json_schema
 from composio.utils.logging import get as get_logger
 from composio.utils.schema_converter import (
     CONTAINER_TYPE,
@@ -36,6 +39,9 @@ __all__ = [
     "get_signature_format_from_schema_params",
     "get_pydantic_signature_format_from_schema_params",
     "generate_request_id",
+    "ToolSchemaAliases",
+    "alias_tool_input_schema",
+    "restore_tool_arguments",
     "substitute_reserved_python_keywords",
     "reinstate_reserved_python_keywords",
     "normalize_tool_arguments",
@@ -44,6 +50,8 @@ __all__ = [
 reserved_names = ["validate"]
 
 _OBJ_MARKER = "-_object_-"
+_ARR_MARKER = "-_array_-"
+_MAX_PROVIDER_ALIAS_LENGTH = 64
 
 
 def normalize_tool_arguments(arguments: t.Any) -> t.Dict[str, t.Any]:
@@ -97,44 +105,174 @@ def _make_safe_name(name: str) -> str:
     return f"{name}_rs"
 
 
+def _make_python_identifier(name: str) -> str:
+    if keyword.iskeyword(name):
+        return _make_safe_name(name)
+
+    safe = "".join(
+        char if (char.isascii() and (char.isalnum() or char == "_")) else "_"
+        for char in name
+    )
+    if not safe:
+        safe = "param"
+    if safe[0].isdigit() or safe[0] == "_":
+        safe = f"param_{safe.lstrip('_') or 'value'}"
+    if keyword.iskeyword(safe):
+        safe = _make_safe_name(safe)
+    if len(safe) > _MAX_PROVIDER_ALIAS_LENGTH:
+        hash_suffix = hashlib.sha256(name.encode()).hexdigest()[:8]
+        safe = (
+            f"{safe[: _MAX_PROVIDER_ALIAS_LENGTH - len(hash_suffix) - 1]}_{hash_suffix}"
+        )
+    return safe
+
+
+@dataclasses.dataclass(frozen=True)
+class ToolSchemaAliases:
+    """Provider-visible schema plus mapping back to backend argument names."""
+
+    schema: t.Dict[str, t.Any]
+    aliases: t.Dict[str, t.Any]
+
+    def restore_arguments(self, arguments: dict) -> dict:
+        return restore_tool_arguments(arguments, self.aliases)
+
+
+def alias_tool_input_schema(schema: t.Dict) -> ToolSchemaAliases:
+    """Alias tool input schema keys so they are valid Python parameter names.
+
+    Returns a :class:`ToolSchemaAliases` object containing a deep-copied schema
+    for provider/framework exposure and a reverse alias map for restoring model
+    arguments before calling the backend executor.
+
+    Python keywords keep the historical ``_rs`` suffix (``from`` becomes
+    ``from_rs``). Other names that cannot be used as Python identifiers are
+    converted to Pydantic-safe identifiers and long aliases are capped at 64
+    characters so the same provider-facing schema is accepted by
+    Anthropic-style tool schema validators. Internal JSON Schema references are
+    inlined before aliasing so referenced object properties are exposed through
+    the same safe names. If two properties would expose the same alias, an
+    :class:`InvalidSchemaError` is raised instead of guessing.
+    """
+    aliased_schema = t.cast(
+        t.Dict[str, t.Any],
+        dereference_json_schema(
+            copy.deepcopy(schema),
+            on_unresolved="sentinel",
+        ),
+    )
+    schema_params, aliases = _alias_schema_properties(aliased_schema)
+    return ToolSchemaAliases(schema=schema_params, aliases=aliases)
+
+
+def _alias_schema_properties(schema: t.Dict[str, t.Any]) -> t.Tuple[dict, dict]:
+    properties = schema.get("properties")
+    if not isinstance(properties, dict):
+        return schema, {}
+
+    aliases: t.Dict[str, t.Any] = {}
+    aliased_properties: t.Dict[str, t.Any] = {}
+
+    for original_name, property_schema in properties.items():
+        safe_name = _make_python_identifier(original_name)
+        if safe_name in aliased_properties:
+            raise InvalidSchemaError(
+                "Tool input schema property names produce a duplicate Python "
+                f"parameter alias {safe_name!r}"
+            )
+
+        nested_object_aliases: t.Dict[str, t.Any] = {}
+        nested_array_aliases: t.Dict[str, t.Any] = {}
+        if isinstance(property_schema, dict):
+            property_schema, nested_object_aliases = _alias_nested_object_schema(
+                property_schema
+            )
+            property_schema, nested_array_aliases = _alias_nested_array_schema(
+                property_schema
+            )
+
+        aliased_properties[safe_name] = property_schema
+        if safe_name != original_name or nested_object_aliases or nested_array_aliases:
+            aliases[safe_name] = original_name
+        if nested_object_aliases:
+            aliases[f"{safe_name}{_OBJ_MARKER}"] = nested_object_aliases
+        if nested_array_aliases:
+            aliases[f"{safe_name}{_ARR_MARKER}"] = nested_array_aliases
+
+    schema["properties"] = aliased_properties
+    if aliases and "required" in schema:
+        reverse = {
+            original: safe
+            for safe, original in aliases.items()
+            if not safe.endswith(_OBJ_MARKER) and not safe.endswith(_ARR_MARKER)
+        }
+        schema["required"] = [reverse.get(r, r) for r in schema["required"]]
+
+    return schema, aliases
+
+
+def _alias_nested_object_schema(
+    property_schema: t.Dict[str, t.Any],
+) -> t.Tuple[dict, dict]:
+    if not isinstance(property_schema.get("properties"), dict):
+        return property_schema, {}
+    return _alias_schema_properties(property_schema)
+
+
+def _alias_nested_array_schema(
+    property_schema: t.Dict[str, t.Any],
+) -> t.Tuple[dict, dict]:
+    items_schema = property_schema.get("items")
+    if not isinstance(items_schema, dict):
+        return property_schema, {}
+    aliased_items, aliases = _alias_schema_properties(items_schema)
+    if aliases:
+        property_schema["items"] = aliased_items
+    return property_schema, aliases
+
+
+def restore_tool_arguments(request: dict, aliases: dict) -> dict:
+    """Restore provider-visible argument aliases back to backend schema names.
+
+    Modifies *request* in-place and returns it.
+    """
+    alias_keys = [
+        key
+        for key in aliases
+        if not key.endswith(_OBJ_MARKER) and not key.endswith(_ARR_MARKER)
+    ]
+    for clean_key in sorted(alias_keys, reverse=True):
+        if clean_key not in request:
+            continue
+
+        original_value = request.pop(clean_key)
+        object_aliases = aliases.get(f"{clean_key}{_OBJ_MARKER}", {})
+        array_aliases = aliases.get(f"{clean_key}{_ARR_MARKER}", {})
+        if object_aliases and isinstance(original_value, dict):
+            original_value = restore_tool_arguments(
+                request=original_value,
+                aliases=object_aliases,
+            )
+        if array_aliases and isinstance(original_value, list):
+            original_value = [
+                restore_tool_arguments(item, array_aliases)
+                if isinstance(item, dict)
+                else item
+                for item in original_value
+            ]
+        request[aliases.get(clean_key, clean_key)] = original_value
+    return request
+
+
 def substitute_reserved_python_keywords(
     schema: t.Dict,
 ) -> t.Tuple[dict, dict]:
-    """Replace Python reserved keywords in a JSON schema's property names.
+    """Replace unsafe JSON schema property names with Python parameter aliases.
 
-    Returns a ``(schema, keywords)`` tuple where *schema* has safe property
-    names and *keywords* maps each safe name back to the original.  Nested
-    object schemas are processed recursively.
-
-    The schema is deep-copied before any mutation so the caller's original
-    is never modified.
+    Backward-compatible wrapper around :func:`alias_tool_input_schema`.
     """
-    if "properties" not in schema:
-        return schema, {}
-
-    schema = copy.deepcopy(schema)
-
-    keywords: t.Dict[str, t.Any] = {}
-    for p_name in list(schema["properties"]):
-        if not keyword.iskeyword(p_name):
-            continue
-
-        _nested_kw: t.Dict[str, t.Any] = {}
-        p_val = schema["properties"].pop(p_name)
-        if p_val.get("type") == "object":
-            p_val, _nested_kw = substitute_reserved_python_keywords(schema=p_val)
-
-        safe = _make_safe_name(p_name)
-        schema["properties"][safe] = p_val
-        keywords[safe] = p_name
-        keywords[f"{safe}{_OBJ_MARKER}"] = _nested_kw
-
-    # Also rename entries in the ``required`` list.
-    if keywords and "required" in schema:
-        reverse = {v: k for k, v in keywords.items() if not k.endswith(_OBJ_MARKER)}
-        schema["required"] = [reverse.get(r, r) for r in schema["required"]]
-
-    return schema, keywords
+    aliased = alias_tool_input_schema(schema=schema)
+    return aliased.schema, aliased.aliases
 
 
 def reinstate_reserved_python_keywords(
@@ -145,23 +283,7 @@ def reinstate_reserved_python_keywords(
 
     Modifies *request* **in-place** and returns it.
     """
-    for clean_key in sorted(list(keywords), reverse=True):
-        subkeys = None
-        if clean_key.endswith(_OBJ_MARKER):
-            subkeys = keywords[clean_key]
-            clean_key, _ = clean_key.split(_OBJ_MARKER, maxsplit=1)
-
-        if clean_key not in request:
-            continue
-
-        original_value = request.pop(clean_key)
-        if subkeys:
-            original_value = reinstate_reserved_python_keywords(
-                request=original_value,
-                keywords=subkeys,
-            )
-        request[keywords[clean_key]] = original_value
-    return request
+    return restore_tool_arguments(request=request, aliases=keywords)
 
 
 def _coerce_default_value(

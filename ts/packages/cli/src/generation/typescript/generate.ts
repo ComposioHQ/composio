@@ -1,12 +1,14 @@
 import * as ts from '@composio/ts-builders';
 import path from 'node:path';
+import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
+import type { SourceFile } from 'src/generation/types';
 import { generateTypeScriptToolkitSources } from './generate-toolkit-sources';
 import { generateIndexSource } from './generate-index-source';
 import { Effect } from 'effect';
 import type { GenerateTypeFromJsonSchemaError } from './generate-type-from-json-schema';
 
-type SourceFile = readonly [filename: string, content: string];
+type GenerateTypeScriptSourcesError = GenerateTypeFromJsonSchemaError | SafeOutputPathError;
 
 type GenerateTypeScriptSourcesParams = {
   banner: string;
@@ -18,7 +20,7 @@ type GenerateTypeScriptSourcesParams = {
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
   return (
     index: ToolkitIndex
-  ): Effect.Effect<Array<SourceFile>, GenerateTypeFromJsonSchemaError, never> =>
+  ): Effect.Effect<Array<SourceFile>, GenerateTypeScriptSourcesError, never> =>
     Effect.gen(function* () {
       const toolkitSources = yield* generateTypeScriptToolkitSources(params.banner)(index);
 
@@ -26,12 +28,15 @@ export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParam
       const indexFilename = path.join(params.outputDir, 'index.ts');
 
       if (!params.emitSingleFile) {
-        return [
-          ...toolkitSources.map(
-            ([filename, content]) => [path.join(params.outputDir, filename), content] as const
-          ),
-          [indexFilename, indexSource] as const,
-        ] as const;
+        const safeToolkitSources = yield* Effect.all(
+          toolkitSources.map(([filename, content]) =>
+            safeOutputPath(params.outputDir, filename).pipe(
+              Effect.map(filePath => [filePath, content] as const)
+            )
+          )
+        );
+
+        return [...safeToolkitSources, [indexFilename, indexSource] as const] as const;
       }
 
       const localToolkitsSources = toolkitSources.map(([_, content]) => content).join('\n');

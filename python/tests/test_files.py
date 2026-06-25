@@ -7,6 +7,7 @@ that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
+import requests
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models._files import (
@@ -23,7 +24,11 @@ from composio.core.models._files import (
     _MAX_FILENAME_LENGTH,
 )
 from composio.core.models.base import allow_tracking
-from composio.exceptions import ErrorUploadingFile, ResponseTooLargeError
+from composio.exceptions import (
+    ErrorDownloadingFile,
+    ErrorUploadingFile,
+    ResponseTooLargeError,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -329,6 +334,207 @@ class TestFileHelperSchemaHandling:
             request=request.copy(),
         )
         assert result == {"data": {"value": "test"}}
+
+
+class TestFileHelperRefDefsResolution:
+    """File flags reachable only through a $ref/$defs indirection.
+
+    Regression coverage for
+    https://github.com/ComposioHQ/composio/issues/3506. References are inlined
+    once at the public-method boundary (``dereference_json_schema``), so the
+    walkers themselves stay reference-agnostic.
+    """
+
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_download_resolves_ref_defs(self, mock_download, file_helper, mock_tool):
+        """GMAIL_GET_ATTACHMENT shape: file_downloadable two $ref hops deep."""
+        mock_download.return_value = "/tmp/invoice.pdf"
+        mock_tool.output_parameters = {
+            "type": "object",
+            "$defs": {
+                "FileDownloadable": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "mimetype": {"type": "string"},
+                        "s3url": {"type": "string"},
+                    },
+                    "required": ["name", "mimetype", "s3url"],
+                    "file_downloadable": True,
+                },
+                "GetAttachmentResponse": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"$ref": "#/$defs/FileDownloadable"},
+                        "display_url": {"type": "string"},
+                    },
+                    "required": ["file"],
+                },
+            },
+            "properties": {
+                "data": {"$ref": "#/$defs/GetAttachmentResponse"},
+                "successful": {"type": "boolean"},
+            },
+            "required": ["data", "successful"],
+        }
+        response = {
+            "data": {
+                "file": {
+                    "name": "invoice.pdf",
+                    "mimetype": "application/pdf",
+                    "s3url": "https://s3.example.com/invoice.pdf",
+                },
+                "display_url": "https://mail.google.com/...",
+            },
+            "successful": True,
+        }
+
+        result = file_helper.substitute_file_downloads(
+            tool=mock_tool,
+            response=response,
+        )
+
+        assert result["data"]["file"] == "/tmp/invoice.pdf"
+        assert result["data"]["display_url"] == "https://mail.google.com/..."
+        assert result["successful"] is True
+        mock_download.assert_called_once()
+
+    @patch("composio.core.models._files.FileUploadable.from_path")
+    def test_upload_resolves_ref_defs(self, mock_from_path, file_helper, mock_tool):
+        """$ref/$defs input schema exposes a nested file_uploadable leaf."""
+        upload = MagicMock()
+        upload.model_dump.return_value = {
+            "name": "invoice.pdf",
+            "mimetype": "application/pdf",
+            "s3key": "uploads/invoice.pdf",
+        }
+        mock_from_path.return_value = upload
+        mock_tool.input_parameters = {
+            "type": "object",
+            "$defs": {
+                "FileUploadable": {"type": "string", "file_uploadable": True},
+                "AttachmentInput": {
+                    "type": "object",
+                    "properties": {
+                        "file": {"$ref": "#/$defs/FileUploadable"},
+                        "name": {"type": "string"},
+                    },
+                    "required": ["file"],
+                },
+            },
+            "properties": {"attachment": {"$ref": "#/$defs/AttachmentInput"}},
+            "required": ["attachment"],
+        }
+        request = {"attachment": {"file": "/local/invoice.pdf", "name": "invoice.pdf"}}
+
+        result = file_helper.substitute_file_uploads(
+            tool=mock_tool,
+            request=request,
+        )
+
+        assert result["attachment"]["file"] == {
+            "name": "invoice.pdf",
+            "mimetype": "application/pdf",
+            "s3key": "uploads/invoice.pdf",
+        }
+        assert result["attachment"]["name"] == "invoice.pdf"
+        mock_from_path.assert_called_once()
+
+    def test_process_file_uploadable_schema_resolves_ref_defs(self, file_helper):
+        """The LLM-facing input transform inlines $ref and rewrites the leaf."""
+        schema = {
+            "type": "object",
+            "$defs": {
+                "FileUploadable": {"type": "string", "file_uploadable": True},
+                "AttachmentInput": {
+                    "type": "object",
+                    "properties": {"file": {"$ref": "#/$defs/FileUploadable"}},
+                },
+            },
+            "properties": {"attachment": {"$ref": "#/$defs/AttachmentInput"}},
+        }
+
+        result = file_helper.process_file_uploadable_schema(schema)
+
+        leaf = result["properties"]["attachment"]["properties"]["file"]
+        assert leaf["type"] == "string"
+        assert leaf["format"] == "path"
+        assert leaf["file_uploadable"] is True
+        # $defs is inlined away; no dangling references remain.
+        assert "$defs" not in result
+        assert "$ref" not in result["properties"]["attachment"]
+
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_dangling_ref_download_degrades_gracefully(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """A $ref with no $defs block (issue #3307) must not raise (sentinel)."""
+        mock_tool.output_parameters = {
+            "type": "object",
+            "properties": {
+                "data": {"$ref": "#/$defs/Missing"},
+                "successful": {"type": "boolean"},
+            },
+        }
+        response = {"data": {"value": "passthrough"}, "successful": True}
+
+        # No $defs block at all: strict resolution would raise and abort the
+        # tool call. Sentinel mode keeps execution working — the unresolved
+        # branch is simply not treated as a file.
+        result = file_helper.substitute_file_downloads(
+            tool=mock_tool,
+            response=response,
+        )
+
+        assert result == {"data": {"value": "passthrough"}, "successful": True}
+        mock_download.assert_not_called()
+
+    @patch("composio.core.models._files.FileDownloadable.download")
+    def test_recursive_ref_schema_does_not_recurse_infinitely(
+        self, mock_download, file_helper, mock_tool
+    ):
+        """A self-referential $ref schema must not blow the stack.
+
+        A per-node lazy resolver without threaded cycle tracking infinite-loops
+        here; the centralized walker breaks the cycle with a sentinel.
+        """
+        mock_download.return_value = "/tmp/node.bin"
+        mock_tool.output_parameters = {
+            "type": "object",
+            "$defs": {
+                "Node": {
+                    "type": "object",
+                    "properties": {
+                        "file": {
+                            "type": "object",
+                            "properties": {"s3url": {"type": "string"}},
+                            "file_downloadable": True,
+                        },
+                        "child": {"$ref": "#/$defs/Node"},
+                    },
+                },
+            },
+            "properties": {"root": {"$ref": "#/$defs/Node"}},
+        }
+        response = {
+            "root": {
+                "file": {
+                    "name": "n.bin",
+                    "mimetype": "application/octet-stream",
+                    "s3url": "https://s3/x",
+                },
+                "child": {"value": "leaf"},
+            }
+        }
+
+        # Must complete without RecursionError.
+        result = file_helper.substitute_file_downloads(
+            tool=mock_tool,
+            response=response,
+        )
+
+        assert result["root"]["file"] == "/tmp/node.bin"
+        assert result["root"]["child"] == {"value": "leaf"}
 
 
 class TestFileUploadableInUnionTypes:
@@ -1518,7 +1724,12 @@ class TestUploadBytesToS3:
 
         assert result == "s3-key-123"
         mock_client.post.assert_called_once()
-        mock_put.assert_called_once()
+        mock_put.assert_called_once_with(
+            url="https://s3.example.com/upload",
+            data=b"file content",
+            headers={"Content-Type": "image/jpeg"},
+            timeout=(5, 60),
+        )
 
     @patch("composio.core.models._files.requests.put")
     def test_upload_bytes_to_s3_failure(self, mock_put):
@@ -1544,6 +1755,34 @@ class TestUploadBytesToS3:
             )
 
         assert "Failed to upload to S3" in str(exc_info.value)
+
+    @patch("composio.core.models._files.requests.put")
+    def test_upload_bytes_to_s3_timeout(self, mock_put):
+        """Test request timeouts are reported as upload errors."""
+        mock_client = MagicMock()
+        mock_s3_response = MagicMock()
+        mock_s3_response.key = "s3-key-123"
+        mock_s3_response.new_presigned_url = "https://s3.example.com/upload?token=abc"
+        mock_client.post.return_value = mock_s3_response
+        # The exception text itself carries the presigned URL (incl. token), as
+        # real urllib3 errors do — the SDK must not surface it in the message.
+        mock_put.side_effect = requests.exceptions.Timeout(
+            "HTTPSConnectionPool(host='s3.example.com', port=443): "
+            "Max retries exceeded with url: /upload?token=abc"
+        )
+
+        with pytest.raises(ErrorUploadingFile) as exc_info:
+            _upload_bytes_to_s3(
+                client=mock_client,
+                filename="test.jpg",
+                content=b"file content",
+                mimetype="image/jpeg",
+                tool="TEST_TOOL",
+                toolkit="test_toolkit",
+            )
+
+        assert "Failed to upload to S3" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
 
 
 class TestFileUploadableFromUrl:
@@ -2285,6 +2524,7 @@ class TestFileDownloadablePathTraversal:
         response = MagicMock()
         response.status_code = 200
         response.iter_content = lambda chunk_size: [content]
+        response.close = MagicMock()
         return response
 
     def test_relative_traversal_is_neutralized(self, tmp_path):
@@ -2359,6 +2599,87 @@ class TestFileDownloadablePathTraversal:
 
         assert written == outdir / "report.pdf"
         assert written.read_bytes() == b"%PDF-1.4"
+
+    def test_download_uses_timeout(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=self._mock_response(b"%PDF-1.4"),
+        ) as mock_get:
+            f.download(outdir)
+
+        mock_get.assert_called_once_with(
+            url="https://example.com/file",
+            stream=True,
+            timeout=(5, 60),
+        )
+
+    def test_download_timeout_raises_error(self, tmp_path):
+        outdir = tmp_path / "safe"
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            side_effect=requests.exceptions.Timeout(
+                "Max retries exceeded with url: /file?token=abc"
+            ),
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
+        assert "Error downloading file" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
+
+    def test_download_stream_timeout_raises_error(self, tmp_path):
+        outdir = tmp_path / "safe"
+        response = self._mock_response()
+        response.iter_content = MagicMock(
+            side_effect=requests.exceptions.ReadTimeout(
+                "Max retries exceeded with url: /file?token=abc"
+            )
+        )
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=response,
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
+        assert "Error downloading file" in str(exc_info.value)
+        assert "token=abc" not in str(exc_info.value)
+        response.close.assert_called_once()
+
+    def test_download_non_200_redacts_url_and_closes(self, tmp_path):
+        outdir = tmp_path / "safe"
+        response = self._mock_response()
+        response.status_code = 403
+        f = FileDownloadable(
+            name="report.pdf",
+            mimetype="application/pdf",
+            s3url="https://example.com/file?token=abc",
+        )
+        with patch(
+            "composio.core.models._files.requests.get",
+            return_value=response,
+        ):
+            with pytest.raises(ErrorDownloadingFile) as exc_info:
+                f.download(outdir)
+
+        assert "token=abc" not in str(exc_info.value)
+        response.close.assert_called_once()
 
     def test_basename_collapse_through_subdir_is_rejected(self, tmp_path):
         """`Path('foo/..').name == '..'` — the basename strip of a name that

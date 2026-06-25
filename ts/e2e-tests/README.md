@@ -123,7 +123,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.16.0', '25.9.0'], // Optional: defaults to the current version in mise.toml
+    node: ['22.22.3', '24.17.0', '25.9.0'], // Optional: defaults to the current version in mise.toml
   },
   env: { MY_VAR: process.env.MY_VAR }, // Optional: env vars (validated at startup)
   defineTests: ({ runtime, runFixture }) => {
@@ -198,7 +198,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.16.0', '25.9.0'],
+    node: ['22.22.3', '24.17.0', '25.9.0'],
   },
   usesFixtures: true, // Sets cwd to fixtures/ directory
   env: { MY_API_KEY: process.env.MY_API_KEY },
@@ -279,7 +279,7 @@ Each test suite generates an ephemereal `DEBUG.log` file in its directory with s
 E2E Test: my-test
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/my-test/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.16.0, Node.js 25.9.0
+Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
 ================================================================================
 
 ################################################################################
@@ -315,7 +315,7 @@ Test passed!
 Summary
 ================================================================================
 Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.16.0: PASS (2 phases, 3.09s total)
+Node.js 24.17.0: PASS (2 phases, 3.09s total)
 Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z
