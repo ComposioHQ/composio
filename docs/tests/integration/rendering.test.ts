@@ -12,7 +12,7 @@ const CRITICAL_PAGES = [
   { path: "/docs", name: "Docs home" },
   { path: "/docs/quickstart", name: "Quickstart" },
   { path: "/docs/authentication", name: "Authentication" },
-  { path: "/docs/tools-and-toolkits", name: "Tools & Toolkits" },
+  { path: "/docs/how-composio-works", name: "How Composio works" },
   { path: "/docs/users-and-sessions", name: "Users & Sessions" },
   { path: "/examples", name: "Examples index" },
   { path: "/toolkits", name: "Toolkits index" },

@@ -23,7 +23,7 @@ describe("LLM endpoints - .md pages", () => {
   const MD_PAGES = [
     { path: "/docs/quickstart.md", name: "Quickstart" },
     { path: "/docs/authentication.md", name: "Authentication" },
-    { path: "/docs/tools-and-toolkits.md", name: "Tools & Toolkits" },
+    { path: "/docs/how-composio-works.md", name: "How Composio works" },
   ];
 
   for (const { path, name } of MD_PAGES) {

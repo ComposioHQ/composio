@@ -27,7 +27,7 @@ const REDIRECTS = [
   { from: "/docs/tools-direct/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/docs/tools-direct/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
-  { from: "/docs/how-tools-work", to: "/docs/tools-and-toolkits" },
+  { from: "/docs/how-tools-work", to: "/docs/how-composio-works" },
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
