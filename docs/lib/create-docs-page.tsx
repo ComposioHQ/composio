@@ -5,6 +5,7 @@ import {
 } from 'fumadocs-ui/layouts/docs/page';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
+import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
@@ -13,8 +14,14 @@ import { getOgImageUrl } from '@/lib/source';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Source = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PageData = any;
 
-export function createDocsPage(source: Source, contentDir: string = 'content/docs') {
+export function createDocsPage(
+  source: Source,
+  contentDir: string = 'content/docs',
+  options?: { afterBody?: (page: PageData) => ReactNode },
+) {
   return async function Page({ params }: { params: Promise<{ slug?: string[] }> }) {
     const { slug } = await params;
     const page = source.getPage(slug);
@@ -32,6 +39,7 @@ export function createDocsPage(source: Source, contentDir: string = 'content/doc
               a: createRelativeLink(source, page),
             })}
           />
+          {options?.afterBody?.(page)}
           <EditOnGitHub path={`docs/${contentDir}/${page.path}`} />
         </DocsBody>
       </DocsPage>

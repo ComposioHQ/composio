@@ -200,7 +200,7 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
         className="group flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-fd-accent/30"
       >
         <span className="shrink-0 text-fd-muted-foreground">
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {expanded ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <span className="flex items-center gap-2">
@@ -221,7 +221,7 @@ function ToolItem({ item, toolkitVersion }: { item: Tool | Trigger; toolkitVersi
             className="inline-flex w-fit shrink-0 items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
           >
             <span className="max-w-[140px] truncate sm:max-w-[300px]">{item.slug}</span>
-            {copied ? <Check className="h-3 w-3 shrink-0 text-green-500" /> : <Copy className="h-3 w-3 shrink-0" />}
+            {copied ? <Check className="h-3 w-3 shrink-0 text-green-500" aria-hidden="true" /> : <Copy className="h-3 w-3 shrink-0" aria-hidden="true" />}
           </span>
         </span>
       </button>
@@ -330,7 +330,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
                 className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
               >
                 {toolkit.slug.toUpperCase()}
-                {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                {copied ? <Check className="h-3 w-3 text-green-500" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
               </button>
               {toolkit.version && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-fd-muted-foreground">
@@ -340,7 +340,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
                     className="inline-flex items-center gap-1 rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs text-fd-muted-foreground transition-colors hover:text-fd-foreground"
                   >
                     {toolkit.version}
-                    {versionCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                    {versionCopied ? <Check className="h-3 w-3 text-green-500" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
                   </button>
                 </span>
               )}
@@ -409,7 +409,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               autoComplete="off"
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/60 focus-visible:ring-2 focus-visible:ring-blue-500/40"
             />
           </div>
 
