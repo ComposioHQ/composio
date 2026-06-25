@@ -4,18 +4,18 @@ description: "The PostHog region is now a per-connection setting. Existing conne
 date: "2026-06-17"
 ---
 
-The PostHog **region** (`us` or `eu`) is now set on the **connection** instead of the auth config. It used to be an auth-config setting, which fixed a single region for everyone connecting through that config, but region is really per-connection: different users can be in different regions.
+The PostHog **region** (`us` or `eu`) now lives on the **connection** instead of the auth config. Region is genuinely per-connection — different users can sit in different PostHog regions — so fixing it at the auth config forced everyone through one region. Each connection now carries its own.
 
-We have already taken care of existing connections, so nothing changes for you and there is no re-auth. If a connection was on the default (`us`), it stays on the default; if it used a different region such as `eu`, we carried that value over.
+You don't need to do anything. We migrated every existing connection with no re-auth: connections on the default (`us`) stay on `us`, and any that used another region such as `eu` keep that value.
 
 ### Going forward
 
-- Set `us` (US Cloud) or `eu` (EU Cloud) on the connection. The host is built as `<region>.posthog.com`, so a full URL will not work, and PostHog self-hosted (on-prem) is not supported.
-- **[Link flow](https://docs.composio.dev/reference/api-reference/connected-accounts/postConnectedAccountsLink)**: the Region field appears when the user connects, prefilled with your default and editable.
-- **[Initiate flow](https://docs.composio.dev/reference/api-reference/connected-accounts/postConnectedAccounts)**: you set the region; the end user does not see it.
+- Set `us` (US Cloud) or `eu` (EU Cloud) on the connection. The host is built as `<region>.posthog.com`, so a full URL won't work and self-hosted PostHog isn't supported.
+- **[Link flow](/reference/api-reference/connected-accounts/postConnectedAccountsLink)**: the Region field appears when the user connects, prefilled with your default and editable.
+- **[Initiate flow](/reference/api-reference/connected-accounts/postConnectedAccounts)**: you set the region, and the end user never sees it.
 
 ### Setting a default on your auth config
 
-The region default for an auth config lives in its `shared_credentials`. If you were on the default (`us`), nothing was written there. To pin a region explicitly, set `shared_credentials` when you [create an auth config](https://docs.composio.dev/reference/api-reference/auth-configs/postAuthConfigs), or update an existing one with [patch auth config](https://docs.composio.dev/reference/api-reference/auth-configs/patchAuthConfigsByNanoid).
+An auth config's region default lives in its `shared_credentials`. If you were on the default (`us`), nothing was written there. To pin a region explicitly, set `shared_credentials` when you [create an auth config](/reference/api-reference/auth-configs/postAuthConfigs), or [patch an existing one](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid).
 
-See the [PostHog toolkit docs](https://docs.composio.dev/toolkits/posthog) for the current connection fields.
+See the [PostHog toolkit docs](/toolkits/posthog) for the current connection fields.

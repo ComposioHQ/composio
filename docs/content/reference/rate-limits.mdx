@@ -4,24 +4,20 @@ description: Composio API rate limits by plan, rate limit headers, and best prac
 keywords: [API rate limits, rate limiting, throttling, 429 too many requests, API quotas, request limits]
 ---
 
-Rate limits are enforced **per organization** on a fixed one-minute window.
+Composio enforces rate limits **per organization** over a fixed one-minute window. Every authenticated endpoint draws from the same budget — tool execution, connected accounts, triggers, and the rest — so the limit below is your organization's total across all API calls.
 
 ## Rate limits by plan
 
-| Plan | Rate Limit | Window |
+| Plan | Rate limit | Window |
 |------|------------|--------|
 | Starter | 2,000 requests | 1 minute |
 | Hobby | 2,000 requests | 1 minute |
 | Growth | 10,000 requests | 1 minute |
 | Enterprise | Custom | - |
 
-<Callout>
-All authenticated API endpoints share your organization's rate limit. This includes tool execution, connected accounts, triggers, and all other API operations.
-</Callout>
-
 ## Rate limit headers
 
-API responses include headers to help you track your usage:
+Every response includes headers so you can track usage without guessing:
 
 | Header | Description |
 |--------|-------------|
@@ -42,15 +38,15 @@ When you exceed the rate limit, you'll receive a `429 Too Many Requests` respons
 
 ## Best practices
 
-1. **Monitor your usage** - Check the `X-RateLimit-Remaining` header to track how close you are to the limit.
+1. **Watch `X-RateLimit-Remaining`** — read it on each response to know how much headroom you have left in the window.
 
-2. **Honor `Retry-After`** - On a `429`, wait for the duration in the `Retry-After` header before retrying.
+2. **Honor `Retry-After`** — on a `429`, wait the number of seconds it gives you before retrying instead of hammering the endpoint.
 
-3. **Cache responses** - Cache tool definitions and other static data to reduce unnecessary API calls.
+3. **Cache what doesn't change** — keep tool definitions and other static data client-side so you don't spend requests re-fetching them.
 
 ## Need higher limits?
 
-If you're hitting rate limits regularly, consider upgrading your plan or [talk to us](https://calendly.com/composiohq/enterprise) to discuss custom limits for your use case.
+If you hit these limits regularly, upgrade your plan or [talk to us](https://calendly.com/composiohq/enterprise) about custom limits for your use case.
 
 <Cards>
   <Card title="Errors" href="/reference/errors">
