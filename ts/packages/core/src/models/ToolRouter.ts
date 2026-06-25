@@ -174,11 +174,13 @@ export class ToolRouter<
   // at runtime). See https://docs.composio.dev/docs/sessions-via-mcp
   async create(
     userId: string,
-    config: ToolRouterCreateSessionConfig & { mcp: true }
+    config: ToolRouterCreateSessionConfig & { mcp: true },
+    requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>>;
   async create(
     userId: string,
-    config?: ToolRouterCreateSessionConfig
+    config?: ToolRouterCreateSessionConfig,
+    requestOptions?: ComposioRequestOptions
   ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
   async create(
     userId: string,

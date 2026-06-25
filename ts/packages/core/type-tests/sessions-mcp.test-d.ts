@@ -36,5 +36,18 @@ async function useGating(): Promise<void> {
   void _url;
 }
 
+// Regression guard: `create()` / `use()` must keep accepting a trailing
+// `requestOptions` (AbortSignal/cancellation) arg — with and without `{ mcp: true }`.
+// The `{ mcp: true }` overload refactor previously dropped this from `create()`.
+async function requestOptionsArg(): Promise<void> {
+  const ctrl = new AbortController();
+  await composio.create('user_123', { toolkits: ['gmail'] }, { signal: ctrl.signal });
+  await composio.create('user_123', { mcp: true }, { signal: ctrl.signal });
+  await composio.sessions.create('user_123', undefined, { signal: ctrl.signal });
+  await composio.use('session_123', { customTools: [] }, { signal: ctrl.signal });
+  await composio.use('session_123', { mcp: true }, { signal: ctrl.signal });
+}
+
 void createGating;
 void useGating;
+void requestOptionsArg;
