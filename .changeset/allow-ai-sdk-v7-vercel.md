@@ -1,5 +1,5 @@
 ---
-"@composio/vercel": patch
+'@composio/vercel': patch
 ---
 
 Allow `ai@7` (AI SDK v7) as a peer dependency.
