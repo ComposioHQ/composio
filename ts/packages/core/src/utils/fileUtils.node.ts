@@ -220,7 +220,7 @@ const uploadFileToS3 = async (
   // `InvalidArgumentError: invalid content-length header`, which surfaces as
   // `TypeError: fetch failed` and breaks every `file_uploadable` connector tool
   // on Node 22+.
-  let uploadResponse = await fetch(signedURL, {
+  const uploadResponse = await fetch(signedURL, {
     method: 'PUT',
     body: uploadBuffer,
     signal,
@@ -228,23 +228,6 @@ const uploadFileToS3 = async (
       'Content-Type': mimeType,
     },
   });
-
-  if (
-    !uploadResponse.ok &&
-    (uploadResponse.status === 401 ||
-      uploadResponse.status === 403 ||
-      uploadResponse.statusText === 'Unauthorized' ||
-      uploadResponse.statusText === 'Forbidden')
-  ) {
-    logger.debug(
-      `Retrying ${key} S3 upload without Content-Type after ${uploadResponse.status || uploadResponse.statusText}`
-    );
-    uploadResponse = await fetch(signedURL, {
-      method: 'PUT',
-      body: uploadBuffer,
-      signal,
-    });
-  }
 
   if (!uploadResponse.ok) {
     throw new Error(`Failed to upload file to S3: ${uploadResponse.statusText}`);

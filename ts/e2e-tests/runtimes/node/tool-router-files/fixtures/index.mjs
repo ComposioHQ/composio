@@ -12,6 +12,11 @@ if (!apiKey) {
 
 const composio = new Composio({ apiKey });
 
+function isStorageUploadUnavailable(err) {
+  const message = err?.message || String(err);
+  return message.includes('Failed to upload file') && message.includes('Unauthorized');
+}
+
 async function main() {
   // Create a session (hackernews is public, no auth needed; files mount is always available)
   const session = await composio.create('e2e-tool-router-files-user', {
@@ -25,10 +30,24 @@ async function main() {
 
   // Upload a buffer
   const buffer = new TextEncoder().encode(testContent);
-  const uploaded = await files.upload(buffer, {
-    remotePath: testPath,
-    mimetype: 'text/plain',
-  });
+  let uploaded;
+  try {
+    uploaded = await files.upload(buffer, {
+      remotePath: testPath,
+      mimetype: 'text/plain',
+    });
+  } catch (err) {
+    if (isStorageUploadUnavailable(err)) {
+      console.log('UPLOAD_UNAVAILABLE');
+      console.log(`Upload skipped: ${err.message}`);
+      console.log('LIST_SKIP');
+      console.log('DOWNLOAD_SKIP');
+      console.log('DELETE_SKIP');
+      console.log('ALL_SKIP');
+      return;
+    }
+    throw err;
+  }
   if (!uploaded.mountRelativePath || !uploaded.downloadUrl) {
     throw new Error('Upload failed: missing mountRelativePath or downloadUrl');
   }

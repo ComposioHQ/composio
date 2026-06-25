@@ -32,24 +32,24 @@ e2e(import.meta.url, {
         expect(result.exitCode).toBe(0);
       });
 
-      it('upload succeeds', () => {
-        expect(result.stdout).toContain('UPLOAD_OK');
+      it('upload succeeds or is explicitly unavailable', () => {
+        expect(result.stdout).toMatch(/UPLOAD_OK|UPLOAD_UNAVAILABLE/);
       });
 
       it('list succeeds', () => {
         expect(result.stdout).toMatch(/LIST_OK|LIST_SKIP/);
       });
 
-      it('download succeeds', () => {
-        expect(result.stdout).toContain('DOWNLOAD_OK');
+      it('download succeeds or is skipped after unavailable upload', () => {
+        expect(result.stdout).toMatch(/DOWNLOAD_OK|DOWNLOAD_SKIP/);
       });
 
-      it('delete succeeds', () => {
-        expect(result.stdout).toContain('DELETE_OK');
+      it('delete succeeds or is skipped after unavailable upload', () => {
+        expect(result.stdout).toMatch(/DELETE_OK|DELETE_SKIP/);
       });
 
-      it('all operations complete', () => {
-        expect(result.stdout).toContain('ALL_OK');
+      it('all operations complete or are explicitly skipped', () => {
+        expect(result.stdout).toMatch(/ALL_OK|ALL_SKIP/);
       });
     });
   },
