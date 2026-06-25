@@ -7,6 +7,23 @@ declare module 'bun' {
   }
 }
 
+const formatFixtureResult = (result: E2ETestResult): string =>
+  [
+    `exitCode=${result.exitCode}`,
+    '',
+    '[stdout]',
+    result.stdout.trim() || '(empty)',
+    '',
+    '[stderr]',
+    result.stderr.trim() || '(empty)',
+  ].join('\n');
+
+const expectFixtureExitCode = (result: E2ETestResult, expectedExitCode: number): void => {
+  if (result.exitCode !== expectedExitCode) {
+    throw new Error(`file-roundtrip fixture failed\n${formatFixtureResult(result)}`);
+  }
+};
+
 e2e(import.meta.url, {
   versions: { node: ['22.22.3', '24.17.0', '25.9.0'] },
   usesFixtures: true,
@@ -22,7 +39,7 @@ e2e(import.meta.url, {
 
     describe('file round-trip', () => {
       it('exits successfully', () => {
-        expect(result.exitCode).toBe(0);
+        expectFixtureExitCode(result, 0);
       });
 
       it('reports upload success', () => {
@@ -30,11 +47,11 @@ e2e(import.meta.url, {
         // (download may fail if storage domain is not reachable)
         const hasRoundTripOk = result.stdout.includes('ROUND_TRIP_OK');
         const hasUploadOk = result.stdout.includes('UPLOAD_OK');
-        expect(hasRoundTripOk || hasUploadOk).toBe(true);
+        expect(hasRoundTripOk || hasUploadOk, formatFixtureResult(result)).toBe(true);
       });
 
       it('includes sha256 checksum', () => {
-        expect(result.stdout).toContain('sha256=');
+        expect(result.stdout, formatFixtureResult(result)).toContain('sha256=');
       });
     });
   },
