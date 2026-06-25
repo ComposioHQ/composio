@@ -20,6 +20,8 @@ make type_inference
 make build
 ```
 
+Friendly aliases exist for the short names: `make format` (fmt), `make check` (chk), `make test` (tst), `make sanity` (snt).
+
 ## Nox Sessions
 
 Current sessions include:
