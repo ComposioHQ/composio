@@ -119,7 +119,7 @@ class TestStainlessCopyContract:
         # (Accessing these bound methods via the generic class trips mypy's
         # "generic instance variable via class" check; the identity assert is
         # intentional.)
-        assert HttpClient.with_options is HttpClient.copy  # type: ignore[misc]
+        assert HttpClient.__dict__["with_options"] is HttpClient.__dict__["copy"]  # type: ignore[misc]
 
 
 class TestWritePathDoesNotRetry:
