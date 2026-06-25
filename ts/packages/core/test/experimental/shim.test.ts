@@ -56,6 +56,57 @@ describe('experimental_createPythonWorkbenchHelperSource', () => {
     );
   });
 
+  it('coerces a non-numeric envelope status instead of raising', () => {
+    const source = experimental_createPythonWorkbenchHelperSource();
+    const directory = mkdtempSync(join(tmpdir(), 'composio-helper-'));
+    const scriptPath = join(directory, 'helper_status_test.py');
+    const testScript = `${source}
+
+import json as _json
+
+def _post_json(url, headers, payload, timeout=120):
+    # The session envelope can report status as a string; a bare ">= 400"
+    # comparison would raise TypeError and mask the successful result.
+    return 200, {}, _json.dumps({"data": {"ok": True}, "status": "200"})
+
+ok_data, ok_error = proxy_execute("GET", "/user", "github")
+
+def _post_json_error(url, headers, payload, timeout=120):
+    return 200, {}, _json.dumps({"data": {"message": "nope"}, "status": "404"})
+
+_post_json = _post_json_error
+err_data, err_error = proxy_execute("GET", "/user", "github")
+
+print(_json.dumps({
+    "ok_data": ok_data,
+    "ok_error": ok_error,
+    "err_error": err_error,
+}))
+`;
+
+    try {
+      writeFileSync(scriptPath, testScript);
+      const output = execFileSync('python3', [scriptPath], {
+        env: {
+          ...process.env,
+          BACKEND_URL: 'https://backend.test/',
+          COMPOSIO_TOOLROUTER_SESSION_ID: 'session_123',
+          COMPOSIO_API_KEY: 'project_key',
+        },
+        encoding: 'utf8',
+      });
+      const parsed = JSON.parse(output);
+
+      // String status "200" is treated as success, not a "Failed to execute" crash.
+      expect(parsed.ok_data).toEqual({ ok: true });
+      expect(parsed.ok_error).toBe('');
+      // String status "404" is surfaced as a non-empty API error.
+      expect(parsed.err_error).toContain('API returned status 404');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it('round-trips helper calls through the session execute endpoint shape', () => {
     const source = experimental_createPythonWorkbenchHelperSource({
       invokeLlmModel: 'test/model',

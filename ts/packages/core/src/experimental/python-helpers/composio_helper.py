@@ -381,17 +381,22 @@ def proxy_execute(
 
         # The session wraps the proxied response as {data, status, headers}; the
         # toolkit's own API may still report a >=400 status inside that envelope.
-        if isinstance(response_data, dict) and response_data.get("status", 200) >= 400:
-            api_status = response_data.get("status", 400)
-            error_msg = "API request failed"
-            if "data" in response_data and response_data["data"]:
-                if isinstance(response_data["data"], dict):
+        # `status` can arrive as a string or null, so coerce it before comparing
+        # — a bare `>= 400` against a non-int would raise and mask a valid result.
+        if isinstance(response_data, dict):
+            try:
+                api_status = int(response_data.get("status", 200))
+            except (TypeError, ValueError):
+                api_status = 200
+            if api_status >= 400:
+                error_msg = "API request failed"
+                if isinstance(response_data.get("data"), dict):
                     error_msg = response_data["data"].get(
                         "message", response_data["data"].get("error", error_msg)
                     )
-            return response_data, "API returned status " + str(api_status) + ": " + str(error_msg)
+                return response_data, "API returned status " + str(api_status) + ": " + str(error_msg)
+            return response_data.get("data"), ""
 
-        data = response_data.get("data")
-        return data, ""
+        return response_data, ""
     except Exception as error:
         return None, "Failed to execute proxy request: " + str(error)
