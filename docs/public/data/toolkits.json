@@ -65348,7 +65348,7 @@
       {
         "slug": "ZOOM_DELETE_A_MEETING",
         "name": "Delete a meeting",
-        "description": "Delete or cancel a scheduled Zoom meeting. Use occurrence_id to delete a specific occurrence of a recurring meeting. Supports notification options for hosts and registrants. Returns HTTP 204 on success. Rate limit: Light. Required scopes: meeting:write or meeting:write:admin."
+        "description": "Delete or cancel a scheduled Zoom meeting. Use occurrence_id to delete a specific occurrence of a recurring meeting. Supports notification options for hosts and registrants. Returns HTTP 204 on success. Rate limit: Light. Required scopes: meeting:delete:meeting or meeting:delete:meeting:admin."
       },
       {
         "slug": "ZOOM_DELETE_IQ_CONVERSATION",
