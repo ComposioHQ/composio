@@ -1,5 +1,84 @@
 # @composio/core
 
+## 0.12.0
+
+### Minor Changes
+
+- a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
+- dfd7a08: Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
+
+  Without this, a slow `tools.get` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
+
+  ```typescript
+  try {
+    const tools = await composio.tools.get(
+      'user_1',
+      { search: 'send email', limit: 50 },
+      { signal: AbortSignal.timeout(5_000) }
+    );
+  } catch (err) {
+    if (err instanceof ComposioRequestCancelledError) {
+      return;
+    }
+    throw err;
+  }
+  ```
+
+  The signal is forwarded to the underlying `@composio/client` fetch. Any abort error (`APIUserAbortError`, `AbortError`, or `DOMException(name='AbortError')`) coming back is normalized to `ComposioRequestCancelledError` so callers can `instanceof`-detect cancellation without unwrapping nested causes. Catch-and-wrap paths in `tools.execute` / `tools.getRawComposioToolBySlug` / `toolkits.get` re-throw the cancellation error rather than remapping it to `ComposioToolExecutionError` / `ComposioToolNotFoundError` / `ComposioToolkitFetchError`.
+
+  Wired through on:
+  - **Tools**: `get`, `getRawComposioTools`, `getRawComposioToolBySlug`, `getRawToolRouterSessionTools`, `execute`, `executeSessionTool`, `getToolsEnum`, `getInput`, `proxyExecute`
+  - **Toolkits**: `get`, `listCategories`
+  - **AuthConfigs**: `list`, `create`, `get`, `update`, `delete`, `updateStatus`, `enable`, `disable`
+  - **ConnectedAccounts**: `list`, `get`, `delete`, `refresh`, `updateStatus`, `enable`, `disable`, `update`
+  - **Triggers**: `listActive`, `create`, `update`, `delete`, `enable`, `disable`, `listTypes`, `getType`, `listEnum`
+  - **MCP**: `create`, `list`, `get`, `delete`, `update`, `generate`
+  - **ToolRouter** (`composio.create` / `composio.use`, `composio.toolRouter.create` / `.use`) — long-running session-creation paths
+  - **ToolRouterSession**: `authorize`, `toolkits`, `search`, `execute`, `proxyExecute`, `update`
+
+  ### Custom-tool cooperative cancellation
+
+  Native tool execution is cancelled by the SDK (the underlying `fetch` is aborted). Custom tools are different — the SDK can't preempt user-supplied JavaScript. Two affordances are added so callers get sensible behavior anyway:
+
+  1. **Pre-execute signal check**: if `signal.aborted` is true before the user's `execute` runs, the SDK throws `ComposioRequestCancelledError` and never invokes user code.
+  2. **Cooperative signal forwarding**: the same `AbortSignal` is exposed via `SessionContext.signal` for Tool Router custom tools. Long-running implementations can wire `ctx.signal` into their own `fetch` (or any abortable IO) to abort mid-execution; the resulting `AbortError` is normalized to `ComposioRequestCancelledError` by the SDK.
+
+  ```typescript
+  import { experimental_createTool } from '@composio/core';
+
+  const longRunningFetch = experimental_createTool('LONG_RUNNING_FETCH', {
+    name: 'Long-running fetch',
+    description: 'Fetches a URL with cooperative cancellation',
+    inputParams: z.object({ url: z.string() }),
+    execute: async (input, ctx) => {
+      // Pass ctx.signal into fetch so a session.execute(...) abort cancels
+      // the in-flight HTTP request mid-flight.
+      const resp = await fetch(input.url, { signal: ctx.signal });
+      return { result: await resp.json() };
+    },
+  });
+  ```
+
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+- 4b76dbf: Remove the deprecated `uuid` field from the auth config retrieve/list response type.
+
+  The platform has removed the deprecated V1/V2 UUID-mirror field from V3 API responses (it was a mirror of the canonical nanoid `id`). The SDK no longer reads or re-exposes `uuid` on `AuthConfigRetrieveResponse` (and therefore on the items of `AuthConfigListResponse`).
+
+  This is technically a breaking change to the SDK response type: consumers should use `id` instead of `uuid`. The `expectedInputFields` field is unaffected — it remains a top-level field on the API response.
+
+### Patch Changes
+
+- 552859a: Expose `search` and `showDisabled` filters on `authConfigs.list()`.
+- 23f9053: Replace `chalk` with `picocolors` for colored error and log output. The two render identically, but `picocolors` is a fraction of the size (~0.8 kB gzipped vs chalk's much larger footprint), shrinking the bundled package.
+- 507318d: Add a provider-agnostic JSON-schema property-key sanitizer: `sanitizeSchemaPropertyKeys(schema, policy)`, `restoreOriginalKeys(value, mapping)`, `mappingHasRenames(mapping)`, and the `KeyMapping` / `KeySanitizationPolicy` types.
+
+  Some providers constrain the characters and length of tool `input_schema` property keys and reject the whole request on a single violation. This utility rewrites offending keys to conforming aliases (recursing through `properties`, array `items`/`prefixItems`, the composition keywords `allOf`/`anyOf`/`oneOf` and `not`/`if`/`then`/`else`, plus `additionalProperties`/`patternProperties`/`$defs`/`contains`) and records a schema-shaped reverse mapping so the original parameter names can be restored before execution. The _constraint_ is injected as a `KeySanitizationPolicy`, so the traversal, collision handling, prototype safety, and depth cap stay provider-agnostic. The `@composio/anthropic` provider now consumes it.
+
+- 6a4cb54: Preserve root `$defs` / `definitions` blocks on tool parameter schemas and dereference them in the Node file modifier, so auto file upload/download detection works when `file_uploadable` or `file_downloadable` is hidden behind an internal `$ref`.
+- cbbad15: Improve Zod compatibility at the SDK schema boundary. Custom tools now convert both `zod/v3` and Zod v4 schemas to JSON Schema correctly instead of degrading Zod v4 object schemas to empty schemas. `@composio/core` now exposes `jsonSchemaToZodShape` via `@composio/core/utils/json-schema`, and the Claude Agent SDK provider uses that core subpath instead of converting to a full Zod object and casting `.shape` out of it.
+- Updated dependencies [025a657]
+  - @composio/json-schema-to-zod@0.2.0
+
 ## 0.11.0
 
 ### Minor Changes

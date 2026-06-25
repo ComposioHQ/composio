@@ -1,5 +1,32 @@
 # @composio/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+
+### Patch Changes
+
+- 5f004ff: Drop `COMPOSIO_UPSERT_RECIPE` and `COMPOSIO_GET_RECIPE` from the CLI meta-tool list. These slugs were removed from `@composio/client` (alpha.74), so listing them broke the type-checked CLI build.
+- 23f9053: Remove the unused `ansis` dependency from the CLI. Colored output is already handled by `picocolors`, so `ansis` was a dead production dependency that shipped with the package.
+- 446c6f6: Fix virtual TypeScript file resolution used by CLI type generation so in-memory imports resolve consistently during transpilation and validation.
+- Updated dependencies [552859a]
+- Updated dependencies [a0bef5d]
+- Updated dependencies [23f9053]
+- Updated dependencies [dfd7a08]
+- Updated dependencies [507318d]
+- Updated dependencies [025a657]
+- Updated dependencies [6a4cb54]
+- Updated dependencies [4b76dbf]
+- Updated dependencies [cbbad15]
+  - @composio/core@0.12.0
+  - @composio/json-schema-to-zod@0.2.0
+  - @composio/ts-builders@0.2.0
+  - @composio/cli-keyring@0.2.0
+  - @composio/cli-local-tools@0.1.0
+
 ## 0.2.32
 
 ### Patch Changes
