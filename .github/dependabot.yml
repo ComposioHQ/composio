@@ -1,14 +1,62 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Dependabot configuration.
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Grouping keeps the update/security-alert volume manageable (one PR per group
+# instead of one per advisory). Routine minor/patch bumps are batched; major
+# bumps still arrive individually so they get review.
+# Schedule: every Friday at 06:30 UTC / 12:00 IST.
 
-#Currently set to run every Friday at 06:30 UTC/12:00 IST
 version: 2
 updates:
+  # TypeScript / npm workspace
   - package-ecosystem: "npm"
-    directory: "/" # Location of package manifests
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "friday"
       time: "06:30"
+    open-pull-requests-limit: 10
+    groups:
+      npm-production:
+        applies-to: version-updates
+        dependency-type: "production"
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      npm-development:
+        applies-to: version-updates
+        dependency-type: "development"
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Python SDK and provider packages
+  - package-ecosystem: "pip"
+    directories:
+      - "/python"
+      - "/python/providers/*"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "06:30"
+    open-pull-requests-limit: 10
+    groups:
+      pip-version:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      pip-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # GitHub Actions workflow pins
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "06:30"
+    groups:
+      github-actions:
+        patterns: ["*"]
