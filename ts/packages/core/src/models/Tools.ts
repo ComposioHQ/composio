@@ -682,7 +682,7 @@ export class Tools<
    * });
    *
    * // Timeout a slow search after 5s
-   * const tools = await composio.tools.get('default', {
+   * const emailTools = await composio.tools.get('default', {
    *   search: 'send email',
    * }, { signal: AbortSignal.timeout(5_000) });
    * ```
@@ -953,8 +953,8 @@ export class Tools<
    * @param {string} [body.userId] - The user ID to execute the tool for
    * @param {string} [body.connectedAccountId] - The connected account ID to use for authenticated tools
    * @param {Record<string, unknown>} [body.arguments] - The arguments to pass to the tool
-   * @param {ExecuteToolModifiers} [modifiers] - Optional modifiers to transform the request or response
-   * @returns {Promise<ToolExecuteResponse>} - The response from the tool execution
+   * @param {ExecuteToolModifiers & ComposioRequestOptions} [options] - Optional modifiers and request options
+   * @returns {Promise<ToolExecuteResponse>} The response from the tool execution
    *
    * @throws {ComposioConnectedAccountNotFoundError} If the connected account is not found
    * @throws {ComposioToolNotFoundError} If the tool with the given slug is not found

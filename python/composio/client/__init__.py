@@ -183,7 +183,7 @@ class HttpClient(BaseComposio, WithLogger):
             },
         )
         # Lazily-built sibling client with retries disabled; see `without_retries`.
-        self._without_retries: t.Optional["HttpClient"] = None
+        self._without_retries: t.Optional[te.Self] = None
 
     def copy(  # type: ignore[override]
         self,
@@ -201,7 +201,15 @@ class HttpClient(BaseComposio, WithLogger):
         (e.g. ``with_options(max_retries=0)``).
         """
         return super().copy(  # type: ignore[misc]
-            _extra_kwargs={"provider": self.provider, **_extra_kwargs},
+            _extra_kwargs={
+                "provider": self.provider,
+                # The generated `copy` does not re-pass `_strict_response_validation`,
+                # so without this the clone would silently fall back to the default
+                # (False) even when the original had it enabled — keeping the sibling
+                # a faithful copy that differs from the parent only in `max_retries`.
+                "_strict_response_validation": self._strict_response_validation,
+                **_extra_kwargs,
+            },
             **kwargs,
         )
 
@@ -211,7 +219,7 @@ class HttpClient(BaseComposio, WithLogger):
     with_options = copy
 
     @property
-    def without_retries(self) -> "HttpClient":
+    def without_retries(self) -> te.Self:
         """
         A cached sibling client that never retries requests.
 
@@ -219,9 +227,16 @@ class HttpClient(BaseComposio, WithLogger):
         where a silent retry after a read timeout can duplicate a side effect
         (e.g. send an email twice). Reads keep the default retry behaviour.
 
-        The sibling is cached rather than rebuilt per call: each clone creates a
-        new ``ContextVar``, and dynamically-created ``ContextVar``s are never
-        garbage-collected.
+        Scope: only ``tools.execute`` / ``tools.proxy`` route through this today.
+        Other non-idempotent writes (``auth_configs.create`` / ``update`` /
+        ``delete``, ``mcp.update`` / ``delete``, ``connected_accounts.delete`` /
+        ``refresh``, ``link.create``) keep the default retries — most are
+        naturally idempotent on retry, and the durable fix is backend-honoured
+        idempotency keys.
+
+        The sibling is cached rather than rebuilt per call so a fresh client is
+        not constructed on every execute/proxy (the hottest path); its options
+        never change, so one per client suffices.
         """
         if self._without_retries is None:
             self._without_retries = self.with_options(max_retries=0)
@@ -240,4 +255,4 @@ class HttpClient(BaseComposio, WithLogger):
         try:
             request.headers["x-sdk-version"] = version("composio")
         except Exception:
-            request.headers["x-sdk-version"] = "unknwon"
+            request.headers["x-sdk-version"] = "unknown"

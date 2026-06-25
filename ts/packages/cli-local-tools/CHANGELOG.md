@@ -1,5 +1,24 @@
 # @composio/cli-local-tools
 
+## 0.1.0
+
+### Minor Changes
+
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+
+### Patch Changes
+
+- Updated dependencies [552859a]
+- Updated dependencies [a0bef5d]
+- Updated dependencies [23f9053]
+- Updated dependencies [dfd7a08]
+- Updated dependencies [507318d]
+- Updated dependencies [025a657]
+- Updated dependencies [6a4cb54]
+- Updated dependencies [4b76dbf]
+- Updated dependencies [cbbad15]
+  - @composio/core@0.12.0
+
 ## 0.0.5
 
 ### Patch Changes

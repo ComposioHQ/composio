@@ -16,6 +16,10 @@ const result = await composio.sessionContextImpl.list();
 
 | Name | Type | Description |
 |------|------|-------------|
+| `signal` | `AbortSignal` | Per-execution AbortSignal. Never set on the base instance; `executeCustomTool`
+grafts it onto a per-call `Object.create` child so concurrent executions
+sharing this context don't observe each other's signal. Declared here (rather
+than read via a cast) so the contract is explicit. |
 | `userId` | `string` | The user ID for this session |
 
 ## Methods
@@ -29,7 +33,7 @@ otherwise delegates to the backend API.
 Returns the same response shape as session.execute().
 
 ```typescript
-async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<{ data: Record<string, unknown>; error: string | null; logId: string }>
+async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<ToolRouterSessionExecuteResponse>
 ```
 
 **Parameters**
@@ -41,7 +45,7 @@ async execute(toolSlug: string, arguments_: Record<string, unknown>): Promise<{ 
 
 **Returns**
 
-`Promise<...>`
+`Promise<ToolRouterSessionExecuteResponse>`
 
 ---
 
@@ -51,14 +55,14 @@ Proxy API calls through Composio's auth layer.
 The backend resolves the connected account from the toolkit within the session.
 
 ```typescript
-async proxyExecute(params: object): Promise<ToolRouterSessionProxyExecuteResponse>
+async proxyExecute(params: SessionProxyExecuteParams): Promise<ToolRouterSessionProxyExecuteResponse>
 ```
 
 **Parameters**
 
 | Name | Type |
 |------|------|
-| `params` | `object` |
+| `params` | `SessionProxyExecuteParams` |
 
 **Returns**
 

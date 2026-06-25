@@ -1,5 +1,15 @@
 # @composio/claude-code-agents
 
+## 0.10.0
+
+### Minor Changes
+
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+
+### Patch Changes
+
+- cbbad15: Improve Zod compatibility at the SDK schema boundary. Custom tools now convert both `zod/v3` and Zod v4 schemas to JSON Schema correctly instead of degrading Zod v4 object schemas to empty schemas. `@composio/core` now exposes `jsonSchemaToZodShape` via `@composio/core/utils/json-schema`, and the Claude Agent SDK provider uses that core subpath instead of converting to a full Zod object and casting `.shape` out of it.
+
 ## 0.9.3
 
 ### Patch Changes
