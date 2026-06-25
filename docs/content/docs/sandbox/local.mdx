@@ -78,11 +78,9 @@ Most of the workbench helpers run in a local sandbox today. Only the file helper
 | `run_composio_tool` | Execute any Composio tool | ✅ |
 | `invoke_llm` | Call an LLM | ✅ |
 | `web_search` | Search the web | ✅ |
-| `proxy_execute` | Call a toolkit API directly when no tool exists | ✅ |
+| `proxy_execute` | Call a toolkit API directly when no tool exists (needs a proxy-execute-scoped key) | ✅ |
 | `upload_local_file` | Upload generated files to storage | ❌ |
 | `smart_file_extract` | Extract text from PDFs and images | ❌ |
-
-`proxy_execute` needs a project API key with the proxy-execute scope enabled — mint a scoped key with proxy execute turned on, or the call fails with a permission error.
 
 If your agent needs one of the file helpers, use the [remote sandbox](/docs/sandbox/remote) for now.
 
