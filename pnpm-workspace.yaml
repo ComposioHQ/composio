@@ -18,6 +18,7 @@ packages:
   - ts/packages/wrappers/*
 
 allowBuilds:
+  '@google/genai': false
   '@parcel/watcher': true
   esbuild: true
   msgpackr-extract: true
