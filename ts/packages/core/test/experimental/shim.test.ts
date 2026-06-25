@@ -12,8 +12,11 @@ describe('experimental_createPythonWorkbenchHelperSource', () => {
     expect(source).toContain('def run_composio_tool(');
     expect(source).toContain('def invoke_llm(');
     expect(source).toContain('def web_search(');
+    expect(source).toContain('def proxy_execute(');
     expect(source).toContain('"x-api-key": api_key');
     expect(source).toContain('/api/v3/tool_router/session/%s/execute');
+    // proxy_execute uses the public session route with the project key.
+    expect(source).toContain('/api/v3/tool_router/session/%s/proxy_execute');
     // Config is injected via an `_INTERNAL` prologue, read by the helper.
     expect(source).toContain('_INTERNAL = _composio_internal_json.loads(');
     expect(source).toContain('openai/gpt-oss-120b');
@@ -21,7 +24,6 @@ describe('experimental_createPythonWorkbenchHelperSource', () => {
       'DEFAULT_INVOKE_LLM_MODEL = _INTERNAL.get("invoke_llm_model", "openai/gpt-oss-120b")'
     );
     expect(source).not.toContain('__COMPOSIO_INVOKE_LLM_MODEL__');
-    expect(source).not.toContain('proxy_execute');
     expect(source).not.toContain('upload_local_file');
     expect(source).not.toContain('smart_file_extract');
     expect(source).not.toContain('get_mount_file_url');
@@ -68,6 +70,8 @@ _calls = []
 
 def _post_json(url, headers, payload, timeout=120):
     _calls.append({"url": url, "headers": headers, "payload": payload})
+    if "toolkit_slug" in payload:
+        return 200, {}, _json.dumps({"data": {"login": "octocat"}, "status": 200})
     if payload["tool_slug"] == "COMPOSIO_SEARCH_GROQ_CHAT":
         _content = (chr(96) * 3) + 'json\\n{"ok": true}\\n' + (chr(96) * 3)
         return 200, {}, _json.dumps({
@@ -90,6 +94,9 @@ tool_result, tool_error = run_composio_tool(
 )
 llm_result, llm_error = invoke_llm("return JSON")
 search_result, search_error = web_search("what is Composio?")
+proxy_result, proxy_error = proxy_execute(
+    "GET", "/user", "github", query_params={"per_page": "1"}
+)
 
 print(_json.dumps({
     "calls": _calls,
@@ -99,6 +106,8 @@ print(_json.dumps({
     "llm_error": llm_error,
     "search_result": search_result,
     "search_error": search_error,
+    "proxy_result": proxy_result,
+    "proxy_error": proxy_error,
 }))
 `;
 
@@ -121,7 +130,9 @@ print(_json.dumps({
       expect(parsed.llm_error).toBe('');
       expect(parsed.search_result).toBe('answer text');
       expect(parsed.search_error).toBe('');
-      expect(parsed.calls).toHaveLength(3);
+      expect(parsed.proxy_result).toEqual({ login: 'octocat' });
+      expect(parsed.proxy_error).toBe('');
+      expect(parsed.calls).toHaveLength(4);
       expect(parsed.calls[0]).toMatchObject({
         url: 'https://backend.test/api/v3/tool_router/session/session_123/execute',
         headers: {
@@ -144,6 +155,16 @@ print(_json.dumps({
       expect(parsed.calls[2].payload).toEqual({
         tool_slug: 'COMPOSIO_SEARCH_EXA_ANSWER',
         arguments: { content: 'what is Composio?' },
+      });
+      expect(parsed.calls[3]).toMatchObject({
+        url: 'https://backend.test/api/v3/tool_router/session/session_123/proxy_execute',
+        headers: { 'x-api-key': 'project_key' },
+        payload: {
+          toolkit_slug: 'github',
+          endpoint: '/user',
+          method: 'GET',
+          parameters: [{ name: 'per_page', value: '1', type: 'query' }],
+        },
       });
     } finally {
       rmSync(directory, { recursive: true, force: true });

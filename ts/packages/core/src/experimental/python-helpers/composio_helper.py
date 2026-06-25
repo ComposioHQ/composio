@@ -6,6 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from typing import Any, Dict, Literal, Optional
 
 
 # Config is injected by the SDK via an `_INTERNAL` dict in a prologue prepended
@@ -49,6 +50,19 @@ def _session_execute_url():
     )
     encoded_session_id = urllib.parse.quote(session_id, safe="")
     return "%s/api/v3/tool_router/session/%s/execute" % (backend_url, encoded_session_id)
+
+
+def _session_proxy_execute_url():
+    backend_url = _read_env("BACKEND_URL", "https://backend.composio.dev").rstrip("/")
+    session_id = _require_value(
+        _read_env("COMPOSIO_TOOLROUTER_SESSION_ID"),
+        "COMPOSIO_TOOLROUTER_SESSION_ID",
+    )
+    encoded_session_id = urllib.parse.quote(session_id, safe="")
+    return "%s/api/v3/tool_router/session/%s/proxy_execute" % (
+        backend_url,
+        encoded_session_id,
+    )
 
 
 def _post_json(url, headers, payload, timeout=120):
@@ -252,3 +266,132 @@ def web_search(query):
     if error:
         return "", error
     return (response.get("data") or {}).get("answer", ""), ""
+
+
+def proxy_execute(
+    method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+    endpoint: str,
+    toolkit: str,
+    query_params: Optional[Dict[str, str]] = None,
+    body: Optional[object] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> tuple[Any, str]:
+    """Call a toolkit's API directly when no Composio tool exists.
+
+    The session resolves the connected account and injects auth server-side, so
+    your code never handles raw credentials.
+
+    Args:
+        method: HTTP method to use for the request. Example: "GET"
+        endpoint: API endpoint to call. Example: "/repos/owner/repo"
+        toolkit: Name of the toolkit. Example: "GITHUB"
+        query_params: Query parameters as key-value pairs. Example: {"q": "is:unread"}
+        body: The request body (required for POST, PUT, and PATCH requests)
+        headers: HTTP headers as key-value pairs. Example: {"Accept": "application/json"}
+
+    Returns:
+        tuple[Any, str]:
+            - data: Response data from the API (None if error)
+            - error: Error message ("" if no error)
+    """
+    # Wrapped end-to-end so the helper always returns a (data, error) tuple
+    # rather than raising.
+    try:
+        valid_methods = ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        if method.upper() not in valid_methods:
+            return None, "Invalid HTTP method: " + method
+
+        if not endpoint.strip():
+            return None, "Endpoint cannot be empty"
+
+        if not toolkit.strip():
+            return None, "Toolkit cannot be empty"
+
+        if query_params is not None and not isinstance(query_params, dict):
+            return None, (
+                "Invalid query_params type: expected dict or None, got "
+                + type(query_params).__name__
+            )
+
+        if headers is not None and not isinstance(headers, dict):
+            return None, (
+                "Invalid headers type: expected dict or None, got "
+                + type(headers).__name__
+            )
+
+        if method.upper() in ["POST", "PUT", "PATCH"] and body is None:
+            return None, "Body is required for " + method.upper() + " requests"
+
+        if method.upper() in ["GET", "DELETE"] and body is not None:
+            return None, "Body should not be provided for " + method.upper() + " requests"
+
+        api_key = _read_env("COMPOSIO_API_KEY")
+        if not api_key:
+            return None, "Missing environment variable COMPOSIO_API_KEY"
+        if not _read_env("COMPOSIO_TOOLROUTER_SESSION_ID"):
+            return None, "Missing environment variable COMPOSIO_TOOLROUTER_SESSION_ID"
+
+        # Convert query_params and headers dicts to the flat parameters array.
+        parameters = []
+        if query_params:
+            for key, value in query_params.items():
+                parameters.append({"name": key, "value": str(value), "type": "query"})
+        if headers:
+            for key, value in headers.items():
+                parameters.append({"name": key, "value": str(value), "type": "header"})
+
+        payload = {
+            "toolkit_slug": toolkit.lower(),
+            "endpoint": endpoint,
+            "method": method.upper(),
+        }
+        if parameters:
+            payload["parameters"] = parameters
+        if body is not None:
+            payload["body"] = body
+
+        request_headers = {
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "x-request-id": _request_id(),
+        }
+
+        status, _response_headers, text = _post_json(
+            _session_proxy_execute_url(), request_headers, payload
+        )
+
+        # Handle HTTP errors explicitly. Always surface a non-empty message so a
+        # >=400 response never looks like success (an empty error/message field
+        # must not win over the default).
+        if status >= 400:
+            error_msg = "HTTP " + str(status) + " Error"
+            try:
+                error_data = json.loads(text)
+                if isinstance(error_data, dict):
+                    error_msg = (
+                        error_data.get("error") or error_data.get("message") or error_msg
+                    )
+            except (ValueError, TypeError):
+                if text:
+                    sanitized = text[:200].replace("\n", " ").strip()
+                    error_msg = "HTTP " + str(status) + ": " + sanitized
+            return None, str(error_msg)
+
+        response_data = json.loads(text)
+
+        # The session wraps the proxied response as {data, status, headers}; the
+        # toolkit's own API may still report a >=400 status inside that envelope.
+        if isinstance(response_data, dict) and response_data.get("status", 200) >= 400:
+            api_status = response_data.get("status", 400)
+            error_msg = "API request failed"
+            if "data" in response_data and response_data["data"]:
+                if isinstance(response_data["data"], dict):
+                    error_msg = response_data["data"].get(
+                        "message", response_data["data"].get("error", error_msg)
+                    )
+            return response_data, "API returned status " + str(api_status) + ": " + str(error_msg)
+
+        data = response_data.get("data")
+        return data, ""
+    except Exception as error:
+        return None, "Failed to execute proxy request: " + str(error)
