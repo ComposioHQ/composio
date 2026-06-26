@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
+## [0.17.0] - 2026-06-26
+
+### Added
+- **`triggers.parse()`**: parse and optionally verify an incoming webhook request, mirroring the TypeScript SDK. Pass `verify_secret` to validate the signature; omit it to skip verification explicitly. A present-but-empty `verify_secret` (e.g. an unset `COMPOSIO_WEBHOOK_SECRET`) raises rather than silently skipping verification.
+- **`triggers.set_webhook_subscription()`**: create or update the project webhook subscription from the Python SDK.
+- **`connected_accounts.update_acl()`**: the experimental shared-connection ACL patch helper graduated to `connected_accounts`; `experimental.update_acl()` remains as a deprecated alias.
+
+### Changed
+- **`composio.sessions` is the canonical sessions entrypoint**: use `composio.sessions.create(...)` (or the `composio.create` / `composio.use` shortcuts). `composio.tool_router` is now a deprecated alias for the same object.
+- **MCP is now opt-in for sessions**: `composio.create()` / `composio.use()` return native-tool sessions by default and select the MCP-typed session only when `mcp=True`. The runtime object is unchanged.
+- **Prefer `sandbox` for session code-execution config**: the `sandbox` key is now preferred; the existing `workbench` key is still accepted as an alias.
+- Bumped the Python SDK and provider packages from `0.16.0` to `0.17.0`.
+
 ## [0.16.0] - 2026-06-25
 
 ### Fixed
