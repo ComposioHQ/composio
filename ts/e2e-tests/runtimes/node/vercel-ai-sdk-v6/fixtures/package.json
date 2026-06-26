@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:vercel": "VERCEL_TGZ=$(npm pack /app/ts/packages/providers/vercel --pack-destination . --silent) && test -n \"$VERCEL_TGZ\" && npm install --ignore-scripts --legacy-peer-deps --package-lock=false \"./$VERCEL_TGZ\"",
+    "typecheck": "tsc --noEmit && echo vercel ai sdk compatibility typecheck passed"
+  },
+  "dependencies": {
+    "@composio/core": "file:/app/ts/packages/core",
+    "ai": "6.0.211",
+    "typescript": "5.8.3",
+    "zod": "4.4.3"
+  }
+}
