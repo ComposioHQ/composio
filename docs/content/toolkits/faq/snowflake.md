@@ -19,8 +19,32 @@ CREATE SECURITY INTEGRATION oauth_custom_all_roles
 
 Ensure the OAuth app and Snowflake roles, databases, and schemas are configured correctly for the integration.
 
-## Does Snowflake require per-customer OAuth credentials?
+## Does Snowflake require per-user OAuth credentials?
 
-Yes. Snowflake typically requires per-customer OAuth credentials. Customers often supply their own credentials when integrating with Composio.
+Yes. Snowflake typically requires per-user OAuth credentials. Users often supply their own credentials when integrating with Composio.
 
 ---
+
+## When should I use one Snowflake auth config per user account for multi-tenant SaaS OAuth?
+
+For Snowflake multi-tenant OAuth, create one Composio auth config per user Snowflake account using that user's Snowflake OAuth credentials from `CREATE SECURITY INTEGRATION`. Store the returned `auth_config_id` against the user on your side. When connecting a user, pass the correct `auth_config_id`; Composio will collect the per-connection Account ID, such as `myorg-myaccount`, and use it to construct the Snowflake authorization/token URLs.
+
+## How should I handle snowflake Basic auth was deprecated in favor of OAuth2?
+
+Snowflake Basic authentication was deprecated and replaced by OAuth2. Users using old Basic-auth Snowflake auth configs or connected accounts should migrate to OAuth2 by creating the Snowflake OAuth security integration, creating a Composio auth config with those credentials, and reconnecting users. Basic-auth actions may differ from OAuth2 actions and should not be treated as the long-term path.
+
+## How do I configure Snowflake OAuth refresh tokens and expect periodic reconnects?
+
+For longer-lived Snowflake OAuth connections, configure the Snowflake security integration with `OAUTH_ISSUE_REFRESH_TOKENS = TRUE` so refresh tokens are issued, and set `OAUTH_REFRESH_TOKEN_VALIDITY` as high as Snowflake allows, such as 7776000 seconds (about 90 days). Even with the max window, Snowflake can require users to reconnect after the refresh-token validity period, so design the product flow to handle periodic reconnects.
+
+## How should I handle fetch connected-account fields or toolkit metadata to discover Snowflake account details?
+
+To discover fields collected during connection initiation, call the toolkit-by-slug endpoint and inspect the accepted initiation fields. After a connection exists, fetch the connected account by ID to retrieve the stored connection fields. Provider schemas are mostly static, but providers can change them, so the toolkit metadata endpoint is the safer source for current required/accepted fields.
+
+## How should I handle snowflake statement results may require checking each partition?
+
+If a Snowflake query returns partial results, check whether the result set is split into partitions. Snowflake may not return all partitions in a single tool call. Use `SNOWFLAKE_SNOWFLAKE_CHECK_STATEMENT_STATUS` for each partition/result page to retrieve the remaining results.
+
+## When should I use processors or tool description overrides to reduce Snowflake tool output/token load?
+
+For Snowflake tools that return too much data or need LLM-facing schema/description changes, use processors to post-process tool output before returning it to the model. For local agent setup, you can also modify the returned tool object's description before passing it to the LLM, for example changing the description on `SNOWFLAKE_DESCRIBE_TABLE`.

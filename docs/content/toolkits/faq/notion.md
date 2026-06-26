@@ -49,3 +49,31 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
 ---
+
+## When should I use `NOTION_RETRIEVE_PAGE` instead of deprecated/invalid `NOTION_GET_PAGE`?
+
+`NOTION_GET_PAGE` is not the current valid slug. Use `NOTION_RETRIEVE_PAGE`, and verify available Notion tools from the marketplace/tool listing.
+
+## How should I handle notion database trigger fires for new pages, not updates?
+
+In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.
+
+## What does Notion page/database access mean?
+
+Notion does not model access as normal OAuth scopes. Page/database access is granted per Notion integration/OAuth client ID through Notion “Capabilities” and workspace grants. If multiple Composio auth configs use the same underlying Notion integration, page authorization can overlap.
+
+## How should I handle specifying a different auth config affects get/use lookup, not existing Notion token refresh?
+
+Existing connected accounts under a different auth config continue to refresh and work. Specifying an auth config affects which connection get/use functions look for; it does not rewrite refresh behavior for already-valid connected accounts.
+
+## How should I handle notion 401 can be caused by invalid refresh token after user/admin revokes integration?
+
+A Notion refresh failure with “Invalid refresh token” is usually a token revocation issue. Common causes are the user disconnecting the integration in Notion settings or a workspace admin removing/blocking the integration.
+
+## When should I use `NOTION_FETCH_DATA`, not `NOTION_FETCH_NOTION_DATA`?
+
+`NOTION_FETCH_NOTION_DATA` is not valid. Use `NOTION_FETCH_DATA` instead.
+
+## How should I handle large unfiltered Notion responses can hurt agent quality?
+
+Large response payloads and overly complex structures can degrade agent behavior. Prefer narrower fetches/filters where available and track product improvements for simpler response structures.

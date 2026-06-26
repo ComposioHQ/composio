@@ -82,7 +82,7 @@ console.log('Toolkit:', account.toolkit.slug);
 
 ### Get account credentials
 
-Get account credentials for use with your own tools:
+Get the connected account's auth scheme and non-sensitive auth state:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -115,6 +115,10 @@ if (account.state) {
 ```
   </Tab>
 </Tabs>
+
+<Callout type="warn">
+Access tokens, refresh tokens, API keys, bearer tokens, passwords, and other secrets are redacted in connected account responses. Build tool execution and upstream API calls through Composio instead of depending on raw token values from this response.
+</Callout>
 
 ## Refresh credentials
 
@@ -220,40 +224,28 @@ console.log('Account deleted successfully');
 Deletion is permanent and cannot be undone.
 </Callout>
 
-## Credential masking
+## Credential redaction
 
-By default, sensitive fields in connected account responses are partially masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
-
-Instead of returning full values, the API returns the first 4 characters followed by `...`:
+Connected account responses redact sensitive credential values. This includes fields such as `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other provider secrets.
 
 ```json
 {
-  "access_token": "gho_...",
-  "refresh_token": "ghr_...",
-  "api_key": "sk-l..."
+  "access_token": "REDACTED",
+  "refresh_token": "REDACTED",
+  "api_key": "REDACTED"
 }
 ```
 
-Values shorter than 4 characters are replaced with `REDACTED`.
+This applies to the Get Connected Account and List Connected Accounts endpoints. A connected account can still execute tools while these values are redacted.
 
-This applies to the Get Connected Account and List Connected Accounts endpoints.
+If you need to call an upstream API endpoint that is not exposed as a predefined Composio tool, use [Proxy Execute](/docs/tools-direct/executing-tools#proxy-execute). Proxy Execute lets Composio inject the connected account's credentials on the server side without returning raw tokens to your application.
 
-### Disabling masking
-
-If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
-
-1. **Dashboard**: Go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets"
-2. **API**:
-
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"mask_secret_keys_in_connected_account": false}'
-```
+<Callout type="info">
+`refresh()` starts a new hosted authorization flow for the connected account. It is useful when a user needs to reconnect or re-consent. Composio still handles normal token refresh automatically for active connected accounts.
+</Callout>
 
 <Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
+Changing an auth config affects new connections. Existing connected accounts keep the grants and credentials from the auth config they were created with, so reconnect users when scopes, credentials, regions, or OAuth app settings change.
 </Callout>
 
 ## Multiple accounts

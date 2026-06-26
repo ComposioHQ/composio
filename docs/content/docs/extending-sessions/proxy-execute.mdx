@@ -11,13 +11,14 @@ The session is already scoped to a [userID](/docs/how-composio-works), so you pa
 Proxy execute is a building block, not just a fallback. Use it to build experiences on top of Composio that reach past predefined tools, like the [Pi + Slack bot example](/examples/general-agent-with-pi#reach-the-gaps-with-the-proxy), which drops down to the proxy for the Slack Web API calls the toolkit doesn't wrap as tools. We'll link more examples here as we add them.
 
 <Callout title="Use a scoped API key">
-Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has the **Proxy execute** permission granted. Default full-access keys already include it.
+Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has the **Proxy execute** permission granted. Default full-access keys already include it. Use API `v3.1` or a current SDK.
 </Callout>
 
 ## When to use it
 
 - **Endpoints with no predefined tool.** You need a specific endpoint (an unusual GitHub, LinkedIn, or Notion route) that isn't exposed as a Composio tool. Send it through the proxy instead of extracting the raw token and calling the API yourself.
 - **Request shapes a tool can't express.** Custom query parameters, partial field masks, or advanced filters on Gmail, Drive, Sheets, and similar. The proxy gives you the full HTTP surface of the upstream API while Composio keeps managing auth.
+- **Token-redacted connected accounts.** Connected account APIs redact raw secrets such as access and refresh tokens. Proxy execute lets your app call the upstream API without handling those tokens directly.
 
 ## Quick start
 

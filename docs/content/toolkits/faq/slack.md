@@ -62,3 +62,51 @@ For the Slack toolkit, set `as_user=True` to post as the authenticated user. For
 See [Triggers](/docs/triggers).
 
 ---
+
+## When should I use `user_scopes` for Slack user-token permissions?
+
+For the Slack toolkit, `scopes` refers to bot-user scopes. If the use case is to operate as the actual Slack user, pass the permissions in `user_scopes` on the auth config credentials. Slack is special because it separates bot scopes from user scopes. For user-token tools, set `credentials.user_scopes`; the bot `scopes` field may not matter if the Slack application has no bot-user tools for that use case.
+
+## How should I handle revoked Slack tokens can remain ACTIVE briefly before expiring?
+
+A Slack connected account may stay `ACTIVE` for about two refresh cycles after token revocation. This is an intentional retry mechanism to avoid expiring accounts too aggressively because providers can return transient auth errors. Depending on the toolkit, the account should be marked `EXPIRED` after roughly two failed refresh attempts, about 30 minutes. If Slack returns `account_inactive`, that may indicate the connected Slack account itself is inactive rather than only a token-revocation case.
+
+## How should I handle download Slack file content using file ID?
+
+Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the Slack file ID, which starts with `F` such as `F123ABCDEF0`. The tool returns downloadable file content plus metadata such as name, mimetype, and size. If the file ID is unknown, first call `SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK` to find file IDs, then pass the selected ID to the download tool.
+
+## What does Slack `assistant.search.context` require?
+
+Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. a user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
+
+## How should I handle slack marketplace warning on Composio-managed app does not block OAuth?
+
+The warning can appear because Composio's Slack app is not yet verified on Slack Marketplace. The OAuth flow still works; users can click through and complete the connection. The warning should clear once Slack marketplace review/verification is complete.
+
+## When should I use Slack V2 trigger slugs for channel and direct messages?
+
+Use the Slack V2 triggers for message events. `SLACK_CHANNEL_MESSAGE_RECEIVED` is intended for channel messages, and `SLACK_DIRECT_MESSAGE_RECEIVED` is intended for DMs. Slack V2 triggers include dedicated endpoints, signature verification, better DM handling, and richer filtering. Older V1 Slack trigger slugs may still work, but V2 is the recommended path for new setups.
+
+## How should I handle slack trigger delivery depends on the Slack app event subscription webhook URL?
+
+When Slack trigger events stop unexpectedly, check whether the Slack OAuth app's Event Subscriptions `webhook_url` was changed. If the webhook URL or other Slack app event-subscription settings changed, Slack may stop delivering events to Composio even though the trigger instance was previously working.
+
+## When should I use your own Slack OAuth app for production quota isolation?
+
+Slack rate limits are applied per app, workspace, and method. `conversations.history` and `conversations.replies` are among the stricter methods. For production, use your own Slack OAuth app so your quota is isolated to your app and workspace. Composio's default Slack app is shared, so it is not recommended for production workloads that are sensitive to Slack quota pressure.
+
+## What should I know about Slack short connect links?
+
+The short `/api/v3/s/...` URL is not the `redirect_uri` sent to Slack. It is only a shortened link that redirects the browser to Slack's authorization page. The actual Redirect URI is available in the authConfig and must match what is configured in the Slack OAuth app. The static `callbackUrl` / `redirectUri` must be configured consistently on both Composio and the Slack OAuth app, while `redirectUrl` is the per-connection authentication URL used to send the user through the auth flow.
+
+## What should I know about Slack scheduled-message attachments?
+
+The `attachments` field on Slack scheduled messages refers to Slack's legacy secondary/rich-formatting attachments, not uploaded files. Slack's `chat.scheduleMessage` API does not natively upload files. Files must be uploaded separately, for example with `files.upload` / `files.upload.v2`, and then linked or embedded into the scheduled message body so they unfurl when the scheduled message is posted.
+
+## What does `admin.conversations:write` require?
+
+`admin.conversations:write` is an enterprise/admin-level Slack scope. For APIs such as `admin.conversations.delete`, the Slack workspace must be on an Enterprise plan. If a user cannot use channel deletion/admin conversation tools, first confirm the Slack workspace plan and whether the app has the required admin scope.
+
+## How should I handle slackbot token rotation can make externally cached tokens expire quickly?
+
+Slackbot tokens are usually long-lived, but if Slack token rotation is enabled, a given access token may only remain valid for about two refreshes, often under 30 minutes. Composio auto-refreshes tokens on a fixed cadence, about every 15 minutes, not every time the connected account is fetched. If your backend uses provider tokens directly, fetch the connected account frequently enough to get a fresh token instead of caching a token for long periods. Alternatively, migrate to a Slack app where token rotation is not enabled if that better fits the workflow.

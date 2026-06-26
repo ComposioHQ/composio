@@ -43,6 +43,10 @@ The sandbox corrects common mistakes in the code your agent generates. For examp
 
 The sandbox runs as a persistent Jupyter notebook. Variables, imports, files, and in-memory state from one call are available in the next.
 
+### Runtime and file retention
+
+Sandbox state is temporary. Variables, imports, and live filesystem state remain available while the sandbox is alive, but the runtime can shut down after inactivity. Files and intermediate artifacts are retained for up to 24 hours. Download any result you need to keep outside the sandbox before that window expires.
+
 ### Compute tier
 
 Sandboxes default to `standard` (1 vCPU, 1 GB RAM). For heavier workloads (large dataframes, ML preprocessing, or big bulk operations), pick a larger tier when creating the session via `sandbox.sandboxSize` (TypeScript) or `sandbox.sandbox_size` (Python).

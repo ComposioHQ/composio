@@ -251,6 +251,10 @@ The examples above configure toolkit versions at SDK initialization. You can als
 **Choosing a version strategy:** Use `latest` when tool outputs are consumed by an LLM or AI agent — agents adapt to schema changes dynamically. Pin to a specific version when your code parses outputs programmatically. See [choosing between `latest` and a pinned version](/docs/tools-direct/toolkit-versioning#choosing-between-latest-and-a-pinned-version).
 </Callout>
 
+<Callout type="warn">
+For non-idempotent tools such as send, create, update, or delete actions, retries can repeat the side effect if the client times out after the backend has already completed the provider call. Use a longer request timeout, disable client retries for those call paths, or add your own idempotency guard when duplicate side effects are unacceptable.
+</Callout>
+
 ### Proxy Execute
 
 You can proxy requests to any supported toolkit API and let Composio inject the authentication state. This is useful when you need an API endpoint that isn't available as a predefined tool.
@@ -258,6 +262,8 @@ You can proxy requests to any supported toolkit API and let Composio inject the 
 Proxy execute requires auth context. Pass `connected_account_id` / `connectedAccountId`, or provide `custom_connection_data` if you're supplying auth manually.
 
 The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
+
+Use API `v3.1` or a current SDK for Proxy Execute. The API key you use must allow Proxy Execute: default full-access project keys include it, and scoped project keys need the **Proxy execute** permission enabled. This is the recommended path when connected account responses redact raw tokens but you still need to call an upstream provider endpoint.
 
 <Callout type="warn">
 Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
