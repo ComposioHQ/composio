@@ -290,6 +290,14 @@ function contentFor(
   maxContentChars: number,
   maxSections: number
 ) {
+  if (page.collection === 'knowledge') {
+    const evidence = excerpt(page.text, terms, maxContentChars);
+    return {
+      content: evidence.value,
+      contentTruncated: evidence.truncated,
+    };
+  }
+
   const found = readPageByUrl(page.url);
 
   if (found) {

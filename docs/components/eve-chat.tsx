@@ -179,9 +179,9 @@ export function EveChat() {
                   </div>
                 </li>
               ))}
-              {eagerSources.length > 0 && (
+              {thinking && eagerSources.length > 0 && (
                 <li>
-                  <EagerSourcePreview active={thinking} sources={eagerSources} />
+                  <EagerSourcePreview active sources={eagerSources} />
                 </li>
               )}
               {thinking && (

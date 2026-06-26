@@ -396,7 +396,9 @@ let indexCache: DocPage[] | undefined;
 
 export function buildBundledIndex(): DocPage[] {
   const pages: DocPage[] = [];
+  let bundleHasKnowledge = false;
   for (const p of BUNDLE.pages) {
+    if (p.collection === 'knowledge') bundleHasKnowledge = true;
     pages.push(
       makePage({
         collection: p.collection,
@@ -408,7 +410,7 @@ export function buildBundledIndex(): DocPage[] {
       })
     );
   }
-  pages.push(...loadKnowledge());
+  if (!bundleHasKnowledge) pages.push(...loadKnowledge());
   pages.push(...loadBundledToolkits());
   return pages;
 }

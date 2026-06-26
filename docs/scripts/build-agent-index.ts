@@ -143,8 +143,8 @@ function toPlainText(body: string): string {
   return body
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/<\/?[A-Za-z][^>]*>/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]+\)/g, ' ')
-    .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/[#>*_`|]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -213,11 +213,11 @@ function makeSearchPage(args: {
   };
 }
 
-function loadKnowledgePages(): SearchPage[] {
+function loadKnowledgePages(): BundlePage[] {
   if (!existsSync(KNOWLEDGE_FILE)) return [];
 
   const raw = readFileSync(KNOWLEDGE_FILE, 'utf8');
-  const searchPages: SearchPage[] = [];
+  const pages: BundlePage[] = [];
   const sectionRe = /^##\s+(.+?)\s*(?:\(([^)]+)\))?\s*$/gm;
   const matches = [...raw.matchAll(sectionRe)];
 
@@ -229,18 +229,17 @@ function loadKnowledgePages(): SearchPage[] {
     const bodyEnd = index + 1 < matches.length ? matches[index + 1].index! : raw.length;
     const body = raw.slice(bodyStart, bodyEnd).trim();
 
-    searchPages.push(
-      makeSearchPage({
-        collection: 'knowledge',
-        title,
-        description: '',
-        url,
-        body,
-      })
-    );
+    pages.push({
+      collection: 'knowledge',
+      url,
+      title,
+      description: '',
+      legacy: false,
+      markdown: body,
+    });
   }
 
-  return searchPages;
+  return pages;
 }
 
 function searchPageForToolkit(tk: BundleToolkit): SearchPage {
@@ -346,7 +345,17 @@ const contentSearchPages = pages.map(page =>
     body: page.markdown,
   })
 );
-const knowledgeSearchPages = loadKnowledgePages();
+const knowledgePages = loadKnowledgePages();
+pages.push(...knowledgePages);
+const knowledgeSearchPages = knowledgePages.map(page =>
+  makeSearchPage({
+    collection: page.collection,
+    title: page.title,
+    description: page.description,
+    url: page.url,
+    body: page.markdown,
+  })
+);
 const toolkitSearchPages = toolkits.map(searchPageForToolkit);
 const search = buildSearchIndex([
   ...contentSearchPages,
