@@ -38,6 +38,25 @@ const docsSchema = frontmatterSchema.extend({
       }),
     )
     .optional(),
+  /** Presentation metadata for the /examples featured gallery. The card's
+   *  title and description come from `title`/`description`; this controls the
+   *  category lane, toolkit logos, and whether it surfaces in "Featured". */
+  gallery: z
+    .object({
+      /** Category lanes this example belongs to (can be more than one). */
+      categories: z
+        .array(
+          z.enum(['General agents', 'Background agents', 'Coding agents']),
+        )
+        .min(1),
+      /** Toolkit logo slugs (logos.composio.dev/api/<slug>) shown on the card. */
+      logos: z.array(z.string()).default([]),
+      /** Surface in the default "Featured" view. */
+      featured: z.boolean().optional(),
+      /** Sort order within the grid (lower first). */
+      order: z.number().optional(),
+    })
+    .optional(),
 });
 
 export const docs = defineDocs({

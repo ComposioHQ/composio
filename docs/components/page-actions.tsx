@@ -77,8 +77,8 @@ export function PageActions({ path, variant = 'overlap-title' }: PageActionsProp
   }, [path]);
 
   return (
-    <div className={variant === 'overlap-title' ? 'not-prose -mt-12 mb-2 flex justify-end' : 'not-prose inline-block'}>
-      <div ref={wrapperRef} className="relative">
+    <div className={variant === 'overlap-title' ? 'not-prose -mt-12 mb-2 flex justify-end pointer-events-none' : 'not-prose inline-block'}>
+      <div ref={wrapperRef} className="relative pointer-events-auto">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
