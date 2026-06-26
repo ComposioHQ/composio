@@ -1,6 +1,6 @@
 {
   "name": "@composio/experimental",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Experimental Composio integrations and helpers",
   "main": "src/index.ts",
   "type": "module",

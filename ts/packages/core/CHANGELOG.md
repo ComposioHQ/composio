@@ -1,5 +1,27 @@
 # @composio/core
 
+## 0.13.0
+
+### Minor Changes
+
+- d17a268: Add the first-class `composio.sessions.create()` API while keeping `composio.create()` as an alias, expose the experimental shared-connection ACL patch helper as `connectedAccounts.updateAcl()` while keeping `experimental.updateAcl()` as an alias, and include SDK docs/source in the published package.
+
+  **MCP is now opt-in.** Sessions return native tools by default; the hosted MCP endpoint is only surfaced on the type when you create the session with `{ mcp: true }`. The default `create()` / `use()` now return `SessionWithoutMcp` (the runtime object is unchanged — `session.mcp` still exists at runtime — but it is no longer in the type).
+
+  Migration: read `session.mcp` only after creating with `{ mcp: true }`.
+
+- d17a268: Surface the resolved workbench config on Tool Router sessions.
+
+  - `Session.workbench` is now populated from the API response (on create/retrieve/attach/update). It exposes the resolved workbench config, e.g. `session.workbench?.enable` (defaults to `true` server-side).
+
+  This lets callers create a session with the remote workbench disabled (`workbench: { enable: false }`) and detect that state — the foundation for running code in a sandbox you own via the experimental `@composio/experimental/workbench` helpers.
+
+### Patch Changes
+
+- d17a268: Prefer `sandbox` for session code-execution configuration while continuing to accept the existing `workbench` alias.
+- d17a268: Add `triggers.parse()` to parse and optionally verify incoming webhook requests.
+- d17a268: Add `triggers.setWebhookSubscription()` to create or update the project webhook subscription from the TypeScript SDK.
+
 ## 0.12.0
 
 ### Minor Changes
