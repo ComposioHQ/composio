@@ -7,6 +7,58 @@ import remarkGfm from 'remark-gfm';
 import hljs from 'highlight.js';
 import { Check, Copy, FileText, Search, Wrench } from 'lucide-react';
 
+export type EagerSource = {
+  title: string;
+  url: string;
+};
+
+/**
+ * Renders eager docs search preview links while the assistant is thinking.
+ */
+export function EagerSourcePreview({ active, sources }: { active?: boolean; sources: EagerSource[] }) {
+  const router = useRouter();
+  if (sources.length === 0) return null;
+
+  const base =
+    'flex flex-wrap items-center gap-x-2 gap-y-1 py-0.5 text-[11px] text-fd-muted-foreground';
+
+  return (
+    <div className={base}>
+      <span className="inline-flex shrink-0 items-center gap-1 text-fd-muted-foreground">
+        <Search className="size-3 text-[var(--composio-brand)]/70" aria-hidden="true" />
+        <span>{active ? 'Searching docs' : 'Searched docs'}</span>
+      </span>
+      {sources.map((source) => {
+        const href = source.url.startsWith('/') ? source.url : undefined;
+        const label = source.title || source.url;
+        if (!href) {
+          return (
+            <span key={source.url} className="truncate">
+              {label}
+            </span>
+          );
+        }
+
+        return (
+          <a
+            key={source.url}
+            href={href}
+            title={href}
+            onClick={(event) => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+              event.preventDefault();
+              router.push(href);
+            }}
+            className="group inline-flex max-w-full items-center truncate underline-offset-2 transition-colors hover:text-fd-foreground hover:underline"
+          >
+            {label}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * Renders the agent's tool activity inline — which docs it searched and which
  * pages it read — so you can see its "thinking". Returns null for non-tool parts.

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useEveAgent } from 'eve/react';
 import { Send, X, Sparkles, Square, SquarePen } from 'lucide-react';
-import { AssistantMessage, ToolActivity } from './eve-message';
+import { AssistantMessage, EagerSourcePreview, ToolActivity, type EagerSource } from './eve-message';
 import { closeEveChat, useEveChatOpen } from './eve-chat-store';
 
 const SUGGESTIONS = [
@@ -32,11 +32,13 @@ export function EveChat() {
   const lastHasAssistantText =
     lastMessage?.role === 'assistant' &&
     lastMessage.parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
-  // Show the loading indicator from submit through the search/read phase, until
-  // the assistant's text actually starts streaming, so it doesn't flicker off.
+  // Show the loading indicator from submit through retrieval/model synthesis,
+  // until the assistant's text actually starts streaming, so it doesn't flicker off.
   const thinking = isBusy && !lastHasAssistantText;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
+  const [eagerSources, setEagerSources] = useState<EagerSource[]>([]);
 
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
@@ -46,9 +48,37 @@ export function EveChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [agent.data.messages]);
 
+  function clearEagerPreview() {
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = null;
+    setEagerSources([]);
+  }
+
+  function fetchEagerPreview(message: string) {
+    clearEagerPreview();
+    const controller = new AbortController();
+    previewAbortRef.current = controller;
+
+    void fetch('/api/docs-agent/eager-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { sources?: EagerSource[] } | null) => {
+        if (controller.signal.aborted) return;
+        setEagerSources(Array.isArray(data?.sources) ? data.sources : []);
+      })
+      .catch(() => {});
+  }
+
   function submit(message: string) {
     const trimmed = message.trim();
-    if (trimmed.length > 0 && !isBusy) void agent.send({ message: trimmed });
+    if (trimmed.length > 0 && !isBusy) {
+      fetchEagerPreview(trimmed);
+      void agent.send({ message: trimmed });
+    }
   }
 
   return (
@@ -81,6 +111,7 @@ export function EveChat() {
               title="New chat"
               onClick={() => {
                 if (isBusy) agent.stop();
+                clearEagerPreview();
                 agent.reset();
                 inputRef.current?.focus();
               }}
@@ -148,6 +179,11 @@ export function EveChat() {
                   </div>
                 </li>
               ))}
+              {thinking && eagerSources.length > 0 && (
+                <li>
+                  <EagerSourcePreview active sources={eagerSources} />
+                </li>
+              )}
               {thinking && (
                 <li className="flex items-center gap-2 text-[13px] text-fd-muted-foreground">
                   <span className="inline-flex gap-1">
@@ -155,7 +191,7 @@ export function EveChat() {
                     <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.15s]" />
                     <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60" />
                   </span>
-                  Searching the docs…
+                  Thinking with the docs…
                 </li>
               )}
             </ul>

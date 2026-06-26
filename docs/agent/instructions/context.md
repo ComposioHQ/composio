@@ -1,6 +1,6 @@
 # Composio concept map
 
-This is your always-on map of Composio's concepts and the canonical page for each. Use it to ground answers and to link the right page. Prefer these links over anything `search_docs` returns. Call `read_doc` on the relevant page when you need detail.
+This is your always-on map of Composio's concepts and the canonical page for each. Use it to ground answers and to link the right page. Prefer these links over anything `search_docs` returns. Use the full bounded content from `search_docs` first, and call `read_doc` on the relevant page only when you need detail beyond that included content.
 
 ## Core model
 
@@ -14,7 +14,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Toolkit** — a collection of related tools for a service (e.g. `github`, `gmail`). A **tool** is one action, named `{TOOLKIT}_{ACTION}` (e.g. `GITHUB_CREATE_ISSUE`). Every toolkit is discoverable by default; restrict with the `toolkits` config. → [Configuring sessions](/docs/configuring-sessions)
 - **Meta tools** — the fixed set every session exposes (`COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MANAGE_CONNECTIONS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`). → [Meta tools reference](/toolkits/meta-tools)
 - **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)
-- **Is a toolkit / integration supported?** Composio has 1000+ toolkits, and `search_docs` indexes the catalog. A matching `/toolkits/<slug>` result means **yes, it's supported** — call `read_doc` on that URL for its details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) for an API you already have.
+- **Is a toolkit / integration supported?** Composio has 1000+ toolkits, and `search_docs` indexes the catalog. A matching `/toolkits/<slug>` result means **yes, it's supported** — answer from the returned content when sufficient, call `read_doc` only for more details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [custom tool](/docs/extending-sessions/custom-tools-and-toolkits) for an API you already have.
 
 ## Authentication
 
