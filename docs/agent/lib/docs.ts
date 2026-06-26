@@ -346,10 +346,31 @@ function getToolkitMap(): Map<string, Toolkit> {
       // no catalog available
     }
   }
-  // Deployed runtime (or missing catalog): use the bundled toolkit snapshot.
-  if (map.size === 0) for (const tk of BUNDLE.toolkits) if (tk?.slug) map.set(tk.slug, tk);
+  // Deployed runtime (or partial traced catalog): merge in the bundled toolkit
+  // snapshot so search/read_doc still cover every generated toolkit page.
+  for (const tk of BUNDLE.toolkits) if (tk?.slug && !map.has(tk.slug)) map.set(tk.slug, tk);
   toolkitMap = map;
   return map;
+}
+
+function loadBundledToolkits(): DocPage[] {
+  const pages: DocPage[] = [];
+  for (const tk of BUNDLE.toolkits) {
+    if (!tk?.slug) continue;
+    const name = tk.name ?? tk.slug;
+    const body = `${tk.description ?? ''} Category: ${tk.category ?? ''}. Toolkit slug: ${tk.slug}.`;
+    pages.push(
+      makePage({
+        collection: 'toolkits',
+        title: `${name} toolkit`,
+        description: tk.description ?? '',
+        url: `/toolkits/${tk.slug}`,
+        legacy: false,
+        body,
+      })
+    );
+  }
+  return pages;
 }
 
 function loadToolkits(): DocPage[] {
@@ -372,6 +393,25 @@ function loadToolkits(): DocPage[] {
 }
 
 let indexCache: DocPage[] | undefined;
+
+export function buildBundledIndex(): DocPage[] {
+  const pages: DocPage[] = [];
+  for (const p of BUNDLE.pages) {
+    pages.push(
+      makePage({
+        collection: p.collection,
+        title: p.title,
+        description: p.description,
+        url: p.url,
+        legacy: p.legacy || isLegacyUrl(p.url),
+        body: p.markdown,
+      })
+    );
+  }
+  pages.push(...loadKnowledge());
+  pages.push(...loadBundledToolkits());
+  return pages;
+}
 
 export function buildIndex(): DocPage[] {
   if (indexCache) return indexCache;
@@ -411,18 +451,9 @@ export function buildIndex(): DocPage[] {
     }
   } else {
     // Deployed runtime: content/ isn't on disk, so index the bundled snapshot.
-    for (const p of BUNDLE.pages) {
-      pages.push(
-        makePage({
-          collection: p.collection,
-          title: p.title,
-          description: p.description,
-          url: p.url,
-          legacy: p.legacy || isLegacyUrl(p.url),
-          body: p.markdown,
-        })
-      );
-    }
+    pages.push(...buildBundledIndex());
+    indexCache = pages;
+    return pages;
   }
   pages.push(...loadKnowledge());
   pages.push(...loadToolkits());
@@ -481,7 +512,8 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
         // try next candidate
       }
     }
-    return undefined;
+    // Fall through to the bundled snapshot. Vercel may trace only part of the
+    // content tree, while the generated agent snapshot still has the full docs.
   }
 
   // Deployed runtime: serve the page from the bundled snapshot.

@@ -1,6 +1,7 @@
 import { defineTool } from 'eve/tools';
 import { z } from 'zod';
 import {
+  buildBundledIndex,
   buildIndex,
   extractSections,
   getBundleSearchIndex,
@@ -160,16 +161,24 @@ function getCorpus(): CorpusLoad {
   }
 
   const started = performance.now();
-  const pages = buildIndex();
-  const precomputed = buildPrecomputedCorpus(pages);
+  const bundledPages = buildBundledIndex();
+  const bundledPrecomputed = buildPrecomputedCorpus(bundledPages);
 
-  if (precomputed.corpus) {
-    corpusCache = precomputed.corpus;
+  if (bundledPrecomputed.corpus) {
+    corpusCache = bundledPrecomputed.corpus;
     corpusCacheSource = 'precomputed';
   } else {
-    corpusCache = buildRuntimeCorpus(pages);
-    corpusCacheSource = 'runtime';
-    corpusCacheFallbackReason = precomputed.fallbackReason;
+    const pages = buildIndex();
+    const livePrecomputed = buildPrecomputedCorpus(pages);
+
+    if (livePrecomputed.corpus) {
+      corpusCache = livePrecomputed.corpus;
+      corpusCacheSource = 'precomputed';
+    } else {
+      corpusCache = buildRuntimeCorpus(pages);
+      corpusCacheSource = 'runtime';
+      corpusCacheFallbackReason = `bundle:${bundledPrecomputed.fallbackReason};live:${livePrecomputed.fallbackReason}`;
+    }
   }
 
   return {
