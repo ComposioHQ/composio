@@ -29,8 +29,8 @@ def set_webhook_subscription(webhook_url: str, enabled_events: Sequence[str | No
 
 ```python
 composio.triggers.set_webhook_subscription(
-        webhook_url=f"{APP_URL}/webhooks/composio",
-    )
+    webhook_url=f"{APP_URL}/webhooks/composio",
+)
 ```
 
 ---
@@ -165,23 +165,72 @@ def verify_webhook(id: str, payload: str, secret: str, signature: str, timestamp
 
 ```python
 # In a Flask webhook handler
-    @app.route('/webhook', methods=['POST'])
-    def webhook():
-        try:
-            result = composio.triggers.verify_webhook(
-                id=request.headers.get('webhook-id', ''),
-                payload=request.get_data(as_text=True),
-                signature=request.headers.get('webhook-signature', ''),
-                timestamp=request.headers.get('webhook-timestamp', ''),
-                secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-            )
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        result = composio.triggers.verify_webhook(
+            id=request.headers.get('webhook-id', ''),
+            payload=request.get_data(as_text=True),
+            signature=request.headers.get('webhook-signature', ''),
+            timestamp=request.headers.get('webhook-timestamp', ''),
+            secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+        )
 
-            # Process the verified payload
-            print(f"Version: {result['version']}")
-            print(f"Received trigger: {result['payload']['trigger_slug']}")
-            return 'OK', 200
-        except WebhookSignatureVerificationError:
-            return 'Unauthorized', 401
+        # Process the verified payload
+        print(f"Version: {result['version']}")
+        print(f"Received trigger: {result['payload']['trigger_slug']}")
+        return 'OK', 200
+    except WebhookSignatureVerificationError:
+        return 'Unauthorized', 401
+```
+
+---
+
+### parse()
+
+Parse an incoming webhook request into a typed, normalized trigger payload.  Pass a framework request object, or pass ``body=`` and ``headers=`` explicitly. When ``verify_secret`` is provided, the SDK verifies the webhook signature before returning the normalized trigger payload. When it is omitted, the SDK parses the body without verifying the signature.  ``request`` may be any object exposing the request body and headers, such as a Flask, Django, or FastAPI request. The body is read from ``.body`` (or ``.data`` / ``.get_data()``), and the headers are read from ``.headers``. Because this SDK is synchronous, async frameworks must pass an already-read raw body, for example via ``body=await request.body()``.
+
+```python
+def parse(request: Any = ..., body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `request?` | `Any` |
+| `body?` | `Union[str, bytes, Mapping[str, Any], None]` |
+| `headers?` | `Union[Mapping[str, Any], None]` |
+| `verify_secret?` | `Union[str, None, Omit]` |
+| `tolerance?` | `int` |
+
+**Returns**
+
+`VerifyWebhookResult` — VerifyWebhookResult containing version, normalized payload, and raw payload :raises ValidationError: If ``verify_secret`` is empty, or is set but signature headers are missing :raises WebhookSignatureVerificationError: If signature verification fails :raises WebhookPayloadError: If the payload cannot be parsed
+
+**Example**
+
+```python
+# Flask: verify the signature
+@app.route('/webhooks/composio', methods=['POST'])
+def webhook():
+    try:
+        result = composio.triggers.parse(
+            request,
+            verify_secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
+        )
+        print(f"Trigger: {result['payload']['trigger_slug']}")
+        print(f"Event data: {result['payload']['payload']}")
+        return 'OK', 200
+    except exceptions.WebhookSignatureVerificationError:
+        return 'Unauthorized', 401
+
+# FastAPI: parse without verifying after reading the async body
+@app.post('/webhooks/composio')
+async def webhook(request: Request):
+    raw = await request.body()
+    result = composio.triggers.parse(body=raw, headers=request.headers)
+    return {'trigger': result['payload']['trigger_slug']}
 ```
 
 ---

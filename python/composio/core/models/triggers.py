@@ -1270,21 +1270,16 @@ class Triggers(Resource):
         """
         Parse an incoming webhook request into a typed, normalized trigger payload.
 
-        Dump the incoming request in and get back the parsed Composio trigger
-        event. When ``verify_secret`` is provided, the request signature is
-        verified before the payload is returned (delegating to
-        :meth:`verify_webhook`); without it, the body is parsed without
-        verification.
+        Pass a framework request object, or pass ``body=`` and ``headers=``
+        explicitly. When ``verify_secret`` is provided, the SDK verifies the
+        webhook signature before returning the normalized trigger payload. When
+        it is omitted, the SDK parses the body without verifying the signature.
 
         ``request`` may be any object exposing the request body and headers, such
-        as a Flask/Django/FastAPI request. The body is read from ``.body`` (or
-        ``.data`` / ``.get_data()``) and the headers from ``.headers``. Because
-        this SDK is synchronous, the caller must pass an already-read raw body for
-        async frameworks (e.g. FastAPI ``await request.body()``) — either via the
-        ``body`` keyword or by reading it first.
-
-        Alternatively, pass ``body=`` and ``headers=`` explicitly instead of a
-        ``request`` object.
+        as a Flask, Django, or FastAPI request. The body is read from ``.body``
+        (or ``.data`` / ``.get_data()``), and the headers are read from
+        ``.headers``. Because this SDK is synchronous, async frameworks must pass
+        an already-read raw body, for example via ``body=await request.body()``.
 
         :param request: The incoming webhook request object (Flask/Django/FastAPI)
         :param body: The raw request body (str/bytes/parsed mapping); overrides ``request``
@@ -1300,7 +1295,7 @@ class Triggers(Resource):
         :raises WebhookPayloadError: If the payload cannot be parsed
 
         Example:
-            # Flask — verify the signature
+            # Flask: verify the signature
             @app.route('/webhooks/composio', methods=['POST'])
             def webhook():
                 try:
@@ -1314,7 +1309,7 @@ class Triggers(Resource):
                 except exceptions.WebhookSignatureVerificationError:
                     return 'Unauthorized', 401
 
-            # FastAPI — parse without verifying (read the async body first)
+            # FastAPI: parse without verifying after reading the async body
             @app.post('/webhooks/composio')
             async def webhook(request: Request):
                 raw = await request.body()

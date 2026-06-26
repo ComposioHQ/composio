@@ -13,14 +13,30 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import textwrap
 from pathlib import Path
 from typing import Any
 
-try:
+import typing as t
+
+if t.TYPE_CHECKING:
     import griffe
-except ImportError:
-    print("Error: griffe not installed. Run: pip install griffe")
-    raise SystemExit(1)
+
+griffe: Any | None = None
+
+
+def load_griffe() -> Any:
+    """Load griffe lazily so parser helpers can be unit-tested without it."""
+    global griffe
+    if griffe is None:
+        try:
+            import griffe as griffe_module
+        except ImportError:
+            print("Error: griffe not installed. Run: pip install griffe")
+            raise SystemExit(1)
+        griffe = griffe_module
+    return griffe
+
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -214,7 +230,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             deprecated_lines.append(stripped)
 
     if example_lines:
-        examples.append("\n".join(example_lines).strip())
+        examples.append(normalize_example("\n".join(example_lines)))
 
     return {
         "description": " ".join(description_lines).strip(),
@@ -223,6 +239,19 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
         "examples": examples,
         "deprecated": " ".join(deprecated_lines).strip() if deprecated_lines else None,
     }
+
+
+def normalize_example(example: str) -> str:
+    """Normalize a docstring example before wrapping it in an MDX code fence."""
+    normalized = textwrap.dedent(example).strip()
+    lines = normalized.splitlines()
+
+    if len(lines) >= 2 and lines[0].strip().startswith("```"):
+        closing_index = len(lines) - 1
+        if lines[closing_index].strip() == "```":
+            normalized = "\n".join(lines[1:closing_index]).strip()
+
+    return normalized
 
 
 def extract_class_info(
@@ -537,6 +566,8 @@ result = composio.tools.execute(
 
 
 def main():
+    griffe_module = load_griffe()
+
     print("Starting Python SDK documentation generation...\n")
     print(f"Output: {OUTPUT_DIR}\n")
 
@@ -548,7 +579,7 @@ def main():
     # Load package
     print("Loading composio package...")
     try:
-        package = griffe.load("composio", search_paths=[str(PACKAGE_DIR)])
+        package = griffe_module.load("composio", search_paths=[str(PACKAGE_DIR)])
     except Exception as e:
         print(f"Error: {e}")
         raise SystemExit(1)
