@@ -1,7 +1,7 @@
 {
   "name": "@composio/slim",
   "type": "module",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Slim Composio core package without packaged source or docs",
   "main": "dist/index.mjs",
   "publishConfig": {

@@ -1,5 +1,11 @@
 # @composio/core
 
+## 0.13.1
+
+### Patch Changes
+
+- 605a726: Add Tool Router session deletion APIs.
+
 ## 0.13.0
 
 ### Minor Changes
