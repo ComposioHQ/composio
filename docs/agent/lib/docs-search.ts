@@ -32,9 +32,9 @@ const PRIORITY: Record<DocPage['collection'], number> = {
 
 export const DEFAULT_SEARCH_LIMIT = 5;
 const DEFAULT_LIMIT = DEFAULT_SEARCH_LIMIT;
-const MAX_CONTENT_RESULTS = 4;
-const MAX_CONTENT_CHARS = 10_000;
-const MAX_SECTIONS = 16;
+export const DEFAULT_CONTENT_RESULT_COUNT = 4;
+export const DEFAULT_MAX_CONTENT_CHARS = 10_000;
+export const DEFAULT_MAX_SECTIONS = 16;
 const BM25_K1 = 1.2;
 const BM25_B = 0.75;
 const PERF_LOG_ENABLED = process.env.DOCS_AGENT_SEARCH_PERF_LOG === '1';
@@ -284,21 +284,26 @@ function dedupeByUrl(ranked: { page: DocPage; s: number }[]): { page: DocPage; s
   return deduped;
 }
 
-function contentFor(page: DocPage, terms: string[]) {
+function contentFor(
+  page: DocPage,
+  terms: string[],
+  maxContentChars: number,
+  maxSections: number
+) {
   const found = readPageByUrl(page.url);
 
   if (found) {
     const markdown = toCleanMarkdown(found.raw);
-    const evidence = excerpt(markdown, terms, MAX_CONTENT_CHARS);
+    const evidence = excerpt(markdown, terms, maxContentChars);
 
     return {
-      sections: extractSections(markdown).slice(0, MAX_SECTIONS),
+      sections: extractSections(markdown).slice(0, maxSections),
       content: evidence.value,
       contentTruncated: evidence.truncated,
     };
   }
 
-  const evidence = excerpt(page.text, terms, MAX_CONTENT_CHARS);
+  const evidence = excerpt(page.text, terms, maxContentChars);
   return {
     content: evidence.value,
     contentTruncated: evidence.truncated,
@@ -306,7 +311,32 @@ function contentFor(page: DocPage, terms: string[]) {
 }
 
 
-export type SearchDocsInvocation = 'tool' | 'eager_context' | (string & {});
+export type SearchDocsInvocation = 'tool' | 'eager_context' | 'eager_preview' | (string & {});
+
+export type SearchDocsOptions = {
+  limit?: number;
+  invocation?: SearchDocsInvocation;
+  contentResultCount?: number;
+  maxContentChars?: number;
+  maxSections?: number;
+  /** When false, skip page hydration and return metadata/snippets only. */
+  hydrateContent?: boolean;
+};
+
+export const EAGER_SEARCH_ENABLED = process.env.DOCS_AGENT_EAGER_SEARCH !== '0';
+
+export function shouldRunEagerDocsSearch(text: string): boolean {
+  if (!EAGER_SEARCH_ENABLED) return false;
+  if (text.trim().length < 3) return false;
+
+  const normalized = text.toLowerCase();
+  const accountTerms =
+    /\b(account|billing|invoice|payment|refund|subscription|ticket|dashboard|workspace|organization|org|api key)\b/;
+  const personalTerms =
+    /\b(my|our|me|us|latest|current|status|paid|check|look up|lookup|change|cancel|delete|update)\b/;
+
+  return !(accountTerms.test(normalized) && personalTerms.test(normalized));
+}
 
 export type SearchDocsResult = {
   retrieval: 'bm25-lexical-local';
@@ -321,11 +351,12 @@ export type SearchDocsResult = {
   }>;
 };
 
-export function searchDocs(
-  query: string,
-  options: { limit?: number; invocation?: SearchDocsInvocation } = {}
-): SearchDocsResult {
+export function searchDocs(query: string, options: SearchDocsOptions = {}): SearchDocsResult {
   const limit = options.limit ?? DEFAULT_LIMIT;
+  const contentResultCount = options.contentResultCount ?? DEFAULT_CONTENT_RESULT_COUNT;
+  const maxContentChars = options.maxContentChars ?? DEFAULT_MAX_CONTENT_CHARS;
+  const maxSections = options.maxSections ?? DEFAULT_MAX_SECTIONS;
+  const hydrateContent = options.hydrateContent ?? true;
   const totalStarted = performance.now();
   const tokenizeStarted = performance.now();
   const terms = tokenize(query);
@@ -357,7 +388,9 @@ export function searchDocs(
     url: page.url,
     description: page.description,
     snippet: snippet(page, effective),
-    ...(index < MAX_CONTENT_RESULTS ? contentFor(page, effective) : {}),
+    ...(hydrateContent && index < contentResultCount
+      ? contentFor(page, effective, maxContentChars, maxSections)
+      : {}),
   }));
   const hydrateMs = performance.now() - hydrateStarted;
   const totalMs = performance.now() - totalStarted;

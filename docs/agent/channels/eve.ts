@@ -1,7 +1,7 @@
 import type { UserContent } from 'ai';
 import { none } from 'eve/channels/auth';
 import { defaultEveAuth, eveChannel } from 'eve/channels/eve';
-import { DEFAULT_SEARCH_LIMIT, searchDocs, type SearchDocsResult } from '../lib/docs-search';
+import { searchDocs, shouldRunEagerDocsSearch, type SearchDocsResult } from '../lib/docs-search';
 
 /**
  * HTTP channel for the docs assistant.
@@ -12,9 +12,11 @@ import { DEFAULT_SEARCH_LIMIT, searchDocs, type SearchDocsResult } from '../lib/
  * (or gate it behind the site's own auth).
  */
 
-const EAGER_SEARCH_ENABLED = process.env.DOCS_AGENT_EAGER_SEARCH !== '0';
-const EAGER_SEARCH_LIMIT = DEFAULT_SEARCH_LIMIT;
-const MAX_CONTEXT_SECTIONS = 8;
+const EAGER_SEARCH_LIMIT = 3;
+const EAGER_CONTENT_RESULTS = 2;
+const EAGER_MAX_CONTENT_CHARS = 6000;
+const EAGER_MAX_SECTIONS = 6;
+const MAX_CONTEXT_SECTIONS = EAGER_MAX_SECTIONS;
 
 function messageToText(message: string | UserContent): string {
   if (typeof message === 'string') return message;
@@ -25,19 +27,8 @@ function messageToText(message: string | UserContent): string {
     .trim();
 }
 
-function isClearlyAccountSpecificRequest(text: string): boolean {
-  const normalized = text.toLowerCase();
-  const accountTerms = /\b(account|billing|invoice|payment|refund|subscription|ticket|dashboard|workspace|organization|org|api key)\b/;
-  const personalTerms = /\b(my|our|me|us|latest|current|status|paid|check|look up|lookup|change|cancel|delete|update)\b/;
-
-  return accountTerms.test(normalized) && personalTerms.test(normalized);
-}
-
 function shouldEagerSearch(text: string): boolean {
-  if (!EAGER_SEARCH_ENABLED) return false;
-  if (text.trim().length < 3) return false;
-  if (isClearlyAccountSpecificRequest(text)) return false;
-  return true;
+  return shouldRunEagerDocsSearch(text);
 }
 
 function formatSections(result: SearchDocsResult['results'][number]): string {
@@ -84,7 +75,13 @@ function buildEagerSearchContext(message: string | UserContent): string[] | unde
   if (!shouldEagerSearch(text)) return undefined;
 
   try {
-    const result = searchDocs(text, { limit: EAGER_SEARCH_LIMIT, invocation: 'eager_context' });
+    const result = searchDocs(text, {
+      limit: EAGER_SEARCH_LIMIT,
+      contentResultCount: EAGER_CONTENT_RESULTS,
+      maxContentChars: EAGER_MAX_CONTENT_CHARS,
+      maxSections: EAGER_MAX_SECTIONS,
+      invocation: 'eager_context',
+    });
     const context = formatEagerSearchContext(result);
     return context ? [context] : undefined;
   } catch (error) {
