@@ -18,6 +18,11 @@ permissions:
 jobs:
   sync-search:
     runs-on: ubuntu-latest
+    # The Algolia admin key is stored as an environment secret, not a repo
+    # secret. Declaring the environment is what exposes `secrets.*` (and any
+    # env-scoped `vars.*`) to this job — without it the key resolves empty and
+    # the sync silently skips.
+    environment: Production
     defaults:
       run:
         working-directory: ./docs
