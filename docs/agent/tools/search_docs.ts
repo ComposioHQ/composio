@@ -12,9 +12,10 @@ import {
 /**
  * search_docs — find the most relevant Composio docs pages for a query.
  *
- * Returns each match's title, URL, description, and a snippet. The top matches
- * also include compact page excerpts so the agent can often answer after one
- * tool call instead of doing a separate search_docs -> read_doc round trip.
+ * This is a local, in-memory lexical retriever. It uses a BM25-style body score
+ * plus field boosts for title, description, headings, and URL. The top results
+ * include full page content (bounded per page), so the model gets rich context
+ * in the same fast tool call instead of doing a serial search -> read round trip.
  */
 
 // Collection priority: docs first, then examples, then references and toolkits.
@@ -29,25 +30,86 @@ const PRIORITY: Record<DocPage['collection'], number> = {
 };
 
 const DEFAULT_LIMIT = 5;
-const MAX_EVIDENCE_RESULTS = 3;
-const EVIDENCE_CHARS = 1_800;
-const MAX_SECTIONS = 12;
+const MAX_CONTENT_RESULTS = 4;
+const MAX_CONTENT_CHARS = 10_000;
+const MAX_SECTIONS = 16;
+const BM25_K1 = 1.2;
+const BM25_B = 0.75;
 
-function countOccurrences(text: string, term: string, max = 5): number {
-  let count = 0;
-  let from = 0;
+type CorpusEntry = {
+  page: DocPage;
+  termCounts: Map<string, number>;
+  length: number;
+};
 
-  while (count < max) {
-    const at = text.indexOf(term, from);
-    if (at === -1) break;
-    count += 1;
-    from = at + term.length;
+type Corpus = {
+  entries: CorpusEntry[];
+  documentFrequency: Map<string, number>;
+  averageLength: number;
+};
+
+let corpusCache: Corpus | undefined;
+
+function termCountsFor(page: DocPage): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const token of tokenize(page.lowerText)) {
+    counts.set(token, (counts.get(token) ?? 0) + 1);
   }
 
-  return count;
+  return counts;
 }
 
-function score(page: DocPage, terms: string[]): number {
+function getCorpus(): Corpus {
+  if (corpusCache) return corpusCache;
+
+  const entries = buildIndex().map(page => {
+    const termCounts = termCountsFor(page);
+    return {
+      page,
+      termCounts,
+      length: [...termCounts.values()].reduce((sum, count) => sum + count, 0),
+    };
+  });
+  const documentFrequency = new Map<string, number>();
+
+  for (const entry of entries) {
+    for (const term of entry.termCounts.keys()) {
+      documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1);
+    }
+  }
+
+  corpusCache = {
+    entries,
+    documentFrequency,
+    averageLength:
+      entries.reduce((sum, entry) => sum + entry.length, 0) / Math.max(entries.length, 1),
+  };
+  return corpusCache;
+}
+
+function idf(term: string, corpus: Corpus): number {
+  const n = corpus.entries.length;
+  const df = corpus.documentFrequency.get(term) ?? 0;
+  return Math.log(1 + (n - df + 0.5) / (df + 0.5));
+}
+
+function bm25(entry: CorpusEntry, terms: string[], corpus: Corpus): number {
+  let total = 0;
+
+  for (const term of terms) {
+    const tf = entry.termCounts.get(term) ?? 0;
+    if (tf === 0) continue;
+
+    const denominator =
+      tf + BM25_K1 * (1 - BM25_B + BM25_B * (entry.length / corpus.averageLength));
+    total += idf(term, corpus) * ((tf * (BM25_K1 + 1)) / denominator);
+  }
+
+  return total;
+}
+
+function fieldBoost(page: DocPage, terms: string[]): number {
   const title = page.title.toLowerCase();
   const description = page.description.toLowerCase();
   const url = page.url.toLowerCase();
@@ -58,13 +120,25 @@ function score(page: DocPage, terms: string[]): number {
     if (description.includes(term)) total += 5;
     for (const heading of page.headings) if (heading.includes(term)) total += 4;
     if (url.includes(term)) total += 6;
-    total += countOccurrences(page.lowerText, term);
   }
+
+  return total;
+}
+
+function score(entry: CorpusEntry, terms: string[], corpus: Corpus): number {
+  let total = bm25(entry, terms, corpus) * 8 + fieldBoost(entry.page, terms);
+  const isMigrationIntent = terms.some(term =>
+    ['migration', 'migrate', 'direct', 'legacy', 'v1', 'v2'].includes(term)
+  );
 
   // Heavily downrank legacy (direct-execution) pages so they only surface when
   // nothing in the session-based docs matches.
-  if (page.legacy) total *= 0.12;
-  return total * (PRIORITY[page.collection] ?? 1);
+  if (entry.page.legacy) total *= 0.12;
+  // Migration pages mention both old and current APIs a lot; keep them for
+  // migration/direct-execution questions, but don't let them beat canonical
+  // session docs for ordinary usage questions.
+  if (!isMigrationIntent && entry.page.url.includes('/migration-guide')) total *= 0.35;
+  return total * (PRIORITY[entry.page.collection] ?? 1);
 }
 
 function firstTermMatch(text: string, terms: string[]): number {
@@ -96,12 +170,25 @@ function snippet(page: DocPage, terms: string[]): string {
   return excerpt(page.text, terms, 360).value;
 }
 
-function evidenceFor(page: DocPage, terms: string[]) {
+function dedupeByUrl(ranked: { page: DocPage; s: number }[]): { page: DocPage; s: number }[] {
+  const seen = new Set<string>();
+  const deduped: { page: DocPage; s: number }[] = [];
+
+  for (const item of ranked) {
+    if (seen.has(item.page.url)) continue;
+    seen.add(item.page.url);
+    deduped.push(item);
+  }
+
+  return deduped;
+}
+
+function contentFor(page: DocPage, terms: string[]) {
   const found = readPageByUrl(page.url);
 
   if (found) {
     const markdown = toCleanMarkdown(found.raw);
-    const evidence = excerpt(markdown, terms, EVIDENCE_CHARS);
+    const evidence = excerpt(markdown, terms, MAX_CONTENT_CHARS);
 
     return {
       sections: extractSections(markdown).slice(0, MAX_SECTIONS),
@@ -110,7 +197,7 @@ function evidenceFor(page: DocPage, terms: string[]) {
     };
   }
 
-  const evidence = excerpt(page.text, terms, EVIDENCE_CHARS);
+  const evidence = excerpt(page.text, terms, MAX_CONTENT_CHARS);
   return {
     content: evidence.value,
     contentTruncated: evidence.truncated,
@@ -119,7 +206,7 @@ function evidenceFor(page: DocPage, terms: string[]) {
 
 export default defineTool({
   description:
-    'Search the Composio documentation. Returns relevant pages with title, URL, description, snippet, and compact content excerpts for the top matches. Answer from those excerpts when sufficient; call read_doc only when you need the full page.',
+    'Search the Composio documentation with a fast BM25-style local retriever. Returns relevant pages and includes full bounded content for the top matches, so you can answer from the returned context. Call read_doc only if you need a page beyond the included content.',
   inputSchema: z.object({
     query: z
       .string()
@@ -145,19 +232,22 @@ export default defineTool({
             .toLowerCase()
             .split(/\s+/)
             .filter(t => t.length > 1);
-    const ranked = buildIndex()
-      .map(page => ({ page, s: score(page, effective) }))
-      .filter(({ s }) => s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, limit);
+    const corpus = getCorpus();
+    const ranked = dedupeByUrl(
+      corpus.entries
+        .map(entry => ({ page: entry.page, s: score(entry, effective, corpus) }))
+        .filter(({ s }) => s > 0)
+        .sort((a, b) => b.s - a.s)
+    ).slice(0, limit);
 
     return {
+      retrieval: 'bm25-lexical-local',
       results: ranked.map(({ page }, index) => ({
         title: page.title,
         url: page.url,
         description: page.description,
         snippet: snippet(page, effective),
-        ...(index < MAX_EVIDENCE_RESULTS ? evidenceFor(page, effective) : {}),
+        ...(index < MAX_CONTENT_RESULTS ? contentFor(page, effective) : {}),
       })),
     };
   },
