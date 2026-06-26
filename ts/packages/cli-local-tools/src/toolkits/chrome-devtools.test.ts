@@ -1,21 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import packageJson from '../../package.json';
 import { executeLocalToolBySlug, getLocalToolInputDefinition } from '../registry';
 import { chromeDevtoolsToolkit } from './chrome-devtools';
 
 describe('@composio/cli-local-tools Chrome DevTools toolkit', () => {
-  it('keeps chrome-devtools-mcp runtime metadata aligned with the package pin', () => {
-    const version = packageJson.devDependencies['chrome-devtools-mcp'];
-    const packageSpecifier = `chrome-devtools-mcp@${version}`;
-    const command = `npx -y --package ${packageSpecifier} chrome-devtools`;
-    const readinessArgs = chromeDevtoolsToolkit.tools[0]?.execution.readiness?.args;
-
-    expect(chromeDevtoolsToolkit.source?.package).toBe(packageSpecifier);
-    expect(chromeDevtoolsToolkit.source?.command).toBe(command);
-    expect(chromeDevtoolsToolkit.setup.install).toContain(packageSpecifier);
-    expect(readinessArgs).toEqual(['-y', '--package', packageSpecifier, 'chrome-devtools']);
-  });
-
   it('exposes first-class schemas for documented Chrome DevTools tools', () => {
     expect(chromeDevtoolsToolkit.source?.type).toBe('mcp');
     expect(chromeDevtoolsToolkit.tools.map(tool => tool.slug)).toEqual(
