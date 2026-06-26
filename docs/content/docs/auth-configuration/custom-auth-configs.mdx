@@ -30,9 +30,7 @@ You'll need to customize the auth config when you want to use different values t
 
 <Tabs items={['Example: PostHog', 'Example: Hubspot']}>
   <Tab value="Example: PostHog">
-You may change the subdomain for the PostHog toolkit to match your own instance.
-
-<Figure src="/images/custom-auth-posthog.png" alt="PostHog Auth Config Settings" caption="PostHog Auth Config Settings" size="sm" />
+PostHog connections use a per-connection region: `us` for US Cloud or `eu` for EU Cloud. Set a default region on the auth config's `shared_credentials` if most users connect to one region; users can still choose the region during the Connect Link flow. Full custom PostHog URLs and self-hosted PostHog instances are not supported.
   </Tab>
   <Tab value="Example: Hubspot">
 For Hubspot you may customize everything here. For each auth scheme there is a different set of fields.

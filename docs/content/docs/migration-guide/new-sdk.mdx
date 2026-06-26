@@ -1138,6 +1138,10 @@ The following table lists important API endpoints that have changed. You can use
 This list is not exhaustive. Please refer to the [API Reference](/reference) for the complete list of endpoints.
 </Callout>
 
+<Callout type="warn">
+Legacy `/api/v1` and `/api/v2` endpoints now return `410 Gone`. Move callers to the current v3 or v3.1 endpoints before deploying SDK v3 integrations.
+</Callout>
+
 ### Toolkits (formerly Apps)
 
 | Previous Endpoint | Current Endpoint |
@@ -1155,7 +1159,7 @@ This list is not exhaustive. Please refer to the [API Reference](/reference) for
 | `GET /api/v2/actions/{actionId}` | `GET /api/v3/tools/{tool_slug}` |
 | `POST /api/v2/actions/{actionId}/execute` | `POST /api/v3/tools/execute/{tool_slug}` |
 | `POST /api/v2/actions/{actionId}/execute/get.inputs` | `POST /api/v3/tools/execute/{tool_slug}/input` |
-| `POST /api/v2/actions/proxy` | `POST /api/v3/tools/execute/proxy` |
+| `POST /api/v2/actions/proxy` | `POST /api/v3.1/tools/execute/proxy` |
 
 ### Auth Configs (formerly Integrations/Connectors)
 

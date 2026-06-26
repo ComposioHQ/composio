@@ -259,6 +259,14 @@ Proxy execute requires auth context. Pass `connected_account_id` / `connectedAcc
 
 The `endpoint` can be a relative path or absolute URL. Relative paths are resolved against the connected account's base URL. Absolute URLs are only accepted when they use the same scheme and registrable domain as that base URL. Cross-subdomain requests on the same registrable domain still work.
 
+<Callout title="Use a scoped API key">
+Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has the **Proxy execute** permission granted. Proxy execute is available on the v3.1 API surface; use a current SDK for direct proxy calls.
+</Callout>
+
+<Callout type="info">
+Proxy execute requests have a 250 MB payload cap, including request body and forwarded file data.
+</Callout>
+
 <Callout type="warn">
 Prefer relative endpoints when possible. They resolve against the connected account's base URL and avoid same-domain validation issues.
 </Callout>

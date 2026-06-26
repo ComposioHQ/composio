@@ -133,6 +133,8 @@ console.log(connectionRequest.redirectUrl);
 </Tab>
 </Tabs>
 
+If an expired connection causes Composio to pause a trigger, subscriptions that enable `composio.trigger.disabled` also receive a disabled event with `data.disabled_reason = "connection_expired"`. See [trigger disabled events](/docs/setting-up-triggers/subscribing-to-events#trigger-disabled-events) for the full payload behavior.
+
 ## Next
 
 <Card icon={<ShieldCheck />} title="Manual auth management" href="/docs/manually-authenticating" description="Generate Connect Links yourself, check connection status, and disable in-chat prompts" />

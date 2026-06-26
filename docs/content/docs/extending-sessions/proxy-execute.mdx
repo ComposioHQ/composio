@@ -14,6 +14,10 @@ Proxy execute is a building block, not just a fallback. Use it to build experien
 Proxy execute is gated behind its own permission. Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has the **Proxy execute** permission granted. Default full-access keys already include it.
 </Callout>
 
+<Callout type="info">
+Proxy execute requests have a 250 MB payload cap, including request body and forwarded file data.
+</Callout>
+
 ## When to use it
 
 - **Endpoints with no predefined tool.** You need a specific endpoint (an unusual GitHub, LinkedIn, or Notion route) that isn't exposed as a Composio tool. Send it through the proxy instead of extracting the raw token and calling the API yourself.

@@ -80,41 +80,11 @@ console.log('Toolkit:', account.toolkit.slug);
   </Tab>
 </Tabs>
 
-### Get account credentials
+### Credential access
 
-Get account credentials for use with your own tools:
+Connected account responses include connection metadata and auth scheme information, but sensitive credential values are redacted. This applies to Composio-managed and custom auth configs.
 
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-# Get the connected account's authentication state
-if account.state:
-    # The state contains the auth scheme and credentials
-    auth_scheme = account.state.auth_scheme
-    credentials = account.state.val
-
-    print(f"Auth scheme: {auth_scheme}")
-    print(f"Credentials: {credentials}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const account = await composio.connectedAccounts.get('ca_123');
-// ---cut---
-// Get the connected account's authentication state
-if (account.state) {
-  // The state contains the auth scheme and credentials
-  const authScheme = account.state.authScheme;
-  const credentials = account.state.val;
-
-  console.log('Auth scheme:', authScheme);
-  console.log('Credentials:', credentials);
-}
-```
-  </Tab>
-</Tabs>
+Use [proxy execute](/docs/extending-sessions/proxy-execute) or [custom tools that extend a toolkit](/docs/extending-sessions/custom-tools-and-toolkits#accessing-authenticated-apis) when your code needs to call an upstream API with a user's credentials. Composio injects the credential server-side, so your application does not handle raw tokens, API keys, or passwords.
 
 ## Refresh credentials
 
@@ -218,42 +188,6 @@ console.log('Account deleted successfully');
 
 <Callout type="warn">
 Deletion is permanent and cannot be undone.
-</Callout>
-
-## Credential masking
-
-By default, sensitive fields in connected account responses are partially masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
-
-Instead of returning full values, the API returns the first 4 characters followed by `...`:
-
-```json
-{
-  "access_token": "gho_...",
-  "refresh_token": "ghr_...",
-  "api_key": "sk-l..."
-}
-```
-
-Values shorter than 4 characters are replaced with `REDACTED`.
-
-This applies to the Get Connected Account and List Connected Accounts endpoints.
-
-### Disabling masking
-
-If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
-
-1. **Dashboard**: Go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets"
-2. **API**:
-
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"mask_secret_keys_in_connected_account": false}'
-```
-
-<Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
 </Callout>
 
 ## Multiple accounts

@@ -176,8 +176,35 @@ export async function POST(request: Request) {
 </Tabs>
 
 <Callout>
-Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
+Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.rawPayload.type` first; for trigger messages, use `result.payload.triggerSlug` to handle specific trigger types.
 </Callout>
+
+### Trigger disabled events
+
+Subscribe to `composio.trigger.disabled` when you want to react after Composio disables a trigger on your behalf. The event fires only for platform-initiated disables, such as an expired connected account, webhook subscription refresh failures, provider auth failures, or repeated polling failures. It does not fire when you disable a trigger yourself.
+
+Add the event to the webhook subscription's `enabled_events`:
+
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/webhook_subscriptions/ws_your_subscription_id \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled_events": [
+      "composio.trigger.message",
+      "composio.trigger.disabled"
+    ]
+  }'
+```
+
+The V3 payload uses `data.disabled_reason` to explain why the trigger was disabled:
+
+| `disabled_reason` | What it means |
+|---|---|
+| `connection_expired` | The connected account expired. Re-authenticate the user; Composio re-enables the trigger after the account returns to `ACTIVE`. |
+| `subscription_auth_failure` | The provider rejected credentials while Composio refreshed the webhook subscription. Re-authenticate the connection. |
+| `subscription_refresh_failure` | Composio could not refresh the provider webhook subscription because the provider failed, timed out, or was unreachable. Re-enable the trigger after the provider is healthy. |
+| `polling_failure_in_composio_infra` | Composio could not fetch polling events for this trigger after repeated retries. |
 
 ### Inspecting trigger payload schemas
 
