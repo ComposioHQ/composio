@@ -75,6 +75,30 @@ const session = await composio.sessions.create('user_123', {
 
 ---
 
+### delete()
+
+Delete a tool router session by ID.
+
+Deleted sessions immediately stop being retrievable or executable. Deleting
+a missing or already-deleted session surfaces the backend 404.
+
+```typescript
+async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `string` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolRouterSessionDeleteResponse>`
+
+---
+
 ### use()
 
 Use an existing session
