@@ -37,6 +37,8 @@ const MAX_CONTENT_CHARS = 10_000;
 const MAX_SECTIONS = 16;
 const BM25_K1 = 1.2;
 const BM25_B = 0.75;
+const PERF_LOG_ENABLED = process.env.DOCS_AGENT_SEARCH_PERF_LOG === '1';
+const PERF_LOG_QUERY = process.env.DOCS_AGENT_SEARCH_LOG_QUERY === '1';
 
 type CorpusEntry = {
   page: DocPage;
@@ -50,7 +52,32 @@ type Corpus = {
   averageLength: number;
 };
 
+type CorpusSource = 'precomputed' | 'runtime';
+
+type PrecomputedCorpusResult =
+  | { corpus: Corpus; fallbackReason?: never }
+  | { corpus?: never; fallbackReason: string };
+
+type CorpusLoad = {
+  corpus: Corpus;
+  source: CorpusSource;
+  cached: boolean;
+  loadMs: number;
+  fallbackReason?: string;
+};
+
 let corpusCache: Corpus | undefined;
+let corpusCacheSource: CorpusSource | undefined;
+let corpusCacheFallbackReason: string | undefined;
+
+function roundMs(ms: number): number {
+  return Math.round(ms * 100) / 100;
+}
+
+function logPerf(payload: Record<string, unknown>) {
+  if (!PERF_LOG_ENABLED) return;
+  console.info(`[docs-agent:search_docs] ${JSON.stringify(payload)}`);
+}
 
 function termCountsFor(page: DocPage): Map<string, number> {
   const counts = new Map<string, number>();
@@ -87,9 +114,12 @@ function buildRuntimeCorpus(pages: DocPage[]): Corpus {
   };
 }
 
-function buildPrecomputedCorpus(pages: DocPage[]): Corpus | undefined {
+function buildPrecomputedCorpus(pages: DocPage[]): PrecomputedCorpusResult {
   const search = getBundleSearchIndex();
-  if (!search || search.entries.length !== pages.length) return undefined;
+  if (!search) return { fallbackReason: 'missing-precomputed-index' };
+  if (search.entries.length !== pages.length) {
+    return { fallbackReason: `entry-count-mismatch:${search.entries.length}:${pages.length}` };
+  }
 
   const entries: CorpusEntry[] = [];
 
@@ -97,7 +127,10 @@ function buildPrecomputedCorpus(pages: DocPage[]): Corpus | undefined {
     const page = pages[index];
     const entry = search.entries[index];
 
-    if (!entry || entry.key !== pageSearchKey(page)) return undefined;
+    if (!entry) return { fallbackReason: `missing-entry:${index}` };
+    if (entry.key !== pageSearchKey(page)) {
+      return { fallbackReason: `entry-key-mismatch:${index}:${page.url}` };
+    }
 
     entries.push({
       page,
@@ -107,18 +140,45 @@ function buildPrecomputedCorpus(pages: DocPage[]): Corpus | undefined {
   }
 
   return {
-    entries,
-    documentFrequency: new Map(search.documentFrequency),
-    averageLength: search.averageLength,
+    corpus: {
+      entries,
+      documentFrequency: new Map(search.documentFrequency),
+      averageLength: search.averageLength,
+    },
   };
 }
 
-function getCorpus(): Corpus {
-  if (corpusCache) return corpusCache;
+function getCorpus(): CorpusLoad {
+  if (corpusCache && corpusCacheSource) {
+    return {
+      corpus: corpusCache,
+      source: corpusCacheSource,
+      cached: true,
+      loadMs: 0,
+      fallbackReason: corpusCacheFallbackReason,
+    };
+  }
 
+  const started = performance.now();
   const pages = buildIndex();
-  corpusCache = buildPrecomputedCorpus(pages) ?? buildRuntimeCorpus(pages);
-  return corpusCache;
+  const precomputed = buildPrecomputedCorpus(pages);
+
+  if (precomputed.corpus) {
+    corpusCache = precomputed.corpus;
+    corpusCacheSource = 'precomputed';
+  } else {
+    corpusCache = buildRuntimeCorpus(pages);
+    corpusCacheSource = 'runtime';
+    corpusCacheFallbackReason = precomputed.fallbackReason;
+  }
+
+  return {
+    corpus: corpusCache,
+    source: corpusCacheSource,
+    cached: false,
+    loadMs: performance.now() - started,
+    fallbackReason: corpusCacheFallbackReason,
+  };
 }
 
 function idf(term: string, corpus: Corpus): number {
@@ -256,6 +316,8 @@ export default defineTool({
       .describe('How many pages to return. Defaults to 5.'),
   }),
   async execute({ query, limit = DEFAULT_LIMIT }) {
+    const totalStarted = performance.now();
+    const tokenizeStarted = performance.now();
     const terms = tokenize(query);
     // Fall back to raw terms if the query was all stopwords.
     const effective =
@@ -265,23 +327,56 @@ export default defineTool({
             .toLowerCase()
             .split(/\s+/)
             .filter(t => t.length > 1);
-    const corpus = getCorpus();
+    const tokenizeMs = performance.now() - tokenizeStarted;
+
+    const corpusLoad = getCorpus();
+    const corpus = corpusLoad.corpus;
+
+    const rankStarted = performance.now();
     const ranked = dedupeByUrl(
       corpus.entries
         .map(entry => ({ page: entry.page, s: score(entry, effective, corpus) }))
         .filter(({ s }) => s > 0)
         .sort((a, b) => b.s - a.s)
     ).slice(0, limit);
+    const rankMs = performance.now() - rankStarted;
+
+    const hydrateStarted = performance.now();
+    const results = ranked.map(({ page }, index) => ({
+      title: page.title,
+      url: page.url,
+      description: page.description,
+      snippet: snippet(page, effective),
+      ...(index < MAX_CONTENT_RESULTS ? contentFor(page, effective) : {}),
+    }));
+    const hydrateMs = performance.now() - hydrateStarted;
+    const totalMs = performance.now() - totalStarted;
+
+    logPerf({
+      event: 'search_docs',
+      retrieval: 'bm25-lexical-local',
+      totalMs: roundMs(totalMs),
+      tokenizeMs: roundMs(tokenizeMs),
+      corpusLoadMs: roundMs(corpusLoad.loadMs),
+      rankMs: roundMs(rankMs),
+      hydrateMs: roundMs(hydrateMs),
+      corpusSource: corpusLoad.source,
+      corpusCached: corpusLoad.cached,
+      corpusFallbackReason: corpusLoad.fallbackReason,
+      queryChars: query.length,
+      termCount: effective.length,
+      limit,
+      resultCount: results.length,
+      contentResultCount: results.filter(result => 'content' in result).length,
+      corpusPages: corpus.entries.length,
+      corpusTerms: corpus.documentFrequency.size,
+      topUrls: results.slice(0, 5).map(result => result.url),
+      ...(PERF_LOG_QUERY ? { query, terms: effective } : {}),
+    });
 
     return {
       retrieval: 'bm25-lexical-local',
-      results: ranked.map(({ page }, index) => ({
-        title: page.title,
-        url: page.url,
-        description: page.description,
-        snippet: snippet(page, effective),
-        ...(index < MAX_CONTENT_RESULTS ? contentFor(page, effective) : {}),
-      })),
+      results,
     };
   },
 });
