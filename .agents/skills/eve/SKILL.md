@@ -25,3 +25,5 @@ relevant guide there first.
 
 If `eve` is not installed yet, install it (`npm install eve`) or scaffold a new
 agent with `npx eve init <agent-name>`, then read the bundled docs.
+
+See `references/source-of-truth.md` for the repo-local handoff boundary.

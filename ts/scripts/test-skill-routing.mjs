@@ -58,6 +58,11 @@ const probes = [
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
   },
   {
+    task: 'build or debug a durable backend agent with eve channels and schedules',
+    expect: 'eve',
+    terms: ['durable backend AI agents', 'eve framework', 'channels', 'schedules'],
+  },
+  {
     task: 'create a Python provider adapter under python/providers with metadata',
     expect: 'python-providers',
     terms: ['python/providers', 'Python provider adapters', 'provider metadata', 'framework-specific dependencies'],
