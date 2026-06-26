@@ -8,8 +8,8 @@ When a recently added Webflow tool such as `WEBFLOW_GET_PAGE` is not found throu
 
 ## When should I use a custom Webflow OAuth app when the default app cannot authorize workspaces?
 
-If Webflow's consent screen does not let the user select a workspace/site or the authorize button is greyed out with Composio's default OAuth app, use the user's own Webflow OAuth app credentials as a workaround. Support reproduced the issue and suspected a default OAuth app configuration or publishing/approval problem; the same workspace was visible when using a custom OAuth app.
+If Webflow's consent screen does not let the user select a workspace/site or the authorize button is greyed out with the default OAuth app, use the user's own Webflow OAuth app credentials so the workspace authorization is controlled by their Webflow app.
 
 ## How should I handle deprecated Webflow v1 endpoints caused publish-site integration failures?
 
-If Webflow calls fail because the integration is using unsupported/deprecated endpoints, check whether the failing action is an older v1 Webflow tool. For related failures, verify the Webflow toolkit action has been updated to current endpoints and avoid older deprecated v1 Webflow tools where possible.
+If Webflow calls fail because the integration is using unsupported or deprecated endpoints, check whether the failing action is an older v1 Webflow tool. Prefer current Webflow toolkit versions and avoid older deprecated v1 Webflow tools where possible.

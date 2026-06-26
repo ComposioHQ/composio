@@ -16,14 +16,10 @@ Use `INSTAGRAM_LIST_ALL_MESSAGES` to list Instagram messages. In playground, sel
 
 ## What should I know about Instagram DM send failures with code 10/subcode 2534022?
 
-- Related engineering/debug context: Slack `C08GBKM6GGH/1781874131.674189`, GitHub ComposioHQ/composio issue #3604
-
 That error is enforced by Instagram/Meta, not Composio. Instagram's messaging API only allows replies inside the 24-hour messaging window. Meta opens that window for specific interactions such as a direct DM from the user, story reply, story mention, or icebreaker/quick-reply button tap. Likes, comments, and follows do not open the window. If the qualifying interaction is older than 24 hours or never happened, the send will fail.
 
 - `INSTAGRAM_SEND_TEXT_MESSAGE` should send `messaging_type: "RESPONSE"` for a normal in-window reply, along with `recipient` and `message`.
-- `INSTAGRAM_MARK_SEEN` can also return the same Meta subcode. Because sender actions are more provider-limited, do not promise it is supported for every Instagram account until the action is retested.
-
-Meta is returning its allowed-window error, but your evidence suggests this may not be a stale conversation. We found the current Composio send request may be missing Meta's `messaging_type: RESPONSE` field for normal replies, so we are routing this as an Instagram toolkit payload issue instead of asking you to reconnect or wait for another inbound message.
+- `INSTAGRAM_MARK_SEEN` can also return the same Meta subcode when Meta does not allow the action for the account or conversation state.
 
 ## When should I use your own Meta OAuth app for high-volume Instagram production usage?
 
@@ -39,7 +35,7 @@ For Instagram DM workflows in clients like n8n or Claude, use Composio For You's
 
 ## How should I handle instagram reply-to-comment may require a scope not available in the managed OAuth app?
 
-If Instagram Reply to Comment fails because the required scope is unavailable on Composio's managed OAuth app, use the user's own Meta OAuth app where that permission is configured and approved. Composio had requested approval for the managed app scope, but BYOC/custom OAuth is the immediate unblock.
+If Instagram Reply to Comment requires a Meta permission that is not available on the managed OAuth app, use the user's own Meta OAuth app where that permission is configured and approved.
 
 ## How should I handle `INSTAGRAM_POST_IG_MEDIA_COMMENTS` failures can be caused by an incorrect `ig_media_id`?
 

@@ -16,7 +16,7 @@ For OneDrive and other Microsoft Graph-backed toolkits, use `/api/v3/tools/get_s
 
 ## What should I pass for `version=latest` if OneDrive folder/list behavior looks stale?
 
-If OneDrive folder listing or related tool behavior appears stale, The user should pass `version: "latest"` in the tool execution request so the call uses the latest toolkit version instead of the default pinned version.
+If OneDrive folder listing or related tool behavior appears stale, pass `version: "latest"` in the tool execution request so the call uses the latest toolkit version instead of the default pinned version.
 
 ## What should I know about OneDrive upload/update file tools?
 

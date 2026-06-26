@@ -1,6 +1,6 @@
 ## What does Supabase authorization mean?
 
-Supabase authorization is usually scoped at the organization level. If a user reports project/account access issues, confirm which Supabase organization/account the connected credentials belong to before treating it as a tool bug.
+Supabase authorization is usually scoped at the organization level. If a user reports project/account access issues, confirm which Supabase organization/account the connected credentials belong to before treating it as a tool issue.
 
 ## How should I handle supabase API-key connections pass `supabase_personal_token` during connected account creation?
 

@@ -2,7 +2,7 @@
 
 HubSpot shows this warning when the OAuth app being installed has not been approved by HubSpot's ecosystem review process. The OAuth connection can still work, but HubSpot asks the user to explicitly accept the risk before continuing.
 
-For Composio-managed HubSpot auth, this depends on Composio's HubSpot app approval status. We are actively working through HubSpot's approval process and expect this to be resolved in the near future. Once the Composio HubSpot app is approved by HubSpot, this warning should stop appearing for new installs that use the approved app.
+For Composio-managed HubSpot auth, this depends on Composio's HubSpot app approval status. If the warning blocks your users, use your own HubSpot OAuth app credentials in a custom Composio auth config.
 
 For custom auth, the warning depends on your own HubSpot developer app. If your users see this warning with custom credentials, submit your HubSpot app for the relevant HubSpot approval or listing flow.
 
@@ -113,13 +113,7 @@ Use your own HubSpot OAuth app credentials/custom auth config. That gives contro
 
 ## What should I do if HubSpot shows an unverified app warning?
 
-- Search terms: HubSpot app unverified; HubSpot not reviewed or approved; Connecting an unverified app; Composio managed HubSpot OAuth app verification; HubSpot app review warning; HubSpot OAuth approval ETA
-
-The default managed HubSpot OAuth app is intended to make setup easy for users getting started with Composio. Until HubSpot verifies it, the only practical unblock path for users who cannot accept the warning is to use their own HubSpot OAuth app credentials in a custom Composio auth config. If they already have a HubSpot OAuth app, they can bring those credentials and control the app identity/verification posture shown during OAuth.
-
-The HubSpot OAuth app verification timeline depends on HubSpot, so there may not be an exact ETA until HubSpot completes review.
-
-In the meantime, if this warning blocks your users, the available workaround is to use your own HubSpot OAuth app credentials in a custom Composio auth config. That lets you control the OAuth app identity and verification posture while HubSpot reviews the Composio-managed app.
+The default managed HubSpot OAuth app is intended to make setup easy for users getting started with Composio. If the warning blocks your users, use your own HubSpot OAuth app credentials in a custom Composio auth config. That lets you control the OAuth app identity and verification posture shown during OAuth.
 
 Link the user to the HubSpot custom OAuth/BYOA guide (`https://composio.dev/auth/hubspot`) and remind them to use the Composio callback URL shown in the auth config, currently `https://backend.composio.dev/api/v3/toolkits/auth/callback`.
 
@@ -129,7 +123,7 @@ HubSpot requires scopes to be declared in the app configuration before OAuth. Th
 
 ## How should I handle hubSpot OAuth token-fetch 400: check client secret and required-scope alignment?
 
-First check the HubSpot OAuth client secret. Several reported your own HubSpot OAuth failures were resolved by copying the correct current client secret from the HubSpot app and updating the Composio custom auth config to match. If the secret was rotated or copied from the wrong HubSpot app, HubSpot can fail token exchange with a 400.
+First check the HubSpot OAuth client secret. If the secret was rotated or copied from the wrong HubSpot app, HubSpot can fail token exchange with a 400.
 
 Then check scope alignment. HubSpot is strict about required scopes:
 
@@ -139,13 +133,9 @@ Then check scope alignment. HubSpot is strict about required scopes:
 
 For Composio-managed HubSpot auth configs, do not change the default scope set. If the user needs a different required/optional scope configuration, they need to use their own HubSpot OAuth app through a custom Composio auth config.
 
-This looks like the HubSpot OAuth callback is failing during token exchange. If you're using your own HubSpot OAuth app, please first confirm the client secret in your Composio auth config matches the current client secret in HubSpot.
+## What should I know about HubSpot scopes?
 
-Also make sure the required scopes in the Composio auth config match the required scopes configured on the HubSpot app. HubSpot treats required scopes strictly; optional scopes can be omitted if the account cannot grant them, so the app should check which optional scopes were actually granted.
-
-## What should I know about Some HubSpot scopes?
-
-If a required HubSpot scope is not configured on Composio’s managed OAuth app, users can use their own HubSpot OAuth app to unblock. For managed auth, Composio may need to add the scope to its OAuth app/default scope list before it can be requested.
+If a required HubSpot scope is not available on the managed OAuth app, use your own HubSpot OAuth app where the scope is configured in HubSpot and requested by the Composio auth config.
 
 ## How should I handle old HubSpot SDK/toolkit versions use old double-prefixed slugs?
 
@@ -167,9 +157,9 @@ For HubSpot marketing objects such as campaigns, HubSpot does not expose a prope
 
 HubSpot webhook APIs need the specific HubSpot app that should receive webhook notifications. For user HubSpot triggers, `app_id` and developer API key are required because each user needs their own HubSpot app for webhook delivery.
 
-## How should I handle after HubSpot trigger fixes, recreate old triggers?
+## How should I handle HubSpot trigger configuration changes?
 
-When HubSpot trigger fixes go live, old trigger instances may need to be deleted and recreated so they pick up the new trigger behavior/configuration.
+After HubSpot trigger configuration changes, old trigger instances may need to be deleted and recreated so they pick up the new behavior/configuration.
 
 ## How should I handle deleting a HubSpot connected account disconnects it and stops token refresh?
 

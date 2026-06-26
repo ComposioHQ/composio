@@ -60,7 +60,7 @@ Use `SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT` when you need to inspect the fields a
 
 ## What does Salesforce org admins may need?
 
-Salesforce connected app usage restrictions can require an org admin to install or approve the connected app before org users can authenticate. The user should check whether the error URL includes `error=invalid_client&error_description=app+must+be+installed+into+org`. In Salesforce Setup, go to OAuth Connected App Usage and look for the app with an Install button in the Actions column. After the admin installs/enables the app, users should retry authentication.
+Salesforce connected app usage restrictions can require an org admin to install or approve the connected app before org users can authenticate. Check whether the error URL includes `error=invalid_client&error_description=app+must+be+installed+into+org`. In Salesforce Setup, go to OAuth Connected App Usage and look for the app with an Install button in the Actions column. After the admin installs/enables the app, users should retry authentication.
 
 ## How should I handle salesforce allows only five active refresh tokens per user per app?
 

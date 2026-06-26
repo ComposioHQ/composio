@@ -20,10 +20,10 @@ YouTube enforces strict API quotas. When users use Composio's default YouTube OA
 
 For YouTube video uploads, prefer passing a local file path through SDK automatic file handling. `FileUploadable` objects go through Composio S3 and may be too small for many videos. If `YOUTUBE_MULTIPART_UPLOAD_VIDEO` is available in the current toolkit version, use that path for larger uploads.
 
-## How should I handle youTube `processing abandoned` can be provider-side, but upload byte-transfer bugs should be checked separately?
+## What can cause YouTube `processing abandoned` after upload?
 
-If YouTube returns `processing abandoned`, first reproduce against the official YouTube API to distinguish provider behavior from a Composio tool bug. One investigated failure found that resumable upload must send raw bytes in the PUT request; multipart/form-data wrapping can create the video resource but fail to transfer usable video bytes.
+YouTube can return `processing abandoned` when the video resource exists but uploaded bytes are not usable. For resumable uploads, YouTube expects raw bytes in the PUT request. Avoid multipart/form-data wrapping for the resumable byte-transfer step.
 
 ## What does YouTube caption download require?
 
-For YouTube caption download, verify the connected account includes `https://www.googleapis.com/auth/youtube.force-ssl`. The scope was described as part of the default YouTube scope set, but the actual connection should still be checked from connection details when a tool call fails.
+For YouTube caption download, verify the connected account includes `https://www.googleapis.com/auth/youtube.force-ssl`. If a caption download tool call fails, check the connection details to confirm the scope was granted.

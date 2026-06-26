@@ -16,11 +16,11 @@ For workbook operations, use the Excel toolkit actions because they are Excel AP
 
 ## How should I handle shared item listing cannot reliably search for a specific shared file?
 
-The shared-items response can change because the underlying sharedWithMe API/tool lacks filters for retrieving a specific expected file after sharing, deleting, or stopping sharing items. Support also could not find an API for a dedicated shared-item search action.
+The shared-items response can change because the underlying Microsoft sharedWithMe API/tool lacks filters for retrieving a specific expected file after sharing, deleting, or stopping sharing items. Use the file ID or drive item metadata when you need to target a specific shared workbook.
 
 ## How should I handle excel support for OAuth2 client credentials may vary by action?
 
-Excel was included in OAuth2 client credentials work for O365 toolkits, but action-level support needs validation because some actions only work with user-delegated tokens in the underlying Microsoft API, while others require compatibility fixes for application-only tokens.
+Excel OAuth2 client-credentials behavior can vary by action because some underlying Microsoft APIs require user-delegated tokens. If an Excel action fails with an application-only token, retry with a delegated OAuth connection or verify that Microsoft supports application permissions for that endpoint.
 
 ## How should I handle excel uses the Microsoft auth guide at composio.dev/auth/outlook?
 
@@ -28,8 +28,8 @@ For Excel auth setup, use the Microsoft auth guide published at https://composio
 
 ## How should I handle upgrade older on-prem versions if Excel schemas contain dollar-sign parameters?
 
-Upgrade to a newer release after the March fixes. the invalid schema keywords were fixed in later versions, CI coverage was added, and upgrading to the latest version should resolve Excel schema parameters that are incompatible with Anthropic models.
+Upgrade to a current release if Excel schemas contain dollar-sign parameters that are incompatible with Anthropic models. Current Excel toolkit versions should expose model-compatible schema fields.
 
 ## How should I handle generic column formatting and wrapping support was added in the May 13 release?
 
-Support committed to adding wrapping and other sheet operations for the next release on May 13, then confirmed the requested tools were added and available in the latest release.
+Use the latest Excel toolkit version for generic column formatting, wrapping, and related sheet operations.

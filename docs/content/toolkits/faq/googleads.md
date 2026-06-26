@@ -32,15 +32,11 @@ Correct call shape:
 
 `GOOGLEADS_MUTATE_CAMPAIGNS` may fail with Google Ads 400 `INVALID_ARGUMENT` errors such as `Unknown name "dailyBudget" at operations[0].update` or `Unknown name "targetedLocations" ... Cannot find field`. These failures happen when the request includes fields that are not valid inline Campaign resource fields.
 
-A real daily budget requires a CampaignBudget resource (`campaignBudgets:mutate`) and then passing the CampaignBudget resource name through `campaign_budget`. Location targeting belongs in CampaignCriterion mutations, not inline Campaign fields. If the current tool schema still exposes unsupported inline fields, omit those fields and use the matching Google Ads resource mutation instead.
+A real daily budget requires a CampaignBudget resource (`campaignBudgets:mutate`) and then passing the CampaignBudget resource name through `campaign_budget`. Location targeting belongs in CampaignCriterion mutations, not inline Campaign fields. Omit unsupported inline Campaign fields and use the matching Google Ads resource mutation instead.
 
 ## How should I handle google Ads OAuth callback token-exchange failures usually point to bad credentials?
 
 The `OAuth callback failed during token exchange` error usually means the credentials used to complete the auth flow are incorrect, most often the client secret. Re-enter or update the client secret in the Google Ads auth config, make sure there are no leading/trailing spaces, and initiate a new connection.
-
-## How should I handle older SDK workaround passed Google Ads developer token and user ID as generic fields?
-
-In the older SDK flow referenced, Google Ads connection initiation could pass the developer token and user ID through `config.val` as `generic_token` and `generic_id` with `authScheme: "OAUTH2"`. This was a workaround for a type issue; prefer the latest SDK and current authConfig developer-token field for new implementations.
 
 ## What does Custom Google OAuth apps need?
 

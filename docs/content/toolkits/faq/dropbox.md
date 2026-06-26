@@ -20,7 +20,7 @@ When initiating a Dropbox OAuth connection through the SDK, pass `entityId`, `au
 
 ## What should I know about Dropbox triggers?
 
-Composio does not currently have Dropbox triggers. Custom triggers are not generally supported yet; if a user needs a specific Dropbox trigger use case, collect the use case and escalate it for integrations/product review.
+Dropbox triggers are not currently listed for this toolkit. If a user needs a specific Dropbox trigger use case, submit the exact event and workflow through the tool request flow.
 
 ## How should I handle dropbox connections use Dropbox native OAuth, not Microsoft/Azure/Outlook login?
 
@@ -28,7 +28,7 @@ The Dropbox integration uses Dropbox's native OAuth2 flow, so users authenticate
 
 ## What does For Dropbox upload, `path` mean?
 
-For the Dropbox upload action, `path` is the destination path inside Dropbox, while `content` is the local file path that should be uploaded. Provide the local file path in `content`; the naming was acknowledged as confusing.
+For the Dropbox upload action, `path` is the destination path inside Dropbox, while `content` is the local file path that should be uploaded. Provide the local file path in `content`.
 
 ## What should I pass for file paths to SDK attachment arguments rather than base64/file metadata objects?
 

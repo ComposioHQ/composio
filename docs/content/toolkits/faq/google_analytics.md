@@ -12,4 +12,4 @@ To use Google Analytics through MCP, create an MCP config with Google Analytics 
 
 ## How should I handle empty Google Analytics reports may be provider data availability rather than Composio failure?
 
-If Google Analytics report tools return no data or unexpected data, verify the same query directly against the Google Analytics Data API, such as `properties:runReport`, with the same access token/property/date range. If the direct API call also has no data, it is likely a Google Analytics data availability/property/date-range issue; if direct API works but Composio does not, escalate with the log ID and direct API comparison.
+If Google Analytics report tools return no data or unexpected data, verify the same query directly against the Google Analytics Data API, such as `properties:runReport`, with the same access token/property/date range. If the direct API call also has no data, it is likely a Google Analytics data availability/property/date-range issue. If the direct API works but the Composio tool does not, contact Composio with the log ID and direct API comparison.

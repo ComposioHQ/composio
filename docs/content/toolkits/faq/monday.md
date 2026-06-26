@@ -64,7 +64,7 @@ If both `MONDAY` and `MONDAY_MCP` are enabled, Tool Router may choose `MONDAY_MC
 
 ## What does Monday scopes come from the OAuth app and do not need?
 
-For Monday, the scopes configured on the Monday OAuth app are picked up during authorization. In the common flow, there is no separate Composio-side scope configuration required unless the user is intentionally requesting a subset.
+For Monday, the scopes configured on the Monday OAuth app are picked up during authorization. In the common flow, no separate Composio scope configuration is required unless the user is intentionally requesting a subset.
 
 ## What does Monday trigger management mean?
 

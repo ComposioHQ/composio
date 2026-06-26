@@ -2,9 +2,9 @@
 
 For a step-by-step guide on creating and configuring your own Zoom OAuth credentials with Composio, see [How to create OAuth credentials for Zoom](https://composio.dev/auth/zoom).
 
-## When should I use a custom Zoom OAuth app when the Composio-managed Zoom app is unavailable or under review?
+## When should I use a custom Zoom OAuth app?
 
-If the Composio-managed Zoom OAuth app is unavailable, under review, suspended, or not yet public, advise the user to use their own Zoom OAuth credentials. For third-party user connections, ensure the Zoom app is active/approved and supports the users being connected.
+Use the user's own Zoom OAuth credentials when they need to control app branding, approval state, scopes, or third-party user access. For third-party user connections, ensure the Zoom app is active/approved and supports the users being connected.
 
 ## How should I handle zoom should use the default Composio redirect URL unless the auth guide says otherwise?
 
@@ -12,7 +12,7 @@ For Zoom OAuth setup, do not arbitrarily change the redirect URL. Use the defaul
 
 ## How do I create a new Zoom auth config if the default OAuth app changed after the config was created?
 
-If a Zoom auth config was created before the current default OAuth app was updated, creating a new auth config is usually the cleanest fix. Support can investigate updating an existing auth config, but new auth config plus fresh connection should be the first recommendation.
+If a Zoom auth config was created before the current default OAuth app settings were updated, creating a new auth config plus a fresh connection is usually the cleanest path.
 
 ## What does `ZOOM_GET_A_MEETING_SUMMARY` need?
 
@@ -20,7 +20,7 @@ For Zoom meeting summaries, verify that the meeting was created with `settings__
 
 ## How should I handle zoom delete/summary tools may require extra scopes in a custom OAuth app?
 
-If a Zoom tool fails with a scope/permission issue, check whether the required scope is configured on the user's Zoom OAuth app. Support specifically discussed adding scopes for `ZOOM_DELETE_MEETING` and `meeting:read:list_past_instances` for fetching meeting instances/summary UUIDs.
+If a Zoom tool fails with a scope/permission issue, check whether the required scope is configured on the user's Zoom OAuth app. Examples include delete-meeting scopes for `ZOOM_DELETE_MEETING` and `meeting:read:list_past_instances` for fetching meeting instances/summary UUIDs.
 
 ## How should I handle zoom OAuth consent branding comes from the user's OAuth app?
 

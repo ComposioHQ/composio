@@ -10,27 +10,12 @@ AADSTS650053: The application asked for scope 'ChannelMessage.Read.Group' that d
 
 treat `ChannelMessage.Read.Group` as the wrong auth layer for the Composio delegated OAuth flow. It is a Microsoft Teams resource-specific consent (RSC) permission, not a normal Microsoft Graph OAuth scope to include in an OAuth `/authorize` URL.
 
-Debug steps:
+Use v3.1 or pass `toolkit_versions[microsoft_teams]=latest` when fetching tools/scopes. `MICROSOFT_TEAMS_TEAMS_GET_MESSAGE` on older metadata can return `ChannelMessage.Read.Group`; the latest/v3.1 replacement is `MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE`.
 
-- Check whether the user is using v3 base/default tool metadata or old Teams slugs.
-- `MICROSOFT_TEAMS_TEAMS_GET_MESSAGE` on v3 base can return `ChannelMessage.Read.Group`; the latest/v3.1 replacement is `MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE`.
-- The user should use v3.1 or pass `toolkit_versions[microsoft_teams]=latest` when fetching tools/scopes.
+To fix the OAuth config:
+
 - Remove `ChannelMessage.Read.Group` from the OAuth auth config scopes and use `ChannelMessage.Read.All`, `Group.Read.All`, or `Group.ReadWrite.All` according to the latest tool scope response.
 - If an existing auth config already includes the bad scope, update/recreate it and reconnect. Existing connected accounts may need refresh/reconnect depending on how the user propagates scope changes.
-
-Minimal stale-path repro:
-
-```bash
-curl --globoff 'https://backend.composio.dev/api/v3/tools/MICROSOFT_TEAMS_TEAMS_GET_MESSAGE' \
-  -H 'x-api-key: <key>'
-Expected stale response includes `version: "00000000_00"` and `scopes: ["ChannelMessage.Read.Group"]`.
-
-Clean path:bash
-curl --globoff 'https://backend.composio.dev/api/v3.1/tools/MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE' \
-  -H 'x-api-key: <key>'
-```
-
-Expected clean response includes `ChannelMessage.Read.All`, not `ChannelMessage.Read.Group`.
 
 ## How should I handle `MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS` and `MICROSOFT_TEAMS_CREATE_MEETING` can work with delegated user scopes?
 
@@ -58,7 +43,7 @@ When fetching Microsoft Teams tools by toolkit, the default list may return only
 
 ## How should I handle some Microsoft Teams slugs were restored as deprecated aliases with replacement descriptions?
 
-Some old Microsoft Teams slugs were deleted during cleanup and then restored with a deprecated flag and descriptions pointing to the correct replacement slugs. If a Teams slug suddenly disappears or changes, check the latest toolkit version/changelog and prefer the replacement slug.
+Some older Microsoft Teams slugs are deprecated aliases with descriptions pointing to replacement slugs. If a Teams slug disappears or changes, check the latest toolkit version/changelog and prefer the replacement slug.
 
 ## How should I handle tool Router memory for Microsoft Teams should be a list under the toolkit key?
 

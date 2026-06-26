@@ -1,6 +1,6 @@
 ## When should I use the Wrike user id, not the account id, when assigning or updating task users?
 
-For Wrike task update or assignment fields, pass the Wrike user `id` value rather than the `accountId`. the usable id was `KUAUJWEG`; Wrike's API validates the placeholder id shown in the user object, not the account id.
+For Wrike task update or assignment fields, pass the Wrike user `id` value rather than the `accountId`. Wrike's API validates the user `id` shown in the user object, not the account ID.
 
 ## How should I handle wrike task responses expose multiple user-id fields and can resolve names?
 
@@ -16,8 +16,8 @@ When using v3 SDK connection APIs, pass the `entityId` as a string. If the code 
 
 ## How should I handle reconnect Wrike accounts that failed to refresh after an outage?
 
-If a Wrike connection fails to refresh after an outage or token-refresh incident, have the account owner reconnect. Generate a new auth link with the connected-account refresh API, or delete the connected account and ask the owner to reconnect it.
+If a Wrike connection fails to refresh, have the account owner reconnect. Generate a new auth link with the connected-account refresh API, or delete the connected account and ask the owner to reconnect it.
 
-## When should I use Wrike toolkit version 20260204_00 or latest for nested folder pagination fixes?
+## When should I use Wrike toolkit version 20260204_00 or latest for nested folder pagination?
 
-For Wrike folder APIs, avoid the older `00000000_00` toolkit version when dealing with nested folders. The recursive pagination issue for nested folder trees was fixed in version `20260204_00`; retry with that version or `latest`.
+For Wrike folder APIs, avoid the older `00000000_00` toolkit version when dealing with nested folders. Use version `20260204_00` or `latest` for recursive nested-folder pagination.

@@ -1,3 +1,3 @@
-## How should I handle klaviyo schema keys that exceeded Claude's 64-character limit were fixed?
+## How should I handle Klaviyo schema keys that exceed Claude's 64-character limit?
 
-For Klaviyo tool schemas that failed Claude validation because flattened nested property keys exceeded 64 characters, the backend schema-generation issue was fixed in the latest version. The user should update or re-fetch the latest tools/schema before retrying. The same fix also addressed top-level parameter naming issues such as `$` prefixes; nested `$` parameters were verified as accepted across major model providers and SDKs.
+For Klaviyo tool schemas that fail Claude validation because flattened nested property keys exceed 64 characters, update or re-fetch the latest tools/schema before retrying. Current schema generation avoids the long flattened keys and top-level `$` parameter names that can trigger model-provider validation errors.

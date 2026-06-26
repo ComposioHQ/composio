@@ -10,7 +10,7 @@ For `KICKBOX_SINGLE_VERIFICATION_API`, the Composio credential field is `generic
 }
 ```
 
-If Kickbox returns 403 `Invalid API key`, The user should verify:
+If Kickbox returns 403 `Invalid API key`, the user should verify:
 
 - the redacted `custom_connection_data.val` shape
 - key validity
@@ -18,7 +18,7 @@ If Kickbox returns 403 `Invalid API key`, The user should verify:
 - account/credit state
 - whether the Kickbox account is EU-only
 
-Kickbox docs say EU-only accounts that sign in from `app.eu.kickbox.com` must use `api.eu.kickbox.com`. If the user is EU-only, escalate as a possible toolkit base-URL/region gap because the current toolkit uses the standard `api.kickbox.com` host.
+Kickbox docs say EU-only accounts that sign in from `app.eu.kickbox.com` must use `api.eu.kickbox.com`. If the user is EU-only, use the EU endpoint where available or submit the region-specific endpoint requirement through the tool request flow.
 
 Useful source docs:
 

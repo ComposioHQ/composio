@@ -4,7 +4,7 @@ For a step-by-step guide on creating and configuring your own Pipedrive OAuth cr
 
 ## Why am I seeing "App not found" when connecting Pipedrive?
 
-Composio's default Pipedrive OAuth credentials may have expired. Use your own OAuth app credentials until the default is restored.
+If Pipedrive OAuth shows "App not found", use your own Pipedrive OAuth app credentials or API-key auth and start a fresh connection.
 
 ---
 
@@ -20,9 +20,9 @@ When initiating a Pipedrive OAuth connection, pass the Pipedrive workspace subdo
 
 For Pipedrive custom OAuth, enable the app in Rube/Composio and complete setup there with the user's own developer app credentials. Do not try to install the app directly from Pipedrive's OAuth app settings. During the Composio/Rube flow, provide the Pipedrive subdomain when requested.
 
-## When should I use custom credentials or API key when Composio's default Pipedrive OAuth app is unavailable?
+## When should I use custom credentials or API key for Pipedrive?
 
-If the default Pipedrive OAuth app is unavailable, advise the user to use their own Pipedrive OAuth credentials or API-key auth. There may not be a reliable ETA while waiting on Pipedrive provider approval or review.
+Use the user's own Pipedrive OAuth credentials or API-key auth when they need control over app approval, scopes, branding, or production availability.
 
 ## How should I handle hosted auth links can collect Pipedrive required fields?
 

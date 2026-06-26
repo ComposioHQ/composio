@@ -40,7 +40,3 @@ Twitter/X enforces strict post length limits. For normal posts, keep the content
 ## How should I handle `client-not-enrolled` and `App not linked to project` usually point to Twitter developer app/project setup issues?
 
 These errors usually mean the Twitter/X developer app is not correctly connected to a Twitter developer project, or the OAuth app configuration is stale after X's API model changes. Verify the app is linked to a project, configured according to the Twitter setup guide, and aligned with the current X API requirements. If the connected account is already `EXPIRED`, recreate the connection after fixing the app configuration.
-
-## How should I handle twitter token invalidation incidents can appear as expired connected accounts after skipped refresh attempts?
-
-In the referenced incident, the behavior was specific to Twitter. A small subset of Twitter connected accounts skipped refresh attempts, causing affected connected accounts to appear expired or fail during tool calls. Once the refresh issue is resolved, ask users to retry tool calls and check for remaining execution errors.

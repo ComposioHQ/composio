@@ -2,9 +2,9 @@
 
 For a step-by-step guide on creating and configuring your own Meta (Facebook) OAuth credentials with Composio, see [How to create OAuth credentials for Meta (Facebook)](https://composio.dev/auth/facebook).
 
-## How should I handle FACEBOOK_DELETE_POST failure can be fixed by using the latest Facebook toolkit version?
+## How should I handle `FACEBOOK_DELETE_POST` failures on older toolkit versions?
 
-If `FACEBOOK_DELETE_POST` fails on an older pinned toolkit version, try the latest Facebook toolkit version first. Remove the toolkit version pin or pass `latest` according to the SDK/API path being used. the user was on `20260414_00` and the fix was available in the latest toolkit version.
+If `FACEBOOK_DELETE_POST` fails on an older pinned toolkit version, try the latest Facebook toolkit version first. Remove the toolkit version pin or pass `latest` according to the SDK/API path being used.
 
 ## How should I handle meta OAuth issues can require adding the Composio redirect URI in the Meta app settings?
 
@@ -20,7 +20,7 @@ If Meta Ads authorization fails because no default auth config exists, create an
 
 ## How should I handle meta Ads toolkit was updated to API version v24.0?
 
-If a user asks about Meta Ads API version support around this issue, note that the toolkit was updated to `v24.0` in that case. For current cases, still verify the active toolkit version because Meta versions change over time and users may be pinned to an older toolkit version.
+For Meta Ads API version questions, verify the active toolkit version because Meta versions change over time and users may be pinned to an older toolkit version.
 
 ## How should I handle facebook or Instagram connections authenticate the account selected in Meta's picker and cannot be repointed server-side?
 
@@ -36,4 +36,4 @@ If a user is configuring Instagram webhooks but Composio does not expose the nee
 
 ## What does WhatsApp template sending need?
 
-For WhatsApp template sending, the user needs an approved/existing template before sending. If the flow depends on automatically creating templates or discovering the Phone Number ID and the toolkit lacks those tools or they are not working, treat it as a toolkit gap/request rather than a usage error. Ask for the exact template and phone number workflow they need and track the missing tool coverage.
+For WhatsApp template sending, the user needs an approved/existing template before sending. If the flow depends on automatically creating templates or discovering the Phone Number ID and the toolkit does not expose the needed tools, submit the exact template and phone number workflow through the tool request flow.

@@ -46,7 +46,7 @@ On For You, users cannot configure OAuth scopes directly. If an Outlook For You 
 
 ## What does Outlook/Microsoft apps may need?
 
-Microsoft/Outlook admin-consent issues are Microsoft 365 tenant-level approval problems, not a Composio-side connection bug. Adding delegated permissions to an Azure app registration is not the same as granting tenant admin consent. Once a tenant admin grants consent for the requested permissions, affected users should start a fresh normal Outlook connection flow with their own accounts; the admin does not need to connect every user individually.
+Microsoft/Outlook admin-consent issues are Microsoft 365 tenant-level approval problems, not something fixed by changing only the Composio connection. Adding delegated permissions to an Azure app registration is not the same as granting tenant admin consent. Once a tenant admin grants consent for the requested permissions, affected users should start a fresh normal Outlook connection flow with their own accounts; the admin does not need to connect every user individually.
 
 Two concrete ways an admin can approve:
 

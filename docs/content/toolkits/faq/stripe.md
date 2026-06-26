@@ -20,11 +20,11 @@ Use `STRIPE_LIST_SUBSCRIPTIONS` to retrieve subscription data, then calculate MR
 
 ## How should I handle duplicate Stripe trigger events can be caused by stale webhook records left in Stripe?
 
-If Stripe sends duplicate trigger payloads, check Stripe webhook/event destinations. Support found a bug where deleting Stripe triggers did not always clean up corresponding webhook records in Stripe, so deleting and recreating triggers could accumulate multiple webhook destinations. As a workaround, disable/delete the extra Stripe webhook destination so only one remains active.
+If Stripe sends duplicate trigger payloads, check Stripe webhook/event destinations in the Stripe dashboard. Duplicate webhook destinations can cause duplicate event deliveries. Disable or delete extra Stripe webhook destinations so only the intended destination remains active.
 
 ## How should I handle some Stripe triggers worked with API-key auth but failed with OAuth on verified-account/webhook permissions?
 
-If Stripe trigger creation fails under OAuth but works with API-key auth, check Stripe account verification and webhook permissions. Support saw `STRIPE_CHECKOUT_SESSION_COMPLETED_TRIGGER` work with API-key auth while OAuth trigger creation failed with permission errors such as not being permitted to configure webhook endpoints on a connected account.
+If Stripe trigger creation fails under OAuth but works with API-key auth, check Stripe account verification and webhook permissions. OAuth-connected accounts may not be permitted to configure webhook endpoints depending on the Stripe account state and granted permissions.
 
 ## How should I handle A Stripe trigger should create a corresponding subscription/webhook in Stripe?
 
@@ -32,8 +32,8 @@ When troubleshooting missing Stripe checkout webhook events, verify both sides: 
 
 ## How should I handle additional Stripe endpoints can be added as toolkit requests?
 
-If a Stripe endpoint/tool is missing, collect the exact endpoints needed and route them as toolkit requests. Support explicitly discussed adding endpoints such as balance transactions, search for charges, cash balance, credit balances, coupons, and payouts.
+If a Stripe endpoint/tool is missing, submit the exact endpoints needed through the toolkit request flow. Useful examples include balance transactions, search for charges, cash balance, credit balances, coupons, and payouts.
 
 ## How should I handle stripe tokens may not be revocable programmatically through provider APIs?
 
-For Stripe OAuth connections, provider-side programmatic revocation may not be available. If Composio cannot revoke the token through the provider API, The user should remove the connected app manually from Stripe/app settings as part of the revocation process.
+For Stripe OAuth connections, provider-side programmatic revocation may not be available. If Composio cannot revoke the token through the provider API, the user should remove the connected app manually from Stripe/app settings as part of the revocation process.

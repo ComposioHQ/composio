@@ -4,7 +4,7 @@ For a step-by-step guide on creating and configuring your own Confluence OAuth c
 
 ## What can cause Confluence managed OAuth failures?
 
-If Confluence OAuth fails with the managed app, compare the scopes configured in the auth config with the scopes configured on the Atlassian OAuth app. A mismatch can break connection. Workarounds are to use a your own OAuth app with the correct scopes, or replace the auth config scopes with the supported Confluence scope set while the managed app is fixed.
+If Confluence OAuth fails with the managed app, compare the scopes configured in the auth config with the scopes configured on the Atlassian OAuth app. A mismatch can break connection. Use your own OAuth app with the correct scopes, or replace the auth config scopes with the supported Confluence scope set and reconnect.
 
 ## How should I handle confluence custom OAuth should keep scopes aligned with Composio defaults and endpoint type?
 
@@ -12,7 +12,7 @@ For Confluence custom OAuth, keep Atlassian scopes aligned with the scopes Compo
 
 ## What should I know about Add `offline_access` to Confluence auth configs when refresh tokens?
 
-For Confluence OAuth, include the `offline_access` scope in the auth config and then create a new connected account. that `offline_access` enables token refresh, so adding it to an existing auth config only affects new connections after users reconnect.
+For Confluence OAuth, include the `offline_access` scope in the auth config and then create a new connected account. `offline_access` enables token refresh, so adding it to an existing auth config only affects new connections after users reconnect.
 
 ## When should I use connected account ID, not auth config ID, when executing Confluence tools?
 
@@ -32,7 +32,7 @@ Use `CONFLUENCE_GET_ATTACHMENTS` to list attachments and get the attachment ID, 
 
 ## What should I know about Confluence tool scopes?
 
-For supported MCP deployments, scopes can be retrieved from the `annotations` field in the `listTools` API response. Confluence as one of the apps where scopes were exposed this way.
+For supported MCP deployments, scopes can be retrieved from the `annotations` field in the `listTools` API response.
 
 ## What should I know about Atlassian/Confluence OAuth, use the same redirect URI in auth config and Atlassian app?
 

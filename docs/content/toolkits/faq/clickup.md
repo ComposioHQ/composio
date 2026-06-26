@@ -8,11 +8,11 @@ For ClickUp custom OAuth, make sure the redirect URL in the ClickUp app matches 
 
 ## What should I know about Cursor may fail when too many MCP servers?
 
-If ClickUp MCP fails in Cursor and several MCP servers are configured, reduce the server count or move the ClickUp server into the first few entries. Support referenced a Cursor MCP handling bug where behavior degraded after more than three MCP servers.
+If ClickUp MCP fails in Cursor and several MCP servers are configured, reduce the server count or move the ClickUp server into the first few entries. Some MCP clients can behave differently when many servers are configured, so simplifying the client config is a useful isolation step.
 
 ## What does ClickUp proxy execute may need?
 
-If ClickUp proxy execution returns `ExternalProxy_OrgNotAllowed`, the org may not have Proxy Execute enabled. Support can add the org to the rollout or the user can use an API key with Proxy Execute permission where available.
+If ClickUp proxy execution returns `ExternalProxy_OrgNotAllowed`, the org may not have Proxy Execute enabled. Use an API key or scoped key with Proxy Execute permission where available.
 
 ## What does ClickUp tokens may require manual provider-side removal if programmatic revocation mean?
 

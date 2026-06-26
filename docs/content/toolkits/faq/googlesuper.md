@@ -28,11 +28,11 @@ Google Super is a unified/superset toolkit for Google Workspace services. It can
 
 ## What does Google Meet through Google Super need?
 
-To use Google Meet tools through Google Super, configure the required Meet scopes in the Google Super auth config, create a new connection for the scope changes to apply, and enable the Google Meet API in Google Cloud Console. Support specifically called out `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings`.
+To use Google Meet tools through Google Super, configure the required Meet scopes in the Google Super auth config, create a new connection for the scope changes to apply, and enable the Google Meet API in Google Cloud Console. Common Meet scopes include `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings`.
 
 ## How should I handle managed Google Super OAuth issues can be unblocked by switching to a custom Google OAuth config?
 
-Google Super managed OAuth can be affected independently from other Google managed apps. If managed Google Super OAuth fails with token-exchange 401, `access_denied`, or verification-related errors, use a custom Google OAuth auth config with the user's own credentials while managed app restoration is in progress.
+Google Super managed OAuth can be affected independently from other Google managed apps. If managed Google Super OAuth fails with token-exchange 401, `access_denied`, or verification-related errors, use a custom Google OAuth auth config with the user's own credentials and verified scopes.
 
 ## How should I handle google Super can be narrowed by removing unneeded scopes and tools?
 
@@ -60,7 +60,7 @@ Gmail/Google Super tools are wrappers over Google APIs, so use Gmail-style `quer
 
 ## How should I handle google Super Sheets 404s can mean wrong spreadsheet ID, missing access, or missing spreadsheet scope?
 
-For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet is shared with the connected Google account, and ensure the connection has `https://www.googleapis.com/auth/spreadsheets`. If those are all correct and only one tool fails, treat it as a toolkit bug and escalate with the request/response payload.
+For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet is shared with the connected Google account, and ensure the connection has `https://www.googleapis.com/auth/spreadsheets`. Reconnect after changing scopes or sharing permissions.
 
 ## What does `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` mean?
 
@@ -68,7 +68,7 @@ For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet
 
 ## How should I handle google Super cannot schedule Gmail emails out of the box?
 
-Google Super does not support scheduling an email out of the box. using another email sending toolkit such as `RESEND_SEND_EMAIL` if the user's use case can be met outside Gmail scheduled-send semantics.
+Google Super does not support scheduling an email out of the box. Use another email sending toolkit such as `RESEND_SEND_EMAIL` if the user's use case can be met outside Gmail scheduled-send semantics.
 
 ## How should I handle missing Google Super endpoints should be filed as tool requests, not toolkit requests?
 

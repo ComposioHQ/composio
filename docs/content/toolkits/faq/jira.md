@@ -8,9 +8,9 @@ JQL GET and POST target the same search functionality but use different HTTP met
 
 ---
 
-## How should I handle jira managed OAuth `Something went wrong` was caused by managed-app scope configuration?
+## How should I handle Jira OAuth scope configuration errors?
 
-This class of Jira managed OAuth failure was tied to Composio's managed Jira OAuth app configuration, especially scope configuration. As a workaround while the managed app was broken, users could use their own Jira OAuth app/custom credentials. Once the managed app config was fixed, users could retry the default OAuth flow. Jira/Atlassian also has a maximum of 50 scopes for an OAuth app, so excessive or unsupported scope sets can trigger consent failures.
+For Jira OAuth failures during consent or connection, compare the scopes configured in Composio with the scopes configured on the Atlassian OAuth app. Jira/Atlassian also has a maximum of 50 scopes for an OAuth app, so excessive or unsupported scope sets can trigger consent failures. If the managed app scope set does not match the workflow, use your own Jira OAuth app/custom credentials with the required scopes and reconnect.
 
 ## How should I handle pin custom Jira authConfig when creating Tool Router sessions?
 
@@ -18,11 +18,11 @@ When using a custom Jira OAuth app with Tool Router, pass the custom auth config
 
 ## What does Jira custom token execution need?
 
-For Jira custom-auth execution, include the Atlassian base URL/subdomain along with the access token. Jira expects the tenant URL in the form `https://<subdomain>.atlassian.net`. In Python, pass this through custom auth params such as `base_url`; in the TS SDK, a temporary workaround was to pass `customConnectionData` with `authScheme: "OAUTH2"`, `toolkitSlug: "JIRA"`, `access_token`, and `subdomain`. `JIRA_GET_SERVER_INFO` can help fetch/confirm the base URL.
+For Jira custom-auth execution, include the Atlassian base URL/subdomain along with the access token. Jira expects the tenant URL in the form `https://<subdomain>.atlassian.net`. In Python, pass this through custom auth params such as `base_url`. In TypeScript, pass the custom connection data with `authScheme: "OAUTH2"`, `toolkitSlug: "JIRA"`, `access_token`, and `subdomain`. `JIRA_GET_SERVER_INFO` can help fetch/confirm the base URL.
 
 ## What does Jira search pagination token require?
 
-Jira next-page tokens must be used as part of the same search flow and with the same search context that generated the token. In current Jira toolkit behavior, passing only `next_page_token` can fail immediately because the runtime either sends no JQL (`JIRA_SEARCH_FOR_ISSUES_USING_JQL_GET`) or rebuilds a different default JQL (`JIRA_SEARCH_ISSUES`). That can look like token expiry even when the token was consumed seconds after generation.
+Jira next-page tokens must be used as part of the same search flow and with the same search context that generated the token. Passing only `next_page_token` can fail because Jira expects the original JQL or filter context to remain attached to the paginated request. That can look like token expiry even when the token was consumed seconds after generation.
 
 Workaround:
 
@@ -31,24 +31,13 @@ Workaround:
 - Use the token immediately for the next page.
 - Do not persist old tokens or retry rejected tokens. If Jira returns `invalid or expired` even with the same original context, discard the token and restart pagination from page 1.
 
-Support troubleshooting steps:
-
-1. Ask for the initial search log ID that returned the token and the follow-up log ID that failed.
-2. Compare the provider request payloads in logs.
-3. If the failed follow-up omitted the original JQL/filters or shows a different JQL than the first request, tell the user to preserve the same search context with each token request.
-4. If the same JQL/filters were preserved and the token still failed immediately, treat it as a real invalid/stale token and escalate with both logs if it repeats.
-
-We checked the Jira search execution logs and found pagination-token failures. The main thing is to keep the pagination token tied to the same search context that created it: pass the original JQL or the same original filters along with `next_page_token` on every page request.
-
-Also use the token immediately. If Jira still returns `invalid or expired` with the same context, discard that token and restart pagination from page 1.
-
 ## What must Jira OAuth redirect URI do?
 
 For Jira/Atlassian OAuth, configure the same redirect URI in both the Composio authConfig and the Atlassian OAuth app. Either supported v1 or v3 redirect URI can be used, but they must match exactly. The valid v3 callback is `https://backend.composio.dev/api/v3/toolkits/auth/callback`; `https://backend.composio.dev/api/v3/auth-apps/add` is not the correct v3 callback.
 
 ## How should I handle missing `audience=api.atlassian.com` can prevent Jira refresh tokens?
 
-Atlassian OAuth 2.0 requires `audience=api.atlassian.com` in the authorization URL. Without this parameter, Atlassian may not honor `offline_access`, meaning no refresh token is returned and the access token expires without being refreshable. If Jira credentials expire immediately, check whether the connected account is missing `offline_access` and whether the Jira OAuth config includes the required `audience` parameter. As an urgent workaround, API key auth with Atlassian email + API token can provide stable non-expiring credentials.
+Atlassian OAuth 2.0 requires `audience=api.atlassian.com` in the authorization URL. Without this parameter, Atlassian may not honor `offline_access`, meaning no refresh token is returned and the access token expires without being refreshable. If Jira credentials expire immediately, check whether the connected account is missing `offline_access` and whether the Jira OAuth config includes the required `audience` parameter. API key auth with Atlassian email + API token can provide stable non-expiring credentials when that fits the workflow.
 
 ## When should I use `JIRA_GET_CREATE_METADATA_ISSUE_TYPE_FIELDS` instead of deprecated create metadata behavior?
 

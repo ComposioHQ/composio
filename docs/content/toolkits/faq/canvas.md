@@ -4,7 +4,7 @@ Canvas triggers are available. For a course-based setup flow, first call `CANVAS
 
 ## How should I handle canvas does not expose webhooks for every requested trigger use case?
 
-Canvas only exposes a limited set of webhook-style events, including `quiz_submitted`, `grade_change`, `attachment_created`, `submission_created`, `submission_updated`, and `plagiarism_resubmit`. These can work with courses, assignments, and accounts. For trigger use cases outside those provider-supported events, Composio needs to build a custom trigger implementation instead of wiring a native Canvas webhook.
+Canvas only exposes a limited set of webhook-style events, including `quiz_submitted`, `grade_change`, `attachment_created`, `submission_created`, `submission_updated`, and `plagiarism_resubmit`. These can work with courses, assignments, and accounts. For trigger use cases outside those provider-supported events, submit the exact event and workflow through the tool request flow.
 
 ## How should I handle canvas triggers fire for users visible to the connected bearer-token user?
 
@@ -16,7 +16,7 @@ For Canvas Assignment Graded, that the trigger working for Teacher accounts and 
 
 ## When should I use shorter polling intervals for Canvas triggers when longer intervals misbehave?
 
-There was a Canvas-specific trigger interval issue where longer intervals could fail or behave inconsistently. Until the underlying trigger fix is confirmed for the user's setup, recommend shorter polling intervals, usually around 1-5 minutes, for Canvas triggers.
+For Canvas trigger setups that need timely delivery, use shorter polling intervals where available, usually around 1-5 minutes.
 
 ## How should I handle toolkit versioning does not version Canvas trigger logic?
 
@@ -36,7 +36,7 @@ For Canvas OAuth, the client ID and client secret must belong to the same Canvas
 
 ## How should I handle `CANVAS_GET_ACCOUNTS` and other account-level Canvas endpoints require admin permissions?
 
-Canvas account-level endpoints require account administrator permissions in Canvas. For example, `/api/v1/accounts` through `CANVAS_GET_ACCOUNTS` requires account-level admin access. If a user gets unauthorized on these endpoints, confirm the connected Canvas account has admin permissions before treating it as a Composio-side failure.
+Canvas account-level endpoints require account administrator permissions in Canvas. For example, `/api/v1/accounts` through `CANVAS_GET_ACCOUNTS` requires account-level admin access. If a user gets unauthorized on these endpoints, confirm the connected Canvas account has admin permissions before treating it as a connection or tool failure.
 
 ## What should I know about `CANVAS_CREATE_CALENDAR_EVENT` can use a user ID, and Canvas API field names?
 
@@ -60,7 +60,7 @@ For Canvas quiz matching question answers, use `comments_html`, `text`, `weight`
 
 ## How should I handle older Canvas toolkit versions cannot be patched in place?
 
-Composio cannot patch older toolkit versions in place. If a Canvas bug fix or schema change is released in a newer version, the path is to upgrade the toolkit version. Users can compare differences between toolkit versions in the dashboard before upgrading.
+Composio cannot patch older toolkit versions in place. If a Canvas schema or behavior change is released in a newer version, the path is to upgrade the toolkit version. Users can compare differences between toolkit versions in the dashboard before upgrading.
 
 ## What should I know about Canvas response schemas?
 

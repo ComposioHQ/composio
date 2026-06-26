@@ -4,23 +4,23 @@ For partial matching on text attributes in ATTIO_FIND_RECORD, structure the filt
 
 ## When should I use custom tools when an Attio API object is not built into Composio yet?
 
-If an Attio endpoint is not covered by the built-in toolkit, route the user to create a custom tool and request the missing tool through the Composio request portal. Custom tools can use Composio-managed auth, so the user does not need to build the entire OAuth/token-storage layer themselves.
+If an Attio endpoint is not covered by the built-in toolkit, create a custom tool or request the missing tool through the Composio request portal. Custom tools can use Composio-managed auth, so the user does not need to build the entire OAuth/token-storage layer themselves.
 
 ## What does Auth config names can carry a reference ID, but custom auth config metadata mean?
 
 Composio does not support arbitrary custom metadata on auth configs. As a workaround, set a meaningful authConfig name when creating it, such as a company name or reference ID, and use that name for identification.
 
-## How should I handle missing Attio scopes on Composio managed auth require confirming the auth app and updating the managed OAuth app?
+## How should I handle missing Attio OAuth scopes?
 
-First confirm whether the user is using Composio's managed OAuth app or their own Attio OAuth app. If they are using Composio managed auth and required Attio scopes are missing, the integrations team needs to add those scopes to Composio's default Attio OAuth app before the user can use them through managed auth.
+First confirm whether the user is using Composio's managed OAuth app or their own Attio OAuth app. If the managed app does not include the required Attio scopes, use the user's own Attio OAuth app where those scopes are configured and approved.
 
-## How should I handle attio meeting and call recording get-by-id endpoints were a feature request?
+## How should I handle missing Attio meeting and call-recording get-by-id tools?
 
-Treat missing Attio get-by-id tools for meetings and call recordings as a toolkit feature gap. The requested endpoints were GET /v2/meetings/{id}, GET /v2/call_recordings/{id}, and GET /v2/call_recordings/{id}/transcript; add them to the tooling backlog or direct the user to request the tools.
+If Attio get-by-id tools for meetings and call recordings are missing, submit the exact endpoints through the tool request flow. Useful examples include `GET /v2/meetings/{id}`, `GET /v2/call_recordings/{id}`, and `GET /v2/call_recordings/{id}/transcript`.
 
-## How should I handle top-level $ parameter names were fixed for LLM provider compatibility in the latest schema version?
+## How should I handle top-level `$` parameter names in Attio schemas?
 
-For schema failures caused by top-level $-prefixed parameter names, The user should update to the latest tool schema/toolkit version. The root cause was corrected for top-level $ prefixes, and compatibility was verified across OpenAI, Claude, Gemini, and Vercel AI SDK. Nested $ prefixes were accepted by the major providers tested, while broader parameter naming conventions may still need case-specific review.
+For schema failures caused by top-level `$`-prefixed parameter names, update to the latest tool schema/toolkit version. Current schemas avoid top-level `$` prefixes that some model providers reject. Nested `$` prefixes may still be accepted depending on the provider.
 
 ## How should I handle attio OAuth tokens cannot be programmatically revoked by Composio?
 

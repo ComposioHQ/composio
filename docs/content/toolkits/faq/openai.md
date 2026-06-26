@@ -16,8 +16,8 @@ Composio SDK modifiers can be used to add a gating layer before tool execution. 
 
 ## What should I know about Append `session.experimental.assistivePrompt` when GPT models?
 
-If GPT model behavior is flaky during tool execution, appending `session.experimental.assistivePrompt` to the agent prompt to improve execution reliability. Treat this as a reliability workaround alongside checking tool-call logs and the model/session configuration.
+If GPT model behavior is flaky during tool execution, append `session.experimental.assistivePrompt` to the agent prompt to improve execution reliability. Use this alongside checking tool-call logs and the model/session configuration.
 
-## How should I handle provider/schema bugs often require upgrading Composio SDK packages together?
+## How should I handle provider/schema errors with OpenAI integrations?
 
-When troubleshooting provider/schema errors with OpenAI or LangChain-style integrations, upgrade the relevant Composio SDK packages together. Support repeatedly asked users to update both core Composio and provider packages to the latest version before retesting.
+When troubleshooting provider/schema errors with OpenAI or LangChain-style integrations, upgrade the relevant Composio SDK packages together. Update both core Composio and provider packages to the latest version before retesting.

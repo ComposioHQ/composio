@@ -28,9 +28,9 @@ QuickBooks toolkit support was updated to accept auth and token URLs during conn
 
 If the QuickBooks OAuth flow includes the payments scope `com.intuit.quickbooks.payment`, the QuickBooks payment module must be enabled for that account/app. If the user does not need payment tools, remove that scope and retry the connection.
 
-## How should I handle realm ID mapping fixes may require the latest QuickBooks toolkit version?
+## How should I handle QuickBooks realm/company mapping issues?
 
-For QuickBooks realm/company mapping issues, retry on the latest toolkit version. Support specifically asked users to use `20260212_00` when a realm ID mapping fix was released.
+For QuickBooks realm/company mapping issues, retry on the latest toolkit version. Make sure the connection stores the correct `realm_id` and base URL for the selected QuickBooks company.
 
 ## How should I handle multiple QuickBooks accounts can be selected in Claude/MCP by using separate user IDs or connected account IDs?
 

@@ -1,10 +1,10 @@
 ## What does TikTok is supported, but users generally need?
 
-TikTok is available as a toolkit, but users should expect to bring their own TikTok developer app credentials. Support repeatedly noted there is no generally available managed/default TikTok OAuth app for normal production use.
+TikTok is available as a toolkit, but users should expect to bring their own TikTok developer app credentials for normal production use.
 
 ## How should I handle tikTok OAuth uses `client_key`; credential mismatch or old `client_id` handling causes `client_key` errors?
 
-A TikTok `client_key` error is returned by TikTok, not Composio. First re-copy the Client Key and Client Secret from the TikTok developer app, checking for swapped values or trailing spaces. Also confirm the registered redirect URI exactly matches TikTok requirements. Historically, TikTok required `client_key` in the authorize URL while older Composio handling used `client_id`; if an older flow is involved, unshorten the redirect URL and verify the parameter shape.
+A TikTok `client_key` error is returned by TikTok, not Composio. First re-copy the Client Key and Client Secret from the TikTok developer app, checking for swapped values or trailing spaces. Also confirm the registered redirect URI exactly matches TikTok requirements. If an older flow is involved, unshorten the redirect URL and verify that the authorization URL uses TikTok's expected `client_key` parameter.
 
 ## How should I handle tikTok app status, scopes, and sandbox/production mode determine who can complete OAuth?
 

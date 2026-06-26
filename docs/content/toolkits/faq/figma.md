@@ -4,7 +4,7 @@ For Figma, users can provide the supported credentials/token through the toolkit
 
 ## How should I handle `FIGMA_EXTRACT_DESIGN_TOKENS` variables may be limited by the user's Figma plan?
 
-Some Figma API features are plan-limited. If `FIGMA_EXTRACT_DESIGN_TOKENS` fails when `include_variables` is enabled, The user should verify their Figma plan/API access. As a workaround, set `include_variables` to false.
+Some Figma API features are plan-limited. If `FIGMA_EXTRACT_DESIGN_TOKENS` fails when `include_variables` is enabled, verify the user's Figma plan/API access. If variable extraction is not available, set `include_variables` to false.
 
 ## What can cause Figma 429s?
 
@@ -16,4 +16,4 @@ Figma tools should be usable regardless of whether the connection uses Composio-
 
 ## How should I handle common Figma design-token tools include extract, Tailwind conversion, and component fetch?
 
-For Figma design token and component workflows, `FIGMA_EXTRACT_DESIGN_TOKENS`, `FIGMA_DESIGN_TOKENS_TO_TAILWIND`, and `FIGMA_GET_COMPONENT`. If a needed Figma tool is missing, The user should file a tool request.
+For Figma design token and component workflows, use `FIGMA_EXTRACT_DESIGN_TOKENS`, `FIGMA_DESIGN_TOKENS_TO_TAILWIND`, and `FIGMA_GET_COMPONENT`. If a needed Figma tool is missing, file a tool request.

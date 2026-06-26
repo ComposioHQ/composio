@@ -12,7 +12,7 @@ For additional Airtable scopes, use your own Airtable OAuth developer app. Confi
 
 ## What can cause Airtable refresh failures?
 
-When Airtable connected accounts expire, inspect the refresh error from Airtable. Known cases include 400 `invalid_grant` and 422 responses with `invalid_request` or `temporarily_unavailable`. If failures cluster around the same time, check Airtable's status page because an Airtable-side outage can cause refresh failures. If the failures continue outside the provider outage window, reconnect the affected accounts and contact Composio support with the connected account IDs and recent tool execution IDs.
+When Airtable connected accounts expire, inspect the refresh error from Airtable. Known cases include 400 `invalid_grant` and 422 responses with `invalid_request` or `temporarily_unavailable`. If failures cluster around the same time, check Airtable's status page because an Airtable-side outage can cause refresh failures. If the failures continue outside the provider outage window, reconnect the affected accounts and contact Composio with the connected account IDs and recent tool execution IDs.
 
 ## What does Connection initiation timeout after 10 minutes mean?
 
@@ -26,6 +26,6 @@ If Airtable tools appear missing, first increase the tools list limit or paginat
 
 `AIRTABLE_UPDATE_MULTIPLE_RECORDS` can update a maximum of 10 Airtable records at a time. For larger updates, split the records into batches of 10 and execute multiple calls while respecting Airtable's API rate limits.
 
-## How should I handle exclude problematic Airtable create tools when MCP schema validation fails?
+## How should I handle Airtable MCP schema validation failures?
 
-If an Airtable MCP server fails because specific create tools are breaking schema validation, rebuild or deploy the MCP server excluding those tools temporarily. The affected examples in the thread were Airtable create/base/table/field-style tools. The rest of the Airtable MCP server can continue working while the broken tools are removed and the underlying issue is fixed.
+If an Airtable MCP server fails schema validation for specific create/base/table/field-style tools, rebuild or deploy the MCP server with only the Airtable tools needed for the workflow. Keeping the selected tool set smaller can let the rest of the Airtable MCP server continue working while you isolate the schema that the client rejects.

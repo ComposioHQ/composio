@@ -1,11 +1,11 @@
-## How should I handle discordBot 401s on managed OAuth were a known managed-app configuration issue?
+## How should I handle DiscordBot 401s on active connections?
 
-DiscordBot 401s on Composio-managed auth have been a known issue tied to the managed DiscordBot OAuth app/configuration. When users hit this, first ask whether they are using Composio-managed OAuth or custom credentials. If they are on managed auth, recommend trying their own Discord credentials / custom auth config as a workaround while Composio's managed Discord app verification/configuration is being fixed.
+When DiscordBot tool calls return 401 on an active connection, first identify whether the auth config uses a bot-token-capable setup and whether the Discord app has the permissions required by the action. For production bots, use the user's own Discord app credentials so they control the bot token, scopes, permissions, and server installation.
 
 ## How should I handle discord OAuth credentials do not have a fixed expiration period?
 
 Discord OAuth2 credentials do not have a fixed expiration period. If credentials suddenly fail, they may have been manually revoked, reset, or regenerated in Discord. The user should refresh or create new Discord OAuth credentials and retry. Testing with Composio's default OAuth app can help determine whether the issue is specific to the user's Discord OAuth app/account or broader provider behavior.
 
-## How should I handle multiple accounts for the same Discord app were not supported in that flow?
+## How should I handle multiple Discord identities?
 
-Composio did not support connecting multiple accounts for the same app. The capability was not currently available in that flow. As a workaround, users could use Composio MCP offerings or authenticated tool flows depending on the use case, but same-app multi-account support was not available in that specific DiscordBot setup.
+For workflows that need separate Discord identities, use distinct users or explicit connected accounts in session-based flows. Do not rely on one app context to implicitly switch between multiple Discord identities.

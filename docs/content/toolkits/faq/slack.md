@@ -77,11 +77,11 @@ Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the S
 
 ## What does Slack `assistant.search.context` require?
 
-Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. a user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
+Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. A user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
 
-## How should I handle slack marketplace warning on Composio-managed app does not block OAuth?
+## How should I handle Slack Marketplace warnings during OAuth?
 
-The warning can appear because Composio's Slack app is not yet verified on Slack Marketplace. The OAuth flow still works; users can click through and complete the connection. The warning should clear once Slack marketplace review/verification is complete.
+Slack may show warnings for non-Marketplace apps depending on workspace policy. The OAuth flow can still work if the workspace allows the app. If the workspace requires Marketplace-approved apps or admin approval, use the workspace's own Slack OAuth app or ask a workspace admin to approve the app.
 
 ## When should I use Slack V2 trigger slugs for channel and direct messages?
 

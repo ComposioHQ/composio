@@ -12,8 +12,8 @@ Treat Zoho Mail `account_id` values as strings, not integers. Zoho account IDs c
 
 ## How should I handle zoho Mail attachment download support should be treated as a feature request when absent?
 
-If a user needs Zoho Mail attachment download and the current toolkit does not expose that action, collect the exact use case and ask them to file a feature request. Mention that requests are reviewed by the team and can be prioritized, especially for Enterprise users or active user blockers.
+If a user needs Zoho Mail attachment download and the current toolkit does not expose that action, submit the exact attachment-download use case through the tool request flow.
 
 ## What does Connect MCP mean?
 
-Connect MCP is intended for agent/client workflows through Tool Router, not as a raw direct API endpoint. For Zoho Mail, make sure the user has connected a Zoho Mail account in the Connect dashboard first, then use the supported MCP client flow. If the user wants direct API execution, route them to Tool Router/API or Proxy Execute patterns instead of treating Connect MCP as a raw REST proxy.
+Connect MCP is intended for agent/client workflows through Tool Router, not as a raw direct API endpoint. For Zoho Mail, make sure the user has connected a Zoho Mail account in the Connect dashboard first, then use the supported MCP client flow. If the user wants direct API execution, use Tool Router/API or Proxy Execute patterns instead of treating Connect MCP as a raw REST proxy.

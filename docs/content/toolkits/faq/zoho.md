@@ -6,7 +6,7 @@ For a step-by-step guide on creating and configuring your own Zoho CRM OAuth cre
 
 Attachment support was added to `ZOHO_MAIL_MESSAGES_SEND_EMAIL`. If a user cannot send attachments with Zoho Mail, they should use a current toolkit version and verify the send-email tool schema includes attachment fields.
 
-## How should I handle zoho Mail attachment download was a feature request with short expected pickup timeline?
+## What if Zoho Mail attachment download is not available?
 
 Zoho Mail attachment download may need to be handled as a tool request when the action is not available in the current toolkit. File the exact attachment-download use case through the tool request flow.
 
@@ -24,7 +24,7 @@ Use `toolkits.get("<toolkit-slug>")` or the toolkit-by-slug API to inspect the f
 
 ## How should I handle zoho Books create-estimate moved to the `zoho_invoice` toolkit?
 
-For creating estimates, use the `zoho_invoice` toolkit action `ZOHO_INVOICE_CREATE_ESTIMATE`. that the estimate tool had shifted away from the Zoho Books toolkit.
+For creating estimates, use the `zoho_invoice` toolkit action `ZOHO_INVOICE_CREATE_ESTIMATE`. The estimate tool has shifted away from the Zoho Books toolkit.
 
 ## How should I handle zoho Books bill tools exist, but missing purchase-order/bill flows may require a feature request?
 
@@ -48,8 +48,8 @@ Zoho uses OAuth2. For MCP setups, create an MCP config for Zoho, then initiate/c
 
 ## How should I handle zoho Mail account IDs should be treated as strings to avoid JS safe-integer precision loss?
 
-Zoho Mail account IDs can exceed JavaScript's safe integer range, so they should be modeled and passed as strings. If a Zoho Mail tool truncates or changes a large account ID, it is a schema/serialization bug and should be patched so `account_id` stays a string.
+Zoho Mail account IDs can exceed JavaScript's safe integer range, so they should be modeled and passed as strings. Preserve `account_id` as a string all the way from user input to tool execution.
 
 ## How should I handle some Zoho surfaces may be auth-only or lack formal tools; use custom tools or file requests?
 
-Some Zoho toolkits/surfaces may be auth-only or may not yet have a formal tool set because Composio lacks sandbox/API coverage for that surface. Users can use custom tools with the connected account credentials, or file a tool request with the exact API endpoint and use case.
+Some Zoho toolkits/surfaces may be auth-only or may not yet have a formal tool set. Users can use custom tools with the connected account credentials, or file a tool request with the exact API endpoint and use case.
