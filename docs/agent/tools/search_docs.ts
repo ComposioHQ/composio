@@ -1,13 +1,20 @@
 import { defineTool } from 'eve/tools';
 import { z } from 'zod';
-import { buildIndex, tokenize, type DocPage } from '../lib/docs';
+import {
+  buildIndex,
+  extractSections,
+  readPageByUrl,
+  toCleanMarkdown,
+  tokenize,
+  type DocPage,
+} from '../lib/docs';
 
 /**
  * search_docs — find the most relevant Composio docs pages for a query.
  *
- * Returns each match's title, URL, description, and a snippet. Use it to locate
- * pages, then call `read_doc` on the best matches to read their full content
- * before answering.
+ * Returns each match's title, URL, description, and a snippet. The top matches
+ * also include compact page excerpts so the agent can often answer after one
+ * tool call instead of doing a separate search_docs -> read_doc round trip.
  */
 
 // Collection priority: docs first, then examples, then references and toolkits.
@@ -21,54 +28,136 @@ const PRIORITY: Record<DocPage['collection'], number> = {
   toolkits: 0.9,
 };
 
+const DEFAULT_LIMIT = 5;
+const MAX_EVIDENCE_RESULTS = 3;
+const EVIDENCE_CHARS = 1_800;
+const MAX_SECTIONS = 12;
+
+function countOccurrences(text: string, term: string, max = 5): number {
+  let count = 0;
+  let from = 0;
+
+  while (count < max) {
+    const at = text.indexOf(term, from);
+    if (at === -1) break;
+    count += 1;
+    from = at + term.length;
+  }
+
+  return count;
+}
+
 function score(page: DocPage, terms: string[]): number {
   const title = page.title.toLowerCase();
+  const description = page.description.toLowerCase();
+  const url = page.url.toLowerCase();
   let total = 0;
+
   for (const term of terms) {
     if (title.includes(term)) total += 12;
-    if (page.description.toLowerCase().includes(term)) total += 5;
+    if (description.includes(term)) total += 5;
     for (const heading of page.headings) if (heading.includes(term)) total += 4;
-    if (page.url.toLowerCase().includes(term)) total += 6;
-    const occurrences = page.lowerText.split(term).length - 1;
-    total += Math.min(occurrences, 5);
+    if (url.includes(term)) total += 6;
+    total += countOccurrences(page.lowerText, term);
   }
+
   // Heavily downrank legacy (direct-execution) pages so they only surface when
   // nothing in the session-based docs matches.
   if (page.legacy) total *= 0.12;
   return total * (PRIORITY[page.collection] ?? 1);
 }
 
+function firstTermMatch(text: string, terms: string[]): number {
+  const lower = text.toLowerCase();
+  return (
+    terms
+      .map(term => lower.indexOf(term))
+      .filter(index => index >= 0)
+      .sort((a, b) => a - b)[0] ?? 0
+  );
+}
+
+function excerpt(
+  text: string,
+  terms: string[],
+  maxChars: number
+): { value: string; truncated: boolean } {
+  const at = firstTermMatch(text, terms);
+  const start = Math.max(0, at - 180);
+  const end = Math.min(text.length, start + maxChars);
+  const slice = text.slice(start, end).trim();
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < text.length ? '…' : '';
+
+  return { value: `${prefix}${slice}${suffix}`, truncated: start > 0 || end < text.length };
+}
+
 function snippet(page: DocPage, terms: string[]): string {
-  const lower = page.text.toLowerCase();
-  const at = terms.map((t) => lower.indexOf(t)).filter((i) => i >= 0).sort((a, b) => a - b)[0] ?? 0;
-  const start = Math.max(0, at - 100);
-  const slice = page.text.slice(start, start + 360).trim();
-  return (start > 0 ? '…' : '') + slice + (start + 360 < page.text.length ? '…' : '');
+  return excerpt(page.text, terms, 360).value;
+}
+
+function evidenceFor(page: DocPage, terms: string[]) {
+  const found = readPageByUrl(page.url);
+
+  if (found) {
+    const markdown = toCleanMarkdown(found.raw);
+    const evidence = excerpt(markdown, terms, EVIDENCE_CHARS);
+
+    return {
+      sections: extractSections(markdown).slice(0, MAX_SECTIONS),
+      content: evidence.value,
+      contentTruncated: evidence.truncated,
+    };
+  }
+
+  const evidence = excerpt(page.text, terms, EVIDENCE_CHARS);
+  return {
+    content: evidence.value,
+    contentTruncated: evidence.truncated,
+  };
 }
 
 export default defineTool({
   description:
-    'Search the Composio documentation. Returns the most relevant pages with their title, URL, description, and a snippet. Follow up with read_doc on the best matches to read full page content before answering.',
+    'Search the Composio documentation. Returns relevant pages with title, URL, description, snippet, and compact content excerpts for the top matches. Answer from those excerpts when sufficient; call read_doc only when you need the full page.',
   inputSchema: z.object({
-    query: z.string().min(1).describe('What to look for, e.g. "authentication", "create a session", "trigger webhook verification".'),
-    limit: z.number().int().min(1).max(12).optional().describe('How many pages to return. Defaults to 8.'),
+    query: z
+      .string()
+      .min(1)
+      .describe(
+        'What to look for, e.g. "authentication", "create a session", "trigger webhook verification".'
+      ),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(12)
+      .optional()
+      .describe('How many pages to return. Defaults to 5.'),
   }),
-  async execute({ query, limit = 8 }) {
+  async execute({ query, limit = DEFAULT_LIMIT }) {
     const terms = tokenize(query);
     // Fall back to raw terms if the query was all stopwords.
-    const effective = terms.length > 0 ? terms : query.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
+    const effective =
+      terms.length > 0
+        ? terms
+        : query
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(t => t.length > 1);
     const ranked = buildIndex()
-      .map((page) => ({ page, s: score(page, effective) }))
+      .map(page => ({ page, s: score(page, effective) }))
       .filter(({ s }) => s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, limit);
 
     return {
-      results: ranked.map(({ page }) => ({
+      results: ranked.map(({ page }, index) => ({
         title: page.title,
         url: page.url,
         description: page.description,
         snippet: snippet(page, effective),
+        ...(index < MAX_EVIDENCE_RESULTS ? evidenceFor(page, effective) : {}),
       })),
     };
   },
