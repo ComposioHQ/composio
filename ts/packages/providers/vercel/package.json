@@ -38,7 +38,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "ai": "^5.0.0 || ^6.0.0"
+    "ai": "^6.0.0 || ^7.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
