@@ -44,7 +44,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@mastra/core": "^1.0.4",
+    "@mastra/core": "^1.46.0",
     "zod": "^3.25 || ^4"
   },
   "devDependencies": {

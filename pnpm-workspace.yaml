@@ -43,14 +43,14 @@ catalog:
   '@effect/platform-node': ^0.107.0
   '@effect/platform-node-shared': ^0.60.0
   '@effect/vitest': ^0.29.0
-  '@mastra/core': ^1.42.0
+  '@mastra/core': ^1.46.0
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
   '@typescript/native-preview': 7.0.0-dev.20260615.1
   ai: ^6.0.206
   dotenv: ^17.4.2
   effect: ^3.21.3
-  hono: ^4.12.25
+  hono: ^4.12.27
   openai: ^6.42.0
   picocolors: ^1.1.1
   pnpm: ^11.8.0
@@ -67,6 +67,7 @@ catalog:
 minimumReleaseAge: 4320
 
 minimumReleaseAgeExclude:
+  - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
 

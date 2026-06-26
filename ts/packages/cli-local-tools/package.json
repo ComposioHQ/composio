@@ -44,7 +44,7 @@
   "devDependencies": {
     "@types/decompress": "^4.2.7",
     "@types/node": "^24.0.1",
-    "chrome-devtools-mcp": "0.24.0",
+    "chrome-devtools-mcp": "1.4.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

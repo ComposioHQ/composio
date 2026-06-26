@@ -23,6 +23,6 @@
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "ai": "catalog:",
-    "hono": "^4.10.3"
+    "hono": "catalog:"
   }
 }

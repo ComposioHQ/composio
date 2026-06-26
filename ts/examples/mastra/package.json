@@ -26,7 +26,7 @@
     "@ai-sdk/openai": "^3.0.13",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
-    "@mastra/core": "^1.0.4",
+    "@mastra/core": "^1.46.0",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
