@@ -127,7 +127,7 @@ export default function CustomSearchDialog({
   const clientOptions = useMemo(() => {
     const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID ?? '62HI9PQZ1L';
     const searchApiKey = process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY;
-    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio_dev_62hi9pqz1l_pages';
+    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio';
 
     if (appId && searchApiKey) {
       const client = liteClient(appId, searchApiKey);
@@ -201,7 +201,7 @@ export default function CustomSearchDialog({
     const url = new URL(href, window.location.origin);
     const path = `${url.pathname}${url.hash}`;
     const hit = algoliaHitMetaRef.current.get(path) ?? algoliaHitMetaRef.current.get(url.pathname);
-    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio_dev_62hi9pqz1l_pages';
+    const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio';
 
     if (!hit) return;
 

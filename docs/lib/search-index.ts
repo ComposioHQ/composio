@@ -13,7 +13,7 @@ import { mdxToCleanMarkdown } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
 
 export const ALGOLIA_DEFAULT_APP_ID = '62HI9PQZ1L';
-export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio_dev_62hi9pqz1l_pages';
+export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio';
 
 const MAX_CHUNK_CHARS = 3_800;
 const MAX_CHUNK_BYTES = 9_000;

@@ -87,9 +87,9 @@ Detailed documentation for Claude is organized in `.claude/`:
 
 ## Search
 
-The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is configured. `NEXT_PUBLIC_ALGOLIA_APP_ID` defaults to `62HI9PQZ1L`, and `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `docs_composio_dev_62hi9pqz1l_pages`. Without a search API key it falls back to `/api/search` for local development and tests. Algolia searches request `clickAnalytics`, and the client sends search result view/click events with `search-insights`.
+The docs search dialog uses Algolia in production when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is configured. `NEXT_PUBLIC_ALGOLIA_APP_ID` defaults to `62HI9PQZ1L`, and `NEXT_PUBLIC_ALGOLIA_INDEX_NAME` defaults to `docs_composio`. Without a search API key it falls back to `/api/search` for local development and tests. Algolia searches request `clickAnalytics`, and the client sends search result view/click events with `search-insights`.
 
-Run `ALGOLIA_APP_ID=62HI9PQZ1L ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search` from `docs/` to rebuild the Algolia index. The sync script does not use Algolia Crawler: it creates section-sized records from MDX/OpenAPI/toolkit data, configures searchable attributes, `customRanking`, and `attributeForDistinct`, then replaces the index objects. Use `bun run sync:search --dry-run --samples` to inspect generated records and `ALGOLIA_SEARCH_API_KEY=... bun run test:search "oauth auth config"` to test live relevance.
+Run `ALGOLIA_APP_ID=62HI9PQZ1L ALGOLIA_ADMIN_API_KEY=... ALGOLIA_INDEX_NAME=docs_composio bun run sync:search` from `docs/` to rebuild the Algolia index. The sync script does not use Algolia Crawler: it creates section-sized records from MDX/OpenAPI/toolkit data, configures searchable attributes, `customRanking`, and `attributeForDistinct`, then replaces the index objects. Use `bun run sync:search --dry-run --samples` to inspect generated records and `ALGOLIA_SEARCH_API_KEY=... bun run test:search "oauth auth config"` to test live relevance.
 
 ## API Versioning
 
