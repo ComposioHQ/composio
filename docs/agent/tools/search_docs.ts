@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   buildIndex,
   extractSections,
+  getBundleSearchIndex,
+  pageSearchKey,
   readPageByUrl,
   toCleanMarkdown,
   tokenize,
@@ -60,10 +62,8 @@ function termCountsFor(page: DocPage): Map<string, number> {
   return counts;
 }
 
-function getCorpus(): Corpus {
-  if (corpusCache) return corpusCache;
-
-  const entries = buildIndex().map(page => {
+function buildRuntimeCorpus(pages: DocPage[]): Corpus {
+  const entries = pages.map(page => {
     const termCounts = termCountsFor(page);
     return {
       page,
@@ -79,12 +79,45 @@ function getCorpus(): Corpus {
     }
   }
 
-  corpusCache = {
+  return {
     entries,
     documentFrequency,
     averageLength:
       entries.reduce((sum, entry) => sum + entry.length, 0) / Math.max(entries.length, 1),
   };
+}
+
+function buildPrecomputedCorpus(pages: DocPage[]): Corpus | undefined {
+  const search = getBundleSearchIndex();
+  if (!search || search.entries.length !== pages.length) return undefined;
+
+  const entries: CorpusEntry[] = [];
+
+  for (let index = 0; index < pages.length; index++) {
+    const page = pages[index];
+    const entry = search.entries[index];
+
+    if (!entry || entry.key !== pageSearchKey(page)) return undefined;
+
+    entries.push({
+      page,
+      termCounts: new Map(entry.terms),
+      length: entry.length,
+    });
+  }
+
+  return {
+    entries,
+    documentFrequency: new Map(search.documentFrequency),
+    averageLength: search.averageLength,
+  };
+}
+
+function getCorpus(): Corpus {
+  if (corpusCache) return corpusCache;
+
+  const pages = buildIndex();
+  corpusCache = buildPrecomputedCorpus(pages) ?? buildRuntimeCorpus(pages);
   return corpusCache;
 }
 

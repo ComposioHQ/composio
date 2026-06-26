@@ -53,11 +53,61 @@ const LEGACY_URL_PATTERNS = [
 ];
 
 const STOPWORDS = new Set([
-  'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been',
-  'to', 'of', 'in', 'on', 'for', 'with', 'as', 'at', 'by', 'from', 'how', 'do',
-  'does', 'did', 'what', 'why', 'when', 'which', 'who', 'can', 'i', 'you', 'it',
-  'this', 'that', 'these', 'those', 'my', 'your', 'we', 'they', 'use', 'using',
-  'work', 'works', 'about', 'into', 'so', 'if', 'me', 'get', 'set', 'up',
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'but',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'to',
+  'of',
+  'in',
+  'on',
+  'for',
+  'with',
+  'as',
+  'at',
+  'by',
+  'from',
+  'how',
+  'do',
+  'does',
+  'did',
+  'what',
+  'why',
+  'when',
+  'which',
+  'who',
+  'can',
+  'i',
+  'you',
+  'it',
+  'this',
+  'that',
+  'these',
+  'those',
+  'my',
+  'your',
+  'we',
+  'they',
+  'use',
+  'using',
+  'work',
+  'works',
+  'about',
+  'into',
+  'so',
+  'if',
+  'me',
+  'get',
+  'set',
+  'up',
 ]);
 
 export type Collection = 'docs' | 'examples' | 'reference' | 'toolkits' | 'knowledge';
@@ -92,7 +142,20 @@ interface BundleToolkit {
   category?: string;
   authSchemes?: string[];
 }
-const BUNDLE = bundledIndex as { pages: BundlePage[]; toolkits: BundleToolkit[] };
+export interface BundleSearchIndex {
+  averageLength: number;
+  documentFrequency: [string, number][];
+  entries: {
+    key: string;
+    length: number;
+    terms: [string, number][];
+  }[];
+}
+const BUNDLE = bundledIndex as {
+  pages: BundlePage[];
+  toolkits: BundleToolkit[];
+  search?: BundleSearchIndex;
+};
 
 /**
  * Whether the live content tree is on disk. True in dev / local (read fresh
@@ -120,14 +183,14 @@ export function urlFromContentPath(absPath: string): string | undefined {
 }
 
 export function isLegacyUrl(url: string): boolean {
-  return LEGACY_URL_PATTERNS.some((p) => url === p || url.startsWith(`${p}/`));
+  return LEGACY_URL_PATTERNS.some(p => url === p || url.startsWith(`${p}/`));
 }
 
 export function tokenize(query: string): string[] {
   return query
     .toLowerCase()
     .split(/[^a-z0-9_]+/)
-    .filter((t) => t.length > 1 && !STOPWORDS.has(t));
+    .filter(t => t.length > 1 && !STOPWORDS.has(t));
 }
 
 export function parseFrontmatter(raw: string): {
@@ -143,7 +206,12 @@ export function parseFrontmatter(raw: string): {
     const m = fm.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
     return m ? m[1].trim().replace(/^["']|["']$/g, '') : '';
   };
-  return { title: get('title'), description: get('description'), legacy: get('legacy') === 'true', body };
+  return {
+    title: get('title'),
+    description: get('description'),
+    legacy: get('legacy') === 'true',
+    body,
+  };
 }
 
 /** Strip MDX/JSX noise to readable text (keeps prose and inline code words). */
@@ -173,11 +241,22 @@ export function toCleanMarkdown(raw: string): string {
  * of just the page. Anchor slugs match the docs' heading-id convention.
  */
 export function extractSections(markdown: string): { title: string; anchor: string }[] {
-  return [...markdown.matchAll(/^#{2,4}\s+(.+?)\s*$/gm)].map((m) => {
+  return [...markdown.matchAll(/^#{2,4}\s+(.+?)\s*$/gm)].map(m => {
     const title = m[1].replace(/[`*_]/g, '').trim();
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
     return { title, anchor: `#${slug}` };
   });
+}
+
+export function pageSearchKey(page: Pick<DocPage, 'collection' | 'title' | 'url'>): string {
+  return `${page.collection}\u0000${page.url}\u0000${page.title}`;
+}
+
+export function getBundleSearchIndex(): BundleSearchIndex | undefined {
+  return BUNDLE.search;
 }
 
 function makePage(args: {
@@ -188,8 +267,11 @@ function makePage(args: {
   legacy: boolean;
   body: string;
 }): DocPage {
-  const headings = (args.body.match(/^#{1,4}\s+(.+)$/gm) ?? []).map((h) =>
-    h.replace(/^#{1,4}\s+/, '').toLowerCase().trim(),
+  const headings = (args.body.match(/^#{1,4}\s+(.+)$/gm) ?? []).map(h =>
+    h
+      .replace(/^#{1,4}\s+/, '')
+      .toLowerCase()
+      .trim()
   );
   const text = toPlainText(args.body);
   return {
@@ -225,7 +307,9 @@ function loadKnowledge(): DocPage[] {
     const bodyStart = m.index! + m[0].length;
     const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : raw.length;
     const body = raw.slice(bodyStart, bodyEnd).trim();
-    pages.push(makePage({ collection: 'knowledge', title, description: '', url, legacy: false, body }));
+    pages.push(
+      makePage({ collection: 'knowledge', title, description: '', url, legacy: false, body })
+    );
   }
   return pages;
 }
@@ -251,8 +335,12 @@ function getToolkitMap(): Map<string, Toolkit> {
   const map = new Map<string, Toolkit>();
   if (CONTENT_AVAILABLE) {
     try {
-      const parsed = JSON.parse(readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8'));
-      const list: Toolkit[] = Array.isArray(parsed) ? parsed : (parsed.toolkits ?? parsed.items ?? []);
+      const parsed = JSON.parse(
+        readFileSync(join(APP_ROOT, 'public', 'data', 'toolkits.json'), 'utf8')
+      );
+      const list: Toolkit[] = Array.isArray(parsed)
+        ? parsed
+        : (parsed.toolkits ?? parsed.items ?? []);
       for (const tk of list) if (tk?.slug) map.set(tk.slug, tk);
     } catch {
       // no catalog available
@@ -277,7 +365,7 @@ function loadToolkits(): DocPage[] {
         url: `/toolkits/${tk.slug}`,
         legacy: false,
         body,
-      }),
+      })
     );
   }
   return pages;
@@ -317,7 +405,7 @@ export function buildIndex(): DocPage[] {
             url,
             legacy: legacy || isLegacyUrl(url),
             body,
-          }),
+          })
         );
       }
     }
@@ -332,7 +420,7 @@ export function buildIndex(): DocPage[] {
           url: p.url,
           legacy: p.legacy || isLegacyUrl(p.url),
           body: p.markdown,
-        }),
+        })
       );
     }
   }
@@ -345,14 +433,15 @@ export function buildIndex(): DocPage[] {
 /** Resolve a page URL back to its source file and return the raw MDX. */
 function authSchemesMarkdown(schemes: string[] = []): string {
   if (!schemes.length) return 'n/a';
-  return schemes.map((scheme) => `\`${scheme}\``).join(', ');
+  return schemes.map(scheme => `\`${scheme}\``).join(', ');
 }
 
 export function readPageByUrl(url: string): { title: string; raw: string } | undefined {
   const clean = url.split('#')[0].split('?')[0].replace(/\/$/, '');
   const parts = clean.split('/').filter(Boolean);
   const collection = parts.shift();
-  if (!collection || !COLLECTIONS.includes(collection as (typeof COLLECTIONS)[number])) return undefined;
+  if (!collection || !COLLECTIONS.includes(collection as (typeof COLLECTIONS)[number]))
+    return undefined;
 
   // Toolkit pages are generated from the catalog, not MDX. Synthesize content
   // so the assistant can confirm support and describe the toolkit.
@@ -377,7 +466,12 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
 
   if (CONTENT_AVAILABLE) {
     const base = join(CONTENT_ROOT, collection, ...parts);
-    const candidates = [`${base}.mdx`, `${base}.md`, join(base, 'index.mdx'), join(base, 'index.md')];
+    const candidates = [
+      `${base}.mdx`,
+      `${base}.md`,
+      join(base, 'index.mdx'),
+      join(base, 'index.md'),
+    ];
     for (const candidate of candidates) {
       try {
         const raw = readFileSync(candidate, 'utf8');
@@ -391,7 +485,7 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
   }
 
   // Deployed runtime: serve the page from the bundled snapshot.
-  const page = BUNDLE.pages.find((p) => p.url === clean);
+  const page = BUNDLE.pages.find(p => p.url === clean);
   if (page) return { title: page.title || url, raw: page.markdown };
   return undefined;
 }
