@@ -32,8 +32,8 @@ export function EveChat() {
   const lastHasAssistantText =
     lastMessage?.role === 'assistant' &&
     lastMessage.parts.some((part) => part.type === 'text' && part.text.trim().length > 0);
-  // Show the loading indicator from submit through the search/read phase, until
-  // the assistant's text actually starts streaming, so it doesn't flicker off.
+  // Show the loading indicator from submit through retrieval/model synthesis,
+  // until the assistant's text actually starts streaming, so it doesn't flicker off.
   const thinking = isBusy && !lastHasAssistantText;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -155,7 +155,7 @@ export function EveChat() {
                     <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60 [animation-delay:-0.15s]" />
                     <span className="size-1.5 animate-bounce rounded-full bg-fd-muted-foreground/60" />
                   </span>
-                  Searching the docs…
+                  Thinking with the docs…
                 </li>
               )}
             </ul>

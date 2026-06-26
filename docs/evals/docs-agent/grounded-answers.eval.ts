@@ -34,7 +34,8 @@ export default cases.map(row =>
 
       t.completed();
       t.noFailedActions();
-      t.calledTool('search_docs');
+      // The docs channel now injects eager search context before the model step,
+      // so a good answer may not need an explicit search_docs tool call.
       t.maxToolCalls(3);
       t.messageIncludes(/\]\(\/(?:docs|reference)\//);
 
