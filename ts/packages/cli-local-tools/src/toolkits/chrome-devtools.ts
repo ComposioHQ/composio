@@ -8,7 +8,7 @@ import type {
   LocalToolDeclaration,
 } from '../types';
 
-const CHROME_DEVTOOLS_MCP_VERSION = '0.24.0';
+const CHROME_DEVTOOLS_MCP_VERSION = '1.4.0';
 const COMMAND_TIMEOUT_MS = 180_000;
 
 const cliOutput = z.object({
