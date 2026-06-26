@@ -25,6 +25,7 @@
     "test:integration": "bun test tests/integration/ --timeout 30000"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.9",
     "@pierre/diffs": "^1.2.11",
     "@pierre/trees": "^1.0.0-beta.4",
     "@radix-ui/react-tabs": "^1.1.13",
@@ -61,7 +62,6 @@
   "devDependencies": {
     "@ai-sdk/anthropic": "^3.0.11",
     "@ai-sdk/mcp": "^1.0.6",
-    "@ai-sdk/openai": "^3.0.9",
     "@ai-sdk/react": "^3.0.102",
     "@anthropic-ai/claude-agent-sdk": "^0.2.5",
     "@anthropic-ai/sdk": "^0.71.2",
