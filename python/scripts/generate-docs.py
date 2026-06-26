@@ -13,14 +13,30 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import textwrap
 from pathlib import Path
 from typing import Any
 
-try:
-    import griffe
-except ImportError:
-    print("Error: griffe not installed. Run: pip install griffe")
-    raise SystemExit(1)
+import typing as t
+
+if t.TYPE_CHECKING:
+    import griffe as griffe_t
+
+_griffe: Any | None = None
+
+
+def load_griffe() -> Any:
+    """Load griffe lazily so parser helpers can be unit-tested without it."""
+    global _griffe
+    if _griffe is None:
+        try:
+            import griffe as griffe_module
+        except ImportError:
+            print("Error: griffe not installed. Run: pip install griffe")
+            raise SystemExit(1)
+        _griffe = griffe_module
+    return _griffe
+
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -107,7 +123,7 @@ def escape_yaml_string(s: str) -> str:
     return json.dumps(s)
 
 
-def get_source_link(obj: griffe.Object) -> str | None:
+def get_source_link(obj: griffe_t.Object) -> str | None:
     """Get GitHub source link for an object."""
     if not hasattr(obj, "filepath") or not obj.filepath:
         return None
@@ -214,7 +230,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             deprecated_lines.append(stripped)
 
     if example_lines:
-        examples.append("\n".join(example_lines).strip())
+        examples.append(normalize_example("\n".join(example_lines)))
 
     return {
         "description": " ".join(description_lines).strip(),
@@ -225,10 +241,24 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
     }
 
 
+def normalize_example(example: str) -> str:
+    """Normalize a docstring example before wrapping it in an MDX code fence."""
+    normalized = textwrap.dedent(example).strip()
+    lines = normalized.splitlines()
+
+    if len(lines) >= 2 and lines[0].strip().startswith("```"):
+        closing_index = len(lines) - 1
+        if lines[closing_index].strip() == "```":
+            normalized = "\n".join(lines[1:closing_index]).strip()
+
+    return normalized
+
+
 def extract_class_info(
-    cls: griffe.Class, class_name: str, config: dict
+    cls: griffe_t.Class, class_name: str, config: dict
 ) -> dict[str, Any]:
     """Extract documentation from a class."""
+    griffe_module = load_griffe()
     doc = parse_docstring(cls.docstring.value if cls.docstring else None)
 
     info = {
@@ -245,7 +275,7 @@ def extract_class_info(
     for name, member in cls.members.items():
         if name.startswith("_"):
             continue
-        if isinstance(member, griffe.Attribute):
+        if isinstance(member, griffe_module.Attribute):
             attr_doc = member.docstring.value if member.docstring else ""
             info["properties"].append(
                 {
@@ -259,7 +289,7 @@ def extract_class_info(
     for name, member in cls.members.items():
         if name.startswith("_"):
             continue
-        if isinstance(member, griffe.Function):
+        if isinstance(member, griffe_module.Function):
             method_doc = parse_docstring(
                 member.docstring.value if member.docstring else None
             )
@@ -537,6 +567,8 @@ result = composio.tools.execute(
 
 
 def main():
+    griffe_module = load_griffe()
+
     print("Starting Python SDK documentation generation...\n")
     print(f"Output: {OUTPUT_DIR}\n")
 
@@ -548,7 +580,7 @@ def main():
     # Load package
     print("Loading composio package...")
     try:
-        package = griffe.load("composio", search_paths=[str(PACKAGE_DIR)])
+        package = griffe_module.load("composio", search_paths=[str(PACKAGE_DIR)])
     except Exception as e:
         print(f"Error: {e}")
         raise SystemExit(1)
@@ -572,7 +604,7 @@ def main():
             for class_name, prop_name in EXPECTED_CLASSES.items():
                 if class_name in current.members:
                     cls = current.members[class_name]
-                    if isinstance(cls, griffe.Class):
+                    if isinstance(cls, griffe_module.Class):
                         classes_to_doc[class_name] = {
                             "cls": cls,
                             "access": f"composio.{prop_name}",
@@ -594,7 +626,7 @@ def main():
 
             if class_name in current.members:
                 cls = current.members[class_name]
-                if isinstance(cls, griffe.Class):
+                if isinstance(cls, griffe_module.Class):
                     classes_to_doc[class_name] = {
                         "cls": cls,
                         "access": None,
@@ -641,7 +673,7 @@ def main():
 
         if dec_name in current.members:
             func = current.members[dec_name]
-            if isinstance(func, griffe.Function):
+            if isinstance(func, griffe_module.Function):
                 print(f"  Processing decorator {dec_name}...")
                 doc = parse_docstring(func.docstring.value if func.docstring else None)
 

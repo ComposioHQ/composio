@@ -29,10 +29,10 @@ def update(nanoid: str, alias: str | None = ..., connection: connected_account_p
 
 ```python
 # Set an alias
-    composio.connected_accounts.update('ca_abc123', alias='work-gmail')
+composio.connected_accounts.update('ca_abc123', alias='work-gmail')
 
-    # Clear an alias
-    composio.connected_accounts.update('ca_abc123', alias='')
+# Clear an alias
+composio.connected_accounts.update('ca_abc123', alias='')
 ```
 
 ---
@@ -62,10 +62,10 @@ def update_acl(nanoid: str, allow_all_users: bool | None = ..., allowed_user_ids
 
 ```python
 composio.connected_accounts.update_acl(
-        'ca_abc',
-        allow_all_users=True,
-        not_allowed_user_ids=['user_bob'],
-    )
+    'ca_abc',
+    allow_all_users=True,
+    not_allowed_user_ids=['user_bob'],
+)
 ```
 
 ---
@@ -122,36 +122,36 @@ def link(user_id: str, auth_config_id: str, callback_url: str | None = ..., alia
 
 ```python
 # Create a connection request and redirect the user to the redirect url
-    connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
-    redirect_url = connection_request.redirect_url
-    print(f"Visit: {redirect_url} to authenticate your account")
+connection_request = composio.connected_accounts.link('user_123', 'auth_config_123')
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
 
-    # Wait for the connection to be established
-    connected_account = connection_request.wait_for_connection()
+# Wait for the connection to be established
+connected_account = connection_request.wait_for_connection()
 
-    # Create a connection request with callback URL
-    connection_request = composio.connected_accounts.link(
-        'user_123',
-        'auth_config_123',
-        callback_url='https://your-app.com/callback'
-    )
-    redirect_url = connection_request.redirect_url
-    print(f"Visit: {redirect_url} to authenticate your account")
+# Create a connection request with callback URL
+connection_request = composio.connected_accounts.link(
+    'user_123',
+    'auth_config_123',
+    callback_url='https://your-app.com/callback'
+)
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
 
-    # Wait for the connection to be established
-    connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
+# Wait for the connection to be established
+connected_account = composio.connected_accounts.wait_for_connection(connection_request.id)
 
-    connection_request = composio.connected_accounts.link(
-        'user_creator',
-        'auth_config_123',
-        experimental={
-            'account_type': 'SHARED',
-            'acl_config_for_shared': {
-                'allow_all_users': True,
-                'not_allowed_user_ids': ['user_bob'],
-            },
+connection_request = composio.connected_accounts.link(
+    'user_creator',
+    'auth_config_123',
+    experimental={
+        'account_type': 'SHARED',
+        'acl_config_for_shared': {
+            'allow_all_users': True,
+            'not_allowed_user_ids': ['user_bob'],
         },
-    )
+    },
+)
 ```
 
 ---
