@@ -12,6 +12,7 @@ from .mcp import MCP
 from .tool_router import ToolRouter
 from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .tool_router_session import ToolRouterSession
+from .tool_router_session_delete import ToolRouterSessionDeleteResponse
 from .tool_router_session_files import RemoteFile, ToolRouterSessionFilesMount
 from .toolkits import Toolkits
 from .tools import Tools
@@ -45,6 +46,7 @@ __all__ = [
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",
     "ToolRouterSession",
+    "ToolRouterSessionDeleteResponse",
     "ToolRouterSessionFilesMount",
     "Toolkits",
     "Tools",

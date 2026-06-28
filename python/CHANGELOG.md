@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
+## [Unreleased]
+
+### Added
+- **Tool Router session deletion**: delete sessions from Python via `composio.sessions.delete(session_id)` or `session.delete()`, matching the TypeScript SDK surface.
+
 ## [0.17.0] - 2026-06-26
 
 ### Added

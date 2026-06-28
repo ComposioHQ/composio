@@ -22,7 +22,6 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
-from composio.exceptions import InvalidParams
 from composio.core.models.base import Resource
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
@@ -30,29 +29,34 @@ from composio.core.models.custom_tool import (
     build_custom_tools_map,
     build_custom_tools_map_from_response,
     get_preloaded_custom_tool_slugs,
-    serialize_custom_tools,
     serialize_custom_toolkits,
+    serialize_custom_tools,
 )
 from composio.core.models.custom_tool_types import (
     CustomTool,
     CustomToolsMap,
     InlineCustomToolsWirePayload,
 )
+from composio.core.models.inline_custom_tools_payload import (
+    inline_custom_tools_attach_experimental,
+)
+from composio.core.models.tool_router_constants import (
+    PRELOAD_TOOLS_ALL,
+    SESSION_PRESET_DIRECT_TOOLS,
+)
 from composio.core.models.tool_router_session import (
     ToolRouterSession,
     ToolRouterSessionPreloadConfig,
     ToolRouterSessionWithMcp,
 )
+from composio.core.models.tool_router_session_delete import (
+    ToolRouterSessionDeleteResponse,
+    delete_tool_router_session,
+)
 from composio.core.models.tool_router_session_files import ToolRouterSessionFilesMount
-from composio.core.models.tool_router_constants import (
-    PRELOAD_TOOLS_ALL,
-    SESSION_PRESET_DIRECT_TOOLS,
-)
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_attach_experimental,
-)
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
+from composio.exceptions import InvalidParams
 
 # Type alias for MCP tag literals
 ToolRouterTag = t.Literal[
@@ -1274,11 +1278,21 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             inline_custom_tools_payload=inline_custom_tools_payload,
         )
 
+    def delete(self, session_id: str) -> ToolRouterSessionDeleteResponse:
+        """
+        Delete a tool router session by ID.
+
+        Deleted sessions immediately stop being retrievable or executable. A
+        missing or already-deleted session surfaces the backend 404.
+        """
+        return delete_tool_router_session(self._client, session_id)
+
 
 __all__ = [
     "ToolRouter",
     "ToolRouterSession",
     "ToolRouterSessionWithMcp",
+    "ToolRouterSessionDeleteResponse",
     "ToolRouterSessionExperimental",
     "ToolRouterToolkitsEnableConfig",
     "ToolRouterToolkitsDisableConfig",
