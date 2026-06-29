@@ -2,9 +2,13 @@
 
 Google Ads was changed so the developer token lives on the auth config itself, not on each connection initiation request. Older auth configs created before this change do not have the developer token field, and new connections through those auth configs can fail because the token is no longer accepted at the connection level. Create a new Google Ads authConfig with the developer token included, then create a fresh connection through that authConfig.
 
+![Google Ads auth config form showing the developer token field under custom developer credentials.](/images/kb/toolkits/googleads/google-ads-developer-token-auth-config.png)
+
 ## What does Google Ads API require?
 
 Google Ads API requests require both an OAuth access token and a Google Ads developer token. Shared managed credentials can hit shared Google Ads quota or access limits. For production reliability, users should use their own Google Ads developer token where possible.
+
+![Google Ads connection form showing the customer ID and developer token fields.](/images/kb/toolkits/googleads/google-ads-connection-fields.png)
 
 ## What can cause Google Ads 429s?
 
@@ -18,15 +22,15 @@ The SDK expects toolkit version strings without the `v` prefix. If the dashboard
 
 For Google Ads manager-account (MCC) setups, `GOOGLEADS_LIST_ACCESSIBLE_CUSTOMERS` can succeed while GAQL/reporting or campaign calls against a child account fail. Two common Google errors are:
 
-- 403 `USER_PERMISSION_DENIED` with guidance that, when accessing a client user, the manager user ID must be set in the `login-user-id` header.
-- `REQUESTED_METRICS_FOR_MANAGER` when metric fields are queried directly from the MCC manager account instead of a child/user account.
+- 403 `USER_PERMISSION_DENIED` with guidance that, when accessing a client customer, the manager customer ID must be set in the `login-customer-id` header.
+- `REQUESTED_METRICS_FOR_MANAGER` when metric fields are queried directly from the MCC manager account instead of a child/customer account.
 
 Treat this as MCC targeting/account-context, not OAuth. Reconnecting alone does not fix it unless the user had connected the wrong account context.
 
 Correct call shape:
 
-- target child/user account ID in the request path, for example `/users/{child_account_id}/googleAds:searchStream`
-- manager/MCC user ID in the `login-user-id` header
+- target child/customer account ID in the request path, for example `/customers/{child_customer_id}/googleAds:searchStream`
+- manager/MCC customer ID in the `login-customer-id` header
 
 ## How should I handle campaign mutate 400s can be caused by unsupported inline Campaign fields?
 

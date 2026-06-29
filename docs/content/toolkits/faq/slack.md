@@ -83,6 +83,8 @@ Slack's `assistant.search.context` requires the Slack OAuth app to have the Agen
 
 Slack may show warnings for non-Marketplace apps depending on workspace policy. The OAuth flow can still work if the workspace allows the app. If the workspace requires Marketplace-approved apps or admin approval, use the workspace's own Slack OAuth app or ask a workspace admin to approve the app.
 
+![Slack OAuth consent warning stating that the app is not approved by Slack.](/images/kb/toolkits/slack/slack-marketplace-warning.png)
+
 ## When should I use Slack V2 trigger slugs for channel and direct messages?
 
 Use the Slack V2 triggers for message events. `SLACK_CHANNEL_MESSAGE_RECEIVED` is intended for channel messages, and `SLACK_DIRECT_MESSAGE_RECEIVED` is intended for DMs. Slack V2 triggers include dedicated endpoints, signature verification, better DM handling, and richer filtering. Older V1 Slack trigger slugs may still work, but V2 is the recommended path for new setups.

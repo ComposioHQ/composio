@@ -20,6 +20,8 @@ FROM Opportunity
 
 You need your subdomain (e.g., `your-company.my`) and instance endpoint `/services/data/v61.0`. If you see `URL_NOT_RESET`, replace the `login` subdomain with your organization's subdomain.
 
+![Salesforce hosted connection form showing the instance endpoint and Salesforce subdomain fields.](/images/kb/toolkits/salesforce/salesforce-hosted-auth-fields.png)
+
 ## What happens to deprecated Salesforce tools?
 
 Deprecated tools continue to work until removed. Check tool descriptions for "DEPRECATED:" markers.
@@ -57,6 +59,8 @@ The Salesforce field collection interface is part of Hosted Authentication / the
 ## When should I use `SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT` to inspect a Salesforce object's fields?
 
 Use `SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT` when you need to inspect the fields available on a Salesforce object. This is the right tool for schema discovery before building object-specific queries or update flows.
+
+![Salesforce tool details panel showing SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT and its required object_name input.](/images/kb/toolkits/salesforce/salesforce-get-all-fields-input.png)
 
 ## What does Salesforce org admins may need?
 
