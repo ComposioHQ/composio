@@ -1039,3 +1039,75 @@ class TestProviderIntegration:
 
         assert result2["successful"] is True
         assert result2["data"]["starred"] is True
+
+
+class TestAgenticSkipDefaultsParity:
+    """Regression: __signature__ and args_schema must agree on defaults.
+
+    The langchain and langgraph providers strip schema defaults from
+    args_schema when schema_config={"skip_defaults": True}. They must apply
+    the same skip_default to the function signature, otherwise the signature
+    keeps the default while args_schema requires the field. See the sibling
+    llamaindex provider, which already passes skip_default to both.
+    """
+
+    def _make_tool_with_default(self):
+        return Tool(
+            name="Test Tool",
+            slug="TEST_TOOL",
+            description="A tool with a defaulted optional param",
+            input_parameters={
+                "type": "object",
+                "title": "TestToolRequest",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Test Tool",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def _provider(self, name, schema_config=None):
+        if name == "langchain":
+            from composio_langchain import LangchainProvider as P
+        else:
+            from composio_langgraph import LanggraphProvider as P
+        return P(schema_config=schema_config) if schema_config else P()
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_skip_defaults_signature_matches_args_schema(self, name):
+        from inspect import Parameter
+
+        provider = self._provider(name, {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+        assert wrapped.args_schema.model_fields["limit"].is_required()
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_default_preserved_without_skip_defaults(self, name):
+        provider = self._provider(name)
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default == 5
+        assert not wrapped.args_schema.model_fields["limit"].is_required()
