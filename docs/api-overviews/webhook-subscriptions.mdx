@@ -4,7 +4,7 @@ Reach for these endpoints to register where Composio should send events, to filt
 
 Each subscription is addressed by its `id`. You can update its URL and filters with `PATCH`, delete it, and rotate its signing secret with `/webhook_subscriptions/{id}/rotate_secret` if the secret leaks.
 
-Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Webhook verification](/docs/webhook-verification) for the SDK and manual verification flows.
+Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Verifying signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) for the SDK and manual verification flows.
 
 ## Event types
 
@@ -22,7 +22,7 @@ Composio automatically refreshes OAuth tokens before they expire. But when a ref
 Subscribe to the `composio.connected_account.expired` event to detect this proactively, instead of waiting for a tool execution to fail.
 
 <Callout>
-This event is only available with [V3 webhook payloads](/docs/webhook-verification#webhook-payload-versions). New organizations use V3 by default.
+This event is only available with [V3 webhook payloads](/docs/setting-up-triggers/subscribing-to-events#webhook-payload-versions). New organizations use V3 by default.
 </Callout>
 
 Add `composio.connected_account.expired` to the subscription's `enabled_events`:
@@ -128,5 +128,5 @@ export default async function webhookHandler(req: NextApiRequest, res: NextApiRe
 </Tabs>
 
 <Callout>
-Always [verify webhook signatures](/docs/webhook-verification) before processing events in production.
+Always [verify webhook signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) before processing events in production.
 </Callout>
