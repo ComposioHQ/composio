@@ -216,15 +216,25 @@ jobs:
           # Let UV manage Python version to satisfy workspace requirements
           uv sync --group dev
 
-      - name: Verify API Key
+      - name: Check API key
+        id: api-key
         run: |
           if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+              echo "::notice::Skipping secret-backed Python integration tests for Dependabot; missing COMPOSIO_API_KEY."
+              exit 0
+            fi
+
             echo "::error::COMPOSIO_API_KEY is not set"
             exit 1
           fi
-          echo "✅ COMPOSIO_API_KEY is configured"
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API key is configured"
 
       - name: Run Integration Tests
+        if: steps.api-key.outputs.available == 'true'
         working-directory: ./python
         run: |
           echo "🧪 Running Integration Tests..."
