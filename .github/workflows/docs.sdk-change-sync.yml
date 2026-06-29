@@ -61,6 +61,26 @@ jobs:
             echo "$(wc -l < /tmp/sdk-diff.patch) lines of SDK changes"
           fi
 
+      - name: Check docs for staleness
+        if: steps.diff.outputs.has_changes == 'true'
+        uses: anthropics/claude-code-action/base-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep"
+          prompt: |
+            SDK source code was just updated. Check if any documentation needs to change.
+
+            1. Read the SDK diff at /tmp/sdk-diff.patch to understand what changed
+            2. Focus on user-facing changes: new/renamed/removed methods, changed parameters, new features, changed behavior. Skip internal refactors, test changes, and type-only changes.
+            3. If there are user-facing changes, search docs/content/docs/ for pages that reference the affected APIs, patterns, or features
+            4. Update any docs that would be stale or incorrect after this SDK change — guides, FAQs, examples, quickstart, etc.
+            5. Do NOT touch docs/content/reference/ (those are auto-generated separately)
+            6. Do NOT touch docs/content/changelog/ (changelogs are written separately)
+            7. Do NOT edit docs/package.json or docs/bun.lock — the `@composio/*` version pins are managed automatically by the dependency-realignment step below, which runs after you and overwrites any changes you make to them
+            8. If no docs changes are needed, make no file changes
+            9. Do NOT add type assertions or casts to force a snippet to compile against an API that is missing from the published `@composio/*` package. If a feature isn't released yet, document the released behavior and let the Twoslash build flag the gap.
+
       - name: Setup Node.js, pnpm, Bun
         if: steps.diff.outputs.has_changes == 'true'
         uses: ./.github/actions/setup-node-pnpm-bun
@@ -75,10 +95,16 @@ jobs:
           # that users can actually install. Realign those pins to the latest
           # released versions on every sync so they never drift behind the SDK
           # (the drift that previously forced workaround casts into snippets).
+          # This runs AFTER the content pass so the committed pins are always
+          # authoritative — even if that pass edited package.json/bun.lock, this
+          # step resets the @composio/* pins and regenerates the lockfile.
           # The PR's Twoslash build (docs-typescript-check.yml) gates the result:
           # if a documented feature isn't published yet, the build fails loudly
           # instead of the gap being papered over.
           set -euo pipefail
+          # Discard any edits the content pass made to these managed files so the
+          # realignment is the sole source of truth for the dependency pins.
+          git checkout -- package.json bun.lock
           changed=0
           for section in dependencies devDependencies; do
             pkgs=$(jq -r --arg s "$section" '.[$s] // {} | keys[] | select(startswith("@composio/"))' package.json)
@@ -102,25 +128,6 @@ jobs:
           else
             echo "All @composio/* pins already match the latest published releases."
           fi
-
-      - name: Check docs for staleness
-        if: steps.diff.outputs.has_changes == 'true'
-        uses: anthropics/claude-code-action/base-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: |
-            --allowedTools "Read,Write,Edit,Glob,Grep"
-          prompt: |
-            SDK source code was just updated. Check if any documentation needs to change.
-
-            1. Read the SDK diff at /tmp/sdk-diff.patch to understand what changed
-            2. Focus on user-facing changes: new/renamed/removed methods, changed parameters, new features, changed behavior. Skip internal refactors, test changes, and type-only changes.
-            3. If there are user-facing changes, search docs/content/docs/ for pages that reference the affected APIs, patterns, or features
-            4. Update any docs that would be stale or incorrect after this SDK change — guides, FAQs, examples, quickstart, etc.
-            5. Do NOT touch docs/content/reference/ (those are auto-generated separately)
-            6. Do NOT touch docs/content/changelog/ (changelogs are written separately)
-            7. If no docs changes are needed, make no file changes
-            8. The docs `@composio/*` dependencies were just realigned to their latest published versions, so newly released APIs are available to Twoslash snippets. Do NOT add type assertions or casts to force a snippet to compile against an API that is missing from the published package — if a feature isn't released yet, document the released behavior and let the Twoslash build flag the gap.
 
       - name: Create PR if changed
         id: create-pr
