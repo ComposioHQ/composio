@@ -815,6 +815,33 @@ do {
 </Tab>
 </Tabs>
 
+### delete()
+
+Delete a session when you're done with it. Deleted sessions immediately stop being retrievable or executable, and the call returns the deleted `session_id`. Deleting a missing or already-deleted session surfaces the backend `404`.
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.13.1` (TypeScript) or `composio` ≥ `0.17.1` (Python).
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+result = session.delete()
+print(result["session_id"], result["deleted"])
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+const result = await session.delete();
+console.log(result.sessionId, result.deleted);
+```
+</Tab>
+</Tabs>
+
 ## Browsing the catalog
 
 Before configuring a session, explore the toolkits and tools available. Browse them visually at [dashboard.composio.dev](https://dashboard.composio.dev) or in the [docs catalog](/toolkits), or fetch them programmatically:
