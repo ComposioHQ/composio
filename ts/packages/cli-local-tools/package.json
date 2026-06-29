@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "decompress": "^4.2.1",
     "zod": "catalog:"
   },
