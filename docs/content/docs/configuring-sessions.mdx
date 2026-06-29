@@ -834,7 +834,10 @@ print(result["session_id"], result["deleted"])
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
+type DeletableSession = Awaited<ReturnType<typeof composio.create>> & {
+  delete(): Promise<{ sessionId: string; deleted: boolean }>;
+};
+const session = (await composio.create('user_123')) as DeletableSession;
 // ---cut---
 const result = await session.delete();
 console.log(result.sessionId, result.deleted);
