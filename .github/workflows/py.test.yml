@@ -193,6 +193,7 @@ jobs:
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
       COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+      IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
 
     steps:
       - name: Checkout repository
@@ -221,8 +222,8 @@ jobs:
         run: |
           if [ -z "$COMPOSIO_API_KEY" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
-              echo "::notice::Skipping secret-backed Python integration tests for Dependabot; missing COMPOSIO_API_KEY."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed Python integration tests for untrusted pull request; missing COMPOSIO_API_KEY."
               exit 0
             fi
 
