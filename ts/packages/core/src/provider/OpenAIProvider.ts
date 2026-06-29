@@ -246,17 +246,18 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
-    for (const message of chatCompletion.choices) {
-      if (message.message.tool_calls && message.message.tool_calls[0].type === 'function') {
-        const toolResult = await this.executeToolCall(
-          userId,
-          message.message.tool_calls[0],
-          options,
-          modifiers
-        );
+    for (const choice of chatCompletion.choices) {
+      // A single assistant message can carry several tool calls (parallel tool
+      // calls, on by default). Each one needs its own tool result, otherwise the
+      // next request fails since some tool_call_ids go unanswered.
+      for (const toolCall of choice.message.tool_calls ?? []) {
+        if (toolCall.type !== 'function') {
+          continue;
+        }
+        const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
         outputs.push({
           role: 'tool',
-          tool_call_id: message.message.tool_calls[0].id,
+          tool_call_id: toolCall.id,
           content: toolResult,
         });
       }
