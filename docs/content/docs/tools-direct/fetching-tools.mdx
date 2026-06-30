@@ -3,10 +3,11 @@ title: Fetching tools and schemas
 description: Fetch and filter tools, and inspect schemas
 keywords: [get tools, list tools, filter, schema]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/tools-and-toolkits) for how sessions discover and fetch tools automatically.
+If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. See [Tools and toolkits](/docs/how-composio-works) for how sessions discover and fetch tools automatically.
 </Callout>
 
 Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.
@@ -242,10 +243,6 @@ const toolkitSearchRaw = await composio.tools.getRawComposioTools({
 When no toolkit version is specified, the API returns tools from the base version (`00000000_00`), which may be fewer than what's available. Pass `toolkit_versions="latest"` or a specific version to get all tools. Never use `latest` in production. See [toolkit versioning](/docs/tools-direct/toolkit-versioning).
 </Callout>
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Blocks />} title="Toolkit versioning" href="/docs/tools-direct/toolkit-versioning" description="Pin specific tool versions for consistent behavior in production" />
-</Cards>
+<Card icon={<Play />} title="Executing tools" href="/docs/tools-direct/executing-tools" description="Run tools with providers, agentic frameworks, or direct execution" />

@@ -4,7 +4,7 @@ description: Build an agent with AutoGen and enable it to use 1000+ tools with C
 keywords: [autogen, microsoft autogen]
 ---
 
-The AutoGen provider transforms Composio tools into AutoGen's [FunctionTool](https://microsoft.github.io/autogen/) format for use with AutoGen agents.
+The AutoGen provider turns Composio tools into AutoGen [`FunctionTool`](https://microsoft.github.io/autogen/) objects and registers them with your agents. You connect an account, fetch the tools, register them with a caller and executor agent, and AutoGen handles the conversation and tool calls.
 
 <Steps>
 <Step>
@@ -67,3 +67,17 @@ print(response.chat_history)
 ```
 </Step>
 </Steps>
+
+## Provider specifics
+
+AutoGen needs tools registered with two agents, not passed once. Call `composio.provider.register_tools(caller=..., executor=..., tools=tools)`: the `caller` decides which tool to invoke, and the `executor` runs it.
+
+Each tool comes back as an AutoGen `FunctionTool` with a generated `name`. AutoGen caps function names at 64 characters, so the provider hashes and truncates long tool slugs to stay under the limit. The registered name will not always match the original Composio slug.
+
+<Callout type="info">
+`register_tools` is unique to the AutoGen provider. Other providers pass tools straight into the agent constructor, so don't expect this method elsewhere.
+</Callout>
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

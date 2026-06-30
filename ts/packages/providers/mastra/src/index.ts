@@ -20,6 +20,7 @@ import {
 } from '@composio/core';
 import { applyCompatLayer } from '@mastra/schema-compat';
 import { createTool } from '@mastra/core/tools';
+import { relaxOutputSchema } from './relax-output-schema';
 
 export type MastraTool = ReturnType<typeof createTool>;
 
@@ -70,12 +71,12 @@ export class MastraProvider extends BaseAgenticProvider<
   }
 
   /**
-   * Transform MCP URL response into Anthropic-specific format.
-   * By default, Anthropic uses the standard format (same as default),
-   * but this method is here to show providers can customize if needed.
+   * Transform an MCP URL response into the Mastra provider's format.
+   * Mastra expects a URL map keyed by server name, so each entry is
+   * reduced into an object of `{ [name]: { url } }`.
    *
    * @param data - The MCP URL response data
-   * @returns Standard MCP server response format
+   * @returns The MCP servers as a Mastra URL map
    */
   wrapMcpServerResponse(data: McpUrlResponse): MastraUrlMap {
     // Transform to Mastra's URL map format
@@ -125,11 +126,19 @@ export class MastraProvider extends BaseAgenticProvider<
       mode: 'jsonSchema',
     });
 
+    // Relax the output schema before compiling it: Composio's API-supplied
+    // output schemas are strict (non-nullable primitives, additionalProperties
+    // false), but third-party APIs return `null` for unset optional fields and
+    // sometimes extra keys. Mastra validates results against this schema and
+    // drops mismatching data, so without this every such response is truncated.
+    // See https://github.com/ComposioHQ/composio/issues/3047.
     const outputSchema = applyCompatLayer({
-      schema: dereferenceJsonSchema(tool.outputParameters ?? {}, {
-        onUnresolved: 'sentinel',
-        onReplace,
-      }),
+      schema: relaxOutputSchema(
+        dereferenceJsonSchema(tool.outputParameters ?? {}, {
+          onUnresolved: 'sentinel',
+          onReplace,
+        })
+      ),
       compatLayers: [],
       mode: 'jsonSchema',
     });

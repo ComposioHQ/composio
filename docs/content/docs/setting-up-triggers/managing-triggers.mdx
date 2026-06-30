@@ -4,9 +4,11 @@ description: List, enable, disable, and delete trigger instances
 keywords: [manage triggers, enable, disable, delete, discover]
 ---
 
+After a trigger is created, you manage it over its lifecycle: list active instances, pause one with `disable()`, bring it back with `enable()`, or remove it for good with `delete()`.
+
 ## Listing active triggers
 
-List trigger instances that have been created. Results are cursor-paginated.
+List the trigger instances you've created. Results are cursor-paginated.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -20,7 +22,7 @@ active = composio.triggers.list_active(
 )
 
 for trigger in active.items:
-    print(f"{trigger.id} ({trigger.trigger_name}) - disabled_at={trigger.disabled_at}")
+    print(f"{trigger.id} ({trigger.trigger_name}) - disabled: {trigger.disabled_at is not None}")
 
 # Paginate with cursor
 if active.next_cursor:
@@ -85,19 +87,6 @@ await composio.triggers.enable('ti_abcd123');
   </Tab>
 </Tabs>
 
-You can also toggle triggers from the dashboard:
-
-1. Go to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs) and select your auth config
-2. Navigate to **Active Triggers**
-3. Toggle the trigger on or off
-
-<Figure
-  src="/images/trigger-enable-disable.png"
-  alt="Enable/disable triggers from the dashboard"
-  caption="Enable/disable triggers from the dashboard"
-  size="lg"
-/>
-
 ## Deleting triggers
 
 Permanently remove a trigger instance:
@@ -121,11 +110,3 @@ await composio.triggers.delete('ti_abcd123');
 <Callout type="warn">
 Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
 </Callout>
-
-## What to read next
-
-<Cards>
-  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
-  <Card icon={<Zap />} title="Creating triggers" href="/docs/setting-up-triggers/creating-triggers" description="Create trigger instances to start receiving events from connected apps" />
-  <Card icon={<Zap />} title="Subscribing to events" href="/docs/setting-up-triggers/subscribing-to-events" description="Set up webhooks or SDK subscriptions to handle trigger events" />
-</Cards>

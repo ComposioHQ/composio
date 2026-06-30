@@ -1,0 +1,72 @@
+{
+  "name": "@composio/experimental",
+  "version": "0.1.0",
+  "description": "Experimental Composio integrations and helpers",
+  "main": "src/index.ts",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/experimental"
+  },
+  "bugs": {
+    "url": "https://github.com/ComposioHQ/composio/issues"
+  },
+  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/experimental#readme",
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.mjs",
+    "types": "dist/index.d.mts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./pi": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./workbench": {
+      "types": "./dist/workbench/index.d.mts",
+      "default": "./dist/workbench/index.mjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build:python-helpers": "tsx scripts/build-python-helpers.ts",
+    "check:python-helpers": "tsx scripts/build-python-helpers.ts && git diff --exit-code -- src/workbench/python-helpers.generated.ts",
+    "build": "pnpm run build:python-helpers && pnpm exec tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "composio",
+    "experimental",
+    "pi",
+    "coding-agent",
+    "tools",
+    "agent"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typebox": "1.1.38"
+  },
+  "peerDependencies": {
+    "@composio/core": ">=0.10.0 <1.0.0",
+    "@earendil-works/pi-coding-agent": ">=0.79.0 <1.0.0"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*",
+    "@earendil-works/pi-coding-agent": "0.79.8",
+    "tsdown": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

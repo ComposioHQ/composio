@@ -1,10 +1,18 @@
 import { defineConfig } from 'tsdown';
-import { baseConfig } from '../../../tsdown.config.base.ts';
+import { baseConfig, baseNeverBundle } from '../../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...baseConfig,
   tsconfig: 'tsconfig.build.json',
-  copy: [{ from: 'pack/generated/*', to: '.', flatten: false }],
+  copy: [
+    { from: 'pack/generated/*', to: '.', flatten: false },
+    { from: 'docs/**/*', to: 'dist/docs', flatten: false },
+    {
+      from: '../../../docs/content/reference/sdk-reference/typescript/*',
+      to: 'dist/docs/reference/sdk-reference/typescript',
+      flatten: true,
+    },
+  ],
   entry: [
     'src/index.ts',
     'src/experimental/index.ts',
@@ -24,33 +32,22 @@ export default defineConfig({
     // #config_defaults
     'src/utils/config-defaults/ConfigDefaults.node.ts',
     'src/utils/config-defaults/ConfigDefaults.workerd.ts',
-  ],
-  attw: {
-    ...baseConfig.attw,
-    ignoreRules: [
-      ...(baseConfig.attw?.ignoreRules ?? []),
 
-      /**
-       * We currently need `"type": "module"` in `@composio/core` package.json because:
-       * - `@composio/cli` tests rely on it
-       * - `@composio/cli` users rely on it
-       * This causes issus with `attw`.
-       *
-       * Ideally, we can drop cjs support altogether in `@composio/core`.
-       * Alternatively, we'd need to modify `composio ts generate` so that it generates .mjs files (and not .js).
-       */
-      'cjs-resolves-to-esm',
+    // public utility subpaths
+    'src/utils/json-schema.ts',
+  ],
+  deps: {
+    ...baseConfig.deps,
+    /**
+     * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
+     * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
+     */
+    neverBundle: [
+      ...baseNeverBundle,
+      '#platform',
+      '#files',
+      '#file_tool_modifier',
+      '#config_defaults',
     ],
   },
-  /**
-   * We don't want to accidentally bundle `node:*` packages (e.g., `node:module`)
-   * as not all of them are available in Cloudflare Workers / Vercel Edge runtimes.
-   */
-  external: [
-    ...(baseConfig.external ?? []),
-    '#platform',
-    '#files',
-    '#file_tool_modifier',
-    '#config_defaults',
-  ],
 });

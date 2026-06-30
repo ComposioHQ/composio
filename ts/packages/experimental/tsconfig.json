@@ -1,0 +1,21 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@composio/core": ["../core/src/index.ts"],
+      "@composio/json-schema-to-zod": ["../json-schema-to-zod/src/index.ts"],
+      "#config_defaults": ["../core/src/utils/config-defaults/ConfigDefaults.node.ts"],
+      "#platform": ["../core/src/platform/node.ts"],
+      "#files": ["../core/src/models/Files.node.ts"],
+      "#file_tool_modifier": ["../core/src/utils/modifiers/FileToolModifier.node.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

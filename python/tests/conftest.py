@@ -62,10 +62,23 @@ def load_golden_signatures() -> dict:
         return json.load(f)
 
 
+def mock_http_client() -> Mock:
+    """Build a mock ``HttpClient`` for tool-execution tests.
+
+    Production routes non-idempotent writes through ``client.without_retries``
+    (a retry-disabled clone of the client). The mock mirrors that by returning
+    itself for ``without_retries``, so assertions on ``client.tools.execute`` and
+    ``client.tools.proxy`` still observe the call.
+    """
+    client = Mock()
+    client.without_retries = client
+    return client
+
+
 @pytest.fixture
 def mock_client() -> Mock:
     """Create a mock HTTP client."""
-    client = Mock()
+    client = mock_http_client()
     client.triggers_types = Mock()
     client.trigger_instances = Mock()
     client.trigger_instances.manage = Mock()

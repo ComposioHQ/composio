@@ -1,0 +1,132 @@
+Webhook subscriptions are outbound delivery configurations. They define the URL Composio posts [trigger](/docs/triggers) events to, along with the signing secret and the set of event types you want to receive.
+
+Reach for these endpoints to register where Composio should send events, to filter delivery to specific event types, and to manage the signing secret used to verify those deliveries. List the available event types with the `/webhook_subscriptions/event_types` endpoint, then create a subscription scoped to the ones you care about.
+
+Each subscription is addressed by its `id`. You can update its URL and filters with `PATCH`, delete it, and rotate its signing secret with `/webhook_subscriptions/{id}/rotate_secret` if the secret leaks.
+
+Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Verifying signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) for the SDK and manual verification flows.
+
+## Event types
+
+A subscription's `enabled_events` controls which events get delivered to its URL. Two broad families exist:
+
+- **Trigger events** like `composio.trigger.message` — payloads emitted by [triggers](/docs/triggers) you've enabled (new email, new issue, etc.).
+- **Lifecycle events** like `composio.connected_account.expired` — emitted when a [connected account](/docs/auth-configuration/connected-accounts) changes state.
+
+List everything you can subscribe to with the `/webhook_subscriptions/event_types` endpoint, then scope a subscription to the events you handle.
+
+## Detecting connection expiry
+
+Composio automatically refreshes OAuth tokens before they expire. But when a refresh token is revoked or expires, the connection enters an `EXPIRED` state and the user must re-authenticate.
+
+Subscribe to the `composio.connected_account.expired` event to detect this proactively, instead of waiting for a tool execution to fail.
+
+<Callout>
+This event is only available with [V3 webhook payloads](/docs/setting-up-triggers/subscribing-to-events#webhook-payload-versions). New organizations use V3 by default.
+</Callout>
+
+Add `composio.connected_account.expired` to the subscription's `enabled_events`:
+
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
+  -H "X-API-KEY: <your-composio-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "webhook_url": "https://example.com/webhook",
+    "enabled_events": [
+      "composio.trigger.message",
+      "composio.connected_account.expired"
+    ]
+  }'
+```
+
+When a connection expires, Composio sends a webhook with the connected account details:
+
+```json
+{
+  "id": "evt_847cdfcd-d219-4f18-a6dd-91acd42ca94a",
+  "type": "composio.connected_account.expired",
+  "metadata": {
+    "project_id": "pr_your-project-id",
+    "org_id": "ok_your-org-id"
+  },
+  "data": {
+    "id": "ca_your-connected-account-id",
+    "toolkit": { "slug": "gmail" },
+    "auth_config": {
+      "id": "ac_your-auth-config-id",
+      "auth_scheme": "OAUTH2"
+    },
+    "status": "EXPIRED",
+    "status_reason": "OAuth refresh token expired"
+  },
+  "timestamp": "2026-02-06T12:00:00.000Z"
+}
+```
+
+Route on `type` to handle expiry alongside trigger events:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio, WebhookEventType
+
+composio = Composio()
+
+@app.post("/webhook")
+async def webhook_handler(request: Request):
+    payload = await request.json()
+    event_type = payload.get("type")
+
+    if event_type == WebhookEventType.CONNECTION_EXPIRED:
+        account_id = payload["data"]["id"]
+        toolkit = payload["data"]["toolkit"]["slug"]
+
+        # Look up the user and send them a re-auth link
+        session = composio.create(user_id=lookup_user(account_id))
+        connection_request = session.authorize(toolkit)
+        notify_user(connection_request.redirect_url)
+
+    elif event_type == WebhookEventType.TRIGGER_MESSAGE:
+        # Handle trigger events
+        pass
+
+    return {"status": "ok"}
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio();
+type NextApiRequest = { body: any };
+type NextApiResponse = { status: (code: number) => { json: (data: any) => void } };
+declare function lookupUser(accountId: string): string;
+declare function notifyUser(url: string): void;
+// ---cut---
+export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
+  const payload = req.body;
+
+  if (payload.type === 'composio.connected_account.expired') {
+    const accountId = payload.data.id;
+    const toolkit = payload.data.toolkit.slug;
+
+    // Look up the user and send them a re-auth link
+    const session = await composio.create(lookupUser(accountId));
+    const connectionRequest = await session.authorize(toolkit);
+    if (connectionRequest.redirectUrl) {
+      notifyUser(connectionRequest.redirectUrl);
+    }
+
+  } else if (payload.type === 'composio.trigger.message') {
+    // Handle trigger events
+  }
+
+  res.status(200).json({ status: 'ok' });
+}
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+Always [verify webhook signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) before processing events in production.
+</Callout>

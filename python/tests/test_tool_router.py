@@ -1,11 +1,14 @@
 """Test ToolRouter functionality."""
 
+import typing as t
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 from composio_client import omit
 from pydantic import BaseModel, Field
 
+from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
@@ -22,8 +25,10 @@ from composio.core.models.tool_router import (
 )
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
+    ToolRouterSession,
+    ToolRouterSessionWithMcp,
 )
-from composio.exceptions import ValidationError
+from composio.exceptions import InvalidParams, ValidationError
 
 experimental_api = ExperimentalAPI()
 
@@ -134,6 +139,106 @@ class TestToolRouter:
 
         # Verify API was called
         mock_client.tool_router.session.create.assert_called_once()
+
+    def test_create_session_default_returns_base_session(self, tool_router):
+        """Default create() (mcp omitted) returns the base ToolRouterSession.
+
+        MCP is opt-in: the type must NOT be the mcp-surfacing subclass.
+        """
+        session = tool_router.create(user_id="user_123")
+
+        assert type(session) is ToolRouterSession
+        assert not isinstance(session, ToolRouterSessionWithMcp)
+
+    def test_create_session_with_mcp_true_returns_with_mcp(self, tool_router):
+        """create(..., mcp=True) returns ToolRouterSessionWithMcp with mcp surfaced."""
+        session = tool_router.create(user_id="user_123", mcp=True)
+
+        assert isinstance(session, ToolRouterSessionWithMcp)
+        # The MCP endpoint is populated on the runtime object either way.
+        assert session.mcp.type == ToolRouterMCPServerType.HTTP
+        assert session.mcp.url == "https://mcp.example.com/session_123"
+
+    def test_use_session_default_returns_base_session(self, tool_router):
+        """Default use() (mcp omitted) returns the base ToolRouterSession."""
+        session = tool_router.use("session_123")
+
+        assert type(session) is ToolRouterSession
+        assert not isinstance(session, ToolRouterSessionWithMcp)
+
+    def test_use_session_with_mcp_true_returns_with_mcp(self, tool_router):
+        """use(..., mcp=True) returns ToolRouterSessionWithMcp."""
+        session = tool_router.use("session_123", mcp=True)
+
+        assert isinstance(session, ToolRouterSessionWithMcp)
+        assert session.mcp.url == "https://mcp.example.com/session_123"
+
+    def test_delete_session_by_id(self, tool_router, mock_client):
+        """delete() removes a session by ID."""
+        mock_client.delete.return_value = {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+
+        result = tool_router.delete("session_123")
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session_123",
+            cast_to=t.Dict[str, t.Any],
+        )
+        assert result == {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+
+    def test_delete_session_by_id_escapes_session_id(self, tool_router, mock_client):
+        """delete() URL-encodes session IDs before calling the raw endpoint."""
+        mock_client.delete.return_value = {
+            "session_id": "session/with spaces",
+            "deleted": True,
+        }
+
+        tool_router.delete("session/with spaces")
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session%2Fwith%20spaces",
+            cast_to=t.Dict[str, t.Any],
+        )
+
+    def test_delete_session_by_id_calls_raw_http_endpoint(self):
+        """delete() works with the low-level Stainless HTTP client."""
+        requests: t.List[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(
+                200,
+                json={
+                    "session_id": "session/with spaces",
+                    "deleted": True,
+                },
+            )
+
+        client = HttpClient(
+            provider="test",
+            api_key="sk-test",
+            base_url="https://backend.invalid",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        tool_router = ToolRouter(client=client, provider=MagicMock())
+
+        result = tool_router.delete("session/with spaces")
+
+        assert result == {
+            "session_id": "session/with spaces",
+            "deleted": True,
+        }
+        assert len(requests) == 1
+        assert requests[0].method == "DELETE"
+        assert (
+            str(requests[0].url)
+            == "https://backend.invalid/api/v3.1/tool_router/session/session%2Fwith%20spaces"
+        )
 
     def test_create_session_with_toolkits_list(self, tool_router, mock_client):
         """Test creating a session with toolkits as a list."""
@@ -516,8 +621,44 @@ class TestToolRouter:
             "slack": ["ca_yyy"],
         }
 
+    def test_create_session_with_sandbox_config(self, tool_router, mock_client):
+        """Test creating a session with preferred sandbox configuration."""
+        session = tool_router.create(
+            user_id="user_123",
+            sandbox={
+                "enable_proxy_execution": False,
+                "auto_offload_threshold": 300,
+                "sandbox_size": "large",
+            },
+        )
+
+        assert session.session_id == "session_123"
+
+        call_args = mock_client.tool_router.session.create.call_args
+        kwargs = call_args.kwargs
+        assert "workbench" in kwargs
+        assert kwargs["workbench"] == {
+            "enable": True,
+            "enable_proxy_execution": False,
+            "auto_offload_threshold": 300,
+            "sandbox_size": "large",
+        }
+
+    def test_create_session_rejects_sandbox_and_workbench(
+        self, tool_router, mock_client
+    ):
+        """Test creating a session rejects both sandbox and workbench."""
+        with pytest.raises(InvalidParams):
+            tool_router.create(
+                user_id="user_123",
+                sandbox={"enable": True},
+                workbench={"enable": True},
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
     def test_create_session_with_workbench_config(self, tool_router, mock_client):
-        """Test creating a session with workbench configuration."""
+        """Test creating a session with backwards-compatible workbench configuration."""
         session = tool_router.create(
             user_id="user_123",
             workbench={"enable_proxy_execution": False, "auto_offload_threshold": 300},
@@ -958,11 +1099,31 @@ class TestToolRouter:
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
+        assert callable(session.delete)
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
 
         mock_client.tool_router.session.retrieve.assert_called_once_with("session_123")
         mock_client.tool_router.session.attach.assert_not_called()
         mock_client.post.assert_not_called()
+
+    def test_session_delete(self, tool_router, mock_client):
+        """Session delete removes the current session."""
+        mock_client.delete.return_value = {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+        session = tool_router.use(session_id="session_123")
+
+        result = session.delete()
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session_123",
+            cast_to=t.Dict[str, t.Any],
+        )
+        assert result == {
+            "session_id": "session_123",
+            "deleted": True,
+        }
 
     def test_use_session_with_custom_tools(self, tool_router, mock_client):
         """Test attaching custom tools when reusing a session."""

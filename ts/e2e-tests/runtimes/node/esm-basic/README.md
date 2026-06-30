@@ -9,7 +9,7 @@ ESM is the modern JavaScript module standard. This suite ensures:
 - `import('@composio/core')` resolves without errors
 - Named imports work (`import { Composio } from '@composio/core'`)
 - All public exports are accessible
-- No CJS-only patterns break ESM consumers
+- The ESM-only package entrypoints resolve correctly
 
 ## What It Tests
 
@@ -42,7 +42,7 @@ The fixture is a standalone `.mjs` file that:
 
 ## Isolation Tool
 
-**Docker** with Node.js versions: 22.22.3, 24.16.0, 25.9.0.
+**Docker** with Node.js versions: 22.22.3, 24.17.0, 25.9.0.
 
 ## Running
 

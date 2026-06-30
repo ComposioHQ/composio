@@ -18,17 +18,22 @@ permissions:
 jobs:
   sync-search:
     runs-on: ubuntu-latest
+    # The Algolia admin key is stored as an environment secret, not a repo
+    # secret. Declaring the environment is what exposes `secrets.*` (and any
+    # env-scoped `vars.*`) to this job — without it the key resolves empty and
+    # the sync silently skips.
+    environment: Production
     defaults:
       run:
         working-directory: ./docs
     env:
       ALGOLIA_APP_ID: ${{ vars.ALGOLIA_APP_ID || '62HI9PQZ1L' }}
       ALGOLIA_ADMIN_API_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
-      ALGOLIA_INDEX_NAME: ${{ vars.ALGOLIA_INDEX_NAME || 'docs_composio_dev_62hi9pqz1l_pages' }}
+      ALGOLIA_INDEX_NAME: ${{ vars.ALGOLIA_INDEX_NAME || 'docs_composio' }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun

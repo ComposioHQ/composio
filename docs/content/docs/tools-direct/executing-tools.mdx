@@ -3,6 +3,7 @@ title: Executing Tools
 description: Learn how to execute Composio tools with different providers and frameworks
 keywords: [execute, run, tool calling, function calling, direct execution]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
 <Callout type="info">
@@ -307,7 +308,7 @@ console.log(data);
 </Tabs>
 
 <Callout type="info">
-Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create session custom tools](/docs/toolkits/custom-tools-and-toolkits).
+Need an API that isn't supported by any Composio toolkit, or want to extend an existing one? Learn how to [create session custom tools](/docs/extending-sessions/custom-tools-and-toolkits).
 </Callout>
 
 ## Automatic File Handling
@@ -594,10 +595,6 @@ await composio.tools.execute('GOOGLEDRIVE_UPLOAD_FILE', {
   </Tab>
 </Tabs>
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-  <Card icon={<Wrench />} title="Custom tools" href="/docs/toolkits/custom-tools-and-toolkits" description="Create local tools that run inside sessions" />
-</Cards>
+<Card icon={<Wrench />} title="Fetching tools" href="/docs/tools-direct/fetching-tools" description="Fetch and filter tools, inspect schemas, and search semantically" />

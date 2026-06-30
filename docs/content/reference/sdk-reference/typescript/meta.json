@@ -7,10 +7,10 @@
     "experimental",
     "mcp",
     "remote-file",
-    "session-context-impl",
+    "sessions",
     "toolkits",
-    "tool-router-session",
-    "tool-router-session-files-mount",
+    "session",
+    "session-files",
     "tools",
     "triggers"
   ]

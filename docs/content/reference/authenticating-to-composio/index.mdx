@@ -1,0 +1,68 @@
+---
+title: Overview
+description: Authenticate requests to the Composio API with an API key
+keywords: [API authentication, API key, x-api-key, x-org-api-key, scoped api key, Composio authentication, authorization]
+---
+
+Every Composio API request authenticates with an API key. Send the key in a request header and Composio resolves it to your project or organization.
+
+Composio has three kinds of API key. They share the same authentication flow — they differ in what they can reach.
+
+| Key | Header | Scope |
+| --- | --- | --- |
+| Project API key | `x-api-key` | Full access to a single project. |
+| Organization API key | `x-org-api-key` | Access across every project in your organization. |
+| Scoped project API key <span style={{ color: '#059669' }}>**· New**</span> | `x-api-key` | A chosen subset of a single project's resources. |
+
+## Project API key
+
+A project API key authenticates to one project with full access. Use it for most application code.
+
+Get it from the dashboard: sign in to [composio.dev](https://composio.dev), open **Settings → Project Settings**, and copy the key from the **API Keys** section.
+
+Send it in the `x-api-key` header:
+
+```bash
+curl https://backend.composio.dev/api/v3.1/tools \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+
+## Organization API key
+
+An organization API key authenticates across every project in your organization. Use it for organization-level endpoints.
+
+Get it from the dashboard: open **Organization Settings → General Settings** and copy a token under **Organization Access Tokens**.
+
+Send it in the `x-org-api-key` header:
+
+```bash
+curl https://backend.composio.dev/api/v3.1/org/projects \
+  -H "x-org-api-key: $COMPOSIO_ORG_API_KEY"
+```
+
+## Scoped project API key
+
+A scoped project API key authenticates to a single project but reaches only the resources you grant it — for example, executing tools without managing connected accounts. It uses the same `x-api-key` header as a default project key.
+
+Scope a key to the least it needs, then send it like any project key:
+
+```bash
+curl https://backend.composio.dev/api/v3.1/tools/execute/HACKERNEWS_GET_USER \
+  -H "x-api-key: $COMPOSIO_SCOPED_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"arguments": {"username": "pg"}}'
+```
+
+See [Scoped project API keys](/reference/authenticating-to-composio/project-api-key-permissions) for the permission areas, access levels, and the routes each one covers.
+
+<Cards>
+  <Card title="Scoped project API keys" href="/reference/authenticating-to-composio/project-api-key-permissions">
+    Permission areas, access levels, and covered routes
+  </Card>
+  <Card title="Errors" href="/reference/errors">
+    Understanding API error responses
+  </Card>
+  <Card title="Rate Limits" href="/reference/rate-limits">
+    API rate limits by plan
+  </Card>
+</Cards>

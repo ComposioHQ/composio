@@ -4,7 +4,7 @@ import { parseSchema } from './parse-schema';
 import type { JsonSchemaObject, Refs, JsonSchema } from '../types';
 import { extendSchemaWithMessage } from '../utils/extend-schema';
 import { its } from '../utils/its';
-import { JSONSchema7TypeName } from 'json-schema';
+import type { JSONSchema7TypeName } from 'json-schema';
 
 type MetadataFields =
   | keyof Pick<JsonSchemaObject, 'default' | 'description' | 'title'>

@@ -1,0 +1,17 @@
+A toolkit is a collection of related tools for a single app, like `gmail`, `github`, or `slack`. Each toolkit groups the actions for that service, its authentication requirements, and the trigger types it exposes.
+
+Reach for these endpoints when you want to:
+
+- List the toolkits in the catalog, sorted by popularity, to browse what is available before configuring a session.
+- Fetch a single toolkit by `slug` for its name, logo, categories, and metadata.
+- Fetch several toolkits at once with the multi endpoint.
+- List the available toolkit categories to filter the catalog by use case.
+- Read the toolkits changelog to track when tools or schemas change.
+
+These endpoints authenticate with your project API key in the `x-api-key` header.
+
+<Callout type="info">
+Tools within a toolkit are versioned. When you execute a tool, resolve to a known version with `toolkit_versions=latest` or a pinned dated version. See the [toolkit versioning migration guide](/docs/migration-guide/toolkit-versioning).
+</Callout>
+
+To browse toolkits visually, see the [toolkits catalog](/toolkits). For the concepts and SDK usage, see [Tools and toolkits](/docs/how-composio-works) and [Configuring sessions](/docs/configuring-sessions).

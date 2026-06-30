@@ -1,0 +1,11 @@
+{
+  "title": "Examples",
+  "root": true,
+  "pages": [
+    "index",
+    "aimlapi-tools",
+    "general-agent-with-pi",
+    "standup-slackbot",
+    "local-sandbox-pr-reviewer"
+  ]
+}

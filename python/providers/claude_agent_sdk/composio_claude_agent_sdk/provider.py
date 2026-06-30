@@ -21,7 +21,7 @@ from claude_agent_sdk import (
 from composio.core.provider import AgenticProvider
 from composio.core.provider.agentic import AgenticProviderExecuteFn
 from composio.types import Tool
-from composio.utils.shared import normalize_tool_arguments
+from composio.utils.shared import alias_tool_input_schema, normalize_tool_arguments
 
 
 class ClaudeAgentSDKProvider(
@@ -91,22 +91,22 @@ class ClaudeAgentSDKProvider(
         Returns:
             A Claude Agent SDK MCP tool definition
         """
-        input_schema = tool.input_parameters or {}
+        aliases = alias_tool_input_schema(tool.input_parameters or {})
 
         @sdk_tool(
             tool.slug,
             tool.description or f"Execute {tool.slug}",
-            input_schema,
+            aliases.schema,
         )
         async def tool_handler(args: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             """Execute the Composio tool with the given arguments."""
             try:
+                arguments = aliases.restore_arguments(normalize_tool_arguments(args))
                 # Run the synchronous execute_tool in a thread
                 result = await asyncio.to_thread(
                     execute_tool,
                     tool.slug,
-                    # Models occasionally emit tool input as a JSON string (issue #2406).
-                    normalize_tool_arguments(args),
+                    arguments,
                 )
                 # Format the result for Claude Agent SDK
                 result_text = result if isinstance(result, str) else json.dumps(result)
@@ -135,6 +135,10 @@ class ClaudeAgentSDKProvider(
                 }
 
         return tool_handler
+
+    def _json_schema_to_simple_schema(self, schema: dict) -> dict:
+        """Return the provider-visible schema for a Composio JSON schema."""
+        return alias_tool_input_schema(schema or {}).schema
 
     def wrap_tools(
         self,

@@ -17,11 +17,46 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  /** When true, the page shows an "Experimental" badge in the sidebar. */
+  experimental: z.boolean().optional(),
+  /** When true, the page shows a "New" badge in the sidebar. */
+  isNew: z.boolean().optional(),
+  /** When true, the page shows a "Legacy" badge at the top of the page. */
+  legacy: z.boolean().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.
    *  - undefined / omitted → default session-based guardrails
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API
    *  - "none" → no guardrails appended */
   llmGuardrails: z.enum(['direct-execution', 'none']).optional(),
+  /** Links rendered in the right-hand "Related" rail under the table of contents. */
+  related: z
+    .array(
+      z.object({
+        title: z.string(),
+        href: z.string(),
+        description: z.string().optional(),
+      }),
+    )
+    .optional(),
+  /** Presentation metadata for the /examples featured gallery. The card's
+   *  title and description come from `title`/`description`; this controls the
+   *  category lane, toolkit logos, and whether it surfaces in "Featured". */
+  gallery: z
+    .object({
+      /** Category lanes this example belongs to (can be more than one). */
+      categories: z
+        .array(
+          z.enum(['General agents', 'Background agents', 'Coding agents']),
+        )
+        .min(1),
+      /** Toolkit logo slugs (logos.composio.dev/api/<slug>) shown on the card. */
+      logos: z.array(z.string()).default([]),
+      /** Surface in the default "Featured" view. */
+      featured: z.boolean().optional(),
+      /** Sort order within the grid (lower first). */
+      order: z.number().optional(),
+    })
+    .optional(),
 });
 
 export const docs = defineDocs({
@@ -47,6 +82,9 @@ export const reference = defineDocs({
       includeProcessedMarkdown: true,
     },
     mdxOptions: applyMdxPreset({
+      // Match the global remark plugins so mermaid diagrams in merged
+      // api-overviews render (applyMdxPreset replaces, not merges).
+      remarkPlugins: [remarkMdxMermaid],
       rehypeCodeOptions: {
         themes: {
           light: 'github-light',
@@ -61,8 +99,8 @@ export const reference = defineDocs({
   },
 });
 
-export const cookbooks = defineDocs({
-  dir: 'content/cookbooks',
+export const examples = defineDocs({
+  dir: 'content/examples',
   docs: {
     schema: docsSchema,
     postprocess: {
@@ -119,6 +157,16 @@ export default defineConfig({
                   compilerOptions: {
                     jsx: 4, // JsxEmit.ReactJSX
                     jsxImportSource: 'react',
+                    // Twoslash type-checks code blocks in its own virtual TS
+                    // environment, which carries a `baseUrl` default that TS 6
+                    // flags as deprecated (TS5101). Silence it here, mirroring
+                    // the root tsconfig.json, so production builds don't fail.
+                    ignoreDeprecations: '6.0',
+                    // TS 6 no longer auto-includes `@types/node` ambiently the
+                    // way 5.9 did, so code blocks using Node globals (`crypto`,
+                    // `process`, `Buffer`) fail to resolve them (TS2591). Pull
+                    // node types in explicitly to restore that.
+                    types: ['node'],
                   },
                 },
                 typesCache: createFileSystemTypesCache({

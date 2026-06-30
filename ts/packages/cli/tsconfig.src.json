@@ -7,8 +7,6 @@
     }
   ],
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": ".",
     "paths": {
       "src/*": ["./src/*"],
       "effect-errors/*": ["./src/effect-errors/*"],

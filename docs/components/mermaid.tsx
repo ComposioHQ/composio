@@ -39,6 +39,9 @@ export function Mermaid({ chart }: { chart: string }) {
 
       mermaid.initialize({
         startOnLoad: false,
+        // 'loose' enables node hyperlinks (the `click ... "url"` directive) and
+        // image nodes in flowcharts. Diagrams here are all authored in-repo.
+        securityLevel: 'loose',
         theme: 'base',
         themeVariables: {
           background: bg,

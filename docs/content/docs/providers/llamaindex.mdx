@@ -4,7 +4,7 @@ description: Build an agent with LlamaIndex and enable it to use 1000+ tools wit
 keywords: [llamaindex]
 ---
 
-The LlamaIndex provider transforms Composio tools into LlamaIndex's [FunctionTool](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/) format with built-in execution.
+The LlamaIndex provider turns Composio tools into LlamaIndex [`FunctionTool`](https://docs.llamaindex.ai/en/stable/module_guides/deploying/agents/) objects that execute themselves. You connect an account, fetch the tools, hand them to a `FunctionAgent`, and LlamaIndex drives the calls. The provider ships for both Python and TypeScript.
 
 <Steps>
 <Step>
@@ -97,3 +97,7 @@ console.log(result.data.result);
 </Tabs>
 </Step>
 </Steps>
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

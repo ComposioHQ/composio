@@ -36,7 +36,6 @@ from composio.client.types import Tool
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
-from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
@@ -48,11 +47,16 @@ from composio.core.models.custom_tool_types import (
     RegisteredCustomTool,
     RegisteredCustomToolkit,
 )
+from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
     inline_custom_tools_search_experimental,
 )
 from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
+from composio.core.models.tool_router_session_delete import (
+    ToolRouterSessionDeleteResponse,
+    delete_tool_router_session,
+)
 from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -60,6 +64,7 @@ from composio.core.provider.base import BaseProvider
 if t.TYPE_CHECKING:
     from composio.core.models.tool_router import (
         ToolkitConnectionsDetails,
+        ToolRouterMCPServerConfig,
         ToolRouterSessionExperimental,
     )
 
@@ -79,22 +84,27 @@ class ToolRouterSessionPreloadConfig:
 
 class ToolRouterSession(t.Generic[TTool, TToolCollection]):
     """
-    Tool router session containing session information and methods.
+    A Composio session — the object returned by ``composio.create(...)`` /
+    ``composio.use(...)``. Use it to fetch session-scoped tools, authorize
+    toolkits, search, and execute tools.
 
     Generic Parameters:
         TTool: The individual tool type returned by the provider.
         TToolCollection: The collection type returned by tools().
 
+    The hosted MCP endpoint (``session.mcp``) exists at runtime on every
+    session, but is only surfaced in the type when you opt in with
+    ``create(..., mcp=True)`` / ``use(..., mcp=True)``, which returns a
+    :class:`ToolRouterSessionWithMcp`. By default agents use native tools via
+    :meth:`tools`. See https://docs.composio.dev/docs/sessions-via-mcp
+
     Attributes:
         session_id: Unique session identifier
-        mcp: MCP server configuration
         experimental: Experimental features (files, assistive prompt, etc.)
     """
 
     #: Unique session identifier.
     session_id: str
-    #: MCP server configuration for this session.
-    mcp: t.Any
     #: Experimental capabilities available on this session.
     experimental: "ToolRouterSessionExperimental"
 
@@ -123,7 +133,11 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         self._file_upload_path_deny_segments = file_upload_path_deny_segments
         self._file_upload_dirs = file_upload_dirs
         self.session_id = session_id
-        self.mcp = mcp
+        # The MCP endpoint exists on every session at runtime (kept for
+        # backwards compatibility), but is only typed via
+        # ToolRouterSessionWithMcp. Assign through setattr so type checkers do
+        # not surface `mcp` on the base class — MCP is an explicit opt-in.
+        setattr(self, "mcp", mcp)
         self.experimental = experimental
         self.preload = preload or ToolRouterSessionPreloadConfig(tools=[])
         self._custom_tools_map = custom_tools_map
@@ -831,6 +845,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         manage_connections: t.Union[
             t.Optional[session_patch_params.ManageConnections], "Omit"
         ] = omit,
+        sandbox: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         workbench: t.Union[t.Optional[session_patch_params.Workbench], "Omit"] = omit,
         multi_account: t.Union[
             t.Optional[session_patch_params.MultiAccount], "Omit"
@@ -842,13 +857,24 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         Only the fields provided will be changed; omitted fields are preserved.
         Mutates this session's ``preload`` in-place.
 
-        Pass ``None`` for ``manage_connections``, ``workbench``, or
+        Pass ``None`` for ``manage_connections``, ``sandbox``/``workbench``, or
         ``multi_account`` to clear the stored value.
+
+        ``workbench`` is a backwards-compatible alias for ``sandbox``. Prefer
+        ``sandbox`` in new code.
 
         All parameters use the same types as the Stainless-generated
         ``client.tool_router.session.patch()`` method.
         """
         from composio.core.models.tool_router import _session_preload_config
+
+        if sandbox is not omit and workbench is not omit:
+            raise exceptions.InvalidParams(
+                "Pass either `sandbox` or `workbench`, not both. "
+                "`workbench` is a backwards-compatible alias for `sandbox`."
+            )
+
+        workbench_payload = sandbox if sandbox is not omit else workbench
 
         response = self._client.tool_router.session.patch(
             session_id=self.session_id,
@@ -858,8 +884,32 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             auth_configs=auth_configs,
             connected_accounts=connected_accounts,
             manage_connections=manage_connections,
-            workbench=workbench,
+            workbench=workbench_payload,
             multi_account=multi_account,
             preload=preload,
         )
         self.preload = _session_preload_config(response.config.preload)
+
+    def delete(self) -> ToolRouterSessionDeleteResponse:
+        """
+        Delete this session.
+
+        Deleted sessions immediately stop being retrievable or executable. An
+        already-deleted session surfaces the backend 404.
+        """
+        return delete_tool_router_session(self._client, self.session_id)
+
+
+class ToolRouterSessionWithMcp(ToolRouterSession[TTool, TToolCollection]):
+    """A :class:`ToolRouterSession` whose hosted MCP endpoint is exposed.
+
+    Returned by ``create(..., mcp=True)`` / ``use(..., mcp=True)``. The ``mcp``
+    attribute is populated by the base ``__init__`` at runtime; this subclass
+    only surfaces it in the type. See
+    https://docs.composio.dev/docs/sessions-via-mcp
+    """
+
+    #: Hosted MCP server configuration (url + auth headers) for this session.
+    #: This is the recommended MCP path, gated behind ``mcp=True``.
+    #: See https://docs.composio.dev/docs/sessions-via-mcp
+    mcp: "ToolRouterMCPServerConfig"

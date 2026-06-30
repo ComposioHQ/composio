@@ -173,6 +173,43 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] fish shell installs completions twice', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] keeps config.fish and composio.fish idempotent', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install', '--completions']);
+          yield* cli(['install', '--completions']);
+
+          const fs = yield* FileSystem.FileSystem;
+          const configPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const completionPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+          const configContents = yield* fs.readFileString(configPath);
+          const completionContents = yield* fs.readFileString(completionPath);
+
+          const pathMarkerCount = configContents.match(/^# Composio CLI$/gm)?.length ?? 0;
+          const configCompletionsCount =
+            configContents.match(/^# Composio CLI completions$/gm)?.length ?? 0;
+          const fishCompletionsCount =
+            completionContents.match(/^# Composio CLI completions$/gm)?.length ?? 0;
+
+          expect(pathMarkerCount).toBe(1);
+          expect(configCompletionsCount).toBe(0);
+          expect(fishCompletionsCount).toBe(1);
+        })
+      );
+    });
+  });
+
   describe('[When] --no-completions is passed', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] writes PATH block but skips completions', () =>

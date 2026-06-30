@@ -26,8 +26,8 @@ export function DocsHeroV2() {
         </h1>
 
         <p className="max-w-[480px] text-[15px] leading-[1.55] text-fd-foreground/70 md:text-base">
-          1000+ pre-authenticated toolkits, per-user sessions, triggers,
-          and a workbench for your AI agent.
+          Give your AI agent 1000+ pre-authenticated toolkits, per-user
+          sessions, triggers, and a workbench.
         </p>
 
         {/* Quick-link chips — single column */}

@@ -12,9 +12,23 @@ export const mockClient = {
   connectedAccounts: {
     list: vi.fn(),
     get: vi.fn(),
+    retrieve: vi.fn(),
+    delete: vi.fn(),
+    refresh: vi.fn(),
+    updateStatus: vi.fn(),
   },
   toolkits: {
+    list: vi.fn(),
     retrieve: vi.fn(),
+    retrieveCategories: vi.fn(),
+  },
+  authConfigs: {
+    list: vi.fn(),
+    create: vi.fn(),
+    retrieve: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    updateStatus: vi.fn(),
   },
   toolRouter: {
     session: {

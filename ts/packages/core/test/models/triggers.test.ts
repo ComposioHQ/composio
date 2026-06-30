@@ -14,6 +14,7 @@ import { PusherService } from '../../src/services/pusher/Pusher';
 import {
   ComposioFailedToSubscribeToPusherChannelError,
   ComposioTriggerTypeNotFoundError,
+  ComposioWebhookSignatureVerificationError,
 } from '../../src/errors/TriggerErrors';
 
 // Mock dependencies
@@ -29,6 +30,9 @@ vi.mock('../../src/services/pusher/Pusher');
 const createMockClient = () => ({
   baseURL: 'https://api.composio.dev',
   apiKey: 'test-api-key',
+  get: vi.fn(),
+  post: vi.fn(),
+  patch: vi.fn(),
   triggerInstances: {
     listActive: vi.fn(),
     upsert: vi.fn(),
@@ -240,13 +244,183 @@ describe('Triggers', () => {
     });
   });
 
+  describe('setWebhookSubscription', () => {
+    const webhookUrl = 'https://example.com/webhooks/composio';
+    const rawSubscription = {
+      id: 'sub_123',
+      webhook_url: webhookUrl,
+      version: 'V3',
+      enabled_events: ['composio.trigger.message'],
+      secret: 'whsec_123',
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    };
+
+    it('should create a webhook subscription when none exists', async () => {
+      mockClient.get.mockResolvedValue({ items: [] });
+      mockClient.post.mockResolvedValue(rawSubscription);
+
+      const result = await triggers.setWebhookSubscription({ webhookUrl });
+
+      expect(mockClient.get).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
+        query: { limit: 1 },
+      });
+      expect(mockClient.post).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions', {
+        body: {
+          webhook_url: webhookUrl,
+          enabled_events: ['composio.trigger.message'],
+          version: 'V3',
+        },
+      });
+      expect(mockClient.patch).not.toHaveBeenCalled();
+      // Only camelCase keys — the snake_case wire fields must not leak through.
+      expect(result).toEqual({
+        id: 'sub_123',
+        webhookUrl,
+        version: 'V3',
+        enabledEvents: ['composio.trigger.message'],
+        secret: 'whsec_123',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+      });
+    });
+
+    it('should update the first webhook subscription when one exists', async () => {
+      mockClient.get.mockResolvedValue({ items: [{ id: 'sub_123' }] });
+      mockClient.patch.mockResolvedValue(rawSubscription);
+
+      await triggers.setWebhookSubscription({
+        webhookUrl,
+        enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],
+        version: 'V3',
+      });
+
+      expect(mockClient.patch).toHaveBeenCalledWith('/api/v3.1/webhook_subscriptions/sub_123', {
+        body: {
+          webhook_url: webhookUrl,
+          enabled_events: ['composio.trigger.message', 'composio.connected_account.expired'],
+          version: 'V3',
+        },
+      });
+      expect(mockClient.post).not.toHaveBeenCalled();
+    });
+
+    it('should throw validation error for invalid webhook subscription parameters', async () => {
+      await expect(
+        triggers.setWebhookSubscription({ webhookUrl, enabledEvents: [] })
+      ).rejects.toThrow(ValidationError);
+      expect(mockClient.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('parse', () => {
+    const webhookSecret = 'test-webhook-secret-12345';
+    const webhookId = 'msg_test123';
+
+    const v3Payload = {
+      id: 'evt-123',
+      timestamp: '2026-01-28T12:00:00Z',
+      type: 'composio.trigger.message',
+      metadata: {
+        log_id: 'log-789',
+        trigger_slug: 'GMAIL_NEW_GMAIL_MESSAGE',
+        trigger_id: 'trigger-456',
+        connected_account_id: 'conn-123',
+        auth_config_id: 'auth-456',
+        user_id: 'user-789',
+      },
+      data: { subject: 'Test email', from: 'test@example.com' },
+    };
+
+    // Mirrors the signing format used by Composio: HMAC-SHA256(id.timestamp.payload).
+    const createSignature = async (timestamp: string, payload: string): Promise<string> => {
+      const { createHmac } = await import('node:crypto');
+      const signature = createHmac('sha256', webhookSecret)
+        .update(`${webhookId}.${timestamp}.${payload}`)
+        .digest('base64');
+      return `v1,${signature}`;
+    };
+
+    it('should parse and verify from a Fetch Request with a valid signature', async () => {
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify(v3Payload);
+      const signature = await createSignature(timestamp, body);
+
+      const request = new Request('https://example.com/webhooks/composio', {
+        method: 'POST',
+        headers: {
+          'webhook-id': webhookId,
+          'webhook-timestamp': timestamp,
+          'webhook-signature': signature,
+        },
+        body,
+      });
+
+      const result = await triggers.parse(request, { verifySecret: webhookSecret });
+
+      expect(result.version).toBe('V3');
+      expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
+      expect(result.payload.payload).toEqual({
+        subject: 'Test email',
+        from: 'test@example.com',
+      });
+    });
+
+    it('should parse from an Express-style { body, headers } without verifying', async () => {
+      const body = JSON.stringify(v3Payload);
+
+      const result = await triggers.parse({
+        body: new TextEncoder().encode(body),
+        headers: {},
+      });
+
+      expect(result.version).toBe('V3');
+      expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
+      expect(result.payload.payload).toEqual({
+        subject: 'Test email',
+        from: 'test@example.com',
+      });
+    });
+
+    it('should throw when verifySecret is set but the signature is invalid', async () => {
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify(v3Payload);
+
+      const request = new Request('https://example.com/webhooks/composio', {
+        method: 'POST',
+        headers: {
+          'webhook-id': webhookId,
+          'webhook-timestamp': timestamp,
+          'webhook-signature': 'v1,not-a-valid-signature',
+        },
+        body,
+      });
+
+      await expect(triggers.parse(request, { verifySecret: webhookSecret })).rejects.toThrow(
+        ComposioWebhookSignatureVerificationError
+      );
+    });
+
+    it('should throw a helpful ValidationError when signature headers are missing', async () => {
+      const body = JSON.stringify(v3Payload);
+
+      await expect(
+        triggers.parse({ body, headers: {} }, { verifySecret: webhookSecret })
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        triggers.parse({ body, headers: {} }, { verifySecret: webhookSecret })
+      ).rejects.toThrow(/missing signature header/i);
+    });
+  });
+
   describe('list', () => {
     it('should list active trigger instances', async () => {
       mockClient.triggerInstances.listActive.mockResolvedValue(mockTriggerInstances);
 
       const result = await triggers.listActive();
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined);
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(undefined, undefined);
       expect(result).toEqual({
         items: mockTriggerInstances.items.map(item => ({
           id: item.id,
@@ -279,15 +453,18 @@ describe('Triggers', () => {
 
       await triggers.listActive(query);
 
-      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith({
-        auth_config_ids: query.authConfigIds,
-        connected_account_ids: query.connectedAccountIds,
-        limit: query.limit,
-        cursor: query.cursor,
-        show_disabled: query.showDisabled,
-        trigger_ids: query.triggerIds,
-        trigger_names: query.triggerNames,
-      });
+      expect(mockClient.triggerInstances.listActive).toHaveBeenCalledWith(
+        {
+          auth_config_ids: query.authConfigIds,
+          connected_account_ids: query.connectedAccountIds,
+          limit: query.limit,
+          cursor: query.cursor,
+          show_disabled: query.showDisabled,
+          trigger_ids: query.triggerIds,
+          trigger_names: query.triggerNames,
+        },
+        undefined
+      );
     });
   });
 
@@ -311,19 +488,30 @@ describe('Triggers', () => {
 
       const result = await triggers.create(userId, slug, body);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest',
-      });
-      expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith({
-        user_ids: [userId],
-        toolkit_slugs: [mockTriggerType.toolkit.slug],
-      });
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
-        connected_account_id: body.connectedAccountId,
-        trigger_config: body.triggerConfig,
-        toolkit_versions: 'latest',
-        user_id: userId,
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
+      expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith(
+        {
+          user_ids: [userId],
+          toolkit_slugs: [mockTriggerType.toolkit.slug],
+        },
+        undefined
+      );
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
+        slug,
+        {
+          connected_account_id: body.connectedAccountId,
+          trigger_config: body.triggerConfig,
+          toolkit_versions: 'latest',
+          user_id: userId,
+        },
+        undefined
+      );
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
     });
 
@@ -337,12 +525,16 @@ describe('Triggers', () => {
 
       const result = await triggers.create(userId, slug, bodyWithoutConnectedAccount);
 
-      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(slug, {
-        connected_account_id: 'conn-456',
-        trigger_config: bodyWithoutConnectedAccount.triggerConfig,
-        toolkit_versions: 'latest',
-        user_id: userId,
-      });
+      expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
+        slug,
+        {
+          connected_account_id: 'conn-456',
+          trigger_config: bodyWithoutConnectedAccount.triggerConfig,
+          toolkit_versions: 'latest',
+          user_id: userId,
+        },
+        undefined
+      );
       expect(logger.warn).toHaveBeenCalledWith(
         `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`
       );
@@ -414,7 +606,11 @@ describe('Triggers', () => {
 
       const result = await triggers.update(triggerId, body);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, body);
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        body,
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -426,7 +622,7 @@ describe('Triggers', () => {
 
       const result = await triggers.delete(triggerId);
 
-      expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId);
+      expect(mockClient.triggerInstances.manage.delete).toHaveBeenCalledWith(triggerId, undefined);
       expect(result).toEqual({ triggerId: mockTriggerDeleteResponse.trigger_id });
     });
   });
@@ -438,9 +634,13 @@ describe('Triggers', () => {
 
       const result = await triggers.disable(triggerId);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
-        status: 'disable',
-      });
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        {
+          status: 'disable',
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -452,9 +652,13 @@ describe('Triggers', () => {
 
       const result = await triggers.enable(triggerId);
 
-      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(triggerId, {
-        status: 'enable',
-      });
+      expect(mockClient.triggerInstances.manage.update).toHaveBeenCalledWith(
+        triggerId,
+        {
+          status: 'enable',
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerUpdateResponse);
     });
   });
@@ -465,12 +669,15 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes();
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
-        cursor: undefined,
-        limit: undefined,
-        toolkit_slugs: undefined,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(
+        {
+          cursor: undefined,
+          limit: undefined,
+          toolkit_slugs: undefined,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       expect(result).toEqual({
         items: mockTriggerTypes.items.map(item => ({
           ...item,
@@ -487,12 +694,15 @@ describe('Triggers', () => {
 
       const result = await triggers.listTypes(query);
 
-      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith({
-        cursor: undefined,
-        limit: query.limit,
-        toolkit_slugs: query.toolkits,
-        toolkit_versions: 'latest',
-      });
+      expect(mockClient.triggersTypes.list).toHaveBeenCalledWith(
+        {
+          cursor: undefined,
+          limit: query.limit,
+          toolkit_slugs: query.toolkits,
+          toolkit_versions: 'latest',
+        },
+        undefined
+      );
       expect(result).toEqual({
         items: mockTriggerTypes.items,
         nextCursor: mockTriggerTypes.next_cursor,
@@ -508,9 +718,13 @@ describe('Triggers', () => {
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest', // Uses global default
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest', // Uses global default
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
 
@@ -525,9 +739,13 @@ describe('Triggers', () => {
 
       const result = await customTriggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: customToolkitVersions, // Uses configured global versions
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: customToolkitVersions, // Uses configured global versions
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
 
@@ -537,9 +755,13 @@ describe('Triggers', () => {
 
       const result = await triggers.getType(slug);
 
-      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(slug, {
-        toolkit_versions: 'latest', // Default to latest
-      });
+      expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
+        slug,
+        {
+          toolkit_versions: 'latest', // Default to latest
+        },
+        undefined
+      );
       expect(result).toEqual(mockTriggerType);
     });
   });

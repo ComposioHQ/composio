@@ -28,3 +28,19 @@ next-env.d.ts.cache
 
 # Claude local settings (permissions are user-specific)
 .claude/settings.local.json
+
+# Re-include the API-reference "logs" tag dir (the root .gitignore "logs" rule
+# matches it by accident; this page is generated from api-overviews/logs.mdx).
+!/content/reference/api-reference/logs/
+!/content/reference/api-reference/logs/**
+!/content/reference/v3/api-reference/logs/
+!/content/reference/v3/api-reference/logs/**
+
+# Generated docs snapshot for the Ask AI agent (regenerated on dev/build/typecheck).
+/agent/lib/docs-index.ts
+/agent/lib/docs-index.json
+
+# docs-graph.ts run artifacts (the script is tracked; its outputs are not).
+/docs-graph.dot
+/docs-graph.html
+/docs-graph.json

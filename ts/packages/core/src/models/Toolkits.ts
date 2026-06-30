@@ -22,6 +22,9 @@ import {
   transformToolkitRetrieveCategoriesResponse,
   transformToolkitRetrieveResponse,
 } from '../utils/transformers/toolkits';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
+import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 /**
  * Toolkits class
  *
@@ -47,7 +50,10 @@ export class Toolkits {
    *
    * @private
    */
-  private async getToolkits(query: ToolkitListParams): Promise<ToolKitListResponse> {
+  private async getToolkits(
+    query: ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolKitListResponse> {
     try {
       const parsedQuery = ToolkitsListParamsSchema.safeParse(query);
       if (!parsedQuery.success) {
@@ -55,16 +61,23 @@ export class Toolkits {
           cause: parsedQuery.error,
         });
       }
-      const result = await this.client.toolkits.list({
+      const listParams = {
         category: parsedQuery.data.category,
         managed_by: parsedQuery.data.managedBy,
         sort_by: parsedQuery.data.sortBy,
         cursor: parsedQuery.data.cursor,
         limit: parsedQuery.data.limit,
-      });
+      };
+      const result = await withCancellation(
+        () => this.client.toolkits.list(listParams, requestOptions),
+        requestOptions?.signal
+      );
 
       return transformToolkitListResponse(result);
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       throw new ComposioToolkitFetchError('Failed to fetch toolkits', {
         cause: error,
       });
@@ -83,11 +96,20 @@ export class Toolkits {
    *
    * @private
    */
-  protected async getToolkitBySlug(slug: string): Promise<ToolkitRetrieveResponse> {
+  protected async getToolkitBySlug(
+    slug: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveResponse> {
     try {
-      const result = await this.client.toolkits.retrieve(slug);
+      const result = await withCancellation(
+        () => this.client.toolkits.retrieve(slug, undefined, requestOptions),
+        requestOptions?.signal
+      );
       return transformToolkitRetrieveResponse(result);
     } catch (error) {
+      if (error instanceof ComposioRequestCancelledError) {
+        throw error;
+      }
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
         throw new ComposioToolkitNotFoundError(`Toolkit with slug ${slug} not found`, {
           meta: {
@@ -120,7 +142,10 @@ export class Toolkits {
    * console.log(githubToolkit.authConfigDetails); // Authentication configuration details
    * ```
    */
-  async get(slug: string): Promise<ToolkitRetrieveResponse>;
+  async get(
+    slug: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveResponse>;
 
   /**
    * Retrieves a list of toolkits based on the provided query parameters.
@@ -144,21 +169,26 @@ export class Toolkits {
    * });
    * ```
    */
-  async get(query?: ToolkitListParams): Promise<ToolKitListResponse>;
+  async get(
+    query?: ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolKitListResponse>;
 
   /**
    * Implementation method that handles both overloads for retrieving toolkits.
    *
    * @param {string | ToolkitListParams} arg - Either a toolkit slug or query parameters
+   * @param {ComposioRequestOptions} [requestOptions] - Per-request cancellation/timeout options
    * @returns {Promise<ToolkitRetrieveResponse | ToolKitListResponse>} The toolkit or list of toolkits
    */
   async get(
-    arg?: string | ToolkitListParams
+    arg?: string | ToolkitListParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ToolkitRetrieveResponse | ToolKitListResponse> {
     if (typeof arg === 'string') {
-      return this.getToolkitBySlug(arg);
+      return this.getToolkitBySlug(arg, requestOptions);
     }
-    return this.getToolkits(arg ?? {});
+    return this.getToolkits(arg ?? {}, requestOptions);
   }
 
   private async getAuthConfigFields(
@@ -277,8 +307,13 @@ export class Toolkits {
    * console.log(categories.items); // Array of category objects
    * ```
    */
-  async listCategories(): Promise<ToolkitRetrieveCategoriesResponse> {
-    const result = await this.client.toolkits.retrieveCategories();
+  async listCategories(
+    requestOptions?: ComposioRequestOptions
+  ): Promise<ToolkitRetrieveCategoriesResponse> {
+    const result = await withCancellation(
+      () => this.client.toolkits.retrieveCategories(requestOptions),
+      requestOptions?.signal
+    );
     return transformToolkitRetrieveCategoriesResponse(result);
   }
 
@@ -298,16 +333,24 @@ export class Toolkits {
   async authorize(
     userId: string,
     toolkitSlug: string,
-    authConfigId?: string
+    authConfigId?: string,
+    requestOptions?: ComposioRequestOptions
   ): Promise<ConnectionRequest> {
-    const toolkit = await this.getToolkitBySlug(toolkitSlug);
+    // High-level helper that fans out to 3-4 network calls (toolkit retrieve,
+    // optional authConfigs list, optional authConfigs create, then
+    // connectedAccounts.initiate). Forward the caller's signal to every
+    // underlying call so the whole composite is cancellable as a single unit.
+    const toolkit = await this.getToolkitBySlug(toolkitSlug, requestOptions);
     const composioAuthConfig = new AuthConfigs(this.client);
     let authConfigIdToUse: string | undefined = authConfigId;
 
     if (!authConfigIdToUse) {
-      const authConfig = await composioAuthConfig.list({
-        toolkit: toolkitSlug,
-      });
+      const authConfig = await composioAuthConfig.list(
+        {
+          toolkit: toolkitSlug,
+        },
+        requestOptions
+      );
       // pick the first auth config if none is passed
       authConfigIdToUse = authConfig.items[0]?.id;
     }
@@ -317,10 +360,14 @@ export class Toolkits {
       // create authConfig using composioManagedAuthSchemes
       if (toolkit.authConfigDetails && toolkit.authConfigDetails.length > 0) {
         try {
-          const authConfig = await composioAuthConfig.create(toolkitSlug, {
-            type: 'use_composio_managed_auth',
-            name: `${toolkit.name} Auth Config`,
-          });
+          const authConfig = await composioAuthConfig.create(
+            toolkitSlug,
+            {
+              type: 'use_composio_managed_auth',
+              name: `${toolkit.name} Auth Config`,
+            },
+            requestOptions
+          );
           authConfigIdToUse = authConfig.id;
         } catch (error) {
           if (error instanceof ComposioClient.APIError && error.status === 400) {
@@ -352,9 +399,14 @@ export class Toolkits {
     }
     // create the auth config
     const composioConnectedAccount = new ConnectedAccounts(this.client);
-    return await composioConnectedAccount.initiate(userId, authConfigIdToUse, {
-      // in this magic function we allow multiple connected accounts per user for an auth config
-      allowMultiple: true,
-    });
+    return await composioConnectedAccount.initiate(
+      userId,
+      authConfigIdToUse,
+      {
+        // in this magic function we allow multiple connected accounts per user for an auth config
+        allowMultiple: true,
+      },
+      requestOptions
+    );
   }
 }

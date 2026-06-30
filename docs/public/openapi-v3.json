@@ -74,16 +74,16 @@
       "description": "Tool execution endpoints"
     },
     {
-      "name": "Recipes",
-      "description": "Recipe management and execution. Recipes are reusable code modules that combine multiple tools."
-    },
-    {
       "name": "Triggers",
       "description": "Trigger management and execution"
     },
     {
       "name": "Payments",
       "description": "Payment and subscription management"
+    },
+    {
+      "name": "Billing",
+      "description": "Dashboard billing state — usage, subscription, contract (cookie-auth only)"
     },
     {
       "name": "Files",
@@ -94,16 +94,12 @@
       "description": "MCP server management"
     },
     {
-      "name": "Migration",
-      "description": "Endpoints to help with migration from v1 to v3"
-    },
-    {
       "name": "MCP Partner",
       "description": "MCP partner management"
     },
     {
-      "name": "Recipe",
-      "description": "Recipe endpoints"
+      "name": "Stripe Projects",
+      "description": "Stripe Projects provisioning"
     },
     {
       "name": "Tool Router",
@@ -203,94 +199,6 @@
                   "val": {
                     "type": "object",
                     "properties": {
-                      "subdomain": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "your-domain": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "region": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "shop": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "account_url": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "COMPANYDOMAIN": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "extension": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "form_api_base_url": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "instanceEndpoint": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "api_url": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "borneo_dashboard_url": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "proxy_username": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "proxy_password": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "domain": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "version": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "dc": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "site_name": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "instanceName": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "account_id": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "your_server": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "server_location": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "base_url": {
-                        "type": "string",
-                        "nullable": true
-                      },
                       "token": {
                         "type": "string",
                         "nullable": true
@@ -308,6 +216,26 @@
                         "nullable": true
                       },
                       "basic_encoded": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "generic_token": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "api_key_prefix": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "generic_secret": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "generic_id": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "user_agent": {
                         "type": "string",
                         "nullable": true
                       },
@@ -336,7 +264,7 @@
                         "nullable": true
                       }
                     },
-                    "additionalProperties": {},
+                    "additionalProperties": false,
                     "description": "Credential fields to update. Only provided fields are changed — omitted fields are preserved. Set a field to null to remove it."
                   }
                 },
@@ -842,9 +770,6 @@
         "operationId": "getAuthSessionInfo",
         "security": [
           {
-            "ApiKeyAuth": []
-          },
-          {
             "UserApiKeyAuth": []
           }
         ],
@@ -1096,10 +1021,6 @@
                         "metadata": {
                           "type": "object",
                           "properties": {
-                            "createdInBetterAuth": {
-                              "type": "boolean",
-                              "description": "Whether the user was created via Better Auth (dashboard signup)."
-                            },
                             "prefers_old_dashboard": {
                               "type": "boolean",
                               "description": "If true, the user will be redirected to the legacy dashboard at platform.composio.dev."
@@ -1291,7 +1212,8 @@
                                       "type": "string"
                                     }
                                   }
-                                ]
+                                ],
+                                "description": "OAuth scopes requested for the managed auth config."
                               },
                               "user_scopes": {
                                 "anyOf": [
@@ -1304,7 +1226,8 @@
                                       "type": "string"
                                     }
                                   }
-                                ]
+                                ],
+                                "description": "OAuth user-token scopes requested for the managed auth config. This is primarily used by Slack OAuth v2."
                               }
                             },
                             "default": {}
@@ -1392,7 +1315,8 @@
                                       "type": "string"
                                     }
                                   }
-                                ]
+                                ],
+                                "description": "OAuth scopes requested for the custom auth config."
                               },
                               "user_scopes": {
                                 "anyOf": [
@@ -1405,7 +1329,8 @@
                                       "type": "string"
                                     }
                                   }
-                                ]
+                                ],
+                                "description": "OAuth user-token scopes requested for the custom auth config. This is primarily used by Slack OAuth v2."
                               }
                             },
                             "default": {}
@@ -1709,7 +1634,8 @@
                           },
                           "uuid": {
                             "type": "string",
-                            "description": "The UUID of the authentication configuration (for backward compatibility)"
+                            "description": "The UUID of the authentication configuration (for backward compatibility)",
+                            "deprecated": true
                           },
                           "type": {
                             "type": "string",
@@ -2025,7 +1951,8 @@
                     },
                     "uuid": {
                       "type": "string",
-                      "description": "The UUID of the authentication configuration (for backward compatibility)"
+                      "description": "The UUID of the authentication configuration (for backward compatibility)",
+                      "deprecated": true
                     },
                     "type": {
                       "type": "string",
@@ -2335,7 +2262,8 @@
                                   "type": "string"
                                 }
                               }
-                            ]
+                            ],
+                            "description": "OAuth scopes requested for the auth config."
                           },
                           "user_scopes": {
                             "anyOf": [
@@ -2348,7 +2276,8 @@
                                   "type": "string"
                                 }
                               }
-                            ]
+                            ],
+                            "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
                           }
                         }
                       },
@@ -2400,7 +2329,7 @@
                       "shared_credentials": {
                         "type": "object",
                         "additionalProperties": {},
-                        "description": "Shared credentials that will be inherited by connected accounts. For eg: this can be used to share the API key for a tool with all connected accounts using this auth config."
+                        "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
                       },
                       "is_enabled_for_tool_router": {
                         "type": "boolean",
@@ -2436,7 +2365,8 @@
                               "type": "string"
                             }
                           }
-                        ]
+                        ],
+                        "description": "OAuth scopes requested for the auth config."
                       },
                       "user_scopes": {
                         "anyOf": [
@@ -2449,7 +2379,8 @@
                               "type": "string"
                             }
                           }
-                        ]
+                        ],
+                        "description": "OAuth user-token scopes requested for the auth config. This is primarily used by Slack OAuth v2."
                       },
                       "restrict_to_following_tools": {
                         "type": "array",
@@ -2481,7 +2412,7 @@
                       "shared_credentials": {
                         "type": "object",
                         "additionalProperties": {},
-                        "description": "Shared credentials that will be inherited by connected accounts. For eg: this can be used to share the API key for a tool with all connected accounts using this auth config."
+                        "description": "Shared credentials inherited by all connected accounts using this auth config. Secret values are redacted in responses, so provide the real values when updating; omit this field to leave them unchanged."
                       },
                       "is_enabled_for_tool_router": {
                         "type": "boolean",
@@ -2571,7 +2502,7 @@
       },
       "delete": {
         "summary": "Delete an authentication configuration",
-        "description": "Soft-deletes an authentication configuration by marking it as deleted in the database. This operation cannot be undone.",
+        "description": "Soft-deletes an authentication configuration by marking it as deleted in the database. This operation cannot be undone. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection using this auth config via a background job.",
         "tags": [
           "Auth Configs"
         ],
@@ -2595,6 +2526,18 @@
             "description": "The unique identifier of the authentication configuration to delete",
             "name": "nanoid",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials."
+            },
+            "required": false,
+            "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials.",
+            "name": "revoke_on_delete",
+            "in": "query"
           }
         ],
         "responses": {
@@ -2604,7 +2547,13 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {}
+                  "properties": {
+                    "revoke_job_id": {
+                      "type": "string",
+                      "description": "Identifier of the background revoke job started for this delete. Present only when `revoke_on_delete=true`. Track the job and its per-connection results from the Composio dashboard — a programmatic endpoint to poll this job is not yet generally available.",
+                      "example": "pj_1a2b3c4d5e6f"
+                    }
+                  }
                 }
               }
             }
@@ -2665,9 +2614,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3386,9 +3332,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -3919,8 +3862,7 @@
                     "connectionData",
                     "status",
                     "redirect_url",
-                    "redirect_uri",
-                    "deprecated"
+                    "redirect_uri"
                   ]
                 }
               }
@@ -4370,6 +4312,20 @@
                       "additionalProperties": {},
                       "description": "The initialization data of the connection, including configuration parameters",
                       "deprecated": true
+                    },
+                    "requested_scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "OAuth scopes requested when this connection was most recently initiated (create or refresh). Absent for connections created before scope snapshots were captured and for non-OAuth auth schemes."
+                    },
+                    "requested_user_scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "OAuth user-token scopes requested at the most recent initiation. Only meaningful for Slackbot auth configs (user-token scopes); absent otherwise."
                     }
                   },
                   "required": [
@@ -4457,7 +4413,7 @@
       },
       "delete": {
         "summary": "Delete a connected account",
-        "description": "Soft-deletes a connected account by marking it as deleted in the database. This prevents the account from being used for API calls but preserves the record for audit purposes.",
+        "description": "Soft-deletes a connected account by marking it as deleted in the database. This prevents the account from being used for API calls but preserves the record for audit purposes. Pass `?revoke_on_delete=true` to also revoke the account's upstream credentials via a background job.",
         "tags": [
           "Connected Accounts"
         ],
@@ -4481,6 +4437,18 @@
             "example": "ca_1a2b3c4d5e6f",
             "name": "nanoid",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials."
+            },
+            "required": false,
+            "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials.",
+            "name": "revoke_on_delete",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4494,6 +4462,11 @@
                     "success": {
                       "type": "boolean",
                       "description": "Indicates whether the connected account was successfully deleted"
+                    },
+                    "revoke_job_id": {
+                      "type": "string",
+                      "description": "Identifier of the background revoke job started for this delete. Present only when `revoke_on_delete=true`. Track the job and its per-connection results from the Composio dashboard — a programmatic endpoint to poll this job is not yet generally available.",
+                      "example": "pj_1a2b3c4d5e6f"
                     }
                   },
                   "required": [
@@ -4571,9 +4544,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4720,9 +4690,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4849,9 +4816,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -5505,73 +5469,109 @@
         "x-api-version": "3.0"
       }
     },
-    "/api/v3/org/project/config": {
+    "/api/v3/org/list": {
       "get": {
-        "summary": "Get project configuration",
-        "description": "Retrieves the current project configuration including 2FA settings.",
+        "summary": "List organizations",
+        "description": "Retrieves a list of organizations that the authenticated user has access to. This includes organizations where the user is a member with any role.",
         "tags": [
-          "Projects"
+          "Organization Management"
         ],
-        "operationId": "getOrgProjectConfig",
+        "operationId": "getOrgList",
         "security": [
-          {
-            "ApiKeyAuth": []
-          },
           {
             "UserApiKeyAuth": []
           }
         ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "required": false,
+            "description": "Number of items per page, max allowed is 50",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Cursor for pagination. The cursor is a base64 encoded string of the page and limit. The page is the page number and the limit is the number of items per page. The cursor is used to paginate through the items. The cursor is not required for the first page.",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Project configuration retrieved successfully.",
+            "description": "Successfully retrieved list of organizations with pagination.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "is_2FA_enabled": {
-                      "type": "boolean"
+                    "organizations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "orgId",
+                            "description": "Unique identifier for the organization"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 32,
+                            "pattern": "^[a-zA-Z][a-zA-Z0-9_]*[a-zA-Z0-9]$",
+                            "description": "Name of the organization"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "description": "When the organization was created"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "description": "When the organization was last updated"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "created_at",
+                          "updated_at"
+                        ]
+                      }
                     },
-                    "logo_url": {
-                      "type": "string"
-                    },
-                    "display_name": {
-                      "type": "string"
-                    },
-                    "mask_secret_keys_in_connected_account": {
-                      "type": "boolean"
-                    },
-                    "log_visibility_setting": {
+                    "next_cursor": {
                       "type": "string",
-                      "enum": [
-                        "show_all",
-                        "dont_store_data"
-                      ]
+                      "nullable": true
                     },
-                    "require_mcp_api_key": {
-                      "type": "boolean"
+                    "total_pages": {
+                      "type": "number"
                     },
-                    "is_composio_link_enabled_for_managed_auth": {
-                      "type": "boolean",
-                      "description": "Whether to enable composio link for managed authentication. This key will be deprecated in the future. Please don't use this key."
+                    "current_page": {
+                      "type": "number"
                     },
-                    "signed_url_file_expiry_in_seconds": {
-                      "type": "number",
-                      "minimum": 1,
-                      "maximum": 86400
+                    "total_items": {
+                      "type": "number"
                     }
                   },
                   "required": [
-                    "is_2FA_enabled",
-                    "mask_secret_keys_in_connected_account",
-                    "log_visibility_setting"
+                    "organizations",
+                    "total_pages",
+                    "current_page",
+                    "total_items"
                   ]
                 }
               }
             }
           },
           "400": {
-            "description": "Bad request. The project configuration data may be invalid.",
+            "description": "Bad request. This may occur if there are invalid query parameters or the request is malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5591,7 +5591,7 @@
             }
           },
           "404": {
-            "description": "Project not found. The specified project does not exist or has been deleted.",
+            "description": "Not found. The user or organization was not found.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5612,127 +5612,198 @@
           }
         },
         "x-api-version": "3.0"
-      },
-      "patch": {
-        "summary": "Update project configuration",
-        "description": "Updates the project configuration settings.",
+      }
+    },
+    "/api/v3/org/project/list": {
+      "get": {
+        "summary": "List all projects",
+        "description": "Retrieves projects belonging to the authenticated organization by default, or all organizations the authenticated user belongs to when list_all_org_projects is true. Projects are returned in descending order of creation date (newest first). This endpoint is useful for displaying project selection in dashboards or for integrations that need to list all available projects.",
         "tags": [
           "Projects"
         ],
-        "operationId": "patchOrgProjectConfig",
+        "operationId": "getOrgProjectList",
         "security": [
-          {
-            "ApiKeyAuth": []
-          },
           {
             "UserApiKeyAuth": []
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "is_2FA_enabled": {
-                    "type": "boolean"
-                  },
-                  "logo_url": {
-                    "type": "string"
-                  },
-                  "display_name": {
-                    "type": "string"
-                  },
-                  "mask_secret_keys_in_connected_account": {
-                    "type": "boolean"
-                  },
-                  "log_visibility_setting": {
-                    "type": "string",
-                    "enum": [
-                      "show_all",
-                      "dont_store_data"
-                    ]
-                  },
-                  "require_mcp_api_key": {
-                    "type": "boolean"
-                  },
-                  "is_composio_link_enabled_for_managed_auth": {
-                    "type": "boolean",
-                    "description": "Whether to enable composio link for managed authentication. This key will be deprecated in the future. Please don't use this key."
-                  },
-                  "signed_url_file_expiry_in_seconds": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 86400
-                  }
-                }
-              },
-              "examples": {
-                "Enable 2FA": {
-                  "value": {
-                    "is_2FA_enabled": true
-                  }
-                },
-                "Disable 2FA": {
-                  "value": {
-                    "is_2FA_enabled": false
-                  }
-                }
-              }
-            }
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "List projects from all organizations the authenticated user belongs to"
+            },
+            "required": false,
+            "description": "List projects from all organizations the authenticated user belongs to",
+            "name": "list_all_org_projects",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "required": false,
+            "description": "Number of items per page, max allowed is 50",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "Cursor for pagination. The cursor is a base64 encoded string of the page and limit. The page is the page number and the limit is the number of items per page. The cursor is used to paginate through the items. The cursor is not required for the first page.",
+            "name": "cursor",
+            "in": "query"
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Project configuration updated successfully.",
+            "description": "Projects retrieved successfully with pagination. Returns an array of project objects with their complete details and pagination info.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "is_2FA_enabled": {
-                      "type": "boolean"
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "projectId",
+                            "description": "Unique identifier for the project",
+                            "example": "pr_1a2b3c4d5e6f"
+                          },
+                          "org_id": {
+                            "type": "string",
+                            "format": "orgId",
+                            "description": "Identifier of the organization that owns this project",
+                            "example": "ok_1a2b3c4d5e6f"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Name of the project",
+                            "example": "My Awesome Project"
+                          },
+                          "email": {
+                            "type": "string",
+                            "description": "Email address associated with the project",
+                            "example": "project-123@composio.dev"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "description": "ISO timestamp when the project was created",
+                            "example": "2023-05-16T14:30:00.000Z"
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "description": "ISO timestamp when the project was last updated",
+                            "example": "2023-05-18T09:15:30.000Z"
+                          },
+                          "webhook_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "format": "uri",
+                            "description": "DEPRECATED: Use GET /api/v3/webhook_subscriptions instead. Legacy project-level webhook URL.",
+                            "example": "https://example.com/webhook",
+                            "deprecated": true
+                          },
+                          "event_webhook_url": {
+                            "type": "string",
+                            "nullable": true,
+                            "format": "uri",
+                            "description": "DEPRECATED: No longer used.",
+                            "example": "https://example.com/events",
+                            "deprecated": true
+                          },
+                          "webhook_secret": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "DEPRECATED: Use GET /api/v3/webhook_subscriptions instead. Legacy project-level webhook secret.",
+                            "example": "whsec_abcdef123456789",
+                            "deprecated": true
+                          },
+                          "triggers_enabled": {
+                            "type": "boolean",
+                            "description": "Whether triggers are enabled for this project",
+                            "example": true
+                          },
+                          "last_subscribed_at": {
+                            "type": "string",
+                            "nullable": true,
+                            "format": "date-time",
+                            "description": "ISO timestamp when the project last subscribed to updates",
+                            "example": "2023-05-17T10:00:00.000Z"
+                          },
+                          "is_new_webhook": {
+                            "type": "boolean",
+                            "description": "Deprecated: Please refer to webhook_version instead. True indicates if the webhook configuration is using the previous new format (V2). False indicates the oldest format (V1)",
+                            "example": true,
+                            "deprecated": true
+                          },
+                          "webhook_version": {
+                            "type": "string",
+                            "enum": [
+                              "V1",
+                              "V2",
+                              "V3"
+                            ],
+                            "description": "Payload format version for Pusher real-time events only. For webhook configuration, use GET /api/v3/webhook_subscriptions.",
+                            "example": "V2"
+                          },
+                          "deleted": {
+                            "type": "boolean",
+                            "description": "Whether this project has been soft-deleted",
+                            "example": false
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "org_id",
+                          "name",
+                          "email",
+                          "created_at",
+                          "updated_at",
+                          "webhook_url",
+                          "event_webhook_url",
+                          "webhook_secret",
+                          "webhook_version",
+                          "deleted"
+                        ]
+                      }
                     },
-                    "logo_url": {
-                      "type": "string"
-                    },
-                    "display_name": {
-                      "type": "string"
-                    },
-                    "mask_secret_keys_in_connected_account": {
-                      "type": "boolean"
-                    },
-                    "log_visibility_setting": {
+                    "next_cursor": {
                       "type": "string",
-                      "enum": [
-                        "show_all",
-                        "dont_store_data"
-                      ]
+                      "nullable": true
                     },
-                    "require_mcp_api_key": {
-                      "type": "boolean"
+                    "total_pages": {
+                      "type": "number"
                     },
-                    "is_composio_link_enabled_for_managed_auth": {
-                      "type": "boolean",
-                      "description": "Whether to enable composio link for managed authentication. This key will be deprecated in the future. Please don't use this key."
+                    "current_page": {
+                      "type": "number"
                     },
-                    "signed_url_file_expiry_in_seconds": {
-                      "type": "number",
-                      "minimum": 1,
-                      "maximum": 86400
+                    "total_items": {
+                      "type": "number"
                     }
                   },
                   "required": [
-                    "is_2FA_enabled",
-                    "mask_secret_keys_in_connected_account",
-                    "log_visibility_setting"
+                    "data",
+                    "total_pages",
+                    "current_page",
+                    "total_items"
                   ]
                 }
               }
             }
           },
           "400": {
-            "description": "Bad request. The configuration data may be invalid or missing.",
+            "description": "Bad request. This may occur if there are invalid query parameters or the request is malformed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5743,16 +5814,6 @@
           },
           "401": {
             "description": "Unauthorized. Authentication is required or the provided credentials are invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Project not found. The specified project does not exist or has been deleted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6282,8 +6343,8 @@
                           },
                           "key": {
                             "type": "string",
-                            "description": "The actual API key value used for authentication",
-                            "example": "ak_a1b2c3d4e5f6g7h8i9j0"
+                            "description": "Masked API key value",
+                            "example": "ak_**6j0z"
                           },
                           "created_at": {
                             "type": "string",
@@ -6365,7 +6426,7 @@
       },
       "delete": {
         "summary": "Delete a project",
-        "description": "Soft-deletes a project within the organization by its unique identifier. When a project is deleted, it is marked as deleted but not immediately removed from the database. This operation affects all resources associated with the project including API keys, webhook configurations, and connected services. This action cannot be undone through the API.",
+        "description": "Soft-deletes a project within the organization by its unique identifier. When a project is deleted, it is marked as deleted but not immediately removed from the database. This operation affects all resources associated with the project including API keys, webhook configurations, and connected services. This action cannot be undone through the API. Pass `?revoke_on_delete=true` to also revoke the upstream credentials of every connection in the project via a background job.",
         "tags": [
           "Projects"
         ],
@@ -6387,6 +6448,18 @@
             "description": "Unique identifier (Nano ID) of the project to delete",
             "name": "nano_id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials."
+            },
+            "required": false,
+            "description": "When `true`, the delete also starts a background job that revokes the upstream credentials of every connected account in scope, and the response carries a `revoke_job_id`. Defaults to `false`. Revocation is irreversible — recovering a deleted entity does not restore working credentials.",
+            "name": "revoke_on_delete",
+            "in": "query"
           }
         ],
         "responses": {
@@ -6404,6 +6477,11 @@
                       ],
                       "description": "Status indicating successful deletion",
                       "example": "success"
+                    },
+                    "revoke_job_id": {
+                      "type": "string",
+                      "description": "Identifier of the background revoke job started for this delete. Present only when `revoke_on_delete=true`. Track the job and its per-connection results from the Composio dashboard — a programmatic endpoint to poll this job is not yet generally available.",
+                      "example": "oj_1a2b3c4d5e6f"
                     }
                   },
                   "required": [
@@ -6569,6 +6647,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden. API key regeneration is not enabled for this organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found. The specified project does not exist or you do not have access to it.",
             "content": {
@@ -6604,9 +6692,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -6760,9 +6845,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -6917,9 +6999,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7037,9 +7116,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7201,9 +7277,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7283,9 +7356,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7372,9 +7442,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -7461,9 +7528,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -7643,9 +7707,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7737,9 +7798,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7857,9 +7915,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -7998,9 +8053,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -8475,9 +8527,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "responses": {
@@ -8652,6 +8701,68 @@
                       "example": [
                         "oauth2"
                       ]
+                    },
+                    "composio_managed_auth": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "description": "Authentication mode for the Composio-managed auth config",
+                            "example": "OAUTH2"
+                          },
+                          "scopes": {
+                            "type": "object",
+                            "properties": {
+                              "available": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Available OAuth scopes"
+                              }
+                            },
+                            "required": [
+                              "available"
+                            ],
+                            "description": "OAuth scopes available in the Composio-managed auth config for this auth mode.",
+                            "example": {
+                              "available": [
+                                "read",
+                                "write"
+                              ]
+                            }
+                          },
+                          "user_scopes": {
+                            "type": "object",
+                            "properties": {
+                              "available": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Available OAuth user scopes"
+                              }
+                            },
+                            "required": [
+                              "available"
+                            ],
+                            "description": "OAuth user scopes available in the Composio-managed auth config for this auth mode. Only present for Slack toolkits.",
+                            "example": {
+                              "available": [
+                                "search:read",
+                                "users:read"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "scopes"
+                        ]
+                      },
+                      "description": "Managed-auth-only metadata, including the supported OAuth scope ceiling."
                     },
                     "is_local_toolkit": {
                       "type": "boolean",
@@ -9068,6 +9179,7 @@
                     "slug",
                     "name",
                     "enabled",
+                    "composio_managed_auth",
                     "is_local_toolkit",
                     "meta",
                     "deprecated"
@@ -9599,9 +9711,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -10339,7 +10448,7 @@
                     "log_id": {
                       "type": "string",
                       "description": "Unique identifier for the execution log (useful for debugging and support)",
-                      "example": "log_abc123def456"
+                      "example": "log_1a2b3c4d5e6f"
                     }
                   },
                   "required": [
@@ -10496,9 +10605,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -10644,7 +10750,7 @@
     "/api/v3/tools/execute/proxy": {
       "post": {
         "summary": "Execute proxy request",
-        "description": "Proxy an HTTP request to a third-party API using connected account credentials. This endpoint allows making authenticated API calls to external services while abstracting away authentication details.",
+        "description": "Proxy an HTTP request to a third-party API using connected account credentials. This endpoint allows making authenticated API calls to external services while abstracting away authentication details. The v3 endpoint is retired except for orgs explicitly allowlisted in LaunchDarkly during migration.",
         "tags": [
           "Tools"
         ],
@@ -10652,9 +10758,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -11260,6 +11363,10 @@
                     "format": "connectedAccountId",
                     "description": "Connected account nanoid"
                   },
+                  "user_id": {
+                    "type": "string",
+                    "description": "The user id (entity id) that owns the connected account. When the project has 2FA enabled, this is validated against the owner of connected_account_id."
+                  },
                   "trigger_config": {
                     "type": "object",
                     "additionalProperties": {},
@@ -11321,8 +11428,7 @@
                     }
                   },
                   "required": [
-                    "trigger_id",
-                    "deprecated"
+                    "trigger_id"
                   ]
                 }
               }
@@ -11353,8 +11459,7 @@
                     }
                   },
                   "required": [
-                    "trigger_id",
-                    "deprecated"
+                    "trigger_id"
                   ]
                 }
               }
@@ -11383,6 +11488,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -12228,7 +12343,7 @@
             "schema": {
               "type": "string",
               "description": "The unique slug identifier for the trigger type. Case-insensitive (internally normalized to uppercase).",
-              "example": "SLACK_RECEIVE_MESSAGE"
+              "example": "SLACK_CHANNEL_MESSAGE_RECEIVED"
             },
             "required": true,
             "description": "The unique slug identifier for the trigger type. Case-insensitive (internally normalized to uppercase).",
@@ -12284,7 +12399,7 @@
                     "slug": {
                       "type": "string",
                       "description": "Unique identifier for the trigger type",
-                      "example": "SLACK_RECEIVE_MESSAGE"
+                      "example": "SLACK_CHANNEL_MESSAGE_RECEIVED"
                     },
                     "name": {
                       "type": "string",
@@ -12553,7 +12668,7 @@
                           "slug": {
                             "type": "string",
                             "description": "Unique identifier for the trigger type",
-                            "example": "SLACK_RECEIVE_MESSAGE"
+                            "example": "SLACK_CHANNEL_MESSAGE_RECEIVED"
                           },
                           "name": {
                             "type": "string",
@@ -12747,9 +12862,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -13094,9 +13206,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -13399,9 +13508,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -13642,9 +13748,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -13744,8 +13847,8 @@
                       },
                       "description": "List of URLs generated for each connected account ID",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_ids=ca_1a2b3c4d5e6f&user_id=user_123456,user_789012",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_ids=ca_7g8h9i0j1k2l&user_id=user_123456,user_789012"
+                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_1a2b3c4d5e6f",
+                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_id=ca_7g8h9i0j1k2l"
                       ]
                     },
                     "user_ids_url": {
@@ -13755,8 +13858,8 @@
                       },
                       "description": "List of URLs generated for each user ID",
                       "example": [
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_ids=ca_1a2b3c4d5e6f,ca_7g8h9i0j1k2l&user_id=user_123456",
-                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&connected_account_ids=ca_1a2b3c4d5e6f,ca_7g8h9i0j1k2l&user_id=user_789012"
+                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_123456",
+                        "https://mcp.composio.dev/composio/server/550e8400-e29b-41d4-a716-446655440000?include_composio_helper_actions=true&user_id=user_789012"
                       ]
                     }
                   },
@@ -13835,9 +13938,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14062,9 +14162,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14404,9 +14501,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14516,9 +14610,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -14886,9 +14977,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -15118,9 +15206,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -15285,9 +15370,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -15383,8 +15465,9 @@
     },
     "/api/v3/files/list": {
       "get": {
-        "summary": "List files with optional app and action filters",
-        "description": "Retrieves a list of files associated with the authenticated project. Results can be filtered by toolkit and tool slugs.",
+        "summary": "List files with optional app and action filters (DEPRECATED)",
+        "description": "DEPRECATED: This endpoint is deprecated and will be removed in a future release. Retrieves a list of files associated with the authenticated project. Results can be filtered by toolkit and tool slugs. Responses carry a `Deprecation` header (RFC 9745) for client-side detection.",
+        "deprecated": true,
         "tags": [
           "Files"
         ],
@@ -15392,9 +15475,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -15560,9 +15640,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "requestBody": {
@@ -15784,137 +15861,6 @@
           },
           "501": {
             "description": "Not Implemented",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        },
-        "x-api-version": "3.0"
-      }
-    },
-    "/api/v3/migration/get-nanoid": {
-      "get": {
-        "summary": "Get NanoId from UUID",
-        "description": "Convert a legacy UUID to its corresponding NanoId for migration purposes. This endpoint facilitates the transition from UUID-based identifiers to the more compact NanoId format used in the v3 API.",
-        "tags": [
-          "Migration"
-        ],
-        "operationId": "getMigrationGetNanoid",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "123e4567-e89b-12d3-a456-426614174000"
-            },
-            "required": true,
-            "description": "The legacy UUID that needs to be converted to a NanoId",
-            "name": "uuid",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "CONNECTED_ACCOUNT",
-                "AUTH_CONFIG",
-                "TRIGGER_INSTANCE"
-              ],
-              "example": "CONNECTED_ACCOUNT"
-            },
-            "required": true,
-            "description": "The type of resource that the UUID belongs to",
-            "name": "type",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Your Composio API key used for authentication",
-              "example": "sk_123456789abcdef"
-            },
-            "required": true,
-            "name": "x-api-key",
-            "in": "header"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved NanoId for the given UUID",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "nanoid": {
-                      "type": "string",
-                      "minLength": 10,
-                      "maxLength": 10,
-                      "description": "The NanoId corresponding to the provided UUID. This is the new identifier that should be used in place of the legacy UUID.",
-                      "example": "XqXrPalt3v"
-                    }
-                  },
-                  "required": [
-                    "nanoid"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request - Invalid UUID or resource not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found - The UUID does not correspond to any resource of the specified type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "410": {
-            "description": "Gone - The UUID does not correspond to any resource of the specified type",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - An unexpected error occurred during processing",
             "content": {
               "application/json": {
                 "schema": {
@@ -17324,9 +17270,6 @@
             "ApiKeyAuth": []
           },
           {
-            "UserApiKeyAuth": []
-          },
-          {
             "workbench_access_key": []
           }
         ],
@@ -17520,9 +17463,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -17554,9 +17494,7 @@
                       "COMPOSIO_WAIT_FOR_CONNECTIONS",
                       "COMPOSIO_REMOTE_WORKBENCH",
                       "COMPOSIO_REMOTE_BASH_TOOL",
-                      "COMPOSIO_GET_TOOL_SCHEMAS",
-                      "COMPOSIO_UPSERT_RECIPE",
-                      "COMPOSIO_GET_RECIPE"
+                      "COMPOSIO_GET_TOOL_SCHEMAS"
                     ],
                     "description": "The unique slug identifier of the meta tool to execute",
                     "example": "COMPOSIO_MANAGE_CONNECTIONS"
@@ -17713,9 +17651,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -18287,9 +18222,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -19304,9 +19236,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -19549,9 +19478,6 @@
           },
           {
             "UserApiKeyAuth": []
-          },
-          {
-            "workbench_access_key": []
           }
         ],
         "parameters": [
@@ -20109,9 +20035,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -20262,9 +20185,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -20408,9 +20328,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -20945,9 +20862,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -21117,9 +21031,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -21258,9 +21169,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -21405,9 +21313,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -21536,9 +21441,6 @@
         "security": [
           {
             "ApiKeyAuth": []
-          },
-          {
-            "UserApiKeyAuth": []
           }
         ],
         "responses": {

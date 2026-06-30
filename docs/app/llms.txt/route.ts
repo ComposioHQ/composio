@@ -1,4 +1,4 @@
-import { source, cookbooksSource, referenceSource, toolkitsSource } from '@/lib/source';
+import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -32,22 +32,40 @@ function nodeText(name: ReactNode): string | null {
 }
 
 /**
+ * A section is legacy/deprecated when its separator heading says so (e.g.
+ * "Direct Tool Execution Guides (Legacy)"). We omit those sections from the
+ * default LLM index so code generators reach for the current session-based
+ * APIs, not deprecated ones.
+ */
+function isLegacySeparator(name: ReactNode): boolean {
+  const text = nodeText(name);
+  return text != null && /legacy|deprecated/i.test(text);
+}
+
+/**
  * Walk the fumadocs page tree and generate a markdown index.
  * Separators become ## headings, pages become URL entries, folders recurse.
+ * Legacy/deprecated sections (and everything under them) are skipped.
  */
 function walkPageTree(nodes: TreeNode[], depth = 2): string {
   const lines: string[] = [];
+  let skippingSection = false;
 
   for (const node of nodes) {
-    switch (node.type) {
-      case 'separator': {
-        const text = nodeText(node.name);
-        if (text) {
-          lines.push('', `${'#'.repeat(depth)} ${text}`, '');
-        }
-        break;
+    if (node.type === 'separator') {
+      // A separator starts a new section; skip it and its pages when legacy.
+      skippingSection = isLegacySeparator(node.name);
+      if (skippingSection) continue;
+      const text = nodeText(node.name);
+      if (text) {
+        lines.push('', `${'#'.repeat(depth)} ${text}`, '');
       }
+      continue;
+    }
 
+    if (skippingSection) continue;
+
+    switch (node.type) {
       case 'page':
         lines.push(`- https://docs.composio.dev${node.url}.md`);
         break;
@@ -83,7 +101,7 @@ export async function GET() {
   try {
     const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
 
-    const cookbooksPages = cookbooksSource.getPages();
+    const examplesPages = examplesSource.getPages();
     const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
 
@@ -91,13 +109,13 @@ export async function GET() {
 
 > Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.
 
-> **For AI agents:** Composio supports two integration modes. **Native Tools:** use \`composio.create(user_id)\` + \`session.tools()\` with a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). **MCP:** use \`composio.create(user_id)\` + \`session.mcp.url\` with any MCP-compatible client — no provider package needed. See any page's .md endpoint for full usage instructions.
+> **For AI agents:** Give your agent tools it can call directly with \`composio.create(user_id)\` + \`session.tools()\` and a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). To connect over MCP instead, create the session with \`mcp: true\` and read \`session.mcp.url\` from any MCP-compatible client. See any page's .md endpoint for full usage instructions.
 
 ${docsTree}
 
-## Cookbooks
+## Examples
 
-${cookbooksPages.map(formatPage).join('\n')}
+${examplesPages.map(formatPage).join('\n')}
 
 ## API Reference
 

@@ -9,6 +9,7 @@ import type {
 } from '../types/customTool.types';
 import type { ToolExecuteResponse } from '../types/tool.types';
 import { ValidationError } from '../errors';
+import { ComposioRequestCancelledError, isRequestAbortError } from '../errors/SDKErrors';
 
 /**
  * Find a custom tool entry by slug.
@@ -62,9 +63,14 @@ export function assertUnambiguousCustomToolSlug(
 export async function executeCustomTool(
   entry: CustomToolsMapEntry,
   arguments_: Record<string, unknown>,
-  sessionContext: SessionContext
+  sessionContext: SessionContext,
+  options?: { signal?: AbortSignal }
 ): Promise<ToolExecuteResponse> {
   const { handle } = entry;
+
+  if (options?.signal?.aborted) {
+    throw new ComposioRequestCancelledError();
+  }
 
   // Validate and transform input using the original Zod schema.
   // This applies defaults, coercions, and transforms (e.g. z.string().default('all')).
@@ -76,16 +82,32 @@ export async function executeCustomTool(
       successful: false,
     };
   }
+  if (options?.signal?.aborted) {
+    throw new ComposioRequestCancelledError();
+  }
 
   try {
-    // User's execute returns data directly — we wrap into { data, error, successful }
-    const data = await handle.execute(parsed.data, sessionContext);
+    // Object.create preserves prototype methods (execute, proxyExecute) that spread would drop
+    const ctxWithSignal: SessionContext = options?.signal
+      ? Object.assign(Object.create(sessionContext as object) as SessionContext, {
+          signal: options.signal,
+        })
+      : sessionContext;
+    const data = await handle.execute(parsed.data, ctxWithSignal);
     return {
       data: data ?? {},
       error: null,
       successful: true,
     };
   } catch (err: unknown) {
+    if (err instanceof ComposioRequestCancelledError) {
+      throw err;
+    }
+    if (options?.signal?.aborted && isRequestAbortError(err)) {
+      throw new ComposioRequestCancelledError(undefined, {
+        cause: err instanceof Error ? err : undefined,
+      });
+    }
     const message = err instanceof Error ? err.message : String(err);
     return {
       data: {},

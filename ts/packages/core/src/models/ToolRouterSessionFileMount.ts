@@ -21,6 +21,11 @@ import { platform } from '#platform';
 import { getExtensionFromMimeType } from '../utils/mime';
 import { getRandomShortId } from '../utils/uuid';
 
+/**
+ * File mount for a Composio session, reached via `session.experimental.files`
+ * on a session created with `composio.sessions.create(...)`. Upload, list,
+ * download, and delete files scoped to a single session.
+ */
 export class ToolRouterSessionFilesMount {
   private readonly sessionId: string;
   private readonly client: ComposioClient;

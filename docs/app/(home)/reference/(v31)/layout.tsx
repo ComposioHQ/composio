@@ -7,10 +7,11 @@ export default async function Layout({ children }: { children: ReactNode }) {
   const source = await getReferenceSource();
   const tree = prepareTree(source.pageTree, '3.1');
   const changelogPage = { type: 'page' as const, name: 'Changelog', url: '/reference/changelog' };
-  const errorsIdx = tree.children.findIndex(
-    (child: { type: string; name?: string }) => child.type === 'page' && child.name === 'Errors'
+  // Pin Changelog directly beneath Overview (the first/top entry) in the sidebar.
+  const overviewIdx = tree.children.findIndex(
+    (child: { type: string; name?: string }) => child.type === 'page' && child.name === 'Overview'
   );
-  const insertIdx = errorsIdx === -1 ? Math.min(4, tree.children.length) : errorsIdx + 1;
+  const insertIdx = overviewIdx === -1 ? Math.min(1, tree.children.length) : overviewIdx + 1;
   const pageTree = {
     ...tree,
     children: [

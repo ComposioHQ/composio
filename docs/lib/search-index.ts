@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { docs, reference, cookbooks, toolkits } from 'fumadocs-mdx:collections/server';
+import { docs, reference, examples, toolkits } from 'fumadocs-mdx:collections/server';
 import { loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -13,12 +13,18 @@ import { mdxToCleanMarkdown } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
 
 export const ALGOLIA_DEFAULT_APP_ID = '62HI9PQZ1L';
-export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio_dev_62hi9pqz1l_pages';
+export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio';
 
 const MAX_CHUNK_CHARS = 3_800;
 const MAX_CHUNK_BYTES = 9_000;
 const MAX_TOOL_ALIAS_ITEMS = 80;
 const MAX_TOOL_ALIAS_BYTES = 2_500;
+
+// Pages flagged `legacy: true` or `deprecated: true` in frontmatter are pushed to
+// the bottom of custom ranking so current content always wins on close matches.
+// They stay indexed (an exact-term query still finds them) but never outrank live
+// docs. Sits below changelog (300), just above the legacy v3 reference (25).
+const LEGACY_PAGE_RANK = 50;
 
 // Create loaders directly here to avoid the problematic lib/source.ts import in the
 // fallback route. This route is intentionally still Fumadocs/Orama-backed for local
@@ -29,9 +35,9 @@ const docsSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-const cookbooksSource = loader({
-  baseUrl: '/cookbooks',
-  source: cookbooks.toFumadocsSource(),
+const examplesSource = loader({
+  baseUrl: '/examples',
+  source: examples.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
@@ -161,6 +167,16 @@ function contentHash(value: string): string {
   return createHash('sha1').update(value).digest('hex').slice(0, 10);
 }
 
+// Sections intentionally kept out of search entirely (not just deprioritized).
+// Direct tool execution is the legacy pre-sessions flow — we don't want it
+// surfacing in results at all. Matches the prefix and anything beneath it.
+const SEARCH_EXCLUDED_PREFIXES = ['/docs/tools-direct'];
+
+function isExcludedFromSearch(url: string): boolean {
+  const path = url.replace(/\/$/, '');
+  return SEARCH_EXCLUDED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
 function urlFromContentPath(path: string): { url: string; type: string } | undefined {
   const rel = relative(join(process.cwd(), 'content'), path).replace(/\\/g, '/');
   const withoutExt = rel.replace(/\.mdx?$/, '');
@@ -171,8 +187,8 @@ function urlFromContentPath(path: string): { url: string; type: string } | undef
   if (collection === 'docs') {
     return { url: `/docs/${parts.join('/')}`.replace(/\/index$/, ''), type: 'docs' };
   }
-  if (collection === 'cookbooks') {
-    return { url: `/cookbooks/${parts.join('/')}`.replace(/\/index$/, ''), type: 'cookbooks' };
+  if (collection === 'examples') {
+    return { url: `/examples/${parts.join('/')}`.replace(/\/index$/, ''), type: 'examples' };
   }
   if (collection === 'reference') {
     const url = `/reference/${parts.join('/')}`.replace(/\/index$/, '');
@@ -198,7 +214,7 @@ function slugTokens(url: string): string {
 
 const typeLabels: Record<string, string> = {
   docs: 'Docs',
-  cookbooks: 'Cookbook',
+  examples: 'Example',
   reference: 'Reference',
   'v3-reference': 'Legacy v3 Reference',
   toolkits: 'Toolkit',
@@ -221,7 +237,7 @@ function titleizeSlug(value: string): string {
 function breadcrumbsForUrl(url: string, type: string): string[] {
   const label = typeLabels[type] ?? titleizeSlug(type);
 
-  if (type === 'toolkits' || type === 'cookbooks' || type === 'changelog') {
+  if (type === 'toolkits' || type === 'examples' || type === 'changelog') {
     return [label];
   }
 
@@ -272,16 +288,24 @@ function pageRank(url: string, type: string): number {
   // Prefer conceptual docs over generated/reference material when textual
   // relevance is otherwise close. Toolkit aliases can still win earlier via
   // searchableAttributes when the query matches a tool name/slug exactly.
+  //
+  // Hints use precise path matches against the current (nested) docs structure.
+  // When pages move, update these — a stale `.includes()` hint silently boosts
+  // nothing. See content/docs/ for the canonical layout.
   if (type === 'docs') {
-    if (url === '/docs' || url === '/docs/') return 2_400;
-    if (url.includes('/quickstart')) return 2_300;
-    if (url.includes('/authentication')) return 2_220;
-    if (url.includes('/tools-and-toolkits')) return 2_180;
-    if (url.includes('/configuring-sessions')) return 2_120;
+    const path = url.replace(/\/$/, '');
+    if (path === '/docs') return 2_400;
+    if (path === '/docs/quickstart') return 2_300;
+    if (path === '/docs/how-composio-works') return 2_250;
+    if (path === '/docs/authentication') return 2_220;
+    if (path.startsWith('/docs/tools-direct/')) return 2_180;
+    if (path === '/docs/configuring-sessions') return 2_120;
+    if (path.startsWith('/docs/auth-configuration/')) return 2_080;
+    if (path === '/docs/triggers' || path.startsWith('/docs/setting-up-triggers/')) return 2_060;
     return 2_000;
   }
 
-  if (type === 'cookbooks') return 1_500;
+  if (type === 'examples') return 1_500;
   if (type === 'toolkits') return 1_250;
   // Current v3.1 reference should be available, but conceptual docs should
   // win whenever both match. Legacy v3 reference is only a last-resort result.
@@ -303,7 +327,11 @@ function recordsFromMarkdownPage(input: {
   tags?: string[];
   toolNames?: string[];
   toolSlugs?: string[];
+  legacy?: boolean;
 }): AlgoliaDocsRecord[] {
+  const isLegacy = input.legacy === true;
+  const resolvedPageRank = isLegacy ? LEGACY_PAGE_RANK : pageRank(input.url, input.type);
+  const resolvedTags = isLegacy ? [...(input.tags ?? []), 'legacy'] : input.tags;
   const clean = mdxToCleanMarkdown(input.markdown);
   const lines = clean.split('\n');
   const headingSlugs = new Map<string, number>();
@@ -379,8 +407,8 @@ function recordsFromMarkdownPage(input: {
         tool_slugs: includeToolkitAliases ? input.toolSlugs : undefined,
         type: input.type,
         lang: 'en',
-        tags: input.tags,
-        page_rank: pageRank(input.url, input.type),
+        tags: resolvedTags,
+        page_rank: resolvedPageRank,
         toolkit_popularity: toolkitPopularity(input.url, input.type),
         section_rank: sectionRank,
         position,
@@ -426,6 +454,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
   return listContentFiles(contentDir).flatMap((file) => {
     const route = urlFromContentPath(file);
     if (!route) return [];
+    if (isExcludedFromSearch(route.url)) return [];
 
     const source = readFileSync(file, 'utf8');
     const frontmatter = getFrontmatter(source);
@@ -436,6 +465,10 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       ? getToolkitSearchFields(route.url.replace(/^\/toolkits\//, ''))
       : {};
 
+    const legacy =
+      getFrontmatterValue(frontmatter, 'legacy') === 'true' ||
+      getFrontmatterValue(frontmatter, 'deprecated') === 'true';
+
     return recordsFromMarkdownPage({
       url: route.url,
       type: route.type,
@@ -444,6 +477,7 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       keywords: getFrontmatterList(frontmatter, 'keywords'),
       markdown: source,
       breadcrumbs: breadcrumbsForUrl(route.url, route.type),
+      legacy,
       ...toolkitFields,
     });
   });
@@ -558,10 +592,10 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
 
   const mdxIndexes = [
     ...docsSource.getPages(),
-    ...cookbooksSource.getPages(),
+    ...examplesSource.getPages(),
     ...toolkitsSource.getPages(),
     ...fullReferenceSource.getPages(),
-  ].map((page) => ({
+  ].filter((page) => !isExcludedFromSearch(page.url)).map((page) => ({
     id: page.url,
     title: page.data.title ?? 'Untitled',
     description: page.data.description,

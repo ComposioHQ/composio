@@ -2,9 +2,11 @@
  * @fileoverview The `composio.experimental` namespace. Houses experimental
  * SDK methods whose shape may change in future releases.
  *
- * For experimental stateless factories (e.g. `experimental_createTool`),
- * see the top-level `experimental_*` exports from `@composio/core`.
- * Anything that takes a Composio client and performs I/O belongs here.
+ * Domain-specific mounts remain preferred when they exist (for example
+ * `composio.connectedAccounts.updateAcl(...)`). This namespace keeps
+ * compatibility aliases while those APIs are experimental. For experimental
+ * stateless factories (e.g. `experimental_createTool`), see the top-level
+ * `experimental_*` exports from `@composio/core`.
  */
 import ComposioClient, { BadRequestError } from '@composio/client';
 import {
@@ -22,10 +24,9 @@ import { telemetry } from '../telemetry/Telemetry';
 
 /**
  * Server-side 400 message the API uses to reject ACL writes against a
- * PRIVATE connection. Substring-matched in `updateAcl` here, and in the
- * sibling `connectedAccounts.link()` / `session.authorize()` call sites
- * — kept as a single constant so a server-side message tweak only
- * requires one edit.
+ * PRIVATE connection. Substring-matched in `updateAcl` and in the sibling
+ * `connectedAccounts.link()` / `session.authorize()` call sites — kept as
+ * a single constant so a server-side message tweak only requires one edit.
  */
 export const ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT = 'acl_config_for_shared is only valid on SHARED';
 
@@ -89,10 +90,42 @@ export function serializeExperimentalForWire(
 }
 
 /**
- * `composio.experimental` namespace. Mirrors the Python SDK's
- * `composio.experimental` mount, with one method per experimental
- * surface. **Shape may change in future releases.**
+ * `composio.experimental` namespace. Keeps compatibility aliases for
+ * experimental surfaces while domain-specific mounts graduate. **Shape may
+ * change in future releases.**
  */
+export async function updateConnectedAccountAcl(
+  client: ComposioClient,
+  nanoid: string,
+  params: UpdateConnectedAccountAclParams
+): Promise<ConnectedAccountPatchResponse> {
+  const parsedParams = UpdateConnectedAccountAclParamsSchema.safeParse(params);
+  if (!parsedParams.success) {
+    throw new ValidationError('Failed to parse connected account ACL update params', {
+      cause: parsedParams.error,
+    });
+  }
+
+  const body: ConnectedAccountPatchParams = {
+    experimental: {
+      acl_config_for_shared: serializeAclConfigForWire(parsedParams.data),
+    },
+  };
+
+  try {
+    return await client.connectedAccounts.patch(nanoid, body);
+  } catch (error) {
+    if (
+      error instanceof BadRequestError &&
+      typeof error.message === 'string' &&
+      error.message.includes(ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT)
+    ) {
+      throw new ComposioAclOnlyForSharedError(error.message, { cause: error });
+    }
+    throw error;
+  }
+}
+
 export class Experimental {
   private client: ComposioClient;
 
@@ -102,6 +135,7 @@ export class Experimental {
   }
 
   /**
+   * Compatibility alias for `composio.connectedAccounts.updateAcl(...)`.
    * Update the per-user ACL on a SHARED connected account.
    * **Experimental — shape may change in future releases.**
    *
@@ -126,21 +160,21 @@ export class Experimental {
    * const composio = new Composio({ apiKey: '...' });
    *
    * // Allow every userId to use this connection
-   * await composio.experimental.updateAcl('ca_abc', { allowAllUsers: true });
+   * await composio.connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true });
    *
    * // Everyone except a specific user
-   * await composio.experimental.updateAcl('ca_abc', {
+   * await composio.connectedAccounts.updateAcl('ca_abc', {
    *   allowAllUsers: true,
    *   notAllowedUserIds: ['user_bob'],
    * });
    *
    * // Targeted allow
-   * await composio.experimental.updateAcl('ca_abc', {
+   * await composio.connectedAccounts.updateAcl('ca_abc', {
    *   allowedUserIds: ['user_alice', 'user_bob'],
    * });
    *
    * // Revoke a previously-granted allow list (back to deny-by-default)
-   * await composio.experimental.updateAcl('ca_abc', { allowedUserIds: [] });
+   * await composio.connectedAccounts.updateAcl('ca_abc', { allowedUserIds: [] });
    * ```
    *
    * **Empty-array semantics — read carefully.** Passing `[]` for either
@@ -156,35 +190,13 @@ export class Experimental {
    *   the updated ACL block, call
    *   `composio.connectedAccounts.get(nanoid)` after the promise
    *   resolves and inspect `account.experimental?.aclConfigForShared`.
+   *
+   * @deprecated Use `composio.connectedAccounts.updateAcl(...)` instead — ACL updates graduated onto the `connectedAccounts` mount. This experimental alias is kept only for backwards compatibility and will be removed once the API graduates. Prefer the `connectedAccounts` mount; do not generate new code against this alias.
    */
   async updateAcl(
     nanoid: string,
     params: UpdateConnectedAccountAclParams
   ): Promise<ConnectedAccountPatchResponse> {
-    const parsedParams = UpdateConnectedAccountAclParamsSchema.safeParse(params);
-    if (!parsedParams.success) {
-      throw new ValidationError('Failed to parse connected account ACL update params', {
-        cause: parsedParams.error,
-      });
-    }
-
-    const body: ConnectedAccountPatchParams = {
-      experimental: {
-        acl_config_for_shared: serializeAclConfigForWire(parsedParams.data),
-      },
-    };
-
-    try {
-      return await this.client.connectedAccounts.patch(nanoid, body);
-    } catch (error) {
-      if (
-        error instanceof BadRequestError &&
-        typeof error.message === 'string' &&
-        error.message.includes(ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT)
-      ) {
-        throw new ComposioAclOnlyForSharedError(error.message, { cause: error });
-      }
-      throw error;
-    }
+    return updateConnectedAccountAcl(this.client, nanoid, params);
   }
 }

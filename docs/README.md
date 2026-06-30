@@ -81,7 +81,7 @@ Docs search uses Algolia when `NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY` is set; other
 ```bash
 NEXT_PUBLIC_ALGOLIA_APP_ID=62HI9PQZ1L # optional; default shown
 NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY=...
-NEXT_PUBLIC_ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages # optional; default shown
+NEXT_PUBLIC_ALGOLIA_INDEX_NAME=docs_composio # optional; default shown
 ```
 
 Sync the Algolia index with an admin key:
@@ -89,7 +89,7 @@ Sync the Algolia index with an admin key:
 ```bash
 ALGOLIA_APP_ID=62HI9PQZ1L
 ALGOLIA_ADMIN_API_KEY=...
-ALGOLIA_INDEX_NAME=docs_composio_dev_62hi9pqz1l_pages bun run sync:search
+ALGOLIA_INDEX_NAME=docs_composio bun run sync:search
 ```
 
 Preview the generated records or test live relevance:

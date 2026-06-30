@@ -1,6 +1,7 @@
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createMDX } from 'fumadocs-mdx/next';
+import { withEve } from 'eve/next';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const withMDX = createMDX();
@@ -10,6 +11,28 @@ const config = {
   reactStrictMode: true,
   turbopack: {
     root: __dirname,
+    resolveAlias: {
+      // eve/react pulls in a bundled rolldown helper with a bare, unused
+      // `import "node:module"`. Turbopack can't keep that as an external in a
+      // browser chunk, so stub it to an empty module on the browser.
+      'node:module': { browser: './lib/eve-empty-module.js' },
+    },
+  },
+  // The OpenAPI specs are loaded at request time via
+  // `join(process.cwd(), 'public/openapi.json')` (see lib/openapi.ts). Because
+  // that path is computed, Next.js' file tracer can't statically detect it, so
+  // the JSON files are NOT bundled into the serverless functions that render
+  // reference pages and their `/llms.mdx/reference/...` (.md) endpoints. Without
+  // them present on disk, fumadocs-openapi throws
+  // `[OpenAPI] Failed to resolve input` and the route 500s in production
+  // (it works at build time only because `public/` exists at the project root).
+  // Explicitly trace the specs into every route that may resolve them at runtime.
+  outputFileTracingIncludes: {
+    '/reference/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/reference/v3/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms.mdx/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms-full.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/llms.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
   },
   images: {
     // Enable modern image formats for better compression
@@ -27,35 +50,168 @@ const config = {
   },
   async redirects() {
     return [
+      // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
+      // Renamed/moved pages -> new location
+      {
+        source: '/docs/observability/logs',
+        destination: '/reference/api-reference/logs',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/python/tool-router-session',
+        destination: '/reference/sdk-reference/python/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/tool-router-session-files-mount',
+        destination: '/reference/sdk-reference/typescript/session-files',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/tool-router-session',
+        destination: '/reference/sdk-reference/typescript/session',
+        permanent: true,
+      },
+      {
+        source: '/toolkits/premium-tools',
+        destination: '/toolkits/pro-tools',
+        permanent: true,
+      },
+      // Deleted/merged pages -> closest surviving page (semantically resolved + verified)
+      {
+        source: '/docs/authenticating-users/in-chat-authentication',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/common-faq',
+        destination: '/docs',
+        permanent: true,
+      },
+      {
+        source: '/docs/debugging-info',
+        destination: '/reference/errors',
+        permanent: true,
+      },
+      {
+        source: '/docs/glossary',
+        destination: '/reference/glossary',
+        permanent: true,
+      },
+      {
+        source: '/docs/native-tools-vs-mcp',
+        destination: '/docs/sessions-via-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/observability',
+        destination: '/reference/api-reference/logs',
+        permanent: true,
+      },
+      {
+        source: '/docs/observability/usage',
+        destination: '/reference/api-reference/organization',
+        permanent: true,
+      },
+      {
+        source: '/docs/projects',
+        destination: '/reference/api-reference/projects',
+        permanent: true,
+      },
+      {
+        source: '/docs/signing-up-as-an-agent',
+        destination: '/docs/cli',
+        permanent: true,
+      },
+      {
+        source: '/docs/subscribing-to-connection-expiry-events',
+        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/enable-and-disable-toolkits',
+        destination: '/docs/configuring-sessions',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/fetching-tools-and-toolkits',
+        destination: '/docs/configuring-sessions',
+        permanent: true,
+      },
+      {
+        source: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
+        permanent: true,
+      },
+      {
+        source: '/docs/webhook-verification',
+        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        permanent: true,
+      },
+      {
+        source: '/reference/api-reference/authentication',
+        destination: '/reference/authenticating-to-composio',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/python/session-context-impl',
+        destination: '/reference/sdk-reference/python/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/sdk-reference/typescript/session-context-impl',
+        destination: '/reference/sdk-reference/typescript/session',
+        permanent: true,
+      },
+      {
+        source: '/reference/v3/api-reference/authentication',
+        destination: '/reference/v3/authentication',
+        permanent: true,
+      },
+      // === end docs v3 reorganization redirects ===
       {
         source: '/',
         destination: '/docs',
         permanent: false,
       },
+      // Meta Tools moved from the Reference tab to the Toolkits tab.
       {
-        source: '/examples',
-        destination: '/cookbooks',
+        source: '/reference/meta-tools',
+        destination: '/toolkits/meta-tools',
         permanent: true,
       },
       {
-        source: '/cookbooks/vercel-chat',
-        destination: '/cookbooks/chat-app',
+        source: '/reference/meta-tools/:path*',
+        destination: '/toolkits/meta-tools/:path*',
         permanent: true,
       },
-      // Specific /examples/ subroutes before the catch-all
+      // Cookbooks were renamed to Examples; the old articles were removed,
+      // so send every old /cookbooks URL to the Examples index.
       {
-        source: '/examples/combined/:path*',
-        destination: '/cookbooks',
+        source: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
-        source: '/examples/:path*',
-        destination: '/cookbooks/:path*',
+        source: '/cookbooks/:path*',
+        destination: '/examples',
         permanent: true,
       },
       {
         source: '/docs/welcome',
         destination: '/docs',
+        permanent: true,
+      },
+      // The workbench was renamed to the sandbox; keep old links working.
+      {
+        source: '/docs/workbench',
+        destination: '/docs/sandbox/remote',
+        permanent: true,
+      },
+      // The sandbox page became a section (remote + local); keep the old URL working.
+      {
+        source: '/docs/sandbox',
+        destination: '/docs/sandbox/remote',
         permanent: true,
       },
       {
@@ -126,18 +282,18 @@ const config = {
       },
       {
         source: '/tool-router/tools-and-toolkits',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       // Authentication pages moved from tool-router to docs
       {
         source: '/tool-router/using-in-chat-authentication',
-        destination: '/docs/authenticating-users/in-chat-authentication',
+        destination: '/docs/authentication#in-chat-authentication',
         permanent: true,
       },
       {
         source: '/tool-router/manually-authenticating-users',
-        destination: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
         permanent: true,
       },
       {
@@ -275,6 +431,39 @@ const config = {
         destination: '/reference/api-reference/:path*',
         permanent: true,
       },
+      // Programmatic auth configs consolidated into the Customizing auth section
+      {
+        source: '/docs/auth-configuration/programmatic-auth-configs',
+        destination: '/docs/programmatic-auth-configs',
+        permanent: true,
+      },
+      // Authenticating users folder flattened into the Authenticate users section
+      {
+        source: '/docs/authenticating-users/manually-authenticating',
+        destination: '/docs/manually-authenticating',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/managing-multiple-connected-accounts',
+        destination: '/docs/managing-multiple-connected-accounts',
+        permanent: true,
+      },
+      {
+        source: '/docs/authenticating-users/shared-connections',
+        destination: '/docs/shared-connections',
+        permanent: true,
+      },
+      // Authentication reference renamed to "Authenticating to Composio"
+      {
+        source: '/reference/authentication',
+        destination: '/reference/authenticating-to-composio',
+        permanent: true,
+      },
+      {
+        source: '/reference/authentication/:path*',
+        destination: '/reference/authenticating-to-composio/:path*',
+        permanent: true,
+      },
       // Features section redirects
       {
         source: '/docs/users-and-sessions',
@@ -292,18 +481,13 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/setting-up-triggers/webhook-verification',
-        destination: '/docs/webhook-verification',
-        permanent: true,
-      },
-      {
         source: '/triggers',
         destination: '/docs/triggers',
         permanent: true,
       },
       {
         source: '/docs/how-tools-work',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -352,19 +536,35 @@ const config = {
         destination: '/docs/tools-direct/modify-tool-behavior/:path*',
         permanent: true,
       },
+      // Custom tools and proxy execute moved under the Extending sessions section.
+      {
+        source: '/docs/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
+        permanent: true,
+      },
+      {
+        source: '/docs/proxy-execute',
+        destination: '/docs/extending-sessions/proxy-execute',
+        permanent: true,
+      },
       {
         source: '/docs/custom-tools',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
         source: '/docs/tools-direct/custom-tools/:path*',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       {
@@ -376,11 +576,6 @@ const config = {
       {
         source: '/docs/custom-auth-configs',
         destination: '/docs/auth-configuration/custom-auth-configs',
-        permanent: true,
-      },
-      {
-        source: '/docs/programmatic-auth-configs',
-        destination: '/docs/auth-configuration/programmatic-auth-configs',
         permanent: true,
       },
       {
@@ -413,7 +608,7 @@ const config = {
       },
       {
         source: '/toolkits/introduction',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -433,12 +628,12 @@ const config = {
       },
       {
         source: '/guides/examples/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
         source: '/custom-tools/:path*',
-        destination: '/docs/toolkits/custom-tools-and-toolkits',
+        destination: '/docs/extending-sessions/custom-tools-and-toolkits',
         permanent: true,
       },
       // Error handling redirect (old fern URL)
@@ -471,12 +666,12 @@ const config = {
       },
       {
         source: '/tool-calling/introduction',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
         source: '/tool-calling/:path*',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       // Old framework pages
@@ -563,7 +758,7 @@ const config = {
       // Guides case studies
       {
         source: '/guides/casestudy/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       // Docs pages that moved or don't exist
@@ -579,7 +774,7 @@ const config = {
       },
       {
         source: '/docs/tools',
-        destination: '/docs/tools-and-toolkits',
+        destination: '/docs/how-composio-works',
         permanent: true,
       },
       {
@@ -666,7 +861,7 @@ const config = {
       },
       {
         source: '/apps/usecases/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
@@ -709,11 +904,6 @@ const config = {
       {
         source: '/docs/tools/modify/:path*',
         destination: '/docs/tools-direct/modify-tool-behavior',
-        permanent: true,
-      },
-      {
-        source: '/docs/troubleshooting/overview',
-        destination: '/docs/troubleshooting',
         permanent: true,
       },
       {
@@ -804,7 +994,7 @@ const config = {
       },
       {
         source: '/cryptokit/:path*',
-        destination: '/cookbooks',
+        destination: '/examples',
         permanent: true,
       },
       {
@@ -859,4 +1049,7 @@ const config = {
   },
 };
 
-export default withMDX(config);
+// `withEve` mounts the Eve docs assistant (agent/) on same-origin /eve/v1/*
+// routes and runs the agent alongside the Next.js app in one Vercel deploy.
+// Requires Node 24+ (see package.json engines / .node-version).
+export default withEve(withMDX(config));

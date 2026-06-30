@@ -13,14 +13,30 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import textwrap
 from pathlib import Path
 from typing import Any
 
-try:
-    import griffe
-except ImportError:
-    print("Error: griffe not installed. Run: pip install griffe")
-    raise SystemExit(1)
+import typing as t
+
+if t.TYPE_CHECKING:
+    import griffe as griffe_t
+
+_griffe: Any | None = None
+
+
+def load_griffe() -> Any:
+    """Load griffe lazily so parser helpers can be unit-tested without it."""
+    global _griffe
+    if _griffe is None:
+        try:
+            import griffe as griffe_module
+        except ImportError:
+            print("Error: griffe not installed. Run: pip install griffe")
+            raise SystemExit(1)
+        _griffe = griffe_module
+    return _griffe
+
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -55,9 +71,13 @@ EXPECTED_CLASSES = {
 
 # Additional public-facing classes worth documenting even though they are not
 # exposed as direct properties on ``Composio``.
+#
+# ``SessionContextImpl`` is intentionally omitted: it is an internal
+# implementation detail handed to custom-tool execute functions as a
+# ``SessionContext`` instance, never referenced directly, so it must not
+# appear in the public SDK reference.
 ADDITIONAL_CLASSES = {
     "ToolRouterSession": "core.models.tool_router_session",
-    "SessionContextImpl": "core.models.session_context",
 }
 
 # Modules to search for classes
@@ -70,6 +90,17 @@ CLASS_MODULES = [
     "core.models.mcp",
 ]
 
+# Pure-docs presentation overrides. The public class name ``ToolRouterSession``
+# is kept in source (renaming is a breaking change), but the SDK reference
+# presents the session object under the canonical "Session" naming.
+DISPLAY_NAME_OVERRIDES = {
+    "ToolRouterSession": "Session",
+}
+
+SLUG_OVERRIDES = {
+    "ToolRouterSession": "session",
+}
+
 
 def to_kebab_case(name: str) -> str:
     """Convert PascalCase to kebab-case."""
@@ -77,14 +108,22 @@ def to_kebab_case(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1-\2", s1).lower()
 
 
+def display_name_for(class_name: str) -> str:
+    """Resolve the display title for a class (falls back to the class name)."""
+    return DISPLAY_NAME_OVERRIDES.get(class_name, class_name)
+
+
+def slug_for(class_name: str) -> str:
+    """Resolve the URL slug / filename stem (falls back to kebab-case)."""
+    return SLUG_OVERRIDES.get(class_name, to_kebab_case(class_name))
+
+
 def escape_yaml_string(s: str) -> str:
     """Escape a string for YAML frontmatter."""
-    if any(c in s for c in [":", '"', "'", "\n", "#", "{", "}"]):
-        return f'"{s.replace(chr(34), chr(92) + chr(34))}"'
-    return s
+    return json.dumps(s)
 
 
-def get_source_link(obj: griffe.Object) -> str | None:
+def get_source_link(obj: griffe_t.Object) -> str | None:
     """Get GitHub source link for an object."""
     if not hasattr(obj, "filepath") or not obj.filepath:
         return None
@@ -128,13 +167,20 @@ def format_type(annotation: Any) -> str:
 def parse_docstring(docstring: str | None) -> dict[str, Any]:
     """Parse docstring into components."""
     if not docstring:
-        return {"description": "", "params": {}, "returns": None, "examples": []}
+        return {
+            "description": "",
+            "params": {},
+            "returns": None,
+            "examples": [],
+            "deprecated": None,
+        }
 
     lines = docstring.strip().split("\n")
     description_lines = []
     params: dict[str, str] = {}
     returns = None
     examples: list[str] = []
+    deprecated_lines: list[str] = []
 
     section = "description"
     current_param = None
@@ -142,6 +188,14 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
 
     for line in lines:
         stripped = line.strip()
+
+        # Check for a ``.. deprecated::`` directive (reStructuredText).
+        if re.match(r"\.\.\s+deprecated::", stripped):
+            section = "deprecated"
+            rest = re.sub(r"\.\.\s+deprecated::\s*", "", stripped).strip()
+            if rest:
+                deprecated_lines.append(rest)
+            continue
 
         # Check for :param name: description
         param_match = re.match(r":param\s+(\w+):\s*(.*)", stripped)
@@ -172,22 +226,39 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
             returns += " " + stripped
         elif section == "examples":
             example_lines.append(line)
+        elif section == "deprecated" and stripped:
+            deprecated_lines.append(stripped)
 
     if example_lines:
-        examples.append("\n".join(example_lines).strip())
+        examples.append(normalize_example("\n".join(example_lines)))
 
     return {
         "description": " ".join(description_lines).strip(),
         "params": params,
         "returns": returns,
         "examples": examples,
+        "deprecated": " ".join(deprecated_lines).strip() if deprecated_lines else None,
     }
 
 
+def normalize_example(example: str) -> str:
+    """Normalize a docstring example before wrapping it in an MDX code fence."""
+    normalized = textwrap.dedent(example).strip()
+    lines = normalized.splitlines()
+
+    if len(lines) >= 2 and lines[0].strip().startswith("```"):
+        closing_index = len(lines) - 1
+        if lines[closing_index].strip() == "```":
+            normalized = "\n".join(lines[1:closing_index]).strip()
+
+    return normalized
+
+
 def extract_class_info(
-    cls: griffe.Class, class_name: str, config: dict
+    cls: griffe_t.Class, class_name: str, config: dict
 ) -> dict[str, Any]:
     """Extract documentation from a class."""
+    griffe_module = load_griffe()
     doc = parse_docstring(cls.docstring.value if cls.docstring else None)
 
     info = {
@@ -195,6 +266,7 @@ def extract_class_info(
         "access": config.get("access"),
         "source_link": get_source_link(cls),
         "description": doc["description"],
+        "deprecated": doc.get("deprecated"),
         "properties": [],
         "methods": [],
     }
@@ -203,7 +275,7 @@ def extract_class_info(
     for name, member in cls.members.items():
         if name.startswith("_"):
             continue
-        if isinstance(member, griffe.Attribute):
+        if isinstance(member, griffe_module.Attribute):
             attr_doc = member.docstring.value if member.docstring else ""
             info["properties"].append(
                 {
@@ -217,7 +289,7 @@ def extract_class_info(
     for name, member in cls.members.items():
         if name.startswith("_"):
             continue
-        if isinstance(member, griffe.Function):
+        if isinstance(member, griffe_module.Function):
             method_doc = parse_docstring(
                 member.docstring.value if member.docstring else None
             )
@@ -262,14 +334,28 @@ def generate_class_mdx(
         if info["description"]
         else f"{info['name']} class"
     )
+    # Normalize reStructuredText ``double backticks`` to single backticks so the
+    # frontmatter description reads cleanly.
+    desc = re.sub(r"``([^`]+)``", r"`\1`", desc)
     if len(desc) > 150:
         desc = desc[:147] + "..."
 
     lines.append("---")
-    lines.append(f"title: {info['name']}")
+    lines.append(f"title: {escape_yaml_string(display_name_for(info['name']))}")
     lines.append(f"description: {escape_yaml_string(desc)}")
     lines.append("---")
     lines.append("")
+
+    # Class-level deprecation callout (rendered as a fumadocs warning callout).
+    deprecated_note = info.get("deprecated")
+    if deprecated_note:
+        # Normalize reStructuredText ``double backticks`` to MDX `single` so
+        # inline code renders correctly.
+        deprecated_note = re.sub(r"``([^`]+)``", r"`\1`", deprecated_note)
+        lines.append('<Callout type="warn" title="Deprecated">')
+        lines.append(deprecated_note)
+        lines.append("</Callout>")
+        lines.append("")
 
     source_link = info.get("source_link", "")
 
@@ -397,13 +483,13 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
     # Classes table
     class_rows = []
     for c in classes:
-        link = f"/reference/sdk-reference/python/{to_kebab_case(c['name'])}"
+        link = f"/reference/sdk-reference/python/{slug_for(c['name'])}"
         desc = (
             c["description"][:80] + "..."
             if len(c["description"]) > 80
             else c["description"]
         )
-        class_rows.append(f"| [`{c['name']}`]({link}) | {desc} |")
+        class_rows.append(f"| [`{display_name_for(c['name'])}`]({link}) | {desc} |")
 
     # Decorators section
     dec_section = ""
@@ -432,8 +518,8 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
         dec_section = "\n".join(dec_lines)
 
     return f"""---
-title: Python SDK Reference
-description: API reference for the Composio Python SDK
+title: {escape_yaml_string("Python SDK Reference")}
+description: {escape_yaml_string("API reference for the Composio Python SDK")}
 ---
 
 # Python SDK Reference
@@ -481,6 +567,8 @@ result = composio.tools.execute(
 
 
 def main():
+    griffe_module = load_griffe()
+
     print("Starting Python SDK documentation generation...\n")
     print(f"Output: {OUTPUT_DIR}\n")
 
@@ -492,7 +580,7 @@ def main():
     # Load package
     print("Loading composio package...")
     try:
-        package = griffe.load("composio", search_paths=[str(PACKAGE_DIR)])
+        package = griffe_module.load("composio", search_paths=[str(PACKAGE_DIR)])
     except Exception as e:
         print(f"Error: {e}")
         raise SystemExit(1)
@@ -516,7 +604,7 @@ def main():
             for class_name, prop_name in EXPECTED_CLASSES.items():
                 if class_name in current.members:
                     cls = current.members[class_name]
-                    if isinstance(cls, griffe.Class):
+                    if isinstance(cls, griffe_module.Class):
                         classes_to_doc[class_name] = {
                             "cls": cls,
                             "access": f"composio.{prop_name}",
@@ -538,7 +626,7 @@ def main():
 
             if class_name in current.members:
                 cls = current.members[class_name]
-                if isinstance(cls, griffe.Class):
+                if isinstance(cls, griffe_module.Class):
                     classes_to_doc[class_name] = {
                         "cls": cls,
                         "access": None,
@@ -563,7 +651,7 @@ def main():
         else:
             mdx = generate_class_mdx(info, None)
 
-        file_path = OUTPUT_DIR / f"{to_kebab_case(class_name)}.mdx"
+        file_path = OUTPUT_DIR / f"{slug_for(class_name)}.mdx"
         file_path.write_text(mdx)
 
         documented_classes.append(
@@ -585,7 +673,7 @@ def main():
 
         if dec_name in current.members:
             func = current.members[dec_name]
-            if isinstance(func, griffe.Function):
+            if isinstance(func, griffe_module.Function):
                 print(f"  Processing decorator {dec_name}...")
                 doc = parse_docstring(func.docstring.value if func.docstring else None)
 
@@ -618,7 +706,7 @@ def main():
     # Generate meta.json
     meta = {
         "title": "Python SDK",
-        "pages": [to_kebab_case(c["name"]) for c in documented_classes],
+        "pages": [slug_for(c["name"]) for c in documented_classes],
     }
     (OUTPUT_DIR / "meta.json").write_text(json.dumps(meta, indent=2))
 

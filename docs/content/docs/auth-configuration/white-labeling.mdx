@@ -3,6 +3,7 @@ title: White-labeling (direct execution)
 description: Remove Composio branding from your auth flows
 keywords: [branding, own oauth, custom redirect, white label]
 llmGuardrails: "direct-execution"
+legacy: true
 ---
 
 <Callout type="info">
@@ -170,7 +171,7 @@ const githubConn = await composio.connectedAccounts.initiate(
   {
     config: {
       authScheme: "OAUTH2",
-      // val fields use snake_case — they're sent to the API as-is
+      // val fields use snake_case; they're sent to the API as-is
       val: { status: "INITIALIZING", long_redirect_url: true },
     },
   },
@@ -248,22 +249,12 @@ In the Composio dashboard, update your auth config to use your custom redirect U
 
 Here's how the redirect flow works. Your proxy just forwards the browser redirect to Composio. It never touches the authorization code or token.
 
-```mermaid
-flowchart TD
-    A[Your App] -->|User connects| B["OAuth toolkit (e.g. Google, GitHub)"]
-    B -->|Redirects user| C[yourdomain.com]
-    C -->|Forwards redirect| D[backend.composio.dev]
-    D -.->|Redirects back| A
-```
+<WhiteLabelFlow />
 
 <Callout type="info">
 For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).
 </Callout>
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />
-  <Card icon={<Wrench />} title="Custom auth configs" href="/docs/auth-configuration/custom-auth-configs" description="Customize auth configs with your own OAuth apps" />
-  <Card icon={<Key />} title="Authenticating tools" href="/docs/tools-direct/authenticating-tools" description="Create auth configs and connect user accounts" />
-</Cards>
+<Card icon={<Database />} title="Connected accounts" href="/docs/auth-configuration/connected-accounts" description="Manage and monitor user connections to toolkits" />

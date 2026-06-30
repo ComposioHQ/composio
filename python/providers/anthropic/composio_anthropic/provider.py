@@ -7,7 +7,11 @@ from anthropic.types.tool_use_block import ToolUseBlock
 
 from composio.core.provider import NonAgenticProvider
 from composio.types import Modifiers, Tool, ToolExecutionResponse
-from composio.utils.shared import normalize_tool_arguments
+from composio.utils.shared import (
+    ToolSchemaAliases,
+    alias_tool_input_schema,
+    normalize_tool_arguments,
+)
 
 
 class AnthropicProvider(
@@ -18,9 +22,15 @@ class AnthropicProvider(
     Composio toolset for Anthropic Claude platform.
     """
 
+    def __init__(self, **kwargs: t.Any) -> None:
+        super().__init__(**kwargs)
+        self._aliases: dict[str, ToolSchemaAliases] = {}
+
     def wrap_tool(self, tool: Tool) -> ToolParam:
+        aliases = alias_tool_input_schema(tool.input_parameters or {})
+        self._aliases[tool.slug] = aliases
         return ToolParam(
-            input_schema=tool.input_parameters,
+            input_schema=aliases.schema,
             name=tool.slug,
             description=tool.description,
         )
@@ -43,9 +53,13 @@ class AnthropicProvider(
         :return: Object containing output data from the tool call.
         """
         # Models occasionally emit tool input as a JSON string rather than a dict (issue #2406).
+        arguments = normalize_tool_arguments(tool_call.input)
+        aliases = self._aliases.get(tool_call.name)
+        if aliases is not None:
+            arguments = aliases.restore_arguments(arguments)
         return self.execute_tool(
             slug=tool_call.name,
-            arguments=normalize_tool_arguments(tool_call.input),
+            arguments=arguments,
             modifiers=modifiers,
             user_id=user_id,
         )

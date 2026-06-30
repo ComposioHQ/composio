@@ -1,0 +1,120 @@
+name: Bump Homebrew Tap
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to sync (e.g. @composio/cli@0.2.28)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-homebrew-tap
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, '@composio/cli@')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag and version
+        id: meta
+        env:
+          TAG_INPUT: ${{ inputs.tag }}
+          TAG_RELEASE: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          tag="${TAG_INPUT:-$TAG_RELEASE}"
+          if [[ -z "$tag" ]]; then
+            echo "::error::No tag resolved"; exit 1
+          fi
+          if [[ ! "$tag" =~ ^@composio/cli@ ]]; then
+            echo "::notice::Tag $tag is not a CLI release, skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Skip beta/prerelease tags — only stable bumps the formula.
+          if [[ "$tag" == *"-beta."* || "$tag" == *"-rc."* || "$tag" == *"-alpha."* ]]; then
+            echo "::notice::Tag $tag is a prerelease, skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version="${tag#@composio/cli@}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Download checksums
+        if: steps.meta.outputs.skip != 'true'
+        id: sha
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern checksums.txt \
+            --output checksums.txt
+          extract() {
+            grep "  $1\$" checksums.txt | awk '{print $1}' || true
+          }
+          {
+            echo "darwin_arm=$(extract composio-darwin-aarch64.zip)"
+            echo "darwin_x86=$(extract composio-darwin-x64.zip)"
+            echo "linux_arm=$(extract composio-linux-aarch64.zip)"
+            echo "linux_x86=$(extract composio-linux-x64.zip)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout source repo (for bump script)
+        if: steps.meta.outputs.skip != 'true'
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Checkout homebrew tap
+        if: steps.meta.outputs.skip != 'true'
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ComposioHQ/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Update formula
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          DARWIN_ARM: ${{ steps.sha.outputs.darwin_arm }}
+          DARWIN_X86: ${{ steps.sha.outputs.darwin_x86 }}
+          LINUX_ARM: ${{ steps.sha.outputs.linux_arm }}
+          LINUX_X86: ${{ steps.sha.outputs.linux_x86 }}
+        run: |
+          set -euo pipefail
+          formula="tap/Formula/composio.rb"
+          [[ -f "$formula" ]] || { echo "::error::$formula not found"; exit 1; }
+
+          .github/scripts/bump-homebrew-formula.py "$formula"
+
+          echo "--- updated formula ---"
+          cat "$formula"
+
+      - name: Commit and push
+        if: steps.meta.outputs.skip != 'true'
+        working-directory: tap
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name  "composio-release-bot"
+          git config user.email "composio-release-bot@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Formula already up to date for $VERSION; nothing to commit."
+            exit 0
+          fi
+          git add Formula/composio.rb
+          git commit -m "composio $VERSION"
+          git push origin HEAD

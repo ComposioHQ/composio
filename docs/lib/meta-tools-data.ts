@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { getMetaToolOverride } from './meta-tool-overrides';
 
 export interface MetaToolParameter {
   type: string;
@@ -26,6 +27,10 @@ export interface MetaTool {
   tags: string[];
   inputParameters: MetaToolSchema;
   responseSchema: MetaToolSchema;
+  /** Hand-written Modal-voice copy, merged over the API data at read time. */
+  summary?: string;
+  whenToUse?: string;
+  usageNote?: string;
 }
 
 const META_TOOLS_PATH = join(process.cwd(), 'public/data/meta-tools.json');
@@ -40,6 +45,13 @@ function buildCache(tools: MetaTool[]) {
   return cached;
 }
 
+/** Merge the hand-written override copy over the API-sourced tool. */
+function applyOverride(tool: MetaTool): MetaTool {
+  const override = getMetaToolOverride(tool.slug);
+  if (!override) return tool;
+  return { ...tool, ...override };
+}
+
 function parse(data: string): MetaTool[] {
   const tools = JSON.parse(data) as MetaTool[];
 
@@ -47,7 +59,7 @@ function parse(data: string): MetaTool[] {
     throw new Error('meta-tools.json must contain an array');
   }
 
-  return tools;
+  return tools.map(applyOverride);
 }
 
 export async function getAllMetaTools(): Promise<MetaTool[]> {

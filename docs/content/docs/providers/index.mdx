@@ -3,29 +3,92 @@ title: Providers
 description: Composio works with any AI framework. Pick your preferred SDK to get started.
 ---
 
-Composio works with any AI framework. Each provider transforms Composio tools into the native format your framework expects — no glue code needed.
+Composio works with any AI framework. A provider is the adapter that turns Composio tools into the native tool format your framework expects, so you don't write glue code.
+
+Pick the provider that matches the SDK or agent framework you already use. Each one fetches tools, handles execution, and hands your agent objects it understands. If your framework isn't listed, you can [build your own provider](/docs/providers/custom-providers).
 
 ## AI SDKs
 
+Use these when you call a model SDK directly.
+
 <ProviderGrid>
-  <ProviderCard name="Anthropic" href="/docs/providers/anthropic" logo="/images/providers/anthropic-logo.svg" logoDark="/images/providers/anthropic-logo-dark.svg" languages={["Python", "TypeScript"]} />
-  <ProviderCard name="OpenAI" href="/docs/providers/openai" logo="/images/providers/openai-logo.svg" logoDark="/images/providers/openai-logo-dark.svg" languages={["Python", "TypeScript"]} />
-  <ProviderCard name="Vercel AI SDK" href="/docs/providers/vercel" logo="/images/providers/vercel-logo.svg" logoDark="/images/providers/vercel-logo-dark.svg" languages={["TypeScript"]} />
-  <ProviderCard name="Google" href="/docs/providers/google" logo="/images/providers/google-logo.svg" languages={["Python", "TypeScript"]} />
+  <ProviderCard
+    name="Anthropic"
+    href="/docs/providers/anthropic"
+    logo="/images/providers/anthropic-logo.svg"
+    logoDark="/images/providers/anthropic-logo-dark.svg"
+    languages={['Python', 'TypeScript']}
+  />
+  <ProviderCard
+    name="OpenAI"
+    href="/docs/providers/openai"
+    logo="/images/providers/openai-logo.svg"
+    logoDark="/images/providers/openai-logo-dark.svg"
+    languages={['Python', 'TypeScript']}
+  />
+  <ProviderCard
+    name="Vercel AI SDK"
+    href="/docs/providers/vercel"
+    logo="/images/providers/vercel-logo.svg"
+    logoDark="/images/providers/vercel-logo-dark.svg"
+    languages={['TypeScript']}
+  />
+  <ProviderCard
+    name="Google"
+    href="/docs/providers/google"
+    logo="/images/providers/google-logo.svg"
+    languages={['Python', 'TypeScript']}
+  />
 </ProviderGrid>
 
-## Agent Frameworks
+## Agent frameworks
+
+Use these when an agent framework orchestrates the tool calls for you.
 
 <ProviderGrid>
-  <ProviderCard name="LangChain" href="/docs/providers/langchain" logo="/images/providers/langchain-logo.svg" logoDark="/images/providers/langchain-logo-dark.svg" languages={["Python", "TypeScript"]} />
-  <ProviderCard name="CrewAI" href="/docs/providers/crewai" logo="/images/providers/crewai-logo.svg" languages={["Python"]} />
-  <ProviderCard name="LlamaIndex" href="/docs/providers/llamaindex" logo="/images/providers/llamaIndex-logo.svg" languages={["Python", "TypeScript"]} />
-  <ProviderCard name="Mastra" href="/docs/providers/mastra" logo="/images/providers/mastra-logo.svg" logoDark="/images/providers/mastra-logo-dark.svg" languages={["TypeScript"]} />
-  <ProviderCard name="AutoGen" href="/docs/providers/autogen" languages={["Python"]} />
+  <ProviderCard
+    name="LangChain"
+    href="/docs/providers/langchain"
+    logo="/images/providers/langchain-logo.svg"
+    logoDark="/images/providers/langchain-logo-dark.svg"
+    languages={['Python', 'TypeScript']}
+  />
+  <ProviderCard
+    name="CrewAI"
+    href="/docs/providers/crewai"
+    logo="/images/providers/crewai-logo.svg"
+    languages={['Python']}
+  />
+  <ProviderCard
+    name="LlamaIndex"
+    href="/docs/providers/llamaindex"
+    logo="/images/providers/llamaIndex-logo.svg"
+    languages={['Python', 'TypeScript']}
+  />
+  <ProviderCard
+    name="Mastra"
+    href="/docs/providers/mastra"
+    logo="/images/providers/mastra-logo.svg"
+    logoDark="/images/providers/mastra-logo-dark.svg"
+    languages={['TypeScript']}
+  />
+  <ProviderCard
+    name="Pi"
+    href="/docs/providers/pi"
+    logo="/images/providers/pi-logo.svg"
+    logoDark="/images/providers/pi-logo-dark.svg"
+    languages={['TypeScript']}
+  />
+  <ProviderCard name="AutoGen" href="/docs/providers/autogen" languages={['Python']} />
 </ProviderGrid>
 
 ## Custom
 
 <ProviderGrid>
-  <ProviderCard name="Build your own" href="/docs/providers/custom-providers" icon={<Blocks size={32} />} languages={["Python", "TypeScript"]} />
+  <ProviderCard
+    name="Build your own"
+    href="/docs/providers/custom-providers"
+    icon={<Blocks size={32} />}
+    languages={['Python', 'TypeScript']}
+  />
 </ProviderGrid>

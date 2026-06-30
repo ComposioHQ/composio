@@ -274,6 +274,29 @@ export const WebhookVersions = {
 } as const;
 export type WebhookVersion = (typeof WebhookVersions)[keyof typeof WebhookVersions];
 
+export const DefaultWebhookSubscriptionEvents = ['composio.trigger.message'] as const;
+
+export const SetWebhookSubscriptionParamsSchema = z.object({
+  /** HTTPS URL to receive webhook events. */
+  webhookUrl: z.string().min(1),
+  /** Event types to subscribe to. Defaults to trigger messages. */
+  enabledEvents: z.array(z.string()).min(1).optional(),
+  /** Webhook payload version. Defaults to V3. */
+  version: z.enum(['V1', 'V2', 'V3']).optional(),
+});
+
+export type SetWebhookSubscriptionParams = z.infer<typeof SetWebhookSubscriptionParamsSchema>;
+
+export type WebhookSubscription = {
+  id: string;
+  webhookUrl: string;
+  version: WebhookVersion;
+  enabledEvents: string[];
+  secret?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 /**
  * Parameters for verifying a webhook signature
  */
@@ -328,6 +351,41 @@ export const VerifyWebhookParamsSchema = z.object({
 });
 
 export type VerifyWebhookParams = z.input<typeof VerifyWebhookParamsSchema>;
+
+/**
+ * An incoming HTTP request that carries a Composio webhook.
+ *
+ * Accepts either:
+ * - A Fetch API `Request` (Next.js App Router, Hono, Remix, Cloudflare Workers).
+ * - A plain object `{ body, headers }` (Express with `express.raw`, Next.js
+ *   Pages Router `req`). `body` may be a string, a Buffer/Uint8Array, or an
+ *   already-parsed object; `headers` may be a `Headers` instance or a plain
+ *   record of `string | string[] | undefined`.
+ */
+export type WebhookRequestLike =
+  | Request
+  | {
+      body: unknown;
+      headers: unknown;
+    };
+
+/**
+ * Options for {@link Triggers.parse}.
+ */
+export type ParseWebhookOptions = {
+  /**
+   * The webhook secret used to sign the payload (from the Composio dashboard).
+   * When provided, the request signature is verified before the payload is
+   * returned. When omitted, the payload is parsed without verification.
+   */
+  verifySecret?: string;
+  /**
+   * Maximum allowed age of the webhook in seconds (default: 300 = 5 minutes).
+   * Only used when `verifySecret` is provided. Set to 0 to disable timestamp
+   * validation.
+   */
+  tolerance?: number;
+};
 
 /**
  * Result of a successful webhook verification.

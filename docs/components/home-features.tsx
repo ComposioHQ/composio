@@ -42,13 +42,13 @@ export function HomeFeatures() {
       <div className="grid grid-cols-1 gap-5 sm:auto-rows-fr sm:grid-cols-2">
         <FeatureCard
           title="Tools that resolve by intent."
-          description="Smart tool search over 1000+ apps — surfaced just-in-time, with the right scope."
-          href="/docs/tools-and-toolkits"
+          description="Smart tool search over 1000+ apps, surfaced just in time with the right scope."
+          href="/docs/how-composio-works"
           visual={<ToolkitsVisual />}
         />
         <FeatureCard
           title="Auth and context, per end-user."
-          description="OAuth, API keys, and tokens scoped to each user — refreshed automatically."
+          description="OAuth, API keys, and tokens scoped to each user and refreshed automatically."
           href="/docs/authentication"
           visual={<SessionsVisual />}
         />
@@ -60,8 +60,8 @@ export function HomeFeatures() {
         />
         <FeatureCard
           title="Run arbitrary code, safely."
-          description="A workbench pre-wired with your user's connected accounts and 1000+ tools."
-          href="/docs/workbench"
+          description="A sandbox pre-wired with your user's connected accounts and 1000+ tools."
+          href="/docs/sandbox"
           visual={<WorkbenchVisual />}
         />
       </div>

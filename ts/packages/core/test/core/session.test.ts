@@ -109,6 +109,40 @@ describe('Composio Session Management', () => {
       'x-sdk-version': version,
     });
   });
+
+  it('should expose sessions.create and keep composio.create as a bound alias', async () => {
+    const composio = new Composio(baseConfig);
+    const client = composio.getClient() as any;
+    client.toolRouter.session.create = vi.fn().mockResolvedValue({
+      session_id: 'session_123',
+      mcp: {
+        type: 'http',
+        url: 'https://mcp.example.com/session_123',
+      },
+      config: {
+        preload: { tools: [] },
+      },
+      config_version: 1,
+    });
+
+    expect(composio.toolRouter).toBe(composio.sessions);
+
+    const sessionFromCanonicalApi = await composio.sessions.create('user_123');
+    const sessionFromAlias = await composio.create('user_456');
+
+    expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ user_id: 'user_123' }),
+      undefined
+    );
+    expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ user_id: 'user_456' }),
+      undefined
+    );
+    expect(sessionFromCanonicalApi.sessionId).toBe('session_123');
+    expect(sessionFromAlias.sessionId).toBe('session_123');
+  });
 });
 
 describe('Session Headers Generation', () => {

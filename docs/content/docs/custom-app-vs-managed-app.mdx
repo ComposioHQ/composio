@@ -9,7 +9,7 @@ Composio supports two ways to authenticate users with toolkits.
 - **[Composio managed apps](/toolkits/managed-auth)**: Composio registers and maintains OAuth apps for popular toolkits (GitHub, Gmail, Slack, etc.). Zero setup, works out of the box.
 - **Custom auth configs**: You provide your own OAuth app, API key, bearer token, or other credentials and tell Composio to use them for a toolkit.
 
-Use this page as the canonical guide for deciding between managed auth and custom auth configs, then wiring the chosen auth config into a session.
+This page covers when to use each, how to create a custom auth config, and how to wire it into a session.
 
 ## When to use Composio managed apps
 
@@ -33,6 +33,8 @@ Bring your own credentials when any of these apply:
 ## Create a custom auth config
 
 To check whether a toolkit already has a Composio managed app, see the [managed auth toolkit list](/toolkits/managed-auth). You can still create a custom auth config for branding, scopes, rate limits, polling intervals, or custom instances.
+
+The steps below use the dashboard. To create auth configs in code instead, for example one per customer, see [Programmatic auth configs](/docs/programmatic-auth-configs).
 
 <Steps>
 <Step>
@@ -66,6 +68,8 @@ After you enter the required credentials, click **Create** and copy the auth con
 
 <Step>
 <StepTitle>Pass the auth config ID in your session</StepTitle>
+
+Creating the auth config isn't enough on its own. A session uses your config only when you pass its ID to `authConfigs`, keyed by toolkit. Toolkits you leave out keep using Composio managed auth.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -136,10 +140,6 @@ const session = await composio.create("user_123", {
 
 Some toolkits don't have Composio managed auth. For these, the setup is the same as above, except the provider may ask for API keys or instance details instead of OAuth credentials. Browse the full list on the [managed auth page](/toolkits/managed-auth) or check individual toolkit pages on the [toolkits page](/toolkits).
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Palette />} title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Remove all Composio branding from your auth flows" />
-  <Card icon={<Key />} title="Importing existing connections" href="/docs/importing-existing-connections" description="Bring existing OAuth tokens or API keys into Composio" />
-  <Card icon={<Database />} title="Managing multiple accounts" href="/docs/managing-multiple-connected-accounts" description="Handle users with multiple accounts for the same toolkit" />
-</Cards>
+<Card icon={<Code />} title="Programmatic auth configs" href="/docs/programmatic-auth-configs" description="Create auth configs in code and pass them to a session" />

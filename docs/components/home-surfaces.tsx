@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   Code2,
   Heart,
-  Bot,
   Terminal,
   Copy,
   Check,
@@ -61,8 +60,7 @@ const CLIENTS: { name: string; logo: string; h: number }[] = [
  * Welcome-page audience selector — surfaces the three ways into Composio.
  * "Build with the SDK" gets the full width of the top row and a strip of
  * provider logos showing which frameworks ship first-class support; the
- * two non-developer surfaces (For You + Agents) sit below in a 2-col
- * row.
+ * two non-developer surfaces (For You + CLI) sit below in a 2-col row.
  */
 export function HomeSurfaces() {
   return (
@@ -71,7 +69,7 @@ export function HomeSurfaces() {
         eyebrow="For everyone"
         title="Three ways to use Composio."
       />
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {/* Full-width Developers card */}
         <SurfaceCard
           eyebrow="Developers"
@@ -83,12 +81,12 @@ export function HomeSurfaces() {
           spanFull
           extra={<ProviderStrip />}
         />
-        {/* Bottom row: For You + Agents */}
+        {/* Bottom row: For You + CLI */}
         <SurfaceCard
           eyebrow="For You"
           eyebrowIcon={<Heart aria-hidden="true" className="size-4" />}
           title="Use Composio yourself"
-          description="Plug 1000+ pre-authenticated apps into Claude Code, Cursor, or any MCP client. No build required — connect once and go."
+          description="Plug 1000+ pre-authenticated apps into Claude Code, Cursor, or any MCP client. No build required. Connect once and go."
           href="https://composio.dev/for-you"
           external
           extra={<ClientStrip />}
@@ -101,14 +99,6 @@ export function HomeSurfaces() {
           href="/docs/cli"
           external={false}
           extra={<CliInstall />}
-        />
-        <SurfaceCard
-          eyebrow="Agents"
-          eyebrowIcon={<Bot aria-hidden="true" className="size-4" />}
-          title="Sign up as an agent"
-          description="Agents can create their own Composio identity at agents.composio.dev — no human in the loop — and start running tools in seconds."
-          href="https://agents.composio.dev"
-          external
         />
       </div>
     </section>
@@ -143,7 +133,7 @@ function SurfaceCard({
       {...externalProps}
       className={
         'group relative flex flex-col gap-3 overflow-hidden border border-fd-border bg-fd-card p-6 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)] sm:p-7' +
-        (spanFull ? ' md:col-span-3' : '')
+        (spanFull ? ' md:col-span-2' : '')
       }
     >
       <div className="flex items-center justify-between">

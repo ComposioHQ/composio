@@ -194,7 +194,7 @@ export type CreateConnectedAccountResponse = z.infer<typeof CreateConnectedAccou
 
 export const ConnectedAccountAuthConfigSchema = z.object({
   id: z.string(),
-  /** @deprecated use connectedAccount.state.authScheme instead */
+  /** @deprecated Use `connectedAccount.state.authScheme` instead. */
   authScheme: AuthSchemeEnum.optional(),
   isComposioManaged: z.boolean(),
   isDisabled: z.boolean(),
@@ -206,9 +206,9 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   authConfig: z.infer<typeof ConnectedAccountAuthConfigSchema>;
   wordId?: string | null;
   alias?: string | null;
-  /** @deprecated use connectedAccount.state instead */
+  /** @deprecated Use `connectedAccount.state` instead — `data` is a legacy raw credential field. */
   data?: Record<string, unknown>;
-  /** @deprecated use connectedAccount.state instead */
+  /** @deprecated Use `connectedAccount.state` instead — `params` is a legacy raw credential field. */
   params?: Record<string, unknown>;
   status: ConnectedAccountStatusEnum;
   statusReason: string | null;
@@ -225,11 +225,11 @@ export const ConnectedAccountRetrieveResponseSchema: z.ZodType<{
   wordId: z.string().nullable().optional(),
   alias: z.string().nullable().optional(),
   /**
-   * @deprecated use connectedAccount.state instead
+   * @deprecated Use `connectedAccount.state` instead — `data` is a legacy raw credential field.
    */
   data: z.record(z.string(), z.unknown()).optional(),
   /**
-   * @deprecated use connectedAccount.state instead
+   * @deprecated Use `connectedAccount.state` instead — `params` is a legacy raw credential field.
    */
   params: z.record(z.string(), z.unknown()).optional(),
   status: ConnectedAccountStatusSchema,

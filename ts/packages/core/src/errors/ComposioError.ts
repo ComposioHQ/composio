@@ -8,7 +8,7 @@
  * @module errors/ComposioError
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error}
  */
-import chalk from 'chalk';
+import pc from 'picocolors';
 import { ZodError } from 'zod/v3';
 import { BadRequestError } from '@composio/client';
 import logger from '../utils/logger';
@@ -216,36 +216,35 @@ export class ComposioError extends Error {
     const data = this.getErrorData(includeStack);
 
     let output =
-      '\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(data.message) + '\n';
+      '\n' + pc.bgRed(pc.white(pc.bold(' ERROR '))) + ' ' + pc.white(pc.bold(data.message)) + '\n';
 
     if (data.code) {
-      output += chalk.yellow(`Error Code: ${data.code}`) + '\n';
+      output += pc.yellow(`Error Code: ${data.code}`) + '\n';
     }
 
     if (data.statusCode !== undefined) {
-      output += chalk.yellow(`Status: ${data.statusCode}`) + '\n';
+      output += pc.yellow(`Status: ${data.statusCode}`) + '\n';
     }
 
     if (data.cause) {
-      output += chalk.gray('Reason:') + '\n';
-      output += '  ' + chalk.white(data.cause) + '\n';
+      output += pc.gray('Reason:') + '\n';
+      output += '  ' + pc.white(data.cause) + '\n';
     }
 
     if (data.meta) {
-      output += chalk.gray('Additional Information:') + '\n';
-      output +=
-        '  ' + chalk.white(JSON.stringify(data.meta, null, 2).replace(/\n/g, '\n  ')) + '\n';
+      output += pc.gray('Additional Information:') + '\n';
+      output += '  ' + pc.white(JSON.stringify(data.meta, null, 2).replace(/\n/g, '\n  ')) + '\n';
     }
 
     if (data.possibleFixes?.length) {
-      output += '\n' + chalk.cyan.bold('Try the following:') + '\n';
-      const fixes = data.possibleFixes?.map((fix, index) => ` ${index + 1}. ` + chalk.white(fix));
+      output += '\n' + pc.cyan(pc.bold('Try the following:')) + '\n';
+      const fixes = data.possibleFixes?.map((fix, index) => ` ${index + 1}. ` + pc.white(fix));
       output += fixes?.join('\n') + '\n';
     }
 
     if (data.stack?.length) {
-      output += '\n' + chalk.gray('Stack Trace:') + '\n';
-      output += chalk.gray(data.stack.join('\n')) + '\n';
+      output += '\n' + pc.gray('Stack Trace:') + '\n';
+      output += pc.gray(data.stack.join('\n')) + '\n';
     }
 
     output += '\n'; // Add a trailing empty line
@@ -334,32 +333,32 @@ export class ComposioError extends Error {
    * @private
    */
   private static handleZodError(error: ZodError, includeStack: boolean): void {
-    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(error.message));
+    logger.error(
+      '\n' + pc.bgRed(pc.white(pc.bold(' ERROR '))) + ' ' + pc.white(pc.bold(error.message))
+    );
 
     // print the invalid parameters
-    logger.error(chalk.gray('Invalid parameters:'));
+    logger.error(pc.gray('Invalid parameters:'));
     error.errors.forEach(err => {
-      logger.error(chalk.yellow(err.path.join('.')) + ' ' + chalk.white(err.message));
+      logger.error(pc.yellow(err.path.join('.')) + ' ' + pc.white(err.message));
     });
 
-    logger.error(chalk.gray('Expected parameters:'));
+    logger.error(pc.gray('Expected parameters:'));
     error.errors.forEach(err => {
-      logger.error(chalk.yellow(err.path.join('.')) + ' ' + chalk.white(err.message));
+      logger.error(pc.yellow(err.path.join('.')) + ' ' + pc.white(err.message));
     });
 
     if (includeStack) {
-      logger.error('\n' + chalk.gray('Validation Errors:'));
+      logger.error('\n' + pc.gray('Validation Errors:'));
       error.errors.forEach(err => {
         const path = err.path.join('.');
-        logger.error(
-          chalk.gray('  • ') + chalk.yellow(path ? `${path}: ` : '') + chalk.white(err.message)
-        );
+        logger.error(pc.gray('  • ') + pc.yellow(path ? `${path}: ` : '') + pc.white(err.message));
       });
 
       if (error.stack) {
-        logger.error('\n' + chalk.gray('Stack Trace:'));
+        logger.error('\n' + pc.gray('Stack Trace:'));
         const stackLines = error.stack.split('\n').slice(1);
-        logger.error(chalk.gray(stackLines.join('\n')));
+        logger.error(pc.gray(stackLines.join('\n')));
       }
     }
 
@@ -373,12 +372,14 @@ export class ComposioError extends Error {
    * @private
    */
   private static handleStandardError(error: Error, includeStack: boolean): void {
-    logger.error('\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold(error.message));
+    logger.error(
+      '\n' + pc.bgRed(pc.white(pc.bold(' ERROR '))) + ' ' + pc.white(pc.bold(error.message))
+    );
 
     if (includeStack && error.stack) {
-      logger.error('\n' + chalk.gray('Stack Trace:'));
+      logger.error('\n' + pc.gray('Stack Trace:'));
       const stackLines = error.stack.split('\n').slice(1);
-      logger.error(chalk.gray(stackLines.join('\n')));
+      logger.error(pc.gray(stackLines.join('\n')));
     }
 
     logger.error(''); // Add a trailing empty line
@@ -391,12 +392,15 @@ export class ComposioError extends Error {
    */
   private static handleUnknownError(error: unknown): void {
     logger.error(
-      '\n' + chalk.bgRed.white.bold(' ERROR ') + ' ' + chalk.white.bold('Unknown error occurred')
+      '\n' +
+        pc.bgRed(pc.white(pc.bold(' ERROR '))) +
+        ' ' +
+        pc.white(pc.bold('Unknown error occurred'))
     );
 
     if (error !== null && error !== undefined) {
-      logger.error(chalk.gray('Error details:'));
-      logger.error('  ' + chalk.white(String(error)));
+      logger.error(pc.gray('Error details:'));
+      logger.error('  ' + pc.white(String(error)));
     }
 
     logger.error(''); // Add a trailing empty line

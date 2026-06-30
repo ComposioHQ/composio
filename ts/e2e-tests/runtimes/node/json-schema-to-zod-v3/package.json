@@ -11,7 +11,7 @@
   "dependencies": {
     "@composio/json-schema-to-zod": "workspace:*",
     "zod": "3.25.76",
-    "zod-to-json-schema": "^3.25.1"
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"

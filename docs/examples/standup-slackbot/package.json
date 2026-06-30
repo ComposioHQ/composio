@@ -1,0 +1,24 @@
+{
+  "name": "standup-slackbot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@composio/core": "latest",
+    "@composio/vercel": "latest",
+    "@vercel/functions": "^3.7.2",
+    "ai": "latest",
+    "dayjs": "^1.11.21",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@vercel/node": "^5.8.18",
+    "typescript": "^5",
+    "vercel": "latest"
+  }
+}

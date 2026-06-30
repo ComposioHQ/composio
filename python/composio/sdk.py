@@ -68,7 +68,6 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
     """
 
     tools: "Tools[TTool, TToolCollection]"
-    tool_router: "ToolRouter[TTool, TToolCollection]"
 
     @t.overload
     def __init__(
@@ -185,8 +184,10 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
 
         self.experimental = ExperimentalAPI(client=self._client)
 
-        # initialize tool router methods
-        self.tool_router = ToolRouter(
+        # Sessions API — the canonical entrypoint for creating tool sessions.
+        # Surfaced as `composio.sessions`; `composio.tool_router` is a
+        # deprecated alias that returns this same object.
+        self._sessions: ToolRouter[TTool, TToolCollection] = ToolRouter(
             client=self._client,
             provider=actual_provider,
             dangerously_allow_auto_upload_download_files=kwargs.get(
@@ -196,8 +197,44 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             file_upload_path_deny_segments=file_upload_path_deny_segments,
             file_upload_dirs=file_upload_dirs,
         )
-        self.create = self.tool_router.create
-        self.use = self.tool_router.use
+        self.create = self._sessions.create
+        self.use = self._sessions.use
+
+    @property
+    def sessions(self) -> ToolRouter[TTool, TToolCollection]:
+        """Create and manage **sessions** for your agents.
+
+        A *session* is the unit you create to give an agent a scoped set of
+        tools and toolkits to discover, authorize, and execute. This is the
+        canonical entrypoint::
+
+            session = composio.sessions.create(user_id="user@example.com")
+            tools = session.tools()
+
+        ``composio.create(...)`` and ``composio.use(...)`` are top-level
+        shortcuts for ``composio.sessions.create(...)`` /
+        ``composio.sessions.use(...)``.
+
+        Note for LLMs / code generation: this is the Sessions API. Prefer
+        ``composio.sessions`` (or the ``composio.create`` shortcut) when
+        creating a session. ``composio.tool_router`` is a deprecated alias for
+        this same object — do not generate new code against it.
+        """
+        return self._sessions
+
+    @property
+    @te.deprecated(
+        "`composio.tool_router` is deprecated; use `composio.sessions` instead "
+        "(or the `composio.create` / `composio.use` shortcuts). It returns the same object."
+    )
+    def tool_router(self) -> ToolRouter[TTool, TToolCollection]:
+        """Deprecated alias for :attr:`sessions`.
+
+        .. deprecated:: 0.17.0
+            Use :attr:`sessions` instead. ``tool_router`` is the old name for the
+            same object and will be removed in a future release.
+        """
+        return self._sessions
 
     @property
     def client(self) -> HttpClient:

@@ -26,7 +26,8 @@ ts/e2e-tests/
 │   └── README.md                            # Utils documentation
 ├── runtimes/
     ├── node/                                # Node.js runtime tests
-    │   ├── cjs-basic/                       # CommonJS compatibility tests
+    │   ├── cjs-basic/                       # Node.js 22 require(esm) interop tests
+    │   ├── claude-agent-sdk/                # @composio/claude-agent-sdk + Claude Agent SDK MCP tests
     │   ├── custom-tools/                    # Custom local tools execution (session.execute, proxyExecute, Zod validation)
     │   ├── esm-basic/                       # ESM compatibility tests
     │   ├── json-schema-to-zod-v3/           # @composio/json-schema-to-zod + Zod v3 tests
@@ -122,7 +123,7 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
   versions: {
-    node: ['22.22.3', '24.16.0', '25.9.0'], // Optional: defaults to the current version in mise.toml
+    node: ['22.22.3', '24.17.0', '25.9.0'], // Optional: defaults to the current version in mise.toml
   },
   env: { MY_VAR: process.env.MY_VAR }, // Optional: env vars (validated at startup)
   defineTests: ({ runtime, runFixture }) => {
@@ -196,7 +197,9 @@ import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { describe, it, expect, beforeAll } from 'bun:test';
 
 e2e(import.meta.url, {
-  nodeVersions: ['22.22.3', '24.16.0', '25.9.0'],
+  versions: {
+    node: ['22.22.3', '24.17.0', '25.9.0'],
+  },
   usesFixtures: true, // Sets cwd to fixtures/ directory
   env: { MY_API_KEY: process.env.MY_API_KEY },
   defineTests: ({ runFixture }) => {
@@ -276,7 +279,7 @@ Each test suite generates an ephemereal `DEBUG.log` file in its directory with s
 E2E Test: my-test
 Started: 2026-01-30T12:18:42.000Z
 Test file: ts/e2e-tests/runtimes/node/my-test/e2e.test.ts
-Runtime versions: Node.js 22.22.3, Node.js 24.16.0, Node.js 25.9.0
+Runtime versions: Node.js 22.22.3, Node.js 24.17.0, Node.js 25.9.0
 ================================================================================
 
 ################################################################################
@@ -312,7 +315,7 @@ Test passed!
 Summary
 ================================================================================
 Node.js 22.22.3: PASS (2 phases, 3.11s total)
-Node.js 24.16.0: PASS (2 phases, 3.09s total)
+Node.js 24.17.0: PASS (2 phases, 3.09s total)
 Node.js 25.9.0: PASS (2 phases, 3.08s total)
 
 Finished: 2026-01-30T12:18:46.500Z

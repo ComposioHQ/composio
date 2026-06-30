@@ -2,11 +2,12 @@
 title: Sessions vs Direct Execution
 description: When to use session-based meta tools vs direct tool fetching and execution
 keywords: [session, direct execution, tool router, meta tools, architecture, decision]
+legacy: true
 ---
 
-**Sessions** give your agent [meta tools](/docs/tools-and-toolkits#meta-tools). The agent discovers which app tools to use, authenticates users, and executes tools at runtime through these meta tools.
+A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
-**Direct execution** gives your code specific tool schemas. You decide which tools to fetch, manage auth yourself, and call `tools.execute()` directly.
+**Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
 Use sessions unless you need full control over which tools are available and when they run.
 
@@ -16,16 +17,18 @@ Use sessions unless you need full control over which tools are available and whe
 | **Context cost** | Only meta tools in context, app tools loaded on demand | Every tool schema you select is loaded upfront |
 | **Guidance** | Search returns recommended steps and common pitfalls alongside schemas | You get tool schemas only |
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
-| **Auth** | [In-chat](/docs/authenticating-users/in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authenticating-users/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
-| **[Workbench](/docs/workbench)** | Built in, large responses offloaded automatically | Not available |
+| **Auth** | [In-chat](/docs/authentication#in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
+| **[Sandbox](/docs/sandbox/remote)** | Built in, large responses offloaded automatically | Not available |
 | **Human approval** | You configure approval rules on the session. Harder to intercept individual calls since tools are discovered dynamically | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
-Sessions are configurable. You can [enable or disable specific toolkits](/docs/toolkits/enable-and-disable-toolkits), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin specific [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+Sessions are configurable. [Restrict toolkits](/docs/configuring-sessions), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+
+Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the sandbox. It's the middle ground between runtime discovery and direct execution.
 
 ## Sessions
 
-`composio.create()` returns [meta tools](/docs/tools-and-toolkits#meta-tools):
+`composio.create()` returns [meta tools](/docs/how-composio-works#meta-tools):
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -75,7 +78,7 @@ Agent: "Created issue #42 on your-org/your-repo"
 ```
 
 <Callout>
-`session.tools()` returns **meta tools** (COMPOSIO_SEARCH_TOOLS, etc.), not app tools (GMAIL_SEND_EMAIL, etc.). The agent discovers app tools at runtime through search. For app tools directly, use direct execution.
+`session.tools()` returns **meta tools** (`COMPOSIO_SEARCH_TOOLS`, etc.), not app tools (`GMAIL_SEND_EMAIL`, etc.). The agent discovers app tools at runtime through search. To work with app tools directly, use direct execution.
 </Callout>
 
 ### Configuration
@@ -182,9 +185,6 @@ With direct execution, you manage [auth configs](/docs/auth-configuration/custom
 
 See the [migration guide](/docs/migration-guide/direct-to-sessions). Auth configs and connected accounts carry over.
 
-## Next steps
+## Next
 
-<Cards>
-  <Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, and connected accounts" />
-  <Card icon={<Wrench />} title="Tools and toolkits" href="/docs/tools-and-toolkits" description="How sessions discover and execute tools at runtime" />
-</Cards>
+<Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, and connected accounts" />

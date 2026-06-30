@@ -12,7 +12,7 @@
  * ```
  */
 import { ZodTypeAny, z } from 'zod/v3';
-import { logger } from '..';
+import logger from './logger';
 
 export function transform<RawInput>(raw: RawInput) {
   return {

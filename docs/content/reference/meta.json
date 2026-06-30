@@ -2,12 +2,12 @@
   "title": "Reference",
   "pages": [
     "index",
-    "authentication",
+    "authenticating-to-composio",
     "rate-limits",
     "errors",
+    "glossary",
     "api-reference",
     "v3",
-    "meta-tools",
     "sdk-reference"
   ]
 }

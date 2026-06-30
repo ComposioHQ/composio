@@ -47,7 +47,7 @@ Update the redirect URL in your Slack App under OAuth & Permissions → Redirect
 
 ## How do I set up Slack event webhooks?
 
-With Composio-managed Slack credentials, the webhook endpoint is already provisioned — just create the trigger. If you bring your own Slack OAuth app, see [Configuring the webhook endpoint](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#configuring-the-webhook-endpoint).
+With Composio-managed Slack credentials, the webhook endpoint is already provisioned, so just create the trigger. If you bring your own Slack OAuth app, see [Custom OAuth webhooks](https://docs.composio.dev/docs/setting-up-triggers/custom-oauth-webhooks).
 
 ## Why am I getting scope errors on Slack?
 
@@ -59,6 +59,6 @@ For the Slack toolkit, set `as_user=True` to post as the authenticated user. For
 
 ## Why aren't my Slack triggers working?
 
-See [Triggers troubleshooting](https://docs.composio.dev/docs/troubleshooting/triggers).
+See [Triggers](/docs/triggers).
 
 ---

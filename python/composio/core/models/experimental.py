@@ -21,10 +21,7 @@ import typing as t
 from pydantic import BaseModel
 
 from composio.client import HttpClient
-from composio.client.types import (
-    connected_account_patch_params,
-    connected_account_patch_response,
-)
+from composio.client.types import connected_account_patch_response
 
 from .custom_tool import (
     CustomTool,
@@ -80,55 +77,36 @@ class ExperimentalAPI:
             list silently re-grants access to previously-blocked users.
         :return: Response with ``id``, ``status``, and ``success``.
 
+        .. deprecated::
+            Use :meth:`composio.connected_accounts.update_acl` instead — ACL
+            updates graduated onto the ``connected_accounts`` model. This
+            experimental alias is kept only for backwards compatibility and
+            delegates to it. Prefer the ``connected_accounts`` model; do not
+            generate new code against this alias.
+
         Example:
-            composio.experimental.update_acl(
+            composio.connected_accounts.update_acl(
                 'ca_abc',
                 allow_all_users=True,
                 not_allowed_user_ids=['user_bob'],
             )
         """
-        from composio_client import BadRequestError
-
         from composio import exceptions
+
+        from .connected_accounts import ConnectedAccounts
 
         if self._client is None:
             raise exceptions.ValidationError(
                 "update_acl requires a Composio client. Access it via "
-                "composio.experimental.update_acl(...)."
-            )
-        if (
-            allow_all_users is None
-            and allowed_user_ids is None
-            and not_allowed_user_ids is None
-        ):
-            raise exceptions.ValidationError(
-                "update_acl requires at least one of allow_all_users, "
-                "allowed_user_ids, or not_allowed_user_ids"
+                "composio.connected_accounts.update_acl(...)."
             )
 
-        acl: t.Dict[str, t.Any] = {}
-        if allow_all_users is not None:
-            acl["allow_all_users"] = allow_all_users
-        if allowed_user_ids is not None:
-            acl["allowed_user_ids"] = allowed_user_ids
-        if not_allowed_user_ids is not None:
-            acl["not_allowed_user_ids"] = not_allowed_user_ids
-
-        try:
-            return self._client.connected_accounts.patch(
-                nanoid,
-                experimental={
-                    "acl_config_for_shared": t.cast(
-                        connected_account_patch_params.ExperimentalACLConfigForShared,
-                        acl,
-                    ),
-                },
-            )
-        except BadRequestError as error:
-            message = str(error)
-            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
-                raise exceptions.ComposioAclOnlyForSharedError(message) from error
-            raise
+        return ConnectedAccounts(client=self._client).update_acl(
+            nanoid,
+            allow_all_users=allow_all_users,
+            allowed_user_ids=allowed_user_ids,
+            not_allowed_user_ids=not_allowed_user_ids,
+        )
 
     @t.overload
     def tool(self, fn: t.Callable[..., t.Any], /) -> CustomTool: ...

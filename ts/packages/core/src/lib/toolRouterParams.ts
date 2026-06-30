@@ -13,6 +13,7 @@ import {
   ToolRouterToolkitsDisabledConfigSchema,
   ToolRouterToolkitsEnabledConfigSchema,
   ToolRouterUpdateSessionConfig,
+  ToolRouterSandboxConfig,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
@@ -115,8 +116,19 @@ export const transformToolRouterManageConnectionsParams = (
   };
 };
 
-export const transformToolRouterWorkbenchParams = (
-  params?: ToolRouterCreateSessionConfig['workbench']
+export const resolveToolRouterSandboxConfig = (
+  config: Pick<ToolRouterCreateSessionConfig, 'sandbox' | 'workbench'>
+): ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench'] => {
+  if (config.sandbox !== undefined && config.workbench !== undefined) {
+    throw new ValidationError(
+      'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
+    );
+  }
+  return config.sandbox ?? config.workbench;
+};
+
+export const transformToolRouterSandboxParams = (
+  params?: ToolRouterCreateSessionConfig['sandbox'] | ToolRouterCreateSessionConfig['workbench']
 ): SessionCreateParams.Workbench | undefined => {
   if (!params) {
     return undefined;
@@ -129,6 +141,9 @@ export const transformToolRouterWorkbenchParams = (
     sandbox_size: params.sandboxSize,
   };
 };
+
+/** @deprecated Renamed — use `transformToolRouterSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
+export const transformToolRouterWorkbenchParams = transformToolRouterSandboxParams;
 
 /**
  * PATCH-safe variant of transformToolRouterManageConnectionsParams.
@@ -163,16 +178,11 @@ export const transformToolRouterUpdateManageConnectionsParams = (
 };
 
 /**
- * PATCH-safe variant of transformToolRouterWorkbenchParams.
+ * PATCH-safe variant of transformToolRouterSandboxParams.
  * Does NOT apply `enable ?? true` default — only includes fields explicitly present.
  */
-export const transformToolRouterUpdateWorkbenchParams = (
-  params: {
-    enable?: boolean;
-    enableProxyExecution?: boolean;
-    autoOffloadThreshold?: number;
-    sandboxSize?: 'standard' | 'medium' | 'large' | 'xlarge';
-  }
+export const transformToolRouterUpdateSandboxParams = (
+  params: Partial<ToolRouterSandboxConfig>
 ): SessionPatchParams.Workbench => {
   const result: Record<string, unknown> = {};
   if (params.enable !== undefined) {
@@ -190,6 +200,9 @@ export const transformToolRouterUpdateWorkbenchParams = (
   return result as SessionPatchParams.Workbench;
 };
 
+/** @deprecated Renamed — use `transformToolRouterUpdateSandboxParams` instead. `workbench` is a backwards-compatible alias for `sandbox`. */
+export const transformToolRouterUpdateWorkbenchParams = transformToolRouterUpdateSandboxParams;
+
 export const transformToolRouterMultiAccountParams = (
   params?: ToolRouterCreateSessionConfig['multiAccount']
 ): SessionCreateParams.MultiAccount | undefined => {
@@ -200,7 +213,8 @@ export const transformToolRouterMultiAccountParams = (
   const transformedParams = {
     enable: params.enable,
     max_accounts_per_toolkit: params.maxAccountsPerToolkit,
-    require_explicit_selection: params.requireExplicitSelection ?? (params.enable ? true : undefined),
+    require_explicit_selection:
+      params.requireExplicitSelection ?? (params.enable ? true : undefined),
   };
 
   if (
@@ -258,14 +272,17 @@ export const transformToolRouterUpdateParams = (
     if (config.manageConnections === null) {
       params.manage_connections = null;
     } else {
-      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(config.manageConnections);
+      params.manage_connections = transformToolRouterUpdateManageConnectionsParams(
+        config.manageConnections
+      );
     }
   }
-  if (config.workbench !== undefined) {
-    if (config.workbench === null) {
+  const sandboxConfig = config.sandbox !== undefined ? config.sandbox : config.workbench;
+  if (sandboxConfig !== undefined) {
+    if (sandboxConfig === null) {
       params.workbench = null;
     } else {
-      params.workbench = transformToolRouterUpdateWorkbenchParams(config.workbench);
+      params.workbench = transformToolRouterUpdateSandboxParams(sandboxConfig);
     }
   }
   if (config.multiAccount !== undefined) {
@@ -274,8 +291,10 @@ export const transformToolRouterUpdateParams = (
     } else {
       const ma: Record<string, unknown> = {};
       if (config.multiAccount.enable !== undefined) ma.enable = config.multiAccount.enable;
-      if (config.multiAccount.maxAccountsPerToolkit !== undefined) ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
-      if (config.multiAccount.requireExplicitSelection !== undefined) ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
+      if (config.multiAccount.maxAccountsPerToolkit !== undefined)
+        ma.max_accounts_per_toolkit = config.multiAccount.maxAccountsPerToolkit;
+      if (config.multiAccount.requireExplicitSelection !== undefined)
+        ma.require_explicit_selection = config.multiAccount.requireExplicitSelection;
       params.multi_account = ma as SessionPatchParams.MultiAccount;
     }
   }

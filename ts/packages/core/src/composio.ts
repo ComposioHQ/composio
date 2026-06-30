@@ -15,12 +15,12 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
+import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
 import { ToolRouter } from './models/ToolRouter';
-import { ToolRouterCreateSessionConfig, Session } from './types/toolRouter.types';
-import type { CustomTool, CustomToolkit } from './types/customTool.types';
+import { Sessions } from './models/Sessions';
 import { CONFIG_DEFAULTS } from './utils/config-defaults';
 import { expandHomeAndResolve, expandHomeAndResolveMany } from './utils/fileDirs';
 export type ComposioConfig<
@@ -197,17 +197,33 @@ export class Composio<
   connectedAccounts: ConnectedAccounts;
   /**
    * Experimental SDK methods whose shape may change in future releases.
-   * Houses stateful operations like {@link Experimental.updateAcl} that
-   * take a client and perform I/O. Stateless experimental factories
-   * (e.g. `experimental_createTool`) stay at the top level.
+   * Prefer domain-specific mounts (for example
+   * `composio.connectedAccounts.updateAcl(...)`) when available; this
+   * namespace keeps compatibility aliases while APIs are experimental.
+   * Stateless experimental factories (e.g. `experimental_createTool`) stay
+   * at the top level.
    * @experimental
    */
   experimental: Experimental;
-  /** Model Context Protocol server management */
+  /**
+   * Model Context Protocol server management.
+   * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`
+   * returns a session that exposes `session.mcp.url` / `session.mcp.headers`. MCP is now opt-in
+   * per session; this standalone server-management API is kept only for backwards compatibility.
+   * Prefer the session MCP endpoint; do not generate new code against `composio.mcp`.
+   * See https://docs.composio.dev/docs/sessions-via-mcp
+   */
   mcp: MCP;
   /**
-   * Experimental feature, use with caution
-   * @experimental
+   * Create and reuse Composio sessions.
+   *
+   * Prefer `composio.sessions.create(...)` for new code. The top-level
+   * `composio.create(...)` method is kept as an alias.
+   */
+  sessions: Sessions<unknown, unknown, TProvider>;
+  /**
+   * Legacy alias for `composio.sessions`.
+   * @deprecated Use `composio.sessions` instead — `toolRouter` was renamed to `sessions` and is kept only for backwards compatibility. Prefer `composio.sessions`; do not generate new code against `composio.toolRouter`.
    */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
   /**
@@ -226,7 +242,12 @@ export class Composio<
    * const composio = new Composio();
    * const userId = 'user_123';
    *
-   * const session = await composio.create(userId, {
+   * const session = await composio.sessions.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * // Backwards-compatible alias:
+   * const same = await composio.create(userId, {
    *  manageConnections: true,
    * });
    *
@@ -235,21 +256,20 @@ export class Composio<
    * console.log(session.tools());
    * ```
    */
-  create: (
-    userId: string,
-    routerConfig?: ToolRouterCreateSessionConfig
-  ) => Promise<Session<unknown, unknown, TProvider>>;
+  create: Sessions<unknown, unknown, TProvider>['create'];
 
   /**
    * Use an existing tool router session
    *
    * @param id {string} The id of the session to use
+   * @param options {object} Custom tools / toolkits to attach to the session
+   * @param requestOptions {ComposioRequestOptions} Per-request cancellation
+   *   options. The supplied AbortSignal aborts the underlying session
+   *   retrieve/attach call only. Subsequent session method calls accept
+   *   their own per-call requestOptions.
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    */
-  use: (
-    id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[] }
-  ) => Promise<Session<unknown, unknown, TProvider>>;
+  use: Sessions<unknown, unknown, TProvider>['use'];
 
   /**
    * Creates a new instance of the Composio SDK.
@@ -341,14 +361,18 @@ export class Composio<
     });
     this.connectedAccounts = new ConnectedAccounts(this.client);
     this.experimental = new Experimental(this.client);
-    this.toolRouter = new ToolRouter(this.client, this.config);
+    this.sessions = new Sessions(this.client, this.config);
+    this.toolRouter = this.sessions;
 
     /**
-     * Initialize tool router methods
-     * Properly bind the methods to maintain the correct 'this' context
+     * Initialize session aliases.
+     * Properly bind the methods to maintain the correct 'this' context.
      */
-    this.create = this.toolRouter.create.bind(this.toolRouter);
-    this.use = this.toolRouter.use.bind(this.toolRouter);
+    // Cast: Function.prototype.bind collapses the create/use overloads to a
+    // single signature; re-assert the overloaded type. Runtime behaviour is
+    // unchanged — bind only rebinds `this`.
+    this.create = this.sessions.create.bind(this.sessions) as Composio<TProvider>['create'];
+    this.use = this.sessions.use.bind(this.sessions) as Composio<TProvider>['use'];
 
     /**
      * Initialize the client telemetry.
@@ -416,7 +440,9 @@ export class Composio<
    * The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
    * but allows you to specify custom request options that will be used for all API calls made through this session.
    *
-   * @deprecated DEPRECATED: This method will be removed in a future version of the SDK.
+   * @deprecated Will be removed in a future version of the SDK. Instead, construct a new
+   *   instance directly with the headers you need: `new Composio({ ...existingConfig, defaultHeaders })`.
+   *   For one-off overrides, pass per-call `requestOptions` where supported.
    *
    * @param {MergedRequestInit} fetchOptions - Custom request options to be used for all API calls in this session.
    *                                          This follows the Fetch API RequestInit interface with additional options.

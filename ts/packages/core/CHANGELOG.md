@@ -1,12 +1,162 @@
 # @composio/core
 
+## 0.13.1
+
+### Patch Changes
+
+- 605a726: Add Tool Router session deletion APIs.
+
+## 0.13.0
+
+### Minor Changes
+
+- d17a268: Add the first-class `composio.sessions.create()` API while keeping `composio.create()` as an alias, expose the experimental shared-connection ACL patch helper as `connectedAccounts.updateAcl()` while keeping `experimental.updateAcl()` as an alias, and include SDK docs/source in the published package.
+
+  **MCP is now opt-in.** Sessions return native tools by default; the hosted MCP endpoint is only surfaced on the type when you create the session with `{ mcp: true }`. The default `create()` / `use()` now return `SessionWithoutMcp` (the runtime object is unchanged — `session.mcp` still exists at runtime — but it is no longer in the type).
+
+  Migration: read `session.mcp` only after creating with `{ mcp: true }`.
+
+- d17a268: Surface the resolved workbench config on Tool Router sessions.
+
+  - `Session.workbench` is now populated from the API response (on create/retrieve/attach/update). It exposes the resolved workbench config, e.g. `session.workbench?.enable` (defaults to `true` server-side).
+
+  This lets callers create a session with the remote workbench disabled (`workbench: { enable: false }`) and detect that state — the foundation for running code in a sandbox you own via the experimental `@composio/experimental/workbench` helpers.
+
+### Patch Changes
+
+- d17a268: Prefer `sandbox` for session code-execution configuration while continuing to accept the existing `workbench` alias.
+- d17a268: Add `triggers.parse()` to parse and optionally verify incoming webhook requests.
+- d17a268: Add `triggers.setWebhookSubscription()` to create or update the project webhook subscription from the TypeScript SDK.
+
+## 0.12.0
+
+### Minor Changes
+
+- a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
+- dfd7a08: Add per-request cancellation to public SDK methods via a new `ComposioRequestOptions` (`{ signal?: AbortSignal }`) trailing argument, plus a typed `ComposioRequestCancelledError` for detecting caller-initiated aborts.
+
+  Without this, a slow `tools.get` or `tools.execute` had no way to be cancelled — a 100s search would block the calling agent indefinitely. The new shape:
+
+  ```typescript
+  try {
+    const tools = await composio.tools.get(
+      'user_1',
+      { search: 'send email', limit: 50 },
+      { signal: AbortSignal.timeout(5_000) }
+    );
+  } catch (err) {
+    if (err instanceof ComposioRequestCancelledError) {
+      return;
+    }
+    throw err;
+  }
+  ```
+
+  The signal is forwarded to the underlying `@composio/client` fetch. Any abort error (`APIUserAbortError`, `AbortError`, or `DOMException(name='AbortError')`) coming back is normalized to `ComposioRequestCancelledError` so callers can `instanceof`-detect cancellation without unwrapping nested causes. Catch-and-wrap paths in `tools.execute` / `tools.getRawComposioToolBySlug` / `toolkits.get` re-throw the cancellation error rather than remapping it to `ComposioToolExecutionError` / `ComposioToolNotFoundError` / `ComposioToolkitFetchError`.
+
+  Wired through on:
+  - **Tools**: `get`, `getRawComposioTools`, `getRawComposioToolBySlug`, `getRawToolRouterSessionTools`, `execute`, `executeSessionTool`, `getToolsEnum`, `getInput`, `proxyExecute`
+  - **Toolkits**: `get`, `listCategories`
+  - **AuthConfigs**: `list`, `create`, `get`, `update`, `delete`, `updateStatus`, `enable`, `disable`
+  - **ConnectedAccounts**: `list`, `get`, `delete`, `refresh`, `updateStatus`, `enable`, `disable`, `update`
+  - **Triggers**: `listActive`, `create`, `update`, `delete`, `enable`, `disable`, `listTypes`, `getType`, `listEnum`
+  - **MCP**: `create`, `list`, `get`, `delete`, `update`, `generate`
+  - **ToolRouter** (`composio.create` / `composio.use`, `composio.toolRouter.create` / `.use`) — long-running session-creation paths
+  - **ToolRouterSession**: `authorize`, `toolkits`, `search`, `execute`, `proxyExecute`, `update`
+
+  ### Custom-tool cooperative cancellation
+
+  Native tool execution is cancelled by the SDK (the underlying `fetch` is aborted). Custom tools are different — the SDK can't preempt user-supplied JavaScript. Two affordances are added so callers get sensible behavior anyway:
+
+  1. **Pre-execute signal check**: if `signal.aborted` is true before the user's `execute` runs, the SDK throws `ComposioRequestCancelledError` and never invokes user code.
+  2. **Cooperative signal forwarding**: the same `AbortSignal` is exposed via `SessionContext.signal` for Tool Router custom tools. Long-running implementations can wire `ctx.signal` into their own `fetch` (or any abortable IO) to abort mid-execution; the resulting `AbortError` is normalized to `ComposioRequestCancelledError` by the SDK.
+
+  ```typescript
+  import { experimental_createTool } from '@composio/core';
+
+  const longRunningFetch = experimental_createTool('LONG_RUNNING_FETCH', {
+    name: 'Long-running fetch',
+    description: 'Fetches a URL with cooperative cancellation',
+    inputParams: z.object({ url: z.string() }),
+    execute: async (input, ctx) => {
+      // Pass ctx.signal into fetch so a session.execute(...) abort cancels
+      // the in-flight HTTP request mid-flight.
+      const resp = await fetch(input.url, { signal: ctx.signal });
+      return { result: await resp.json() };
+    },
+  });
+  ```
+
+- 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
+- 4b76dbf: Remove the deprecated `uuid` field from the auth config retrieve/list response type.
+
+  The platform has removed the deprecated V1/V2 UUID-mirror field from V3 API responses (it was a mirror of the canonical nanoid `id`). The SDK no longer reads or re-exposes `uuid` on `AuthConfigRetrieveResponse` (and therefore on the items of `AuthConfigListResponse`).
+
+  This is technically a breaking change to the SDK response type: consumers should use `id` instead of `uuid`. The `expectedInputFields` field is unaffected — it remains a top-level field on the API response.
+
+### Patch Changes
+
+- 552859a: Expose `search` and `showDisabled` filters on `authConfigs.list()`.
+- 23f9053: Replace `chalk` with `picocolors` for colored error and log output. The two render identically, but `picocolors` is a fraction of the size (~0.8 kB gzipped vs chalk's much larger footprint), shrinking the bundled package.
+- 507318d: Add a provider-agnostic JSON-schema property-key sanitizer: `sanitizeSchemaPropertyKeys(schema, policy)`, `restoreOriginalKeys(value, mapping)`, `mappingHasRenames(mapping)`, and the `KeyMapping` / `KeySanitizationPolicy` types.
+
+  Some providers constrain the characters and length of tool `input_schema` property keys and reject the whole request on a single violation. This utility rewrites offending keys to conforming aliases (recursing through `properties`, array `items`/`prefixItems`, the composition keywords `allOf`/`anyOf`/`oneOf` and `not`/`if`/`then`/`else`, plus `additionalProperties`/`patternProperties`/`$defs`/`contains`) and records a schema-shaped reverse mapping so the original parameter names can be restored before execution. The _constraint_ is injected as a `KeySanitizationPolicy`, so the traversal, collision handling, prototype safety, and depth cap stay provider-agnostic. The `@composio/anthropic` provider now consumes it.
+
+- 6a4cb54: Preserve root `$defs` / `definitions` blocks on tool parameter schemas and dereference them in the Node file modifier, so auto file upload/download detection works when `file_uploadable` or `file_downloadable` is hidden behind an internal `$ref`.
+- cbbad15: Improve Zod compatibility at the SDK schema boundary. Custom tools now convert both `zod/v3` and Zod v4 schemas to JSON Schema correctly instead of degrading Zod v4 object schemas to empty schemas. `@composio/core` now exposes `jsonSchemaToZodShape` via `@composio/core/utils/json-schema`, and the Claude Agent SDK provider uses that core subpath instead of converting to a full Zod object and casting `.shape` out of it.
+- Updated dependencies [025a657]
+  - @composio/json-schema-to-zod@0.2.0
+
+## 0.11.0
+
+### Minor Changes
+
+- a94715f: Forward `userId` when creating trigger instances so trigger 2FA flows can verify connected account ownership.
+- 44e5458: Remove the legacy `composio.tools.createCustomTool(...)` in-memory registry API. Use Tool Router custom tools via `experimental_createTool`, `experimental_createToolkit`, and `composio.create(..., { experimental: { customTools, customToolkits } })` instead.
+
+### Patch Changes
+
+- 22a9171: Defer telemetry batch and error sends so instrumentation does not wait for telemetry network requests before returning SDK results or rethrowing SDK errors.
+- 93b67e8: Fix automatic file upload/download substitution for file schemas that accept either a single file or a list of files.
+
+  The file modifier now selects composed-schema branches by runtime value shape, so `anyOf(file, array<file>)` uploads or downloads each file when the tool receives a list while preserving existing single-file behavior.
+
+- b69cef1: Tolerate dangling `$ref` pointers in tool schemas the Composio API ships without a matching `$defs` entry. Some toolkits (e.g. `GMAIL_FETCH_EMAILS`) emit `outputParameters` with `"$ref": "#/$defs/FetchEmailsResponse"` while never declaring a top-level `$defs` block. After the strict resolver shipped with the previous Mastra fix, this caused `composio.tools.get(...)` to throw `JsonSchemaRefResolutionError` upfront, making every Gmail / Slack / Google-Calendar tool unusable through `MastraProvider`. The SDK now degrades the unresolvable branch to a permissive object schema and surfaces a single observability warning per `(toolSlug, ref)` pair instead of crashing.
+  - `dereferenceJsonSchema` accepts a new optional second argument `{ onUnresolved?: 'throw' | 'sentinel'; onReplace?: (ref, reason) => void }`. Default behavior is unchanged (`'throw'`) — first-party / custom-tool schemas with a typo'd `$ref` still surface as a hard error. Pass `'sentinel'` to replace unresolved branches with the cycle-break sentinel (`{ type: 'object', additionalProperties: true }`) that the resolver already uses for `$ref` cycles. The replaced sentinel carries a default `description` hint so LLMs consuming the wrapped tool's schema get an in-band signal that the branch is opaque; a caller-provided `description` sibling overrides the default (Draft 2020-12 sibling-keyword merge). Safety caps (`MAX_REF_CHAIN_DEPTH`, `MAX_NODE_DEPTH`) keep throwing in both modes. New `UnresolvedRefStrategy`, `UnresolvedRefReason`, and `DereferenceJsonSchemaOptions` type exports.
+  - `MastraProvider.wrapTool` opts both `inputParameters` and `outputParameters` into `'sentinel'` mode and emits one `logger.warn` per `(toolSlug, ref)` pair via the provider-scoped dedup `Set`. User-controlled segments in the warning (`tool.slug`, `toolkit.slug`, `ref`) are `JSON.stringify`d to neutralize embedded newlines / ANSI escapes / control bytes that could otherwise forge log lines (CWE-117). A matching one-shot telemetry event (`composio.mastra.wrapTool.danglingRef`) fires next to the warn so the Composio team has aggregate visibility into which toolkits are affected; the event respects `COMPOSIO_DISABLE_TELEMETRY=true`.
+  - The `telemetry` instance from `@composio/core` is now publicly re-exported alongside `logger`, so providers can emit aggregate signals without reaching into the package's internals.
+  - Resolvable `$defs` / `definitions` continue to be inlined exactly as before — no regression in the type-info preservation contract introduced by the previous Mastra fix.
+
+- 1ba66ca: Fix `tools.execute` (and `tools.get` / `tools.list`) failing with a `ZodError` for every tool from an MCP-backed toolkit (e.g. `granola_mcp`, `apify_mcp`, `tavily_mcp`).
+
+  MCP toolkits don't declare an output schema, and the Composio API serializes that as `output_parameters: {}`. The SDK's `ParametersSchema` required `{ type: 'object', properties: {...} }`, so `transformToolCases` rejected the response and `getRawComposioToolBySlug` — called by `execute` and the list path — threw.
+
+  The SDK now normalizes empty (`{}`), `null`, and missing `input_parameters` / `output_parameters` payloads to `undefined` before validation. `outputParameters` was already declared `.optional()` in the public `Tool` type, so this preserves the contract: "undefined means no declared schema." Tools that _do_ declare a schema continue to be validated strictly.
+
+  No public API change; no toolkit allow-list.
+
+- ce4b213: fix(providers): normalize string tool-call arguments across all providers
+
+  Models occasionally emit tool-call arguments as a JSON string instead of an
+  object (most visibly with `COMPOSIO_MULTI_EXECUTE_TOOL` on the Vercel AI SDK),
+  which broke downstream validation with errors like
+  `tool_use.input: Input should be a valid dictionary`.
+
+  `@composio/core` now exposes a single `normalizeToolArguments` helper, and every
+  provider routes model-supplied arguments through it. Object payloads pass
+  through unchanged, JSON strings are parsed, empty/`null` payloads become `{}`,
+  and anything that cannot resolve to an object throws a typed
+  `ComposioInvalidToolArgumentsError` instead of a raw `SyntaxError` or a silently
+  forwarded malformed string. This replaces the inconsistent per-provider guards
+  that previously existed only in vercel, cloudflare and openai-agents.
+
 ## 0.10.0
 
 ### Minor Changes
 
 - 42ebff3: feat(connected-accounts): namespace SHARED-connection surface under `experimental`
 
-  Aligns the TypeScript SDK with the experimental wire shape used by Shared Connections. The flat `accountType` / `aclConfigForShared` options on `connectedAccounts.link()` and `session.authorize()` have moved under a single `experimental` block, and `connectedAccounts.updateAcl()` has moved off the class onto a top-level `experimental_updateAcl(composio, id, opts)` export — same precedent as `experimental_createTool` / `experimental_createToolkit`.
+  Aligns the TypeScript SDK with the experimental wire shape used by Shared Connections. The flat `accountType` / `aclConfigForShared` options on `connectedAccounts.link()` and `session.authorize()` have moved under a single `experimental` block. ACL updates remain on the domain-specific `connectedAccounts.updateAcl()` mount, with `experimental.updateAcl()` kept as an experimental compatibility alias.
 
   The `experimental` namespace is the signal that the shape may change in future releases. Pinning a SHARED connection in a session config (`connectedAccounts: { gmail: [...] }`) and direct execute by `connectedAccountId` are unchanged — only the connection-create / patch / authorize surfaces are namespaced.
 
@@ -35,7 +185,7 @@
       aclConfigForShared: { allowAllUsers: true },
     },
   });
-  await experimental_updateAcl(composio, 'ca_abc', { allowAllUsers: true });
+  await composio.connectedAccounts.updateAcl('ca_abc', { allowAllUsers: true });
   await session.authorize('github', {
     experimental: {
       accountType: 'SHARED',

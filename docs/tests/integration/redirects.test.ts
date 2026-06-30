@@ -10,7 +10,7 @@ import { fetchPage, fetchNoRedirect, BASE_URL } from "./helpers";
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   { from: "/", to: "/docs" },
-  { from: "/examples", to: "/cookbooks" },
+  { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
   { from: "/providers/openai", to: "/docs/providers/openai" },
   { from: "/providers/anthropic", to: "/docs/providers/anthropic" },
@@ -23,16 +23,20 @@ const REDIRECTS = [
   { from: "/docs/providers/langgraph", to: "/docs/providers/langchain" },
   { from: "/tools", to: "/toolkits" },
   { from: "/docs/fetching-tools", to: "/docs/tools-direct/fetching-tools" },
-  { from: "/docs/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/custom-tools/github", to: "/docs/toolkits/custom-tools-and-toolkits" },
-  { from: "/docs/how-tools-work", to: "/docs/tools-and-toolkits" },
+  { from: "/docs/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/tools-direct/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/custom-tools/github", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/how-tools-work", to: "/docs/how-composio-works" },
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
+  { from: "/docs/workbench", to: "/docs/sandbox/remote" },
+  { from: "/docs/sandbox", to: "/docs/sandbox/remote" },
+  { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
+  { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
 ];
 
 describe("Redirects - key patterns", () => {

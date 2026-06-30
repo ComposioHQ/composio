@@ -407,6 +407,74 @@ class ConnectedAccounts:
             connection=connection if connection is not None else omit,
         )
 
+    def update_acl(
+        self,
+        nanoid: str,
+        *,
+        allow_all_users: t.Optional[bool] = None,
+        allowed_user_ids: t.Optional[t.List[str]] = None,
+        not_allowed_user_ids: t.Optional[t.List[str]] = None,
+    ) -> connected_account_patch_response.ConnectedAccountPatchResponse:
+        """
+        Update the per-user ACL on a SHARED connected account. Experimental —
+        shape may change in future releases.
+
+        Only valid on SHARED connections; raises
+        ``ComposioAclOnlyForSharedError`` on a PRIVATE connection. Omit a
+        parameter to leave it unchanged; pass an empty list to clear an
+        allow/deny list. At least one parameter must be provided.
+
+        :param nanoid: The connected account ID (``ca_xxx``).
+        :param allow_all_users: When True, any ``user_id`` may use this
+            SHARED connection (subject to the deny list).
+        :param allowed_user_ids: Explicit list of allowed ``user_id`` strings.
+            Pass ``[]`` to clear.
+        :param not_allowed_user_ids: Explicit deny list (wins over allow on
+            conflict). Pass ``[]`` to clear — note that clearing the deny
+            list silently re-grants access to previously-blocked users.
+        :return: Response with ``id``, ``status``, and ``success``.
+
+        Example:
+            composio.connected_accounts.update_acl(
+                'ca_abc',
+                allow_all_users=True,
+                not_allowed_user_ids=['user_bob'],
+            )
+        """
+        if (
+            allow_all_users is None
+            and allowed_user_ids is None
+            and not_allowed_user_ids is None
+        ):
+            raise exceptions.ValidationError(
+                "update_acl requires at least one of allow_all_users, "
+                "allowed_user_ids, or not_allowed_user_ids"
+            )
+
+        acl: t.Dict[str, t.Any] = {}
+        if allow_all_users is not None:
+            acl["allow_all_users"] = allow_all_users
+        if allowed_user_ids is not None:
+            acl["allowed_user_ids"] = allowed_user_ids
+        if not_allowed_user_ids is not None:
+            acl["not_allowed_user_ids"] = not_allowed_user_ids
+
+        try:
+            return self._client.connected_accounts.patch(
+                nanoid,
+                experimental={
+                    "acl_config_for_shared": t.cast(
+                        connected_account_patch_params.ExperimentalACLConfigForShared,
+                        acl,
+                    ),
+                },
+            )
+        except BadRequestError as error:
+            message = str(error)
+            if ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT in message:
+                raise exceptions.ComposioAclOnlyForSharedError(message) from error
+            raise
+
     def initiate(
         self,
         user_id: str,

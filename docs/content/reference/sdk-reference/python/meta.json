@@ -8,7 +8,6 @@
     "connected-accounts",
     "auth-configs",
     "mcp",
-    "tool-router-session",
-    "session-context-impl"
+    "session"
   ]
 }

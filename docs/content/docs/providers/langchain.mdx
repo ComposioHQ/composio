@@ -4,7 +4,7 @@ description: Build an agent with LangChain or LangGraph and enable it to use 100
 keywords: [langchain, langgraph]
 ---
 
-Composio integrates with [LangChain](https://python.langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/). Pick the tab that matches your integration.
+The LangChain provider formats Composio tools for [LangChain](https://python.langchain.com/) and [LangGraph](https://langchain-ai.github.io/langgraph/) agents. Pick the tab that matches your setup.
 
 <IntegrationTabs tabs={[
   { value: "langchain", label: "LangChain" },
@@ -13,7 +13,7 @@ Composio integrates with [LangChain](https://python.langchain.com/) and [LangGra
 
 <IntegrationContent value="langchain">
 
-The LangChain provider transforms Composio tools into LangChain's StructuredTool format with built-in execution.
+The LangChain provider transforms each Composio tool into a LangChain [`DynamicStructuredTool`](https://js.langchain.com/docs/concepts/tools/) with built-in execution. You can hand the tools to `create_agent` in Python or wire them into a graph node in TypeScript, and the framework runs the tool loop for you.
 
 <Steps>
 <Step>
@@ -130,7 +130,7 @@ console.log(finalState.messages[finalState.messages.length - 1].content);
 
 <IntegrationContent value="langgraph">
 
-The LangGraph provider transforms Composio tools into LangChain StructuredTool format for use with LangGraph agents. LangGraph integration is Python-only.
+The LangGraph provider transforms Composio tools into the same LangChain `DynamicStructuredTool` format, ready to use with LangGraph agents. LangGraph integration is Python-only.
 
 <Steps>
 <Step>
@@ -181,3 +181,7 @@ print(result["messages"][-1].content)
 </IntegrationContent>
 
 </IntegrationTabs>
+
+## Next
+
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

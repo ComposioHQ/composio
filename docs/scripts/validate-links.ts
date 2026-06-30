@@ -11,14 +11,14 @@ import GithubSlugger from 'github-slugger';
 import {
   source,
   getReferenceSource,
-  cookbooksSource,
+  examplesSource,
   toolkitsSource,
 } from '../lib/source';
 
 type AnySource =
   | typeof source
   | Awaited<ReturnType<typeof getReferenceSource>>
-  | typeof cookbooksSource
+  | typeof examplesSource
   | typeof toolkitsSource;
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
@@ -92,10 +92,10 @@ async function getDynamicToolkitEntries() {
 
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
-  const [docsEntries, refEntries, cookbookEntries, toolkitEntries, dynamicToolkitEntries] = await Promise.all([
+  const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] = await Promise.all([
     buildPopulateEntries(source),
     buildPopulateEntries(referenceSource),
-    buildPopulateEntries(cookbooksSource),
+    buildPopulateEntries(examplesSource),
     buildPopulateEntries(toolkitsSource),
     getDynamicToolkitEntries(),
   ]);
@@ -106,7 +106,7 @@ async function checkLinks() {
       // Keys must include (home) route group to match app directory structure
       '(home)/docs/[[...slug]]': docsEntries,
       '(home)/reference/[[...slug]]': refEntries,
-      '(home)/cookbooks/[[...slug]]': cookbookEntries,
+      '(home)/examples/[[...slug]]': exampleEntries,
       '(home)/toolkits/[[...slug]]': [...toolkitEntries, ...dynamicToolkitEntries],
     },
   });
@@ -139,7 +139,7 @@ async function checkLinks() {
 
 async function getFiles(): Promise<FileObject[]> {
   const referenceSource = await getReferenceSource();
-  const sources = [source, referenceSource, cookbooksSource, toolkitsSource];
+  const sources = [source, referenceSource, examplesSource, toolkitsSource];
   const allFiles: FileObject[] = [];
 
   for (const src of sources) {

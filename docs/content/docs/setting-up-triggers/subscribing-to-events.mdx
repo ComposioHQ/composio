@@ -1,163 +1,18 @@
 ---
-title: Subscribing to events
-description: Receive trigger events via webhooks or SDK subscriptions
-keywords: [webhooks, subscribe, events, webhook payload, V3]
+title: Receiving events
+description: Get trigger events locally with an SDK subscription or in production over your webhook URL
+keywords: [webhooks, subscribe, parse, events, webhook payload, realtime, polling]
 ---
 
-## Webhooks
+Once a trigger is active, its events come to you as the same payload, whether you're testing locally or running in production. Develop against your local handler first, then point Composio at your production URL when you ship.
 
-Webhooks are the recommended way to receive trigger events in production. To start receiving events, create a webhook subscription with your endpoint URL and select which event types you want to receive. You can subscribe to any combination:
+## Receive events locally
 
-| Event type | Description |
-|------------|-------------|
-| `composio.trigger.message` | Fired when a trigger receives data from an external service. |
-| `composio.connected_account.expired` | Fired when a connected account expires and needs re-authentication. See [Subscribing to connection expiry events](/docs/subscribing-to-connection-expiry-events). |
-| `composio.trigger.disabled` | **Fired when** Composio automatically disables a trigger — expired connection, webhook refresh failure, or unhealthy polling. **Not fired when** you disable a trigger through the manage API or deactivate its connected account via `PATCH /api/v3/connected_accounts/{id}/status`. |
+While developing, you want trigger events on your machine. The best option forwards them to the real webhook handler you'll run in production, so you test the exact path (including `parse()` and signature verification) before you ship.
 
-Set your webhook URL in the [dashboard settings](https://dashboard.composio.dev/~/project/settings/webhook) or via the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions):
+### Quick look with `subscribe()`
 
-```bash
-curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
-  -H "X-API-KEY: <your-composio-api-key>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "webhook_url": "https://example.com/webhook",
-    "enabled_events": ["composio.trigger.message"]
-  }'
-```
-
-<Callout>
-Your webhook endpoint must be publicly accessible — Composio's outbound IPs are dynamic, so IP allowlisting and private/VPN-only endpoints will not work. Use [signature verification](/docs/webhook-verification) to authenticate payloads instead.
-</Callout>
-
-<Callout type="warn">
-The response includes a `secret` for [verifying webhook signatures](/docs/webhook-verification). Store it securely.
-</Callout>
-
-### Handling events
-
-All events arrive at the same endpoint. Route on the `type` field to handle each event type:
-
-<Callout>
-[Inspect the payload schema](#inspecting-trigger-payload-schemas) for a trigger before writing your handler. See [Webhook payload (V3)](#webhook-payload-v3) for the full event structure.
-</Callout>
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import WebhookEventType
-
-@app.post("/webhook")
-async def webhook_handler(request: Request):
-    payload = await request.json()
-    event_type = payload.get("type")
-
-    if event_type == WebhookEventType.TRIGGER_MESSAGE:
-        trigger_slug = payload["metadata"]["trigger_slug"]
-        event_data = payload["data"]
-
-        if trigger_slug == "GITHUB_COMMIT_EVENT":
-            print(f"New commit by {event_data['author']}: {event_data['message']}")
-
-    # Handle connected account expired events
-
-    return {"status": "ok"}
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-type NextApiRequest = { body: any };
-type NextApiResponse = { status: (code: number) => { json: (data: any) => void } };
-// ---cut---
-export default async function webhookHandler(req: NextApiRequest, res: NextApiResponse) {
-  const payload = req.body;
-
-  if (payload.type === 'composio.trigger.message') {
-    const triggerSlug = payload.metadata.trigger_slug;
-    const eventData = payload.data;
-
-    if (triggerSlug === 'GITHUB_COMMIT_EVENT') {
-      console.log(`New commit by ${eventData.author}: ${eventData.message}`);
-    }
-  }
-
-  // Handle connected account expired events
-
-  res.status(200).json({ status: 'ok' });
-}
-```
-  </Tab>
-</Tabs>
-
-<Callout type="warn">
-Always [verify webhook signatures](/docs/webhook-verification) in production to ensure payloads are authentic.
-</Callout>
-
-### Inspecting trigger payload schemas
-
-Each trigger type defines the schema of event data it sends. Use `get_type()`/`getType()` to inspect it before writing your handler:
-
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
-print(trigger_type.payload)
-# Returns: {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-const triggerType = await composio.triggers.getType("GITHUB_COMMIT_EVENT");
-console.log(triggerType.payload);
-// Returns: {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
-```
-  </Tab>
-</Tabs>
-
-The payload schema tells you what fields will be in the `data` object of the webhook event.
-
-### Webhook payload (V3)
-
-New organizations receive V3 payloads by default. V3 separates event metadata from the actual event data:
-
-```json
-{
-  "id": "msg_abc123",
-  "type": "composio.trigger.message",
-  "metadata": {
-    "log_id": "log_abc123",
-    "trigger_slug": "GITHUB_COMMIT_EVENT",
-    "trigger_id": "ti_xyz789",
-    "connected_account_id": "ca_def456",
-    "auth_config_id": "ac_xyz789",
-    "user_id": "user-id-123435"
-  },
-  "data": {
-    "commit_sha": "a1b2c3d",
-    "message": "fix: resolve null pointer",
-    "author": "jane"
-  },
-  "timestamp": "2026-01-15T10:30:00Z"
-}
-```
-
-<Callout>
-See [webhook payload versions](/docs/webhook-verification#webhook-payload-versions) for V2 and V1 formats.
-</Callout>
-
-## Testing locally
-
-### SDK subscriptions
-
-Subscribe to trigger events directly through the SDK without setting up a webhook endpoint. Uses WebSockets under the hood.
+`subscribe()` streams events straight to your process over a WebSocket, with no webhook URL, no tunnel, and no signing. It's the fastest way to eyeball what a trigger sends, but it bypasses your real webhook handler. Use it only for basic prototyping; for anything you intend to ship, forward events to your handler with one of the options below.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
@@ -182,55 +37,366 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 
 await composio.triggers.subscribe(
-    (data) => {
-        console.log('Event received:', data);
-    },
-    { triggerId: 'your_trigger_id' }
+  data => {
+    console.log('Event received:', data);
+  },
+  { triggerId: 'your_trigger_id' }
 );
 ```
   </Tab>
 </Tabs>
 
-### Using ngrok
+Filter the stream by `triggerId`, `triggerSlug`, `connectedAccountId`, `toolkits`, or `userId`, or pass no filters to receive every trigger event in the project.
 
-To test the full webhook flow locally, use [ngrok](https://ngrok.com) to expose your local server:
+### Forward to your local handler with the CLI (recommended)
+
+The Composio CLI streams realtime events and forwards each one to your local URL, signed exactly like production. No public URL, no tunnel, and it runs your real handler (and [`parse()`](#handling-events)) end to end.
+
+```bash
+composio dev triggers listen --forward "http://localhost:8000/webhooks/composio"
+```
+
+Events are signed with `COMPOSIO_WEBHOOK_SECRET` if it's set, otherwise the CLI prints a generated secret to verify against. Filter the stream with `--toolkits`, `--trigger-slug`, or `--trigger-id`, and tee events to a file with `--out events.jsonl`.
+
+### Cloudflare Tunnel
+
+Expose your local server with [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/), no account needed for quick runs:
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+Register the printed `trycloudflare.com` URL as your [webhook URL](#receive-events-in-production), then events reach your handler at `http://localhost:8000/webhooks/composio`.
+
+### ngrok
+
+Expose your local server with [ngrok](https://ngrok.com):
 
 ```bash
 ngrok http 8000
 ```
 
-Then use the ngrok URL as your webhook endpoint:
+Register the printed `ngrok-free.app` URL as your [webhook URL](#receive-events-in-production) the same way.
+
+## Receive events in production
+
+Register your webhook URL once per project. Composio then `POST`s every trigger event to it. Set it from the SDK:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+subscription = composio.triggers.set_webhook_subscription(
+    webhook_url="https://your-app.com/webhooks/composio",
+)
+print(f"Delivering events to {subscription['webhook_url']}")
+# Store subscription['secret'] to verify signatures
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const subscription = await composio.triggers.setWebhookSubscription({
+  webhookUrl: 'https://your-app.com/webhooks/composio',
+});
+console.log(`Delivering events to ${subscription.webhookUrl}`);
+// Store subscription.secret to verify signatures
+```
+  </Tab>
+</Tabs>
+
+Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
+
+## Handling events
+
+In your handler, pass the incoming request to `parse()`. It returns the typed, normalized payload. Pass `verifySecret` and it verifies the signature first, so one call both authenticates and parses.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio()
+
+@app.post("/webhooks/composio")
+async def webhook_handler(request: Request):
+    # On async frameworks (FastAPI) read the raw body and pass body=/headers=.
+    # On sync frameworks (Flask, Django) you can pass the request directly.
+    # Use the raw body so the signature verifies. Omit verify_secret to skip it.
+    result = composio.triggers.parse(
+        body=await request.body(),
+        headers=request.headers,
+        verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"],
+    )
+
+    if result["raw_payload"]["type"] == "composio.trigger.message":
+        event = result["payload"]
+        if event["trigger_slug"] == "GITHUB_COMMIT_EVENT":
+            data = event["payload"]
+            print(f"New commit by {data['author']}: {data['message']}")
+
+    return {"status": "ok"}
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Next.js App Router, Hono, or any Fetch-style handler
+export async function POST(request: Request) {
+  // parse() takes a Fetch Request (shown) or an Express-style { body, headers }.
+  // Pass the raw body so the signature verifies; omit verifySecret to skip it.
+  const result = await composio.triggers.parse(request, {
+    verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+  });
+
+  if (result.rawPayload.type === 'composio.trigger.message') {
+    const event = result.payload;
+    if (event.triggerSlug === 'GITHUB_COMMIT_EVENT') {
+      const data = event.payload;
+      console.log(`New commit by ${data.author}: ${data.message}`);
+    }
+  }
+
+  return Response.json({ status: 'ok' });
+}
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
+</Callout>
+
+### Inspecting trigger payload schemas
+
+Each trigger type declares the shape of the `data` it sends. Inspect it before you write your handler:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_type.payload)
+# {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const triggerType = await composio.triggers.getType('GITHUB_COMMIT_EVENT');
+console.log(triggerType.payload);
+// {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
+```
+  </Tab>
+</Tabs>
+
+From the CLI, inspect a single trigger type's config and payload schema:
 
 ```bash
-curl -X POST https://backend.composio.dev/api/v3.1/webhook_subscriptions \
-  -H "X-API-KEY: <your-composio-api-key>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "webhook_url": "https://your-ngrok-url.ngrok-free.app/webhook",
-    "enabled_events": ["composio.trigger.message"]
-  }'
+composio triggers info "GITHUB_COMMIT_EVENT"
 ```
 
-Events will now be forwarded to your local server at `http://localhost:8000/webhook`.
+Or generate typed stubs for your project (scope to the toolkits you use with `--toolkits`), so your handler is type-checked against the trigger's payload:
 
-## Identifying trigger events
+```bash
+composio generate --toolkits github   # auto-detects TypeScript or Python
+```
 
-Every webhook event includes a `metadata` object that tells you exactly where it came from:
+### Webhook payload shape
 
-| Field | What it tells you |
+Every trigger event arrives in the same envelope. `metadata` tells you where the event came from; `data` holds the event itself, in the shape the trigger type declares.
+
+```json
+{
+  "id": "msg_abc123",
+  "type": "composio.trigger.message",
+  "metadata": {
+    "log_id": "log_abc123",
+    "trigger_slug": "GITHUB_COMMIT_EVENT",
+    "trigger_id": "ti_xyz789",
+    "connected_account_id": "ca_def456",
+    "auth_config_id": "ac_xyz789",
+    "user_id": "user-id-123435"
+  },
+  "data": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane"
+  },
+  "timestamp": "2026-01-15T10:30:00Z"
+}
+```
+
+| `metadata` field | What it tells you |
 |-------|-------------------|
-| `metadata.trigger_id` | Which trigger instance fired this event |
-| `metadata.trigger_slug` | The type of trigger (e.g., `GITHUB_COMMIT_EVENT`) |
-| `metadata.connected_account_id` | Which connected account it belongs to |
-| `metadata.user_id` | Which user it's for |
-| `metadata.auth_config_id` | Which auth config was used |
+| `trigger_id` | Which trigger instance fired this event |
+| `trigger_slug` | The trigger type (for example `GITHUB_COMMIT_EVENT`) |
+| `connected_account_id` | Which connected account it belongs to |
+| `user_id` | Which user it's for |
+| `auth_config_id` | Which auth config was used |
 
-Use `trigger_id` to match events to a specific trigger instance, or `trigger_slug` to handle all events of a certain type. These fields can also be passed as filters when using [SDK subscriptions](#sdk-subscriptions).
+<Callout>
+This is the V3 payload, the default for new organizations. See [webhook payload versions](#webhook-payload-versions) for V2 and V1.
+</Callout>
 
-## What to read next
+## Verifying signatures
 
-<Cards>
-  <Card icon={<Zap />} title="Managing triggers" href="/docs/setting-up-triggers/managing-triggers" description="List, enable, disable, and delete trigger instances" />
-  <Card icon={<ShieldCheck />} title="Verifying webhooks" href="/docs/webhook-verification" description="Validate webhook signatures to ensure payloads are authentic" />
-  <Card icon={<Zap />} title="Troubleshooting triggers" href="/docs/troubleshooting/triggers" description="Not receiving events? Check common trigger issues and how to fix them" />
-</Cards>
+Composio signs every webhook request. `parse({ verifySecret })` verifies the signature for you (and `verifyWebhook()` does the same at a lower level), so most handlers need nothing more. You only need this section if you're **not** using the Composio SDK.
+
+<Callout>
+Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`. Fetch it from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) any time, or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) if it leaks.
+</Callout>
+
+Every request includes `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. Compute `HMAC-SHA256` over `{webhook-id}.{webhook-timestamp}.{rawBody}` with your secret and compare it against the signature:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+import hmac
+import hashlib
+import base64
+import json
+import os
+
+def verify_webhook(webhook_id: str, webhook_timestamp: str, body: str, signature: str) -> dict:
+    secret = os.getenv("COMPOSIO_WEBHOOK_SECRET", "")
+    signing_string = f"{webhook_id}.{webhook_timestamp}.{body}"
+    expected = base64.b64encode(
+        hmac.new(secret.encode(), signing_string.encode(), hashlib.sha256).digest()
+    ).decode()
+    received = signature.split(",", 1)[1] if "," in signature else signature
+    if not hmac.compare_digest(expected, received):
+        raise ValueError("Invalid webhook signature")
+
+    payload = json.loads(body)
+    # V3 payload
+    return {
+        "trigger_slug": payload["metadata"]["trigger_slug"],
+        "data": payload["data"],
+    }
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import crypto from 'crypto';
+// ---cut---
+function verifyWebhook(
+  webhookId: string,
+  webhookTimestamp: string,
+  body: string,
+  signature: string
+) {
+  const secret = process.env.COMPOSIO_WEBHOOK_SECRET ?? '';
+  const signingString = `${webhookId}.${webhookTimestamp}.${body}`;
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(signingString)
+    .digest('base64');
+  const received = signature.split(',')[1] ?? signature;
+  if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(received))) {
+    throw new Error('Invalid webhook signature');
+  }
+
+  const payload = JSON.parse(body);
+  // V3 payload
+  return {
+    triggerSlug: payload.metadata.trigger_slug,
+    data: payload.data,
+  };
+}
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+Reject requests whose `webhook-timestamp` is too old to block replays. The SDK's `parse()` and `verifyWebhook()` enforce a 300-second tolerance by default; pass `tolerance` to change it, or `0` to disable the check.
+</Callout>
+
+## Webhook payload versions
+
+`parse()` and `verifyWebhook()` auto-detect the version. If you process payloads manually, here are the formats:
+
+<Tabs items={['V3 (default)', 'V2 (legacy)', 'V1 (legacy)']}>
+  <Tab value="V3 (default)">
+Metadata is separated from event data. New organizations receive V3 payloads by default.
+
+```json
+{
+  "id": "msg_abc123",
+  "type": "composio.trigger.message",
+  "metadata": {
+    "log_id": "log_abc123",
+    "trigger_slug": "GITHUB_COMMIT_EVENT",
+    "trigger_id": "ti_xyz789",
+    "connected_account_id": "ca_def456",
+    "auth_config_id": "ac_xyz789",
+    "user_id": "user-id-123435"
+  },
+  "data": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane"
+  },
+  "timestamp": "2026-01-15T10:30:00Z"
+}
+```
+  </Tab>
+  <Tab value="V2 (legacy)">
+Metadata fields are mixed into the `data` object alongside event data.
+
+```json
+{
+  "type": "github_commit_event",
+  "data": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane",
+    "connection_id": "ca_def456",
+    "connection_nano_id": "cn_abc123",
+    "trigger_nano_id": "tn_xyz789",
+    "trigger_id": "ti_xyz789",
+    "user_id": "user-id-123435"
+  },
+  "timestamp": "2026-01-15T10:30:00Z",
+  "log_id": "log_abc123"
+}
+```
+  </Tab>
+  <Tab value="V1 (legacy)">
+```json
+{
+  "trigger_name": "github_commit_event",
+  "trigger_id": "ti_xyz789",
+  "connection_id": "ca_def456",
+  "payload": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane"
+  },
+  "log_id": "log_abc123"
+}
+```
+  </Tab>
+</Tabs>
+
+## Next
+
+<Card icon={<Zap />} title="Managing triggers" href="/docs/setting-up-triggers/managing-triggers" description="List, enable, disable, and delete trigger instances" />

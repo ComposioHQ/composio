@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [["@composio/core", "@composio/slim"]],
   "linked": [],
   "access": "restricted",
   "privatePackages": {
@@ -14,5 +14,5 @@
   "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
     "onlyUpdatePeerDependentsWhenOutOfRange": true
   },
-  "ignore": []
+  "ignore": ["@composio/cli", "@composio/cli-local-tools"]
 }

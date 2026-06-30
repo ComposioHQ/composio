@@ -1,0 +1,9 @@
+These endpoints help you migrate from Composio v1 to v3 by translating identifiers between the two systems.
+
+Reach for this endpoint when you have a v1 UUID and need the corresponding v3 NanoId so existing references continue to resolve against the v3 API. Pass the UUID and get the NanoId back.
+
+These endpoints authenticate with your project API key in the `x-api-key` header.
+
+<Callout type="info">
+This is a low-level translation helper for migrating identifiers. For migrating SDK code, sessions, and toolkit versioning, see the [migration guides](/docs/migration-guide).
+</Callout>

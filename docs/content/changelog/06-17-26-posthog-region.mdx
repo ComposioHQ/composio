@@ -1,0 +1,21 @@
+---
+title: "PostHog connections: set your data region (US or EU) per connection"
+description: "The PostHog region is now a per-connection setting. Existing connections keep their current region, so nothing changes for you."
+date: "2026-06-17"
+---
+
+The PostHog **region** (`us` or `eu`) now lives on the **connection** instead of the auth config. Region is genuinely per-connection — different users can sit in different PostHog regions — so fixing it at the auth config forced everyone through one region. Each connection now carries its own.
+
+You don't need to do anything. We migrated every existing connection with no re-auth: connections on the default (`us`) stay on `us`, and any that used another region such as `eu` keep that value.
+
+### Going forward
+
+- Set `us` (US Cloud) or `eu` (EU Cloud) on the connection. The host is built as `<region>.posthog.com`, so a full URL won't work and self-hosted PostHog isn't supported.
+- **[Link flow](/reference/api-reference/connected-accounts/postConnectedAccountsLink)**: the Region field appears when the user connects, prefilled with your default and editable.
+- **[Initiate flow](/reference/api-reference/connected-accounts/postConnectedAccounts)**: you set the region, and the end user never sees it.
+
+### Setting a default on your auth config
+
+An auth config's region default lives in its `shared_credentials`. If you were on the default (`us`), nothing was written there. To pin a region explicitly, set `shared_credentials` when you [create an auth config](/reference/api-reference/auth-configs/postAuthConfigs), or [patch an existing one](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid).
+
+See the [PostHog toolkit docs](/toolkits/posthog) for the current connection fields.

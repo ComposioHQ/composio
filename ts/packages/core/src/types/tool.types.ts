@@ -99,6 +99,24 @@ const ParametersSchema = z.object({
   nullable: z.boolean().optional(),
   description: z.string().optional(),
   additionalProperties: z.boolean().default(false).optional(),
+  // Definition blocks targeted by `$ref` pointers. The Composio API ships
+  // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
+  // because `z.object` strips unknown keys they were being dropped on parse —
+  // leaving every nested `$ref` dangling and unresolvable downstream
+  // (providers, file modifiers). `JSONSchemaPropertySchema` already accepts
+  // both keywords; the parameters root must too.
+  $defs: z
+    .record(
+      z.string(),
+      z.lazy(() => JSONSchemaPropertySchema)
+    )
+    .optional(),
+  definitions: z
+    .record(
+      z.string(),
+      z.lazy(() => JSONSchemaPropertySchema)
+    )
+    .optional(),
 });
 
 /**

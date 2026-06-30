@@ -17,14 +17,12 @@ There are four places where Composio branding shows up during authentication:
 
 The Connect Link is the hosted page your users see when connecting their accounts. By default it shows Composio branding.
 
-<Video src="/videos/connect-link-branding.mp4" autoPlay />
-
 To replace it with your own branding:
 
 1. Go to **Project Settings** → [**Auth Screen**](https://dashboard.composio.dev/~/project/settings/auth-screen)
 2. Upload your **Logo** and set your **App Title**
 
-This applies to all Connect Link flows across all toolkits, for both [in-chat](/docs/authenticating-users/in-chat-authentication) and [manual](/docs/authenticating-users/manually-authenticating) authentication. Each project has one logo and app title, so if you need different branding per product, use separate projects.
+This applies to all Connect Link flows across all toolkits, for both [in-chat](/docs/authentication#in-chat-authentication) and [manual](/docs/manually-authenticating) authentication. Each project has one logo and app title, so if you need different branding per product, use separate projects.
 
 <Callout>
 Customizing the Connect Link only changes the Composio-hosted page. For OAuth toolkits like Gmail, Google Sheets, GitHub, and Slack, users still see a consent screen saying "Composio wants to access your account." To change that, and to remove the "Secured by Composio" badge, set up your own OAuth app as described [below](#using-your-own-oauth-apps).
@@ -120,13 +118,7 @@ In the Composio dashboard, update your auth config to use your custom redirect U
 
 Here's how the redirect flow works. Your proxy just forwards the browser redirect to Composio. It never touches the authorization code or token.
 
-```mermaid
-flowchart TD
-    A[Your App] -->|User connects| B["OAuth toolkit (e.g. Google, GitHub)"]
-    B -->|Redirects user| C[yourdomain.com]
-    C -->|Forwards redirect| D[backend.composio.dev]
-    D -.->|Redirects back| A
-```
+<WhiteLabelFlow />
 
 <Callout type="info">
 For FAQs and setup guides for individual toolkits, browse the [toolkits page](/toolkits).
@@ -158,11 +150,8 @@ const connectionRequest = await session.authorize("gmail", {
 </Tab>
 </Tabs>
 
-After authentication, Composio redirects the user to your callback URL instead of the default success page. For full details on the parameters appended to your callback URL, see [Manually authenticating users → Redirecting users after authentication](/docs/authenticating-users/manually-authenticating#redirecting-users-after-authentication).
+After authentication, Composio redirects the user to your callback URL instead of the default success page. For full details on the parameters appended to your callback URL, see [Manually authenticating users → Redirecting users after authentication](/docs/manually-authenticating#redirecting-users-after-authentication).
 
-## What to read next
+## Next
 
-<Cards>
-  <Card icon={<Key />} title="Managed vs custom auth" href="/docs/custom-app-vs-managed-app" description="Set up auth configs for OAuth apps, API keys, and toolkits without managed auth" />
-  <Card icon={<Key />} title="Authentication overview" href="/docs/authentication" description="Connect Links, OAuth, API keys, and how Composio manages auth" />
-</Cards>
+<Card icon={<Key />} title="Managed vs custom auth" href="/docs/custom-app-vs-managed-app" description="Set up auth configs for OAuth apps, API keys, and toolkits without managed auth" />

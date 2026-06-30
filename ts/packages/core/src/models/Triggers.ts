@@ -24,6 +24,8 @@ import {
   VerifyWebhookParams,
   VerifyWebhookParamsSchema,
   VerifyWebhookResult,
+  ParseWebhookOptions,
+  WebhookRequestLike,
   WebhookPayload,
   WebhookPayloadV1Schema,
   WebhookPayloadV2Schema,
@@ -31,6 +33,10 @@ import {
   WebhookTriggerPayloadV3Schema,
   WebhookVersion,
   WebhookVersions,
+  DefaultWebhookSubscriptionEvents,
+  SetWebhookSubscriptionParams,
+  SetWebhookSubscriptionParamsSchema,
+  WebhookSubscription,
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
@@ -49,10 +55,12 @@ import {
   transformTriggerTypeRetrieveResponse,
 } from '../utils/transformers/triggers';
 import { ToolkitVersionParam } from '../types/tool.types';
-import { ComposioConfig } from '../composio';
-import { BaseComposioProvider } from '../provider/BaseProvider';
+import type { ComposioConfig } from '../composio';
+import type { BaseComposioProvider } from '../provider/BaseProvider';
 import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
+import { ComposioRequestOptions } from '../types/requestOptions.types';
+import { withCancellation } from '../utils/cancellation';
 
 /**
  * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
@@ -65,6 +73,134 @@ const toStringOrDefault = (value: unknown, defaultValue: string): string => {
   }
   const str = String(value);
   return str.length > 0 ? str : defaultValue;
+};
+
+const WEBHOOK_SUBSCRIPTIONS_PATH = '/api/v3.1/webhook_subscriptions';
+
+type RawWebhookSubscription = Record<string, unknown> & {
+  id?: unknown;
+  webhook_url?: unknown;
+  webhookUrl?: unknown;
+  version?: unknown;
+  enabled_events?: unknown;
+  enabledEvents?: unknown;
+  secret?: unknown;
+  created_at?: unknown;
+  createdAt?: unknown;
+  updated_at?: unknown;
+  updatedAt?: unknown;
+};
+
+type RawWebhookSubscriptionListResponse = Record<string, unknown> & {
+  items?: unknown;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const firstString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
+const stringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const transformWebhookSubscription = (subscription: unknown): WebhookSubscription => {
+  const raw = asRecord(subscription) as RawWebhookSubscription;
+
+  // Map to camelCase explicitly — do NOT spread `...raw`, or the response's
+  // snake_case keys (webhook_url, enabled_events, created_at, ...) leak into the
+  // public object alongside their camelCase counterparts.
+  return {
+    id: firstString(raw.id) ?? '',
+    webhookUrl: firstString(raw.webhook_url) ?? firstString(raw.webhookUrl) ?? '',
+    version: (firstString(raw.version) ?? WebhookVersions.V3) as WebhookVersion,
+    enabledEvents: stringArray(raw.enabled_events).length
+      ? stringArray(raw.enabled_events)
+      : stringArray(raw.enabledEvents),
+    secret: firstString(raw.secret),
+    createdAt: firstString(raw.created_at) ?? firstString(raw.createdAt),
+    updatedAt: firstString(raw.updated_at) ?? firstString(raw.updatedAt),
+  };
+};
+
+const firstWebhookSubscriptionId = (
+  response: RawWebhookSubscriptionListResponse
+): string | undefined => {
+  const firstItem = Array.isArray(response.items) ? response.items[0] : undefined;
+  return firstString(asRecord(firstItem).id);
+};
+
+/**
+ * The signature header names Composio sends with every webhook delivery.
+ * @private
+ */
+const WEBHOOK_HEADERS = {
+  id: 'webhook-id',
+  timestamp: 'webhook-timestamp',
+  signature: 'webhook-signature',
+} as const;
+
+/**
+ * Returns true if the value is a Fetch API `Request`.
+ * @private
+ */
+const isFetchRequest = (request: WebhookRequestLike): request is Request =>
+  typeof Request !== 'undefined' && request instanceof Request;
+
+/**
+ * Reads a single header value case-insensitively from either a `Headers`
+ * instance or a plain record (where values may be `string | string[]`).
+ * Returns `undefined` when the header is missing.
+ * @private
+ */
+const getHeader = (headers: unknown, name: string): string | undefined => {
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return headers.get(name) ?? undefined;
+  }
+
+  if (headers === null || typeof headers !== 'object') {
+    return undefined;
+  }
+
+  // Plain record: match the header name case-insensitively.
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+    if (key.toLowerCase() !== target) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const first = value.find((item): item is string => typeof item === 'string');
+      return first;
+    }
+    return typeof value === 'string' ? value : undefined;
+  }
+  return undefined;
+};
+
+/**
+ * Coerces an object request body (string, Buffer/Uint8Array, or already-parsed
+ * value) into the raw string form expected by signature verification.
+ * @private
+ */
+const bodyToString = (body: unknown): string => {
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (body instanceof Uint8Array) {
+    return new TextDecoder().decode(body);
+  }
+  if (body === null || body === undefined) {
+    return '';
+  }
+  // Already-parsed object (e.g. Next.js Pages Router with the JSON body parser).
+  // Note: re-stringifying cannot reproduce the exact bytes Composio signed, so
+  // signature verification on a pre-parsed body is best-effort only.
+  if (typeof body === 'object') {
+    return JSON.stringify(body);
+  }
+  return String(body);
 };
 
 /**
@@ -85,6 +221,50 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   }
 
   /**
+   * Create or update the project webhook subscription used for webhook delivery.
+   *
+   * If a subscription already exists, the first subscription is updated. Otherwise a new
+   * subscription is created. By default this subscribes to V3 trigger message events.
+   *
+   * @example
+   * ```ts
+   * await composio.triggers.setWebhookSubscription({
+   *   webhookUrl: `${APP_URL}/webhooks/composio`,
+   * });
+   * ```
+   */
+  async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<WebhookSubscription> {
+    const parsedParams = SetWebhookSubscriptionParamsSchema.safeParse(params);
+
+    if (!parsedParams.success) {
+      throw new ValidationError(`Invalid parameters passed to set webhook subscription`, {
+        cause: parsedParams.error,
+      });
+    }
+
+    const body = {
+      webhook_url: parsedParams.data.webhookUrl,
+      enabled_events: parsedParams.data.enabledEvents ?? [...DefaultWebhookSubscriptionEvents],
+      version: parsedParams.data.version ?? WebhookVersions.V3,
+    };
+
+    const existing = await this.client.get<RawWebhookSubscriptionListResponse>(
+      WEBHOOK_SUBSCRIPTIONS_PATH,
+      { query: { limit: 1 } }
+    );
+    const subscriptionId = firstWebhookSubscriptionId(existing);
+
+    const subscription = subscriptionId
+      ? await this.client.patch<RawWebhookSubscription>(
+          `${WEBHOOK_SUBSCRIPTIONS_PATH}/${encodeURIComponent(subscriptionId)}`,
+          { body }
+        )
+      : await this.client.post<RawWebhookSubscription>(WEBHOOK_SUBSCRIPTIONS_PATH, { body });
+
+    return transformWebhookSubscription(subscription);
+  }
+
+  /**
    * Fetch list of all the active triggers
    *
    * @param {TriggerInstanceListActiveParams} query - The query parameters to filter the trigger instances
@@ -102,7 +282,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * ```
    */
   async listActive(
-    query?: TriggerInstanceListActiveParams
+    query?: TriggerInstanceListActiveParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceListActiveResponse> {
     // Validate the parameters if provided
 
@@ -114,18 +295,20 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
-    const result = await this.client.triggerInstances.listActive(
-      query
-        ? {
-            auth_config_ids: parsedParams.data.authConfigIds,
-            connected_account_ids: parsedParams.data.connectedAccountIds,
-            cursor: parsedParams.data.cursor,
-            limit: parsedParams.data.limit,
-            show_disabled: parsedParams.data.showDisabled,
-            trigger_ids: parsedParams.data.triggerIds,
-            trigger_names: parsedParams.data.triggerNames,
-          }
-        : undefined
+    const listParams = query
+      ? {
+          auth_config_ids: parsedParams.data.authConfigIds,
+          connected_account_ids: parsedParams.data.connectedAccountIds,
+          cursor: parsedParams.data.cursor,
+          limit: parsedParams.data.limit,
+          show_disabled: parsedParams.data.showDisabled,
+          trigger_ids: parsedParams.data.triggerIds,
+          trigger_names: parsedParams.data.triggerNames,
+        }
+      : undefined;
+    const result = await withCancellation(
+      () => this.client.triggerInstances.listActive(listParams, requestOptions),
+      requestOptions?.signal
     );
     return transformTriggerInstanceListActiveResponse(result);
   }
@@ -142,7 +325,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
   async create(
     userId: string,
     slug: string,
-    body?: TriggerInstanceUpsertParams
+    body?: TriggerInstanceUpsertParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceUpsertResponse> {
     const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body ?? {});
 
@@ -156,7 +340,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     let triggerType: TriggersTypeRetrieveResponse;
     let toolkitSlug: string;
     try {
-      triggerType = await this.getType(slug);
+      triggerType = await this.getType(slug, requestOptions);
       toolkitSlug = triggerType.toolkit.slug;
     } catch (error) {
       // for some reason, the triggers types list endpoint returns 400 for invalid user ids
@@ -178,10 +362,14 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     let connectedAccountId: string | undefined = body?.connectedAccountId;
 
     try {
-      const { items: connectedAccounts } = await this.client.connectedAccounts.list({
+      const connectedAccountListParams = {
         user_ids: [userId],
         toolkit_slugs: [toolkitSlug],
-      });
+      };
+      const { items: connectedAccounts } = await withCancellation(
+        () => this.client.connectedAccounts.list(connectedAccountListParams, requestOptions),
+        requestOptions?.signal
+      );
 
       if (connectedAccounts.length === 0) {
         throw new ComposioConnectedAccountNotFoundError(
@@ -242,8 +430,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       toolkit_versions: this.toolkitVersions,
       user_id: userId,
     };
-
-    const result = await this.client.triggerInstances.upsert(slug, upsertParams);
+    const result = await withCancellation(
+      () => this.client.triggerInstances.upsert(slug, upsertParams, requestOptions),
+      requestOptions?.signal
+    );
 
     return {
       triggerId: result.trigger_id,
@@ -259,9 +449,13 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async update(
     triggerId: string,
-    body: TriggerInstanceManageUpdateParams
+    body: TriggerInstanceManageUpdateParams,
+    requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceManageUpdateResponse> {
-    return this.client.triggerInstances.manage.update(triggerId, body);
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -270,8 +464,14 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} triggerId - The slug of the trigger instance
    * @returns
    */
-  async delete(triggerId: string): Promise<TriggerInstanceManageDeleteResponse> {
-    const result = await this.client.triggerInstances.manage.delete(triggerId);
+  async delete(
+    triggerId: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<TriggerInstanceManageDeleteResponse> {
+    const result = await withCancellation(
+      () => this.client.triggerInstances.manage.delete(triggerId, requestOptions),
+      requestOptions?.signal
+    );
     return {
       triggerId: result.trigger_id,
     };
@@ -283,10 +483,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} triggerId - The id of the trigger instance
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
-  async disable(triggerId: string) {
-    return this.client.triggerInstances.manage.update(triggerId, {
-      status: 'disable',
-    });
+  async disable(triggerId: string, requestOptions?: ComposioRequestOptions) {
+    const body = { status: 'disable' as const };
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -295,10 +497,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} triggerId - The id of the trigger instance
    * @returns {Promise<TriggerInstanceUpsertResponse>} The updated trigger instance
    */
-  async enable(triggerId: string) {
-    return this.client.triggerInstances.manage.update(triggerId, {
-      status: 'enable',
-    });
+  async enable(triggerId: string, requestOptions?: ComposioRequestOptions) {
+    const body = { status: 'enable' as const };
+    return withCancellation(
+      () => this.client.triggerInstances.manage.update(triggerId, body, requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -311,17 +515,24 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {RequestOptions} options - Request options
    * @returns {Promise<TriggersTypeListResponse>} The list of trigger types
    */
-  async listTypes(query?: TriggersTypeListParams): Promise<TriggersTypeListResponse> {
+  async listTypes(
+    query?: TriggersTypeListParams,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<TriggersTypeListResponse> {
     const parsedQuery = transform(query ?? {})
       .with(TriggersTypeListParamsSchema)
       .using(raw => raw);
 
-    const result = await this.client.triggersTypes.list({
+    const listParams = {
       cursor: parsedQuery.cursor,
       limit: parsedQuery.limit,
       toolkit_slugs: parsedQuery.toolkits,
       toolkit_versions: this.toolkitVersions,
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.triggersTypes.list(listParams, requestOptions),
+      requestOptions?.signal
+    );
 
     return transformTriggerTypeListResponse(result);
   }
@@ -333,11 +544,18 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} slug - The slug of the trigger type
    * @returns {Promise<TriggersTypeRetrieveResponse>} The trigger type object
    */
-  async getType(slug: string): Promise<TriggersTypeRetrieveResponse> {
-    const result = await this.client.triggersTypes.retrieve(slug, {
+  async getType(
+    slug: string,
+    requestOptions?: ComposioRequestOptions
+  ): Promise<TriggersTypeRetrieveResponse> {
+    const retrieveParams = {
       // if the version is provided override the global version
       toolkit_versions: this.toolkitVersions,
-    });
+    };
+    const result = await withCancellation(
+      () => this.client.triggersTypes.retrieve(slug, retrieveParams, requestOptions),
+      requestOptions?.signal
+    );
     return transformTriggerTypeRetrieveResponse(result);
   }
 
@@ -347,8 +565,13 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * This method is used by the CLI where filters are not required.
    * @returns
    */
-  async listEnum(): Promise<TriggersTypeRetrieveEnumResponse> {
-    return this.client.triggersTypes.retrieveEnum();
+  async listEnum(
+    requestOptions?: ComposioRequestOptions
+  ): Promise<TriggersTypeRetrieveEnumResponse> {
+    return withCancellation(
+      () => this.client.triggersTypes.retrieveEnum(requestOptions),
+      requestOptions?.signal
+    );
   }
 
   /**
@@ -615,6 +838,148 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    */
   async unsubscribe() {
     await this.pusherService.unsubscribe();
+  }
+
+  /**
+   * Parse an incoming webhook HTTP request into a typed, normalized trigger payload.
+   *
+   * Dump the incoming request in and get back the parsed Composio trigger event.
+   * When `verifySecret` is provided, the request signature is verified before the
+   * payload is returned (delegating to {@link verifyWebhook}); without it, the body
+   * is parsed without verification.
+   *
+   * The `request` may be either a Fetch API `Request` (Next.js App Router, Hono,
+   * Remix) or a plain `{ body, headers }` object (Express with `express.raw`,
+   * Next.js Pages Router `req`). The signature headers (`webhook-id`,
+   * `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
+   *
+   * @param {WebhookRequestLike} request - The incoming webhook HTTP request
+   * @param {ParseWebhookOptions} [options] - Parse options
+   * @param {string} [options.verifySecret] - Webhook secret; when set, the signature is verified
+   * @param {number} [options.tolerance=300] - Max webhook age in seconds (only used when verifying)
+   * @returns {Promise<VerifyWebhookResult>} The parsed (and optionally verified) webhook payload
+   *
+   * @throws {ValidationError} If `verifySecret` is set but the signature headers are missing
+   * @throws {ComposioWebhookSignatureVerificationError} If signature verification fails
+   * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed
+   *
+   * @example
+   * ```ts
+   * // Express with express.raw (verify the signature)
+   * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
+   *   try {
+   *     const result = await composio.triggers.parse(req, {
+   *       verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+   *     });
+   *     console.log('Trigger:', result.payload.triggerSlug);
+   *     console.log('Event data:', result.payload.payload);
+   *     res.sendStatus(200);
+   *   } catch (error) {
+   *     res.sendStatus(401);
+   *   }
+   * });
+   *
+   * // Express without verifying (parse only)
+   * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
+   *   const result = await composio.triggers.parse(req);
+   *   console.log('Trigger:', result.payload.triggerSlug);
+   *   res.sendStatus(200);
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Next.js App Router (Request) — verify the signature
+   * export async function POST(request: Request) {
+   *   try {
+   *     const result = await composio.triggers.parse(request, {
+   *       verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+   *     });
+   *     console.log('Trigger:', result.payload.triggerSlug);
+   *     console.log('Event data:', result.payload.payload);
+   *     return new Response('OK', { status: 200 });
+   *   } catch (error) {
+   *     return new Response('Unauthorized', { status: 401 });
+   *   }
+   * }
+   *
+   * // Next.js App Router — parse only (no verification)
+   * export async function POST(request: Request) {
+   *   const result = await composio.triggers.parse(request);
+   *   console.log('Trigger:', result.payload.triggerSlug);
+   *   return new Response('OK', { status: 200 });
+   * }
+   * ```
+   */
+  async parse(
+    request: WebhookRequestLike,
+    options?: ParseWebhookOptions
+  ): Promise<VerifyWebhookResult> {
+    // Extract the raw body and signature headers from either request shape.
+    let body: string;
+    let headers: unknown;
+    if (isFetchRequest(request)) {
+      body = await request.text();
+      headers = request.headers;
+    } else {
+      body = bodyToString(request.body);
+      headers = request.headers;
+    }
+
+    const verifySecret = options?.verifySecret;
+
+    // Distinguish "caller omitted verifySecret" (explicit opt-out) from
+    // "caller passed verifySecret but it resolved to empty" (almost always an
+    // unset COMPOSIO_WEBHOOK_SECRET). The latter must fail loudly rather than
+    // silently skip verification and accept forged events.
+    const optedOutOfVerification = options === undefined || !('verifySecret' in options);
+
+    if (optedOutOfVerification) {
+      // No secret requested: parse without verifying the signature.
+      const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(body);
+      return {
+        version,
+        payload: normalizedPayload,
+        rawPayload,
+      };
+    }
+
+    if (!verifySecret) {
+      throw new ValidationError(
+        `Cannot verify webhook: 'verifySecret' was provided but is empty — your ` +
+          `COMPOSIO_WEBHOOK_SECRET is likely unset. Set the secret, or omit 'verifySecret' ` +
+          `entirely to parse without verification.`
+      );
+    }
+
+    // Secret provided: signature headers are required to verify.
+    const id = getHeader(headers, WEBHOOK_HEADERS.id);
+    const timestamp = getHeader(headers, WEBHOOK_HEADERS.timestamp);
+    const signature = getHeader(headers, WEBHOOK_HEADERS.signature);
+
+    if (!id || !timestamp || !signature) {
+      const missing = [
+        !id ? `'${WEBHOOK_HEADERS.id}'` : undefined,
+        !timestamp ? `'${WEBHOOK_HEADERS.timestamp}'` : undefined,
+        !signature ? `'${WEBHOOK_HEADERS.signature}'` : undefined,
+      ].filter((header): header is string => header !== undefined);
+
+      throw new ValidationError(
+        `Cannot verify webhook: missing signature header(s) ${missing.join(', ')}. ` +
+          `Pass the raw, unparsed request body and ensure the Composio signature headers ` +
+          `(${WEBHOOK_HEADERS.id}, ${WEBHOOK_HEADERS.timestamp}, ${WEBHOOK_HEADERS.signature}) ` +
+          `are forwarded to triggers.parse(). To parse without verifying, omit 'verifySecret'.`
+      );
+    }
+
+    return this.verifyWebhook({
+      payload: body,
+      signature,
+      id,
+      timestamp,
+      secret: verifySecret,
+      tolerance: options?.tolerance,
+    });
   }
 
   /**
