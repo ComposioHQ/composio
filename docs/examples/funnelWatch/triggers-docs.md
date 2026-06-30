@@ -1003,3 +1003,215 @@ Metadata fields are mixed into the `data` object alongside event data.
   <Card icon={<Key />} title="Connection expiry events" href="/docs/subscribing-to-connection-expiry-events" description="Detect when OAuth connections expire and prompt re-authentication" />
 </Cards>
 
+---
+
+# Implementation Playbook — one-shotting triggers (FunnelWatch lessons)
+
+Everything above is the upstream reference. This section is the opinionated, battle-tested
+companion: every architectural decision, its tradeoffs, the default we chose, the exact
+errors we hit, and the working code. It was written after wiring a real Slack trigger
+(inbound channel message → bot answers / creates an alert → replies in Slack) into this app.
+**Goal: set up a new trigger — webhook or polling — correctly in one pass.**
+
+## 0. The opinionated default stack (use unless you have a specific reason not to)
+
+| Concern | Default we chose | One-liner why |
+|---|---|---|
+| Delivery transport | **Single public webhook** `POST /webhooks/composio`, route by `metadata.trigger_slug` | Production-grade, decoupled, survives app restarts. Use SDK `subscribe()` only for throwaway local iteration. |
+| Dev tunnel | **cloudflared quick tunnel** | No account/login, instant. Accept the URL is ephemeral. |
+| Stable URL | **named cloudflared tunnel** (later) | Quick-tunnel URL changes every restart → must re-register. |
+| Signature verification | **enforce only when a signature header is present** | Non-breaking for local test tools that POST unsigned; still verifies real Composio traffic. Flip to always-enforce + sign internal traffic in prod. |
+| Verification impl | **SDK `triggers.verify_webhook()` if available, else manual HMAC** | SDK handles scheme/version drift. |
+| Trigger creation | **programmatic + idempotent** (`list_active()` → create if absent) | Reproducible; no duplicate `ti_*` instances. |
+| Identity | **one constant `user_id`** (single-tenant) | A namespace label; connect the account under the same id. |
+| Reply tool execution | **`dangerously_skip_version_check=True`** (dev); pin versions (prod) | Manual execution requires a pinned toolkit version. |
+| Loop safety | **bot/app-id check + recent-reply dedup** | Channel triggers also fire for the bot's own replies. |
+
+Where each piece lives in this repo (mirror these):
+- Receive + verify + route: `app/webhooks.py`
+- Bot brain (answer / create alert / loop guard): `app/slackbot.py`
+- Outbound Slack send: `app/slack.py`
+- Discover + create triggers: `tools/setup_slack_trigger.py`
+- Real send test: `tools/test_slack_send.py`; offline bot test (no Slack): `tools/test_slackbot.py`
+
+## 1. End-to-end runbook (checklist)
+
+1. **Connect the account** under the app's `user_id` (dashboard or SDK). Verify:
+   `composio.connected_accounts.list()` lists the toolkit. *(A connection is scoped to a
+   `user_id`/entity — the id you connect under must equal the id you create triggers and
+   execute tools with. Mismatch = silent "no connected account".)*
+2. **Discover the exact slug — never guess.** Slugs vary and wrong ones 404:
+   `composio.triggers.list(toolkit_slugs=["slack"])` → e.g. `SLACK_CHANNEL_MESSAGE_RECEIVED`.
+   (Slack exposes two families: `SLACK_*` and `SLACKBOT_*` — see Pending Questions.)
+3. **Pick transport.** Webhook (default) → start the tunnel and set the **project webhook URL**
+   = `<public-url>/webhooks/composio` in the dashboard. *Setting that URL is where the
+   **signing secret** is shown* — copy it to `.env` as `COMPOSIO_WEBHOOK_SECRET`.
+   (Local dev alternative: skip the tunnel entirely and use `composio.triggers.subscribe()`.)
+4. **Create the trigger instance (idempotent):**
+   `composio.triggers.create(slug="SLACK_CHANNEL_MESSAGE_RECEIVED", user_id=USER_ID)` → `ti_*`.
+   Some types need config (GitHub needs `owner`/`repo`; some Slack ones a channel id). Discover
+   required config via `composio.triggers.get_type(slug)` **or** by reading the create error.
+5. **Receiver:** read the **raw body** → verify signature → parse JSON → dispatch on
+   `metadata.trigger_slug` (prefix match) → handle.
+6. **Response action** (e.g. Slack send) — mind §3 gotchas.
+7. **Loop guard** if the trigger can observe your own outputs (channel messages do).
+8. **Test offline first** (`tools/test_slackbot.py` posts a synthetic event), then a real event.
+
+## 2. Architectural decisions & tradeoffs
+
+**D1 — Delivery transport.** *Webhook* (Composio POSTs to your public URL) vs *SDK `subscribe()`*
+(long-lived local connection, no public URL).
+- Webhook: production-standard, decoupled, Composio can retry while you redeploy; needs a public
+  URL (tunnel in dev) + signature verification.
+- subscribe(): zero tunnel, fastest local loop, no signature handling; but tied to process
+  lifetime (miss events while down unless buffered), not for serverless.
+- **Default: webhook for anything real; subscribe() for local iteration.**
+
+**D2 — Dev tunnel.** cloudflared quick (no account, ephemeral) vs ngrok (account, ephemeral free)
+vs cloudflared named (stable, needs CF account) vs none (subscribe).
+- **Default: cloudflared quick** to start; named tunnel once you're tired of re-registering.
+
+**D3 — Webhook URL stability.** Ephemeral quick-tunnel URL changes on every restart → you must
+re-paste it into the Composio project webhook each time. Named tunnel / deployed host = stable.
+- **Default: accept ephemeral in dev; stable host in prod.**
+
+**D4 — Signature verification policy.** off / enforce-when-present / always-enforce.
+- off: anyone who learns your public URL can POST fake events.
+- always-enforce: most secure, but breaks local tools that POST unsigned (you'd have to sign them).
+- enforce-when-present: verifies real (signed) Composio traffic, lets unsigned localhost tools through.
+- **Default: enforce-when-present in dev, always-enforce in prod (and sign internal callers).**
+
+**D5 — Verification implementation.** SDK `triggers.verify_webhook()` vs hand-rolled HMAC.
+- SDK abstracts the scheme + payload-version detection; manual can drift (secret prefix, label).
+- **Default: SDK if present; manual HMAC-SHA256 over `{webhook-id}.{webhook-timestamp}.{body}`,
+  base64, as a fallback (try both raw and `whsec_`-stripped key).**
+
+**D6 — Endpoint topology.** One endpoint + dispatch on `trigger_slug` vs a route per trigger.
+- **Default: one endpoint, prefix dispatch.** Adding a source becomes a one-line handler entry.
+
+**D7 — Trigger creation: programmatic vs dashboard; idempotency.** Re-running create can spawn
+duplicate `ti_*` instances → duplicate deliveries.
+- **Default: programmatic, but `list_active()` first and skip if the (slug,user_id) already exists.**
+
+**D8 — Trigger granularity (Slack-style, noise vs coverage).** channel-message (fires on *every*
+message — chatty, replies to all) vs DM-to-bot vs @mention vs thread-reply.
+- **Default: a dedicated bot channel + channel-message** for a demo; **DM or @mention** for a bot
+  living in busy shared channels.
+
+**D9 — Loop prevention.** When a trigger can see the bot's own output (channel messages), naive
+handling loops forever.
+- Options: detect bot/app messages (`bot_id`/`app_id`/`subtype==bot_message`); dedup against a
+  bounded set of recently-sent replies; match the bot's own user id; tag outbound text.
+- **Default: combine the bot/app-id check with a recent-reply dedup** (belt + suspenders, because
+  the inbound payload may not always carry a bot marker).
+
+**D10 — Identity / `user_id`.** single constant (single-tenant internal tool) vs per-end-user
+(multi-tenant SaaS where each customer connects their own account).
+- **Default: one constant for internal tools.** Multi-tenant: derive `user_id` from your own user.
+
+**D11 — Tool version handling (for the response action).** `dangerously_skip_version_check=True`
+vs pinning `toolkit_versions={...}` vs `COMPOSIO_TOOLKIT_VERSION_<SLUG>` env.
+- skip: convenient, but a new toolkit version can change behavior under you.
+- pin: reproducible.
+- **Default: skip in dev, pin in prod.**
+
+**D12 — Idempotency / retries.** Deliveries can repeat. Dedup on a stable id (`webhook-id` header
+or `log_id` in the payload) before side effects.
+- **Default: keep a bounded seen-set of delivery ids; drop repeats.**
+
+**D13 — Webhook-style vs polling-style trigger *types*.** This is about how Composio learns of the
+event, **not** how you receive it. Provider-push (real-time webhook into Composio) vs Composio
+polling the provider API every N minutes. **From your code it is identical** — same endpoint, same
+`metadata.trigger_slug`, same handler. Differences that matter: latency (poll interval), possible
+extra config (interval), and cold-start/backfill behavior on first enable (a polling trigger may
+emit a burst or may not backfill history). Don't special-case delivery; do account for latency and
+a possible first-enable burst.
+
+**D14 — Payload version (V3 vs V1).** Shapes differ (`data` vs `payload`, field names). Pin/handle
+the version you expect; the SDK verify path can normalize.
+- **Default: target V3, read `metadata.trigger_slug` + `data`.**
+
+**D15 — Concurrency / ordering.** Events can arrive concurrently and out of order. Handlers must be
+order-independent and safe under parallel calls (our volume appends are lock-guarded).
+
+## 3. Hard-won gotchas (exact error → fix)
+
+- **`ToolVersionRequiredError: Toolkit version not specified … "latest" is not supported in manual
+  execution`** → pass `dangerously_skip_version_check=True` to `tools.execute(...)`, or pin
+  `toolkit_versions`. Hit when *sending the reply*, not when creating the trigger.
+- **Slack send returns `successful: False … Unsupported Slack send message field(s). text: Use
+  markdown_text`** → the argument is **`markdown_text`**, not `text`.
+- **`Slack API error: channel_not_found`** → the bot/app must be a **member** of the target channel
+  (`/invite @app`); prefer the **channel ID** (`C0…`) over `#name`; watch for typo'd channel names.
+- **`Tool <SLUG> not found` (404)** → wrong slug. Discover real ones via `triggers.list(...)` /
+  the tools API. Verified-good here: send action `SLACK_SEND_MESSAGE`; trigger
+  `SLACK_CHANNEL_MESSAGE_RECEIVED`.
+- **Infinite reply loop** → a channel trigger re-delivers the bot's own replies. Guard (D9).
+- **Local test tools start getting 401 after you set the secret** → use enforce-when-present (D4),
+  or sign your test requests.
+- **Signature never matches** → you must HMAC the **raw request bytes**, computed **before** JSON
+  parsing/re-serialization. Also handle the `whsec_` secret prefix and the `v1,<sig>` header format.
+- **Ephemeral tunnel** → quick-tunnel URL changes on restart; the old project webhook URL goes dead.
+  Re-register, or use a named tunnel.
+- **"Connected but nothing works"** → almost always a `user_id` mismatch between where you connected
+  and where you create the trigger / execute tools.
+
+## 4. Verified code patterns
+
+```python
+# Discover slugs (never guess)
+composio.triggers.list(toolkit_slugs=["slack"])          # → [... 'SLACK_CHANNEL_MESSAGE_RECEIVED', ...]
+composio.triggers.list_enum()                            # all types (no kwargs)
+composio.triggers.get_type("SLACK_CHANNEL_MESSAGE_RECEIVED")   # required config schema
+
+# Create idempotently
+active = {(getattr(t,'trigger_name',None), ...) for t in composio.triggers.list_active().items}
+ti = composio.triggers.create(slug="SLACK_CHANNEL_MESSAGE_RECEIVED", user_id=USER_ID)  # → ti.trigger_id 'ti_*'
+
+# Verify a webhook (manual fallback; prefer composio.triggers.verify_webhook(...))
+signing = f"{headers['webhook-id']}.{headers['webhook-timestamp']}.{raw_body}"
+key = secret[6:] if secret.startswith("whsec_") else secret
+for k in (secret.encode(), base64.b64decode(key)):       # try both encodings
+    expected = base64.b64encode(hmac.new(k, signing.encode(), hashlib.sha256).digest()).decode()
+    if any(hmac.compare_digest(expected, s.split(',',1)[-1]) for s in headers['webhook-signature'].split()):
+        ok = True
+
+# Respond (Slack send) — markdown_text + version skip
+composio.tools.execute("SLACK_SEND_MESSAGE", user_id=USER_ID,
+                       arguments={"channel": channel_id, "markdown_text": text},
+                       dangerously_skip_version_check=True)
+
+# Receiver skeleton (see app/webhooks.py)
+raw = await request.body()                                # raw bytes FIRST
+if not signature_ok(request.headers, raw.decode()): raise HTTPException(401)
+payload = json.loads(raw)
+slug = payload["metadata"]["trigger_slug"]                # dispatch on this
+
+# Local dev without a tunnel
+composio.triggers.subscribe()  # long-lived listener; register handlers, no public URL needed
+```
+
+## 5. Pending questions (resolve these to make it bulletproof)
+
+1. **Inbound payload shape for `SLACK_CHANNEL_MESSAGE_RECEIVED`** — exact field names/nesting for
+   `channel` / `text` / `user` and the bot-message marker were never confirmed against a live event;
+   our `_extract` in `app/slackbot.py` is deliberately defensive (checks `event.*` and `data.*`,
+   `channel`/`channel_id`, `bot_id`/`app_id`). Confirm with one real delivery and tighten.
+2. **`SLACK_*` vs `SLACKBOT_*` trigger family** — which matches an OAuth *bot* connection vs user
+   token? We used `SLACK_CHANNEL_MESSAGE_RECEIVED` and it created fine, but didn't confirm a live
+   event end-to-end. Also confirm the DM (`SLACK_DIRECT_MESSAGE_RECEIVED`) and any @mention slug for
+   a quieter UX.
+3. **SDK `verify_webhook()` exact signature** — prefer it over hand-rolled HMAC; confirm args
+   (headers vs individual fields, return shape) and whether it normalizes payload versions.
+4. **Retry / idempotency semantics** — does Composio retry failed deliveries, with what backoff, and
+   what stable id should we dedup on (`webhook-id` header? `log_id`?).
+5. **Was the project webhook URL actually registered**, or should this app prefer `subscribe()` to
+   avoid the tunnel entirely? Decide the canonical dev path.
+6. **Toolkit version pinning syntax for prod** — `toolkit_versions={'slack': '<v>'}` on the client
+   vs `COMPOSIO_TOOLKIT_VERSION_SLACK=<v>` env; and where to find the current version.
+7. **Polling-trigger first-enable behavior** — does a polling trigger backfill recent history or only
+   emit changes after creation? Affects whether you get a startup burst.
+8. **Channel id vs name for replies** — we hit `channel_not_found` with a name; confirm whether a
+   channel **ID** is required for reliable sends and store IDs, not names.
+
+
