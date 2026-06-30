@@ -1,0 +1,25 @@
+{
+  "updated_at": "2026-06-25T03:24:53.590408+00:00",
+  "stages": [
+    {
+      "name": "Visits",
+      "count": 239,
+      "conv_pct": null
+    },
+    {
+      "name": "Signups",
+      "count": 31,
+      "conv_pct": 13.0
+    },
+    {
+      "name": "Activations",
+      "count": 22,
+      "conv_pct": 71.0
+    },
+    {
+      "name": "Paid",
+      "count": 6,
+      "conv_pct": 27.3
+    }
+  ]
+}

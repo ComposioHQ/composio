@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-06-25T03:24:53.588059+00:00",
+  "events": 627,
+  "visits": 239,
+  "signups": 31,
+  "activations": 22,
+  "signup_conv_pct": 13.0,
+  "activation_rate_pct": 71.0,
+  "trials": 11,
+  "new_subscriptions": 6,
+  "churned": 3,
+  "failed_payments": 2,
+  "invoice_attempts": 124,
+  "trial_conv_pct": 54.5,
+  "failed_rate_pct": 1.6,
+  "new_mrr_cents": 59400,
+  "new_mrr": 594.0,
+  "churned_mrr": 227.0,
+  "net_new_mrr": 367.0
+}

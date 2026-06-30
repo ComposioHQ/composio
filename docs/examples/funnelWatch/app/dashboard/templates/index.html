@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FunnelWatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">FUNNELWATCH <span>(01)</span></div>
+    <nav class="actions">
+      <button id="refresh-btn" class="ghost">REFRESH</button>
+      <button id="settings-btn" class="ghost">SETTINGS</button>
+    </nav>
+  </header>
+
+  <!-- STATS ON TOP -->
+  <section class="stats" id="stats"></section>
+  <section class="source-strip" id="source-health"></section>
+
+  <!-- CHARTS LEFT · CHAT CENTER · SLACKBOT RIGHT -->
+  <main class="grid">
+    <section class="charts">
+      <div class="chart-block">
+        <p class="eyebrow">ACQUISITION FUNNEL</p>
+        <div class="bars" id="bars-funnel"></div>
+      </div>
+
+      <div class="chart-block">
+        <p class="eyebrow">TOP BUTTON CLICKS</p>
+        <div class="bars" id="bars-clicks"></div>
+      </div>
+
+      <div class="chart-block">
+        <p class="eyebrow">NEW MRR BY PLAN</p>
+        <div class="bars" id="bars-mrr"></div>
+      </div>
+
+      <div class="chart-block">
+        <p class="eyebrow">SOURCE PERFORMANCE</p>
+        <div class="source-table" id="source-performance"></div>
+      </div>
+
+      <div class="chart-block">
+        <p class="eyebrow">BILLING MOVEMENTS</p>
+        <div class="statusbar" id="statusbar"></div>
+        <div class="legend" id="status-legend"></div>
+      </div>
+    </section>
+
+    <section class="chat">
+      <div class="glow"></div>
+      <p class="eyebrow">ASK FUNNELWATCH</p>
+      <div class="chat-thread" id="chat-thread"></div>
+      <form class="chat-input" id="chat-form">
+        <input id="chat-text" placeholder="Ask about MRR, funnel, churn, plans…" autocomplete="off" />
+        <button type="submit" aria-label="Send">↑</button>
+      </form>
+    </section>
+
+    <aside class="feed">
+      <p class="eyebrow">SLACKBOT · #funnel-watch</p>
+      <div class="queue" id="slack-feed"></div>
+    </aside>
+  </main>
+
+  <footer class="statusbar-footer">
+    <span id="system-status">SYSTEM STATUS: OPTIMAL</span>
+    <button id="rollover-btn" class="ghost">RUN DAILY ROLLOVER</button>
+  </footer>
+
+  <!-- SINGLE SETTINGS MODAL -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2>Settings</h2>
+        <button id="modal-close" class="ghost">CLOSE ✕</button>
+      </div>
+
+      <section class="modal-section">
+        <p class="eyebrow">REQUEST A CUSTOM ALERT</p>
+        <form id="monitor-form" class="alert-form">
+          <div class="row">
+            <input name="question" placeholder="alert me if we get more than twice our average visitors in the past hour" required />
+            <button type="submit">ADD ALERT</button>
+          </div>
+        </form>
+        <ul class="monitor-list" id="monitor-list"></ul>
+      </section>
+
+      <section class="modal-section">
+        <p class="eyebrow">CONNECTED ACCOUNTS</p>
+        <ul class="integration-list" id="integration-list"></ul>
+      </section>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

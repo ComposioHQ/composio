@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-06-27T05:24:33.744501+00:00",
+  "events": 0,
+  "visits": 0,
+  "signups": 0,
+  "activations": 0,
+  "signup_conv_pct": 0.0,
+  "activation_rate_pct": 0.0,
+  "trials": 0,
+  "new_subscriptions": 0,
+  "churned": 0,
+  "failed_payments": 0,
+  "invoice_attempts": 0,
+  "trial_conv_pct": 0.0,
+  "failed_rate_pct": 0.0,
+  "new_mrr_cents": 0,
+  "new_mrr": 0.0,
+  "churned_mrr": 0.0,
+  "net_new_mrr": 0.0
+}

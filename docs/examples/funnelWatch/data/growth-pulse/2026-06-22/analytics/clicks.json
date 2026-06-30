@@ -1,0 +1,30 @@
+{
+  "updated_at": "2026-06-23T07:00:00.068916+00:00",
+  "total_clicks": 1738,
+  "elements": [
+    {
+      "name": "Get Started",
+      "clicks": 498
+    },
+    {
+      "name": "View Docs",
+      "clicks": 389
+    },
+    {
+      "name": "Start Building",
+      "clicks": 319
+    },
+    {
+      "name": "Pricing",
+      "clicks": 221
+    },
+    {
+      "name": "Book a Demo",
+      "clicks": 177
+    },
+    {
+      "name": "Get Paid",
+      "clicks": 134
+    }
+  ]
+}

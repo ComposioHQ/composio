@@ -1,0 +1,29 @@
+{
+  "updated_at": "2026-06-27T07:00:00.086882+00:00",
+  "insights": [
+    {
+      "type": "lead_quality_mismatch",
+      "severity": "high",
+      "score": 104.85,
+      "title": "Lead quality mismatch",
+      "source": "Meta Ads",
+      "summary": "Meta Ads leads are up 39.4%, but paid conversions have not moved.",
+      "recommendation": "Review targeting, offer, and landing-page fit before increasing spend.",
+      "evidence": {
+        "today_leads": 69,
+        "baseline_leads": 49.5,
+        "lead_delta_pct": 39.4,
+        "today_paid": 8,
+        "baseline_paid": 7.67,
+        "paid_delta_pct": 4.3,
+        "today_spend": 980.0,
+        "baseline_spend": 914.67,
+        "spend_delta_pct": 7.1,
+        "lead_to_paid_pct": 11.6
+      },
+      "id": "fcde0c34fff5",
+      "created_at": "2026-06-27T07:00:00.086495+00:00",
+      "message": "High-severity lead quality mismatch (Meta Ads): lead volume jumped +39.4% (69 vs 49.5) while paid conversions were nearly flat (+4.3%, 8 vs 7.67). Spend also rose +7.1% ($980 vs $914.67), so cost efficiency is deteriorating (lead\u2192paid rate ~11.6%) without a corresponding lift in paid outcomes/MRR. Check next: break out lead\u2192paid by Meta campaign/ad set/creative, verify targeting + offer/landing-page fit, and inspect where drop-off increased between landing \u2192 signup/activation \u2192 payment."
+    }
+  ]
+}

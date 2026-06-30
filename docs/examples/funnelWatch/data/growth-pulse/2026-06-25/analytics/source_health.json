@@ -1,0 +1,33 @@
+{
+  "updated_at": "2026-06-27T05:24:33.746412+00:00",
+  "sources": [
+    {
+      "key": "stripe",
+      "name": "Stripe",
+      "events": 0,
+      "last_event_at": null,
+      "status": "waiting"
+    },
+    {
+      "key": "posthog",
+      "name": "PostHog",
+      "events": 0,
+      "last_event_at": null,
+      "status": "waiting"
+    },
+    {
+      "key": "hubspot",
+      "name": "HubSpot",
+      "events": 0,
+      "last_event_at": null,
+      "status": "waiting"
+    },
+    {
+      "key": "ads",
+      "name": "Ads",
+      "events": 0,
+      "last_event_at": null,
+      "status": "waiting"
+    }
+  ]
+}

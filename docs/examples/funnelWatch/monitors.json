@@ -1,0 +1,211 @@
+[
+  {
+    "id": "66160c75",
+    "name": "Plan mix & new MRR",
+    "question": "Which plan is driving the most new MRR today?",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": "plan_comparison",
+    "enabled": true
+  },
+  {
+    "id": "dd8845b6",
+    "name": "Failed payment rate",
+    "question": "Alert me if failed payments go above 5%.",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "real-time",
+    "slack_channel": "#funnel-watch",
+    "threshold": 5.0,
+    "kind": "failed_payments_threshold",
+    "enabled": true
+  },
+  {
+    "id": "01e4b776",
+    "name": "Trial-to-paid conversion",
+    "question": "How is trial-to-paid conversion trending?",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "daily",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "d9aa67c7",
+    "name": "Net new MRR",
+    "question": "What is net new MRR today (new minus churn)?",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "daily",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "392f2257",
+    "name": "Churn spike",
+    "question": "Are cancellations spiking?",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "4fba8bcc",
+    "name": "Signup conversion rate",
+    "question": "Is signup conversion dropping?",
+    "data_sources": [
+      "posthog"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "978c0a6c",
+    "name": "Activation rate",
+    "question": "Are new signups activating (first tool call)?",
+    "data_sources": [
+      "posthog"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "c427ce1d",
+    "name": "Top acquisition source",
+    "question": "Which source drives the most signups?",
+    "data_sources": [
+      "posthog"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "777ea6ef",
+    "name": "Paid vs organic efficiency",
+    "question": "Do paid sources convert better than organic?",
+    "data_sources": [
+      "posthog",
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "168f3b48",
+    "name": "Enterprise vs SMB",
+    "question": "Do Enterprise trials convert better than Starter/Pro?",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "8676a4fd",
+    "name": "Lead volume vs signups",
+    "question": "How do leads compare to signups?",
+    "data_sources": [
+      "hubspot"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "3f3828c5",
+    "name": "Ad spend vs new MRR",
+    "question": "How does ad spend compare to new MRR?",
+    "data_sources": [
+      "googleads"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": null,
+    "enabled": true
+  },
+  {
+    "id": "bad4a3c2",
+    "name": "Alert me if we get more than twice our average\u2026",
+    "question": "alert me if we get more than twice our average visitors in the past hour",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": "custom",
+    "enabled": true
+  },
+  {
+    "id": "744cae61",
+    "name": "Alert me if failed payments go above 5%",
+    "question": "alert me if failed payments go above 5%",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": "custom",
+    "enabled": true
+  },
+  {
+    "id": "75a973db",
+    "name": "Let me know when churn spikes above 10 in a da\u2026",
+    "question": "let me know when churn spikes above 10 in a day",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": "custom",
+    "enabled": true
+  },
+  {
+    "id": "d7e7be5c",
+    "name": "Watch whether Meta Ads leads stop converting t\u2026",
+    "question": "watch whether Meta Ads leads stop converting to paid",
+    "data_sources": [
+      "stripe"
+    ],
+    "frequency": "hourly",
+    "slack_channel": "#funnel-watch",
+    "threshold": null,
+    "kind": "custom",
+    "enabled": true
+  }
+]
