@@ -2403,3 +2403,62 @@ describe('Tools', () => {
     });
   });
 });
+
+describe('retries disabled on non-idempotent writes', () => {
+  // Regression: a timed-out, non-idempotent tools.execute / tools.proxy must not
+  // be silently retried — a retry after a server-side success duplicates the side
+  // effect (e.g. sends the same email up to 3 times). Both route through a sibling
+  // client built with maxRetries: 0; reads keep the client's default retries.
+  // See https://github.com/ComposioHQ/composio/issues/3586 (TS parity with Python).
+  const context = createTestContext();
+  setupTest(context);
+
+  it('routes tools.execute through a client with maxRetries: 0', async () => {
+    await mockToolExecution(context.tools);
+
+    await context.tools.execute('COMPOSIO_TOOL', {
+      userId: 'test-user',
+      arguments: { query: 'test' },
+      dangerouslySkipVersionCheck: true,
+    });
+
+    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
+    expect(mockClient.tools.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes tools.proxyExecute through a client with maxRetries: 0', async () => {
+    mockClient.tools.proxy.mockResolvedValueOnce({ data: {}, successful: true });
+
+    await context.tools.proxyExecute({
+      endpoint: '/api/test',
+      method: 'POST' as const,
+      body: { data: 'test' },
+      connectedAccountId: 'test-account-id',
+    });
+
+    expect(mockClient.withOptions).toHaveBeenCalledWith({ maxRetries: 0 });
+    expect(mockClient.tools.proxy).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses one no-retries sibling client across executes (cached per instance)', async () => {
+    const { getRawComposioToolBySlugSpy } = await mockToolExecution(context.tools);
+
+    await context.tools.execute('COMPOSIO_TOOL', {
+      userId: 'test-user',
+      arguments: { query: 'test' },
+      dangerouslySkipVersionCheck: true,
+    });
+
+    // Queue a second execute; mockToolExecution only primed one response.
+    getRawComposioToolBySlugSpy.mockResolvedValueOnce(toolMocks.transformedTool as unknown as Tool);
+    mockClient.tools.execute.mockResolvedValueOnce(toolMocks.rawToolExecuteResponse);
+    await context.tools.execute('COMPOSIO_TOOL', {
+      userId: 'test-user',
+      arguments: { query: 'test again' },
+      dangerouslySkipVersionCheck: true,
+    });
+
+    expect(mockClient.tools.execute).toHaveBeenCalledTimes(2);
+    expect(mockClient.withOptions).toHaveBeenCalledTimes(1);
+  });
+});
