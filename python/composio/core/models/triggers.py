@@ -1134,49 +1134,29 @@ class Triggers(Resource):
         :param trigger_config: The configuration of the trigger
         :return: The trigger instance
         """
-        if user_id is not None:
-            connected_account_id = self._get_connected_account_for_user(
-                trigger=slug,
-                user_id=user_id,
-            )
-
-        if connected_account_id is None:
+        if user_id is None and connected_account_id is None:
             raise exceptions.InvalidParams(
-                "please provide valid `connected_account` or `user_id`"
+                "please provide valid `connected_account_id` or `user_id`"
             )
 
-        # Forward user_id so 2FA-enabled projects can verify the pinned connected
-        # account belongs to this user (backends without 2FA ignore it). Sent via
-        # extra_body until composio-client regenerates with the field.
-        extra_body = {"user_id": user_id} if user_id is not None else {}
-
+        # Pass user_id straight through: when connected_account_id is omitted the
+        # backend resolves the first active connection for this user and the
+        # trigger's toolkit (parity with tool execution). This removes the extra
+        # connected_accounts.list() round-trip the SDK used to make. When 2FA is
+        # enabled and connected_account_id is pinned, the backend validates that
+        # user_id owns it. Sent via extra_body until composio-client regenerates
+        # with the field.
         return self._client.trigger_instances.upsert(
             slug=slug,
-            connected_account_id=connected_account_id,
+            connected_account_id=(
+                connected_account_id if connected_account_id is not None else omit
+            ),
             toolkit_versions=self._toolkit_versions,
             body_trigger_config_1=(
                 trigger_config if trigger_config is not None else omit
             ),
-            extra_body=extra_body,
+            extra_body=({"user_id": user_id} if user_id is not None else {}),
         )
-
-    def _get_connected_account_for_user(self, trigger: str, user_id: str) -> str:
-        toolkit = self.get_type(slug=trigger).toolkit.slug
-        connected_accounts = self._client.connected_accounts.list(
-            toolkit_slugs=[toolkit],
-            user_ids=[user_id],
-        )
-        if len(connected_accounts.items) == 0:
-            raise exceptions.NoItemsFound(
-                f"No connected accounts found for {trigger} and {user_id}"
-            )
-
-        account, *_ = sorted(
-            connected_accounts.items,
-            key=lambda x: x.created_at,
-            reverse=True,
-        )
-        return account.id
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """
