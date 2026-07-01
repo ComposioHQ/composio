@@ -213,7 +213,7 @@ def search_memory(input: SearchMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
 def forget_memory(input: ForgetMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
     """Delete one or more memories from Dakera."""
     payload: dict[str, t.Any] = {"agent_id": _AGENT_ID}
-    if input.memory_ids:
+    if input.memory_ids is not None:
         payload["memory_ids"] = input.memory_ids
 
     _dakera_post("/v1/memory/forget", payload)
@@ -235,9 +235,7 @@ Use the memory tools proactively — the user should not have to repeat themselv
 agent = Agent(
     name="Dakera Memory Agent",
     instructions=SYSTEM_PROMPT,
-    tools=composio.experimental.get_tools(
-        tools=["STORE_MEMORY", "SEARCH_MEMORY", "FORGET_MEMORY"]
-    ),
+    tools=[store_memory, search_memory, forget_memory],
 )
 
 # ---------------------------------------------------------------------------
