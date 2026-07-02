@@ -6,7 +6,7 @@
  * Run: bun scripts/generate-api-index.ts
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { HIDDEN_API_TAGS } from '../lib/filter-api-version';
 
@@ -94,6 +94,35 @@ function getOperationsByTag(spec: OpenAPISpec): Record<string, OperationEntry[]>
   return tagOps;
 }
 
+function activeTagSlugs(opsByTag: Record<string, OperationEntry[]>): Set<string> {
+  const active = new Set<string>();
+  for (const [tagName, ops] of Object.entries(opsByTag)) {
+    const tagSlug = slugify(tagName);
+    if (ops.length > 0 && !HIDDEN_TAGS.has(tagSlug)) {
+      active.add(tagSlug);
+    }
+  }
+  return active;
+}
+
+function removeStaleTagIndexes(baseDir: string, activeSlugs: Set<string>) {
+  if (!existsSync(baseDir)) return;
+
+  for (const entry of readdirSync(baseDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+
+    const tagSlug = entry.name;
+    if (activeSlugs.has(tagSlug)) continue;
+
+    const tagDir = join(baseDir, tagSlug);
+    const indexPath = join(tagDir, 'index.mdx');
+    if (existsSync(indexPath)) {
+      rmSync(tagDir, { recursive: true, force: true });
+      console.log(`Removed stale tag: ${tagDir}`);
+    }
+  }
+}
+
 function generateIndexPages() {
   const specV31Path = join(process.cwd(), 'public/openapi.json');
   const specV3Path = join(process.cwd(), 'public/openapi-v3.json');
@@ -114,6 +143,12 @@ function generateIndexPages() {
   }
 
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
+
+  removeStaleTagIndexes(outputDir, activeTagSlugs(v31Ops));
+  removeStaleTagIndexes(
+    join(process.cwd(), 'content/reference/v3/api-reference'),
+    activeTagSlugs(v3Ops),
+  );
 
   // Get all unique tag names
   const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);

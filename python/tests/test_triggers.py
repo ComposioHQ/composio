@@ -288,6 +288,8 @@ class TestTriggers:
             trigger_config={"webhook_url": "https://example.com/webhook"},
         )
 
+        # No extra lookup when an explicit connection is pinned.
+        mock_client.connected_accounts.list.assert_not_called()
         mock_client.trigger_instances.upsert.assert_called_once()
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
         assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
@@ -296,22 +298,19 @@ class TestTriggers:
             "webhook_url": "https://example.com/webhook"
         }
         assert call_kwargs["toolkit_versions"] is None
+        # No user_id supplied → empty extra_body.
+        assert call_kwargs["extra_body"] == {}
         assert result == mock_response
 
-    def test_create_with_user_id(self, triggers, mock_client, mock_trigger_type):
-        """Test create trigger with user_id."""
+    def test_create_with_user_id(self, triggers, mock_client):
+        """Test create trigger with user_id only.
+
+        The backend resolves the connection from ``user_id``, so the SDK passes
+        it through (via ``extra_body``) and no longer lists connected accounts.
+        """
         mock_response = Mock()
         mock_response.trigger_id = "trigger-123"
         mock_client.trigger_instances.upsert.return_value = mock_response
-        mock_client.triggers_types.retrieve.return_value = mock_trigger_type
-
-        # Mock connected accounts list
-        mock_accounts = Mock()
-        mock_account = Mock()
-        mock_account.id = "conn-456"
-        mock_account.created_at = "2024-01-01T00:00:00Z"
-        mock_accounts.items = [mock_account]
-        mock_client.connected_accounts.list.return_value = mock_accounts
 
         result = triggers.create(
             slug="GITHUB_COMMIT_EVENT",
@@ -319,25 +318,20 @@ class TestTriggers:
             trigger_config={"webhook_url": "https://example.com/webhook"},
         )
 
-        # Verify get_type was called to get toolkit
-        # Note: toolkit_versions=None gets converted to omit
-        call_kwargs = mock_client.triggers_types.retrieve.call_args.kwargs
-        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
-        assert call_kwargs["toolkit_versions"] is omit
+        # The SDK no longer makes an extra round-trip to find a connection.
+        mock_client.connected_accounts.list.assert_not_called()
+        mock_client.triggers_types.retrieve.assert_not_called()
 
-        # Verify connected accounts were fetched
-        mock_client.connected_accounts.list.assert_called_once_with(
-            toolkit_slugs=["github"],
-            user_ids=["user-123"],
-        )
-
-        # Verify trigger was created with found connected account
         mock_client.trigger_instances.upsert.assert_called_once()
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
-        assert call_kwargs["connected_account_id"] == "conn-456"
-        assert call_kwargs["toolkit_versions"] is None
-        # user_id forwarded for trigger 2FA ownership verification
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        # No explicit connection pinned → omitted; user_id rides in extra_body.
+        assert call_kwargs["connected_account_id"] is omit
         assert call_kwargs["extra_body"] == {"user_id": "user-123"}
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert call_kwargs["toolkit_versions"] is None
         assert result == mock_response
 
     def test_create_with_custom_toolkit_versions(
@@ -375,72 +369,9 @@ class TestTriggers:
                 trigger_config={"webhook_url": "https://example.com/webhook"},
             )
 
-        assert "please provide valid `connected_account` or `user_id`" in str(
+        assert "please provide valid `connected_account_id` or `user_id`" in str(
             exc_info.value
         )
-
-    def test_create_with_user_id_no_connected_accounts_raises_error(
-        self, triggers, mock_client, mock_trigger_type
-    ):
-        """Test create trigger with user_id but no connected accounts raises error."""
-        mock_client.triggers_types.retrieve.return_value = mock_trigger_type
-
-        # Mock empty connected accounts list
-        mock_accounts = Mock()
-        mock_accounts.items = []
-        mock_client.connected_accounts.list.return_value = mock_accounts
-
-        with pytest.raises(exceptions.NoItemsFound) as exc_info:
-            triggers.create(
-                slug="GITHUB_COMMIT_EVENT",
-                user_id="user-123",
-            )
-
-        assert "No connected accounts found" in str(exc_info.value)
-
-    def test_get_connected_account_for_user(
-        self, triggers, mock_client, mock_trigger_type
-    ):
-        """Test _get_connected_account_for_user method."""
-        mock_client.triggers_types.retrieve.return_value = mock_trigger_type
-
-        # Mock connected accounts
-        mock_accounts = Mock()
-        mock_account1 = Mock()
-        mock_account1.id = "conn-old"
-        mock_account1.created_at = "2024-01-01T00:00:00Z"
-        mock_account2 = Mock()
-        mock_account2.id = "conn-new"
-        mock_account2.created_at = "2024-01-02T00:00:00Z"
-        mock_accounts.items = [mock_account1, mock_account2]
-        mock_client.connected_accounts.list.return_value = mock_accounts
-
-        result = triggers._get_connected_account_for_user(
-            trigger="GITHUB_COMMIT_EVENT",
-            user_id="user-123",
-        )
-
-        # Should return the most recent account
-        assert result == "conn-new"
-
-    def test_get_connected_account_for_user_no_accounts(
-        self, triggers, mock_client, mock_trigger_type
-    ):
-        """Test _get_connected_account_for_user with no accounts raises error."""
-        mock_client.triggers_types.retrieve.return_value = mock_trigger_type
-
-        # Mock empty connected accounts
-        mock_accounts = Mock()
-        mock_accounts.items = []
-        mock_client.connected_accounts.list.return_value = mock_accounts
-
-        with pytest.raises(exceptions.NoItemsFound) as exc_info:
-            triggers._get_connected_account_for_user(
-                trigger="GITHUB_COMMIT_EVENT",
-                user_id="user-123",
-            )
-
-        assert "No connected accounts found" in str(exc_info.value)
 
     def test_enable_trigger(self, triggers, mock_client):
         """Test enable trigger."""

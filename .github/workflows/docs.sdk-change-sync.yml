@@ -28,7 +28,7 @@ jobs:
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
 
       - name: Check docs for staleness
         if: steps.diff.outputs.has_changes == 'true'
-        uses: anthropics/claude-code-action/base-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
+        uses: anthropics/claude-code-action/base-action@a92e7c70a4da9793dc164451d829089dc057a464 # v1.0.159
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |

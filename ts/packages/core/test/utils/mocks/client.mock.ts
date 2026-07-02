@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 
-export const mockClient = {
+const mockClientBase = {
   tools: {
     list: vi.fn(),
     retrieve: vi.fn(),
@@ -37,3 +37,14 @@ export const mockClient = {
     },
   },
 };
+
+// `withOptions` returns the same mock so chained calls (e.g.
+// `client.withOptions({ maxRetries: 0 }).tools.execute(...)`) still record on
+// the same spies. Mirrors the real client's `withOptions`.
+//
+// This implementation is load-bearing: tests rely on `vi.clearAllMocks()`
+// (which preserves implementations), not `vi.resetAllMocks()` (which would wipe
+// it and make chained `.tools.*` calls throw on `undefined`).
+export const mockClient = Object.assign(mockClientBase, {
+  withOptions: vi.fn(() => mockClientBase),
+});

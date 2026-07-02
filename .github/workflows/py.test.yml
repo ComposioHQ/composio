@@ -32,7 +32,7 @@ jobs:
       python: ${{ steps.versions.outputs.python }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Read versions
         id: versions
@@ -48,15 +48,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pip
           key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
@@ -109,7 +109,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -161,7 +161,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -196,14 +196,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install UV
         id: setup-python
         uses: ./.github/actions/setup-python-uv
 
       - name: Cache UV dependencies
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/uv
           key: uv-${{ hashFiles('mise.lock') }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('python/pyproject.toml') }}
@@ -216,15 +216,25 @@ jobs:
           # Let UV manage Python version to satisfy workspace requirements
           uv sync --group dev
 
-      - name: Verify API Key
+      - name: Check API key
+        id: api-key
         run: |
           if [ -z "$COMPOSIO_API_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+              echo "::notice::Skipping secret-backed Python integration tests for Dependabot; missing COMPOSIO_API_KEY."
+              exit 0
+            fi
+
             echo "::error::COMPOSIO_API_KEY is not set"
             exit 1
           fi
-          echo "✅ COMPOSIO_API_KEY is configured"
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API key is configured"
 
       - name: Run Integration Tests
+        if: steps.api-key.outputs.available == 'true'
         working-directory: ./python
         run: |
           echo "🧪 Running Integration Tests..."
