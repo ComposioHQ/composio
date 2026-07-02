@@ -1110,13 +1110,20 @@ class TestProviderIntegration:
 
 
 class TestAgenticSkipDefaultsParity:
-    """Regression: __signature__ and args_schema must agree on defaults.
+    """Regression: agentic providers must honor skip_defaults in __signature__.
 
     The langchain and langgraph providers strip schema defaults from
-    args_schema when schema_config={"skip_defaults": True}. They must apply
-    the same skip_default to the function signature, otherwise the signature
-    keeps the default while args_schema requires the field. See the sibling
-    llamaindex provider, which already passes skip_default to both.
+    args_schema when schema_config={"skip_defaults": True}, but kept the
+    defaults in the function __signature__, so the signature and args_schema
+    disagreed about which optional params were required. They now pass the
+    same skip_default to both, matching the sibling llamaindex provider.
+
+    autogen only builds __signature__ (no args_schema), so it never had the
+    mismatch, but its signature likewise ignored skip_defaults; it is aligned
+    too and checked on the signature alone.
+
+    Provider packages are optional (the unit-test job installs langchain and
+    autogen), so each case skips via importorskip when its provider is absent.
     """
 
     def _make_tool_with_default(self):
@@ -1154,11 +1161,13 @@ class TestAgenticSkipDefaultsParity:
         )
 
     def _provider(self, name, schema_config=None):
-        if name == "langchain":
-            from composio_langchain import LangchainProvider as P
-        else:
-            from composio_langgraph import LanggraphProvider as P
-        return P(schema_config=schema_config) if schema_config else P()
+        module = pytest.importorskip(f"composio_{name}")
+        provider_cls = getattr(module, f"{name.capitalize()}Provider")
+        return (
+            provider_cls(schema_config=schema_config)
+            if schema_config
+            else provider_cls()
+        )
 
     @pytest.mark.parametrize("name", ["langchain", "langgraph"])
     def test_skip_defaults_signature_matches_args_schema(self, name):
@@ -1179,3 +1188,20 @@ class TestAgenticSkipDefaultsParity:
         limit = wrapped.func.__signature__.parameters["limit"]
         assert limit.default == 5
         assert not wrapped.args_schema.model_fields["limit"].is_required()
+
+    def test_autogen_signature_honors_skip_defaults(self):
+        from inspect import Parameter
+
+        provider = self._provider("autogen", {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        # autogen exposes the wrapped function as `_func` and has no args_schema.
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+
+    def test_autogen_signature_preserves_default(self):
+        provider = self._provider("autogen")
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default == 5
