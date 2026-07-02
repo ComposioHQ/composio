@@ -16,7 +16,7 @@ import {
   ToolRouterSandboxConfig,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 export const transformToolRouterToolsParams = (
   params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined

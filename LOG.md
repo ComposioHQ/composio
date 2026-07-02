@@ -199,3 +199,27 @@ Commands run:
 Result: Green. All ten TypeScript provider packages now expose both `typecheck` and `typecheck:tsc`; the existing provider test suites still pass. This completes the script half of the roadmap's TypeScript provider coverage item while preserving the existing real test suites.
 
 Next blocker: Continue the TypeScript polish lane with the barrel export audit or Zod v3/v4 support matrix.
+
+## 2026-07-03 - TypeScript Zod support matrix
+
+Selected blocker: The TypeScript SDK supports both Zod 3 and Zod 4 in practice, but the v1 contract does not spell out which surfaces support which major, and one stable core file still imports the bare `zod` entrypoint.
+
+Hypothesis: Normalizing the stable core import to `zod/v3` and documenting the support matrix in the stability contract clarifies the 1.0 promise without changing runtime behavior.
+
+Files changed:
+
+- `ts/packages/core/src/lib/toolRouterParams.ts`
+- `docs/decisions/sdk-1.0-stability-contract.md`
+- `LOG.md`
+
+Commands run:
+
+- `command rg -n "from ['\"]zod['\"]|from ['\"]zod/" ts/packages/core/src --glob '!**/dist/**'`
+- `pnpm --filter @composio/core typecheck`
+- `pnpm --filter @composio/core test`
+- `pnpm exec prettier --check docs/decisions/sdk-1.0-stability-contract.md LOG.md ts/packages/core/src/lib/toolRouterParams.ts`
+- `git diff --check`
+
+Result: Green. Stable core now uses explicit `zod/v3` imports at schema boundaries, and the only core `zod/v4` import is the custom-tool conversion path that calls `toJSONSchema`. The stability contract now records the Zod 3/4 support matrix for stable core schemas, custom tools, JSON Schema helpers, provider packages, and CLI internals.
+
+Next blocker: Continue the TypeScript polish lane with the barrel export audit.
