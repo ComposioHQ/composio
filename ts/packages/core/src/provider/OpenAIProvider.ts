@@ -246,21 +246,24 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
-    for (const choice of chatCompletion.choices) {
-      // A single assistant message can carry several tool calls (parallel tool
-      // calls, on by default). Each one needs its own tool result, otherwise the
-      // next request fails since some tool_call_ids go unanswered.
-      for (const toolCall of choice.message.tool_calls ?? []) {
-        if (toolCall.type !== 'function') {
-          continue;
-        }
-        const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
-        outputs.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: toolResult,
-        });
+    // Only the first choice is actionable: its tool results feed back into a
+    // single assistant turn. With n > 1, iterating every choice would run each
+    // tool call once per choice and orphan the tool_call_ids belonging to the
+    // alternative completions.
+    const [choice] = chatCompletion.choices;
+    // A single assistant message can carry several tool calls (parallel tool
+    // calls, on by default). Each one needs its own tool result, otherwise the
+    // next request fails since some tool_call_ids go unanswered.
+    for (const toolCall of choice?.message.tool_calls ?? []) {
+      if (toolCall.type !== 'function') {
+        continue;
       }
+      const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
+      outputs.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: toolResult,
+      });
     }
     return outputs;
   }
