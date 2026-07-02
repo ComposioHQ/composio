@@ -150,3 +150,30 @@ Commands run:
 Result: Green. `ts/docs/internal/release.md` now directs regular and manual TypeScript SDK release operators to `next`, and the `ts.release.yml` Changesets step comment now says it runs on `next` merges. The targeted branch search only reports `next` in those files.
 
 Next blocker: Continue the polish lane by choosing either Python type-contract tightening or TypeScript provider test/typecheck coverage.
+
+## 2026-07-03 - Python type-contract tightening
+
+Selected blocker: Python auth-config and MCP methods still expose loose return types, and the custom-provider type-inference file exists but is omitted from the `type_inference` nox session.
+
+Hypothesis: Use generated response classes where they exist, mirror the auth-config update/status shape with the generated retrieve response until the generated client exposes a dedicated update schema, and add the custom-provider inference file to the nox gate.
+
+Files changed:
+
+- `python/composio/client/types.py`
+- `python/composio/core/models/auth_configs.py`
+- `python/composio/core/models/mcp.py`
+- `python/noxfile.py`
+- `LOG.md`
+
+Commands run:
+
+- `uv run ruff check composio/client/types.py composio/core/models/auth_configs.py composio/core/models/mcp.py noxfile.py`
+- `uv run pytest tests/test_auth_configs.py -q`
+- `uv run nox -s type_inference`
+- `.nox/type_inference/bin/mypy --config-file config/mypy.ini composio/client/types.py composio/core/models/auth_configs.py composio/core/models/mcp.py`
+- `uv run ruff format --check composio/client/types.py composio/core/models/auth_configs.py composio/core/models/mcp.py noxfile.py tests/test_type_inference_custom_provider.py`
+- `git diff --check`
+
+Result: Green. `auth_configs.update()` and the status helpers now return local aliases to `AuthConfigRetrieveResponse`, `auth_configs.delete()` returns the generated `AuthConfigDeleteResponse`, and `mcp.get()` / `mcp.update()` return generated MCP response classes. `nox -s type_inference` now checks `tests/test_type_inference_custom_provider.py` and passes across 13 source files. `mcp.delete()` intentionally remains a dict-shaped convenience wrapper because changing it to the generated response object would alter current runtime behavior and was not part of this blocker.
+
+Next blocker: Continue the polish lane with TypeScript provider typecheck/test coverage or the TypeScript barrel export audit.

@@ -11,6 +11,7 @@ import typing as t
 import typing_extensions as te
 from composio_client.types.mcp.custom_create_response import CustomCreateResponse
 
+from composio.client.types import mcp_retrieve_response, mcp_update_response
 from composio.client import HttpClient
 from composio.core.models.base import Resource
 from composio.exceptions import ValidationError
@@ -289,7 +290,7 @@ class MCP(Resource):
         except Exception as e:
             raise ValidationError("Failed to list MCP servers") from e
 
-    def get(self, server_id: str):
+    def get(self, server_id: str) -> mcp_retrieve_response.McpRetrieveResponse:
         """
         Retrieve detailed information about a specific MCP server/config.
 
@@ -319,7 +320,7 @@ class MCP(Resource):
         toolkits: t.Optional[t.List[t.Union[ConfigToolkit, str]]] = None,
         manually_manage_connections: t.Optional[bool] = None,
         allowed_tools: t.Optional[t.List[str]] = None,
-    ):
+    ) -> mcp_update_response.McpUpdateResponse:
         """
         Update an existing MCP server configuration.
 

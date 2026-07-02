@@ -7,12 +7,20 @@ import typing_extensions as te
 from composio.client.types import (
     auth_config_create_params,
     auth_config_create_response,
+    auth_config_delete_response,
     auth_config_list_params,
     auth_config_list_response,
     auth_config_retrieve_response,
     auth_config_update_params,
 )
 from composio.core.models.base import Resource
+
+AuthConfigUpdateResponse: t.TypeAlias = (
+    auth_config_retrieve_response.AuthConfigRetrieveResponse
+)
+AuthConfigUpdateStatusResponse: t.TypeAlias = (
+    auth_config_retrieve_response.AuthConfigRetrieveResponse
+)
 
 
 class AuthConfigs(Resource):
@@ -67,17 +75,16 @@ class AuthConfigs(Resource):
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant0
-    ) -> t.Dict: ...
+    ) -> AuthConfigUpdateResponse: ...
 
     @t.overload
     def update(
         self, nanoid: str, *, options: auth_config_update_params.Variant1
-    ) -> t.Dict: ...
+    ) -> AuthConfigUpdateResponse: ...
 
-    # FIXME: what type is this response, in ts, it's AuthConfigUpdateResponse
     def update(
         self, nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams
-    ) -> t.Dict:
+    ) -> AuthConfigUpdateResponse:
         """
         Updates an existing authentication configuration.
 
@@ -90,7 +97,7 @@ class AuthConfigs(Resource):
         :return: The updated auth config.
         """
         return t.cast(
-            t.Dict,
+            AuthConfigUpdateResponse,
             self._client.auth_configs.update(
                 nanoid=nanoid,
                 type=options["type"],  # type: ignore
@@ -104,29 +111,31 @@ class AuthConfigs(Resource):
             ),
         )
 
-    def delete(self, nanoid: str) -> t.Dict:
+    def delete(
+        self, nanoid: str
+    ) -> auth_config_delete_response.AuthConfigDeleteResponse:
         """
         Deletes an existing authentication configuration.
 
         :param nanoid: The ID of the auth config to delete.
         :return: The deleted auth config.
         """
-        return t.cast(t.Dict, self._client.auth_configs.delete(nanoid))
+        return self._client.auth_configs.delete(nanoid)
 
     def __update_status(
         self,
         nanoid: str,
         status: t.Literal["ENABLED", "DISABLED"],
-    ) -> t.Dict:
+    ) -> AuthConfigUpdateStatusResponse:
         return t.cast(
-            t.Dict,
+            AuthConfigUpdateStatusResponse,
             self._client.auth_configs.update_status(
                 status,
                 nanoid=nanoid,
             ),
         )
 
-    def enable(self, nanoid: str) -> t.Dict:
+    def enable(self, nanoid: str) -> AuthConfigUpdateStatusResponse:
         """
         Enables an existing authentication configuration.
 
@@ -135,7 +144,7 @@ class AuthConfigs(Resource):
         """
         return self.__update_status(nanoid, "ENABLED")
 
-    def disable(self, nanoid: str) -> t.Dict:
+    def disable(self, nanoid: str) -> AuthConfigUpdateStatusResponse:
         """
         Disables an existing authentication configuration.
 
