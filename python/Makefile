@@ -1,4 +1,4 @@
-.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference bump build format check sanity test
+.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference examples bump build format check sanity test test-examples
 
 clean-build:
 	@rm -rf dist/ build/
@@ -62,11 +62,15 @@ tst:
 type_inference:
 	@nox -s type_inference
 
+examples:
+	@uv run nox -s examples
+
 # Friendly aliases for the short session names above (e.g. `make test` == `make tst`).
 format: fmt
 check: chk
 sanity: snt
 test: tst
+test-examples: examples
 
 bump: clean-build
 	@uv run python scripts/bump.py

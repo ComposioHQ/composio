@@ -67,6 +67,12 @@ def chk(session: Session):
 
 
 @nox.session
+def examples(session: Session):
+    """Validate Python example files without executing live API calls."""
+    session.run("python", "scripts/validate_examples.py")
+
+
+@nox.session
 def fix(session: Session):
     """Fix linter issues"""
     session.install("--group", "dev")

@@ -303,3 +303,30 @@ Commands run:
 Result: Green. `check:package-exports` now allows the current 0.x `./generated` subpath but blocks a future `@composio/core` 1.x release if the throwing generated stub remains in the exports map. This keeps current CLI behavior intact while turning the unresolved B3 contract decision into a release-time guardrail.
 
 Next blocker: Continue with independent current-repo work that does not decide the generated subpath contract, likely the cross-changelog strategy audit or Python examples CI validation.
+
+## 2026-07-03 - Python examples CI validation
+
+Selected blocker: The roadmap calls out validating Python examples in CI the way TypeScript already runs `test:examples`. Python examples were Ruff-checked through `nox -s chk`, but there was no dedicated example validation gate.
+
+Hypothesis: Add a no-execute Python example validator that compiles every `python/examples/**/*.py` file and rejects empty files, then wire it into nox, `make examples`, and the Python check workflow. This catches syntax drift without requiring API keys or executing live-service examples.
+
+Files changed:
+
+- `python/scripts/validate_examples.py`
+- `python/noxfile.py`
+- `python/Makefile`
+- `.github/workflows/py.check.yaml`
+- `LOG.md`
+
+Commands run:
+
+- `uv run nox -s examples`
+- `make examples`
+- `uv run ruff check scripts/validate_examples.py noxfile.py`
+- `uv run ruff format --check scripts/validate_examples.py noxfile.py`
+- `pnpm exec prettier --check .github/workflows/py.check.yaml LOG.md`
+- `git diff --check`
+
+Result: Green. The new nox session and Makefile target validate 23 Python example files without executing them, and `py.check.yaml` now runs the examples gate between the normal Python checks and type-inference tests.
+
+Next blocker: Continue with the cross-changelog strategy audit or stop if the remaining blockers require product/release authority.

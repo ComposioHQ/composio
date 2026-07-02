@@ -107,6 +107,12 @@ jobs:
           cd python/
           uv run nox -s chk
 
+      - name: Validate Python examples
+        shell: bash
+        run: |
+          cd python/
+          uv run nox -s examples
+
       - name: Type inference tests
         shell: bash
         run: |
