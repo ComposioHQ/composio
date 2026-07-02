@@ -1107,3 +1107,101 @@ class TestProviderIntegration:
 
         assert result2["successful"] is True
         assert result2["data"]["starred"] is True
+
+
+class TestAgenticSkipDefaultsParity:
+    """Regression: agentic providers must honor skip_defaults in __signature__.
+
+    The langchain and langgraph providers strip schema defaults from
+    args_schema when schema_config={"skip_defaults": True}, but kept the
+    defaults in the function __signature__, so the signature and args_schema
+    disagreed about which optional params were required. They now pass the
+    same skip_default to both, matching the sibling llamaindex provider.
+
+    autogen only builds __signature__ (no args_schema), so it never had the
+    mismatch, but its signature likewise ignored skip_defaults; it is aligned
+    too and checked on the signature alone.
+
+    Provider packages are optional (the unit-test job installs langchain and
+    autogen), so each case skips via importorskip when its provider is absent.
+    """
+
+    def _make_tool_with_default(self):
+        return Tool(
+            name="Test Tool",
+            slug="TEST_TOOL",
+            description="A tool with a defaulted optional param",
+            input_parameters={
+                "type": "object",
+                "title": "TestToolRequest",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Test Tool",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def _provider(self, name, schema_config=None):
+        module = pytest.importorskip(f"composio_{name}")
+        provider_cls = getattr(module, f"{name.capitalize()}Provider")
+        return (
+            provider_cls(schema_config=schema_config)
+            if schema_config
+            else provider_cls()
+        )
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_skip_defaults_signature_matches_args_schema(self, name):
+        from inspect import Parameter
+
+        provider = self._provider(name, {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+        assert wrapped.args_schema.model_fields["limit"].is_required()
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_default_preserved_without_skip_defaults(self, name):
+        provider = self._provider(name)
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default == 5
+        assert not wrapped.args_schema.model_fields["limit"].is_required()
+
+    def test_autogen_signature_honors_skip_defaults(self):
+        from inspect import Parameter
+
+        provider = self._provider("autogen", {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        # autogen exposes the wrapped function as `_func` and has no args_schema.
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+
+    def test_autogen_signature_preserves_default(self):
+        provider = self._provider("autogen")
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default == 5
