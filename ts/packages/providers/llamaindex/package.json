@@ -31,7 +31,9 @@
   ],
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "pnpm exec tsgo --noEmit --skipLibCheck",
+    "typecheck:tsc": "tsc --noEmit --skipLibCheck"
   },
   "keywords": [
     "composio",

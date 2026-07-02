@@ -177,3 +177,25 @@ Commands run:
 Result: Green. `auth_configs.update()` and the status helpers now return local aliases to `AuthConfigRetrieveResponse`, `auth_configs.delete()` returns the generated `AuthConfigDeleteResponse`, and `mcp.get()` / `mcp.update()` return generated MCP response classes. `nox -s type_inference` now checks `tests/test_type_inference_custom_provider.py` and passes across 13 source files. `mcp.delete()` intentionally remains a dict-shaped convenience wrapper because changing it to the generated response object would alter current runtime behavior and was not part of this blocker.
 
 Next blocker: Continue the polish lane with TypeScript provider typecheck/test coverage or the TypeScript barrel export audit.
+
+## 2026-07-03 - TypeScript provider typecheck scripts
+
+Selected blocker: Nine TypeScript provider packages have real Vitest suites but no `typecheck` script, so the workspace `typecheck` task skips those adapters.
+
+Hypothesis: Giving every provider the same `typecheck` / `typecheck:tsc` scripts already used by `@composio/mastra` makes provider type coverage explicit without changing provider runtime behavior.
+
+Files changed:
+
+- `ts/packages/providers/{anthropic,claude-agent-sdk,cloudflare,google,langchain,llamaindex,openai,openai-agents,vercel}/package.json`
+- `LOG.md`
+
+Commands run:
+
+- `pnpm typecheck --filter='./ts/packages/providers/**'`
+- `pnpm exec turbo test --filter='./ts/packages/providers/**'`
+- `pnpm exec prettier --check ts/packages/providers/anthropic/package.json ts/packages/providers/claude-agent-sdk/package.json ts/packages/providers/cloudflare/package.json ts/packages/providers/google/package.json ts/packages/providers/langchain/package.json ts/packages/providers/llamaindex/package.json ts/packages/providers/openai-agents/package.json ts/packages/providers/openai/package.json ts/packages/providers/vercel/package.json LOG.md`
+- `git diff --check`
+
+Result: Green. All ten TypeScript provider packages now expose both `typecheck` and `typecheck:tsc`; the existing provider test suites still pass. This completes the script half of the roadmap's TypeScript provider coverage item while preserving the existing real test suites.
+
+Next blocker: Continue the TypeScript polish lane with the barrel export audit or Zod v3/v4 support matrix.
