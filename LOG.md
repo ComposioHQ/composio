@@ -330,3 +330,30 @@ Commands run:
 Result: Green. The new nox session and Makefile target validate 23 Python example files without executing them, and `py.check.yaml` now runs the examples gate between the normal Python checks and type-inference tests.
 
 Next blocker: Continue with the cross-changelog strategy audit or stop if the remaining blockers require product/release authority.
+
+## 2026-07-03 - MCP source doc contradiction cleanup
+
+Selected blocker: B4 still cited MCP source documentation contradictions: examples pointed at nonexistent `composio.experimental.mcp`, and the TypeScript provider hook deprecation referenced nonexistent `wrapMcpServers`.
+
+Hypothesis: Keep the runtime MCP surface unchanged, but make source docs name the real top-level `composio.mcp` API while clearly preserving its deprecated/experimental status and pointing users toward session MCP endpoints.
+
+Files changed:
+
+- `ts/packages/core/src/models/MCP.ts`
+- `ts/packages/core/src/provider/BaseProvider.ts`
+- `python/composio/core/models/mcp.py`
+- `docs/decisions/sdk-v1-readiness.md`
+- `LOG.md`
+
+Commands run:
+
+- `! command rg -n "experimental\\.mcp|wrapMcpServers" ts/packages/core/src python/composio docs/decisions/sdk-v1-readiness.md --glob '!**/generated/**'`
+- `pnpm --filter @composio/core typecheck`
+- `uv run ruff check composio/core/models/mcp.py`
+- `uv run ruff format --check composio/core/models/mcp.py`
+- `pnpm exec prettier --check ts/packages/core/src/provider/BaseProvider.ts ts/packages/core/src/models/MCP.ts LOG.md`
+- `git diff --check`
+
+Result: Green. The source examples now use the real `composio.mcp` path, the provider hook no longer points to nonexistent `wrapMcpServers`, and the readiness note now describes the remaining MCP blocker accurately: the standalone top-level namespace remains deprecated/experimental and still needs final v1 surface settlement.
+
+Next blocker: Remaining blockers now require either generated-client replacement, MCP/error contract design, provider rename/migration planning, async Python design, or release-authority coordination.

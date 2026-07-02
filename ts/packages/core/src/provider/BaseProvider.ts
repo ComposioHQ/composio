@@ -62,7 +62,9 @@ abstract class BaseProvider<TMcpResponse> {
 
   /**
    * @public
-   * @deprecated: Will be removed in a future version, once the `experimental.mcp` flag is stabilized. Use `wrapMcpServers` instead.
+   * @deprecated MCP remains experimental and the standalone MCP helpers are deprecated in favor of
+   * session MCP endpoints. This provider hook is kept for backwards compatibility while that
+   * surface stays in flux.
    * Optional method to transform MCP URL response into provider-specific format.
    * Providers can override this method to define custom transformation logic
    * for MCP server responses.
