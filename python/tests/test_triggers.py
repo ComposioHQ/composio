@@ -8,8 +8,9 @@ import time
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
-from composio_client import omit
+from composio_client import NotFoundError, omit
 
 from composio import exceptions
 from composio.core.models.triggers import (
@@ -298,15 +299,15 @@ class TestTriggers:
             "webhook_url": "https://example.com/webhook"
         }
         assert call_kwargs["toolkit_versions"] is None
-        # No user_id supplied → empty extra_body.
-        assert call_kwargs["extra_body"] == {}
+        # No user_id supplied → omitted from the request (native kwarg, not extra_body).
+        assert call_kwargs["user_id"] is omit
         assert result == mock_response
 
     def test_create_with_user_id(self, triggers, mock_client):
         """Test create trigger with user_id only.
 
         The backend resolves the connection from ``user_id``, so the SDK passes
-        it through (via ``extra_body``) and no longer lists connected accounts.
+        it straight through and no longer lists connected accounts.
         """
         mock_response = Mock()
         mock_response.trigger_id = "trigger-123"
@@ -318,21 +319,74 @@ class TestTriggers:
             trigger_config={"webhook_url": "https://example.com/webhook"},
         )
 
-        # The SDK no longer makes an extra round-trip to find a connection.
+        # The SDK no longer lists connected accounts to resolve the connection,
+        # but it still validates the slug up-front (parity with the TS SDK).
         mock_client.connected_accounts.list.assert_not_called()
-        mock_client.triggers_types.retrieve.assert_not_called()
+        mock_client.triggers_types.retrieve.assert_called_once()
 
         mock_client.trigger_instances.upsert.assert_called_once()
         call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
         assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
-        # No explicit connection pinned → omitted; user_id rides in extra_body.
+        # No explicit connection pinned → omitted; user_id is sent as a native kwarg.
         assert call_kwargs["connected_account_id"] is omit
-        assert call_kwargs["extra_body"] == {"user_id": "user-123"}
+        assert call_kwargs["user_id"] == "user-123"
         assert call_kwargs["body_trigger_config_1"] == {
             "webhook_url": "https://example.com/webhook"
         }
         assert call_kwargs["toolkit_versions"] is None
         assert result == mock_response
+
+    def test_create_with_user_id_and_connected_account_id(self, triggers, mock_client):
+        """Test create trigger with both user_id and a pinned connected_account_id.
+
+        When a connection is pinned and 2FA is enabled, the backend validates the
+        connection is owned by ``user_id``. Both values are forwarded natively
+        (no ``extra_body``). Mirrors the TS ``create`` test.
+        """
+        mock_response = Mock()
+        mock_response.trigger_id = "trigger-123"
+        mock_client.trigger_instances.upsert.return_value = mock_response
+
+        result = triggers.create(
+            slug="GITHUB_COMMIT_EVENT",
+            user_id="user-123",
+            connected_account_id="conn-123",
+            trigger_config={"webhook_url": "https://example.com/webhook"},
+        )
+
+        mock_client.connected_accounts.list.assert_not_called()
+        mock_client.trigger_instances.upsert.assert_called_once()
+        call_kwargs = mock_client.trigger_instances.upsert.call_args.kwargs
+        assert call_kwargs["slug"] == "GITHUB_COMMIT_EVENT"
+        assert call_kwargs["connected_account_id"] == "conn-123"
+        assert call_kwargs["user_id"] == "user-123"
+        assert call_kwargs["body_trigger_config_1"] == {
+            "webhook_url": "https://example.com/webhook"
+        }
+        assert result == mock_response
+
+    def test_create_raises_trigger_type_not_found_for_unknown_slug(
+        self, triggers, mock_client
+    ):
+        """An unknown slug surfaces as TriggerTypeNotFound (parity with the TS SDK)."""
+        request = httpx.Request("GET", "https://backend.composio.dev")
+        response = httpx.Response(404, request=request)
+        mock_client.triggers_types.retrieve.side_effect = NotFoundError(
+            "not found", response=response, body=None
+        )
+
+        with pytest.raises(exceptions.TriggerTypeNotFound):
+            triggers.create(slug="UNKNOWN_TRIGGER", user_id="user-123")
+
+        mock_client.trigger_instances.upsert.assert_not_called()
+
+    def test_create_treats_blank_user_id_as_missing(self, triggers, mock_client):
+        """A blank user_id is rejected like a missing one, before any request."""
+        with pytest.raises(exceptions.InvalidParams):
+            triggers.create(slug="GITHUB_COMMIT_EVENT", user_id="   ")
+
+        mock_client.triggers_types.retrieve.assert_not_called()
+        mock_client.trigger_instances.upsert.assert_not_called()
 
     def test_create_with_custom_toolkit_versions(
         self, triggers_with_versions, mock_client

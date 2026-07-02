@@ -33,7 +33,7 @@ const triggers = await composio.triggers.listActive({
 
 ### Create Trigger Instance
 
-Create a new trigger instance for a specific user and trigger type. The trigger instance version is determined by the global `toolkitVersions` configuration set during Composio initialization (defaults to `'latest'`). If a connected account ID is not provided, the SDK will automatically use the first available connected account for the user and toolkit.
+Create a new trigger instance for a specific user and trigger type. The trigger instance version is determined by the global `toolkitVersions` configuration set during Composio initialization (defaults to `'latest'`). If a connected account ID is not provided, the backend resolves the first active connection for the user and toolkit.
 
 **With Connected Account ID:**
 
@@ -57,17 +57,17 @@ const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSA
     userId: 'me',
     interval: 60,
   },
-}); // Will use the first available connected account
+}); // The backend resolves the first active connection for the user and toolkit
 ```
 
-> **Note:** It's recommended to provide a `connectedAccountId` when you have multiple connected accounts for the same toolkit to ensure the trigger is created for the intended account. If not provided, the SDK will use the first available connected account and log a warning.
+> **Note:** It's recommended to provide a `connectedAccountId` when you have multiple connected accounts for the same toolkit to ensure the trigger is created for the intended account. If not provided, the backend resolves the first active connection for the user and toolkit (ordered by most recently created).
 
 **Parameters:**
 
 - `userId` (string, required): The ID of the user to create the trigger instance for
 - `slug` (string, required): The slug of the trigger type to create
 - `body` (TriggerInstanceUpsertParams, optional): Configuration for the trigger instance
-  - `connectedAccountId` (string, optional): ID of the connected account to use. If not provided, will use the first available connected account for the user and toolkit
+  - `connectedAccountId` (string, optional): ID of the connected account to use. If not provided, the backend resolves the first active connection for the user and toolkit
   - `triggerConfig` (object, optional): Trigger-specific configuration parameters
 
 **Returns:** Promise<TriggerInstanceUpsertResponse> - The created trigger instance with the following structure:
@@ -86,9 +86,10 @@ const trigger = await composio.triggers.create('default', 'GMAIL_NEW_GMAIL_MESSA
 
 **Throws:**
 
-- `ValidationError`: If the provided parameters are invalid
+- `ValidationError`: If `userId` is empty or the provided parameters are invalid
 - `ComposioTriggerTypeNotFoundError`: If the trigger type with the given slug is not found
-- `ComposioConnectedAccountNotFoundError`: If no connected account is found for the user, or if the specified connected account ID is not found
+
+> **Note:** Connection resolution now happens on the backend. If no active connection exists for the user and toolkit — or a pinned `connectedAccountId` is invalid — the upsert call rejects with the backend error, not a client-side `ComposioConnectedAccountNotFoundError`.
 
 **Example with Specific Toolkit Version:**
 
@@ -132,16 +133,13 @@ try {
   if (error instanceof ComposioTriggerTypeNotFoundError) {
     console.error('Trigger type not found:', error.message);
     // Handle invalid trigger type
-  } else if (error instanceof ComposioConnectedAccountNotFoundError) {
-    console.error('Connected account issue:', error.message);
-    // Handle missing or invalid connected account
-    // This can happen if:
-    // 1. No connected accounts exist for the user and toolkit
-    // 2. The specified connectedAccountId was not found
   } else if (error instanceof ValidationError) {
     console.error('Invalid parameters:', error.message);
     // Handle validation errors
   } else {
+    // Connection problems now surface here as backend errors, for example when
+    // no active connection exists for the user and toolkit, or the pinned
+    // connectedAccountId is invalid.
     console.error('Unexpected error:', error);
     // Handle other errors
   }
