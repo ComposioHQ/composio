@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from pydantic.fields import PydanticUndefined
 
 from composio.utils.shared import (
+    get_signature_format_from_schema_params,
     json_schema_to_fields_dict,
     json_schema_to_model,
     json_schema_to_pydantic_field,
@@ -1460,6 +1461,146 @@ class TestBooleanDefaultCoercion:
             assert prop.get("default") is expected_bool, (
                 f"Expected '{string_value}' to coerce to {expected_bool}"
             )
+
+
+class TestGetSignatureFormatFromSchemaParams:
+    """Test cases for get_signature_format_from_schema_params union handling."""
+
+    @staticmethod
+    def _annotation(schema):
+        params = get_signature_format_from_schema_params(schema)
+        assert len(params) == 1
+        return params[0].annotation
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_four_members(self):
+        """oneOf with 4 options builds a Union instead of raising ValueError."""
+        schema = {
+            "properties": {
+                "value": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "integer"},
+                        {"type": "boolean"},
+                        {"type": "number"},
+                    ]
+                }
+            }
+        }
+
+        annotation = self._annotation(schema)
+        assert t.get_origin(annotation) is t.Union
+        assert set(t.get_args(annotation)) == {str, int, bool, float}
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_five_members(self):
+        """oneOf with more than four options is also supported (no 3-member cap)."""
+        schema = {
+            "properties": {
+                "value": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "integer"},
+                        {"type": "boolean"},
+                        {"type": "number"},
+                        {"type": "array"},
+                    ]
+                }
+            }
+        }
+
+        annotation = self._annotation(schema)
+        assert t.get_origin(annotation) is t.Union
+        assert len(t.get_args(annotation)) == 5
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_option_missing_type(self):
+        """An anyOf option without a 'type' key maps to Any instead of raising KeyError."""
+        schema = {
+            "properties": {
+                "value": {
+                    "anyOf": [
+                        {"description": "free-form value"},
+                        {"type": "string"},
+                    ]
+                }
+            }
+        }
+
+        annotation = self._annotation(schema)
+        assert t.get_origin(annotation) is t.Union
+        args = t.get_args(annotation)
+        assert t.Any in args
+        assert str in args
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_all_options_missing_type(self):
+        """anyOf where every option lacks a 'type' collapses to a single Any annotation."""
+        schema = {
+            "properties": {
+                "value": {
+                    "anyOf": [
+                        {"description": "a"},
+                        {"description": "b"},
+                    ]
+                }
+            }
+        }
+
+        assert self._annotation(schema) is t.Any
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_single_member(self):
+        """oneOf with a single option resolves to that type directly (unchanged)."""
+        schema = {"properties": {"value": {"oneOf": [{"type": "string"}]}}}
+        assert self._annotation(schema) is str
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_two_members(self):
+        """Two-member oneOf behavior is preserved (Union of the two types)."""
+        schema = {
+            "properties": {
+                "value": {"oneOf": [{"type": "string"}, {"type": "integer"}]}
+            }
+        }
+        assert self._annotation(schema) == t.Union[str, int]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_oneof_three_members(self):
+        """Three-member oneOf behavior is preserved (Union of the three types)."""
+        schema = {
+            "properties": {
+                "value": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "integer"},
+                        {"type": "boolean"},
+                    ]
+                }
+            }
+        }
+        assert self._annotation(schema) == t.Union[str, int, bool]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_anyof_with_null_member_still_resolves(self):
+        """Nullable anyOf [type, null] continues to resolve without raising."""
+        schema = {
+            "properties": {"value": {"anyOf": [{"type": "string"}, {"type": "null"}]}}
+        }
+
+        annotation = self._annotation(schema)
+        assert t.get_origin(annotation) is t.Union
+        args = t.get_args(annotation)
+        assert str in args
+        assert type(None) in args
 
 
 if __name__ == "__main__":
