@@ -500,6 +500,74 @@ class TestNonAgenticProviderHelperMethods:
         assert results[0]["successful"] is True
         assert results[0]["data"]["starred"] is True
 
+    def test_openai_provider_handle_tool_calls_only_first_choice(self):
+        """Only the first choice runs; n > 1 alternatives would orphan tool_call_ids."""
+        from openai.types.chat import ChatCompletion
+        from openai.types.chat.chat_completion import Choice
+        from openai.types.chat.chat_completion_message import ChatCompletionMessage
+        from openai.types.chat.chat_completion_message_tool_call import (
+            ChatCompletionMessageToolCall,
+            Function,
+        )
+
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+
+        Tools(
+            client=mock_client,
+            provider=provider,
+            toolkit_versions={"github": "12012025_00"},
+        )
+
+        github_tool = create_mock_tool("GITHUB_STAR_REPO", "github", "12012025_00")
+        mock_client.tools.retrieve.return_value = github_tool
+
+        mock_execute_response = Mock()
+        mock_execute_response.model_dump.return_value = {
+            "data": {"starred": True},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = mock_execute_response
+
+        def make_choice(index: int, call_id: str) -> Choice:
+            return Choice(
+                finish_reason="tool_calls",
+                index=index,
+                message=ChatCompletionMessage(
+                    role="assistant",
+                    content=None,
+                    tool_calls=[
+                        ChatCompletionMessageToolCall(
+                            id=call_id,
+                            function=Function(
+                                name="GITHUB_STAR_REPO",
+                                arguments='{"repo": "composio/composio"}',
+                            ),
+                            type="function",
+                        )
+                    ],
+                ),
+            )
+
+        completion = ChatCompletion(
+            id="chatcmpl-123",
+            choices=[make_choice(0, "call_first"), make_choice(1, "call_second")],
+            created=1234567890,
+            model="gpt-4",
+            object="chat.completion",
+        )
+
+        results = provider.handle_tool_calls(
+            user_id="test-user",
+            response=completion,
+        )
+
+        assert len(results) == 1
+        assert mock_client.tools.execute.call_count == 1
+
     def test_openai_provider_wrap_tools(self):
         """Test that OpenAIProvider.wrap_tools creates proper tool definitions."""
         from composio.core.provider._openai import OpenAIProvider
