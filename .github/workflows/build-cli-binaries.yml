@@ -224,10 +224,15 @@ jobs:
       - name: Package skill files
         working-directory: ts/packages/cli
         env:
-          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
           pnpm run validate:skills
-          if [[ "$PRERELEASE" == "true" ]]; then
+          # Derive the skill channel from the FINAL release tag — the single source of truth for
+          # release identity — not the secondary `prerelease` flag, which can drift from the tag
+          # (e.g. when a beta is promoted to stable). `beta` iff the tag carries a `-beta.` suffix,
+          # else `stable`. This makes it structurally impossible for a stable release (including a
+          # promoted-from-beta one) to ship the beta-gated skill content (e.g. `composio listen`).
+          if [[ "$RELEASE_TAG" == *-beta.* ]]; then
             channel=beta
           else
             channel=stable
