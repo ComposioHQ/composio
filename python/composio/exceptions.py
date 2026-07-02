@@ -257,6 +257,15 @@ class WebhookPayloadError(TriggerError):
     pass
 
 
+class TriggerTypeNotFound(TriggerError, NotFoundError):
+    """Raised when a trigger type cannot be found for the given slug.
+
+    Mirrors the TypeScript SDK's ``ComposioTriggerTypeNotFoundError``.
+    """
+
+    pass
+
+
 class ActionError(ToolkitError):
     pass
 

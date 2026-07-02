@@ -18,10 +18,10 @@ This keeps large payloads out of request bodies. Tools receive a file reference 
 File uploads are a two-step flow. Call the upload-request endpoint to mint a presigned URL, then upload the file contents directly to that URL. The API never receives the raw bytes.
 </Callout>
 
-If your agent works with files inside a session, prefer the session file mount, where the sandbox exposes uploaded files to running code. See the [sandbox](/docs/sandbox/remote) for the sandbox helpers (`upload_local_file`, `smart_file_extract`) that build on this storage.
+If your agent works with files inside a session, prefer the session file mount, where the sandbox exposes uploaded files to running code. See the [remote sandbox](/docs/sandbox/remote) for the sandbox helpers (`upload_local_file`, `smart_file_extract`) that build on this storage.
 
 These endpoints use your project API key in the `x-api-key` header.
 
 ## Endpoints
 
-<ApiEndpointsTable endpoints={[{"method":"GET","pathV31":"/api/v3.1/files/list","pathV3":"/api/v3/files/list","summary":"List files with optional app and action filters","href":"/reference/api-reference/files/getFilesList"},{"method":"POST","pathV31":"/api/v3.1/files/upload/request","pathV3":"/api/v3/files/upload/request","summary":"Create presigned URL for request file upload to S3","href":"/reference/api-reference/files/postFilesUploadRequest"}]} />
+<ApiEndpointsTable endpoints={[{"method":"GET","pathV31":"/api/v3.1/files/list","pathV3":"/api/v3/files/list","summary":"List files with optional app and action filters (DEPRECATED)","href":"/reference/api-reference/files/getFilesList"},{"method":"POST","pathV31":"/api/v3.1/files/upload/request","pathV3":"/api/v3/files/upload/request","summary":"Create presigned URL for request file upload to S3","href":"/reference/api-reference/files/postFilesUploadRequest"}]} />
