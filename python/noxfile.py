@@ -78,7 +78,6 @@ def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")
     session.install("./providers/langchain")
-    session.install("./providers/langgraph")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")
 

@@ -1110,13 +1110,26 @@ class TestProviderIntegration:
 
 
 class TestAgenticSkipDefaultsParity:
-    """Regression: __signature__ and args_schema must agree on defaults.
+    """Regression: agentic providers must honor skip_defaults in __signature__.
 
     The langchain and langgraph providers strip schema defaults from
-    args_schema when schema_config={"skip_defaults": True}. They must apply
-    the same skip_default to the function signature, otherwise the signature
-    keeps the default while args_schema requires the field. See the sibling
-    llamaindex provider, which already passes skip_default to both.
+    args_schema when schema_config={"skip_defaults": True}, but kept the
+    defaults in the function __signature__, so the signature and args_schema
+    disagreed about which optional params were required. They now pass the
+    same skip_default to both, matching the sibling llamaindex provider.
+
+    The langchain/langgraph packages live outside the uv workspace and are not
+    always installed (the unit-test CI job installs only langchain), so those
+    cases skip via importorskip when the provider is absent instead of erroring.
+
+    autogen shares the same __signature__ code path and was likewise dropping
+    skip_default; it only builds __signature__ (no args_schema), so it never had
+    the mismatch, but its signature still ignored skip_defaults. It cannot be
+    imported normally in CI (the provider needs both pyautogen and autogen-core,
+    and the declared pin resolves pyautogen 0.10, which ships no top-level
+    `autogen` module), so its case execs the provider source with the two
+    external symbols it imports stubbed -- exercising the real wrap_tool without
+    installing the autogen stack. See _load_autogen_provider.
     """
 
     def _make_tool_with_default(self):
@@ -1154,11 +1167,13 @@ class TestAgenticSkipDefaultsParity:
         )
 
     def _provider(self, name, schema_config=None):
-        if name == "langchain":
-            from composio_langchain import LangchainProvider as P
-        else:
-            from composio_langgraph import LanggraphProvider as P
-        return P(schema_config=schema_config) if schema_config else P()
+        module = pytest.importorskip(f"composio_{name}")
+        provider_cls = getattr(module, f"{name.capitalize()}Provider")
+        return (
+            provider_cls(schema_config=schema_config)
+            if schema_config
+            else provider_cls()
+        )
 
     @pytest.mark.parametrize("name", ["langchain", "langgraph"])
     def test_skip_defaults_signature_matches_args_schema(self, name):
@@ -1179,3 +1194,65 @@ class TestAgenticSkipDefaultsParity:
         limit = wrapped.func.__signature__.parameters["limit"]
         assert limit.default == 5
         assert not wrapped.args_schema.model_fields["limit"].is_required()
+
+    def _load_autogen_provider(self):
+        """Exec the autogen provider source with its external deps stubbed.
+
+        See the class docstring: autogen is not importable in CI. We stand in
+        for the two symbols the provider imports (autogen / autogen_core) so the
+        real AutogenProvider.wrap_tool runs without the autogen stack installed.
+        """
+        import sys
+        from importlib.util import module_from_spec, spec_from_file_location
+        from pathlib import Path
+        from types import ModuleType
+        from unittest.mock import patch
+
+        class FunctionTool:
+            def __init__(self, func, **kwargs):
+                self._func = func
+
+        def stub(name, **attrs):
+            module = ModuleType(name)
+            module.__dict__.update(attrs)
+            return module
+
+        stubs = {
+            "autogen": stub("autogen"),
+            "autogen.agentchat": stub("autogen.agentchat"),
+            "autogen.agentchat.conversable_agent": stub(
+                "autogen.agentchat.conversable_agent", ConversableAgent=object
+            ),
+            "autogen_core": stub("autogen_core"),
+            "autogen_core.tools": stub("autogen_core.tools", FunctionTool=FunctionTool),
+        }
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "providers/autogen/composio_autogen/provider.py"
+        )
+        if not source.exists():
+            pytest.skip(f"autogen provider source not found at {source}")
+
+        with patch.dict(sys.modules, stubs):
+            spec = spec_from_file_location(
+                "composio_autogen_provider_under_test", source
+            )
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+        return module.AutogenProvider
+
+    def test_autogen_signature_honors_skip_defaults(self):
+        from inspect import Parameter
+
+        provider = self._load_autogen_provider()(schema_config={"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+
+    def test_autogen_signature_preserves_default(self):
+        provider = self._load_autogen_provider()()
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default == 5
