@@ -282,3 +282,24 @@ Commands run:
 Result: Green. Current SDK warnings/docstrings, typed error docs, migration docs, and readiness notes now describe managed-OAuth `initiate()` as retired after the 2026-07-03 all-org cutover. The runtime branch remains unchanged: the SDK still warns only when the server sends the retirement header, preserves unaffected `initiate()` usage, and maps retired managed-OAuth server errors to the existing typed error.
 
 Next blocker: Audit the TypeScript `@composio/core/generated` subpath and document whether the current repo has enough settled contract to freeze or unpublish it before v1; if not, move to the next independent polish item such as changelog strategy or Python examples CI.
+
+## 2026-07-03 - Generated subpath v1 guardrail
+
+Selected blocker: The TypeScript `@composio/core/generated` subpath is public today, but it ships as a throwing stub until `composio generate ts` writes toolkit code into the consumer's installed package. Freezing or unpublishing that subpath is a product/API decision because the CLI currently depends on it when users omit `--output-dir`.
+
+Hypothesis: Do not remove the subpath in this slice. Instead, make the existing package export check fail if `@composio/core` reaches 1.x while `./generated` is still exported, so the release path cannot accidentally freeze the stub before the contract is deliberately settled.
+
+Files changed:
+
+- `ts/scripts/check-package-exports.mjs`
+- `LOG.md`
+
+Commands run:
+
+- `pnpm exec prettier --check ts/scripts/check-package-exports.mjs`
+- `pnpm run check:package-exports`
+- `git diff --check`
+
+Result: Green. `check:package-exports` now allows the current 0.x `./generated` subpath but blocks a future `@composio/core` 1.x release if the throwing generated stub remains in the exports map. This keeps current CLI behavior intact while turning the unresolved B3 contract decision into a release-time guardrail.
+
+Next blocker: Continue with independent current-repo work that does not decide the generated subpath contract, likely the cross-changelog strategy audit or Python examples CI validation.

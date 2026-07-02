@@ -50,6 +50,15 @@ function isPublishablePackage(pkg) {
   );
 }
 
+function majorVersion(version) {
+  if (typeof version !== 'string') {
+    return null;
+  }
+
+  const match = version.match(/^(\d+)\./);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
 async function assertBuiltFile(packageDir, packageName, fieldName, filePath) {
   if (typeof filePath !== 'string' || filePath.length === 0) {
     throw new Error(`${packageName} is missing package.json#${fieldName}`);
@@ -87,6 +96,18 @@ async function discoverPublishablePackages() {
     if (pkg.types !== expectedTypes) {
       metadataErrors.push(
         `${pkg.name} package.json#types must match publishConfig.types (${expectedTypes})`
+      );
+    }
+
+    const major = majorVersion(pkg.version);
+    if (
+      pkg.name === '@composio/core' &&
+      major !== null &&
+      major >= 1 &&
+      pkg.exports?.['./generated']
+    ) {
+      metadataErrors.push(
+        '@composio/core must not publish the throwing ./generated stub in 1.x. Decide and document the generated subpath contract before cutting v1.'
       );
     }
 
