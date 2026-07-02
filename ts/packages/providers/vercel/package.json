@@ -37,7 +37,7 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@composio/core": ">=0.10.0 <1.0.0",
+    "@composio/core": ">=0.10.0 <2.0.0",
     "ai": "^6.0.0 || ^7.0.0"
   },
   "devDependencies": {
