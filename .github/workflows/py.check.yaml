@@ -3,8 +3,23 @@ on:
   push:
     branches:
       - master
+      - next
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.toml'
+      - 'python/Makefile'
+      - 'python/setup.py'
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/providers/**'
+      - 'ts/scripts/validate-sdk-parity.mjs'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
@@ -13,6 +28,20 @@ on:
     types: [opened, synchronize]
     paths:
       - 'python/**/*.py'
+      - 'python/**/*.toml'
+      - 'python/Makefile'
+      - 'python/setup.py'
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/providers/**'
+      - 'ts/scripts/validate-sdk-parity.mjs'
+      - 'ts/scripts/validate-agent-skills.mjs'
+      - 'ts/scripts/test-skill-routing.mjs'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/py.check.yaml'
       - 'mise.toml'
@@ -26,6 +55,15 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 50
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Validate SDK parity and agent routing
+        run: |
+          pnpm run validate:sdk-parity
+          pnpm run validate:agent-skills
+          pnpm run validate:skill-routing
 
       - name: Setup Python with UV
         id: setup-python

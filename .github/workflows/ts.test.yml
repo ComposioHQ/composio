@@ -5,6 +5,14 @@ on:
     branches: [master, next]
     paths:
       - 'ts/**'
+      - 'python/pyproject.toml'
+      - 'python/setup.py'
+      - 'python/providers/**/pyproject.toml'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
@@ -13,6 +21,14 @@ on:
     branches: [master, next]
     paths:
       - 'ts/**'
+      - 'python/pyproject.toml'
+      - 'python/setup.py'
+      - 'python/providers/**/pyproject.toml'
+      - '.agents/**'
+      - 'AGENTS.md'
+      - 'docs/decisions/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.test.yml'
       - 'mise.toml'
@@ -37,6 +53,12 @@ jobs:
 
       - name: Check Python helpers codegen is up to date
         run: pnpm --filter @composio/experimental run check:python-helpers
+
+      - name: Validate SDK parity and agent routing
+        run: |
+          pnpm run validate:sdk-parity
+          pnpm run validate:agent-skills
+          pnpm run validate:skill-routing
 
       - name: Run Tests
         run: pnpm run test

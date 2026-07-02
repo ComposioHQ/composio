@@ -47,6 +47,7 @@
     "create:example": "bash ts/scripts/create-example.sh",
     "check:peer-deps": "tsx ts/scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx ts/scripts/update-peer-deps.ts",
+    "validate:sdk-parity": "node ts/scripts/validate-sdk-parity.mjs",
     "validate:agent-skills": "node ts/scripts/validate-agent-skills.mjs",
     "validate:skill-routing": "node ts/scripts/test-skill-routing.mjs",
     "prepublish": "pnpm run build:packages",
