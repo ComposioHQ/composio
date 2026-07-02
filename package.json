@@ -45,6 +45,7 @@
     "prepare": "husky",
     "create:provider": "bash ts/scripts/create-provider.sh",
     "create:example": "bash ts/scripts/create-example.sh",
+    "check:package-exports": "node ts/scripts/check-package-exports.mjs",
     "check:peer-deps": "tsx ts/scripts/check-peer-deps.ts",
     "update:peer-deps": "tsx ts/scripts/update-peer-deps.ts",
     "validate:sdk-parity": "node ts/scripts/validate-sdk-parity.mjs",

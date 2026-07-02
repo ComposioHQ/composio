@@ -98,3 +98,33 @@ Commands run:
 Result: Green. `composio.__version__` now follows `python/pyproject.toml` in the source tree and falls back to installed package metadata for built installs. A focused import test asserts the runtime version matches `pyproject.toml`.
 
 Next blocker: Continue the low-risk release plumbing lane by wiring TypeScript package export/type checks such as `publint` and `@arethetypeswrong/cli` into the release path.
+
+## 2026-07-03 - TypeScript package export checks
+
+Selected blocker: TypeScript package export/type checks are configured in direct `tsdown` builds but are skipped under Turbo, so the release workflow can publish without an explicit packed-package export check.
+
+Hypothesis: Running a serial checker after `build:packages` gives the release path the same package-shape coverage without reintroducing the concurrent tarball race that disabled `tsdown` checks under Turbo.
+
+Files changed:
+
+- `ts/scripts/check-package-exports.mjs`
+- `package.json`
+- `ts/scripts/changeset-release.sh`
+- `.github/workflows/ts.release.yml`
+- `ts/packages/**/package.json` for publishable TypeScript packages
+- `.changeset/package-export-entrypoints.md`
+- `tsdown.config.base.ts`
+- `LOG.md`
+
+Commands run:
+
+- `pnpm run check:package-exports`
+- `pnpm run build:packages`
+- `pnpm run check:package-exports`
+- `pnpm run validate:sdk-parity`
+- `pnpm run check:peer-deps`
+- `git diff --check`
+
+Result: Green. `check:package-exports` now discovers the 14 public TypeScript packages that publish `exports`, verifies `main`/`types` match the release `dist` metadata, and runs packed-package `publint` plus `attw` serially to avoid the tarball race documented in `tsdown.config.base.ts`. The release workflow and `changeset:release` script run the checker after `build:packages`, before `changeset publish`. Public TypeScript package manifests now expose built `dist/index.mjs` and `dist/index.d.mts` through top-level `main`/`types`, with a patch changeset.
+
+Next blocker: Continue the low-risk release plumbing lane by auditing whether additional TypeScript release gates should run before publish, or move to the next unresolved SDK v1 blocker in `road-to-v1.md`.

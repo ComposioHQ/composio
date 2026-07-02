@@ -52,6 +52,9 @@ jobs:
       - name: Run Build
         run: pnpm run build:packages
 
+      - name: Check Package Exports
+        run: pnpm run check:package-exports
+
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0

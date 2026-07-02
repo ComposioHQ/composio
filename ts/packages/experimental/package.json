@@ -2,7 +2,8 @@
   "name": "@composio/experimental",
   "version": "0.1.0",
   "description": "Experimental Composio integrations and helpers",
-  "main": "src/index.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "type": "module",
   "repository": {
     "type": "git",

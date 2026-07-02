@@ -13,6 +13,7 @@ stderr_file=$(mktemp)
 trap 'rm -f "$stdout_file" "$stderr_file"' EXIT
 
 pnpm run build:packages
+pnpm run check:package-exports
 
 set +e
 pnpm changeset publish >"$stdout_file" 2>"$stderr_file"

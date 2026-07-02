@@ -4,6 +4,7 @@
   "version": "0.13.1",
   "description": "Slim Composio core package without packaged source or docs",
   "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",

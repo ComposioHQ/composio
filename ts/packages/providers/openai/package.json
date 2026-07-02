@@ -2,7 +2,8 @@
   "name": "@composio/openai",
   "version": "0.10.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "type": "module",
   "repository": {
     "type": "git",
