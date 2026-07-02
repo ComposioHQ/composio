@@ -44,7 +44,7 @@ Custom-provider authors subclass `BaseProvider` (and its agentic and non-agentic
 
 ## Generated client
 
-Both SDKs are thin shells over a Stainless-generated client. TypeScript pins `@composio/client@0.1.0-alpha.74`, an alpha whose types leak into core's public surface; Python pins `composio-client==1.41.0` and had to re-declare `ConfigToolkit` after the client dropped it. We own the generated client, and we graduate it to a stable (>= 1.0) line before SDK 1.0, which in turn requires declaring the backend OpenAPI spec stable. Once the client is stable and semver-managed, re-exporting its types is allowed. The parity check records the expected client pin so a future client major cannot move the SDK's public types without someone noticing.
+Both SDKs are thin shells over a Stainless-generated client. TypeScript pins `@composio/client@0.1.0-alpha.74`, an alpha whose types leak into core's public surface; Python pins `composio-client==1.41.0` and had to re-declare `ConfigToolkit` after the client dropped it. We own the generated client, and we graduate it to a stable (>= 1.0) line before SDK 1.0, which in turn requires declaring the backend OpenAPI spec stable. Owning it end to end means owning the generator too: `generated-client-codegen.md` records the decision to replace Stainless with a self-hosted Hey API pipeline and the wrapper layer that keeps that swap invisible to core's public surface. Once the client is stable and semver-managed, re-exporting its types is allowed. The parity check records the expected client pin so a future client major cannot move the SDK's public types without someone noticing.
 
 ## Deprecation policy
 

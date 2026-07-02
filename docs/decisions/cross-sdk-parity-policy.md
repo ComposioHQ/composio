@@ -2,7 +2,7 @@
 
 ## Decision
 
-The TypeScript and Python SDKs expose the same conceptual model, and we keep them at declared parity through one policy, one living matrix, and one CI check. TypeScript is the reference implementation: a new capability lands in TypeScript first and in Python within an agreed window, and the matrix records the state at every point so "are they at parity?" has an answer that does not depend on someone's memory.
+The TypeScript and Python SDKs expose the same conceptual model, and we keep them at declared parity through one policy, one living matrix, and a planned CI check. TypeScript is the reference implementation: a new capability lands in TypeScript first and in Python within an agreed window, and the matrix records the state at every point so "are they at parity?" has an answer that does not depend on someone's memory.
 
 Parity is not uniformity. Some divergence is correct and stays, as long as it is declared. The policy draws the line between divergence we accept on purpose and drift we treat as a bug.
 
@@ -16,7 +16,7 @@ The code already says so: Python source carries comments like `# in ts it's Auth
 
 ## Naming rule
 
-Every public namespace and method maps one-to-one across the two SDKs after normalizing camelCase to snake_case. `listActive` in TypeScript is `list_active` in Python, never `active_list`. The `validate:sdk-parity` check enforces this by diffing the normalized name sets, so a rename on one side that is not mirrored on the other fails CI.
+Every public namespace and method maps one-to-one across the two SDKs after normalizing camelCase to snake_case. `listActive` in TypeScript is `list_active` in Python, never `active_list`. The planned `validate:sdk-parity` check enforces this by diffing the normalized name sets, so a rename on one side that is not mirrored on the other fails CI once B9 is implemented.
 
 One rename is required before 1.0 freezes the import names. Today `google` means the Google GenAI SDK in TypeScript but Vertex AI in Python, while Python also ships `gemini` for GenAI. We adopt one scheme in both languages:
 
@@ -37,19 +37,19 @@ Python ships both a synchronous and an asynchronous client before 1.0, mirroring
 
 Both SDKs implement one shared, language-neutral error-code catalog. The codes use a `COMPOSIO::` prefix and carry the same semantics in both languages, with idiomatic class names on top (`ComposioToolNotFoundError` in TypeScript, `ToolNotFoundError` in Python), both exposing the same `code`. TypeScript has the richest taxonomy today, so it seeds the catalog; in doing so it drops its current `TS-SDK::` prefix for the neutral one. Python gains codes where it has none and stops collapsing MCP failures into a generic `ValidationError`, so a 404, a 401, and a network failure become distinguishable. The catalog is a committed artifact both SDKs build against, not a per-language convenience.
 
-## Enforcement
+## Planned enforcement
 
-A `validate:sdk-parity` check, modelled on the existing `validate:agent-skills` validator, runs in CI on both `ts.test.yml` and `py.check.yaml`. It diffs three things against this policy:
+A `validate:sdk-parity` check, modelled on the existing `validate:agent-skills` validator, is required before 1.0 and tracked as B9 in `sdk-v1-readiness.md`. Once implemented and wired into `ts.test.yml` and `py.check.yaml`, it diffs three things against this policy:
 
 1. Namespace and method names, normalized camelCase to snake_case, against the declared matrix.
 2. The provider directory lists (`ts/packages/providers/*` against `python/providers/*`) against the matrix, honoring `n/a-by-design` flags.
 3. The recorded generated-client pin pair, so a client bump on one side that the other has not matched is visible.
 
-The check fails only on undeclared drift. Declared divergence passes.
+The check will fail only on undeclared drift. Declared divergence will pass.
 
 ## The parity matrix
 
-This is the live snapshot. Update it in the same PR that changes a surface.
+This is the live snapshot, with explicit target-state notes where a 1.0 rename is still pending. Update it in the same PR that changes a surface.
 
 ### Capabilities
 
@@ -80,7 +80,7 @@ This is the live snapshot. Update it in the same PR that changes a surface.
 | langchain | yes | yes | |
 | llamaindex | yes | yes | |
 | openai-agents | yes | yes | |
-| gemini (Google GenAI) | yes (renamed from `google`) | yes | |
+| gemini (Google GenAI) | pre-1.0 rename required (currently `google`) | yes | TS package is still `ts/packages/providers/google` |
 | google (Vertex AI) | n/a-by-design | yes | GCP-enterprise, low TS demand |
 | google_adk | n/a-by-design | yes | Python ecosystem |
 | langgraph | n/a-by-design | yes | Python ecosystem |
