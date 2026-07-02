@@ -328,6 +328,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     body?: TriggerInstanceUpsertParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceUpsertResponse> {
+    if (!userId?.trim()) {
+      throw new ValidationError(`A non-empty userId is required to create a trigger`);
+    }
+
     const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body ?? {});
 
     if (!parsedBody.success) {
@@ -337,11 +341,11 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     }
 
     // Validate the trigger slug up-front so callers get a clear client-side
-    // error (the backend would also reject an unknown slug).
+    // `ComposioTriggerTypeNotFoundError`. The Python SDK mirrors this behavior.
     try {
       await this.getType(slug, requestOptions);
     } catch (error) {
-      // for some reason, the triggers types list endpoint returns 400 for invalid user ids
+      // The trigger types endpoint returns 400 (not 404) for an unknown slug.
       if (error instanceof APIError && (error.status === 400 || error.status === 404)) {
         throw new ComposioTriggerTypeNotFoundError(`Trigger type ${slug} not found`, {
           cause: error,
@@ -351,23 +355,17 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
             `Visit the toolkit page to see the available triggers`,
           ],
         });
-      } else {
-        throw error;
       }
+      throw error;
     }
 
     // Pass `user_id` straight through: when `connected_account_id` is omitted the
     // backend resolves the first active connection for this user and the
-    // trigger's toolkit, mirroring tool execution. This removes the extra
-    // `connectedAccounts.list()` round-trip the SDK used to make. When 2FA is
-    // enabled and `connected_account_id` is pinned, the backend validates that
-    // `user_id` owns it.
-    // The `& { user_id }` bridges until @composio/client regenerates from the
-    // updated OpenAPI spec; drop it once the field lands on the generated type.
-    const upsertParams: ClientTriggerInstanceUpsertParams & {
-      user_id?: string;
-    } = {
-      connected_account_id: body?.connectedAccountId,
+    // trigger's toolkit, mirroring tool execution. When 2FA is enabled and
+    // `connected_account_id` is pinned, the backend validates that `user_id`
+    // owns it.
+    const upsertParams: ClientTriggerInstanceUpsertParams = {
+      connected_account_id: parsedBody.data.connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
       toolkit_versions: this.toolkitVersions,
       user_id: userId,

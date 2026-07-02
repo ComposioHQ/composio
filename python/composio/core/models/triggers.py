@@ -14,7 +14,7 @@ from enum import Enum
 from unittest import mock
 
 import typing_extensions as te
-from composio_client import Omit, omit
+from composio_client import APIStatusError, Omit, omit
 from composio_client.types import TriggersTypeRetrieveResponse
 from pysher import Pusher
 from pysher.channel import Channel as PusherChannel
@@ -1130,32 +1130,47 @@ class Triggers(Resource):
         Create a trigger instance
 
         :param slug: The slug of the trigger
-        :param connected_account_id: The ID of the connected account
+        :param user_id: The ID of the user that owns the connected account. When
+            ``connected_account_id`` is omitted, the backend resolves the first
+            active connection for this user and the trigger's toolkit.
+        :param connected_account_id: The ID of the connected account to pin
         :param trigger_config: The configuration of the trigger
         :return: The trigger instance
         """
+        # Treat blank strings as missing so an empty or whitespace-only
+        # `user_id` / `connected_account_id` does not slip past the guard below
+        # or reach the backend (parity with the TypeScript SDK's `userId` check).
+        if isinstance(user_id, str) and not user_id.strip():
+            user_id = None
+        if isinstance(connected_account_id, str) and not connected_account_id.strip():
+            connected_account_id = None
+
         if user_id is None and connected_account_id is None:
             raise exceptions.InvalidParams(
                 "please provide valid `connected_account_id` or `user_id`"
             )
 
+        # Validate the trigger slug up-front so callers get a clear
+        # `TriggerTypeNotFound` (parity with the TypeScript SDK).
+        try:
+            self.get_type(slug=slug)
+        except APIStatusError as error:
+            if error.status_code in (400, 404):
+                raise exceptions.TriggerTypeNotFound(
+                    f"Trigger type {slug} not found"
+                ) from error
+            raise
+
         # Pass user_id straight through: when connected_account_id is omitted the
         # backend resolves the first active connection for this user and the
-        # trigger's toolkit (parity with tool execution). This removes the extra
-        # connected_accounts.list() round-trip the SDK used to make. When 2FA is
-        # enabled and connected_account_id is pinned, the backend validates that
-        # user_id owns it. Sent via extra_body until composio-client regenerates
-        # with the field.
+        # trigger's toolkit (parity with tool execution). When 2FA is enabled and
+        # connected_account_id is pinned, the backend validates that user_id owns it.
         return self._client.trigger_instances.upsert(
             slug=slug,
-            connected_account_id=(
-                connected_account_id if connected_account_id is not None else omit
-            ),
+            connected_account_id=none_to_omit(connected_account_id),
             toolkit_versions=self._toolkit_versions,
-            body_trigger_config_1=(
-                trigger_config if trigger_config is not None else omit
-            ),
-            extra_body=({"user_id": user_id} if user_id is not None else {}),
+            body_trigger_config_1=none_to_omit(trigger_config),
+            user_id=none_to_omit(user_id),
         )
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:

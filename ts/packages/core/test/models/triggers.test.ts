@@ -525,7 +525,20 @@ describe('Triggers', () => {
         },
         undefined
       );
+      // `toEqual` treats a present-but-undefined key the same as an absent one,
+      // so assert explicitly that the SDK does not invent a connected account id
+      // (the client drops the undefined field on the wire, letting the backend
+      // resolve it).
+      const upsertParams = mockClient.triggerInstances.upsert.mock.calls[0][1];
+      expect(upsertParams.connected_account_id).toBeUndefined();
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
+    });
+
+    it('should throw a validation error when userId is empty', async () => {
+      await expect(triggers.create('', slug, body)).rejects.toThrow(ValidationError);
+      await expect(triggers.create('   ', slug, body)).rejects.toThrow(ValidationError);
+      expect(mockClient.triggersTypes.retrieve).not.toHaveBeenCalled();
+      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
     });
 
     it('should throw validation error for invalid body parameters', async () => {
