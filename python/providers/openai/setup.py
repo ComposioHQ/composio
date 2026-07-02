@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["openai>=2.42.0", "composio>=1.0,<2"],
+    install_requires=["openai>=2.42.0", "composio>=0.17.1,<2"],
     include_package_data=True,
 )

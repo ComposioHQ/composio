@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "claude-agent-sdk>=0.2.103",
-    "composio>=1.0,<2",
+    "composio>=0.17.1,<2",
 ]
 
 [project.urls]

@@ -22,6 +22,6 @@ setup(
     ],
     python_requires=">=3.10,<4",
     packages=find_packages(),
-    install_requires=["claude-agent-sdk>=0.2.103", "composio>=1.0,<2"],
+    install_requires=["claude-agent-sdk>=0.2.103", "composio>=0.17.1,<2"],
     include_package_data=True,
 )
