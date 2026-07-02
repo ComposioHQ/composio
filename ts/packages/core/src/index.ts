@@ -38,7 +38,37 @@ export * from './types/connectedAccounts.types';
 export * from './types/toolkit.types';
 export * from './types/triggers.types';
 export * from './types/webhookEvents.types';
-export * from './types/mcp.types';
+export { ConnectionStatus } from './types/mcp.types';
+export type {
+  CustomCreateResponse,
+  CustomCreateResponseValidated,
+  GenerateURLParams,
+  GenerateURLResponse,
+  GenerateURLResponseValidated,
+  MCPAuthOptions,
+  MCPCreateMethodResponse,
+  MCPGenerateURLParams,
+  MCPGetServerParams,
+  MCPInstanceParams,
+  MCPMultiAppServer,
+  MCPServer,
+  MCPServerCreateResponse,
+  MCPServerListResponse,
+  MCPServerUpdateParams,
+  MCPSingleAppServer,
+  MCPToolkitConfig,
+  McpDeleteResponse,
+  McpListResponse,
+  McpRetrieveResponse,
+  McpServerCreateResponse,
+  McpServerGetResponse,
+  McpServerUrlInfo,
+  McpToolkitConnectionStatus,
+  McpUpdateResponse,
+  McpUrlResponse,
+  McpUrlResponseCamelCase,
+  McpUserConnectionStatus,
+} from './types/mcp.types';
 export * from './types/files.types';
 export * from './types/connectionRequest.types';
 export * from './types/toolRouter.types';

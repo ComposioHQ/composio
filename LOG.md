@@ -223,3 +223,26 @@ Commands run:
 Result: Green. Stable core now uses explicit `zod/v3` imports at schema boundaries, and the only core `zod/v4` import is the custom-tool conversion path that calls `toJSONSchema`. The stability contract now records the Zod 3/4 support matrix for stable core schemas, custom tools, JSON Schema helpers, provider packages, and CLI internals.
 
 Next blocker: Continue the TypeScript polish lane with the barrel export audit.
+
+## 2026-07-03 - TypeScript MCP barrel export audit
+
+Selected blocker: `@composio/core` root re-exports every value from `types/mcp.types`, which leaks internal Zod schema constants and snake_case wire schemas into the public barrel.
+
+Hypothesis: Replace the wildcard export with an explicit type-only MCP allowlist plus the non-schema `ConnectionStatus` enum so provider-facing MCP types remain available while root runtime schema values stop leaking.
+
+Files changed:
+
+- `ts/packages/core/src/index.ts`
+- `ts/packages/core/test/core/index-exports.test.ts`
+- `LOG.md`
+
+Commands run:
+
+- `pnpm --filter @composio/core typecheck`
+- `pnpm --filter @composio/core test`
+- `pnpm exec prettier --check ts/packages/core/src/index.ts ts/packages/core/test/core/index-exports.test.ts LOG.md`
+- `git diff --check`
+- `pnpm typecheck --filter='./ts/packages/providers/**'`
+- `pnpm exec turbo test --filter='./ts/packages/providers/**'`
+
+Result: Green. The root `@composio/core` barrel now keeps the runtime `ConnectionStatus` export and the provider-facing MCP response/parameter types, but no longer exports MCP Zod schema constants from the top-level package entrypoint. The new regression test covers the most visible schema leaks, and provider typecheck/tests confirm existing provider imports still work through the public root package.
