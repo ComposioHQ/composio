@@ -48,7 +48,7 @@ When running **Build CLI Binaries** manually:
 
 ## Automated Release Process
 
-The automated release process is triggered when code is merged into the `main` branch or manually through GitHub Actions.
+The automated release process is triggered when code is merged into the `next` branch or manually through GitHub Actions.
 
 ### Requirements
 
@@ -59,9 +59,9 @@ The automated release process is triggered when code is merged into the `main` b
 
 ### Using Automated Release
 
-1. **For Regular Releases (via main branch)**
-   - Make sure your changeset is added to the PR you are merging to main. Run `pnpm changeset` on your branch before submiting the PR
-   - Get your PR merged to main
+1. **For Regular Releases (via next branch)**
+   - Make sure your changeset is added to the PR you are merging to `next`. Run `pnpm changeset` on your branch before submitting the PR
+   - Get your PR merged to `next`
    - The workflow will automatically:
      - Create a release PR
      - Publish packages when the release PR is merged
@@ -69,7 +69,7 @@ The automated release process is triggered when code is merged into the `main` b
 2. **For Manual Triggers**
    - Go to GitHub Actions
    - Select "TS SDK Release" workflow
-   - Click "Run workflow" on main branch
+   - Click "Run workflow" on `next`
    - Monitor the workflow progress
 
 ## Manual Release Process
@@ -87,9 +87,9 @@ The manual release process is available for cases where direct control over the 
 1. **Prepare for Release**
 
    ```bash
-   # Ensure you're on the latest main
-   git checkout main
-   git pull origin main
+   # Ensure you're on the latest next
+   git checkout next
+   git pull origin next
 
    # Install dependencies
    mise install

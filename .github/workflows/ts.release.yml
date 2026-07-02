@@ -58,7 +58,7 @@ jobs:
       - name: Create Release Pull Request & Publish packages
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
-        if: github.event_name != 'workflow_dispatch' # only run on master merges
+        if: github.event_name != 'workflow_dispatch' # only run on next merges
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GITHUB_ACCESS_TOKEN: ${{ steps.app-token.outputs.token }}

@@ -128,3 +128,25 @@ Commands run:
 Result: Green. `check:package-exports` now discovers the 14 public TypeScript packages that publish `exports`, verifies `main`/`types` match the release `dist` metadata, and runs packed-package `publint` plus `attw` serially to avoid the tarball race documented in `tsdown.config.base.ts`. The release workflow and `changeset:release` script run the checker after `build:packages`, before `changeset publish`. Public TypeScript package manifests now expose built `dist/index.mjs` and `dist/index.d.mts` through top-level `main`/`types`, with a patch changeset.
 
 Next blocker: Continue the low-risk release plumbing lane by auditing whether additional TypeScript release gates should run before publish, or move to the next unresolved SDK v1 blocker in `road-to-v1.md`.
+
+## 2026-07-03 - Release guide branch target
+
+Selected blocker: The internal release guide still points regular and manual release operators at `main`, even though this repo branches and releases from `next`.
+
+Hypothesis: A narrow branch-language cleanup closes the roadmap's internal-release-guide drift without changing release authentication or publish behavior.
+
+Files changed:
+
+- `ts/docs/internal/release.md`
+- `.github/workflows/ts.release.yml`
+- `LOG.md`
+
+Commands run:
+
+- `rg -n "main|master|next" ts/docs/internal/release.md .github/workflows/ts.release.yml`
+- `pnpm exec prettier --check ts/docs/internal/release.md .github/workflows/ts.release.yml LOG.md`
+- `git diff --check`
+
+Result: Green. `ts/docs/internal/release.md` now directs regular and manual TypeScript SDK release operators to `next`, and the `ts.release.yml` Changesets step comment now says it runs on `next` merges. The targeted branch search only reports `next` in those files.
+
+Next blocker: Continue the polish lane by choosing either Python type-contract tightening or TypeScript provider test/typecheck coverage.
