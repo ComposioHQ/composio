@@ -246,3 +246,39 @@ Commands run:
 - `pnpm exec turbo test --filter='./ts/packages/providers/**'`
 
 Result: Green. The root `@composio/core` barrel now keeps the runtime `ConnectionStatus` export and the provider-facing MCP response/parameter types, but no longer exports MCP Zod schema constants from the top-level package entrypoint. The new regression test covers the most visible schema leaks, and provider typecheck/tests confirm existing provider imports still work through the public root package.
+
+Next blocker: Continue the stable/experimental surface-settlement lane with the managed-OAuth `initiate()` retirement wording, then audit the generated subpath fate only as far as the current decisions allow.
+
+## 2026-07-03 - Managed OAuth initiate cutover wording
+
+Selected blocker: The roadmap treats `connected_accounts.initiate()` for managed OAuth as a server-driven retirement after the 2026-07-03 all-org cutover, but SDK warnings and current docs still described the cutover as a future event.
+
+Hypothesis: Update TypeScript, Python, and current docs to post-cutover wording while preserving the existing runtime behavior: custom auth configs and non-OAuth schemes keep using `initiate()`, while the retired managed-OAuth path maps the server rejection to the typed legacy-endpoint error and points users at `link()`.
+
+Files changed:
+
+- `ts/packages/core/src/models/ConnectedAccounts.ts`
+- `ts/packages/core/src/errors/ConnectedAccountsErrors.ts`
+- `ts/packages/core/test/connectedAccounts/connectedAccounts.test.ts`
+- `python/composio/core/models/connected_accounts.py`
+- `python/composio/exceptions.py`
+- `python/tests/test_connected_accounts.py`
+- `docs/content/docs/auth-configuration/connected-accounts.mdx`
+- `docs/content/docs/auth-configuration/migrating-initiate-to-link.mdx`
+- `docs/content/docs/tools-direct/authenticating-tools.mdx`
+- `docs/decisions/sdk-v1-readiness.md`
+- `LOG.md`
+
+Commands run:
+
+- `pnpm --filter @composio/core test -- connectedAccounts/connectedAccounts.test.ts`
+- `uv run pytest tests/test_connected_accounts.py -q`
+- `uv run ruff check composio/core/models/connected_accounts.py composio/exceptions.py tests/test_connected_accounts.py`
+- `uv run ruff format --check composio/core/models/connected_accounts.py composio/exceptions.py tests/test_connected_accounts.py`
+- `! command rg -n "will stop|on or before 2026-07-03|being retired|is being retired|before the 2026-05-08|start returning|roughly a week" ts/packages/core/src python/composio python/tests ts/packages/core/test docs/decisions docs/content/docs --glob '!**/generated/**'`
+- `pnpm exec prettier --check ts/packages/core/src/models/ConnectedAccounts.ts ts/packages/core/src/errors/ConnectedAccountsErrors.ts ts/packages/core/test/connectedAccounts/connectedAccounts.test.ts LOG.md`
+- `git diff --check`
+
+Result: Green. Current SDK warnings/docstrings, typed error docs, migration docs, and readiness notes now describe managed-OAuth `initiate()` as retired after the 2026-07-03 all-org cutover. The runtime branch remains unchanged: the SDK still warns only when the server sends the retirement header, preserves unaffected `initiate()` usage, and maps retired managed-OAuth server errors to the existing typed error.
+
+Next blocker: Audit the TypeScript `@composio/core/generated` subpath and document whether the current repo has enough settled contract to freeze or unpublish it before v1; if not, move to the next independent polish item such as changelog strategy or Python examples CI.

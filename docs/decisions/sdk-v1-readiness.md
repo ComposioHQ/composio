@@ -47,7 +47,7 @@ Roughly tied on core capabilities. TypeScript leads: it is larger, it reaches ne
 - `experimental.*`: custom tools, custom toolkits, the shared-connection ACL.
 - MCP types. TypeScript draws them from `mcp.experimental.types`; Python re-declares `ConfigToolkit` because the generated client dropped it in 1.41.0, which is a regen-fragility signal.
 - TypeScript `@composio/core/generated` ships as a throwing stub for opt-in codegen.
-- `connected_accounts.initiate()` is being retired for managed OAuth. The backend cutover is 2026-05-08 for new orgs and 2026-07-03 for all orgs, roughly a week out from this writing. `link()` is the replacement.
+- `connected_accounts.initiate()` is retired for managed OAuth. The backend cutover was 2026-05-08 for new orgs and 2026-07-03 for all orgs. `link()` is the replacement.
 
 ## Decisions
 

@@ -495,11 +495,11 @@ class ConnectedAccounts:
         .. deprecated::
             For Composio-managed (default) auth configs on redirectable OAuth
             schemes (OAuth1, OAuth2, DCR_OAUTH), the legacy endpoint this
-            method wraps is being retired: **2026-05-08** for new
+            method wraps has been retired: **2026-05-08** for new
             organizations and **2026-07-03** for all remaining organizations.
-            After your org's cutover, this method will raise
-            :class:`composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError`
-            for that specific combination.
+            For that specific combination, the server rejects the request and
+            this method raises
+            :class:`composio.exceptions.ComposioLegacyConnectedAccountsEndpointRetiredError`.
 
             Use :meth:`ConnectedAccounts.link` for Composio-managed OAuth — it
             works for every redirectable scheme regardless of whether the
@@ -603,9 +603,9 @@ class ConnectedAccounts:
         if not _legacy_initiate_warning_emitted and deprecation_header:
             _legacy_initiate_warning_emitted = True
             warnings.warn(
-                "composio.connected_accounts.initiate() will stop working "
-                "for this auth config on or before 2026-07-03 (see Sunset "
-                "header on the response). Switch to "
+                "composio.connected_accounts.initiate() has been retired "
+                "for this auth config; see the Deprecation/Sunset headers "
+                "on the response. Switch to "
                 "composio.connected_accounts.link() — same return shape, "
                 "same allow_multiple semantics. "
                 "https://docs.composio.dev/docs/changelog/2026/04/24",
