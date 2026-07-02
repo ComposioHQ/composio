@@ -21,6 +21,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["langchain>=1.3.9,<2.0.0", "composio"],
+    install_requires=["langchain>=1.3.9,<2.0.0", "composio>=1.0,<2"],
     include_package_data=True,
 )

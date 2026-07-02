@@ -23,7 +23,7 @@ setup(
     python_requires=">=3.10,<4",
     install_requires=[
         "google-adk>=2.2.0",
-        "composio",
+        "composio>=1.0,<2",
     ],
     include_package_data=True,
 )

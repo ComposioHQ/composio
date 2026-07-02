@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "llama_index>=0.14.22",
-    "composio",
+    "composio>=1.0,<2",
 ]
 
 [project.urls]

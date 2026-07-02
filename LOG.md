@@ -48,3 +48,27 @@ Commands run:
 Result: Green. All ten TypeScript provider packages now peer-depend on `@composio/core` with `>=0.10.0 <2.0.0`, and a patch changeset records the provider metadata update.
 
 Next blocker: Continue the low-risk release plumbing lane with B7, pinning Python providers to `composio>=1.0,<2`.
+
+## 2026-07-03 - B7 Python provider pins
+
+Selected blocker: B7, Python providers depend on an unpinned `composio`.
+
+Hypothesis: Pinning each provider package to `composio>=1.0,<2` in both `pyproject.toml` and `setup.py` prevents a provider `1.x` release from resolving against a future incompatible core `2.x` while still allowing the coordinated SDK 1.x line.
+
+Files changed:
+
+- `python/providers/*/pyproject.toml`
+- `python/providers/*/setup.py`
+- `LOG.md`
+
+Commands run:
+
+- Structured metadata parser over every Python provider `pyproject.toml` and `setup.py`
+- `command rg -n '^\s*"composio",\s*$|install_requires=\[[^\]]*"composio"' python/providers/*/pyproject.toml python/providers/*/setup.py || true`
+- `command rg -n 'composio>=1\.0,<2' python/providers | wc -l`
+- `pnpm run validate:sdk-parity`
+- `git diff --check`
+
+Result: Green. All twelve Python provider packages now declare `composio>=1.0,<2` in both metadata surfaces, for 24 pinned entries total. No bare dependency entries remain.
+
+Next blocker: Continue the low-risk release plumbing lane with B8, stopping `python/composio/__version__.py` from drifting from release metadata.

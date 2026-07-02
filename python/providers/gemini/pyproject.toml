@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "google-genai>=2.8.0",
-    "composio",
+    "composio>=1.0,<2",
 ]
 
 [project.urls]

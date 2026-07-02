@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "google-adk>=2.2.0",
-    "composio",
+    "composio>=1.0,<2",
 ]
 
 [project.urls]
