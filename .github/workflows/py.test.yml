@@ -24,6 +24,10 @@ on:
       - 'python/pyproject.toml'
       - 'python/requirements*.txt'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   toolchain-versions:
     name: Read toolchain test matrix

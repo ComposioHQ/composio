@@ -25,6 +25,10 @@ on:
       - 'pnpm-workspace.yaml'
       - 'tsdown.config.base.ts'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
   TURBO_TELEMETRY_DEBUG: 1
