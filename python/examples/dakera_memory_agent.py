@@ -58,7 +58,7 @@ import httpx
 from agents import Agent, Runner
 from pydantic import BaseModel, Field
 
-from composio import Composio
+from composio import SESSION_PRESET_DIRECT_TOOLS, Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
 # ---------------------------------------------------------------------------
@@ -253,13 +253,17 @@ Use the memory tools proactively — the user should not have to repeat themselv
 def _build_agent() -> Agent:
     """Register the custom tools on a Composio session and build the agent.
 
-    Custom tools are registered inline via ``experimental.custom_tools``;
-    ``session.tools()`` returns the ``FunctionTool`` instances the OpenAI
-    Agents SDK expects (passing the raw decorated tools to ``Agent`` would
-    not be invokable).
+    Custom tools are registered inline via ``experimental.custom_tools``.
+    The ``direct_tools`` session preset exposes them straight from
+    ``session.tools()`` as OpenAI Agents ``FunctionTool`` instances (and
+    disables the router's search/multi-execute meta-tools), so the agent
+    sees exactly STORE_MEMORY / RECALL_MEMORY / FORGET_MEMORY. Without the
+    preset, inline custom tools are search-only and would not be directly
+    invokable as the system prompt expects.
     """
     session = composio.create(
         user_id="default",
+        session_preset=SESSION_PRESET_DIRECT_TOOLS,
         experimental={
             "custom_tools": [store_memory, recall_memory, forget_memory],
         },
