@@ -19,8 +19,7 @@
       "outputs": ["dist/"]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/"]
+      "dependsOn": ["^build"]
     },
     "test:e2e": {
       "dependsOn": ["^build"],
