@@ -10,7 +10,7 @@ Selection note: this run executed non-interactively, so plans were written for t
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | CI speed: turbo/bun/uv caching + PR run cancellation | P1 | M | — | TODO |
+| 001 | CI speed: turbo/bun/uv caching + PR run cancellation | P1 | M | — | IN PROGRESS — PR [#3747](https://github.com/ComposioHQ/composio/pull/3747) open |
 | 002 | CI hardening: permissions, fork-PR guards, audit gate | P1 | S | — | TODO |
 | 003 | Python telemetry: privacy redaction + thread-correct opt-out | P1 | M | — | TODO |
 | 004 | TS Pusher: catchable subscription errors + chunk eviction | P2 | M | — | TODO |
