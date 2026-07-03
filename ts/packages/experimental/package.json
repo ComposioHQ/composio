@@ -27,7 +27,7 @@
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
     },
-"./workbench": {
+    "./workbench": {
       "types": "./dist/workbench/index.d.mts",
       "default": "./dist/workbench/index.mjs"
     },
@@ -68,8 +68,12 @@
     "eve": ">=0.11.0 <1.0.0"
   },
   "peerDependenciesMeta": {
-    "@earendil-works/pi-coding-agent": { "optional": true },
-    "eve": { "optional": true }
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "eve": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
