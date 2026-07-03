@@ -26,7 +26,7 @@ on:
       - 'tsdown.config.base.ts'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Print Turborepo telemetry events to the logs instead of sending them.
