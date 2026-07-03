@@ -78,7 +78,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf dist generated node_modules",
-    "build": "pnpm --filter @composio/core build && rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
+    "build": "rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
     "test": "node -e \"import('./dist/index.mjs').then(() => console.log('@composio/slim import ok'))\""
   },
   "keywords": [
@@ -93,6 +93,9 @@
   "license": "ISC",
   "peerDependencies": {
     "zod": "^3.25 || ^4"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*"
   },
   "dependencies": {
     "@composio/client": "catalog:",
