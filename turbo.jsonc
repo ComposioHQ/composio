@@ -54,8 +54,7 @@
       "cache": false
     },
     "typecheck": {
-      "dependsOn": ["^build"],
-      "cache": false
+      "dependsOn": ["^build"]
     },
     "typecheck:tsc": {
       "dependsOn": ["^build"],
