@@ -44,7 +44,7 @@ jobs:
 
       - name: Codex updates docs
         if: steps.detect.outputs.found == 'true'
-        uses: openai/codex-action@10cb888d2ed3b99867f7e7ccff174a861a75aeb6 # v1.9
+        uses: openai/codex-action@6b771854be52d8637d060e4b15120b9d746282ab # v1.10
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write
