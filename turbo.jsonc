@@ -5,6 +5,10 @@
   // mise stays the single source of truth. Turbo then infers pnpm from
   // pnpm-lock.yaml for workspace resolution.
   "dangerouslyDisablePackageManagerCheck": true,
+  // The toolchain (node, bun, pnpm, tsgo host) is pinned by mise, not by
+  // package.json/lockfile, so toolchain bumps must invalidate every task hash
+  // or restored CI caches would skip the very runs meant to validate them.
+  "globalDependencies": ["mise.toml", "mise.lock"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
