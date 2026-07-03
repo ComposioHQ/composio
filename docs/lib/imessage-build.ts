@@ -57,7 +57,7 @@ export const sendMessage = experimental_createTool('SEND', {
 `;
 
 const wiringClient = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 
 export const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -66,7 +66,7 @@ export const composio = new Composio({
 `;
 
 const wiringSession = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 
 export const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
@@ -77,7 +77,7 @@ export const session = composio.sessions.create('user_123');
 `;
 
 const wiringToolkit = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental';
+import { EveProvider } from '@composio/experimental/eve';
 import { createImessageToolkit } from './imessage';
 
 export const composio = new Composio({
