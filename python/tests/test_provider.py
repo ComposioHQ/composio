@@ -500,6 +500,74 @@ class TestNonAgenticProviderHelperMethods:
         assert results[0]["successful"] is True
         assert results[0]["data"]["starred"] is True
 
+    def test_openai_provider_handle_tool_calls_only_first_choice(self):
+        """Only the first choice runs; n > 1 alternatives would orphan tool_call_ids."""
+        from openai.types.chat import ChatCompletion
+        from openai.types.chat.chat_completion import Choice
+        from openai.types.chat.chat_completion_message import ChatCompletionMessage
+        from openai.types.chat.chat_completion_message_tool_call import (
+            ChatCompletionMessageToolCall,
+            Function,
+        )
+
+        mock_client = mock_http_client()
+        from composio.core.provider._openai import OpenAIProvider
+
+        provider = OpenAIProvider()
+
+        Tools(
+            client=mock_client,
+            provider=provider,
+            toolkit_versions={"github": "12012025_00"},
+        )
+
+        github_tool = create_mock_tool("GITHUB_STAR_REPO", "github", "12012025_00")
+        mock_client.tools.retrieve.return_value = github_tool
+
+        mock_execute_response = Mock()
+        mock_execute_response.model_dump.return_value = {
+            "data": {"starred": True},
+            "error": None,
+            "successful": True,
+        }
+        mock_client.tools.execute.return_value = mock_execute_response
+
+        def make_choice(index: int, call_id: str) -> Choice:
+            return Choice(
+                finish_reason="tool_calls",
+                index=index,
+                message=ChatCompletionMessage(
+                    role="assistant",
+                    content=None,
+                    tool_calls=[
+                        ChatCompletionMessageToolCall(
+                            id=call_id,
+                            function=Function(
+                                name="GITHUB_STAR_REPO",
+                                arguments='{"repo": "composio/composio"}',
+                            ),
+                            type="function",
+                        )
+                    ],
+                ),
+            )
+
+        completion = ChatCompletion(
+            id="chatcmpl-123",
+            choices=[make_choice(0, "call_first"), make_choice(1, "call_second")],
+            created=1234567890,
+            model="gpt-4",
+            object="chat.completion",
+        )
+
+        results = provider.handle_tool_calls(
+            user_id="test-user",
+            response=completion,
+        )
+
+        assert len(results) == 1
+        assert mock_client.tools.execute.call_count == 1
+
     def test_openai_provider_wrap_tools(self):
         """Test that OpenAIProvider.wrap_tools creates proper tool definitions."""
         from composio.core.provider._openai import OpenAIProvider
@@ -1039,3 +1107,101 @@ class TestProviderIntegration:
 
         assert result2["successful"] is True
         assert result2["data"]["starred"] is True
+
+
+class TestAgenticSkipDefaultsParity:
+    """Regression: agentic providers must honor skip_defaults in __signature__.
+
+    The langchain and langgraph providers strip schema defaults from
+    args_schema when schema_config={"skip_defaults": True}, but kept the
+    defaults in the function __signature__, so the signature and args_schema
+    disagreed about which optional params were required. They now pass the
+    same skip_default to both, matching the sibling llamaindex provider.
+
+    autogen only builds __signature__ (no args_schema), so it never had the
+    mismatch, but its signature likewise ignored skip_defaults; it is aligned
+    too and checked on the signature alone.
+
+    Provider packages are optional (the unit-test job installs langchain and
+    autogen), so each case skips via importorskip when its provider is absent.
+    """
+
+    def _make_tool_with_default(self):
+        return Tool(
+            name="Test Tool",
+            slug="TEST_TOOL",
+            description="A tool with a defaulted optional param",
+            input_parameters={
+                "type": "object",
+                "title": "TestToolRequest",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results",
+                        "default": 5,
+                    },
+                },
+                "required": [],
+            },
+            output_parameters={},
+            available_versions=["12012025_00"],
+            version="12012025_00",
+            scopes=[],
+            toolkit=tool_list_response.ItemToolkit(name="Test", slug="test", logo=""),
+            deprecated=tool_list_response.ItemDeprecated(
+                available_versions=["12012025_00"],
+                displayName="Test Tool",
+                version="12012025_00",
+                toolkit=tool_list_response.ItemDeprecatedToolkit(logo=""),
+                is_deprecated=False,
+            ),
+            is_deprecated=False,
+            no_auth=False,
+            tags=[],
+        )
+
+    def _provider(self, name, schema_config=None):
+        module = pytest.importorskip(f"composio_{name}")
+        provider_cls = getattr(module, f"{name.capitalize()}Provider")
+        return (
+            provider_cls(schema_config=schema_config)
+            if schema_config
+            else provider_cls()
+        )
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_skip_defaults_signature_matches_args_schema(self, name):
+        from inspect import Parameter
+
+        provider = self._provider(name, {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+        assert wrapped.args_schema.model_fields["limit"].is_required()
+
+    @pytest.mark.parametrize("name", ["langchain", "langgraph"])
+    def test_default_preserved_without_skip_defaults(self, name):
+        provider = self._provider(name)
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped.func.__signature__.parameters["limit"]
+        assert limit.default == 5
+        assert not wrapped.args_schema.model_fields["limit"].is_required()
+
+    def test_autogen_signature_honors_skip_defaults(self):
+        from inspect import Parameter
+
+        provider = self._provider("autogen", {"skip_defaults": True})
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        # autogen exposes the wrapped function as `_func` and has no args_schema.
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default is Parameter.empty
+
+    def test_autogen_signature_preserves_default(self):
+        provider = self._provider("autogen")
+        wrapped = provider.wrap_tool(self._make_tool_with_default(), Mock())
+
+        limit = wrapped._func.__signature__.parameters["limit"]
+        assert limit.default == 5

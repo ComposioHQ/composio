@@ -9,7 +9,7 @@ import {
   IncomingTriggerPayloadSchema,
 } from '../../src/types/triggers.types';
 import { telemetry } from '../../src/telemetry/Telemetry';
-import { ComposioConnectedAccountNotFoundError, ValidationError } from '../../src/errors';
+import { ValidationError } from '../../src/errors';
 import { PusherService } from '../../src/services/pusher/Pusher';
 import {
   ComposioFailedToSubscribeToPusherChannelError,
@@ -481,11 +481,7 @@ describe('Triggers', () => {
       mockClient.triggerInstances.upsert.mockResolvedValue(mockTriggerUpsertResponse);
     });
 
-    it('should create a new trigger instance with provided connected account ID', async () => {
-      mockClient.connectedAccounts.list.mockResolvedValue({
-        items: [{ id: 'conn-123' }],
-      });
-
+    it('should pass user_id and the explicit connected account ID to upsert (no extra lookup)', async () => {
       const result = await triggers.create(userId, slug, body);
 
       expect(mockClient.triggersTypes.retrieve).toHaveBeenCalledWith(
@@ -495,13 +491,9 @@ describe('Triggers', () => {
         },
         undefined
       );
-      expect(mockClient.connectedAccounts.list).toHaveBeenCalledWith(
-        {
-          user_ids: [userId],
-          toolkit_slugs: [mockTriggerType.toolkit.slug],
-        },
-        undefined
-      );
+      // The backend now resolves/validates the connection — the SDK no longer
+      // lists connected accounts to find one.
+      expect(mockClient.connectedAccounts.list).not.toHaveBeenCalled();
       expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
         slug,
         {
@@ -515,30 +507,38 @@ describe('Triggers', () => {
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
     });
 
-    it('should use first connected account if no connected account ID is provided', async () => {
+    it('should let the backend auto-resolve the connection when no connected account ID is provided', async () => {
       const bodyWithoutConnectedAccount = {
         triggerConfig: body.triggerConfig,
       };
-      mockClient.connectedAccounts.list.mockResolvedValue({
-        items: [{ id: 'conn-456' }, { id: 'conn-789' }],
-      });
 
       const result = await triggers.create(userId, slug, bodyWithoutConnectedAccount);
 
+      expect(mockClient.connectedAccounts.list).not.toHaveBeenCalled();
       expect(mockClient.triggerInstances.upsert).toHaveBeenCalledWith(
         slug,
         {
-          connected_account_id: 'conn-456',
+          connected_account_id: undefined,
           trigger_config: bodyWithoutConnectedAccount.triggerConfig,
           toolkit_versions: 'latest',
           user_id: userId,
         },
         undefined
       );
-      expect(logger.warn).toHaveBeenCalledWith(
-        `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`
-      );
+      // `toEqual` treats a present-but-undefined key the same as an absent one,
+      // so assert explicitly that the SDK does not invent a connected account id
+      // (the client drops the undefined field on the wire, letting the backend
+      // resolve it).
+      const upsertParams = mockClient.triggerInstances.upsert.mock.calls[0][1];
+      expect(upsertParams.connected_account_id).toBeUndefined();
       expect(result).toEqual({ triggerId: mockTriggerUpsertResponse.trigger_id });
+    });
+
+    it('should throw a validation error when userId is empty', async () => {
+      await expect(triggers.create('', slug, body)).rejects.toThrow(ValidationError);
+      await expect(triggers.create('   ', slug, body)).rejects.toThrow(ValidationError);
+      expect(mockClient.triggersTypes.retrieve).not.toHaveBeenCalled();
+      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
     });
 
     it('should throw validation error for invalid body parameters', async () => {
@@ -560,39 +560,6 @@ describe('Triggers', () => {
 
       await expect(triggers.create(userId, slug, body)).rejects.toThrow(
         ComposioTriggerTypeNotFoundError
-      );
-      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when no connected accounts are found', async () => {
-      mockClient.connectedAccounts.list.mockResolvedValue({
-        items: [],
-      });
-
-      await expect(triggers.create(userId, slug, body)).rejects.toThrow(
-        'No connected account found for user user-123'
-      );
-      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when provided connected account ID is not found', async () => {
-      mockClient.connectedAccounts.list.mockResolvedValue({
-        items: [{ id: 'conn-456' }],
-      });
-
-      await expect(triggers.create(userId, slug, body)).rejects.toThrow(
-        'Connected account ID conn-123 not found for user user-123'
-      );
-      expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when connected accounts list request fails', async () => {
-      mockClient.connectedAccounts.list.mockRejectedValue(
-        new APIError(404, 'Not Connected Account', 'Not Connected Account', new Headers())
-      );
-
-      await expect(triggers.create(userId, slug, body)).rejects.toThrow(
-        ComposioConnectedAccountNotFoundError
       );
       expect(mockClient.triggerInstances.upsert).not.toHaveBeenCalled();
     });

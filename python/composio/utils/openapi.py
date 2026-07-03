@@ -38,7 +38,7 @@ def _type_to_parameter(schema: t.Dict[str, t.Any]) -> t.Any:
     if "enum" in schema:
         return _handle_enum_type(schema=schema)
 
-    p_type = schema["type"]
+    p_type = schema.get("type")
     if p_type in OPENAPI_TO_PYTHON:
         return OPENAPI_TO_PYTHON[p_type]
 
@@ -48,10 +48,18 @@ def _type_to_parameter(schema: t.Dict[str, t.Any]) -> t.Any:
     if p_type == "array":
         return _handle_array_type(schema=schema)
 
+    if p_type is None:
+        # No type specified (e.g. a combiner option that is description-only or
+        # an explicit Any), mirroring the top-level fallback below.
+        return t.Any
+
     raise InvalidSchemaError(f"Invalid property type {p_type}: {schema!r}")
 
 
 def _handle_composite_type(schemas: t.List[t.Dict]) -> t.Any:
+    if not schemas:
+        # An empty oneOf/anyOf has no options to union; fall back to Any.
+        return t.Any
     return t.Union[tuple(map(_type_to_parameter, schemas))]
 
 
