@@ -3,11 +3,16 @@ title: iMessage custom toolkit with eve
 description: Build an agent that texts on your behalf from your own Mac. A Composio custom toolkit wraps local iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog. The full project is below.
 keywords: [custom toolkit, imessage, local tools, eve, provider, session, custom tools, macOS, applescript]
 full: true
+gallery:
+  categories: [General agents, Background agents]
+  logos: [gmail, linear, github]
+  featured: true
+  order: 3
 ---
 
 Most Composio toolkits call a remote API. Some capabilities only exist on one machine, and iMessage is the classic case: there's no iMessage cloud API, so the agent has to run on your Mac and drive Messages.app directly.
 
-This example builds exactly that, a terminal agent that **texts on your behalf from your own Mac** and reaches the rest of your apps (Gmail, Calendar, GitHub, Slack) through the Composio catalog in the same breath.
+This example builds exactly that: a terminal agent that **texts on your behalf from your own Mac** and reaches the rest of your apps (Gmail, Calendar, GitHub, Slack) through the Composio catalog in the same breath.
 
 ```
 you  ›  read my last email and text Shams a summary
@@ -106,7 +111,7 @@ Now hand that session to eve. eve discovers tools from files, so `defineComposio
 
 ```ts title="agent/tools/composio.ts"
 // @noErrors
-import { defineComposioTools } from '@composio/experimental';
+import { defineComposioTools } from '@composio/experimental/eve';
 import { session } from '../../composio';
 
 export default defineComposioTools(session);
@@ -200,7 +205,7 @@ Use the exact slug from the Composio triggers catalog for each, and treat every 
 
 ## Browse the project
 
-The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental`, and the rest is local macOS glue.
+The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental/eve`, and the rest is local macOS glue.
 
 <ImessageRepoBrowser />
 
