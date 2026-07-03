@@ -32,7 +32,7 @@
   {
     "path": "composio.ts",
     "composio": true,
-    "contents": "import { Composio } from '@composio/core';\nimport { EveProvider } from '@composio/experimental/eve';\nimport { createImessageToolkit } from './imessage';\n\nexport const composio = new Composio({\n  apiKey: process.env.COMPOSIO_API_KEY,\n  provider: new EveProvider(),\n});\n\nexport const session = composio.sessions.create('user_123', {\n  experimental: { customToolkits: [createImessageToolkit()] },\n});\n"
+    "contents": "import { Composio } from '@composio/core';\nimport { EveProvider } from '@composio/experimental/eve';\nimport { createImessageToolkit } from './imessage';\n\nexport const composio = new Composio({ provider: new EveProvider() });\n\nexport const session = composio.sessions.create('user_123', {\n  experimental: { customToolkits: [createImessageToolkit()] },\n});\n"
   },
   {
     "path": "agent/tools/composio.ts",
