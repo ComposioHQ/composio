@@ -44,6 +44,8 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

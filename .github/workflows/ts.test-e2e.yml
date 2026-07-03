@@ -82,6 +82,8 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -168,6 +170,8 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -205,6 +209,8 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -254,6 +260,7 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
+          enable-turbo-cache: 'true'
           node-version: '22.22.3'
 
       - name: Install Dependencies
