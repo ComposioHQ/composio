@@ -9,8 +9,9 @@ responses, honors the `Retry-After` header when present, otherwise falls back to
 exponential backoff with jitter, and caps attempts so CI still fails fast when
 the backend is genuinely down.
 
-This matters because `generate-toolkits.ts` issues ~3000 requests per run
-(2 + 3 per toolkit), which exceeds the staging limit of 2000 requests/minute.
+This matters because `generate-toolkits.ts` issues ~6500 requests per run
+(a few catalog pages + 3 per toolkit across a ~2.1k catalog), which exceeds the
+staging limit of 2000 requests/minute.
 Before this helper, runs failed with `429`, and `generate-meta-tools.ts` — which
 runs immediately after — inherited the exhausted rate-limit window.
 
