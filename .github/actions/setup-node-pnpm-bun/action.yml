@@ -102,9 +102,11 @@ runs:
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: .turbo/cache
-        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        # Keyed per job: concurrent jobs save different task graphs under the
+        # same commit, and actions/cache is first-writer-wins on exact keys.
+        key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
         restore-keys: |
-          ${{ runner.os }}-turbo-
+          ${{ runner.os }}-turbo-${{ github.job }}-
 
     - name: Report versions
       id: versions
