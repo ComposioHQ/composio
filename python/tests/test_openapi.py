@@ -106,3 +106,41 @@ class TestExistingShapesUnchanged:
     @pytest.mark.schema
     def test_typeless_property_is_any(self):
         assert _annotation({"description": "free form"}) is t.Any
+
+
+class TestListValuedType:
+    """A list-valued ``type`` (e.g. ``["string", "null"]``) resolves to a Union.
+
+    JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a list of
+    types rather than an ``anyOf``. A list is unhashable, so the older
+    ``p_type in OPENAPI_TO_PYTHON`` membership test raised
+    ``TypeError: unhashable type: 'list'`` and crashed tool wrapping.
+    """
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_nullable_list_is_optional(self):
+        assert _annotation({"type": ["string", "null"]}) == t.Optional[str]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_single_member_list_resolves_to_that_type(self):
+        assert _annotation({"type": ["integer"]}) is int
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_multiple_non_null_members_build_a_union(self):
+        assert _annotation({"type": ["string", "integer"]}) == t.Union[str, int]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_unrecognized_member_falls_back_to_any(self):
+        annotation = _annotation({"type": ["file", "null"]})
+        args = t.get_args(annotation)
+        assert t.Any in args
+        assert type(None) in args
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_empty_list_resolves_to_any(self):
+        assert _annotation({"type": []}) is t.Any
