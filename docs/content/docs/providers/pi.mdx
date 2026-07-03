@@ -5,7 +5,7 @@ keywords: [pi, coding agent, pi coding agent, provider, experimental, typescript
 experimental: true
 ---
 
-The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). A Pi session can search tools, manage connections, execute tools, and run the remote sandbox. Like the [eve provider](/docs/providers/eve), `PiProvider` ships its own hook interface to intercept, allow, deny, or rewrite every helper call before the model sees the result.
+The Pi provider adapts Composio tools for [`@earendil-works/pi-coding-agent`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent). A Pi session can search tools, manage connections, execute tools, and run the remote sandbox. Unlike the other providers, `PiProvider` ships its own hook interface to intercept, allow, deny, or rewrite every helper call before the model sees the result.
 
 <Callout type="info">
   The Pi provider ships from `@composio/experimental` for TypeScript projects.
