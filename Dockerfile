@@ -9,9 +9,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js, pnpm and bun
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g pnpm@10.17.0 \
+    && npm install -g pnpm@11.8.0 \
     && curl -fsSL https://bun.sh/install | bash
 
 # Add bun to PATH
@@ -26,14 +26,14 @@ RUN pnpm install
 RUN pnpm build
 
 # Build the CLI binary
-WORKDIR /app/packages/cli
+WORKDIR /app/ts/packages/cli
 RUN pnpm build:binary
 
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
 
 # Copy the CLI binary from the builder stage
-COPY --from=builder /app/packages/cli/dist/composio /composio
+COPY --from=builder /app/ts/packages/cli/dist/composio /composio
 
 # Make the binary executable
 RUN chmod +x /composio
