@@ -62,20 +62,22 @@ from composio import SESSION_PRESET_DIRECT_TOOLS, Composio
 from composio_openai_agents import OpenAIAgentsProvider
 
 # ---------------------------------------------------------------------------
-# Configuration (read from environment at call time)
+# Configuration — read from the environment at call time (not captured at
+# import), so changing DAKERA_BASE_URL / DAKERA_API_KEY after import is honoured.
 # ---------------------------------------------------------------------------
 
-_DAKERA_BASE_URL = os.environ.get("DAKERA_BASE_URL", "http://localhost:3000").rstrip(
-    "/"
-)
-_DAKERA_API_KEY = os.environ.get("DAKERA_API_KEY", "")
 _AGENT_ID = "composio-demo-agent"
+
+
+def _dakera_base_url() -> str:
+    return os.environ.get("DAKERA_BASE_URL", "http://localhost:3000").rstrip("/")
 
 
 def _dakera_headers() -> dict[str, str]:
     headers: dict[str, str] = {"Content-Type": "application/json"}
-    if _DAKERA_API_KEY:
-        headers["Authorization"] = f"Bearer {_DAKERA_API_KEY}"
+    api_key = os.environ.get("DAKERA_API_KEY", "")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     return headers
 
 
@@ -87,7 +89,7 @@ def _dakera_headers() -> dict[str, str]:
 def _dakera_post(path: str, payload: dict[str, t.Any]) -> dict[str, t.Any]:
     """Call a Dakera REST endpoint and return the parsed JSON response."""
     with httpx.Client(
-        base_url=_DAKERA_BASE_URL, headers=_dakera_headers(), timeout=30.0
+        base_url=_dakera_base_url(), headers=_dakera_headers(), timeout=30.0
     ) as c:
         resp = c.post(path, json=payload)
         if resp.is_error:
