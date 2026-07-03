@@ -90,36 +90,46 @@ EventQueue: t.TypeAlias = q.Queue[Event]
 _queue: t.Optional[EventQueue] = None
 _event: t.Optional[tr.Event] = None
 _thread: t.Optional[tr.Thread] = None
+_init_lock = tr.Lock()
 
 
 def _setup():
     global _queue, _event, _thread
-    if _queue is None:
-        _queue = q.Queue[Event]()
+    # Fast path: once initialized, skip the lock entirely.
+    if _thread is not None:
+        return _queue, _event, _thread
 
-    if _event is None:
-        _event = tr.Event()
+    # `push_event` runs on the trace wrapper of every public Resource method, so
+    # the first call can race across threads (the SDK itself dispatches from a
+    # ThreadPoolExecutor). Guard the check-then-init so exactly one queue/event/
+    # thread is created and a single atexit teardown is registered.
+    with _init_lock:
+        if _queue is None:
+            _queue = q.Queue[Event]()
 
-    if _thread is None:
-        _thread = tr.Thread(
-            target=_thread_loop,
-            kwargs={
-                "queue": _queue,
-                "event": _event,
-            },
-            daemon=True,
-        )
-        _thread.start()
-        atexit.register(
-            functools.partial(
-                _teardown,
-                queue=_queue,
-                event=_event,
-                thread=_thread,
+        if _event is None:
+            _event = tr.Event()
+
+        if _thread is None:
+            _thread = tr.Thread(
+                target=_thread_loop,
+                kwargs={
+                    "queue": _queue,
+                    "event": _event,
+                },
+                daemon=True,
             )
-        )
+            _thread.start()
+            atexit.register(
+                functools.partial(
+                    _teardown,
+                    queue=_queue,
+                    event=_event,
+                    thread=_thread,
+                )
+            )
 
-    return _queue, _event, _thread
+        return _queue, _event, _thread
 
 
 def _teardown(queue: EventQueue, event: tr.Event, thread: tr.Thread):
