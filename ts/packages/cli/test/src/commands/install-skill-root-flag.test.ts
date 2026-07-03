@@ -3,23 +3,17 @@ import { parseRootInstallSkillRequest } from 'src/commands';
 
 describe('CLI: --install-skill', () => {
   it('parses the default skill name when only a target is provided', () => {
-    expect(
-      parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'claude'])
-    ).toEqual({
-      _tag: 'parsed',
-      target: 'claude',
-    });
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'claude'])).toEqual(
+      {
+        _tag: 'parsed',
+        target: 'claude',
+      }
+    );
   });
 
   it('parses an explicit skill name and target', () => {
     expect(
-      parseRootInstallSkillRequest([
-        'node',
-        'composio',
-        '--install-skill',
-        'composio-cli',
-        'codex',
-      ])
+      parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'composio-cli', 'codex'])
     ).toEqual({
       _tag: 'parsed',
       skillName: 'composio-cli',
@@ -33,6 +27,19 @@ describe('CLI: --install-skill', () => {
     ).toEqual({
       _tag: 'parsed',
       target: 'openclaw',
+    });
+  });
+
+  it('accepts Cursor and Dust targets', () => {
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'cursor'])).toEqual(
+      {
+        _tag: 'parsed',
+        target: 'cursor',
+      }
+    );
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'dust'])).toEqual({
+      _tag: 'parsed',
+      target: 'dust',
     });
   });
 
@@ -62,17 +69,15 @@ describe('CLI: --install-skill', () => {
     expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill'])).toEqual({
       _tag: 'error',
       message:
-        'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
+        'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|cursor|dust|openclaw>',
     });
   });
 
   it('returns a helpful error for invalid targets', () => {
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'cursor'])).toEqual(
-      {
-        _tag: 'error',
-        message:
-          'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
-      }
-    );
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'zed'])).toEqual({
+      _tag: 'error',
+      message:
+        'Invalid target for --install-skill. Expected one of: claude, codex, cursor, dust, openclaw.',
+    });
   });
 });

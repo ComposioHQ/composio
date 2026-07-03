@@ -75,6 +75,20 @@ describe('install-skill', () => {
       resolveTargetSkillPath({
         home: '/tmp/test-home',
         skillName: 'composio-cli',
+        target: 'cursor',
+      })
+    ).toBe('/tmp/test-home/.cursor/skills/composio-cli');
+    expect(
+      resolveTargetSkillPath({
+        home: '/tmp/test-home',
+        skillName: 'composio-cli',
+        target: 'dust',
+      })
+    ).toBe('/tmp/test-home/.dust/skills/composio-cli');
+    expect(
+      resolveTargetSkillPath({
+        home: '/tmp/test-home',
+        skillName: 'composio-cli',
         target: 'openclaw',
       })
     ).toBe('/tmp/test-home/.openclaw/skills/composio-cli');

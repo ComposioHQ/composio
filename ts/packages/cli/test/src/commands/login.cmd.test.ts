@@ -42,13 +42,13 @@ describe('CLI: composio login', () => {
 
   describe('login --help', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows browser, session, direct-login flags and no legacy --api-key', () =>
+      it.scoped('[Then] shows session and direct-login flags without removed browser flags', () =>
         Effect.gen(function* () {
           yield* cli(['login', '--help']);
           const lines = yield* MockConsole.getLines();
           const output = lines.join('\n');
-          expect(output).toContain('--no-browser');
-          expect(output).toContain('--no-wait');
+          expect(output).not.toContain('--no-browser');
+          expect(output).not.toContain('--no-wait');
           expect(output).toContain('--poll');
           expect(output).toContain('--key');
           expect(output).toContain('--user-api-key');

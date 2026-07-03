@@ -70,6 +70,7 @@ const RecordingTerminalUI = TerminalUI.of({
   note: (message, title) => Console.log(title ? `[${title}] ${message}` : message),
   confirm: () => Effect.succeed(true),
   select: (_message, options) => Effect.succeed(options[0].value),
+  multiselect: (_message, _options, defaults) => Effect.succeed(defaults),
   withSpinner: (_message, effect) => effect,
   useMakeSpinner: (_message, use) =>
     use({

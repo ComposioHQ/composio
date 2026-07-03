@@ -36,6 +36,7 @@
     "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
+    "postinstall": "node ./bin/postinstall.mjs",
     "prebuild": "pnpm run typecheck",
     "build": "tsdown && bun run ./scripts/copy-local-tools-assets.ts ./dist",
     "bin": "./dist/composio",

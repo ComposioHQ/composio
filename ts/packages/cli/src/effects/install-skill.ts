@@ -16,13 +16,15 @@ import decompress from 'decompress';
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
 export type SkillReleaseChannel = CliReleaseChannel;
-export type SkillInstallTarget = 'claude' | 'codex' | 'openclaw';
+export type SkillInstallTarget = 'claude' | 'codex' | 'cursor' | 'dust' | 'openclaw';
 
 const SKILL_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 const SKILL_TARGET_LABELS: Record<SkillInstallTarget, string> = {
   claude: 'Claude Code',
   codex: 'Codex',
+  cursor: 'Cursor',
+  dust: 'Dust',
   openclaw: 'OpenClaw',
 };
 
@@ -61,6 +63,10 @@ export const resolveTargetSkillPath = ({
       return path.join(home, '.claude', 'skills', skillName);
     case 'codex':
       return path.join(home, '.codex', 'skills', skillName);
+    case 'cursor':
+      return path.join(home, '.cursor', 'skills', skillName);
+    case 'dust':
+      return path.join(home, '.dust', 'skills', skillName);
     case 'openclaw':
       return path.join(home, '.openclaw', 'skills', skillName);
   }
@@ -121,6 +127,7 @@ export const installSkill = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
@@ -226,8 +233,32 @@ export const installSkill = (options?: {
     const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
     fs.symlinkSync(relativeTarget, targetSkillPath);
 
-    yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    if (!options?.silent) {
+      yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    }
   });
+
+export type SkillInstallResult = {
+  readonly target: SkillInstallTarget;
+  readonly success: boolean;
+};
+
+export const installSkillBuffered = (options: {
+  readonly releaseTag?: string;
+  readonly channel?: SkillReleaseChannel;
+  readonly target: SkillInstallTarget;
+  readonly skillName?: string;
+}) =>
+  installSkill({ ...options, silent: true }).pipe(
+    Effect.as<SkillInstallResult>({ target: options.target, success: true }),
+    Effect.sandbox,
+    Effect.catchAll(cause =>
+      Effect.gen(function* () {
+        yield* Effect.logDebug('Skill install failed:', cause);
+        return { target: options.target, success: false } satisfies SkillInstallResult;
+      })
+    )
+  );
 
 /**
  * Wrapped version that catches all errors and logs a warning instead of failing.

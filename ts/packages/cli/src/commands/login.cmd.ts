@@ -17,9 +17,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import { runOrgSelection } from 'src/effects/select-org-project';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
-import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
-import { APP_VERSION } from 'src/constants';
 import { isInteractiveTerminal } from 'src/utils/stdio';
 import {
   ensureAgentSignupAllowed,
@@ -36,13 +34,6 @@ export const noBrowser = Options.boolean('no-browser').pipe(
 const pollOpt = Options.boolean('poll').pipe(
   Options.withDefault(false),
   Options.withDescription('Poll the most recent pending browser login and complete it')
-);
-
-const noWait = Options.boolean('no-wait').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
-    'Print login URL and session info, then exit without opening browser or waiting'
-  )
 );
 
 const keyOpt = Options.text('key').pipe(
@@ -68,7 +59,7 @@ const yesOpt = Options.boolean('yes').pipe(
 
 const noSkillInstall = Options.boolean('no-skill-install').pipe(
   Options.withDefault(false),
-  Options.withDescription('Skip installing the composio-cli skill for Claude Code')
+  Options.withDescription('Deprecated no-op; skill installation is handled by composio onboard')
 );
 
 const agentOpt = Options.boolean('agent').pipe(
@@ -417,7 +408,7 @@ const storeCredentials = (params: {
   });
 
 /**
- * Completes login using an existing session key (from composio login --no-wait).
+ * Completes login using an existing session key from a non-interactive login.
  * Fetches the session, optionally polls until linked, then stores credentials.
  *
  * When noWait is false: polls until session is linked (same as browser flow).
@@ -442,7 +433,7 @@ const loginWithKey = (params: {
         Effect.catchAll(() =>
           Effect.fail(
             new Error(
-              'Session not found or expired. Run `composio login --no-wait` to get a new session.'
+              'Session not found or expired. Run `composio login < /dev/null` to get a new session.'
             )
           )
         )
@@ -586,10 +577,10 @@ export const browserLogin = (params: {
   scope: 'user' | 'project';
   /** When true, don't open browser — just show the URL. */
   noBrowser: boolean;
-  /** When true, print URL/session info and exit without waiting (implies noBrowser). */
-  noWait?: boolean;
   /** When true (login only), skip org/project picker and use session defaults. When false, prompt for org/project. */
   skipOrgProjectPicker?: boolean;
+  /** When true, the browser completes first-run onboarding, including required email setup. */
+  onboarding?: boolean;
 }) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -602,7 +593,13 @@ export const browserLogin = (params: {
 
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
-    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+    const loginUrl = new URL(ctx.data.webURL);
+    loginUrl.searchParams.set('cliKey', session.id);
+    if (params.onboarding) {
+      loginUrl.searchParams.set('onboarding', '1');
+      loginUrl.searchParams.set('email', '1');
+    }
+    const url = loginUrl.toString();
     const pollCommand = 'composio login --poll';
     const expiresAt = DateTime.formatIso(session.expiresAt);
     yield* writePendingLoginSession({
@@ -612,7 +609,7 @@ export const browserLogin = (params: {
     });
 
     const canPrompt = isInteractiveTerminal();
-    const effectiveNoWait = params.noWait || !canPrompt;
+    const effectiveNoWait = !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
     if (effectiveNoWait) {
@@ -647,9 +644,7 @@ export const browserLogin = (params: {
           Effect.gen(function* () {
             yield* Effect.logDebug('Failed to open browser:', error);
             yield* ui.log.warn('Could not open the browser automatically.');
-            yield* ui.log.info(
-              `Tip: try using the \`--no-browser\` flag and open the URL manually.`
-            );
+            yield* ui.log.info('Open the login URL above in your browser.');
           })
         )
       );
@@ -743,10 +738,8 @@ export const browserLogin = (params: {
  * CLI command to login using Composio's CLI session APIs.
  *
  * Browser-based: Opens browser for OAuth flow (default).
- * Use --no-browser to skip auto-opening the browser and print the URL instead.
- * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
- * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
- * with --no-wait, checks once and fails if not linked.
+ * In non-interactive environments, prints the URL and exits without waiting.
+ * Use --key to complete login with a session key, or --poll to resume the cached session.
  * Use --user-api-key to log in directly without a browser flow, and --org to override the current org.
  * Use --agent to sign up or log in using a Composio agent identity.
  * Use -y to skip org picker and use current org.
@@ -754,10 +747,7 @@ export const browserLogin = (params: {
  * @example
  * ```bash
  * composio login
- * composio login --no-browser
- * composio login --no-wait
  * composio login --key <key>
- * composio login --key <key> --no-wait
  * composio login --user-api-key <uak>
  * composio login --user-api-key <uak> --org <org>
  * composio login --agent
@@ -767,9 +757,7 @@ export const browserLogin = (params: {
 export const loginCmd = Command.make(
   'login',
   {
-    noBrowser,
     poll: pollOpt,
-    noWait,
     key: keyOpt,
     userApiKey: userApiKeyOpt,
     org: orgOpt,
@@ -777,7 +765,7 @@ export const loginCmd = Command.make(
     noSkillInstall,
     agent: agentOpt,
   },
-  ({ noBrowser, poll, noWait, key, userApiKey, org, yes, noSkillInstall, agent }) =>
+  ({ poll, key, userApiKey, org, yes, noSkillInstall, agent }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
@@ -787,14 +775,17 @@ export const loginCmd = Command.make(
         yield* ui.intro('composio login');
       }
 
+      if (noSkillInstall) {
+        yield* ui.log.warn(
+          '`--no-skill-install` is deprecated and has no effect. Use `composio onboard --no-skill-install`.'
+        );
+      }
+
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
         return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
       }
 
-      if (
-        poll &&
-        (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
-      ) {
+      if (poll && (Option.isSome(key) || Option.isSome(userApiKey) || agent)) {
         return yield* Effect.fail(
           new Error(
             '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
@@ -802,7 +793,7 @@ export const loginCmd = Command.make(
         );
       }
 
-      if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
+      if (agent && (Option.isSome(key) || Option.isSome(userApiKey))) {
         return yield* Effect.fail(
           new Error('`--agent` cannot be combined with browser, session, or direct-login flags.')
         );
@@ -812,7 +803,7 @@ export const loginCmd = Command.make(
         return yield* Effect.fail(new Error('`--org` requires `--user-api-key`.'));
       }
 
-      if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
+      if (Option.isSome(userApiKey) && Option.isSome(key)) {
         return yield* Effect.fail(
           new Error(
             '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
@@ -842,9 +833,6 @@ export const loginCmd = Command.make(
           yield* ui.note(pollSummary, 'Login complete');
         }
         yield* ui.output(serializePollLoginResult(pollSummaryParams), { force: true });
-        if (!noSkillInstall && canPrompt) {
-          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-        }
         return;
       }
 
@@ -859,9 +847,6 @@ export const loginCmd = Command.make(
               `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
             );
             yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
-            if (!noSkillInstall && canPrompt) {
-              yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-            }
           })
         );
       }
@@ -869,12 +854,9 @@ export const loginCmd = Command.make(
       if (Option.isSome(key)) {
         yield* loginWithKey({
           key: key.value,
-          noWait,
+          noWait: false,
           skipOrgProjectPicker: true,
         });
-        if (!noSkillInstall && canPrompt) {
-          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-        }
         return;
       }
 
@@ -883,9 +865,6 @@ export const loginCmd = Command.make(
           userApiKey: userApiKey.value,
           org: Option.getOrUndefined(org),
         });
-        if (!noSkillInstall && canPrompt) {
-          yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-        }
         return;
       }
 
@@ -902,13 +881,8 @@ export const loginCmd = Command.make(
 
       yield* browserLogin({
         scope: 'user',
-        noBrowser,
-        noWait,
+        noBrowser: false,
         skipOrgProjectPicker: yes,
       });
-
-      if (!noSkillInstall && !noWait && canPrompt) {
-        yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
-      }
     })
 ).pipe(Command.withDescription('Log in to the Composio SDK.'));

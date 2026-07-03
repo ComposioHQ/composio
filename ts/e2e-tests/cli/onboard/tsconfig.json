@@ -1,0 +1,9 @@
+{
+  "extends": "../../_utils/tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "types": ["bun"]
+  },
+  "include": ["e2e.test.ts"]
+}

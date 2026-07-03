@@ -162,6 +162,7 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 // ── Account commands ───────────────────────────────────────────────────
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({ name: 'onboard', description: 'Set up Composio and detected coding agents' }),
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
@@ -829,9 +830,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   login: {
     usage:
-      'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
-    description:
-      'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
+      'composio login [--poll] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
+    description: 'Log in to the Composio CLI session.',
     options: [
       {
         name: '--key <text>',
@@ -847,17 +847,30 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       },
     ],
     flags: [
-      { name: '--no-browser', description: 'Login without browser interaction' },
       {
         name: '--poll',
         description: 'Poll the cached pending login key for up to 10 minutes',
       },
-      { name: '--no-wait', description: 'Print login URL and session info, then exit' },
       { name: '-y, --yes', description: 'Skip org picker; use current org' },
       {
         name: '--no-skill-install',
-        description: 'Skip installing the composio-cli skill for Claude Code',
+        description: 'Deprecated no-op; use the option on composio onboard',
       },
+    ],
+  },
+  onboard: {
+    usage: 'composio onboard [-y, --yes] [--no-skill-install] [--targets text]',
+    description:
+      'Set up your account in the browser and install Composio skills for detected coding agents.',
+    options: [
+      {
+        name: '--targets <text>',
+        description: 'Detected agents to configure, comma-separated',
+      },
+    ],
+    flags: [
+      { name: '-y, --yes', description: 'Install for every detected agent without prompting' },
+      { name: '--no-skill-install', description: 'Skip agent skill installation' },
     ],
   },
   logout: {
@@ -1548,7 +1561,7 @@ export function printRootHelp(
     bold('FLAGS'),
     '  -h, --help [mode]  Show help for command (simple, default, full)',
     `  --version      Show ${name} version`,
-    '  --install-skill [skill-name] <claude|codex|openclaw>',
+    '  --install-skill [skill-name] <claude|codex|cursor|dust|openclaw>',
     '                  Manually install the composio skill for a supported agent',
     '',
     bold('LEARN MORE'),

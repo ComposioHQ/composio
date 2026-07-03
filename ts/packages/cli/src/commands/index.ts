@@ -7,6 +7,7 @@ import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
+import { onboardCmd } from './onboard.cmd';
 import { signupCmd } from './signup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
@@ -49,6 +50,11 @@ import {
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import {
+  formatSkillInstallTargetList,
+  isSkillInstallTarget,
+  ONBOARDING_TARGETS,
+} from 'src/onboarding/targets';
+import {
   experimental,
   type CommandVisibility,
   type TaggedValue,
@@ -62,6 +68,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(upgradeCmd),
   tagged(whoamiCmd),
   tagged(loginCmd),
+  tagged(onboardCmd),
   tagged(signupCmd),
   tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
@@ -178,11 +185,7 @@ const findNestedSubcommandMismatch = (
 };
 
 const ROOT_INSTALL_SKILL_FLAGS = ['--install-skill', '--instal-skill'] as const;
-const SKILL_INSTALL_TARGETS = [
-  'claude',
-  'codex',
-  'openclaw',
-] as const satisfies ReadonlyArray<SkillInstallTarget>;
+const SKILL_INSTALL_TARGETS = ONBOARDING_TARGETS.map(target => target.id);
 
 type RootInstallSkillRequest =
   | {
@@ -191,9 +194,6 @@ type RootInstallSkillRequest =
       target: SkillInstallTarget;
     }
   | { _tag: 'error'; message: string };
-
-const isSkillInstallTarget = (value: string): value is SkillInstallTarget =>
-  (SKILL_INSTALL_TARGETS as ReadonlyArray<string>).includes(value);
 
 export const parseRootInstallSkillRequest = (
   argv: ReadonlyArray<string>
@@ -215,8 +215,7 @@ export const parseRootInstallSkillRequest = (
       if (rawValues.length === 0) {
         return {
           _tag: 'error',
-          message:
-            'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
+          message: `Missing target for --install-skill. Usage: composio --install-skill [skill-name] <${formatSkillInstallTargetList()}>`,
         };
       }
 
@@ -225,8 +224,7 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message:
-              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
+            message: `Invalid target for --install-skill. Expected one of: ${SKILL_INSTALL_TARGETS.join(', ')}.`,
           };
         }
         return { _tag: 'parsed', target };
@@ -237,8 +235,7 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message:
-              'Invalid target for --install-skill. Expected one of: claude, codex, openclaw.',
+            message: `Invalid target for --install-skill. Expected one of: ${SKILL_INSTALL_TARGETS.join(', ')}.`,
           };
         }
         return { _tag: 'parsed', skillName, target };
@@ -246,8 +243,7 @@ export const parseRootInstallSkillRequest = (
 
       return {
         _tag: 'error',
-        message:
-          'Too many arguments for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|openclaw>',
+        message: `Too many arguments for --install-skill. Usage: composio --install-skill [skill-name] <${formatSkillInstallTargetList()}>`,
       };
     }
 

@@ -10,10 +10,11 @@ Tests use `runCmd` to execute shell commands in the container and assert on exit
 
 ## Test Suites
 
-| Suite | Description | Env Vars |
-| --- | --- | --- |
-| [version](./version/) | `composio version` output and exit code | None |
-| [whoami](./whoami/) | `composio whoami` prints the API key | `COMPOSIO_USER_API_KEY` |
+| Suite                 | Description                                               | Env Vars                |
+| --------------------- | --------------------------------------------------------- | ----------------------- |
+| [version](./version/) | `composio version` output and exit code                   | None                    |
+| [whoami](./whoami/)   | `composio whoami` prints the API key                      | `COMPOSIO_USER_API_KEY` |
+| [onboard](./onboard/) | Onboarding command packaging and non-interactive behavior | None                    |
 
 ## Isolation Tool
 
