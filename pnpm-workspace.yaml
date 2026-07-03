@@ -29,31 +29,31 @@ allowBuilds:
 
 catalog:
   '@ai-sdk/openai': ^3.0.71
-  '@arethetypeswrong/cli': ^0.18.3
-  '@clack/core': '^1.4.1'
-  '@clack/prompts': '^1.5.1'
-  '@cloudflare/vitest-pool-workers': 0.16.15
+  '@arethetypeswrong/cli': ^0.18.4
+  '@clack/core': '^1.4.2'
+  '@clack/prompts': '^1.6.0'
+  '@cloudflare/vitest-pool-workers': 0.18.0
   '@cloudflare/workers-types': ^4.20260616.1
   '@composio/client': 0.1.0-alpha.74
   '@effect/cli': ^0.75.2
   '@effect/eslint-plugin': ^0.3.2
   '@effect/language-service': ^0.86.2
-  '@effect/platform': ^0.96.1
+  '@effect/platform': ^0.96.2
   '@effect/platform-bun': ^0.90.0
   '@effect/platform-node': ^0.107.0
   '@effect/platform-node-shared': ^0.60.0
   '@effect/vitest': ^0.29.0
-  '@mastra/core': ^1.46.0
+  '@mastra/core': ^1.49.0
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
   '@typescript/native-preview': 7.0.0-dev.20260615.1
   ai: ^6.0.206
   dotenv: ^17.4.2
-  effect: ^3.21.3
+  effect: ^3.21.4
   hono: ^4.12.27
   openai: ^6.42.0
   picocolors: ^1.1.1
-  pnpm: ^11.8.0
+  pnpm: ^11.9.0
   publint: ^0.3.21
   tsdown: ^0.22.3
   tsx: ^4.22.4

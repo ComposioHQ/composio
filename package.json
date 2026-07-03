@@ -82,7 +82,7 @@
     "lint-staged": "^15.5.1",
     "prettier": "^3.8.4",
     "publint": "catalog:",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "turbo": "^2.9.18",

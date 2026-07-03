@@ -38,11 +38,11 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@langchain/core": "^1.1.4"
+    "@langchain/core": "^1.2.1"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@langchain/core": "^1.1.4",
+    "@langchain/core": "^1.2.1",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

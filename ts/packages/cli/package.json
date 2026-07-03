@@ -81,7 +81,7 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.16.1",
     "@zed-industries/claude-code-acp": "^0.16.2",
-    "@zed-industries/codex-acp": "^0.10.0",
+    "@zed-industries/codex-acp": "^0.16.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
     "@composio/cli-keyring": "workspace:*",
@@ -103,7 +103,7 @@
     "openapi-typescript": "^7.13.0",
     "picocolors": "catalog:",
     "pusher-js": "^8.5.0",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.6",
     "ts-morph": "^26.0.0",
