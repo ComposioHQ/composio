@@ -592,6 +592,20 @@ def get_signature_format_from_schema_params(
             else:
                 annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
             param_default = param_schema.get("default", "")
+        elif isinstance(param_type, list):
+            # JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a
+            # list of types, e.g. {"type": ["string", "null"]}. A list is unhashable,
+            # so the membership test below would raise TypeError. Map each member to a
+            # Python type (falling back to t.Any for unrecognized types) and build a
+            # Union, mirroring the anyOf/oneOf handling above.
+            mapped_types = [
+                PYDANTIC_TYPE_TO_PYTHON_TYPE.get(ptype, t.Any) for ptype in param_type
+            ]
+            if len(mapped_types) == 1:
+                annotation = mapped_types[0]
+            else:
+                annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
+            param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])

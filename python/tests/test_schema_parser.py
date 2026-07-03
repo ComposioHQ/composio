@@ -1602,6 +1602,49 @@ class TestGetSignatureFormatFromSchemaParams:
         assert str in args
         assert type(None) in args
 
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_type_list_nullable_resolves(self):
+        """A list-valued 'type' (e.g. ["string", "null"]) resolves without raising.
+
+        JSON Schema Draft 2020-12 / OpenAPI 3.1 express nullable fields as a list
+        of types rather than an anyOf. A list is unhashable, so the older membership
+        test raised ``TypeError: unhashable type: 'list'`` for these schemas.
+        """
+        schema = {
+            "properties": {"branch": {"type": ["string", "null"]}},
+        }
+
+        annotation = self._annotation(schema)
+        assert t.get_origin(annotation) is t.Union
+        args = t.get_args(annotation)
+        assert str in args
+        assert type(None) in args
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_type_list_single_member(self):
+        """A single-member list-valued 'type' resolves to that type directly."""
+        schema = {"properties": {"value": {"type": ["integer"]}}}
+        assert self._annotation(schema) is int
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_type_list_multiple_non_null(self):
+        """A list-valued 'type' with multiple non-null members builds a Union."""
+        schema = {"properties": {"value": {"type": ["string", "integer"]}}}
+        assert self._annotation(schema) == t.Union[str, int]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_type_list_unrecognized_member_falls_back_to_any(self):
+        """An unrecognized type inside a list maps to Any instead of raising."""
+        schema = {"properties": {"value": {"type": ["file", "null"]}}}
+        annotation = self._annotation(schema)
+        args = t.get_args(annotation)
+        assert t.Any in args
+        assert type(None) in args
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
