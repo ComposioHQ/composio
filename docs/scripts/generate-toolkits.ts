@@ -74,22 +74,57 @@ interface Toolkit {
   authConfigDetails?: AuthConfigDetail[];
 }
 
+// The backend silently caps `limit` at 1000 per page and defaults to usage
+// ordering, so a single request returns only the top-1000 toolkits — about half
+// the catalog. Request the cap and follow `next_cursor` until exhausted.
+// MAX_PAGES is a runaway guard well above the real catalog (~2.1k → 3 pages).
+const TOOLKITS_PAGE_LIMIT = 1000;
+const TOOLKITS_MAX_PAGES = 12;
+
 async function fetchToolkits(): Promise<any[]> {
   console.log('Fetching toolkits from API...');
 
-  const response = await fetchWithRetry(`${API_BASE}/toolkits`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
+  const items: any[] = [];
+  // Pages can overlap when the catalog shifts between cursor fetches; keep the
+  // first occurrence so API-provided ordering stays stable.
+  const seen = new Set<string>();
+  let cursor: string | undefined;
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch toolkits: ${response.status} ${response.statusText}`);
+  for (let page = 0; page < TOOLKITS_MAX_PAGES; page++) {
+    const params = new URLSearchParams({ limit: String(TOOLKITS_PAGE_LIMIT) });
+    if (cursor) params.set('cursor', cursor);
+
+    const response = await fetchWithRetry(`${API_BASE}/toolkits?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY!,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch toolkits: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const pageItems: any[] = data.items || data;
+    for (const item of pageItems) {
+      const slug = item?.slug?.toLowerCase();
+      if (slug) {
+        if (seen.has(slug)) continue;
+        seen.add(slug);
+      }
+      items.push(item);
+    }
+
+    cursor = data.next_cursor ?? undefined;
+    if (!cursor) return items;
   }
 
-  const data = await response.json();
-  return data.items || data;
+  // Failing beats silently publishing a truncated catalog — that is the exact
+  // bug this pagination loop exists to prevent.
+  throw new Error(
+    `Toolkit catalog exceeds ${TOOLKITS_MAX_PAGES} pages of ${TOOLKITS_PAGE_LIMIT}; raise TOOLKITS_MAX_PAGES`
+  );
 }
 
 async function fetchToolkitChangelog(): Promise<Map<string, string>> {
