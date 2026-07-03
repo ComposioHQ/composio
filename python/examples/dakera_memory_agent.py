@@ -4,46 +4,51 @@ Shows how to give a Composio agent cross-session memory using
 `Dakera <https://dakera.ai>`_ — a self-hosted, decay-weighted vector
 memory server.
 
-The three tools registered here (``STORE_MEMORY``, ``SEARCH_MEMORY``,
-``FORGET_MEMORY``) are in-process ``experimental`` tools: they run inside
-the Python process and call the Dakera REST API directly.  No Composio
-cloud connection is needed for the Dakera calls.
+Three in-process custom tools (``STORE_MEMORY``, ``RECALL_MEMORY``,
+``FORGET_MEMORY``) are registered on a Composio tool-router session and
+handed to an OpenAI Agents SDK agent.  The tool bodies run inside this
+Python process and call the Dakera REST API directly — Dakera itself
+needs no Composio cloud connection.  Registering the tools into the
+agent does use a Composio session, so ``COMPOSIO_API_KEY`` is required.
 
 Quick start
 -----------
-1. Start a local Dakera instance::
+1. Start a local Dakera instance.  The server needs an object store, so
+   run the ``dakera-deploy`` docker-compose stack rather than a bare
+   ``docker run`` (compose provisions the storage the server depends on)::
 
-       docker run -d -p 3300:3300 \\
-         -e DAKERA_API_KEY=demo \\
-         ghcr.io/dakera-ai/dakera:latest
+       git clone https://github.com/dakera-ai/dakera-deploy
+       cd dakera-deploy && docker compose up -d   # serves on http://localhost:3000
 
 2. Set environment variables::
 
        export COMPOSIO_API_KEY=...
        export OPENAI_API_KEY=...
-       export DAKERA_API_KEY=demo
-       export DAKERA_BASE_URL=http://localhost:3300   # default
+       export DAKERA_API_KEY=dk-...                    # the key you configured
+       export DAKERA_BASE_URL=http://localhost:3000    # default
 
 3. Run::
 
        python examples/dakera_memory_agent.py
 
-REST API reference
-------------------
+REST API reference (grounded on the Dakera server)
+--------------------------------------------------
 POST /v1/memory/store
-    Body: {content, agent_id, session_id?, importance?, tags?, metadata?}
-    Returns: {memory: {id, content, agent_id, ...}}
+    Body: {content, agent_id, session_id?, importance?, tags?}
+    Returns: {memory: {id, content, agent_id, ...}, embedding_time_ms}
 
-POST /v1/memory/search
+POST /v1/memory/recall
     Body: {agent_id, query, top_k?, session_id?}
-    Returns: {memories: [{memory: {id, content, ...}, score}]}
+    Returns: {memories: [{memory: {id, content, ...}, score}], ...}
+    Recall is importance-weighted and decay-aware — stale memories
+    surface below fresh, relevant ones.
 
 POST /v1/memory/forget
-    Body: {agent_id, memory_ids?}
-    Returns: {success: true}
+    Body: {agent_id, memory_ids, ...}  (at least one selector required)
+    Returns: {deleted_count}
+    The server rejects an unfiltered forget, so it can never wipe an
+    agent's whole memory by accident.
 """
-
-from __future__ import annotations
 
 import asyncio
 import os
@@ -60,7 +65,9 @@ from composio_openai_agents import OpenAIAgentsProvider
 # Configuration (read from environment at call time)
 # ---------------------------------------------------------------------------
 
-_DAKERA_BASE_URL = os.environ.get("DAKERA_BASE_URL", "http://localhost:3300").rstrip("/")
+_DAKERA_BASE_URL = os.environ.get("DAKERA_BASE_URL", "http://localhost:3000").rstrip(
+    "/"
+)
 _DAKERA_API_KEY = os.environ.get("DAKERA_API_KEY", "")
 _AGENT_ID = "composio-demo-agent"
 
@@ -79,10 +86,14 @@ def _dakera_headers() -> dict[str, str]:
 
 def _dakera_post(path: str, payload: dict[str, t.Any]) -> dict[str, t.Any]:
     """Call a Dakera REST endpoint and return the parsed JSON response."""
-    with httpx.Client(base_url=_DAKERA_BASE_URL, headers=_dakera_headers(), timeout=30.0) as c:
+    with httpx.Client(
+        base_url=_DAKERA_BASE_URL, headers=_dakera_headers(), timeout=30.0
+    ) as c:
         resp = c.post(path, json=payload)
         if resp.is_error:
-            raise RuntimeError(f"Dakera {path} returned HTTP {resp.status_code}: {resp.text}")
+            raise RuntimeError(
+                f"Dakera {path} returned HTTP {resp.status_code}: {resp.text}"
+            )
         return resp.json()
 
 
@@ -116,8 +127,8 @@ class StoreMemoryInput(BaseModel):
     )
 
 
-class SearchMemoryInput(BaseModel):
-    query: str = Field(description="Natural-language query to search past memories.")
+class RecallMemoryInput(BaseModel):
+    query: str = Field(description="Natural-language query to recall past memories.")
     top_k: int = Field(
         default=5,
         ge=1,
@@ -127,11 +138,11 @@ class SearchMemoryInput(BaseModel):
 
 
 class ForgetMemoryInput(BaseModel):
-    memory_ids: t.Optional[t.List[str]] = Field(
-        default=None,
+    memory_ids: t.List[str] = Field(
         description=(
-            "Specific memory IDs to delete. "
-            "Omit to wipe ALL memories for this agent."
+            "IDs of specific memories to delete (as returned by recall_memory). "
+            "At least one ID is required — the Dakera server rejects an "
+            "unfiltered forget to guard against accidental bulk deletion."
         ),
     )
 
@@ -172,18 +183,18 @@ def store_memory(input: StoreMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
 
 
 @composio.experimental.tool(
-    slug="SEARCH_MEMORY",
-    name="Search Memory",
+    slug="RECALL_MEMORY",
+    name="Recall Memory",
     description=(
-        "Retrieve relevant memories from long-term storage using semantic search. "
-        "Call this at the start of a conversation to recall what you know about "
-        "the user or the current topic."
+        "Retrieve relevant memories from long-term storage using semantic, "
+        "importance-weighted recall. Call this at the start of a conversation "
+        "to recall what you know about the user or the current topic."
     ),
 )
-def search_memory(input: SearchMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
-    """Retrieve the most semantically relevant memories for a query."""
+def recall_memory(input: RecallMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
+    """Recall the most relevant memories for a query (decay-weighted)."""
     data = _dakera_post(
-        "/v1/memory/search",
+        "/v1/memory/recall",
         {
             "agent_id": _AGENT_ID,
             "query": input.query,
@@ -205,19 +216,24 @@ def search_memory(input: SearchMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
     slug="FORGET_MEMORY",
     name="Forget Memory",
     description=(
-        "Delete specific memories or wipe all memories for this agent. "
+        "Delete specific memories by ID (as returned by recall_memory). "
         "Use when a memory is outdated, incorrect, or should be removed at "
         "the user's request."
     ),
 )
 def forget_memory(input: ForgetMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
-    """Delete one or more memories from Dakera."""
-    payload: dict[str, t.Any] = {"agent_id": _AGENT_ID}
-    if input.memory_ids is not None:
-        payload["memory_ids"] = input.memory_ids
+    """Delete one or more memories from Dakera by ID."""
+    ids = [mid for mid in input.memory_ids if mid]
+    if not ids:
+        # Never send an empty/absent selector: the server would reject it, and
+        # deleting nothing is the safe no-op — we must never risk a bulk wipe.
+        return {"deleted_count": 0, "memory_ids": []}
 
-    _dakera_post("/v1/memory/forget", payload)
-    return {"success": True, "deleted": input.memory_ids or "all"}
+    data = _dakera_post(
+        "/v1/memory/forget",
+        {"agent_id": _AGENT_ID, "memory_ids": ids},
+    )
+    return {"deleted_count": data.get("deleted_count", 0), "memory_ids": ids}
 
 
 # ---------------------------------------------------------------------------
@@ -226,17 +242,34 @@ def forget_memory(input: ForgetMemoryInput, ctx: t.Any) -> dict[str, t.Any]:
 
 SYSTEM_PROMPT = """You are a helpful assistant with access to persistent memory.
 
-At the start of each conversation, search your memory for relevant context.
+At the start of each conversation, recall relevant context from memory.
 When you learn something important about the user, store it for future recall.
-When the user asks you to forget something, call forget_memory.
+When the user asks you to forget something, recall it first to get its ID,
+then call forget_memory with that ID.
 
 Use the memory tools proactively — the user should not have to repeat themselves."""
 
-agent = Agent(
-    name="Dakera Memory Agent",
-    instructions=SYSTEM_PROMPT,
-    tools=[store_memory, search_memory, forget_memory],
-)
+
+def _build_agent() -> Agent:
+    """Register the custom tools on a Composio session and build the agent.
+
+    Custom tools are registered inline via ``experimental.custom_tools``;
+    ``session.tools()`` returns the ``FunctionTool`` instances the OpenAI
+    Agents SDK expects (passing the raw decorated tools to ``Agent`` would
+    not be invokable).
+    """
+    session = composio.create(
+        user_id="default",
+        experimental={
+            "custom_tools": [store_memory, recall_memory, forget_memory],
+        },
+    )
+    return Agent(
+        name="Dakera Memory Agent",
+        instructions=SYSTEM_PROMPT,
+        tools=session.tools(),
+    )
+
 
 # ---------------------------------------------------------------------------
 # Main
@@ -246,6 +279,7 @@ agent = Agent(
 async def main() -> None:
     print("Dakera Memory Agent — type 'quit' to exit.\n")
 
+    agent = _build_agent()
     session_id = "demo-session"
 
     while True:
