@@ -9,6 +9,7 @@ on:
       - '.github/workflows/ts.typecheck.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
   pull_request:
     branches: [master, next]
     paths:
@@ -17,6 +18,11 @@ on:
       - '.github/workflows/ts.typecheck.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   typecheck:
@@ -29,6 +35,8 @@ jobs:
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
