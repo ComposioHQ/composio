@@ -43,10 +43,7 @@ COMPOSIO_API_KEY=xxxxxxxxx
 import { Composio } from '@composio/core';
 import { EveProvider } from '@composio/experimental/eve';
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new EveProvider(),
-});
+const composio = new Composio({ provider: new EveProvider() });
 
 export const session = composio.sessions.create('user_123', {
   toolkits: ['github', 'gmail'], // optional: scope the session to specific apps
