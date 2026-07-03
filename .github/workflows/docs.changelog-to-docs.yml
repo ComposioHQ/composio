@@ -6,6 +6,9 @@ on:
     paths:
       - 'docs/content/changelog/**.mdx'
 
+permissions:
+  contents: read
+
 jobs:
   suggest-docs-updates:
     name: Suggest Documentation Updates

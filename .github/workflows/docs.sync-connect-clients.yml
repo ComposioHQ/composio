@@ -5,6 +5,9 @@ on:
     types: [dashboard-production-deploy]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-clients:
     runs-on: ubuntu-latest

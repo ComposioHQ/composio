@@ -5,6 +5,9 @@ on:
     - cron: '0 * * * *' # Every hour
   workflow_dispatch: # Manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   health-check:
     name: Check docs accessibility

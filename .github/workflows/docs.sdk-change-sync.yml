@@ -10,6 +10,9 @@ on:
       - 'python/composio/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-docs:
     runs-on: ubuntu-latest

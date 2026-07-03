@@ -9,6 +9,10 @@ on:
     - "docs/components/**/*.tsx"
     - "docs/app/**/*.tsx"
     - "docs/app/**/*.css"
+
+permissions:
+  contents: read
+
 jobs:
   claude-review:
     # Optional: Filter by PR author
