@@ -13,8 +13,10 @@
         "tsdown.config.ts",
         // for core
         "../../../tsdown.config.base.ts",
+        "../../../tsconfig.base.json",
         // for providers
-        "../../../../tsdown.config.base.ts"
+        "../../../../tsdown.config.base.ts",
+        "../../../../tsconfig.base.json"
       ],
       "outputs": ["dist/"]
     },
@@ -54,7 +56,16 @@
       "cache": false
     },
     "typecheck": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      // package tsconfigs extend the root base config, which lives outside the
+      // package dirs and is therefore not part of $TURBO_DEFAULT$
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        // for core
+        "../../../tsconfig.base.json",
+        // for providers
+        "../../../../tsconfig.base.json"
+      ]
     },
     "typecheck:tsc": {
       "dependsOn": ["^build"],
