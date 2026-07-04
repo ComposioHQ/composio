@@ -39,3 +39,14 @@ bun run generate:api-index
 - API reference pages and toolkit/meta-tool data are generated. Do not hand-edit generated data unless the local generator owns it.
 - Changelog entries require `title` and `date` frontmatter, and dates use `YYYY-MM-DD`.
 - Prefer cURL for API interactions because docs are consumed by humans and AI crawlers.
+
+## Dual-audience pages: `<ForAgent>`
+
+Docs pages serve two audiences from one MDX file: the rendered page is the human guide, and `<ForAgent>` blocks hold section-specific implementation details for AI agents.
+
+- On the human page, `<ForAgent title="...">` renders as a subtle, muted "Implementation details: ..." disclosure (`components/for-agent.tsx`).
+- In the page's `.md` output (and `llms-full.txt`), `mdxToCleanMarkdown()` in `lib/source.ts` unwraps each block into a `### For AI agents[: title]` heading, so agents always find instructions under a predictable label.
+- Place a block directly under the section it details; a page can have several. Give each a short `title` naming what it covers.
+- No markdown headings inside a block: they would land in the page TOC and anchor into a collapsed accordion. Write sub-section titles as standalone bold lines (`**Title**` alone on a line); the `.md` unwrap promotes them to `####` headings.
+- Write implementation detail: exact call sequences, argument names, result shapes, gotchas, copy-paste snippets. Do not restate the human guide, and do not duplicate the shared `llmGuardrails` content (that still appends after the page body).
+- TypeScript code blocks inside a block are Twoslash-checked like any other; read `docs/agent-guidance/context/twoslash.md` first.
