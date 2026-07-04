@@ -23,9 +23,12 @@ def get_toolkit_version(
     if isinstance(toolkit_versions, str):
         return toolkit_versions
 
-    # If toolkit_versions is a dict mapping, look up the specific toolkit version
+    # If toolkit_versions is a dict mapping, look up the specific toolkit version.
+    # Keys are normalized to lowercase when the mapping is built (see
+    # get_toolkit_versions), so lowercase the slug here to keep the lookup
+    # case-insensitive and avoid a silent fallback to 'latest'.
     if isinstance(toolkit_versions, dict) and len(toolkit_versions) > 0:
-        return toolkit_versions.get(toolkit_slug, "latest")
+        return toolkit_versions.get(toolkit_slug.lower(), "latest")
 
     # Else use 'latest'
     return "latest"

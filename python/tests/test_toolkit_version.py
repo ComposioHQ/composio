@@ -124,6 +124,19 @@ class TestToolkitVersion:
         expected = {"github": "v1.0.0", "slack": "v2.0.0", "openai": "v3.0.0"}
         assert result == expected
 
+    def test_get_toolkit_version_lookup_is_case_insensitive(self):
+        """Test that the lookup slug is matched case-insensitively.
+
+        get_toolkit_versions normalizes keys to lowercase, so a pin configured
+        under a mixed/upper-case key must still resolve regardless of the case
+        of the slug used for retrieval, instead of silently returning 'latest'.
+        """
+        versions = get_toolkit_versions({"GitHub": "v1.0.0"})
+
+        assert get_toolkit_version("GITHUB", versions) == "v1.0.0"
+        assert get_toolkit_version("GitHub", versions) == "v1.0.0"
+        assert get_toolkit_version("github", versions) == "v1.0.0"
+
     def test_priority_order_matches_typescript(self):
         """Test that priority order matches TypeScript implementation.
 
