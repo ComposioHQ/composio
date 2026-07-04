@@ -1,0 +1,193 @@
+---
+title: Triggers
+description: React to events in connected apps. Composio delivers them to your app as structured payloads.
+keywords: [triggers, events, subscribe, create trigger, trigger config, trigger types, manage triggers, enable, disable, trigger lifecycle]
+---
+
+When something happens in a connected app (a new Slack message, a GitHub commit, an incoming email), a **trigger** sends that event to your app as a structured payload. You write the handler. Composio handles the connection to the provider, delivery, retries, and signing.
+
+<TriggersFlow />
+
+Composio delivers every event to one destination you control: your webhook URL. You register it once per project, and Composio `POST`s every trigger event there, signed so you can verify it.
+
+Working with triggers follows one arc: **authenticate** the user for the toolkit ([auth config](/docs/authentication#behind-the-scenes) + [connected account](/docs/authentication)), **create** a trigger, **receive** its events, and **manage** it over its lifecycle. Creating and managing live on this page; [Receiving events](/docs/triggers/receiving-events) covers your endpoint end to end — local development, production, the payload, handling, and signature verification.
+
+## Creating triggers
+
+A trigger watches for one event (like `GITHUB_COMMIT_EVENT`) on one user's connected account. Each trigger type declares the config it needs — `GITHUB_COMMIT_EVENT` needs the `owner` and `repo` to watch. Pass the user, the trigger slug, and that config (trigger slugs and each type's config schema are discoverable from the SDK — the dropdown below has the recipe):
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+user_id = "user-id-123435"
+
+# The user needs a connected account for this toolkit before this runs.
+# Set it up first. See /docs/authentication.
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
+)
+print(f"Trigger created: {trigger.trigger_id}")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+const userId = 'user-id-123435';
+
+// The user needs a connected account for this toolkit before this runs.
+// Set it up first. See /docs/authentication.
+const trigger = await composio.triggers.create(userId, 'GITHUB_COMMIT_EVENT', {
+  triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
+});
+console.log(`Trigger created: ${trigger.triggerId}`);
+```
+  </Tab>
+</Tabs>
+
+You only pass a `user_id`. Composio resolves that user's connected account for the toolkit automatically.
+
+You can also create triggers from the dashboard: go to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs), select the auth config, open **Active Triggers**, and click **Create Trigger**.
+
+<ForAgent title="creating triggers">
+
+**Discover slugs — never guess**
+
+Trigger slugs vary between toolkits and wrong guesses 404 (`Tool <SLUG> not found`). Discover them:
+
+```python
+composio.triggers.list(toolkit_slugs=["slack"])   # types for a toolkit, e.g. SLACK_CHANNEL_MESSAGE_RECEIVED
+composio.triggers.list_enum()                     # all trigger types (no kwargs)
+composio.triggers.get_type("SLACK_CHANNEL_MESSAGE_RECEIVED")  # required config schema
+```
+
+Required config is discoverable via `get_type(slug).config` — or by reading the error a bare `create` returns (GitHub needs `owner`/`repo`; some Slack types need a channel id).
+
+**Multiple connected accounts**
+
+If a user has more than one connected account for the toolkit, pass `connected_account_id` (Python) / `connectedAccountId` (TypeScript) to `create` to pick exactly which account the trigger watches. Otherwise Composio resolves the account from `user_id` automatically.
+
+**Create idempotently**
+
+Re-running `create` can spawn duplicate `ti_*` instances, and duplicates mean duplicate deliveries. Check `list_active()` for an existing (slug, user_id) pair first and skip if present:
+
+```python
+active = composio.triggers.list_active()
+exists = any(t.trigger_name == "SLACK_CHANNEL_MESSAGE_RECEIVED" for t in active.items)
+if not exists:
+    ti = composio.triggers.create(slug="SLACK_CHANNEL_MESSAGE_RECEIVED", user_id=USER_ID)
+```
+
+**The user_id must match everywhere**
+
+A connected account is scoped to a `user_id`. The id you connect the account under must equal the id you create triggers with and execute tools as. A mismatch fails silently as "no connected account" — this is the most common "connected but nothing works" cause.
+
+**Version pinning**
+
+Trigger instances default to the `latest` toolkit version. If your handler parses payloads against a fixed schema, pin a version at SDK initialization (`toolkit_versions={"slack": "<v>"}` or `COMPOSIO_TOOLKIT_VERSION_<SLUG>` env). Related gotcha when *responding* to an event with a manual tool call: `tools.execute` requires a pinned version — `ToolVersionRequiredError: "latest" is not supported in manual execution` — pass `dangerously_skip_version_check=True` in dev, pin in prod.
+
+**API reference**
+
+Trigger types: [list types](/reference/api-reference/triggers/getTriggersTypes), [type enum](/reference/api-reference/triggers/getTriggersTypesListEnum), [type by slug](/reference/api-reference/triggers/getTriggersTypesBySlug). Create or update an instance: [upsert](/reference/api-reference/triggers/postTriggerInstancesBySlugUpsert). SDK methods: [Python](/reference/sdk-reference/python/triggers), [TypeScript](/reference/sdk-reference/typescript/triggers).
+
+</ForAgent>
+
+## Managing triggers
+
+After a trigger is created, you manage it over its lifecycle: list active instances, pause one with `disable()`, bring it back with `enable()`, or remove it for good with `delete()`.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+# List active instances (cursor-paginated)
+active = composio.triggers.list_active(
+    connected_account_ids=["ca_def456"],
+)
+for trigger in active.items:
+    print(f"{trigger.id} ({trigger.trigger_name}) - disabled: {trigger.disabled_at is not None}")
+
+# Pause and resume
+composio.triggers.disable(trigger_id="ti_abcd123")
+composio.triggers.enable(trigger_id="ti_abcd123")
+
+# Remove permanently
+composio.triggers.delete(trigger_id="ti_abcd123")
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// List active instances (cursor-paginated)
+const active = await composio.triggers.listActive({
+  connectedAccountIds: ['ca_def456'],
+});
+for (const trigger of active.items) {
+  console.log(`${trigger.id} (${trigger.triggerName}) - disabled: ${trigger.disabledAt !== null}`);
+}
+
+// Pause and resume
+await composio.triggers.disable('ti_abcd123');
+await composio.triggers.enable('ti_abcd123');
+
+// Remove permanently
+await composio.triggers.delete('ti_abcd123');
+```
+  </Tab>
+</Tabs>
+
+You can also toggle triggers from the dashboard, under your auth config's **Active Triggers**.
+
+You aren't the only one who can disable a trigger: Composio automatically disables one whose connection has expired or whose delivery has become unhealthy. Plan for it — subscribe to the disable event and prompt the user to reconnect (details in the dropdown below).
+
+<Callout type="warn">
+Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
+</Callout>
+
+<ForAgent title="managing triggers">
+
+**Hearing about automatic disables**
+
+Subscribe your webhook to `composio.trigger.disabled`: it fires when Composio automatically disables a trigger (expired connection, webhook refresh failure, or unhealthy polling). It does **not** fire when you disable a trigger through the manage API or deactivate its connected account. Pair it with `composio.connected_account.expired` to prompt re-authentication — see [connection lifecycle](/docs/authentication#connection-lifecycle).
+
+**`list_active` filters**
+
+`connected_account_ids`/`connectedAccountIds`, `trigger_ids`/`triggerIds`, `trigger_names`/`triggerNames` (type slugs), `auth_config_ids`/`authConfigIds`, and `show_disabled`/`showDisabled` (default `false`).
+
+**Duplicate instances mean duplicate deliveries**
+
+If the same (slug, user_id) exists twice, every event is delivered twice. When you see doubled events, `list_active()` and delete the extras — then make creation idempotent (see the creating-triggers dropdown above).
+
+**Route lifecycle events to an alert, not the ignore bucket**
+
+For an always-on consumer, silence is indistinguishable from a quiet day. Give `composio.*` slugs an explicit branch in your webhook handler: on `composio.trigger.disabled` (and connection-expiry events), page the team through your own alert channel and log the event — don't let them fall through the unknown-slug return. Pair with a per-source recency check (last-event-at) to catch anything the explicit events miss.
+
+**Provision from a re-runnable script**
+
+Trigger setup belongs in an idempotent script — check `list_active()` for the slug, create only what's missing — not in one-off console commands. Re-running setup must never mint duplicate instances (see [FunnelWatch](/examples/funnelwatch)'s `tools/setup_triggers.py` for the shape).
+
+**API reference**
+
+Manage instances: [list active](/reference/api-reference/triggers/getTriggerInstancesActive), [enable or disable](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId), [delete](/reference/api-reference/triggers/deleteTriggerInstancesManageByTriggerId). SDK methods: [Python](/reference/sdk-reference/python/triggers), [TypeScript](/reference/sdk-reference/typescript/triggers).
+
+</ForAgent>
+
+## Next
+
+<Cards>
+<Card icon={<Database />} title="Receiving events" href="/docs/triggers/receiving-events" description="Stand up your endpoint: local development, production, the payload, handling, and signature verification." />
+<Card icon={<Key />} title="Custom OAuth webhooks" href="/docs/triggers/custom-oauth-webhooks" description="Bring your own OAuth app to a realtime trigger: register Composio's ingress URL with the provider." />
+<Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Set up the auth config and connected account a trigger needs" />
+</Cards>

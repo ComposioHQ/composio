@@ -125,7 +125,7 @@ const config = {
       },
       {
         source: '/docs/subscribing-to-connection-expiry-events',
-        destination: '/docs/triggers#receiving-events',
+        destination: '/docs/triggers/receiving-events',
         permanent: true,
       },
       {
@@ -145,7 +145,7 @@ const config = {
       },
       {
         source: '/docs/webhook-verification',
-        destination: '/docs/triggers#verifying-signatures',
+        destination: '/docs/triggers/receiving-events#verifying-signatures',
         permanent: true,
       },
       {
@@ -224,7 +224,7 @@ const config = {
       },
       {
         source: '/docs/setting-up-triggers/subscribing-to-events',
-        destination: '/docs/triggers#receiving-events',
+        destination: '/docs/triggers/receiving-events',
         permanent: true,
       },
       {
@@ -234,7 +234,7 @@ const config = {
       },
       {
         source: '/docs/setting-up-triggers/custom-oauth-webhooks',
-        destination: '/docs/triggers#custom-oauth-webhooks',
+        destination: '/docs/triggers/custom-oauth-webhooks',
         permanent: true,
       },
       {
