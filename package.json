@@ -79,7 +79,7 @@
     "eslint": "^9.25.1",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.1",
+    "lint-staged": "^17.0.8",
     "prettier": "^3.8.4",
     "publint": "catalog:",
     "semver": "^7.8.4",

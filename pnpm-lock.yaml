@@ -152,7 +152,7 @@ importers:
         version: 4.1.9(vitest@4.1.9)
       eslint:
         specifier: ^9.25.1
-        version: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+        version: 9.39.2(jiti@2.7.0)
       globals:
         specifier: ^16.0.0
         version: 16.5.0
@@ -160,8 +160,8 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       lint-staged:
-        specifier: ^15.5.1
-        version: 15.5.2(supports-color@10.2.2)
+        specifier: ^17.0.8
+        version: 17.0.8
       prettier:
         specifier: ^3.8.4
         version: 3.8.4
@@ -173,7 +173,7 @@ importers:
         version: 7.8.5
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.22.4
@@ -185,7 +185,7 @@ importers:
         version: 6.0.3
       typescript-eslint:
         specifier: ^8.61.1
-        version: 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+        version: 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
       vitest:
         specifier: 'catalog:'
         version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@22.19.11)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@22.19.11)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -847,7 +847,7 @@ importers:
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       '@openai/agents':
         specifier: ^0.1.4
-        version: 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
+        version: 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -912,13 +912,13 @@ importers:
         version: 1.3.18(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))
       '@langchain/mcp-adapters':
         specifier: ^1.0.1
-        version: 1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(@langchain/langgraph@1.1.4(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(supports-color@10.2.2)
+        version: 1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(@langchain/langgraph@1.1.4(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))
       '@langchain/openai':
         specifier: ^1.1.3
         version: 1.2.8(@aws-sdk/credential-provider-node@3.972.57)(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(@smithy/signature-v4@5.6.0)(ws@8.21.0)
       '@openai/agents':
         specifier: ^0.1.3
-        version: 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
+        version: 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
         version: 6.0.207(zod@4.4.3)
@@ -1213,7 +1213,7 @@ importers:
         version: 3.2.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.22.4
@@ -1237,7 +1237,7 @@ importers:
         version: 3.21.3
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1271,7 +1271,7 @@ importers:
         version: 1.4.0
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1314,7 +1314,7 @@ importers:
         version: 7.7.1
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.22.4
@@ -1342,10 +1342,10 @@ importers:
         version: link:../core
       '@earendil-works/pi-coding-agent':
         specifier: 0.79.8
-        version: 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(supports-color@10.2.2)(ws@8.21.0)(zod@3.25.76)
+        version: 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       tsx:
         specifier: 'catalog:'
         version: 4.22.4
@@ -1366,7 +1366,7 @@ importers:
         version: 24.13.2
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1391,7 +1391,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1413,7 +1413,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1432,7 +1432,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1451,7 +1451,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1466,7 +1466,7 @@ importers:
         version: 1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1488,7 +1488,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1507,7 +1507,7 @@ importers:
         version: 1.46.0(@cfworker/json-schema@4.1.1)(ai@6.0.207(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1529,7 +1529,7 @@ importers:
         version: link:../../core
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1544,10 +1544,10 @@ importers:
         version: link:../../core
       '@openai/agents':
         specifier: ^0.1.3
-        version: 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
+        version: 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1568,7 +1568,7 @@ importers:
         version: 6.0.207(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1592,7 +1592,7 @@ importers:
         version: 7.0.15
       openai:
         specifier: 'catalog:'
-        version: 6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@3.25.76)
+        version: 6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3)
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
@@ -1604,10 +1604,10 @@ importers:
         version: 7.8.5
       zod:
         specifier: ^3.25 || ^4
-        version: 3.25.76
+        version: 4.4.3
       zod-to-json-schema:
         specifier: 'catalog:'
-        version: 3.25.2(zod@3.25.76)
+        version: 3.25.2(zod@4.4.3)
     devDependencies:
       '@composio/core':
         specifier: workspace:*
@@ -1627,7 +1627,7 @@ importers:
         version: link:@types/@babel/helper-validator-identifier
       tsdown:
         specifier: 'catalog:'
-        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0))
+        version: 0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27)
       vitest:
         specifier: 'catalog:'
         version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@26.0.1)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@26.0.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -4554,9 +4554,9 @@ packages:
     resolution: {integrity: sha512-+W/5efTR7y5HRD7gACw9yQjqMVvEMLBHmboM/kPWam+H+Hmyrgjh6YncVKK122YZkXrLudzTuAukUw9FnMf7IQ==}
     engines: {node: 10.* || >= 12.*}
 
-  cli-truncate@4.0.0:
-    resolution: {integrity: sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA==}
-    engines: {node: '>=18'}
+  cli-truncate@5.2.0:
+    resolution: {integrity: sha512-xRwvIOMGrfOAnM1JYtqQImuaNtDEv9v6oIYAs4LIHwTiKee8uwvIi363igssOC0O5U04i4AlENs79LQLu9tEMw==}
+    engines: {node: '>=20'}
 
   cliui@7.0.4:
     resolution: {integrity: sha512-OcRE68cOsVMXp1Yvonl/fzkQOyjLSu/8bhPDfQt0e0/Eb283TKP20Fs2MqoPsr9SwA595rRCA+QMzYc9nBP+JQ==}
@@ -4574,16 +4574,9 @@ packages:
   colorette@1.4.0:
     resolution: {integrity: sha512-Y2oEozpomLn7Q3HFP7dpww7AtMJplbM9lGZP6RDfHqmbeRjiwRg4n6VM6j4KLmRke85uWEI7JqF17f3pqdRA0g==}
 
-  colorette@2.0.20:
-    resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
-
   commander@10.0.1:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
     engines: {node: '>=14'}
-
-  commander@13.1.0:
-    resolution: {integrity: sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw==}
-    engines: {node: '>=18'}
 
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
@@ -4942,10 +4935,6 @@ packages:
     resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
     engines: {node: '>=18.0.0'}
 
-  execa@8.0.1:
-    resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
-    engines: {node: '>=16.17'}
-
   execa@9.6.1:
     resolution: {integrity: sha512-9Be3ZoN4LmYR90tUoVu2te2BsbzHfhJyfEiAVfz7N5/zv+jduIfLrV2xdQXOHbaD6KgpGdO9PRPM1Y4Q9QkPkA==}
     engines: {node: ^18.19.0 || >=20.5.0}
@@ -5152,10 +5141,6 @@ packages:
     resolution: {integrity: sha512-AUGhbbemXxrZJRD5cDvKtQxLuYaIbNtDTK8YqupCI393Q2KSTreEsLUN3ZxAWFGiKTzL6nKuzfcIvieflUX9qA==}
     engines: {node: '>=0.10.0'}
 
-  get-stream@8.0.1:
-    resolution: {integrity: sha512-VaUJspBffn/LMCJVoMvSAdmscJyS1auj5Zulnn5UoYcY531UWmdwhRWkcGKnGU93m5HSXP9LP2usOryrBtQowA==}
-    engines: {node: '>=16'}
-
   get-stream@9.0.1:
     resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
     engines: {node: '>=18'}
@@ -5272,10 +5257,6 @@ packages:
     resolution: {integrity: sha512-tsYlhAYpjCKa//8rXZ9DqKEawhPoSytweBC2eNvcaDK+57RZLHGqNs3PZTQO6yekLFSuvA6AlnAfrw1uBvtb+Q==}
     hasBin: true
 
-  human-signals@5.0.0:
-    resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
-    engines: {node: '>=16.17.0'}
-
   human-signals@8.0.1:
     resolution: {integrity: sha512-eKCa6bwnJhvxj14kZk5NCPc6Hb6BdsU9DZcOnmQKSnO1VKrfV0zCvtttPZUsBvjmNDn8rpcJfpwSYnHBjc95MQ==}
     engines: {node: '>=18.18.0'}
@@ -5355,10 +5336,6 @@ packages:
   is-fullwidth-code-point@3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
-
-  is-fullwidth-code-point@4.0.0:
-    resolution: {integrity: sha512-O4L094N2/dZ7xqVdrXhh9r1KODPJpFms8B5sGdJLPy664AgvXsreZUyCQQNItZRDlYug4xStLjNp/sz3HvBowQ==}
-    engines: {node: '>=12'}
 
   is-fullwidth-code-point@5.1.0:
     resolution: {integrity: sha512-5XHYaSyiqADb4RnZ1Bdad6cPp8Toise4TzEjcOYDHZkTCbKgiUl7WTUCpNWHuxmDt91wnsZBc9xinNzopv3JMQ==}
@@ -5565,21 +5542,17 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-  lilconfig@3.1.3:
-    resolution: {integrity: sha512-/vlFKAoH5Cgt3Ie+JLhRbwOsCQePABiU3tJ1egGvyQ+33R/vcwM2Zl2QR/LzjsBeItPt3oSVXapn+m4nQDvpzw==}
-    engines: {node: '>=14'}
-
   linkify-it@5.0.0:
     resolution: {integrity: sha512-5aHCbzQRADcdP+ATqnDuhhJ/MRIqDkZX5pyjFHRRysS8vZ5AbqGEoFIb6pYHPZ+L/OC2Lc+xT8uHVVR5CAK/wQ==}
 
-  lint-staged@15.5.2:
-    resolution: {integrity: sha512-YUSOLq9VeRNAo/CTaVmhGDKG+LBtA8KF1X4K5+ykMSwWST1vDxJRB2kv2COgLb1fvpCo+A/y9A0G0znNVmdx4w==}
-    engines: {node: '>=18.12.0'}
+  lint-staged@17.0.8:
+    resolution: {integrity: sha512-B2P/d+jVW0UXOQ0MVMLrB/9ydA1P+zz6jYfdrbbEd9ur3S2rcbduFWKiUCC02Sm5hbC8nrm7y24WuYMG54HfxA==}
+    engines: {node: '>=22.22.1'}
     hasBin: true
 
-  listr2@8.3.3:
-    resolution: {integrity: sha512-LWzX2KsqcB1wqQ4AHgYb4RsDXauQiqhjLk+6hjbaeHG4zpjjVAB6wC/gz6X0l+Du1cN3pUB5ZlrvTbhGSNnUQQ==}
-    engines: {node: '>=18.0.0'}
+  listr2@10.2.2:
+    resolution: {integrity: sha512-JtNtbZj8q5BnDMR7trpwvwk3RIrANtIVzEUm8w7amp6xelLgyuq+4WZoTH913XaQAoH/cNdYhaNzBPA2U3xbDw==}
+    engines: {node: '>=22.13.0'}
 
   llamaindex@0.12.1:
     resolution: {integrity: sha512-/tXXITk/iVGBycOFaDhev6dgTBIr6Ycu4FoPIt6A5JcEAiB6ujONjiV36flVXUR8JdqwMtS767XMjV+36nV4yQ==}
@@ -5707,9 +5680,6 @@ packages:
     resolution: {integrity: sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==}
     engines: {node: '>=18'}
 
-  merge-stream@2.0.0:
-    resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
-
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
@@ -5809,10 +5779,6 @@ packages:
   mime-types@3.0.2:
     resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
     engines: {node: '>=18'}
-
-  mimic-fn@4.0.0:
-    resolution: {integrity: sha512-vqiC06CuhBTUdZH+RYl8sFrL096vA45Ok5ISO6sE/Mr1jRbGH4Csnhi8f3wKVl7x8mO4Au7Ir9D3Oyv1VYMFJw==}
-    engines: {node: '>=12'}
 
   mimic-function@5.0.1:
     resolution: {integrity: sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==}
@@ -5915,10 +5881,6 @@ packages:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
 
-  npm-run-path@5.3.0:
-    resolution: {integrity: sha512-ppwTtiJZq0O/ai0z7yfudtBpWIoxM8yE6nHi1X47eFR2EWORqfbu6CnPlNsjeN683eT0qG6H/Pyf9fCcvjnnnQ==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
   npm-run-path@6.0.0:
     resolution: {integrity: sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA==}
     engines: {node: '>=18'}
@@ -5941,10 +5903,6 @@ packages:
 
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
-
-  onetime@6.0.0:
-    resolution: {integrity: sha512-1FlR+gjXK7X+AsAHso35MnyN5KqGwJRi/31ft6x0M194ht7S+rWAvd7PHss9xSKMzE0asv1pyIHaJYq+BbacAQ==}
-    engines: {node: '>=12'}
 
   onetime@7.0.0:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
@@ -6170,11 +6128,6 @@ packages:
   picomatch@4.0.4:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
-
-  pidtree@0.6.0:
-    resolution: {integrity: sha512-eG2dWTVw5bzqGRztnHExczNxt5VGsE6OwTeCG3fdUf9KBsZzO3R5OIIIzWR+iZA0NtZ+RDVdaoE2dK1cn6jH4g==}
-    engines: {node: '>=0.10'}
-    hasBin: true
 
   pify@2.3.0:
     resolution: {integrity: sha512-udgsAY+fTnvv7kI7aaxbqwWNb0AHiB0qBO89PZKPkoTmGOgdbrHDKD+0B2X4uTfJ/FT1R09r9gTsjUjNJotuog==}
@@ -6513,13 +6466,13 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  slice-ansi@5.0.0:
-    resolution: {integrity: sha512-FC+lgizVPfie0kkhqUScwRu1O/lF6NOgJmlCgK+/LYxDCTk8sGelYaHDhFcDN+Sn3Cv+3VSa4Byeo+IMCzpMgQ==}
-    engines: {node: '>=12'}
-
   slice-ansi@7.1.2:
     resolution: {integrity: sha512-iOBWFgUX7caIZiuutICxVgX1SdxwAVFFKwt1EvMYYec/NWO5meOJ6K5uQxhrYBdQJne4KxiqZc+KptFOWFSI9w==}
     engines: {node: '>=18'}
+
+  slice-ansi@8.0.0:
+    resolution: {integrity: sha512-stxByr12oeeOyY2BlviTNQlYV5xOj47GirPr4yA1hE9JCtxfQN0+tVbkxwCtYDQWhEKWFHsEK48ORg5jrouCAg==}
+    engines: {node: '>=20'}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -6565,6 +6518,10 @@ packages:
     resolution: {integrity: sha512-KpqHIdDL9KwYk22wEOg/VIqYbrnLeSApsKT/bSj6Ez7pn3CftUiLAv2Lccpq1ALcpLV9UX1Ppn92npZWu2w/aw==}
     engines: {node: '>=20'}
 
+  string-width@8.2.1:
+    resolution: {integrity: sha512-IIaP0g3iy9Cyy18w3M9YcaDudujEAVHKt3a3QJg1+sr/oX96TbaGUubG0hJyCjCBThFH+tFpcIyoUHUn1ogaLA==}
+    engines: {node: '>=20'}
+
   string_decoder@1.1.1:
     resolution: {integrity: sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==}
 
@@ -6574,6 +6531,10 @@ packages:
 
   strip-ansi@7.1.2:
     resolution: {integrity: sha512-gmBGslpoQJtgnMAvOVqGZpEz9dyoKTCzy2nfz/n8aIFhN/jCE/rCmcxabB6jOOHV+0WNnylOxaxBQPSvcWklhA==}
+    engines: {node: '>=12'}
+
+  strip-ansi@7.2.0:
+    resolution: {integrity: sha512-yDPMNjp4WyfYBkHnjIRLfca1i6KMyGCtsVgoKe/z1+6vukgaENdgGBZt+ZmKPc4gavvEZ5OgHfHdrazhgNyG7w==}
     engines: {node: '>=12'}
 
   strip-bom-string@1.0.0:
@@ -6586,10 +6547,6 @@ packages:
 
   strip-dirs@2.1.0:
     resolution: {integrity: sha512-JOCxOeKLm2CAS73y/U4ZeZPTkE+gNVCzKt7Eox84Iej1LT/2pTWYpZKJuxwQpvX1LiZb1xokNR7RLfuBAa7T3g==}
-
-  strip-final-newline@3.0.0:
-    resolution: {integrity: sha512-dOESqjYr96iWYylGObzd39EuNTa5VJxyvVAEm5Jnh7KGo75V43Hk1odPQkNDyXNmUR6k+gEiDVXnjB8HJ3crXw==}
-    engines: {node: '>=12'}
 
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
@@ -7042,6 +6999,10 @@ packages:
     peerDependenciesMeta:
       '@cloudflare/workers-types':
         optional: true
+
+  wrap-ansi@10.0.0:
+    resolution: {integrity: sha512-SGcvg80f0wUy2/fXES19feHMz8E0JoXv2uNgHOu4Dgi2OrCy1lqwFYEJz1BLbDI0exjPMe/ZdzZ/YpGECBG/aQ==}
+    engines: {node: '>=20'}
 
   wrap-ansi@7.0.0:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
@@ -7884,7 +7845,7 @@ snapshots:
 
   '@earendil-works/pi-agent-core@0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)':
     dependencies:
-      '@earendil-works/pi-ai': 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(supports-color@10.2.2)(ws@8.21.0)(zod@3.25.76)
+      '@earendil-works/pi-ai': 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)
       ignore: 7.0.5
       typebox: 1.1.38
       yaml: 2.9.0
@@ -7896,7 +7857,7 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(supports-color@10.2.2)(ws@8.21.0)(zod@3.25.76)':
+  '@earendil-works/pi-ai@0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)':
     dependencies:
       '@anthropic-ai/sdk': 0.91.1(zod@3.25.76)
       '@aws-sdk/client-bedrock-runtime': 3.1048.0
@@ -7904,7 +7865,7 @@ snapshots:
       '@mistralai/mistralai': 2.2.6(@opentelemetry/api@1.9.0)
       '@opentelemetry/api': 1.9.0
       '@smithy/node-http-handler': 4.7.3
-      http-proxy-agent: 7.0.2(supports-color@10.2.2)
+      http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6(supports-color@10.2.2)
       openai: 6.26.0(ws@8.21.0)(zod@3.25.76)
       partial-json: 0.1.7
@@ -7917,10 +7878,10 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-coding-agent@0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(supports-color@10.2.2)(ws@8.21.0)(zod@3.25.76)':
+  '@earendil-works/pi-coding-agent@0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)':
     dependencies:
       '@earendil-works/pi-agent-core': 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)
-      '@earendil-works/pi-ai': 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(supports-color@10.2.2)(ws@8.21.0)(zod@3.25.76)
+      '@earendil-works/pi-ai': 0.79.8(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(ws@8.21.0)(zod@3.25.76)
       '@earendil-works/pi-tui': 0.79.8
       '@silvia-odwyer/photon-node': 0.3.4
       chalk: 5.6.2
@@ -8309,14 +8270,14 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@eslint-community/eslint-utils@4.9.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))':
+  '@eslint-community/eslint-utils@4.9.1(eslint@9.39.2(jiti@2.7.0))':
     dependencies:
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      eslint: 9.39.2(jiti@2.7.0)
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
 
-  '@eslint/config-array@0.21.1(supports-color@10.2.2)':
+  '@eslint/config-array@0.21.1':
     dependencies:
       '@eslint/object-schema': 2.1.7
       debug: 4.4.3(supports-color@10.2.2)
@@ -8332,7 +8293,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
-  '@eslint/eslintrc@3.3.3(supports-color@10.2.2)':
+  '@eslint/eslintrc@3.3.3':
     dependencies:
       ajv: 6.12.6
       debug: 4.4.3(supports-color@10.2.2)
@@ -8574,7 +8535,7 @@ snapshots:
     dependencies:
       string-width: 5.1.2
       string-width-cjs: string-width@4.2.3
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
       strip-ansi-cjs: strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
@@ -8669,7 +8630,7 @@ snapshots:
       - react
       - react-dom
 
-  '@langchain/mcp-adapters@1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(@langchain/langgraph@1.1.4(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))(supports-color@10.2.2)':
+  '@langchain/mcp-adapters@1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(@langchain/langgraph@1.1.4(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3))':
     dependencies:
       '@langchain/core': 1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0)
       '@langchain/langgraph': 1.1.4(@langchain/core@1.1.25(@opentelemetry/api@1.9.0)(openai@6.45.0(@aws-sdk/credential-provider-node@3.972.57)(@smithy/signature-v4@5.6.0)(ws@8.21.0)(zod@4.4.3))(ws@8.21.0))(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
@@ -9106,7 +9067,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@openai/agents-core@0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)':
+  '@openai/agents-core@0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       openai: 5.23.2(ws@8.21.0)(zod@4.4.3)
@@ -9118,9 +9079,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-openai@0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)':
+  '@openai/agents-openai@0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)':
     dependencies:
-      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
+      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
       debug: 4.4.3(supports-color@10.2.2)
       openai: 5.23.2(ws@8.21.0)(zod@4.4.3)
       zod: 4.4.3
@@ -9129,9 +9090,9 @@ snapshots:
       - supports-color
       - ws
 
-  '@openai/agents-realtime@0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)':
+  '@openai/agents-realtime@0.1.11(@cfworker/json-schema@4.1.1)(zod@4.4.3)':
     dependencies:
-      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
+      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
       '@types/ws': 8.18.1
       debug: 4.4.3(supports-color@10.2.2)
       ws: 8.21.0
@@ -9142,11 +9103,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@openai/agents@0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)':
+  '@openai/agents@0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)':
     dependencies:
-      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
-      '@openai/agents-openai': 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
-      '@openai/agents-realtime': 0.1.11(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@4.4.3)
+      '@openai/agents-core': 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
+      '@openai/agents-openai': 0.1.11(@cfworker/json-schema@4.1.1)(ws@8.21.0)(zod@4.4.3)
+      '@openai/agents-realtime': 0.1.11(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       debug: 4.4.3(supports-color@10.2.2)
       openai: 5.23.2(ws@8.21.0)(zod@4.4.3)
       zod: 4.4.3
@@ -9669,15 +9630,15 @@ snapshots:
     dependencies:
       '@types/node': 24.13.2
 
-  '@typescript-eslint/eslint-plugin@8.61.1(@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+  '@typescript-eslint/eslint-plugin@8.61.1(@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/parser': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
       '@typescript-eslint/scope-manager': 8.61.1
-      '@typescript-eslint/type-utils': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
-      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3)
+      '@typescript-eslint/type-utils': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
+      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
       '@typescript-eslint/visitor-keys': 8.61.1
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      eslint: 9.39.2(jiti@2.7.0)
       ignore: 7.0.5
       natural-compare: 1.4.0
       ts-api-utils: 2.5.0(typescript@6.0.3)
@@ -9685,14 +9646,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+  '@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.61.1
       '@typescript-eslint/types': 8.61.1
       '@typescript-eslint/typescript-estree': 8.61.1(typescript@6.0.3)
       '@typescript-eslint/visitor-keys': 8.61.1
       debug: 4.4.3(supports-color@10.2.2)
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      eslint: 9.39.2(jiti@2.7.0)
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
@@ -9715,13 +9676,13 @@ snapshots:
     dependencies:
       typescript: 6.0.3
 
-  '@typescript-eslint/type-utils@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+  '@typescript-eslint/type-utils@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)':
     dependencies:
       '@typescript-eslint/types': 8.61.1
       '@typescript-eslint/typescript-estree': 8.61.1(typescript@6.0.3)
-      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3)
+      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
       debug: 4.4.3(supports-color@10.2.2)
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      eslint: 9.39.2(jiti@2.7.0)
       ts-api-utils: 2.5.0(typescript@6.0.3)
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -9744,13 +9705,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3)':
+  '@typescript-eslint/utils@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))
+      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2(jiti@2.7.0))
       '@typescript-eslint/scope-manager': 8.61.1
       '@typescript-eslint/types': 8.61.1
       '@typescript-eslint/typescript-estree': 8.61.1(typescript@6.0.3)
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      eslint: 9.39.2(jiti@2.7.0)
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
@@ -9853,7 +9814,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vitest: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@22.19.11)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@22.19.11)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@26.0.1)(@vitest/ui@4.1.9)(vite@7.3.1(@types/node@26.0.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.9.0))
 
   '@vitest/utils@4.1.9':
     dependencies:
@@ -10176,10 +10137,10 @@ snapshots:
     optionalDependencies:
       '@colors/colors': 1.5.0
 
-  cli-truncate@4.0.0:
+  cli-truncate@5.2.0:
     dependencies:
-      slice-ansi: 5.0.0
-      string-width: 7.2.0
+      slice-ansi: 8.0.0
+      string-width: 8.2.1
 
   cliui@7.0.4:
     dependencies:
@@ -10197,11 +10158,7 @@ snapshots:
 
   colorette@1.4.0: {}
 
-  colorette@2.0.20: {}
-
   commander@10.0.1: {}
-
-  commander@13.1.0: {}
 
   commander@2.20.3: {}
 
@@ -10529,14 +10486,14 @@ snapshots:
 
   eslint-visitor-keys@5.0.0: {}
 
-  eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2):
+  eslint@9.39.2(jiti@2.7.0):
     dependencies:
-      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))
+      '@eslint-community/eslint-utils': 4.9.1(eslint@9.39.2(jiti@2.7.0))
       '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.21.1(supports-color@10.2.2)
+      '@eslint/config-array': 0.21.1
       '@eslint/config-helpers': 0.4.2
       '@eslint/core': 0.17.0
-      '@eslint/eslintrc': 3.3.3(supports-color@10.2.2)
+      '@eslint/eslintrc': 3.3.3
       '@eslint/js': 9.39.2
       '@eslint/plugin-kit': 0.4.1
       '@humanfs/node': 0.16.7
@@ -10605,18 +10562,6 @@ snapshots:
   eventsource@3.0.7:
     dependencies:
       eventsource-parser: 3.1.0
-
-  execa@8.0.1:
-    dependencies:
-      cross-spawn: 7.0.6
-      get-stream: 8.0.1
-      human-signals: 5.0.0
-      is-stream: 3.0.0
-      merge-stream: 2.0.0
-      npm-run-path: 5.3.0
-      onetime: 6.0.0
-      signal-exit: 4.1.0
-      strip-final-newline: 3.0.0
 
   execa@9.6.1:
     dependencies:
@@ -10867,8 +10812,6 @@ snapshots:
       object-assign: 4.1.1
       pinkie-promise: 2.0.1
 
-  get-stream@8.0.1: {}
-
   get-stream@9.0.1:
     dependencies:
       '@sec-ant/readable-stream': 0.4.1
@@ -10995,7 +10938,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@7.0.2(supports-color@10.2.2):
+  http-proxy-agent@7.0.2:
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3(supports-color@10.2.2)
@@ -11010,8 +10953,6 @@ snapshots:
       - supports-color
 
   human-id@4.1.3: {}
-
-  human-signals@5.0.0: {}
 
   human-signals@8.0.1: {}
 
@@ -11057,8 +10998,6 @@ snapshots:
   is-extglob@2.1.1: {}
 
   is-fullwidth-code-point@3.0.0: {}
-
-  is-fullwidth-code-point@4.0.0: {}
 
   is-fullwidth-code-point@5.1.0:
     dependencies:
@@ -11230,35 +11169,26 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  lilconfig@3.1.3: {}
-
   linkify-it@5.0.0:
     dependencies:
       uc.micro: 2.1.0
 
-  lint-staged@15.5.2(supports-color@10.2.2):
+  lint-staged@17.0.8:
     dependencies:
-      chalk: 5.6.2
-      commander: 13.1.0
-      debug: 4.4.3(supports-color@10.2.2)
-      execa: 8.0.1
-      lilconfig: 3.1.3
-      listr2: 8.3.3
-      micromatch: 4.0.8
-      pidtree: 0.6.0
+      listr2: 10.2.2
+      picomatch: 4.0.4
       string-argv: 0.3.2
+      tinyexec: 1.2.4
+    optionalDependencies:
       yaml: 2.9.0
-    transitivePeerDependencies:
-      - supports-color
 
-  listr2@8.3.3:
+  listr2@10.2.2:
     dependencies:
-      cli-truncate: 4.0.0
-      colorette: 2.0.20
+      cli-truncate: 5.2.0
       eventemitter3: 5.0.4
       log-update: 6.1.0
       rfdc: 1.4.1
-      wrap-ansi: 9.0.2
+      wrap-ansi: 10.0.0
 
   llamaindex@0.12.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(hono@4.12.27)(tree-sitter@0.22.4)(web-tree-sitter@0.24.7)(zod@4.4.3):
     dependencies:
@@ -11306,7 +11236,7 @@ snapshots:
       ansi-escapes: 7.3.0
       cli-cursor: 5.0.0
       slice-ansi: 7.1.2
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
       wrap-ansi: 9.0.2
 
   long@5.3.2: {}
@@ -11464,8 +11394,6 @@ snapshots:
   media-typer@1.1.0: {}
 
   merge-descriptors@2.0.0: {}
-
-  merge-stream@2.0.0: {}
 
   merge2@1.4.1: {}
 
@@ -11671,8 +11599,6 @@ snapshots:
     dependencies:
       mime-db: 1.54.0
 
-  mimic-fn@4.0.0: {}
-
   mimic-function@5.0.1: {}
 
   miniflare@4.20260611.0:
@@ -11781,10 +11707,6 @@ snapshots:
 
   node-gyp-build@4.8.4: {}
 
-  npm-run-path@5.3.0:
-    dependencies:
-      path-key: 4.0.0
-
   npm-run-path@6.0.0:
     dependencies:
       path-key: 4.0.0
@@ -11803,10 +11725,6 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
-
-  onetime@6.0.0:
-    dependencies:
-      mimic-fn: 4.0.0
 
   onetime@7.0.0:
     dependencies:
@@ -12002,8 +11920,6 @@ snapshots:
   picomatch@2.3.2: {}
 
   picomatch@4.0.4: {}
-
-  pidtree@0.6.0: {}
 
   pify@2.3.0: {}
 
@@ -12444,12 +12360,12 @@ snapshots:
 
   slash@3.0.0: {}
 
-  slice-ansi@5.0.0:
+  slice-ansi@7.1.2:
     dependencies:
       ansi-styles: 6.2.3
-      is-fullwidth-code-point: 4.0.0
+      is-fullwidth-code-point: 5.1.0
 
-  slice-ansi@7.1.2:
+  slice-ansi@8.0.0:
     dependencies:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
@@ -12483,18 +12399,23 @@ snapshots:
     dependencies:
       eastasianwidth: 0.2.0
       emoji-regex: 9.2.2
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
 
   string-width@7.2.0:
     dependencies:
       emoji-regex: 10.6.0
       get-east-asian-width: 1.6.0
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
 
   string-width@8.1.1:
     dependencies:
       get-east-asian-width: 1.6.0
       strip-ansi: 7.1.2
+
+  string-width@8.2.1:
+    dependencies:
+      get-east-asian-width: 1.6.0
+      strip-ansi: 7.2.0
 
   string_decoder@1.1.1:
     dependencies:
@@ -12508,6 +12429,10 @@ snapshots:
     dependencies:
       ansi-regex: 6.2.2
 
+  strip-ansi@7.2.0:
+    dependencies:
+      ansi-regex: 6.2.2
+
   strip-bom-string@1.0.0: {}
 
   strip-bom@3.0.0: {}
@@ -12515,8 +12440,6 @@ snapshots:
   strip-dirs@2.1.0:
     dependencies:
       is-natural-number: 4.0.1
-
-  strip-final-newline@3.0.0: {}
 
   strip-final-newline@4.0.0: {}
 
@@ -12617,7 +12540,7 @@ snapshots:
       '@ts-morph/common': 0.27.0
       code-block-writer: 13.0.3
 
-  tsdown@0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)):
+  tsdown@0.22.3(@arethetypeswrong/core@0.18.3)(@typescript/native-preview@7.0.0-dev.20260615.1)(publint@0.3.21)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.27):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -12698,13 +12621,13 @@ snapshots:
       typescript: 6.0.3
       yaml: 2.9.0
 
-  typescript-eslint@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3):
+  typescript-eslint@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 8.61.1(@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
-      '@typescript-eslint/parser': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/eslint-plugin': 8.61.1(@typescript-eslint/parser@8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3))(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
+      '@typescript-eslint/parser': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
       '@typescript-eslint/typescript-estree': 8.61.1(typescript@6.0.3)
-      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3)
-      eslint: 9.39.2(jiti@2.7.0)(supports-color@10.2.2)
+      '@typescript-eslint/utils': 8.61.1(eslint@9.39.2(jiti@2.7.0))(typescript@6.0.3)
+      eslint: 9.39.2(jiti@2.7.0)
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
@@ -13022,6 +12945,12 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  wrap-ansi@10.0.0:
+    dependencies:
+      ansi-styles: 6.2.3
+      string-width: 8.2.1
+      strip-ansi: 7.2.0
+
   wrap-ansi@7.0.0:
     dependencies:
       ansi-styles: 4.3.0
@@ -13032,13 +12961,13 @@ snapshots:
     dependencies:
       ansi-styles: 6.2.3
       string-width: 5.1.2
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
 
   wrap-ansi@9.0.2:
     dependencies:
       ansi-styles: 6.2.3
       string-width: 7.2.0
-      strip-ansi: 7.1.2
+      strip-ansi: 7.2.0
 
   wrappy@1.0.2: {}
 
