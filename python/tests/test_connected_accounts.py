@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 import warnings
 from unittest.mock import Mock, patch
@@ -854,3 +855,62 @@ class TestInitiateDeprecationHeaderGate:
 
         deprecations = [w for w in caught if issubclass(w.category, DeprecationWarning)]
         assert len(deprecations) == 1
+
+    def test_concurrent_first_calls_warn_once_without_error(self, mock_client):
+        """Pin the lock-guarded contract under concurrency: many first calls
+        that all see the Deprecation header must not error or deadlock, must
+        emit exactly one ``DeprecationWarning``, and must leave the one-time
+        guard set.
+
+        This exercises the fixed lock-guarded path. It does not on its own
+        reproduce the pre-fix check-then-set race: the racy window is only a
+        couple of bytecodes wide and never widened here, so the unguarded code
+        would usually also emit once. It is a fixed-behavior contract test, not
+        a standalone red/green regression guard for the race.
+
+        Count real ``warnings.warn`` calls through a thread-safe counter rather
+        than ``catch_warnings``, whose recording is not thread-safe.
+        """
+        import composio.core.models.connected_accounts as ca_mod
+
+        self._no_existing_accounts(mock_client)
+        _set_initiate_response(
+            mock_client,
+            self._make_response(),
+            headers={"Deprecation": "@1776988800"},
+        )
+        connected_accounts = ConnectedAccounts(client=mock_client)
+
+        deprecation_calls = 0
+        count_lock = threading.Lock()
+        real_warn = warnings.warn
+
+        def counting_warn(message, category=UserWarning, *args, **kwargs):
+            nonlocal deprecation_calls
+            if isinstance(category, type) and issubclass(category, DeprecationWarning):
+                with count_lock:
+                    deprecation_calls += 1
+                return
+            return real_warn(message, category, *args, **kwargs)
+
+        num_threads = 16
+        start = threading.Barrier(num_threads)
+        errors: list[BaseException] = []
+
+        def worker():
+            try:
+                start.wait()
+                connected_accounts.initiate(user_id="user-1", auth_config_id="auth-1")
+            except BaseException as exc:  # noqa: BLE001 - surface to the assertion
+                errors.append(exc)
+
+        with patch.object(warnings, "warn", counting_warn):
+            threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+        assert errors == []
+        assert deprecation_calls == 1
+        assert ca_mod._legacy_initiate_warning_emitted is True

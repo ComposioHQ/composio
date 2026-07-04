@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import threading
 import time
 import typing as t
 import warnings
@@ -32,8 +33,10 @@ _TERMINAL_CONNECTION_STATES: t.FrozenSet[str] = frozenset(
 )
 
 # One-time-per-process guard so long-running services don't spam the deprecation
-# warning on every initiate() call.
+# warning on every initiate() call. The lock makes the check-then-set atomic so
+# concurrent first calls emit the warning exactly once.
 _legacy_initiate_warning_emitted = False
+_legacy_initiate_warning_lock = threading.Lock()
 
 
 class ConnectionRequest(Resource):
@@ -598,10 +601,18 @@ class ConnectedAccounts:
         # retiring path. Header presence is a 1:1 signal — custom auth
         # configs and non-OAuth schemes get a clean response and stay silent,
         # fixing the false-positive that auth_scheme-based detection
-        # produced.
+        # produced. The check-then-set runs under a lock so concurrent first
+        # calls that both see the header still warn exactly once; warn()
+        # itself runs outside the lock to avoid holding it across arbitrary
+        # user warning handlers.
         global _legacy_initiate_warning_emitted
-        if not _legacy_initiate_warning_emitted and deprecation_header:
-            _legacy_initiate_warning_emitted = True
+        should_warn = False
+        if deprecation_header:
+            with _legacy_initiate_warning_lock:
+                if not _legacy_initiate_warning_emitted:
+                    _legacy_initiate_warning_emitted = True
+                    should_warn = True
+        if should_warn:
             warnings.warn(
                 "composio.connected_accounts.initiate() will stop working "
                 "for this auth config on or before 2026-07-03 (see Sunset "
