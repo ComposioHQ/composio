@@ -7,6 +7,9 @@ on:
     types: [apollo-production-deploy]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
