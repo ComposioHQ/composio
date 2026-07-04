@@ -7,6 +7,7 @@ Custom monitors run the agent over current analytics and post an internal insigh
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
@@ -142,7 +143,7 @@ def _dispatch(volume, m, context, state) -> bool:
     if kind == "failed_payments_threshold":
         return _eval_threshold(volume, m, context, state)
     if kind in ("plan_comparison", "custom"):
-        return _eval_insight(volume, m, context)
+        return _eval_insight(volume, m, context, state)
     return False  # listed-but-unwired defaults
 
 
@@ -173,14 +174,39 @@ def _eval_threshold(volume, m, context, state) -> bool:
     return False
 
 
-def _eval_insight(volume, m, context) -> bool:
+# Insight monitors re-emit only when the numbers moved, and never more often than
+# this — a same-data re-evaluation (dashboard refresh, back-to-back cycles) must
+# not spam the channel with identical updates.
+_MIN_REEMIT_S = 45 * 60
+
+
+def _eval_insight(volume, m, context, state) -> bool:
     plans = context["plan_comparison"]
     daily = context["daily_metrics"]
     fallback = plans.get("summary") or (
         f"New MRR ${daily.get('new_mrr', 0)} from {daily.get('new_subscriptions', 0)} new subscriptions today.")
+
+    # Fire only on change: hash the inputs the update is derived from.
+    signature = hashlib.sha256(json.dumps(
+        {"summary": plans.get("summary"), "mrr": daily.get("new_mrr"),
+         "subs": daily.get("new_subscriptions"), "question": m["question"]},
+        sort_keys=True, default=str).encode()).hexdigest()
+    prev = state.get(m["id"], {})
+    if prev.get("signature") == signature:
+        return False  # nothing changed since the last update — stay quiet
+    last_at = prev.get("emitted_at")
+    if last_at:
+        try:
+            since = datetime.now(timezone.utc) - datetime.fromisoformat(last_at)
+            if since.total_seconds() < _MIN_REEMIT_S:
+                return False  # changed, but too soon — the next cycle picks it up
+        except ValueError:
+            pass
+
     text = agent.enrich_alert(volume, m["question"], context, fallback)
     title = "MRR Update" if m.get("kind") == "plan_comparison" else f"Monitor: {m['name']}"
     _emit(volume, m, title, text)
+    state[m["id"]] = {"signature": signature, "emitted_at": _now()}
     return True
 
 

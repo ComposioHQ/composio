@@ -239,7 +239,7 @@ const config = {
       },
       {
         source: '/docs/sandbox/local',
-        destination: '/docs/sandbox#local-sandbox',
+        destination: '/docs/sandbox/local-sandbox',
         permanent: true,
       },
       {
