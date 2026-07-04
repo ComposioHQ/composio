@@ -81,7 +81,7 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.16.1",
     "@zed-industries/claude-code-acp": "^0.16.2",
-    "@zed-industries/codex-acp": "^0.10.0",
+    "@zed-industries/codex-acp": "^0.16.0",
     "@clack/core": "catalog:",
     "@clack/prompts": "catalog:",
     "@composio/cli-keyring": "workspace:*",

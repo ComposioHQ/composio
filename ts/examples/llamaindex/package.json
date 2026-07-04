@@ -19,8 +19,8 @@
   "dependencies": {
     "@composio/core": "workspace:*",
     "@composio/llamaindex": "workspace:*",
-    "@llamaindex/openai": "^0.4.20",
-    "@llamaindex/workflow": "^1.1.24",
+    "@llamaindex/openai": "^0.4.23",
+    "@llamaindex/workflow": "^1.1.25",
     "dotenv": "catalog:",
     "llamaindex": "^0.12.0"
   },

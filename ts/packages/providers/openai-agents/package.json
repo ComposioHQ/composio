@@ -38,12 +38,12 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@openai/agents": "^0.1.3",
+    "@openai/agents": "^0.12.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@openai/agents": "^0.1.3",
+    "@openai/agents": "^0.12.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "zod": "catalog:",
