@@ -8,8 +8,8 @@ const LOGO_CDN = 'https://logos.composio.dev/api';
 
 /** Landing /dev accent (`--brand-foryou`). */
 const BRAND = '#51a2ff';
-/** Landing floating-card shadow. */
-const CARD_SHADOW = '0 24px 70px -10px rgba(0,0,0,0.7)';
+/** Floating-card shadow, tinted to the docs blue-black background. */
+const CARD_SHADOW = '0 24px 70px -10px rgba(2,5,12,0.72)';
 
 const CONNECTIONS: { slug: string; name: string; account: string }[] = [
   { slug: 'gmail', name: 'Gmail', account: 'work@acme.com' },
@@ -48,8 +48,8 @@ function elbowPath(c: DOMRect, from: DOMRect, to: DOMRect, r = 10): string {
 
 /**
  * ConnectionRefreshVisual — Composio's automatic OAuth token refresh, drawn in
- * the landing /dev visual language: bare dark floating cards (#0a0a0a, hairline
- * white borders, JetBrains Mono) wired together with measured SVG elbow
+ * the landing /dev visual language: bare blue-black floating cards, hairline
+ * blue borders, JetBrains Mono) wired together with measured SVG elbow
  * connectors in the for-you brand blue. A central refresh node fans out to the
  * user's live connections (Gmail, Notion, GitHub). On every tick (one simulated
  * 30-minute interval) a pulse travels each wire, the access token rotates, and
@@ -206,10 +206,10 @@ export function ConnectionRefreshVisual() {
                 ref={(el) => {
                   cardRefs.current[i] = el;
                 }}
-                className="overflow-hidden border border-white/10 bg-[#0a0a0a]"
+                className="overflow-hidden border border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-1)]"
                 style={{ boxShadow: CARD_SHADOW }}
               >
-                <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-2.5 py-2">
+                <div className="flex items-center gap-2 border-b border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-2)] px-2.5 py-2">
                   <span className="flex size-6 items-center justify-center rounded-md bg-white ring-1 ring-white/10">
                     <img
                       alt=""

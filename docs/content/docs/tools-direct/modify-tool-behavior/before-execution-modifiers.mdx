@@ -212,7 +212,3 @@ composio.tools.execute(
 
 - **Composition:** `before_file_upload`-type modifiers in the `modifiers` list are applied in **list order** (after filtering by each modifier’s `tools` / `toolkits` scope). Chaining works like a pipeline: each hook receives the path produced by the previous one.
 - **Relative to `before_execute`:** automatic file substitution runs **before** `before_execute` modifiers, matching TypeScript behavior (including tool router `execute_meta`).
-
-## Next
-
-<Card icon={<Wrench />} title="After execution modifiers" href="/docs/tools-direct/modify-tool-behavior/after-execution-modifiers" description="Transform tool results after execution" />

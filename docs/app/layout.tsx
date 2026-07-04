@@ -2,7 +2,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import './global.css';
-import { JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
@@ -52,7 +52,13 @@ const abcDiatype = localFont({
     { path: '../public/fonts/ABCDiatype-RegularItalic.woff2', weight: '400', style: 'italic' },
     { path: '../public/fonts/ABCDiatype-Medium.woff2', weight: '500', style: 'normal' },
   ],
-  variable: '--font-sans',
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
   display: 'swap',
 });
 
@@ -66,12 +72,11 @@ export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html
       lang="en"
-      className={`${abcDiatype.variable} ${jetbrainsMono.variable}`}
+      className={`${abcDiatype.variable} ${inter.variable} ${jetbrainsMono.variable} dark`}
       suppressHydrationWarning
     >
       <head>
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#050912" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -97,8 +102,6 @@ export default function Layout({ children }: LayoutProps<'/'>) {
                   },
                   sameAs: [
                     'https://github.com/composiohq',
-                    'https://twitter.com/composiohq',
-                    'https://discord.gg/composio',
                   ],
                 },
               ],
@@ -112,9 +115,11 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         <PostHogProvider>
           <RootProvider
             theme={{
-              defaultTheme: 'system',
+              defaultTheme: 'dark',
               attribute: 'class',
-              enableSystem: true,
+              enableSystem: false,
+              forcedTheme: 'dark',
+              themes: ['dark'],
             }}
             search={{
               SearchDialog: CustomSearchDialog,

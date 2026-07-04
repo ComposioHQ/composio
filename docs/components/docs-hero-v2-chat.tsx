@@ -93,7 +93,7 @@ const EXAMPLES: Example[] = [
       borderColor: 'var(--hero-border)',
       accent: '#c4956a',
       modelLabel: 'Sonnet 4.6',
-      radius: '20px',
+      radius: 'var(--composio-radius)',
     },
     chatItems: [
       {
@@ -180,7 +180,7 @@ ranked = invoke_llm(
       borderColor: 'var(--hero-border)',
       accent: '#10a37f',
       modelLabel: 'GPT-4.1',
-      radius: '14px',
+      radius: 'var(--composio-radius)',
     },
     chatItems: [
       {
@@ -250,10 +250,10 @@ for batch in chunks(nodes, 50):
       inputBg: 'var(--hero-surface-2)',
       textColor: 'var(--hero-text)',
       textMuted: 'var(--hero-text-muted)',
-      borderColor: 'rgba(0,7,205,0.22)',
+      borderColor: 'transparent',
       accent: '#0007cd',
       modelLabel: 'llama-3.3-70b',
-      radius: '20px',
+      radius: 'var(--composio-radius)',
     },
     chatItems: [
       {
@@ -372,7 +372,7 @@ export function DocsHeroV2Chat() {
           horizontal room between it and the tool overlay for the L-shape
           connector. */}
       <div
-        className="absolute inset-y-0 right-0 flex w-full max-w-[340px] flex-col overflow-hidden border shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-colors duration-300"
+        className="absolute inset-y-0 right-0 flex w-full max-w-[340px] flex-col overflow-hidden border shadow-[0_1px_0_rgba(2,5,12,0.28)] transition-colors duration-300"
         style={{
           backgroundColor: skin.bg,
           borderColor: skin.borderColor,
@@ -472,7 +472,7 @@ export function DocsHeroV2Chat() {
             className="flex flex-col gap-2 px-4 pt-3 pb-2.5"
             style={{
               backgroundColor: skin.inputBg,
-              borderRadius: `calc(${skin.radius} - 4px)`,
+              borderRadius: skin.radius,
             }}
           >
             <span className="text-[14px]" style={{ color: skin.textMuted }}>
@@ -584,7 +584,7 @@ export function DocsHeroV2Chat() {
           bottom of the chat, body content swaps with a fade/slide when
           `shownToolIdx` changes. */}
       <div className="pointer-events-none absolute bottom-6 left-0 z-10 flex max-h-[60%] -translate-x-[46%] flex-col">
-        <div className="flex w-[320px] max-h-full flex-col overflow-hidden rounded-md border border-fd-border bg-fd-card font-mono shadow-[0_24px_48px_-18px_rgba(15,15,15,0.32)]">
+        <div className="flex w-[320px] max-h-full flex-col overflow-hidden rounded-md border border-fd-border bg-fd-card font-mono shadow-[0_24px_48px_-18px_rgba(2,5,12,0.5)]">
           <ActiveToolHeader label={ACTIVE_TOOL_LABELS[activeTool.kind]} />
           <div
             className="flex-1 overflow-hidden"
@@ -622,7 +622,7 @@ function renderChatItem(item: ChatItem, skin: ChatSkin) {
           style={{
             backgroundColor: skin.userBubbleBg,
             color: skin.textColor,
-            borderRadius: `calc(${skin.radius} - 4px)`,
+            borderRadius: skin.radius,
           }}
         >
           {item.content}

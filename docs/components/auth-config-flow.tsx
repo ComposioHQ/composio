@@ -7,8 +7,8 @@ const LOGO_CDN = 'https://logos.composio.dev/api';
 
 /** Landing /dev accent (`--brand-foryou`). */
 const BRAND = '#51a2ff';
-/** Landing floating-card shadow. */
-const CARD_SHADOW = '0 24px 70px -10px rgba(0,0,0,0.7)';
+/** Floating-card shadow, tinted to the docs blue-black background. */
+const CARD_SHADOW = '0 24px 70px -10px rgba(2,5,12,0.72)';
 
 const USERS: {
   id: string;
@@ -55,8 +55,8 @@ function elbowPath(c: DOMRect, from: DOMRect, to: DOMRect, r = 10): string {
 
 /**
  * AuthConfigFlow — the `auth config → connected accounts` relationship, drawn in
- * the landing /dev visual language: bare dark floating cards (#0a0a0a, hairline
- * white borders, JetBrains Mono) wired together with measured SVG elbow
+ * the landing /dev visual language: bare blue-black floating cards, hairline
+ * blue borders, JetBrains Mono) wired together with measured SVG elbow
  * connectors in the for-you brand blue. One auth config is a single blueprint
  * every user authenticates against; it fans out to a connected account (or
  * several) per user, fully isolated. Paths are computed from live geometry so the
@@ -156,7 +156,7 @@ export function AuthConfigFlow() {
         <div className="relative z-10 md:absolute md:top-1/2 md:left-0 md:w-[244px] md:-translate-y-1/2">
           <div
             ref={blueprintRef}
-            className="relative overflow-hidden border bg-[#0a0a0a] p-3"
+            className="relative overflow-hidden border bg-[var(--composio-surface-1)] p-3"
             style={{
               borderColor: 'color-mix(in srgb, ' + BRAND + ' 50%, transparent)',
               boxShadow: CARD_SHADOW,
@@ -194,10 +194,10 @@ export function AuthConfigFlow() {
               ref={(el) => {
                 userRefs.current[i] = el;
               }}
-              className="overflow-hidden border border-white/10 bg-[#0a0a0a]"
+              className="overflow-hidden border border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-1)]"
               style={{ boxShadow: CARD_SHADOW }}
             >
-              <div className="flex items-center gap-2 border-b border-white/[0.06] bg-white/[0.02] px-2.5 py-2">
+              <div className="flex items-center gap-2 border-b border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-2)] px-2.5 py-2">
                 <span
                   className="flex size-5 items-center justify-center rounded-full text-[10px]"
                   style={{
@@ -217,7 +217,7 @@ export function AuthConfigFlow() {
                     className={
                       'flex items-center gap-2.5 px-2.5 py-2' +
                       (j < user.accounts.length - 1
-                        ? ' border-b border-white/[0.06]'
+                        ? ' border-b border-[color:var(--composio-surface-border-soft)]'
                         : '')
                     }
                   >

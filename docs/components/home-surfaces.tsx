@@ -11,7 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useState, type ReactNode, type MouseEvent } from 'react';
-import { SectionHeading } from './home-features';
+import { SectionHeading } from './section-heading';
 
 // Some provider logos ship a dedicated `-dark` variant (white-on-dark
 // or stroke-inverted). Use those in dark mode instead of inverting the
@@ -132,7 +132,7 @@ function SurfaceCard({
       href={href}
       {...externalProps}
       className={
-        'group relative flex flex-col gap-3 overflow-hidden border border-fd-border bg-fd-card p-6 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)] sm:p-7' +
+        'group relative flex flex-col gap-3 overflow-hidden border border-fd-border bg-fd-card p-6 no-underline shadow-[0_1px_0_rgba(2,5,12,0.28)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(2,5,12,0.44)] sm:p-7' +
         (spanFull ? ' md:col-span-2' : '')
       }
     >

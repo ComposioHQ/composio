@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Check } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SectionHeading } from './section-heading';
 
 const LOGO_CDN = 'https://logos.composio.dev/api';
 const TOOLKIT_LOGOS = [
@@ -26,12 +27,8 @@ const WORKBENCH_CODE = `const result = await composio.workbench.run(\`
   await tools.SLACK_POST({ channel, text: summary });
 \`);`;
 
-/**
- * Welcome-page capability grid. Compact card style with proper borders,
- * subtle shadow on hover, and a tight single-row visual at the bottom
- * of each card so the section reads as four discrete cards rather than
- * a flat block.
- */
+// Saved standalone capability grid. It is intentionally not registered in MDX
+// or imported by a route, so it can be wired back in later if needed.
 export function HomeFeatures() {
   return (
     <section className="not-prose mb-14">
@@ -83,7 +80,7 @@ function FeatureCard({
   return (
     <Link
       href={href}
-      className="group relative flex flex-col justify-between gap-4 overflow-hidden border border-fd-border bg-fd-card p-5 no-underline shadow-[0_1px_0_rgba(15,15,15,0.04)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(15,15,15,0.18)]"
+      className="group relative flex flex-col justify-between gap-4 overflow-hidden border border-fd-border bg-fd-card p-5 no-underline shadow-[0_1px_0_rgba(2,5,12,0.28)] transition-[box-shadow,transform,border-color] duration-200 hover:-translate-y-px hover:border-fd-foreground/15 hover:shadow-[0_10px_24px_-12px_rgba(2,5,12,0.44)]"
     >
       <ArrowUpRight
         aria-hidden="true"
@@ -292,25 +289,6 @@ function StaticCpuLights() {
           />
         );
       })}
-    </div>
-  );
-}
-
-export function SectionHeading({
-  eyebrow,
-  title,
-}: {
-  eyebrow: string;
-  title: string;
-}) {
-  return (
-    <div className="mb-5 flex flex-col gap-1.5">
-      <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-fd-foreground/55">
-        {eyebrow}
-      </span>
-      <h2 className="text-xl font-medium leading-[1.15] tracking-[-0.01em] text-fd-foreground sm:text-2xl">
-        {title}
-      </h2>
     </div>
   );
 }

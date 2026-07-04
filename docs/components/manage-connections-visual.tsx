@@ -10,28 +10,25 @@ import { cn } from "@/lib/utils";
 const LOGO_CDN = "https://logos.composio.dev/api";
 
 /**
- * Claude (dark) terminal-kit palette, pinned inline so the terminal renders dark
- * regardless of the docs light/dark theme (the rest of the composition — Google
- * auth window, connections panel — uses hardcoded colors too). Mirrors landing's
- * `.tk-claude-dark` override. `--font-geist-mono` is left to the `.terminal-theme`
- * default so docs JetBrains Mono is used.
+ * Docs-blue terminal-kit palette, pinned inline so the terminal remains in the
+ * same hue family as the surrounding dark docs surfaces.
  */
 const DARK_VARS = {
-	"--terminal-bg": "#0b0b0b",
-	"--terminal-editor-bg": "#1f1f1e",
-	"--terminal-fg": "#ffffff",
-	"--terminal-white": "#ffffff",
-	"--terminal-dim": "#c3c2b7",
-	"--terminal-dimmer": "#898781",
-	"--terminal-vdim": "#3d3d3d",
-	"--terminal-surface": "#232323",
-	"--terminal-input-bg": "#1f1f1e",
-	"--terminal-popover": "#2a2a2a",
-	"--terminal-panel": "rgba(255, 255, 255, 0.05)",
-	"--terminal-panel-strong": "rgba(255, 255, 255, 0.07)",
-	"--terminal-border": "rgba(255, 255, 255, 0.1)",
-	"--terminal-input-border": "#565552",
-	"--terminal-progress-track": "#3d3d3d",
+	"--terminal-bg": "var(--composio-surface-0)",
+	"--terminal-editor-bg": "var(--composio-surface-1)",
+	"--terminal-fg": "#d8dbe2",
+	"--terminal-white": "#d8dbe2",
+	"--terminal-dim": "#a8adba",
+	"--terminal-dimmer": "#818998",
+	"--terminal-vdim": "var(--composio-surface-5)",
+	"--terminal-surface": "var(--composio-surface-2)",
+	"--terminal-input-bg": "var(--composio-surface-1)",
+	"--terminal-popover": "var(--composio-surface-3)",
+	"--terminal-panel": "rgba(91, 139, 240, 0.08)",
+	"--terminal-panel-strong": "rgba(91, 139, 240, 0.12)",
+	"--terminal-border": "var(--composio-surface-border)",
+	"--terminal-input-border": "transparent",
+	"--terminal-progress-track": "var(--composio-surface-5)",
 	"--terminal-progress-fill": "#d97757",
 	"--terminal-green": "#4cc38a",
 	"--terminal-blue": "#4d9fff",
@@ -152,12 +149,12 @@ function FloatingCard({
 		>
 			<motion.div
 				className={cn(
-					"overflow-hidden shadow-[0_24px_70px_-10px_rgba(0,0,0,0.7)]",
+					"overflow-hidden shadow-[0_24px_70px_-10px_rgba(2,5,12,0.72)]",
 					bare
 						? "rounded-lg"
 						: neutral
-							? "border border-white/10 bg-[#0c0c0d]"
-							: "border border-[#51a2ff]/55 bg-[#0c0c0d]",
+							? "border border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-1)]"
+							: "border border-[#51a2ff]/55 bg-[var(--composio-surface-1)]",
 				)}
 				layout={boxMotion ? true : undefined}
 				ref={innerRef}
@@ -361,7 +358,7 @@ function ConnectionsComposition({
 				show={showConnections}
 			>
 				<div className="font-mono">
-					<div className="flex items-center gap-2 border-white/[0.06] border-b bg-white/[0.02] px-3 py-2">
+					<div className="flex items-center gap-2 border-b border-[color:var(--composio-surface-border-soft)] bg-[var(--composio-surface-2)] px-3 py-2">
 						<svg
 							aria-hidden="true"
 							className="size-3 shrink-0 text-white/35"

@@ -84,19 +84,29 @@ export function PageActions({ path, variant = 'overlap-title' }: PageActionsProp
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={open}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium
+          className="inline-flex items-center gap-1.5 rounded-[var(--composio-radius)] px-2.5 py-1.5 text-xs font-medium
             text-fd-muted-foreground hover:text-fd-foreground
             bg-fd-secondary/50 hover:bg-fd-secondary
-            border border-fd-border/60
-            transition-colors duration-150 ease-out
+            shadow-[0_0_0_1px_rgba(255,255,255,0.045),0_1px_2px_rgba(2,5,12,0.28)]
+            transition-[background-color,color,box-shadow] duration-150 ease-out
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring focus-visible:ring-offset-2 focus-visible:ring-offset-fd-background
             touch-manipulation"
-          style={{ borderRadius: 0 }}
         >
-          <Copy className="size-3.5" aria-hidden="true" />
+          <span className="relative size-3.5" aria-hidden="true">
+            <Copy
+              className={`absolute inset-0 size-3.5 transition-[opacity,transform,filter] duration-150 ${
+                copied ? 'scale-75 opacity-0 blur-[1px]' : 'scale-100 opacity-100 blur-0'
+              }`}
+            />
+            <Check
+              className={`absolute inset-0 size-3.5 text-emerald-500 transition-[opacity,transform,filter] duration-150 ${
+                copied ? 'scale-100 opacity-100 blur-0' : 'scale-75 opacity-0 blur-[1px]'
+              }`}
+            />
+          </span>
           <span>Copy page</span>
           <ChevronDown
-            className={`size-3.5 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+            className={`size-3.5 transition-transform duration-200 ease-out ${open ? 'rotate-180' : ''}`}
             aria-hidden="true"
           />
         </button>
@@ -104,8 +114,7 @@ export function PageActions({ path, variant = 'overlap-title' }: PageActionsProp
         {open && (
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-1 w-[280px] border border-fd-border bg-fd-popover text-fd-popover-foreground shadow-lg"
-            style={{ borderRadius: 0 }}
+            className="absolute right-0 z-50 mt-1 w-[280px] rounded-[var(--composio-radius)] bg-fd-popover text-fd-popover-foreground shadow-[0_0_0_1px_rgba(255,255,255,0.055),0_10px_30px_rgba(2,5,12,0.38)]"
           >
             <MenuItem
               icon={
@@ -158,11 +167,11 @@ interface MenuItemProps {
 
 function MenuItem({ icon, title, subtitle, href, external, onClick }: MenuItemProps) {
   const className =
-    'flex w-full items-start gap-3 px-3 py-2.5 text-left hover:bg-fd-accent hover:text-fd-accent-foreground focus-visible:outline-none focus-visible:bg-fd-accent';
+    'group flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-fd-accent hover:text-fd-accent-foreground focus-visible:outline-none focus-visible:bg-fd-accent';
 
   const content = (
     <>
-      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-fd-muted-foreground">
+      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center text-fd-muted-foreground transition-transform duration-150 group-hover:scale-105">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
