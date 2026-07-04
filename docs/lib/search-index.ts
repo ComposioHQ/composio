@@ -301,7 +301,7 @@ function pageRank(url: string, type: string): number {
     if (path.startsWith('/docs/tools-direct/')) return 2_180;
     if (path === '/docs/configuring-sessions') return 2_120;
     if (path.startsWith('/docs/auth-configuration/')) return 2_080;
-    if (path === '/docs/triggers' || path.startsWith('/docs/setting-up-triggers/')) return 2_060;
+    if (path === '/docs/triggers') return 2_060;
     return 2_000;
   }
 

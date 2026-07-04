@@ -107,8 +107,11 @@ def answer(question: str, context: dict) -> str:
 MAX_AGENT_STEPS = 8
 
 # One agent run uses the single shared sandbox session at a time — cells run in a persistent
-# interpreter, so concurrent runs could clobber each other's state.
+# interpreter, so concurrent runs could clobber each other's state. The wait is bounded:
+# a chat can hold the lock for minutes, and an alert queued behind it should fall back to
+# its deterministic text instead of arriving late.
 _agent_lock = threading.Lock()
+AGENT_LOCK_TIMEOUT_S = 90.0
 
 AGENT_SYSTEM = (
     "You are FunnelWatch, a READ-ONLY revenue and marketing analyst for an internal team. "
@@ -160,8 +163,11 @@ def run_agent(question: str, context: dict) -> str | None:
     if client is None or session is None:
         return None
 
-    # Serialize: only one run drives the shared session (and its persistent interpreter) at a time.
-    with _agent_lock:
+    # Serialize: only one run drives the shared session (and its persistent interpreter)
+    # at a time — but never queue unboundedly behind a slow run.
+    if not _agent_lock.acquire(timeout=AGENT_LOCK_TIMEOUT_S):
+        return None  # sandbox busy — the caller falls back to deterministic text
+    try:
         try:
             tools = session.tools()
         except Exception:
@@ -186,6 +192,8 @@ def run_agent(question: str, context: dict) -> str | None:
                 messages.append({"type": "function_call_output",
                                  "call_id": call.call_id, "output": _tool_output(call)})
         return None  # step budget exhausted
+    finally:
+        _agent_lock.release()
 
 
 def _tool_output(call) -> str:

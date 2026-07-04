@@ -1,0 +1,167 @@
+---
+title: Built the ultimate business intelligence agent
+description: A revenue and marketing intelligence agent. Composio triggers stream Stripe, HubSpot, and ad events into one session volume; the agent runs analytics over them in its sandbox and posts grounded, internal-only updates to Slack.
+keywords: [triggers, webhooks, sandbox, session volume, workbench, read-only tools, stripe, hubspot, slack, revenue monitoring, background agent, analytics]
+full: true
+gallery:
+  categories: [Background agents]
+  logos: [stripe, hubspot, slack]
+  featured: false
+  order: 3
+---
+
+**FunnelWatch** watches your growth and sales funnels so nobody has to keep a dozen dashboards open. It reads Stripe billing, HubSpot leads, and ad-spend snapshots all day, then posts internal-only updates to Slack — *"SKU A is outselling SKU B today, 148 vs 91"*, *"failed payments crossed your 5% threshold"* — with the numbers to back them.
+
+What makes that possible isn't any single feature. It's a handful of product goals, each one met by a [Composio](/docs/how-composio-works) primitive:
+
+- **We want it aware the moment something changes** — not polling five dashboards on a timer. → [Triggers](/docs/triggers).
+- **We want it to reason over a whole day of data**, not react to one event in isolation. → a [sandbox](/docs/sandbox) with a persistent [session volume](/docs/sandbox#files-and-mounts).
+- **We want everyone to trust it will never touch anything customer-facing.** → a read-only tool surface.
+
+The rest — FastAPI, a dashboard, the analytics functions — is ordinary app code. Here's the whole pipeline, event to alert:
+
+<Mermaid chart={`flowchart LR
+  stripe([Stripe]) --> triggers
+  hubspot([HubSpot]) --> triggers
+  ads([Ad platforms]) --> triggers
+  triggers[Composio triggers] -->|"POST /webhooks/composio"| webhook["Verify signature,
+route on trigger_slug"]
+  webhook --> normalize["Normalize into the
+day's volume subtree"]
+  normalize --> cycle["Background
+analytics cycle"]
+  cycle --> monitors[Monitors + insights]
+  monitors -->|SLACK_SEND_MESSAGE| slack([Internal Slack update])
+  click triggers "/docs/triggers" "Triggers"
+`} />
+
+Here's how each goal maps to Composio.
+
+## Watch 24/7, with all the context it needs
+
+We want an agent that's always on and never starts from scratch: yesterday's events, the files it wrote this morning, the comparisons it's been tracking — all still there when the next event lands. That rules out a fresh agent per request. It needs one persistent home for its state and a workspace that outlives restarts.
+
+That home is a single long-lived [session](/docs/configuring-sessions) with the [sandbox](/docs/sandbox) turned on. FunnelWatch creates it once and reuses it across restarts and across every webhook, so the `/mnt/files/` workspace and everything accumulated in it stay put.
+
+From [`app/sandbox.py`](https://github.com/ComposioHQ/composio/blob/next/docs/examples/funnelWatch/app/sandbox.py):
+
+```python
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider
+
+composio = Composio(provider=OpenAIResponsesProvider(), api_key=COMPOSIO_API_KEY)
+
+# One long-lived session. Reuse it by id on the next boot; provision only if that fails.
+workbench = {"enable": True, "sandbox_size": "large"}
+session = (
+    composio.use(saved_session_id)
+    if saved_session_id
+    else composio.create(user_id=USER_ID, toolkits=TOOLKITS,
+                         tools=READ_ONLY_TOOLS,  # per-toolkit read allowlists (next section)
+                         workbench=workbench)
+)
+```
+
+## Look at everything, touch nothing
+
+An agent with access to Stripe and HubSpot is one bug — or one clever prompt — away from issuing a refund or emailing a customer. For a team to let it run unattended against production data, *"it won't do that"* has to be a fact about the system, not a hope about the model.
+
+So FunnelWatch grants tools **tool-by-tool, not toolkit-by-toolkit**. Registering a whole toolkit would expose its write tools too — a toolkit is its full tool surface, and a "read-only" system prompt is a request, not a boundary. Instead, one module holds an explicit allowlist of read tools, passed to the session as [per-toolkit `enable` lists](/docs/configuring-sessions#enabling-or-disabling-specific-tools). Refunds, budget changes, customer emails: not merely unmentioned — outside the session's tool surface, unreachable even from sandbox code. The agent's prompt still says "read-only," but as the last layer, not the only one.
+
+From [`app/composio_client.py`](https://github.com/ComposioHQ/composio/blob/next/docs/examples/funnelWatch/app/composio_client.py):
+
+```python
+# The single place tools are granted — tool-by-tool, not toolkit-by-toolkit.
+READ_ONLY_TOOLS = {
+    "stripe":  ["STRIPE_LIST_CHARGES", "STRIPE_LIST_SUBSCRIPTIONS", ...],
+    "hubspot": ["HUBSPOT_SEARCH_DEALS", "HUBSPOT_LIST_CONTACTS", ...],
+    "slack":   ["SLACK_FETCH_CONVERSATION_HISTORY", ...],  # reads only — sends stay host-side
+}
+```
+
+Even the one write FunnelWatch performs — posting its Slack update — runs **host-side** through a direct `tools.execute` call, outside the session. The agent literally has no way to send a message.
+
+## Know the moment something moves
+
+A revenue problem is most useful to hear about while it's still happening. We want FunnelWatch to react to a failed-payment spike or a lead surge *as it lands* — across half a dozen SaaS apps — without standing up a poller for each one or hammering their APIs on a loop.
+
+That's exactly what [triggers](/docs/triggers) give you: every connected app pushes its events to one webhook. The handler verifies the signature (fail closed, via the SDK's `parse()`), **dedups the delivery before any side effect** — deliveries repeat, and a replayed payment event must not double-count MRR — routes on `metadata.trigger_slug`, and returns instantly. Adding a new event source is one line in the routing table, not a new integration.
+
+From [`app/webhooks.py`](https://github.com/ComposioHQ/composio/blob/next/docs/examples/funnelWatch/app/webhooks.py):
+
+```python
+@router.post("/webhooks/composio")
+async def composio_webhook(request: Request):
+    raw = await request.body()
+    verify(raw, request.headers)                # SDK parse() checks the signature; fail closed
+
+    payload = json.loads(raw.decode("utf-8"))
+    slug = payload["metadata"]["trigger_slug"]  # dispatch on this
+
+    delivery_id = _delivery_id(request.headers, payload)
+    if delivery_id and durable.seen_delivery(delivery_id):
+        return {"status": "duplicate"}          # deliveries repeat — dedup BEFORE side effects
+
+    if slug.lower().startswith("composio."):    # trigger disabled, connection expired…
+        return _handle_lifecycle(slug, payload) # -> high-severity internal alert
+
+    handler = route(slug)                       # "STRIPE…" -> normalize.handle_stripe
+    if handler is None:
+        return {"status": "ignored", "trigger_slug": slug}
+
+    row = handler(manager.volume, payload)      # normalize + append to the volume
+    orchestrator.trigger_cycle()                # analytics in a coalesced background cycle
+    return {"status": "ok", "normalized": row}
+```
+
+Two details that matter in production: Slack chat replies run on a worker thread so the webhook acks immediately (a slow LLM answer must never block other deliveries), and `composio.*` lifecycle events get an explicit branch — when a trigger dies, **silence looks exactly like a quiet day**, so FunnelWatch alerts the team instead of quietly going blind.
+
+You create the trigger instances once, idempotently — [`tools/setup_triggers.py`](https://github.com/ComposioHQ/composio/blob/next/docs/examples/funnelWatch/tools/setup_triggers.py) checks `list_active()` and creates only what's missing, so re-running it never mints duplicate instances — point your project's webhook at `/webhooks/composio`, and route everything on the slug from there. See [Triggers](/docs/triggers) for the full flow.
+
+## Reason over the whole day, not one event
+
+*"SKU A is outselling SKU B"* and *"failed payments crossed 5%"* aren't visible in any single event — they're patterns across a day of them. We want the agent to accumulate events and crunch them with real tools (pandas, thresholds), and we want that number-crunching to happen **outside** the model's context, so a busy day of thousands of events doesn't blow up the prompt (or the bill).
+
+<Mermaid chart={`flowchart LR
+  q([Question or fired monitor]) --> loop[Agent loop]
+  loop -->|COMPOSIO_REMOTE_WORKBENCH| cell["Python cell
+in the sandbox"]
+  cell -->|"pandas over /mnt/files"| mount[("Session volume
+raw / normalized / analytics")]
+  cell -->|run_composio_tool| tools["Read-only tool calls
+(Stripe, HubSpot, …)"]
+  loop --> answer([Grounded answer with numbers])
+  click cell "/docs/sandbox" "Sandbox"
+`} />
+
+The [session volume](/docs/sandbox#files-and-mounts) is that workspace. The mount at `/mnt/files/` holds each day's raw events, normalized tables, and analytics outputs, organized into one subtree per day; FunnelWatch keeps a rolling retention window — all through the same `session.experimental.files` handle.
+
+From [`app/session.py`](https://github.com/ComposioHQ/composio/blob/next/docs/examples/funnelWatch/app/session.py):
+
+```python
+files = session.experimental.files            # .upload / .list / .download / .delete
+
+files.list(path="growth-pulse", limit=500)    # which days still have a workspace
+files.delete(f"growth-pulse/{aged_out_day}")  # prune past the retention window
+```
+
+Because the mount survives sandbox restarts, a day's accumulated data is still there after a compute-tier change or a crash — the agent picks up the trend where it left off instead of losing it.
+
+## Alerts the team actually acts on
+
+A monitor that just says *"something looks off"* gets muted within a week. We want every FunnelWatch update to carry the specific numbers, so the team trusts it and acts on it.
+
+Because each insight is computed from data already sitting in the volume, it always does: the agent runs read-only tool calls to fill any gaps, pandas over the volume to compare SKUs and rank campaigns, then the host posts an internal-only Slack update — figures attached, not a vibe.
+
+And FunnelWatch watches *itself* the same way: every analytics cycle snapshots the Composio session's health, and if the session degrades (or recovers), the team gets an alert through the same channel. A monitor that silently loses its own backend is worse than no monitor.
+
+## Run it
+
+The project ships a `dev.sh` that boots the whole demo stack in one shot: the FastAPI server, a Cloudflare quick tunnel that exposes the webhook publicly, and a mock event simulator. It prints the public webhook URL to paste into your Composio project settings, then streams events so you can watch a day fill up.
+
+```bash
+./dev.sh                # default lead-quality scenario
+./dev.sh --spike        # breach the 5% failed-payment monitor and watch the alert fire
+```
+
+The full source lives in [`docs/examples/funnelWatch`](https://github.com/ComposioHQ/composio/tree/next/docs/examples/funnelWatch) — `app/` holds the session, webhook, volume, and Slack wiring shown above.

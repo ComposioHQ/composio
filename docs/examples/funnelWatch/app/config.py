@@ -1,14 +1,29 @@
 """Runtime configuration loaded from environment / .env."""
 from __future__ import annotations
 
+import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+
+
+def _toolkit_versions() -> dict:
+    """Optional {"toolkit": "version"} pins from COMPOSIO_TOOLKIT_VERSIONS (JSON)."""
+    raw = os.getenv("COMPOSIO_TOOLKIT_VERSIONS", "")
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    return {str(k).lower(): str(v) for k, v in parsed.items()}
 
 
 @dataclass(frozen=True)
@@ -25,6 +40,12 @@ class Settings:
     # Composio
     composio_api_key: str = os.getenv("COMPOSIO_API_KEY", "")
     composio_webhook_secret: str = os.getenv("COMPOSIO_WEBHOOK_SECRET", "")
+    # Accept unsigned webhook requests even when a secret is configured. ONLY for
+    # local tools (tools/simulate.py posts unsigned); leave off in production.
+    allow_unsigned_webhooks: bool = os.getenv("GROWTH_PULSE_ALLOW_UNSIGNED", "") == "1"
+    # Optional {"toolkit": "version"} pins (JSON). Pinning keeps trigger payload and
+    # tool schemas stable, and lets manual execution drop the version-check skip.
+    toolkit_versions: dict = field(default_factory=_toolkit_versions)
     user_id: str = os.getenv("GROWTH_PULSE_USER_ID", "growth-pulse-demo")
     # Workbench sandbox compute tier: standard | medium | large | xlarge.
     composio_sandbox_size: str = os.getenv("COMPOSIO_SANDBOX_SIZE", "standard")

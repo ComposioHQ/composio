@@ -124,11 +124,11 @@ A specific, active trigger scoped to a user's connected account.
 </GlossaryTerm>
 
 <GlossaryTerm name="Webhook Endpoint">
-The ingress URL Composio issues per OAuth app for webhook triggers, plus the signing secret used to verify each inbound request. Composio configures it for you in most cases. When a trigger type's `requires_webhook_endpoint_setup` flag is `true`, you configure it yourself once per OAuth app through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks).
+The ingress URL Composio issues per OAuth app for webhook triggers, plus the signing secret used to verify each inbound request. Composio configures it for you in most cases. When a trigger type's `requires_webhook_endpoint_setup` flag is `true`, you configure it yourself once per OAuth app through the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints). See [Custom OAuth webhooks](/docs/triggers#custom-oauth-webhooks).
 </GlossaryTerm>
 
 <GlossaryTerm name="Webhook Subscription">
-The URL Composio delivers signed events to in your application. There is one per project, configured through the dashboard or the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions). See [Subscribing to events](/docs/setting-up-triggers/subscribing-to-events).
+The URL Composio delivers signed events to in your application. There is one per project, configured through the dashboard or the [Webhook Subscriptions API](/reference/api-reference/webhook-subscriptions). See [Subscribing to events](/docs/triggers#receiving-events).
 </GlossaryTerm>
 
 <GlossaryTerm name="userID">
@@ -140,7 +140,7 @@ Customizing the auth experience so users see your brand during the OAuth flow. Y
 </GlossaryTerm>
 
 <GlossaryTerm name="Sandbox">
-A persistent Python environment (previously called the workbench) exposed through the `COMPOSIO_REMOTE_WORKBENCH` meta tool. Its state persists across calls within a session, which makes it useful for bulk operations, data transformations, and processing large tool responses. Configure it with the `sandbox` session key; `workbench` still works as an alias. See [Sandbox](/docs/sandbox/remote).
+A persistent Python environment (previously called the workbench) exposed through the `COMPOSIO_REMOTE_WORKBENCH` meta tool. Its state persists across calls within a session, which makes it useful for bulk operations, data transformations, and processing large tool responses. Configure it with the `sandbox` session key; `workbench` still works as an alias. See [Sandbox](/docs/sandbox).
 </GlossaryTerm>
 
 </Glossary>

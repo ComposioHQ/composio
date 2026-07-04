@@ -6,6 +6,7 @@ demo is observable even with no Slack/Composio credentials.
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 
 from app.composio_client import get_composio
@@ -56,16 +57,27 @@ def send_message(volume: Volume, text: str, channel: str | None = None,
     return record
 
 
+def _pinned() -> bool:
+    """True when the send slug's toolkit has a pinned version (config or env)."""
+    toolkit = settings.slack_send_slug.split("_", 1)[0].lower()
+    return bool(settings.toolkit_versions.get(toolkit)
+                or os.getenv(f"COMPOSIO_TOOLKIT_VERSION_{toolkit.upper()}"))
+
+
 def _try_composio(channel: str, body: str) -> bool:
     composio = get_composio()
     if composio is None:
         return False
+    # Manual (non-agent) execution needs a pinned toolkit version. Pin one via
+    # COMPOSIO_TOOLKIT_VERSIONS / COMPOSIO_TOOLKIT_VERSION_<TOOLKIT> in production;
+    # only unpinned dev falls back to skipping the check.
+    kwargs = {} if _pinned() else {"dangerously_skip_version_check": True}
     try:
         composio.tools.execute(
             settings.slack_send_slug,
             user_id=settings.user_id,
             arguments={"channel": channel, "markdown_text": body},
-            dangerously_skip_version_check=True,  # required for manual (non-agent) execution
+            **kwargs,
         )
         return True
     except Exception:

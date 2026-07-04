@@ -33,8 +33,14 @@ class SessionManager:
     def _make_volume(self, session_date: str):
         files = sandbox.files()
         if files is not None:
-            return MountVolume(self._cache_root(session_date),
-                               self._mount_prefix(session_date), files)
+            vol = MountVolume(self._cache_root(session_date),
+                              self._mount_prefix(session_date), files)
+            if sandbox.consume_reprovisioned():
+                # A fresh session means a fresh, empty mount. Re-seed it from the
+                # local cache so the host and the agent keep seeing the same data.
+                vol.mark_all_dirty()
+                vol.flush()
+            return vol
         return LocalVolume(self._cache_root(session_date))
 
     def volume_for(self, session_date: str):

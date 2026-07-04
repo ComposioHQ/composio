@@ -21,6 +21,11 @@ cd "$(dirname "$0")"
 
 PORT="${PORT:-8000}"
 SIM_ARGS=("$@")
+
+# The simulator posts unsigned events. Explicitly allow them for this demo stack —
+# production keeps signatures mandatory (see app/webhooks.py verify()).
+export GROWTH_PULSE_ALLOW_UNSIGNED=1
+
 CF_LOG="$(mktemp -t funnelwatch-cf.XXXXXX)"
 PIDS=()
 

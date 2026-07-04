@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.config import settings
 
@@ -29,7 +29,30 @@ def _conn() -> sqlite3.Connection:
         "CREATE TABLE IF NOT EXISTS interests ("
         "topic TEXT PRIMARY KEY, count INTEGER, last_asked TEXT, last_question TEXT)"
     )
+    # Webhook delivery ids already processed (dedup that survives restarts).
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS deliveries ("
+        "id TEXT PRIMARY KEY, received_at TEXT)"
+    )
     return conn
+
+
+def seen_delivery(delivery_id: str, retention_days: int = 3) -> bool:
+    """Record a webhook delivery id; return True if it was already seen.
+
+    Composio deliveries repeat (retries, redeliveries), and a replayed payment event
+    must not double-count MRR — so the seen-set lives in durable storage, not memory:
+    restarts happen, and retries cluster exactly around them.
+    """
+    now = datetime.now(timezone.utc)
+    with _conn() as conn:
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO deliveries VALUES (?, ?)",
+            (delivery_id, now.isoformat()),
+        )
+        conn.execute("DELETE FROM deliveries WHERE received_at < ?",
+                     ((now - timedelta(days=retention_days)).isoformat(),))
+        return cur.rowcount == 0
 
 
 def save_daily_summary(session_date: str, summary: dict) -> None:

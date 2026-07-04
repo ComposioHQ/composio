@@ -103,6 +103,9 @@ class LocalVolume:
     def sync_down(self, prefix: str = "") -> int:  # pull mount files into the cache
         return 0
 
+    def mark_all_dirty(self) -> None:  # queue everything for re-upload (mount overrides)
+        pass
+
 
 # Back-compat alias: existing imports of `Volume` keep working and get the local backend.
 Volume = LocalVolume
@@ -198,3 +201,17 @@ class MountVolume(LocalVolume):
             if not cursor:
                 break
         return count
+
+    def mark_all_dirty(self) -> None:
+        """Queue every cached file for re-upload on the next ``flush()``.
+
+        Used when a fresh session replaced a stale one: the new mount starts empty,
+        and without a re-seed the host (reading the local cache) and the agent
+        (reading ``/mnt/files``) would silently see different data.
+        """
+        with _lock:
+            for p in self.root.rglob("*"):
+                if p.is_file():
+                    rel = p.relative_to(self.root).as_posix()
+                    self._dirty.add(rel)
+                    self._fetched.add(rel)

@@ -3,24 +3,39 @@
 handle for the storage mount at ``/mnt/files/``.
 
 The agent writes and runs its own code in the workbench via the loop; the host never
-ships code there. With no Composio key (or GROWTH_PULSE_FORCE_LOCAL=1) ``session()``
-returns None and callers fall back to the local in-process path.
+ships code there. The session is created with a per-toolkit **read-only tool
+allowlist** (see app/composio_client.py), so the agent's reachable tool surface
+contains no writes.
+
+Resilience: failures retry with backoff (never latch), and when a stale session id
+forces a fresh session, the re-provision is flagged so the volume can re-seed the
+new (empty) mount from the local cache — otherwise the host and the agent would
+silently see different data. ``health()`` reports status for self-monitoring.
+
+With no Composio key (or GROWTH_PULSE_FORCE_LOCAL=1) ``session()`` returns None and
+callers fall back to the local in-process path.
 """
 from __future__ import annotations
 
 import threading
+import time
 
-from app.composio_client import READ_ONLY_TOOLKITS, get_composio
+from app.composio_client import READ_ONLY_TOOLS, get_composio
 from app.config import settings
 
 _lock = threading.Lock()
 _session = None
-_failed = False
+# Backoff instead of a latch: after a failure, retry no sooner than _retry_at.
+_retry_at = 0.0
+_backoff_s = 30.0
+_BACKOFF_MAX_S = 600.0
+_reprovisioned = False
+_last_error: str | None = None
 
 
 def _toolkit_slugs() -> list[str]:
     # tool_router.create takes lowercase toolkit slugs (e.g. ['stripe', 'slack']).
-    return [t.lower() for t in READ_ONLY_TOOLKITS]
+    return list(READ_ONLY_TOOLS)
 
 
 def _load_session_id() -> str | None:
@@ -38,21 +53,20 @@ def _save_session_id(session_id: str) -> None:
 
 
 def session():
-    """Return the long-lived tool-rout  ss restarts; provisions a fresh session
-    (with workbench + read-only toolkits) the first time.
+    """Return the long-lived tool-router session, reused across restarts; provisions
+    a fresh session (workbench + read-only tool allowlist) the first time.
     """
-    global _session, _failed
-    if _session is not None or _failed:
+    global _session, _retry_at, _backoff_s, _reprovisioned, _last_error
+    if _session is not None:
         return _session
-    if not settings.use_sandbox:
-        _failed = True
+    if not settings.use_sandbox or time.time() < _retry_at:
         return None
     with _lock:
-        if _session is not None or _failed:
+        if _session is not None or time.time() < _retry_at:
             return _session
         composio = get_composio()
         if composio is None:
-            _failed = True
+            _retry_at = time.time() + _backoff_s  # client unavailable — try again later
             return None
         workbench = {"enable": True, "sandbox_size": settings.composio_sandbox_size}
         try:
@@ -61,19 +75,49 @@ def session():
                 try:
                     _session = composio.use(sid)
                 except Exception:
-                    _session = None  # stale/expired id — provision a new one
+                    _session = None  # stale/expired id — provision a fresh one below
             if _session is None:
                 _session = composio.create(
                     user_id=settings.user_id,
                     toolkits=_toolkit_slugs(),
+                    # Tool-level allowlist: only these reads exist inside the session,
+                    # so no prompt can talk the agent into a write. See composio_client.
+                    tools=READ_ONLY_TOOLS,
                     workbench=workbench,
                 )
                 _save_session_id(_session.session_id)
+                if sid:
+                    # The old session (and its mount) is gone. Flag it so the volume
+                    # re-seeds the fresh, empty mount from the local cache.
+                    _reprovisioned = True
+            _backoff_s = 30.0
+            _last_error = None
             return _session
-        except Exception:
-            _failed = True
+        except Exception as exc:  # noqa: BLE001
+            _last_error = f"{type(exc).__name__}: {exc}"
+            _retry_at = time.time() + _backoff_s
+            _backoff_s = min(_BACKOFF_MAX_S, _backoff_s * 2)
             _session = None
             return None
+
+
+def consume_reprovisioned() -> bool:
+    """True exactly once, right after a fresh session replaced a stale one."""
+    global _reprovisioned
+    if _reprovisioned:
+        _reprovisioned = False
+        return True
+    return False
+
+
+def health() -> dict:
+    """Runtime status for self-monitoring (see orchestrator._record_runtime_health)."""
+    if not settings.use_sandbox:
+        return {"status": "local", "detail": "sandbox disabled (no key or forced local)"}
+    if _session is not None:
+        return {"status": "ok", "session_id": getattr(_session, "session_id", None)}
+    return {"status": "degraded", "detail": _last_error or "not yet connected",
+            "retry_at": _retry_at}
 
 
 def available() -> bool:

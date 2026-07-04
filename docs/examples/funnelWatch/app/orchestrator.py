@@ -8,6 +8,7 @@ refreshes.
 from __future__ import annotations
 
 import threading
+from datetime import datetime, timezone
 
 from app import analytics, insights, monitors
 from app.runtime import manager
@@ -18,6 +19,35 @@ from app.volume import Volume
 _cycle_lock = threading.Lock()
 _cycle_pending = threading.Event()
 
+_last_status: str | None = None  # runtime status last recorded (for transition alerts)
+
+
+def _record_runtime_health(volume: Volume) -> None:
+    """Self-monitoring: a monitor that silently loses its own backend is worse than
+    no monitor. Snapshot the session status each cycle; alert on transitions."""
+    global _last_status
+    from app import sandbox, slack
+
+    health = sandbox.health()
+    status = health.get("status")
+    volume.write_json("analytics/runtime_health.json",
+                      {**health, "checked_at": datetime.now(timezone.utc).isoformat()})
+    if status == _last_status:
+        return
+    if status == "degraded":
+        slack.send_internal_update(
+            volume, "FunnelWatch runtime degraded",
+            f"The Composio session is unavailable ({health.get('detail', 'unknown')}). "
+            "Ingest continues on the local buffer, but mount flushes and agent answers "
+            "are paused until it reconnects (automatic retry with backoff).",
+            kind="alert", meta={"severity": "high", "source": "runtime"})
+    elif status == "ok" and _last_status == "degraded":
+        slack.send_internal_update(
+            volume, "FunnelWatch runtime recovered",
+            "The Composio session reconnected. Mount flushes and agent answers resumed.",
+            kind="alert", meta={"severity": "info", "source": "runtime"})
+    _last_status = status
+
 
 def run_cycle(volume: Volume | None = None, *, frequency: str = "real-time",
               emit: bool = False) -> dict:
@@ -25,6 +55,7 @@ def run_cycle(volume: Volume | None = None, *, frequency: str = "real-time",
     metrics = analytics.run(vol)
     fired = monitors.evaluate(vol, frequency=frequency)
     ranked = insights.evaluate(vol, emit=emit)
+    _record_runtime_health(vol)
     # Periodic flush: push buffered events + monitor/insight outputs to the mount.
     # No-op for the local fallback backend.
     vol.flush()

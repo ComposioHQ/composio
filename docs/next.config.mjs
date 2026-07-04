@@ -125,7 +125,7 @@ const config = {
       },
       {
         source: '/docs/subscribing-to-connection-expiry-events',
-        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        destination: '/docs/triggers#receiving-events',
         permanent: true,
       },
       {
@@ -145,7 +145,7 @@ const config = {
       },
       {
         source: '/docs/webhook-verification',
-        destination: '/docs/setting-up-triggers/subscribing-to-events',
+        destination: '/docs/triggers#verifying-signatures',
         permanent: true,
       },
       {
@@ -205,13 +205,41 @@ const config = {
       // The workbench was renamed to the sandbox; keep old links working.
       {
         source: '/docs/workbench',
-        destination: '/docs/sandbox/remote',
+        destination: '/docs/sandbox',
         permanent: true,
       },
-      // The sandbox page became a section (remote + local); keep the old URL working.
+      // The sandbox briefly split into a section (remote + local) before
+      // merging back into a single page; keep both old URLs working.
       {
-        source: '/docs/sandbox',
-        destination: '/docs/sandbox/remote',
+        source: '/docs/sandbox/remote',
+        destination: '/docs/sandbox',
+        permanent: true,
+      },
+      // The setting-up-triggers section merged into the single /docs/triggers
+      // page; keep the old URLs working via section anchors.
+      {
+        source: '/docs/setting-up-triggers/creating-triggers',
+        destination: '/docs/triggers#creating-triggers',
+        permanent: true,
+      },
+      {
+        source: '/docs/setting-up-triggers/subscribing-to-events',
+        destination: '/docs/triggers#receiving-events',
+        permanent: true,
+      },
+      {
+        source: '/docs/setting-up-triggers/managing-triggers',
+        destination: '/docs/triggers#managing-triggers',
+        permanent: true,
+      },
+      {
+        source: '/docs/setting-up-triggers/custom-oauth-webhooks',
+        destination: '/docs/triggers#custom-oauth-webhooks',
+        permanent: true,
+      },
+      {
+        source: '/docs/sandbox/local',
+        destination: '/docs/sandbox#local-sandbox',
         permanent: true,
       },
       {
@@ -477,7 +505,7 @@ const config = {
       },
             {
         source: '/docs/using-triggers',
-        destination: '/docs/setting-up-triggers/creating-triggers',
+        destination: '/docs/triggers#creating-triggers',
         permanent: true,
       },
       {

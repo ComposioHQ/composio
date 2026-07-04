@@ -137,6 +137,26 @@ export function mdxToCleanMarkdown(content: string): string {
   // Remove frontmatter
   result = result.replace(/^---[\s\S]*?---\n*/m, '');
 
+  // Unwrap <ForAgent> blocks into "### For AI agents[: title]" sections.
+  // Unwrapping early (instead of letting the generic JSX sweep strip the
+  // tags) gives every block a predictable heading agents can navigate to,
+  // and the inner content still passes through the remaining cleaners below.
+  // Pages place one block under each section they detail, so the heading
+  // sits right after that section's content in the .md output.
+  // Inside a block, standalone bold lines are the sub-section titles
+  // (markdown headings there would pollute the human page's TOC with anchors
+  // into a collapsed accordion); promote them to #### headings.
+  result = result.replace(
+    /<ForAgent(?:\s+title="([^"]*)")?\s*>([\s\S]*?)<\/ForAgent>/g,
+    (_, title: string | undefined, inner: string) => {
+      // Tolerate leading indentation: the MDX processor re-serializes JSX
+      // children indented, so bold title lines arrive as "  **Title**".
+      const withHeadings = inner.trim().replace(/^[ \t]*\*\*([^*]+)\*\*[ \t]*$/gm, '#### $1');
+      const heading = title ? `### For AI agents: ${title}` : '### For AI agents';
+      return `\n\n${heading}\n\n${withHeadings}\n`;
+    }
+  );
+
   // Convert YouTube to link
   result = result.replace(
     /<YouTube\s+id="([^"]+)"\s+title="([^"]+)"\s*\/>/g,
@@ -188,7 +208,11 @@ export function mdxToCleanMarkdown(content: string): string {
   result = result.replace(/<Step>\s*###\s*(.+)/g, '#### $1');
   result = result.replace(/<\/?Steps>/g, '');
   result = result.replace(/<\/?Step>/g, '');
-  result = result.replace(/^(\s*#{1,6})\s*#\s+(.+)$/gm, '$1 $2');
+  // Collapse a stray duplicate '#' inside a heading (e.g. "#### # Title" from
+  // Step/StepTitle processing). The separator must be real whitespace: with
+  // `\s*` here, backtracking let the literal '#' consume part of the heading
+  // marker itself, demoting every '## Heading' in every page to '# Heading'.
+  result = result.replace(/^(\s*#{1,6})\s+#\s+(.+)$/gm, '$1 $2');
   result = result.replace(/^\s*#\s*$/gm, '');
 
   result = result.replace(
@@ -271,6 +295,13 @@ export function mdxToCleanMarkdown(content: string): string {
   result = result.replace(
     /<ConnectClientOption[^>]*\bname="([^"]*)"[^>]*>/g,
     (_, name) => `## ${name}\n`
+  );
+
+  // Inline experimental marker (used under a heading for an experimental
+  // sub-feature) — keep the signal in the .md output.
+  result = result.replace(
+    /<ExperimentalBadge\s*\/>/g,
+    '*Experimental: these APIs may change in future releases.*'
   );
 
   result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
