@@ -73,4 +73,6 @@ minimumReleaseAgeExclude:
 
 overrides:
   qs@<6.14.1: '>=6.14.1'
-  protobufjs: 7.5.9
+  protobufjs: 7.6.1
+  # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
+  'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
