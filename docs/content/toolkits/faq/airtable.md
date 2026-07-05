@@ -2,30 +2,10 @@
 
 For a step-by-step guide on creating and configuring your own Airtable OAuth credentials with Composio, see [How to create OAuth credentials for Airtable](https://composio.dev/auth/airtable).
 
-## Connect Airtable to Claude using MCP
-
-Airtable can be connected to Claude through Composio MCP. Create or use an MCP server with Airtable tools selected, add the MCP server configuration to Claude, and complete the Airtable account connection from the MCP/connect flow.
-
-## When should I use custom Airtable OAuth credentials for additional scopes?
-
-For additional Airtable scopes, use your own Airtable OAuth developer app. Configure the required scopes in Airtable, enable/use custom OAuth credentials in Composio, and create a new integration/auth config with those credentials and scopes. If an existing integration was created before the scope change, create a new one and retry the connection.
-
-## What can cause Airtable refresh failures?
-
-When Airtable connected accounts expire, inspect the refresh error from Airtable. Known cases include 400 `invalid_grant` and 422 responses with `invalid_request` or `temporarily_unavailable`. If failures cluster around the same time, check Airtable's status page because an Airtable-side outage can cause refresh failures. If the failures continue outside the provider outage window, reconnect the affected accounts and contact Composio with the connected account IDs and recent tool execution IDs.
-
-## Why did Airtable connection initiation time out after 10 minutes?
-
-The expiry reason "Connection initiation did not complete within 10 minutes" means the user opened or initiated the connection but did not finish the authentication flow within ten minutes. It is a generic connected-account timeout across toolkits, not an Airtable-specific error. Start a fresh connection/initiation link and complete the OAuth flow within the allowed window.
-
-## Missing Airtable tools may be caused by default list limits or TS SDK not requesting latest
-
-If Airtable tools appear missing, first increase the tools list limit or paginate because the default response may only return the first page of tools. In Python, listing tools with a higher limit returns the expected tools. In TypeScript, pass `toolkit_versions: "latest"` when listing tools until the SDK handles that automatically. Also note that old names such as `create_multiple_records` and `create_record` were deprecated in favor of current uppercase slugs such as `AIRTABLE_CREATE_RECORDS`.
-
 ## AIRTABLE_UPDATE_MULTIPLE_RECORDS updates at most 10 records per call
 
-`AIRTABLE_UPDATE_MULTIPLE_RECORDS` can update a maximum of 10 Airtable records at a time. For larger updates, split the records into batches of 10 and execute multiple calls while respecting Airtable's API rate limits.
+`AIRTABLE_UPDATE_MULTIPLE_RECORDS` can update up to 10 Airtable records in one tool call. This follows Airtable's batched record update limit, so a request with more than 10 record objects should be split before execution.
 
-## Airtable MCP schema validation failures
+For larger updates, chunk your input into groups of at most 10 records and call `AIRTABLE_UPDATE_MULTIPLE_RECORDS` once per group. Each record in the batch should identify the Airtable record to update and include the fields you want to change. Treat retries at the batch level: if one batch fails, inspect that batch's response and retry only the affected records when possible instead of replaying every successful batch.
 
-If an Airtable MCP server fails schema validation for specific create/base/table/field-style tools, rebuild or deploy the MCP server with only the Airtable tools needed for the workflow. Keeping the selected tool set smaller can let the rest of the Airtable MCP server continue working while you isolate the schema that the client rejects.
+Use `AIRTABLE_UPDATE_MULTIPLE_RECORDS` when you want patch-style updates where unspecified fields remain unchanged. If you need full replacement semantics, use the PUT variant carefully because unspecified fields may be cleared. Airtable rate limits still apply across batches, so add backoff or reduce concurrency if you see 429s or timeout-like failures.
