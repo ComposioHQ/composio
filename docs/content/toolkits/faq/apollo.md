@@ -1,8 +1,8 @@
 ## Why can Apollo search or enrichment tools return HTTP 403?
 
-Apollo API keys can be scoped to individual endpoints or created as master keys. If a tool returns HTTP 403 or `Forbidden`, the API key may be valid but not allowed to call that specific Apollo endpoint.
+Composio's Apollo tools use the Apollo API key on the connected account. Apollo API keys can be scoped to individual endpoint groups or created as master keys. If a Composio Apollo tool returns HTTP 403 or `Forbidden`, the key may be valid but not allowed to perform that specific search, enrichment, usage, or outreach operation.
 
-This has shown up with Apollo people search, exposed in Composio as `APOLLO_PEOPLE_SEARCH`. The same permission or plan-access pattern can also affect gated search, enrichment, usage, or outreach tools such as `APOLLO_ORGANIZATION_SEARCH`, `APOLLO_SEARCH_ACCOUNTS`, `APOLLO_SEARCH_OUTREACH_EMAILS`, `APOLLO_PEOPLE_ENRICHMENT`, `APOLLO_BULK_PEOPLE_ENRICHMENT`, `APOLLO_ORGANIZATION_ENRICHMENT`, `APOLLO_BULK_ORGANIZATION_ENRICHMENT`, and `APOLLO_VIEW_API_USAGE_STATS`.
+In Composio, this can appear on `APOLLO_PEOPLE_SEARCH`. The same permission or plan-access pattern can also affect gated Apollo tools such as `APOLLO_ORGANIZATION_SEARCH`, `APOLLO_SEARCH_ACCOUNTS`, `APOLLO_SEARCH_OUTREACH_EMAILS`, `APOLLO_PEOPLE_ENRICHMENT`, `APOLLO_BULK_PEOPLE_ENRICHMENT`, `APOLLO_ORGANIZATION_ENRICHMENT`, `APOLLO_BULK_ORGANIZATION_ENRICHMENT`, and `APOLLO_VIEW_API_USAGE_STATS`.
 
 Check that the connected account was created with the Apollo API key in the `generic_api_key` field, then confirm the Apollo key has the relevant endpoint enabled or has **Set as master key** turned on. Also check the Apollo plan, API access, and credit limits for the endpoint being called. `APOLLO_GET_AUTH_STATUS` can succeed even when a more restricted endpoint returns 403, so treat it as a credential-validity check, not proof that every Apollo tool is allowed.
 
