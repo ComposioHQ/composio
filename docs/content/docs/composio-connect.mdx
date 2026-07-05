@@ -8,7 +8,7 @@ Give any AI agent the ability to act across 1000+ apps. Bring your agent to wher
 
 ## How Composio Connect works
 
-Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps — Gmail, Notion, Slack, GitHub, HubSpot, Strava, and more — through a single connection.
+Composio Connect is an MCP server at `https://connect.composio.dev/mcp` that gives your AI agent access to 1000+ apps — Gmail, Notion, Slack, GitHub, Linear, HubSpot, Strava, and more — through a single connection.
 
 Rather than exposing every app tool directly, Composio exposes **7 meta-tools** that let the agent discover what's available, authorize apps on demand, and execute tools across apps in parallel. The first time your agent needs an app, Composio generates an OAuth link you approve in your browser; after that the connection persists across sessions. See [Available MCP tools](#available-mcp-tools) for the full list.
 
@@ -510,12 +510,6 @@ OAuth links are short-lived. If the browser window doesn't open or the link has 
 1. Open the [Composio dashboard](https://dashboard.composio.dev) and click **Connect Apps**.
 2. Find the app in question. If the connection is unhealthy, click **Disconnect** and reconnect.
 3. Retry the action in your agent.
-
-### An app I configured in the developer dashboard is not available in Connect
-
-Composio Connect uses the AI Clients / Connect flow and the `x-consumer-api-key` header shown in this guide. Its app connections are separate from developer project resources such as auth configs, project API keys, and connected accounts created for direct API or SDK execution.
-
-Connect the app from the Connect flow or from **Connect Apps** in the dashboard. If your integration depends on a custom developer auth config, custom scopes, or a specific connected account from a developer project, use the direct API/SDK flow for that project instead.
 
 ### I want to remove or reconnect an app
 
