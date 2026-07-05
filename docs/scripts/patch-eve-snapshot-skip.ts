@@ -15,9 +15,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// Like the sibling scripts, this always runs from docs/ (package.json scripts).
 const target = join(
-  import.meta.dir,
-  '..',
+  process.cwd(),
   'node_modules/eve/dist/src/internal/nitro/dev-runtime-source-snapshot-copy.js',
 );
 
