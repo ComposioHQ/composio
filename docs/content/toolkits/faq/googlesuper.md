@@ -42,37 +42,9 @@ Google Super can cover all Google services including Gmail, but users can remove
 
 Google Super can cover Gmail workflows through one Google connection, but Gmail filter creation still follows the underlying Gmail API scope requirement. The `users.settings.filters.create` endpoint requires `https://www.googleapis.com/auth/gmail.settings.basic` specifically.
 
-## `GOOGLESUPER_LIST_LABELS` with `include_details=true` can be slow because it fans out per label
-
-For `GOOGLESUPER_LIST_LABELS`, setting `include_details=true` fans out into one Gmail API call per label. Accounts with many labels can become slow because the calls happen sequentially. Set `include_details=false` or omit the parameter to return to a single API call and much lower latency.
-
-## `GOOGLESUPER_LIST_THREADS` verbose behavior trades payload/latency for detail and may return completion order
-
-Selecting arbitrary fields is not supported in the thread-list response because it would increase payload size and latency, which conflicts with the purpose of the `verbose` flag. When `verbose=true`, thread enrichment runs concurrently, so results can appear in completion order rather than chronological order.
-
-## `resultSizeEstimate` was added to Gmail thread listing response
-
-`resultSizeEstimate` was added to the response payload of `GMAIL_LIST_THREADS`. If a user expects this field through Google Super thread listing, verify the toolkit/tool version includes the update.
-
-## When should I use Gmail/Google Super query and label filters to find sent or labeled messages?
-
-Gmail/Google Super tools are wrappers over Google APIs, so use Gmail-style `query` filters or `label_ids` where supported to filter messages, including sent-mail style queries. If the exact filter is not exposed, file a tool request for the endpoint/parameter.
-
 ## Google Super Sheets 404s can mean wrong spreadsheet ID, missing access, or missing spreadsheet scope
 
 For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet is shared with the connected Google account, and ensure the connection has `https://www.googleapis.com/auth/spreadsheets`. Reconnect after changing scopes or sharing permissions.
-
-## Which Google Super Calendar trigger should I use?
-
-`GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` is planned for deprecation. Use `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` instead for calendar event sync/change workflows.
-
-## Google Super cannot schedule Gmail emails out of the box
-
-Google Super does not support scheduling an email out of the box. Use another email sending toolkit such as `RESEND_SEND_EMAIL` if the user's use case can be met outside Gmail scheduled-send semantics.
-
-## Missing Google Super endpoints should be filed as tool requests, not toolkit requests
-
-If Google Super already exists but a specific endpoint is missing, file a tool request with the endpoint/API details. Toolkits are providers/services, while tools are individual endpoints/actions. Enterprise users are prioritized, but general requests are still reviewed.
 
 ## `Connection initiation did not complete within 10 minutes` means OAuth consent was not completed, not token refresh failure
 

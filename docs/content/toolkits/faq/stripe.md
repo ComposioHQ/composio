@@ -14,10 +14,6 @@ For Stripe API-key auth, use the Stripe secret key from Stripe Dashboard -> Deve
 
 Stripe usually uses different API keys for separate accounts, so one connected account/MCP server has access to one Stripe account. If the user uses Stripe Connect, the platform can consolidate connected accounts under one platform API key and may better fit multi-account workflows.
 
-## MRR can be calculated from `STRIPE_LIST_SUBSCRIPTIONS`
-
-Use `STRIPE_LIST_SUBSCRIPTIONS` to retrieve subscription data, then calculate MRR from the returned subscriptions in the agent/application layer.
-
 ## Duplicate Stripe trigger events can be caused by stale webhook records left in Stripe
 
 If Stripe sends duplicate trigger payloads, check Stripe webhook/event destinations in the Stripe dashboard. Duplicate webhook destinations can cause duplicate event deliveries. Disable or delete extra Stripe webhook destinations so only the intended destination remains active.
@@ -29,10 +25,6 @@ If Stripe trigger creation fails under OAuth but works with API-key auth, check 
 ## A Stripe trigger should create a corresponding subscription/webhook in Stripe
 
 When troubleshooting missing Stripe checkout webhook events, verify both sides: confirm the trigger was created in Composio, then check whether the corresponding webhook/subscription was created in the user's Stripe dashboard. Recreating the trigger can be a valid recovery step if the webhook subscription was not created correctly.
-
-## Additional Stripe endpoints can be added as toolkit requests
-
-If a Stripe endpoint/tool is missing, submit the exact endpoints needed through the toolkit request flow. Useful examples include balance transactions, search for charges, cash balance, credit balances, coupons, and payouts.
 
 ## Stripe tokens may not be revocable programmatically through provider APIs
 

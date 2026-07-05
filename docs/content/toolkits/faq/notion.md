@@ -50,10 +50,6 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 ---
 
-## When should I use `NOTION_RETRIEVE_PAGE` instead of deprecated/invalid `NOTION_GET_PAGE`?
-
-`NOTION_GET_PAGE` is not the current valid slug. Use `NOTION_RETRIEVE_PAGE`, and verify available Notion tools from the marketplace/tool listing.
-
 ## Notion database trigger fires for new pages, not updates
 
 In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.
@@ -69,11 +65,3 @@ Existing connected accounts under a different auth config continue to refresh an
 ## Notion 401 can be caused by invalid refresh token after user/admin revokes integration
 
 A Notion refresh failure with “Invalid refresh token” is usually a token revocation issue. Common causes are the user disconnecting the integration in Notion settings or a workspace admin removing/blocking the integration.
-
-## When should I use `NOTION_FETCH_DATA`, not `NOTION_FETCH_NOTION_DATA`?
-
-`NOTION_FETCH_NOTION_DATA` is not valid. Use `NOTION_FETCH_DATA` instead.
-
-## Large unfiltered Notion responses can hurt agent quality
-
-Large response payloads and overly complex structures can degrade agent behavior. Prefer narrower fetches/filters where available and track product improvements for simpler response structures.

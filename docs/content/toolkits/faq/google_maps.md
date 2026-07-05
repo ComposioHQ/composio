@@ -38,14 +38,6 @@ Check whether the OAuth app requests the sensitive `https://www.googleapis.com/a
 
 If Google Maps authentication fails while using the default Composio OAuth app and the default app has been updated, create a new auth config and reconnect. Existing auth configs may continue using the older app configuration.
 
-## Validate Places `includedTypes` against Google's supported place types
-
-For Google Maps Places requests, `includedTypes` must use values supported by Google's Places API. If a request fails with an invalid argument around `includedTypes`, compare the value against Google's supported place type lists and replace unsupported values before retrying.
-
-## What should I use instead of deprecated `GEOCODING_API`?
-
-`GEOCODING_API` belongs to a different toolkit and has been deprecated. Do not require it as part of normal `google_maps` toolkit usage; use the current Google Maps toolkit tool slugs instead.
-
 ## Google Maps APIs may require billing and quota management in GCP
 
 Most Google APIs used through Composio are generally free to access, but Google Maps is an exception: Maps APIs can require billing on the Google Cloud project. If usage exceeds limits, users may need to request higher limits in their own Google project.

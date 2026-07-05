@@ -30,26 +30,6 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## When should I use Google Drive search to list or discover Google Slides presentations?
-
-Google Slides does not offer a dedicated endpoint to list all presentations through the Slides toolkit. Use `GOOGLEDRIVE_FIND_FILE` and filter Drive files with `q`, for example `mimeType = 'application/vnd.google-apps.presentation'`, then pass the returned presentation ID into the Google Slides tool.
-
-## What is needed for `GOOGLESLIDES_PRESENTATIONS_GET`?
-
-`GOOGLESLIDES_PRESENTATIONS_GET` should be called with the Google Slides presentation ID. Get that ID from the presentation URL, or use the ID returned by `GOOGLEDRIVE_FIND_FILE` when discovering presentations through Drive.
-
-## When should I use the same Google account when pairing Drive discovery with Google Slides reads?
-
-When a workflow discovers presentations with `GOOGLEDRIVE_FIND_FILE` and then reads them with `GOOGLESLIDES_PRESENTATIONS_GET`, make sure the connected Google Drive and Google Slides accounts are the same account. Otherwise the ID may be valid in Drive discovery but inaccessible to the Slides connection.
-
-## `GOOGLEDRIVE_CREATE_FILE_FROM_TEXT` cannot create native Google Slides from text
-
-`GOOGLEDRIVE_CREATE_FILE_FROM_TEXT` cannot create native Google Slides from text because the Google Drive API does not support text-to-slides conversion. Passing `application/vnd.google-apps.presentation` can default to `text/plain`. Drive import supports presentation formats such as Microsoft PowerPoint and OpenDocument Presentation instead.
-
-## What should I know about Google Slides creation tools?
-
-Google Slide creation tools were added to the Google Super toolkit. For slide creation workflows, use the relevant Google Super tools rather than trying to create a native Slides file through generic Drive text upload.
-
 ## What must custom Google Slides OAuth apps configure?
 
 When using a custom Google developer app for Google Slides, the app must be verified for the sensitive Google scopes it requests. Without verification, Google may block or warn on the OAuth consent flow.

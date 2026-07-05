@@ -71,10 +71,6 @@ For the Slack toolkit, `scopes` refers to bot-user scopes. If the use case is to
 
 A Slack connected account may stay `ACTIVE` for about two refresh cycles after token revocation. This is an intentional retry mechanism to avoid expiring accounts too aggressively because providers can return transient auth errors. Depending on the toolkit, the account should be marked `EXPIRED` after roughly two failed refresh attempts, about 30 minutes. If Slack returns `account_inactive`, that may indicate the connected Slack account itself is inactive rather than only a token-revocation case.
 
-## Download Slack file content using file ID
-
-Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the Slack file ID, which starts with `F` such as `F123ABCDEF0`. The tool returns downloadable file content plus metadata such as name, mimetype, and size. If the file ID is unknown, first call `SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK` to find file IDs, then pass the selected ID to the download tool.
-
 ## What is required for Slack `assistant.search.context`?
 
 Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. A user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
@@ -84,10 +80,6 @@ Slack's `assistant.search.context` requires the Slack OAuth app to have the Agen
 Slack may show warnings for non-Marketplace apps depending on workspace policy. The OAuth flow can still work if the workspace allows the app. If the workspace requires Marketplace-approved apps or admin approval, use the workspace's own Slack OAuth app or ask a workspace admin to approve the app.
 
 ![Slack OAuth consent warning stating that the app is not approved by Slack.](/images/kb/toolkits/slack/slack-marketplace-warning.png)
-
-## When should I use Slack V2 trigger slugs for channel and direct messages?
-
-Use the Slack V2 triggers for message events. `SLACK_CHANNEL_MESSAGE_RECEIVED` is intended for channel messages, and `SLACK_DIRECT_MESSAGE_RECEIVED` is intended for DMs. Slack V2 triggers include dedicated endpoints, signature verification, better DM handling, and richer filtering. Older V1 Slack trigger slugs may still work, but V2 is the recommended path for new setups.
 
 ## Slack trigger delivery depends on the Slack app event subscription webhook URL
 
@@ -100,10 +92,6 @@ Slack rate limits are applied per app, workspace, and method. `conversations.his
 ## What should I know about Slack short connect links?
 
 The short `/api/v3/s/...` URL is not the `redirect_uri` sent to Slack. It is only a shortened link that redirects the browser to Slack's authorization page. The actual Redirect URI is available in the authConfig and must match what is configured in the Slack OAuth app. The static `callbackUrl` / `redirectUri` must be configured consistently on both Composio and the Slack OAuth app, while `redirectUrl` is the per-connection authentication URL used to send the user through the auth flow.
-
-## What should I know about Slack scheduled-message attachments?
-
-The `attachments` field on Slack scheduled messages refers to Slack's legacy secondary/rich-formatting attachments, not uploaded files. Slack's `chat.scheduleMessage` API does not natively upload files. Files must be uploaded separately, for example with `files.upload` / `files.upload.v2`, and then linked or embedded into the scheduled message body so they unfurl when the scheduled message is posted.
 
 ## What is required for `admin.conversations:write`?
 

@@ -99,10 +99,6 @@ For HubSpot CRM contacts, the minimum scopes are `crm.objects.contacts.read` and
 
 Use HubSpot’s own scopes documentation and Composio’s scopes/tools API to map actions to required scopes. This is better than guessing scopes manually.
 
-## How do I create custom HubSpot tools through toolkit-authenticated API requests?
-
-You can create a custom tool that sends authenticated requests to HubSpot API endpoints; Composio handles authentication for the connected account. Alternatively, call the provider directly with connection config/custom headers if needed.
-
 ## What is needed for HubSpot trigger setup?
 
 For HubSpot webhook/trigger setup, get the app ID from HubSpot’s webhook app documentation / developer app settings and use it when configuring triggers.
@@ -137,10 +133,6 @@ For Composio-managed HubSpot auth configs, do not change the default scope set. 
 
 If a required HubSpot scope is not available on the managed OAuth app, use your own HubSpot OAuth app where the scope is configured in HubSpot and requested by the Composio auth config.
 
-## Old HubSpot SDK/toolkit versions use old double-prefixed slugs
-
-Update the SDK and explicitly use the latest HubSpot toolkit version. Older versions used slugs like `HUBSPOT_HUBSPOT_LIST_CONTACTS`; newer versions use slugs like `HUBSPOT_LIST_CONTACTS`.
-
 ## HubSpot auth loops can be caused by HubSpot-side workspace/login state
 
 If the HubSpot flow loops while Composio works on its side, retry while logged into the correct HubSpot workspace and confirm the OAuth app is public/configured correctly.
@@ -148,10 +140,6 @@ If the HubSpot flow loops while Composio works on its side, retry while logged i
 ## Composio does not provide HubSpot field-level permissions; restrict by user/session/tools instead
 
 Composio does not provide HubSpot field-level permissions inside a single tool call. Approximate this with user-scoped sessions, deciding which users connect HubSpot, and filtering allowed toolkits/tools per session, such as read-only tools for some users and update tools for others.
-
-## HubSpot marketing campaign objects do not expose a properties API like CRM objects
-
-For HubSpot marketing objects such as campaigns, HubSpot does not expose a properties API in the same way it does for CRM objects. Users may need to inspect/configure these from the HubSpot portal.
 
 ## HubSpot triggers require each user’s own app ID and developer API key
 

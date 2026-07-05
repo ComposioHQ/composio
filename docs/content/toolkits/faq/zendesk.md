@@ -22,22 +22,6 @@ When initiating a Zendesk OAuth connected account, pass `subdomain` in the conne
 
 For Zendesk API-key/basic auth connection initiation, pass the Zendesk `subdomain` and `basic_encoded` credential value in the connection data. The `basic_encoded` value should be the base64 encoding of the Zendesk email/token credential form requested by the auth config.
 
-## Include `toolkit_versions` when listing Zendesk tools through the API
-
-When listing Zendesk tools through the API, include the toolkit version query parameter. For example, use `toolkit_versions=latest&toolkit_slug=zendesk&limit=1000`. Without the toolkit version query, the API response may not show the expected tool set.
-
-## When should I use `ZENDESK_SEARCH_ZENDESK`?
-
-Use `ZENDESK_SEARCH_ZENDESK` for Zendesk search workflows.
-
-## When should I use `ZENDESK_UPDATE_ZENDESK_TICKET`?
-
-Use `ZENDESK_UPDATE_ZENDESK_TICKET` for Zendesk ticket updates. For endpoint-level context, the corresponding Zendesk API is the Update Ticket endpoint in Zendesk's ticketing API.
-
-## When should I use the Zendesk get-ticket-by-id action?
-
-The Zendesk get-ticket-by-id action is available and returns the ticket details in a single tool call. Use it when the user has a Zendesk ticket ID and needs the ticket's metadata/details rather than searching first.
-
 ## Does Zendesk support triggers in Composio?
 
 Zendesk is one of the toolkits with trigger support in Composio. Check the Zendesk toolkit page for the currently available trigger list.

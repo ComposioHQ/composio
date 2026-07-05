@@ -30,10 +30,6 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## When should I use Google Super tool slugs with a Google Super connected account?
-
-Google Super is a separate toolkit with its own tool slugs. If the connected account was created for Google Super, run the corresponding GOOGLESUPER_* tool, such as GOOGLESUPER_CREATE_MEET, instead of the GOOGLEMEET_* slug. A separate Google Meet auth config or connected account is not required when the workflow is intentionally using Google Super.
-
 ## How do I configure Meet scopes and enable the Google Meet API before creating Meet spaces?
 
 For Meet space creation/settings through Google Super, include the Meet scopes https://www.googleapis.com/auth/meetings.space.created and https://www.googleapis.com/auth/meetings.space.settings in the auth config, then initiate a new connection so the new scopes are granted. Also enable the Google Meet API in the Google Cloud Console project backing the OAuth app.
@@ -41,10 +37,6 @@ For Meet space creation/settings through Google Super, include the Meet scopes h
 ![Google Cloud API Library search results showing the Google Meet REST API result.](/images/kb/toolkits/googlemeet/google-meet-api-library-result.png)
 
 ![Google Cloud product details page showing the Enable button for Google Meet REST API.](/images/kb/toolkits/googlemeet/google-meet-api-enable-button.png)
-
-## Fetch transcript entries by first resolving the conference record
-
-Start by resolving the conference record, either with GOOGLEMEET_GET_CONFERENCE_RECORD_FOR_MEET when you have the meeting code, or with GOOGLEMEET_LIST_CONFERENCE_RECORDS when listing available records. Use the resulting conferenceRecord_id with GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID, then use the conference record and transcript values to list transcript entries. Prefer GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID over the older/misdescribed GOOGLEMEET_GET_CONFERENCE_TRANSCRIPTS path.
 
 ## Why do Google Meet calls return 403 on a conference resource?
 

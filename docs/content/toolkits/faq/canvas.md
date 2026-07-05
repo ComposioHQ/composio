@@ -14,17 +14,9 @@ Canvas trigger behavior is tied to the user represented by the bearer token on t
 
 For Canvas Assignment Graded, that the trigger working for Teacher accounts and not Student accounts is expected based on Canvas permission behavior. If the same connected account also has token-expiry symptoms, verify by executing a Canvas action on that connected account to separate permission behavior from connection/auth issues.
 
-## When should I use shorter polling intervals for Canvas triggers when longer intervals misbehave?
-
-For Canvas trigger setups that need timely delivery, use shorter polling intervals where available, usually around 1-5 minutes.
-
 ## Toolkit versioning does not version Canvas trigger logic
 
 Toolkit versioning applies to tools, not trigger logic. Canvas trigger fixes or behavior changes are not selected by pinning a toolkit version in the same way tool schemas and tool implementations can be.
-
-## Canvas trigger payloads expose Canvas user ID separately as `canvas_user_id`
-
-Canvas trigger payloads now separate the Canvas-side user identifier from Composio's user identifier. Use `canvas_user_id` for the Canvas LMS user and `user_id` for the Composio/project user. This avoids ambiguity when both identifiers are present in the same payload.
 
 ## Why can Canvas actions return 401 or unauthorized errors?
 
@@ -38,30 +30,6 @@ For Canvas OAuth, the client ID and client secret must belong to the same Canvas
 
 Canvas account-level endpoints require account administrator permissions in Canvas. For example, `/api/v1/accounts` through `CANVAS_GET_ACCOUNTS` requires account-level admin access. If a user gets unauthorized on these endpoints, confirm the connected Canvas account has admin permissions before treating it as a connection or tool failure.
 
-## What should I know about `CANVAS_CREATE_CALENDAR_EVENT` user IDs and Canvas API field names?
-
-For `CANVAS_CREATE_CALENDAR_EVENT`, a Canvas user ID can be used where accepted by the Canvas API. Composio keeps Canvas API field names to stay consistent with the provider API, so rely on each field description for accepted values when the field name is ambiguous.
-
-## How do Canvas list and fetch endpoints handle pagination?
-
-Canvas list endpoints follow Canvas API pagination behavior. Where supported, pass `per_page` to control how many records are returned in a response. If a Canvas action appears capped or returns a smaller page, check whether the relevant tool version supports `per_page` and upgrade if needed.
-
-## Canvas discussion topics and announcements require `only_announcements` selection
-
-For Canvas discussion topics, use `only_announcements: false` or omit it when calling the discussion-topic flow. For announcements, use `only_announcements: true`. Canvas cannot return both discussion topics and announcements in one combined call for this case, so make two separate API calls and merge the results client-side if both are needed.
-
 ## Why do Canvas course-analytics calls return 404?
 
 For Canvas course-level participation or analytics actions, first verify the course ID by listing courses or fetching the course by ID with `CANVAS_LIST_COURSES` or `CANVAS_GET_SINGLE_COURSE`. If the course ID is valid but the analytics endpoint still 404s, the Canvas analytics activity endpoint may simply not be available on that Canvas instance.
-
-## Canvas quiz matching question answers use unprefixed answer field keys
-
-For Canvas quiz matching question answers, use `comments_html`, `text`, `weight`, `match_left`, and `match_right`. Do not use `answer_comments_html`, `answer_text`, `answer_weight`, `answer_match_left`, or `answer_match_right` for this payload.
-
-## Older Canvas toolkit versions cannot be patched in place
-
-Composio cannot patch older toolkit versions in place. If a Canvas schema or behavior change is released in a newer version, the path is to upgrade the toolkit version. Users can compare differences between toolkit versions in the dashboard before upgrading.
-
-## What should I know about Canvas response schemas?
-
-Canvas response schema improvements are not universal across all fetch/list tools yet. Some recently updated or newly released tools have response schemas, but older Canvas tools may still differ. Treat these response shapes as tool/version-specific and pin or upgrade versions carefully when response shape stability matters.

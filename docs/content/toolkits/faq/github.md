@@ -6,10 +6,6 @@ For GitHub App based access, the user must install the GitHub App on the relevan
 
 GitHub V2 trigger setup does not require a separate webhook endpoint creation step. The webhook URL is automatically provisioned when the trigger instance is created. Skip the `/webhook_endpoints` call and create or update the trigger directly through `/trigger_instances/{slug}/upsert`.
 
-## List GitHub organizations and repositories for the authenticated user
-
-Use `GITHUB_LIST_ORGANIZATIONS_FOR_THE_AUTHENTICATED_USER` to list organizations available to the authenticated GitHub user. Then use `GITHUB_LIST_ORGANIZATION_REPOSITORIES` to list repositories for a selected organization. During connection, the user should be able to choose the organization they want to grant access to.
-
 ## Why GitHub connected-account tokens may show as REDACTED?
 
 Connected-account responses redact provider tokens and other secrets. If you need to call a GitHub API endpoint that is not exposed as a tool, use Proxy Execute so Composio injects the credentials without returning the raw token to your application.

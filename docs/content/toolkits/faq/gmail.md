@@ -53,10 +53,6 @@ This approach works for any tool whose parameters accept file uploads. See [Auto
 
 ---
 
-## When should I use `latest` or v3.1 for newer Gmail settings tools?
-
-The v3 execute endpoint can default to base toolkit version `00000000_00` when no version is specified. For newer Gmail tools like `GMAIL_PATCH_SEND_AS`, `GMAIL_LIST_SEND_AS`, and `GMAIL_GET_VACATION_SETTINGS`, pass `version: "latest"` in the execute body or use the v3.1 endpoint, which defaults to latest.
-
 ## How do I create Gmail custom OAuth auth config, then initiate a connection with callback URL?
 
 Create the Gmail auth config first with the custom OAuth credentials, then initiate a connected account using that auth config. The callback URL is supplied during connection initiation, while the OAuth client ID/secret and redirect URI live on the auth config.
@@ -81,18 +77,6 @@ When creating the Gmail auth config, pass the desired Gmail scopes in `credentia
 
 The Gmail metadata scope cannot be used when requesting full email content. Remove `https://www.googleapis.com/auth/gmail.metadata` and use a scope that allows message content access, such as `https://mail.google.com/`, when full payload/body data is needed.
 
-## When should I use `me` for Gmail `user_id` in tool calls?
-
-For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenticated connected account.
-
-## `GMAIL_SEND_EMAIL` accepts at least one of `to`, `cc`, or `bcc`
-
-`GMAIL_SEND_EMAIL` no longer needs a single required recipient field. At least one recipient channel such as `to` / `recipient_email`, `cc`, or `bcc` can be supplied, which keeps the tool flexible for different email composition flows.
-
-## What should I know about Gmail attachments over MCP, upload files before tool execution?
-
-Temporary S3/file instances are short-lived. Use `files.upload` before tool execution via the SDK or MCP flow, then pass the resulting `FileUploadable`/uploaded file object to the agent/tool call.
-
 ## Gmail attachments can make send-email slow enough to hit SDK request timeouts
 
 `GMAIL_SEND_EMAIL` accepts attachments as uploaded Composio file references, not signed URLs or JSON strings. The action downloads the uploaded file, builds the MIME message, base64-url encodes it, and posts it to Gmail. Attachment sends can therefore take materially longer than small text-only sends.
@@ -100,30 +84,6 @@ Temporary S3/file instances are short-lived. Use `files.upload` before tool exec
 If a user reports `GMAIL_SEND_EMAIL` hanging or duplicate sends with attachments:
 
 We found this can happen when the client times out before the backend finishes the tool call. Since GMAIL_SEND_EMAIL is non-idempotent, a retry can create another sent email. Until this is fixed at the SDK/API level, disable retries for this call path and use a longer request timeout or server-side idempotency on your side where possible.
-
-## Reduce Gmail fetch payload size with `include_payload=false`, `verbose=false`, `only_ids`, query, and limits
-
-For Gmail fetch/list flows, reduce payload by setting `include_payload=false` and `verbose=false` where supported. For very lightweight flows, use `only_ids=true` and then fetch selected messages separately. Also use `max_results` and Gmail `query` filters to keep result sets small.
-
-## Verbose Gmail thread results cannot select custom fields and may not be chronological
-
-Custom field selection is not supported in that verbose mode because it would increase payload size and latency. When `verbose=true`, thread work can run concurrently, so returned results may be ordered by completion rather than strict chronology.
-
-## When should I use `from_email` to select Gmail send-as alias?
-
-Use the `from_email` parameter on `GMAIL_SEND_EMAIL` to choose the Gmail send-as alias.
-
-## When should I use Gmail label IDs, not label names, for label operations?
-
-For Gmail label operations and trigger label filters that require IDs, pass the label ID rather than the display name. Use `GMAIL_LIST_LABELS` to retrieve IDs.
-
-## Patch Gmail label colors with `background_color` and accepted color values
-
-To patch a label color, use the label ID and pass background color as an object field such as `{ "background_color": "#FFFF0000" }`. Gmail only accepts specific label color values from the Gmail API reference.
-
-## Filter Gmail new-message trigger by label/query instead of label IDs
-
-For Gmail new-message trigger setup, use a Gmail query such as `label:sent OR label:category_personal` to filter matching messages. This avoids depending on label IDs for that trigger path.
 
 ## When should I use `googlesuper` for one Google auth across Gmail, Calendar, Drive-style use cases?
 

@@ -36,15 +36,3 @@ Snowflake Basic authentication was deprecated and replaced by OAuth2. Users usin
 ## How do I configure Snowflake OAuth refresh tokens and expect periodic reconnects?
 
 For longer-lived Snowflake OAuth connections, configure the Snowflake security integration with `OAUTH_ISSUE_REFRESH_TOKENS = TRUE` so refresh tokens are issued, and set `OAUTH_REFRESH_TOKEN_VALIDITY` as high as Snowflake allows, such as 7776000 seconds (about 90 days). Even with the max window, Snowflake can require users to reconnect after the refresh-token validity period, so design the product flow to handle periodic reconnects.
-
-## Fetch connected-account fields or toolkit metadata to discover Snowflake account details
-
-To discover fields collected during connection initiation, call the toolkit-by-slug endpoint and inspect the accepted initiation fields. After a connection exists, fetch the connected account by ID to retrieve the stored connection fields. Provider schemas are mostly static, but providers can change them, so the toolkit metadata endpoint is the safer source for current required/accepted fields.
-
-## Snowflake statement results may require checking each partition
-
-If a Snowflake query returns partial results, check whether the result set is split into partitions. Snowflake may not return all partitions in a single tool call. Use `SNOWFLAKE_SNOWFLAKE_CHECK_STATEMENT_STATUS` for each partition/result page to retrieve the remaining results.
-
-## When should I use processors or tool description overrides to reduce Snowflake tool output/token load?
-
-For Snowflake tools that return too much data or need LLM-facing schema/description changes, use processors to post-process tool output before returning it to the model. For local agent setup, you can also modify the returned tool object's description before passing it to the LLM, for example changing the description on `SNOWFLAKE_DESCRIBE_TABLE`.

@@ -13,7 +13,3 @@ If Mailchimp tools fail despite the connection looking correct, check the user's
 ## What does Mailchimp Proxy Execute need with a raw access token?
 
 When using Proxy Execute with Mailchimp custom connection data, include both the OAuth access token and Mailchimp `subdomain`/server prefix. The endpoint can then be called through `/api/v3/tools/execute/proxy` with `toolkitSlug: "mailchimp"`, `authScheme: "OAUTH2"`, and `val` containing `access_token` plus `subdomain` such as `us20`.
-
-## Mailchimp has trigger support in the supported-trigger toolkit list
-
-Mailchimp appears in the supported-trigger toolkit list. If a user asks for a specific Mailchimp trigger, verify the exact trigger/event exists in the current toolkit; if it does not, collect the use case and file a toolkit request.

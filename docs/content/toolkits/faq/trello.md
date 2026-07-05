@@ -2,17 +2,9 @@
 
 Trello supports `OAuth1` and `Bearer_token` auth modes in Composio. For user-facing Trello MCP flows, OAuth1 is generally the recommended authentication method because the user can complete the provider auth flow and Composio can store the resulting connection.
 
-## Route Trello MCP calls by appending user_id or connected_account_id
-
-For multi-user Trello MCP usage, create the Trello auth config and have users complete the auth flow. Then route MCP calls to the right user/connection by appending `user_id=<external-user-id>` or `connected_account_id=<ca_...>` to the MCP server URL, for example `/mcp?user_id=abcd`.
-
 ## Connect Trello to Cursor by creating a Trello MCP instance and running the generated command
 
 To use Trello in Cursor, create a Trello MCP instance/server in Composio, select the Trello tools, then run or add the generated MCP command/config in Cursor. Complete the Trello account connection when prompted by the MCP flow.
-
-## Get the authenticated Trello user with TRELLO_GET_MEMBERS_BY_ID_MEMBER and idMember=me
-
-Use `TRELLO_GET_MEMBERS_BY_ID_MEMBER` with `idMember` set to `me` to retrieve the authenticated Trello user/member for the current connection.
 
 ## Invalid Trello board ID can break Trello triggers
 

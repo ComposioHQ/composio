@@ -24,18 +24,6 @@ Outlook tools authenticate through the Microsoft account/OAuth flow in a browser
 
 `connect.composio.dev/mcp` uses Tool Router architecture, so it intentionally exposes meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`. The agent discovers and executes Outlook tools at runtime through those meta-tools. If a user needs specific Outlook tools without meta-tool round trips, use SDK direct execution or create a focused MCP config with selected Outlook tools.
 
-## What should I know about Outlook shared mailboxes, pass the shared mailbox address as `user_id`/mailbox target?
-
-For Outlook shared mailbox operations, pass the shared mailbox address, for example `shared@domain.com`, instead of `me`/primary mailbox where the tool expects the mailbox user. Delegated access must already be granted in the Microsoft tenant. This applies to delegated and S2S/application auth patterns where the tenant permissions allow shared mailbox access.
-
-## When should I remove old/bad Outlook tool slugs from MCP configs and patch `allowed_tools`?
-
-If an Outlook MCP config fails due to older/bad tool slugs, update the MCP config to remove invalid slugs and include only current supported tools in `allowed_tools`. This can be done through the dashboard or the MCP patch endpoint.
-
-## Outlook multi-account sessions require explicit per-call `account` selection and aliases
-
-For multi-account Outlook sessions, every connected account needs a unique non-null alias, the session should set `multi_account.enable=true` and `require_explicit_selection=true`, and the LLM must set the `account` field on each item in `COMPOSIO_MULTI_EXECUTE_TOOL.tools[]`. Without explicit selection, Tool Router cannot disambiguate and may default to one account.
-
 ## When should I use `get_scopes_required` with Outlook tool slugs, then refresh/reconnect after scope changes?
 
 For Outlook 403s, look up required scopes with `/api/v3/tools/get_scopes_required` using the exact Outlook tool slug, not the toolkit name. For example `OUTLOOK_GET_MAILBOX_SETTINGS` requires `MailboxSettings.ReadWrite`. After adding scopes to the auth config, refresh the existing connection through the connected-account refresh endpoint or create a new connection so the new scopes are granted.
@@ -57,14 +45,6 @@ For the Composio-managed Outlook app, Microsoft's in-flow `sign in as an admin` 
 
 Your own verified-publisher Azure app can improve branding and control, and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not remove the admin-consent requirement: each tenant's user-consent policy and the exact scopes requested still decide whether admin consent is needed.
 
-## Outlook/Gmail email attachments through SDK should be passed as file paths
-
-When using SDK automatic file handling for email attachments, pass the local file path directly in the `attachment`/`attachments` argument. Do not pass only a filename or raw content fields unless the tool schema explicitly asks for them.
-
 ## Outlook trigger issues can be stale subscriptions/no trigger logs or provider-side account-specific failures
 
 When Outlook triggers stop, check whether the connected account has active trigger logs and webhook subscriptions. If a specific account has stale triggers with no logs/subscriptions, reconnect or recreate the trigger. If Composio sees no provider warnings/errors and only one Outlook account is affected, the user should also check with Microsoft/Outlook support while Composio investigates.
-
-## What should I do if an Outlook email action is missing?
-
-If an Outlook action such as add category, send draft, or pin email is not available, treat it as a tool request. If the exact Outlook action is unavailable, treat it as a tool request and use an available draft/send/category workflow where possible.
