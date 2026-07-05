@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
+import { assertSafeFileUploadPath } from '@composio/core';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
@@ -146,11 +147,14 @@ const readFileFromUrl = async (url: string) => {
   };
 };
 
-const readFileFromDisk = async (filePath: string) => ({
-  bytes: new Uint8Array(await fs.readFile(filePath)),
-  fileName: path.basename(filePath),
-  mimeType: 'application/octet-stream',
-});
+const readFileFromDisk = async (filePath: string) => {
+  assertSafeFileUploadPath(filePath);
+  return {
+    bytes: new Uint8Array(await fs.readFile(filePath)),
+    fileName: path.basename(filePath),
+    mimeType: 'application/octet-stream',
+  };
+};
 
 const readUploadSource = async (file: string | File) => {
   if (isFileLike(file)) {

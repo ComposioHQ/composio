@@ -62,3 +62,10 @@ export { Experimental } from './models/Experimental';
 
 // Error handling exports
 export * from './errors';
+
+// File upload safety utilities
+export {
+  assertSafeFileUploadPath,
+  isBlockedSensitiveFileUploadPath,
+  BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
+} from './utils/sensitiveFileUploadPaths.node';
