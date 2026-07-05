@@ -1,4 +1,4 @@
-## What does Figma token auth is handled by Composio; users do not need?
+## Do users need to manually add a Bearer auth header for Figma?
 
 For Figma, users can provide the supported credentials/token through the toolkit's auth mode, and Composio handles the Bearer authorization header internally. They should not need to manually create a separate Bearer-token auth scheme for normal Figma tool use.
 

@@ -4,7 +4,7 @@ Google Ads was changed so the developer token lives on the auth config itself, n
 
 ![Google Ads auth config form showing the developer token field under custom developer credentials.](/images/kb/toolkits/googleads/google-ads-developer-token-auth-config.png)
 
-## What does Google Ads API require?
+## What is required for Google Ads API requests?
 
 Google Ads API requests require both an OAuth access token and a Google Ads developer token. Shared managed credentials can hit shared Google Ads quota or access limits. For production reliability, users should use their own Google Ads developer token where possible.
 
@@ -18,7 +18,7 @@ A Google Ads 429 / `RESOURCE_EXHAUSTED` can come from Google's own API limits or
 
 The SDK expects toolkit version strings without the `v` prefix. If the dashboard shows `v20260429_00`, pass `20260429_00` in `toolkitVersions` or per-execution `version`. `dangerouslySkipVersionCheck` is a per-execution option inside the `tools.execute()` payload, not a constructor option. Sessions can manage toolkit versions automatically if the user migrates to session-based execution.
 
-## What does Google Ads MCC/sub-account targeting mean?
+## How should I handle Google Ads MCC/sub-account targeting?
 
 For Google Ads manager-account (MCC) setups, `GOOGLEADS_LIST_ACCESSIBLE_CUSTOMERS` can succeed while GAQL/reporting or campaign calls against a child account fail. Two common Google errors are:
 
@@ -42,6 +42,6 @@ A real daily budget requires a CampaignBudget resource (`campaignBudgets:mutate`
 
 The `OAuth callback failed during token exchange` error usually means the credentials used to complete the auth flow are incorrect, most often the client secret. Re-enter or update the client secret in the Google Ads auth config, make sure there are no leading/trailing spaces, and initiate a new connection.
 
-## What does Custom Google OAuth apps need?
+## What do custom Google OAuth apps need for white-label consent?
 
 For Google toolkits, creating a new authConfig with the user's OAuth app credentials is not enough for full white-label consent. They also need to route the callback through their own domain using their own redirect URI so Google displays the configured consent screen for that OAuth app.

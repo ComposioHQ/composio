@@ -30,10 +30,10 @@ If the wrong Facebook/Page/Instagram account is connected, remove the existing C
 
 For WhatsApp, OAuth2 connection initiation requires `generic_id`, which is the WABA ID. API-key auth requires both `bearer_token` (System User Token) and `generic_id` (WABA ID). Users can find the WABA ID in the Facebook developer app's WhatsApp API setup, or through Meta APIs such as `/me/businesses` followed by `/{business_id}/owned_whatsapp_business_accounts`. To avoid hardcoding, use hosted auth links so the user can enter required fields during connection.
 
-## What does Instagram webhook verification config mean?
+## What should I know about Instagram webhook verification config?
 
-If a user is configuring Instagram webhooks but Composio does not expose the needed Instagram trigger, explain that the webhook verification config is not required for Composio at that time. For OAuth customization, they can use their own Instagram/Meta auth app credentials, which also lets them configure their own redirect URI.
+If a user is configuring Instagram webhooks but Composio does not expose the needed Instagram trigger, the webhook verification config is not required for Composio. For OAuth customization, they can use their own Instagram/Meta auth app credentials, which also lets them configure their own redirect URI.
 
-## What does WhatsApp template sending need?
+## What is needed for WhatsApp template sending?
 
 For WhatsApp template sending, the user needs an approved/existing template before sending. If the flow depends on automatically creating templates or discovering the Phone Number ID and the toolkit does not expose the needed tools, submit the exact template and phone number workflow through the tool request flow.

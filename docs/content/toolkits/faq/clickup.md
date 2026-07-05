@@ -10,10 +10,10 @@ For ClickUp custom OAuth, make sure the redirect URL in the ClickUp app matches 
 
 If ClickUp MCP fails in Cursor and several MCP servers are configured, reduce the server count or move the ClickUp server into the first few entries. Some MCP clients can behave differently when many servers are configured, so simplifying the client config is a useful isolation step.
 
-## What does ClickUp proxy execute may need?
+## What can `ExternalProxy_OrgNotAllowed` mean for ClickUp Proxy Execute?
 
 If ClickUp proxy execution returns `ExternalProxy_OrgNotAllowed`, the org may not have Proxy Execute enabled. Use an API key or scoped key with Proxy Execute permission where available.
 
-## What does ClickUp tokens may require manual provider-side removal if programmatic revocation mean?
+## How should I revoke ClickUp tokens?
 
 For ClickUp, provider-side programmatic token revocation may not be available. If Composio cannot revoke the token through the provider API, the end user should remove the connected app manually from ClickUp/app settings.

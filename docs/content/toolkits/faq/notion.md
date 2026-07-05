@@ -58,7 +58,7 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.
 
-## What does Notion page/database access mean?
+## How does Notion page and database access work?
 
 Notion does not model access as normal OAuth scopes. Page/database access is granted per Notion integration/OAuth client ID through Notion “Capabilities” and workspace grants. If multiple Composio auth configs use the same underlying Notion integration, page authorization can overlap.
 

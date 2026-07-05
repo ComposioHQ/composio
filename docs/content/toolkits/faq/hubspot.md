@@ -103,7 +103,7 @@ Use HubSpot’s own scopes documentation and Composio’s scopes/tools API to ma
 
 You can create a custom tool that sends authenticated requests to HubSpot API endpoints; Composio handles authentication for the connected account. Alternatively, call the provider directly with connection config/custom headers if needed.
 
-## What does HubSpot trigger setup need?
+## What is needed for HubSpot trigger setup?
 
 For HubSpot webhook/trigger setup, get the app ID from HubSpot’s webhook app documentation / developer app settings and use it when configuring triggers.
 
@@ -128,7 +128,7 @@ First check the HubSpot OAuth client secret. If the secret was rotated or copied
 Then check scope alignment. HubSpot is strict about required scopes:
 
 - Required scopes configured on the HubSpot app must be present in the OAuth request/install URL `scope` parameter for successful installation.
-- If the Composio auth config requests required scopes that do not match the your own HubSpot app's configured required scopes, authorization/token exchange can fail.
+- If the Composio auth config requests required scopes that do not match your own HubSpot app's configured required scopes, authorization/token exchange can fail.
 - Optional scopes should be requested through HubSpot's `optional_scope` parameter. If the selected HubSpot account/user cannot grant an optional scope, HubSpot can omit it and the resulting token will not include that scope. Do not assume optional scopes were granted; inspect token/granted scopes before relying on optional capabilities.
 
 For Composio-managed HubSpot auth configs, do not change the default scope set. If the user needs a different required/optional scope configuration, they need to use their own HubSpot OAuth app through a custom Composio auth config.

@@ -20,13 +20,13 @@ Slack connected accounts may remain `ACTIVE` briefly after revocation because Co
 
 ## How should I handle with Slack token rotation enabled, fetch connected account data frequently enough to get fresh tokens?
 
-If Slack token rotation is enabled, a token may only be valid for a short period, described  as about two refreshes or under 30 minutes. If the user directly uses tokens from connected account data, their backend should fetch the connected account frequently enough to pick up fresh tokens instead of reusing stale ones.
+If Slack token rotation is enabled, a token may only stay valid for about two refreshes, often under 30 minutes. If the user directly uses tokens from connected account data, their backend should fetch the connected account frequently enough to pick up fresh tokens instead of reusing stale ones.
 
 ## What should I know about Slack short auth links?
 
 The short `/api/v3/s/...` auth link is only a shortened connection initiation URL that redirects the browser to Slack. It is not the `redirect_uri` sent to Slack. Configure the static redirect/callback URI shown in the Composio auth config in the Slack OAuth app; either supported v1 or v3 callback URI can be used depending on the auth config.
 
-## What does `SLACKBOT_SEND_MESSAGE` mean?
+## Which Slackbot send-message slug should I use?
 
 `SLACKBOT_SEND_MESSAGE` is not the Slackbot send-message tool slug. Use the actual Slackbot send-message slug exposed by the toolkit, such as `SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL`, or fetch tool slugs dynamically before execution.
 

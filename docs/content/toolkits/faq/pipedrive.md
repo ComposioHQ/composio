@@ -8,17 +8,17 @@ If Pipedrive OAuth shows "App not found", use your own Pipedrive OAuth app crede
 
 ---
 
-## What should I know about Claude may block Pipedrive because payment-processing toolkits?
+## Why can Claude block Pipedrive in some sessions?
 
-If Claude reports `[Session Restriction] Toolkit 'pipedrive' is disabled for this session`, explain that this is intentional behavior caused by Claude's payment-processing policy classification. The workaround is to use Composio through Claude Code or Cowork via the Composio CLI path while direct access is restricted.
+If Claude reports `[Session Restriction] Toolkit 'pipedrive' is disabled for this session`, use Composio through Claude Code or Cowork via the Composio CLI path while direct access is restricted.
 
-## What does Pipedrive OAuth initiation require?
+## What is required for Pipedrive OAuth initiation?
 
-When initiating a Pipedrive OAuth connection, pass the Pipedrive workspace subdomain/domain expected by the auth config. If the user has `voltiqsrl.pipedrive.com`, pass `voltiqsrl` rather than the full hostname.
+When initiating a Pipedrive OAuth connection, pass the Pipedrive workspace subdomain/domain expected by the auth config. If the account URL is `your-company.pipedrive.com`, pass `your-company` rather than the full hostname.
 
 ## Do not install the Pipedrive app directly from Pipedrive OAuth settings?
 
-For Pipedrive custom OAuth, enable the app in Rube/Composio and complete setup there with the user's own developer app credentials. Do not try to install the app directly from Pipedrive's OAuth app settings. During the Composio/Rube flow, provide the Pipedrive subdomain when requested.
+For Pipedrive custom OAuth, enable the app in Composio and complete setup there with the user's own developer app credentials. Do not try to install the app directly from Pipedrive's OAuth app settings. During the Composio flow, provide the Pipedrive subdomain when requested.
 
 ## When should I use custom credentials or API key for Pipedrive?
 

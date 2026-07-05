@@ -6,7 +6,7 @@ For partial matching on text attributes in ATTIO_FIND_RECORD, structure the filt
 
 If an Attio endpoint is not covered by the built-in toolkit, create a custom tool or request the missing tool through the Composio request portal. Custom tools can use Composio-managed auth, so the user does not need to build the entire OAuth/token-storage layer themselves.
 
-## What does Auth config names can carry a reference ID, but custom auth config metadata mean?
+## Can Attio auth config names carry a reference ID?
 
 Composio does not support arbitrary custom metadata on auth configs. As a workaround, set a meaningful authConfig name when creating it, such as a company name or reference ID, and use that name for identification.
 

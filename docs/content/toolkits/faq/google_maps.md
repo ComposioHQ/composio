@@ -26,7 +26,7 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 ---
 
-## What does Maps Embed API require?
+## What is required for the Maps Embed API?
 
 `GOOGLE_MAPS_MAPS_EMBED_API` requires API-key authentication. Use an auth config whose auth mode is `api-key`, or pass the `api_key` parameter directly when making the tool call.
 
@@ -42,7 +42,7 @@ If Google Maps authentication fails while using the default Composio OAuth app a
 
 For Google Maps Places requests, `includedTypes` must use values supported by Google's Places API. If a request fails with an invalid argument around `includedTypes`, compare the value against Google's supported place type lists and replace unsupported values before retrying.
 
-## What does Deprecated `GEOCODING_API` mean?
+## What should I use instead of deprecated `GEOCODING_API`?
 
 `GEOCODING_API` belongs to a different toolkit and has been deprecated. Do not require it as part of normal `google_maps` toolkit usage; use the current Google Maps toolkit tool slugs instead.
 

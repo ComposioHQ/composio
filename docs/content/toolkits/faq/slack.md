@@ -75,7 +75,7 @@ A Slack connected account may stay `ACTIVE` for about two refresh cycles after t
 
 Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the Slack file ID, which starts with `F` such as `F123ABCDEF0`. The tool returns downloadable file content plus metadata such as name, mimetype, and size. If the file ID is unknown, first call `SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK` to find file IDs, then pass the selected ID to the download tool.
 
-## What does Slack `assistant.search.context` require?
+## What is required for Slack `assistant.search.context`?
 
 Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. A user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
 
@@ -105,7 +105,7 @@ The short `/api/v3/s/...` URL is not the `redirect_uri` sent to Slack. It is onl
 
 The `attachments` field on Slack scheduled messages refers to Slack's legacy secondary/rich-formatting attachments, not uploaded files. Slack's `chat.scheduleMessage` API does not natively upload files. Files must be uploaded separately, for example with `files.upload` / `files.upload.v2`, and then linked or embedded into the scheduled message body so they unfurl when the scheduled message is posted.
 
-## What does `admin.conversations:write` require?
+## What is required for `admin.conversations:write`?
 
 `admin.conversations:write` is an enterprise/admin-level Slack scope. For APIs such as `admin.conversations.delete`, the Slack workspace must be on an Enterprise plan. If a user cannot use channel deletion/admin conversation tools, first confirm the Slack workspace plan and whether the app has the required admin scope.
 

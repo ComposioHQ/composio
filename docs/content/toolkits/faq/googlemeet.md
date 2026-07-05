@@ -46,10 +46,10 @@ For Meet space creation/settings through Google Super, include the Meet scopes h
 
 Start by resolving the conference record, either with GOOGLEMEET_GET_CONFERENCE_RECORD_FOR_MEET when you have the meeting code, or with GOOGLEMEET_LIST_CONFERENCE_RECORDS when listing available records. Use the resulting conferenceRecord_id with GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID, then use the conference record and transcript values to list transcript entries. Prefer GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID over the older/misdescribed GOOGLEMEET_GET_CONFERENCE_TRANSCRIPTS path.
 
-## What does 403 permission errors usually mean the conference resource mean?
+## Why do Google Meet calls return 403 on a conference resource?
 
 For a Google Meet API error like "Permission denied on resource Conference (or it might not exist)", verify that the signed-in connected account has access to the conference/artifact and that the conference record exists. A useful sanity check is to run the official Google Meet API cURL with the connected account access token from the Composio connected account details and compare the provider response with the Composio tool result.
 
-## What does Google Workspace Enterprise mean?
+## Why are Google Workspace Enterprise features required for Meet recordings?
 
 The Google account must be on a Google Workspace Enterprise plan to record meetings. Without meeting recording support on the workspace/account, recordings and related transcripts will not be available through the Google Meet APIs or Composio Google Meet tools.

@@ -14,7 +14,7 @@ For additional Airtable scopes, use your own Airtable OAuth developer app. Confi
 
 When Airtable connected accounts expire, inspect the refresh error from Airtable. Known cases include 400 `invalid_grant` and 422 responses with `invalid_request` or `temporarily_unavailable`. If failures cluster around the same time, check Airtable's status page because an Airtable-side outage can cause refresh failures. If the failures continue outside the provider outage window, reconnect the affected accounts and contact Composio with the connected account IDs and recent tool execution IDs.
 
-## What does Connection initiation timeout after 10 minutes mean?
+## Why did Airtable connection initiation time out after 10 minutes?
 
 The expiry reason "Connection initiation did not complete within 10 minutes" means the user opened or initiated the connection but did not finish the authentication flow within ten minutes. It is a generic connected-account timeout across toolkits, not an Airtable-specific error. Start a fresh connection/initiation link and complete the OAuth flow within the allowed window.
 

@@ -21,11 +21,11 @@ Your developer account or project may not have the required access level for the
 
 ---
 
-## What should I do now that Twitter/X managed OAuth is no longer supported?
+## What should I do now that Twitter/X requires custom OAuth credentials?
 
-Composio removed support for the managed/default Twitter OAuth app after X/Twitter suspended the app and moved to its newer pay-per-use API model. For Twitter/X, users should create their own Twitter developer app and configure a custom authConfig with their own credentials. The Twitter setup guide should be used to verify app settings, callback/redirect URLs, scopes, and project linkage before retrying the connection.
+For Twitter/X, users should create their own Twitter developer app and configure a custom auth config with their own credentials. Use the Twitter setup guide to verify app settings, callback/redirect URLs, scopes, and project linkage before retrying the connection.
 
-## What does Twitter/X cannot be used through Connect when it require?
+## Why can't Twitter/X use Connect when custom OAuth credentials are required?
 
 Connect does not support custom OAuth credentials. Since Twitter/X requires your own developer credentials after managed OAuth support was removed, Twitter integrations that need those credentials must be set up from the main Composio Platform with a custom authConfig. The consumer Connect flow is not the right surface for Twitter when BYOC/custom OAuth is required.
 
@@ -33,7 +33,7 @@ Connect does not support custom OAuth credentials. Since Twitter/X requires your
 
 For Twitter OAuth callback mismatch errors, try configuring `https://backend.composio.dev/api/v1/auth-apps/add` as the redirect URI in the Twitter/X developer app. Composio's v1 URI can be used by default in this flow, so the provider-side callback URL must match it exactly.
 
-## What must Twitter/X posts do?
+## What length limits apply to Twitter/X posts?
 
 Twitter/X enforces strict post length limits. For normal posts, keep the content under 280 characters and follow X's official character-counting behavior, since URLs, Unicode, and special characters may be counted by provider-specific rules.
 

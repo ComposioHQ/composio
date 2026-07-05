@@ -22,11 +22,11 @@ By default, the consent screen uses Composio's OAuth app. To show your own app n
 
 ---
 
-## What does Google Super mean?
+## When should I use Google Super?
 
 Google Super is a unified/superset toolkit for Google Workspace services. It can cover tools across Gmail, Google Calendar, Google Meet, and related Google APIs through one Google Super connection when the required scopes are configured.
 
-## What does Google Meet through Google Super need?
+## What is needed for Google Meet through Google Super?
 
 To use Google Meet tools through Google Super, configure the required Meet scopes in the Google Super auth config, create a new connection for the scope changes to apply, and enable the Google Meet API in Google Cloud Console. Common Meet scopes include `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings`.
 
@@ -38,7 +38,7 @@ Google Super managed OAuth can be affected independently from other Google manag
 
 Google Super can cover all Google services including Gmail, but users can remove scopes and tools they do not want as part of the Google Super auth/tool configuration. Make sure the remaining scopes still cover the tools the user expects to use.
 
-## What does Gmail filter creation through Google Super also require?
+## What is required for Gmail filter creation through Google Super?
 
 Google Super can cover Gmail workflows through one Google connection, but Gmail filter creation still follows the underlying Gmail API scope requirement. The `users.settings.filters.create` endpoint requires `https://www.googleapis.com/auth/gmail.settings.basic` specifically.
 
@@ -62,9 +62,9 @@ Gmail/Google Super tools are wrappers over Google APIs, so use Gmail-style `quer
 
 For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet is shared with the connected Google account, and ensure the connection has `https://www.googleapis.com/auth/spreadsheets`. Reconnect after changing scopes or sharing permissions.
 
-## What does `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` mean?
+## Which Google Super Calendar trigger should I use?
 
-`GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` was called out as soon to be deprecated. Use `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` instead for calendar event sync/change workflows.
+`GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` is planned for deprecation. Use `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` instead for calendar event sync/change workflows.
 
 ## How should I handle google Super cannot schedule Gmail emails out of the box?
 

@@ -21,15 +21,15 @@ To fix the OAuth config:
 
 `MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS` can use `Chat.ReadBasic`, `Chat.Read`, or `Chat.ReadWrite`. `MICROSOFT_TEAMS_CREATE_MEETING` requires `OnlineMeetings.ReadWrite`. Confirm exact required scopes with the latest versioned scope endpoint before changing auth config scopes.
 
-## What does Microsoft Teams often need?
+## When should I use my own Microsoft Teams Azure app?
 
 For Microsoft Teams, recommend using the user's own Azure/Microsoft developer app credentials when custom scopes are needed. Additional scopes should be added in the Microsoft app, and admin consent may need to be granted in Azure before the connection has usable permissions.
 
-## What does Microsoft Teams one-on-one chat creation need?
+## What is needed for Microsoft Teams one-on-one chat creation?
 
 For Microsoft Teams one-on-one chat creation, pass two users, not one. Also make sure the OData bind payload uses the correct role and bind-data format expected by Microsoft Graph.
 
-## What does Microsoft Teams MCP access mean?
+## How should I configure Microsoft Teams MCP access?
 
 For Microsoft Teams MCP, the user ID in the MCP server URL/query params must match the user ID attached to the connected account. If the connection is bound to an email/GUID, use that value in the MCP URL or create a new server/connection with the desired user ID.
 
@@ -37,7 +37,7 @@ For Microsoft Teams MCP, the user ID in the MCP server URL/query params must mat
 
 For `MICROSOFT_TEAMS_LIST_USER_CHAT_MESSAGES`, a 400 commonly means `user_id` was not passed as a GUID or UPN. For chat members tools, 403/404 often means the connected user is not part of the meeting chat or the chat ID is not in that user's scope. Use `MICROSOFT_TEAMS_LIST_USERS` to find valid user IDs and verify the connected user is a participant in the target chat.
 
-## What does Microsoft Teams tool listing may return only 20 tools unless `limit` mean?
+## Why does Microsoft Teams tool listing return only 20 tools?
 
 When fetching Microsoft Teams tools by toolkit, the default list may return only 20 tools. Increase the `limit` parameter or search for exact tool slugs to retrieve the full set.
 

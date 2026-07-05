@@ -20,7 +20,7 @@ If Kickbox returns 403 `Invalid API key`, the user should verify:
 
 Kickbox docs say EU-only accounts that sign in from `app.eu.kickbox.com` must use `api.eu.kickbox.com`. If the user is EU-only, use the EU endpoint where available or submit the region-specific endpoint requirement through the tool request flow.
 
-Useful source docs:
+Provider docs:
 
 - Single Verification API: https://docs.kickbox.com/docs/single-verification-api
 - API Quickstart / authentication and EU endpoint note: https://docs.kickbox.com/docs/using-the-api

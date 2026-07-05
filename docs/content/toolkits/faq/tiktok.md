@@ -1,4 +1,4 @@
-## What does TikTok is supported, but users generally need?
+## What should I know before using TikTok in production?
 
 TikTok is available as a toolkit, but users should expect to bring their own TikTok developer app credentials for normal production use.
 
@@ -10,7 +10,7 @@ A TikTok `client_key` error is returned by TikTok, not Composio. First re-copy t
 
 For TikTok OAuth failures, ask for the app type/status, sandbox vs production mode, enabled APIs/scopes, redirect URI, and screenshots of the OAuth screen. If the TikTok app is sandbox or under review, only authorized testers/users may be able to complete OAuth.
 
-## What does Public TikTok posting require?
+## What is required for public TikTok posting?
 
 For TikTok public content posting, the user must go through TikTok's content posting audit with their own OAuth app. Without an audited/approved app, posting may be restricted, for example to private-only visibility or limited testing behavior.
 

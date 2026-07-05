@@ -12,21 +12,21 @@ Ensure all required fields are provided when initiating the connection. See the 
 
 WhatsApp API usage requires a WhatsApp Business Account. Personal WhatsApp accounts are for personal communication and are not supported by the WhatsApp Business API flows used by the toolkit. If the user needs WhatsApp messaging through Composio, they should use a WABA-backed business account.
 
-## What does WABA ID mean?
+## What is a WABA ID?
 
 The WABA ID, or WhatsApp Business Account ID, is required because the WhatsApp Business API needs it to identify the business account. Users can find it in Meta Developers under the app's WhatsApp API Setup section, or fetch it programmatically by calling `GET /me/businesses` and then `GET /{business_id}/owned_whatsapp_business_accounts` with an access token.
 
-## What does WhatsApp API key auth need?
+## What is needed for WhatsApp API-key auth?
 
 For WhatsApp API key auth, pass the system user token as the bearer token and pass the WABA ID as `generic_id`. The required connection fields depend on the auth scheme, so fetch the toolkit/auth-config initiation fields if unsure. Hosted auth links can also collect these values from the user instead of hardcoding them.
 
-## What does WhatsApp OAuth2 initiation still require?
+## What is still required for WhatsApp OAuth2 initiation?
 
 WhatsApp OAuth2 auth still requires `generic_id`, and that value is the WhatsApp Business Account ID. API key auth requires both `bearer_token` and `generic_id`, while OAuth2 only requires `generic_id` for initiation. Differences in required initiation fields usually come from the selected auth scheme.
 
-## What does WhatsApp OAuth require?
+## What is required for WhatsApp OAuth?
 
-For WhatsApp OAuth with a your own Meta app, create a Meta developer app, enable the Business use case, configure the WhatsApp product, and publish the app so users can connect to it. The Meta app/account used during connection should match the account that owns or can access the WhatsApp Business setup.
+For WhatsApp OAuth with your own Meta app, create a Meta developer app, enable the Business use case, configure the WhatsApp product, and publish the app so users can connect to it. The Meta app/account used during connection should match the account that owns or can access the WhatsApp Business setup.
 
 ## How should I handle meta OAuth errors can require adding the Composio redirect URI in the Meta app?
 
@@ -44,7 +44,7 @@ Support for `components` was added to the WhatsApp send-template flow in a newer
 
 For WhatsApp send-message actions, make sure the action arguments contain the actual `phone_number_id` and recipient `to_number`. Placeholder values in the tool arguments will fail even if the connected account itself is active.
 
-## What does Reading WhatsApp replies mean?
+## How should I handle reading WhatsApp replies?
 
 WhatsApp does not expose every reply-reading flow as a normal API action in the toolkit. The better product shape is a trigger/webhook for events such as message or reply received. Where a first-party WhatsApp trigger is not available for the exact use case, TimelinesAI may be an alternative because it includes WhatsApp-related trigger support.
 

@@ -4,7 +4,7 @@ Composio does not provide a default OAuth app for Spotify. Create your own OAuth
 
 ---
 
-## What does Spotify library scopes may need?
+## When do Spotify library tools need extra scopes?
 
 If Spotify tools need library access, ensure scopes such as `user-library-read` and `user-library-modify` are present in the auth config. After scopes are added, the user should reconnect so the new scopes are granted on the connected account.
 
@@ -20,6 +20,6 @@ If creating a custom Spotify-related toolkit, avoid naming it exactly `Spotify` 
 
 To use Spotify through MCP, create or edit an MCP config from the platform MCP configs page and add Spotify to that server. Then use the generated MCP URL in the MCP client.
 
-## What does Spotify tokens may need?
+## How should I revoke Spotify tokens?
 
 Spotify may not support provider-side programmatic token revocation through Composio. If automatic revocation is unavailable, remove the app manually from Spotify/provider settings.

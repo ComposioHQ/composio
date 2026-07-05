@@ -26,15 +26,15 @@ For Zendesk API-key/basic auth connection initiation, pass the Zendesk `subdomai
 
 When listing Zendesk tools through the API, include the toolkit version query parameter. For example, use `toolkit_versions=latest&toolkit_slug=zendesk&limit=1000`. Without the toolkit version query, the API response may not show the expected tool set.
 
-## How should I handle `ZENDESK_SEARCH_ZENDESK` was added for Zendesk search use cases?
+## When should I use `ZENDESK_SEARCH_ZENDESK`?
 
-Use `ZENDESK_SEARCH_ZENDESK` for Zendesk search use cases. this tool was added specifically to cover the user's requested Zendesk search workflow.
+Use `ZENDESK_SEARCH_ZENDESK` for Zendesk search workflows.
 
-## What does `ZENDESK_UPDATE_ZENDESK_TICKET` mean?
+## When should I use `ZENDESK_UPDATE_ZENDESK_TICKET`?
 
 Use `ZENDESK_UPDATE_ZENDESK_TICKET` for Zendesk ticket updates. For endpoint-level context, the corresponding Zendesk API is the Update Ticket endpoint in Zendesk's ticketing API.
 
-## How should I handle zendesk get-ticket-by-id returns ticket details in one tool call?
+## When should I use the Zendesk get-ticket-by-id action?
 
 The Zendesk get-ticket-by-id action is available and returns the ticket details in a single tool call. Use it when the user has a Zendesk ticket ID and needs the ticket's metadata/details rather than searching first.
 
@@ -42,6 +42,6 @@ The Zendesk get-ticket-by-id action is available and returns the ticket details 
 
 Zendesk is one of the toolkits with trigger support in Composio. Check the Zendesk toolkit page for the currently available trigger list.
 
-## What does Zendesk mean?
+## How should I use Zendesk with LangFlow?
 
 Zendesk toolkit support in LangFlow is not official. A practical workaround is to create/connect the Zendesk account through the Composio dashboard first, then use that active connection in the user's flow where possible.

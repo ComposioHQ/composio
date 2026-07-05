@@ -28,11 +28,11 @@ Deprecated tools continue to work until removed. Check tool descriptions for "DE
 
 ---
 
-## What does Salesforce require?
+## What does Salesforce require for OAuth setup?
 
 Salesforce is one of the OAuth toolkits where users should bring their own developer credentials rather than relying on Composio-managed OAuth. Create a Salesforce connected app/developer app, configure it according to the Salesforce auth guide, and use those credentials in the Composio authConfig.
 
-## What does Salesforce connection initiation need?
+## What fields are needed when initiating a Salesforce connection?
 
 Salesforce accepts additional connection initiation fields. Fetch the toolkit by slug (`/api/v3.1/toolkits/salesforce`) to inspect the expected fields, and fetch the connected account to see the same fields after connection. The important Salesforce fields are `My Domain Subdomain` and `Instance endpoint`. If you are initiating directly through the SDK/API, pass these fields through `.initiate()` rather than waiting for the hosted connection UI.
 
@@ -62,7 +62,7 @@ Use `SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT` when you need to inspect the fields a
 
 ![Salesforce tool details panel showing SALESFORCE_GET_ALL_FIELDS_FOR_OBJECT and its required object_name input.](/images/kb/toolkits/salesforce/salesforce-get-all-fields-input.png)
 
-## What does Salesforce org admins may need?
+## When does a Salesforce org admin need to approve the connected app?
 
 Salesforce connected app usage restrictions can require an org admin to install or approve the connected app before org users can authenticate. Check whether the error URL includes `error=invalid_client&error_description=app+must+be+installed+into+org`. In Salesforce Setup, go to OAuth Connected App Usage and look for the app with an Install button in the Actions column. After the admin installs/enables the app, users should retry authentication.
 
@@ -70,7 +70,7 @@ Salesforce connected app usage restrictions can require an org admin to install 
 
 Salesforce allows only five active refresh tokens per user per connected app. When the same Salesforce user connects a sixth time, Salesforce can revoke the oldest refresh token, which makes older Composio connected accounts fail with token errors. Also check whether the user changed their password, revoked the app, changed connected app refresh-token policy away from `valid until revoked`, or has org-level session policies that invalidate tokens.
 
-## What does Salesforce action-to-scope mapping mean?
+## How should I map Salesforce actions to OAuth scopes?
 
 Composio does not maintain a precise granular scope map for every Salesforce action because Salesforce implementations vary heavily by org and many actions rely on SOQL rather than resource-specific endpoints. Users can use Salesforce's granular OAuth scopes instead of `full`, but should explicitly include the `refresh_token` scope so Composio can refresh the connection. If the exact tool set is known, compare those actions against Salesforce's documented OAuth scopes before requesting broad access.
 
@@ -82,6 +82,6 @@ Use the newer Salesforce tool slugs instead of the deprecated retrieve variants:
 
 Use `SALESFORCE_RETRIEVE_CONTACT_INFO_WITH_STANDARD_RESPONSES` to list contacts and capture the IDs with their names. Then call `SALESFORCE_RETRIEVE_SPECIFIC_CONTACT_BY_ID` with the desired contact ID to fetch the specific contact details. If using newer tool versions, prefer the replacement contact-get tool where available.
 
-## What does The Salesforce custom auth redirect URL mean?
+## Which redirect URL should I use for Salesforce custom auth?
 
 Use Composio's toolkit auth callback URL as the authorized redirect URI for custom Salesforce OAuth configuration: `https://backend.composio.dev/api/v3/toolkits/auth/callback`. For SDK-direct flows, the post-auth user redirect can separately be passed as `callback_url` / `callbackUrl` during connection initiation.

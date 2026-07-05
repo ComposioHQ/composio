@@ -10,6 +10,6 @@ For Databricks OAuth client and secret setup, the ThoughtSpot Databricks OAuth g
 
 The Databricks API key credentials are entered during the connection flow. In code, point users to `composio.connected_accounts.link()` for creating the connected account and entering the API key details.
 
-## What does Databricks require?
+## What does Databricks require for production OAuth setup?
 
 If a toolkit does not offer Composio managed auth, the user should use their own developer credentials/BYOC setup. For production OAuth configurations, BYOC is preferred because it gives control over scopes, OAuth configuration, white-labelling, and avoids shared managed-credential limits.

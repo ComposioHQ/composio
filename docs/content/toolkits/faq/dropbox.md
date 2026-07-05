@@ -26,7 +26,7 @@ Dropbox triggers are not currently listed for this toolkit. If a user needs a sp
 
 The Dropbox integration uses Dropbox's native OAuth2 flow, so users authenticate through Dropbox's login page. Composio cannot add Microsoft, Azure, or Outlook as alternative identity providers for Dropbox because the authentication method is controlled by Dropbox's API. If the user's Dropbox Business tenant has SSO configured with Microsoft/Azure AD, that SSO behavior must be configured in Dropbox, not in Composio.
 
-## What does For Dropbox upload, `path` mean?
+## What does `path` mean for Dropbox uploads?
 
 For the Dropbox upload action, `path` is the destination path inside Dropbox, while `content` is the local file path that should be uploaded. Provide the local file path in `content`.
 

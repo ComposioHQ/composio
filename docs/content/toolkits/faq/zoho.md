@@ -12,7 +12,7 @@ Zoho Mail attachment download may need to be handled as a tool request when the 
 
 ## How should I handle zoho connections require the correct region/domain extension?
 
-Zoho requires the correct region/domain extension during connection initiation. Accepted values mentioned  include `com`, `eu`, `in`, `cn`, and `au`. Pass the user's Zoho account region, not a full URL, so Composio can build the correct `accounts.zoho.<region>` URL.
+Zoho requires the correct region/domain extension during connection initiation. Accepted values include `com`, `eu`, `in`, `cn`, and `au`. Pass the user's Zoho account region, not a full URL, so Composio can build the correct `accounts.zoho.<region>` URL.
 
 ## How should I handle zoho Mail uses `suffix.one` as the connection initiation domain-extension field?
 
@@ -38,7 +38,7 @@ Zoho Books has tools such as `ZOHO_BOOKS_GET_BILL` and `ZOHO_BOOKS_LIST_BILLS`. 
 
 For Zoho lead conversion, verify the `lead_id` first. Use `ZOHO_GET_ZOHO_RECORDS` to retrieve the lead record and obtain the correct `lead_id`, then pass that value into the conversion tool.
 
-## What does Zoho record listing can require page tokens and mean?
+## How does Zoho record-list pagination work?
 
 Zoho list endpoints may return around 200 records per request and require pagination with `page_token` for larger result sets. Multiple tool calls may be needed, and Zoho's own API rate limits can still apply.
 

@@ -14,7 +14,7 @@ If `FIRECRAWL_SEARCH` or other Firecrawl tools are missing from a tools list, in
 
 For Firecrawl scrape timeouts, reduce the number of links per request, such as batching 1-2 links at a time for complex pages, or increase the scrape timeout if the tool call supports it. A useful starting timeout is `120000` milliseconds for roughly a 2-minute timeout.
 
-## What does Firecrawl API base URL mean?
+## What is the Firecrawl API base URL?
 
 The Firecrawl API base URL is `https://api.firecrawl.dev/v1`. If a user must manually enter a base URL for a connection or custom call, use that value.
 

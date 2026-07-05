@@ -8,25 +8,25 @@ The default Shopify OAuth app may be under review or expired. Use your own OAuth
 
 ---
 
-## What does Shopify API-key/admin-token auth mean?
+## How should I handle Shopify API-key/admin-token auth?
 
 - Shopify docs: [client credentials grant](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/client-credentials-grant), [admin-created custom app tokens](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/generate-app-access-tokens-admin)
 
 Shopify deprecated the old admin-created custom-app token copy/paste path for new apps. New Dev Dashboard apps expose a Client ID and Client Secret, and the access token is generated programmatically with Shopify's client-credentials flow. In Composio, do not direct new Shopify users to API-key/Admin API Access Token auth. Use OAuth2 for user-facing Shopify integrations, or S2S auth when that matches the app's server-to-server/client-credentials use case.
 
-## What does Shopify managed/default OAuth mean?
+## When should I use my own Shopify OAuth app?
 
-Composio's default Shopify OAuth app was under review for a long time and was later removed because approval had no clear ETA. Users should create their own Shopify OAuth app, configure the required scopes and redirect URL, and create a custom Composio authConfig with that app's client ID and secret. Shopify is also one of the OAuth toolkits where users generally need their own developer credentials.
+Users should create their own Shopify OAuth app, configure the required scopes and redirect URL, and create a custom Composio auth config with that app's client ID and secret. Shopify is one of the OAuth toolkits where users generally need their own developer credentials.
 
 ## When should I use Composio's toolkit auth callback as the Shopify OAuth redirect URL?
 
 Set the Shopify OAuth app redirect URL to `https://backend.composio.dev/api/v3/toolkits/auth/callback`. If the user is following custom-auth-config docs, this is the Composio callback endpoint the Shopify app should authorize. Older or mistyped redirect URLs can cause OAuth redirect failures.
 
-## What should I know about You Shopify OAuth scopes cannot currently be customized?
+## What should I know about Shopify OAuth scope customization?
 
 The Dashboard / For You Shopify connection flow does not currently support configuring an arbitrary custom scope set. If a user needs broader Shopify scopes, treat it as a currently unsupported flow or use a custom OAuth app/authConfig path where the requested scopes are configured on the user's Shopify app.
 
-## How should I handle custom Shopify credentials keep the same hosted auth UX and Composio still manages refresh?
+## What changes when I use custom Shopify credentials?
 
 Using custom Shopify OAuth credentials does not change the end-user hosted auth and redirect experience. Users still go through the same Composio connect flow, and Composio continues to handle token refresh and credential management automatically. Masking changes for managed credentials do not affect custom-credential toolkits in the same way.
 
@@ -36,7 +36,7 @@ A Shopify OAuth 400 during token exchange or connection initiation is commonly c
 
 ## How should I handle shopify subdomain should be only the store name, not the full `.myshopify.com` host?
 
-When Composio asks for the Shopify subdomain, pass only the store name, such as `your-store-name` or `groovygoose-coffee`. Do not pass the full host like `your-store-name.myshopify.com`; Composio constructs the Shopify domain from the subdomain.
+When Composio asks for the Shopify subdomain, pass only the store name, such as `your-store-name`. Do not pass the full host like `your-store-name.myshopify.com`; Composio constructs the Shopify domain from the subdomain.
 
 ## When should I use `SHOPIFY_GRAPH_QL_QUERY` for Shopify GraphQL queries?
 
@@ -46,9 +46,9 @@ Use the updated Shopify GraphQL tool slug `SHOPIFY_GRAPH_QL_QUERY` for Shopify G
 
 Tool fetching can default to a limited number of tools. Pass a higher `limit`, for example `tools.get(user_id="<userId>", toolkits=["shopify"], limit=1000)`, to fetch the full Shopify tool set. For MCP, also confirm the target Shopify tool is enabled when creating the MCP config or by modifying the existing config.
 
-## How should I handle dashboard/Claude Shopify flow does not currently support multiple connected accounts for the same app?
+## How should I handle multiple Shopify accounts in dashboard or Claude flows?
 
-The Dashboard flow used with clients like Claude Cowork does not currently support multiple connected accounts for a single app/toolkit in that experience. This is not currently available in that flow. For multi-store or multi-user production use cases, use the Platform/tool-router style flow with explicit users/connections rather than relying on the single-account dashboard connection UX.
+For multi-store or multi-user production use cases, use the Platform or Tool Router flow with explicit users and connected accounts rather than relying on a single-account dashboard connection UX.
 
 ## When should I use `SHOPIFY_GET_ORDER_LIST` to confirm orders and retrieve order IDs?
 
@@ -62,6 +62,6 @@ Check the scopes on the Shopify connection. If order reads or updates require ac
 
 Create a custom tool/action under the Shopify toolkit and call Shopify's GraphQL endpoint from inside it. Composio injects the Shopify auth automatically through the custom tool execution path. For newer examples, the endpoint can be `/graphql.json`; older snippets used the full `https://<shopify-sub-domain>.myshopify.com/admin/api/<version>/graphql.json` endpoint. Include the JSON content type header and pass the GraphQL query in the body.
 
-## How should I handle if Shopify MCP auth completes but tools fail, append the configured `user_id` to the MCP server URL?
+## How should I handle Shopify MCP auth completing but tool calls failing?
 
 As a workaround, get the MCP config ID, fetch the MCP server URL from the API, find the related authConfig and configured `user_id` in the dashboard, and append that `user_id` as a query parameter to the MCP server URL: `https://backend.composio.dev/v3/mcp/<server-id>/mcp?user_id=<user_id>`. Then retry the MCP server URL with that explicit user context.

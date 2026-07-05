@@ -38,7 +38,7 @@ Google Sheets read/write operations are subject to Google's own API limits. When
 
 Connections made on the Platform side (`dashboard.composio.dev`) are isolated from the For You / `connect.composio.dev/mcp` flow. A Google Sheets connection created on Platform will not automatically appear in Connect MCP. To use Sheets through Connect MCP, ask the MCP server from the client to connect Google Sheets, complete the surfaced auth link, then retry discovery/execution.
 
-## What does Old Google Sheets integrations may need?
+## When do old Google Sheets integrations need a new auth config?
 
 Scopes cannot always be added to an existing Google Sheets integration if the required permissions belong to a newer Google OAuth client/app. Create a new integration/auth config using the newer OAuth app with the required scopes. Existing users can continue on the old integration; only users who need the new action must connect to the new integration and re-authenticate.
 
@@ -66,9 +66,9 @@ Use `GOOGLESHEETS_BATCH_UPDATE` when updating or adding values to an existing sh
 
 When executing Google Sheets tools, pass the exact slug directly as the tool identifier, for example `composio.tools.execute("GOOGLESHEETS_LIST_TABLES", executePayload)`. If a wrapper parameter like `params.toolIdentifier` is used, verify it resolves to the exact tool slug.
 
-## How should I handle google Sheets 403s can be caused by an old placeholder toolkit version?
+## Why can Google Sheets return 403 on an old toolkit version?
 
-If Google Sheets actions fail with permission errors and logs show an old version such as `00000000_00`, switch to the latest Google Sheets toolkit version. moving to `20260324_00` and checking the toolkit versioning docs.
+If Google Sheets actions fail with permission errors and logs show an old version such as `00000000_00`, switch to the latest Google Sheets toolkit version, for example `20260324_00`. See the toolkit versioning docs for how to move off a pinned version.
 
 ## When should I use Google Super when one Google connection should cover Gmail, Sheets, Docs, Drive, and other Google tools?
 

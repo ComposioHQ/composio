@@ -16,7 +16,7 @@ The `@odata.context` URL provides metadata about the response (entity set, servi
 
 ---
 
-## What does Outlook desktop users still need?
+## What do Outlook desktop users need for OAuth?
 
 Outlook tools authenticate through the Microsoft account/OAuth flow in a browser. If the user only uses Outlook desktop, they still need to log into the underlying Microsoft/Outlook account in the browser to complete OAuth. Desktop and cloud use the same account, so once the account is authenticated, the tools can operate against that mailbox.
 
@@ -44,7 +44,7 @@ For Outlook 403s, look up required scopes with `/api/v3/tools/get_scopes_require
 
 On For You, users cannot configure OAuth scopes directly. If an Outlook For You user needs an extra scope, the scope may need to be added on the account side before the user reconnects Outlook.
 
-## What does Outlook/Microsoft apps may need?
+## When do Outlook/Microsoft apps need tenant admin consent?
 
 Microsoft/Outlook admin-consent issues are Microsoft 365 tenant-level approval problems, not something fixed by changing only the Composio connection. Adding delegated permissions to an Azure app registration is not the same as granting tenant admin consent. Once a tenant admin grants consent for the requested permissions, affected users should start a fresh normal Outlook connection flow with their own accounts; the admin does not need to connect every user individually.
 
@@ -55,7 +55,7 @@ Two concrete ways an admin can approve:
 
 For the Composio-managed Outlook app, Microsoft's in-flow `sign in as an admin` / `Connectez-vous avec ce compte` link is also a real tenant-admin consent path. If the admin signs in through that same OAuth attempt, that attempt may connect the admin's mailbox, not the original user's mailbox; treat that connected account as the admin's and have the original user start a fresh Connect flow afterward. Incomplete/pending Outlook connection attempts expire after about 10 minutes, so an expired non-admin attempt cannot be resumed. Nothing needs to happen on Composio's side between the admin grant and the user's retry: no cache clear, webhook, or manual status change.
 
-a your own verified-publisher Azure app can improve branding/control and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not guarantee that no admin approval is needed: each Microsoft tenant's user-consent policy and the exact scopes requested still decide whether admin consent is required.
+Your own verified-publisher Azure app can improve branding and control, and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not remove the admin-consent requirement: each tenant's user-consent policy and the exact scopes requested still decide whether admin consent is needed.
 
 ## How should I handle outlook/Gmail email attachments through SDK should be passed as file paths?
 
@@ -65,6 +65,6 @@ When using SDK automatic file handling for email attachments, pass the local fil
 
 When Outlook triggers stop, check whether the connected account has active trigger logs and webhook subscriptions. If a specific account has stale triggers with no logs/subscriptions, reconnect or recreate the trigger. If Composio sees no provider warnings/errors and only one Outlook account is affected, the user should also check with Microsoft/Outlook support while Composio investigates.
 
-## What does Outlook email categories and send-draft/pin-email support may need?
+## What should I do if an Outlook email action is missing?
 
 If an Outlook action such as add category, send draft, or pin email is not available, treat it as a tool request. If the exact Outlook action is unavailable, treat it as a tool request and use an available draft/send/category workflow where possible.

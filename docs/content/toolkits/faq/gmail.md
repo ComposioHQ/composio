@@ -65,13 +65,11 @@ Create the Gmail auth config first with the custom OAuth credentials, then initi
 
 Composio managed Gmail OAuth is not verified for every sensitive Gmail scope. If a user needs sensitive granular scopes that are not verified on the managed app, use their own Google OAuth app with those scopes verified in Google Cloud Console.
 
-## What does Creating Gmail filters require?
+## Why can Gmail filter setup show an app-blocked error?
 
-If a user using Composio-managed Gmail auth hits Google's "app is blocked" / unverified-app screen after adding `gmail.settings.basic`, the unblock path is either:
+If a user on Composio-managed Gmail auth hits Google's "app is blocked" / unverified-app screen after adding `gmail.settings.basic`, use your own Google OAuth app verified for `https://www.googleapis.com/auth/gmail.settings.basic`, then reconnect.
 
-1. Use a your own Google OAuth app that is verified for `https://www.googleapis.com/auth/gmail.settings.basic`, then reconnect.
-
-## What does `gmail.send` mean?
+## What should I know about the `gmail.send` scope?
 
 `https://www.googleapis.com/auth/gmail.send` can send messages, but it is a granular sensitive scope and requires Google verification. The broader `https://mail.google.com/` scope gives full mailbox access and can cover send use cases, but it is broader than many users want.
 

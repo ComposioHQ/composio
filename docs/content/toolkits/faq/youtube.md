@@ -14,7 +14,7 @@ YouTube enforces strict API quotas. When users use Composio's default YouTube OA
 
 ![YouTube auth config form showing the option to use custom developer credentials.](/images/kb/toolkits/youtube/youtube-custom-oauth-auth-config.png)
 
-## What does `YOUTUBE_UPLOAD_VIDEO` with `videoFilePath` mean?
+## How should I use `YOUTUBE_UPLOAD_VIDEO` with `videoFilePath`?
 
 `YOUTUBE_UPLOAD_VIDEO` is intended to be used through the SDK because it accepts `videoFilePath`. Pass a full local file path string such as `/path/to/video.mp4`, and use the latest toolkit version when troubleshooting older upload failures.
 
@@ -26,7 +26,7 @@ For YouTube video uploads, prefer passing a local file path through SDK automati
 
 YouTube can return `processing abandoned` when the video resource exists but uploaded bytes are not usable. For resumable uploads, YouTube expects raw bytes in the PUT request. Avoid multipart/form-data wrapping for the resumable byte-transfer step.
 
-## What does YouTube caption download require?
+## What is required for YouTube caption download?
 
 For YouTube caption download, verify the connected account includes `https://www.googleapis.com/auth/youtube.force-ssl`. If a caption download tool call fails, check the connection details to confirm the scope was granted.
 

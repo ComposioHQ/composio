@@ -2,7 +2,7 @@
 
 For a step-by-step guide on creating and configuring your own PostHog OAuth credentials with Composio, see [How to create OAuth credentials for PostHog](https://composio.dev/auth/posthog).
 
-## What does PostHog mean?
+## How does PostHog authentication work?
 
 PostHog is API-key based in Composio. Use the user's PostHog API key when creating the connection. For connected-account creation, pass the key in the API-key auth state, for example with `generic_api_key` or the required field name returned by toolkit metadata.
 

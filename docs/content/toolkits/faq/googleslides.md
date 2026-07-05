@@ -34,7 +34,7 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 Google Slides does not offer a dedicated endpoint to list all presentations through the Slides toolkit. Use `GOOGLEDRIVE_FIND_FILE` and filter Drive files with `q`, for example `mimeType = 'application/vnd.google-apps.presentation'`, then pass the returned presentation ID into the Google Slides tool.
 
-## What does `GOOGLESLIDES_PRESENTATIONS_GET` need?
+## What is needed for `GOOGLESLIDES_PRESENTATIONS_GET`?
 
 `GOOGLESLIDES_PRESENTATIONS_GET` should be called with the Google Slides presentation ID. Get that ID from the presentation URL, or use the ID returned by `GOOGLEDRIVE_FIND_FILE` when discovering presentations through Drive.
 
@@ -50,7 +50,7 @@ When a workflow discovers presentations with `GOOGLEDRIVE_FIND_FILE` and then re
 
 Google Slide creation tools were added to the Google Super toolkit. For slide creation workflows, use the relevant Google Super tools rather than trying to create a native Slides file through generic Drive text upload.
 
-## What must Custom Google Slides OAuth apps do?
+## What must custom Google Slides OAuth apps do?
 
 When using a custom Google developer app for Google Slides, the app must be verified for the sensitive Google scopes it requests. Without verification, Google may block or warn on the OAuth consent flow.
 

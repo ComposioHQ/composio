@@ -16,11 +16,11 @@ For Jira OAuth failures during consent or connection, compare the scopes configu
 
 When using a custom Jira OAuth app with Tool Router, pass the custom auth config while creating the session. If the session does not specify the Jira auth config, Tool Router can fall back to an auto-generated/default Jira config and fail to see the user's active custom-auth connections. Pin the active BYOA config, for example `auth_configs: { jira: "<auth_config_id>" }`, so Tool Router resolves the intended Jira connected accounts.
 
-## What does Jira custom token execution need?
+## What is needed for Jira custom-token execution?
 
 For Jira custom-auth execution, include the Atlassian base URL/subdomain along with the access token. Jira expects the tenant URL in the form `https://<subdomain>.atlassian.net`. In Python, pass this through custom auth params such as `base_url`. In TypeScript, pass the custom connection data with `authScheme: "OAUTH2"`, `toolkitSlug: "JIRA"`, `access_token`, and `subdomain`. `JIRA_GET_SERVER_INFO` can help fetch/confirm the base URL.
 
-## What does Jira search pagination token require?
+## What is required for Jira search pagination?
 
 Jira next-page tokens must be used as part of the same search flow and with the same search context that generated the token. Passing only `next_page_token` can fail because Jira expects the original JQL or filter context to remain attached to the paginated request. That can look like token expiry even when the token was consumed seconds after generation.
 
@@ -47,7 +47,7 @@ Use `JIRA_GET_CREATE_METADATA_ISSUE_TYPE_FIELDS` for the closest replacement beh
 
 Use `JIRA_GET_ATTACHMENT` to retrieve the binary content of a Jira attachment by attachment ID. This tool is intended for downloading a specific file attached to a Jira issue.
 
-## What does Self-hosted Jira require?
+## What is required for self-hosted Jira?
 
 For self-hosted Jira, configure the connection with the user's self-hosted subdomain during setup. If the correct subdomain/base URL is supplied, the connection setup should work like other Jira configurations.
 
@@ -55,6 +55,6 @@ For self-hosted Jira, configure the connection with the user's self-hosted subdo
 
 Composio manages Jira OAuth access and refresh tokens securely, but does not store Jira API response payloads. Jira API responses flow back to the user's application when agents call Jira tools through Composio. If the user's system stores conversation logs or tool outputs, Jira data such as AccountIDs or display names resides in the user's infrastructure.
 
-## What does Jira service account use require?
+## What is required for Jira service-account usage?
 
 For Jira service account style usage, users should use their own credentials with the required Jira and Jira service-account scopes. Composio does not provide a managed auth app specifically for that service-account use case.

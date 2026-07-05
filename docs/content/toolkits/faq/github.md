@@ -1,4 +1,4 @@
-## What does GitHub Apps need?
+## What do GitHub Apps need before tool calls work?
 
 For GitHub App based access, the user must install the GitHub App on the relevant account or organization and grant repository access. GitHub App permissions are configured on the GitHub App itself; Composio authConfig scopes do not control those permissions. Complete the GitHub App installation and repository-access grant before relying on GitHub App based tool calls. For standard user-authorized GitHub workflows, OAuth remains the simpler setup path.
 

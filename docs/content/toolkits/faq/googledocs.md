@@ -34,7 +34,7 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 `GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN` accepts GitHub-Flavored Markdown. Markdown tables should work, and HTML tables can also be passed in the markdown payload when a table shape is needed.
 
-## What does Google Docs tab-level read and edit mean?
+## How do I read and edit Google Docs tabs?
 
 Google Docs tab-level access is supported. For reading tabs, use `GOOGLEDOCS_GET_DOCUMENT_BY_ID` or `GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT`. For editing specific tabs, use `GOOGLEDOCS_REPLACE_ALL_TEXT`, `GOOGLEDOCS_REPLACE_IMAGE`, or `GOOGLEDOCS_UPDATE_EXISTING_DOCUMENT`.
 
@@ -42,11 +42,11 @@ Google Docs tab-level access is supported. For reading tabs, use `GOOGLEDOCS_GET
 
 For Google Docs, users can choose OAuth2 or Bearer authentication. If using Bearer authentication, enter the bearer token. If using the Composio CLI/environment flow and not logged in, setting `COMPOSIO_API_KEY` in `.env` keeps the session authenticated for toolkit connections.
 
-## What does Google sensitive scopes can cause app-blocked errors unless the OAuth app mean?
+## Why can Google sensitive scopes cause app-blocked errors?
 
 Google may block OAuth consent when an app requests unverified sensitive scopes. For production Google Docs/Workspace usage with sensitive scopes, use a verified OAuth app and complete the required Google verification/CASA process where applicable. Without verification, users may see warnings or app-blocked errors.
 
-## What does Managed Google OAuth tokens stay redacted; custom OAuth mean?
+## Why are managed Google OAuth tokens always redacted?
 
 For connections using Composio-managed Google OAuth apps, provider tokens are fully redacted regardless of the project masking setting. To access raw tokens, create a custom auth config with the user's own Google OAuth client credentials; custom auth configs can respect the project masking toggle. Prefer tool execution or Proxy Execute when possible instead of reading tokens directly.
 

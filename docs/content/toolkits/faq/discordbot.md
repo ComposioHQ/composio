@@ -6,7 +6,7 @@ Discord has two different authorization models: a user token represents an indiv
 
 When DiscordBot tool calls return 401 on an active connection, first identify whether the auth config uses a bot-token-capable setup and whether the Discord app has the permissions required by the action. For production bots, use the user's own Discord app credentials so they control the bot token, scopes, permissions, and server installation.
 
-## What does Discord message triggers need?
+## What do Discord message triggers need?
 
 Discord's REST endpoint for channel messages requires a bot token in the Authorization header. OAuth user tokens, even with message-related scopes, do not satisfy that REST API requirement. Use a bot-token-capable Discord connection for bot/channel-message automation. Adding more OAuth user scopes does not turn a Discord user token into a bot token.
 

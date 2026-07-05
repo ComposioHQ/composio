@@ -28,4 +28,4 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 ## Which Google Calendar trigger should I use for full event data?
 
-Use `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` when your workflow needs full event details, attendees, and metadata. `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` is a real-time webhook trigger that returns event metadata only and is marked as soon to be deprecated. For basic real-time notifications, Event Changes can still be used; for richer event payloads, use Event Sync.
+Use `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` when your workflow needs full event details, attendees, and metadata. `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` is a real-time webhook trigger that returns event metadata only and is planned for deprecation. For basic real-time notifications, Event Changes can still be used; for richer event payloads, use Event Sync.

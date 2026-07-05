@@ -20,7 +20,7 @@ LinkedIn 426 `NONEXISTENT_VERSION` errors usually mean the request is using an o
 
 The v3 tools-list endpoint defaults to the base toolkit version when no toolkit version is specified, which can return only legacy LinkedIn slugs. Use the singular filter `toolkit_slug=linkedin`; plural or alternate filters such as `toolkit_slugs`, `toolkits`, `app`, or `app_names` may be ignored. Add `toolkit_versions=latest` or an explicit version such as `20240624_00`. Example: `GET /api/v3/tools?toolkit_slug=linkedin&toolkit_versions=latest&limit=100`.
 
-## What does Company-page posting need?
+## What is needed for LinkedIn company-page posting?
 
 Composio's managed LinkedIn OAuth app is intended for personal-profile posting and includes personal scopes such as `w_member_social`. Company-page posting requires organization scopes such as `w_organization_social` and often `r_organization_admin`. LinkedIn restricts combining some personal and organization scopes, such as `w_member_social` and `r_organization_admin`, in the same OAuth grant. For company-page posting, create your own LinkedIn OAuth app, request/approve the organization products/scopes in LinkedIn, create a custom auth config in Composio with those credentials/scopes, reconnect, and pass the company page URN like `urn:li:organization:<id>` when posting.
 

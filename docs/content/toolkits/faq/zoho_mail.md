@@ -6,7 +6,7 @@
 
 For Zoho Mail connection issues, verify the region passed during connection initiation. Zoho accounts can be region-specific, so an EU or other regional account may fail if the default/wrong region is used. Retry the connection with the correct Zoho region.
 
-## What must Zoho Mail account_id do?
+## How should I pass Zoho Mail `account_id` values?
 
 Treat Zoho Mail `account_id` values as strings, not integers. Zoho account IDs can exceed JavaScript's safe integer limit, and numeric coercion can silently truncate them before the tool call reaches Zoho. If a user sees unexpected account IDs or tool failures with long IDs, verify the schema and payload preserve `account_id` as a string.
 
@@ -14,6 +14,6 @@ Treat Zoho Mail `account_id` values as strings, not integers. Zoho account IDs c
 
 If a user needs Zoho Mail attachment download and the current toolkit does not expose that action, submit the exact attachment-download use case through the tool request flow.
 
-## What does Connect MCP mean?
+## How should I use Connect MCP with Zoho Mail?
 
 Connect MCP is intended for agent/client workflows through Tool Router, not as a raw direct API endpoint. For Zoho Mail, make sure the user has connected a Zoho Mail account in the Connect dashboard first, then use the supported MCP client flow. If the user wants direct API execution, use Tool Router/API or Proxy Execute patterns instead of treating Connect MCP as a raw REST proxy.

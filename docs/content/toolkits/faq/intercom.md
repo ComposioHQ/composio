@@ -6,7 +6,7 @@ Composio does not control how Intercom Fin retrieves knowledge inside Intercom. 
 
 When an Intercom workflow needs scopes that are not available on the hosted OAuth app, users can create the integration with their own Intercom developer account/app and configure the required scopes there.
 
-## What does INTERCOM_LIST_ALL_COMPANIES per_page limit mean?
+## What is the `INTERCOM_LIST_ALL_COMPANIES` `per_page` limit?
 
 For Intercom company listing through Composio, keep `per_page` at 60 or lower. The generic Intercom pagination page can be misleading for this endpoint; Composio verified the list companies endpoint limit as 60 and updated the field description accordingly.
 

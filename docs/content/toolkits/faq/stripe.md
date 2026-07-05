@@ -2,7 +2,7 @@
 
 For a step-by-step guide on creating and configuring your own Stripe OAuth credentials with Composio, see [How to create OAuth credentials for Stripe](https://composio.dev/auth/stripe).
 
-## What does Stripe mean?
+## How does Stripe authentication work?
 
 Composio supports the Stripe toolkit with OAuth2 and API-key auth modes. The marketplace entry is available on the Stripe toolkit page.
 

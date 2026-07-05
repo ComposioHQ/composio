@@ -4,9 +4,9 @@ This usually happens when the `com.intuit.quickbooks.payment` scope is included 
 
 ---
 
-## What does QuickBooks mean?
+## Why can Claude block QuickBooks in consumer MCP sessions?
 
-This behavior is intentional on Claude's side. QuickBooks has tools that can process payments, so Claude can classify it under Payment Processing and block execution in consumer MCP sessions. Use use Claude Code or Cowork with Composio through the CLI/developer path where the agent can still access QuickBooks through Composio.
+This behavior is intentional on Claude's side. QuickBooks has tools that can process payments, so Claude can classify it under Payment Processing and block execution in consumer MCP sessions. Use Claude Code or Cowork with Composio through the CLI/developer path where the agent can still access QuickBooks through Composio.
 
 ## How should I handle quickBooks connections require base URL and realm ID during connection initiation?
 
@@ -16,7 +16,7 @@ QuickBooks needs connection-level values before OAuth/tool execution can work. C
 
 For QuickBooks sandbox accounts, pass `https://sandbox-quickbooks.api.intuit.com` as the URL/base URL when initiating the connection. Production connections should use the production Intuit API base URL.
 
-## What does QuickBooks auth configs need?
+## What do QuickBooks auth configs need?
 
 When creating a QuickBooks auth config, enter the QuickBooks OAuth credentials from the Intuit developer app and configure the Composio redirect URL in the QuickBooks auth app. A mismatch or missing redirect URL can break the OAuth flow.
 
@@ -24,7 +24,7 @@ When creating a QuickBooks auth config, enter the QuickBooks OAuth credentials f
 
 QuickBooks toolkit support was updated to accept auth and token URLs during connection initiation. If a user needs sandbox or custom Intuit OAuth endpoints, use a toolkit version that supports passing those URLs.
 
-## What does QuickBooks payment scope require?
+## What is required for the QuickBooks payment scope?
 
 If the QuickBooks OAuth flow includes the payments scope `com.intuit.quickbooks.payment`, the QuickBooks payment module must be enabled for that account/app. If the user does not need payment tools, remove that scope and retry the connection.
 

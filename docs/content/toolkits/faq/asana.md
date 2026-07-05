@@ -16,4 +16,4 @@ If Asana triggers do not fire, first verify whether the requested trigger type i
 
 ## How should I handle older SDK connection initiation may require appName, integrationId, entityId, and redirectUrl?
 
-For older SDK flows, initiate the connection with `appName`, `integrationId`, `entityId`, and `redirectUrl`. If using custom OAuth credentials, pass `client_id` and `client_secret` under `authConfig` together with `authMode: "OAUTH2"`. This was described as a DX issue in the older flow, so prefer current SDK/API patterns when available.
+For older SDK flows, initiate the connection with `appName`, `integrationId`, `entityId`, and `redirectUrl`. If using custom OAuth credentials, pass `client_id` and `client_secret` under `authConfig` together with `authMode: "OAUTH2"`. Prefer current SDK/API patterns when available.

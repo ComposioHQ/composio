@@ -6,7 +6,7 @@ Instagram connection goes through Facebook Login, where the user selects which I
 
 The Instagram toolkit uses Instagram API with Business Login for Instagram. OAuth errors commonly happen when unsupported or unverified scopes are configured. Prefer the default scopes where possible, because they are intended to cover the toolkit's supported actions. If configuring custom scopes, use only Meta-supported Instagram Business Login permissions and remove unsupported scopes such as `user_profile`.
 
-## What does Instagram toolkit require?
+## What is required for the Instagram toolkit?
 
 Instagram toolkit support is for Instagram Business/Creator account flows. If a user is using a personal Instagram account, convert or connect a Business/Creator account linked through Meta/Facebook as required by Instagram's API.
 
@@ -41,6 +41,6 @@ If Instagram Reply to Comment requires a Meta permission that is not available o
 
 If `INSTAGRAM_POST_IG_MEDIA_COMMENTS` fails while the tool works in a direct test, verify the `ig_media_id` being passed. An incorrect media ID can cause the action to fail even though the tool itself is working.
 
-## What does Instagram mean?
+## How do I connect Instagram from the marketplace?
 
 Instagram is available in the Composio marketplace. Create a new Instagram authConfig, complete the OAuth connection for the Instagram account, and then use the Instagram toolkit tools. The authConfig ID / integration ID can be found from the dashboard.

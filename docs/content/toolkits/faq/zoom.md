@@ -14,7 +14,7 @@ For Zoom OAuth setup, do not arbitrarily change the redirect URL. Use the defaul
 
 If a Zoom auth config was created before the current default OAuth app settings were updated, creating a new auth config plus a fresh connection is usually the cleanest path.
 
-## What does `ZOOM_GET_A_MEETING_SUMMARY` need?
+## What is needed for `ZOOM_GET_A_MEETING_SUMMARY`?
 
 For Zoom meeting summaries, verify that the meeting was created with `settings__auto_start_meeting_summary=true`. Then fetch the correct past-meeting UUID from Zoom's `/v2/past_meetings/{meetingId}/instances` endpoint and use that UUID with `ZOOM_GET_A_MEETING_SUMMARY`; the numeric meeting ID alone may not be sufficient.
 

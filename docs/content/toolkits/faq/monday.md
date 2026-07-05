@@ -46,7 +46,7 @@ webhooks:read
 
 ---
 
-## What does Monday require?
+## What does Monday require before users can connect?
 
 Monday is unusual among popular toolkits because the OAuth app must be installed in the Monday workspace before users initiate individual OAuth connections. An admin can install the app once for the workspace, then users can connect normally. For Composio's managed Monday app, use this Monday installation link: `https://auth.monday.com/oauth2/authorize?client_id=96b038435fc029e045f9ba800e66fefa&response_type=install`.
 
@@ -62,10 +62,10 @@ For a custom Monday OAuth app, add the Composio redirect URL/callback URL to the
 
 If both `MONDAY` and `MONDAY_MCP` are enabled, Tool Router may choose `MONDAY_MCP` for search/execution. If the user specifically needs the regular Monday toolkit, disable `monday_mcp` in the session or narrow toolkit availability so `COMPOSIO_SEARCH_TOOLS` returns the intended tools.
 
-## What does Monday scopes come from the OAuth app and do not need?
+## Where do Monday scopes come from?
 
 For Monday, the scopes configured on the Monday OAuth app are picked up during authorization. In the common flow, no separate Composio scope configuration is required unless the user is intentionally requesting a subset.
 
-## What does Monday trigger management mean?
+## How should Monday trigger management work?
 
 Trigger setup and management should be handled outside the agent runtime, for example through the CLI/API/dashboard flow. The agent should consume trigger payloads, not create or manage trigger instances as part of normal tool execution.

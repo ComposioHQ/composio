@@ -42,7 +42,7 @@ Google Drive webhook payloads need to be delivered to a public domain or publicl
 
 Downloaded files are staged in temporary S3-backed storage and exposed through presigned URLs. The default presigned URL TTL is 1 hour, and that URL expiration can be customized in Project Settings -> File TTL. The staged files themselves are short lived and are deleted from Composio storage after about 24 hours / one day.
 
-## What does Disable SDK auto file handling when you need?
+## When should I disable SDK auto file handling?
 
 If the SDK is converting downloaded file output into a local path and the application needs the raw URL or file payload, disable automatic file handling for the execution path. Use the documented `auto_upload_download_files=False` / disabling-auto-file-handling option, and make sure the relevant Composio SDK packages are upgraded to a version that supports that behavior.
 
@@ -62,7 +62,7 @@ Using Composio MCP for a Google Drive file browser is feasible, but MCP servers 
 
 Run `GOOGLEDRIVE_GET_ABOUT` for the connected account ID to confirm the email address and identity of the Google Drive account being used. This is the quickest check when actions appear to affect a different Drive account than expected.
 
-## What does Google Drive tool execution requests should include an `arguments` object, even when it mean?
+## Do Google Drive tool-execution requests need an `arguments` object?
 
 When calling tool execution APIs such as `GOOGLEDRIVE_LIST_FILES`, include the `arguments` object in the request body. If the tool does not need arguments for that call, send an empty object such as `"arguments": {}` along with the connected account, user/entity ID, and version fields.
 

@@ -2,7 +2,7 @@
 
 Gemini toolkit quota has historically been backed by shared Composio credentials, so users can hit shared-provider quota limits. If a user needs independent quota management, use BYOK or custom API key support when available.
 
-## What does Gemini no-auth/toolkit usage mean?
+## How is Gemini no-auth toolkit usage logged?
 
 Gemini no-auth toolkit calls are logged like other toolkit calls and can be tracked in Composio tool logs. Treat Gemini usage as regular toolkit usage based on tool calls.
 
