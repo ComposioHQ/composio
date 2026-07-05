@@ -10,6 +10,8 @@ If an older Google Analytics MCP/config shows zero actions, check whether it is 
 
 To use Google Analytics through MCP, create an MCP config with Google Analytics selected, or edit an existing MCP config and add Google Analytics as a tool/toolkit. Then follow the MCP quickstart to connect and use the generated MCP configuration.
 
-## Empty Google Analytics reports may be provider data availability rather than Composio failure
+## Why can Google Analytics report tools return no data?
 
-If Google Analytics report tools return no data or unexpected data, verify the same query directly against the Google Analytics Data API, such as `properties:runReport`, with the same access token/property/date range. If the direct API call also has no data, it is likely a Google Analytics data availability/property/date-range issue. If the direct API works but the Composio tool does not, contact Composio with the log ID and direct API comparison.
+If Google Analytics report tools return no data or unexpected data, first check the property ID, date range, metrics, dimensions, filters, and whether the connected Google account has access to the selected property. Empty reports can happen when the property has no matching data for the requested date range or when the filters are too narrow.
+
+Start with a broader date range and a simple metric/dimension set, then narrow the query once data appears. If the Google Analytics dashboard shows data for the same property and date range but the Composio tool still returns an empty or inconsistent response, contact Composio with the tool slug, property ID, date range, requested metrics/dimensions, and recent tool execution log ID.

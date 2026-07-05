@@ -12,7 +12,7 @@ For Meta/Facebook OAuth failures, verify that the Composio redirect URI is added
 
 ## Why can API-key Meta Ads connections show ACTIVE before credential validation?
 
-For API-key auth modes, Composio may mark a connection `ACTIVE` once the required fields are present. The provider token may still fail later when a tool call reaches MetaAds. If the API/SDK supports it, pass `validate_credentials=true` while initiating the connection to run an upstream MetaAds verification call; invalid credentials then return `CredentialsValidationFailed` instead of creating an apparently active connection.
+For API-key auth modes, Composio may mark a connection `ACTIVE` once the required fields are present. The Meta Ads token may still fail later when a tool call runs. If the API/SDK supports it, pass `validate_credentials=true` while initiating the connection to run Meta Ads credential verification; invalid credentials then return `CredentialsValidationFailed` instead of creating an apparently active connection.
 
 ## Meta Ads does not have a managed OAuth app; use your own credentials
 

@@ -32,4 +32,4 @@ Use session-level tag controls to disable destructive tools globally or per tool
 
 ## Deleting a OneDrive connection may not revoke provider-side tokens
 
-Use the connected-account revoke endpoint when the goal is to invalidate provider-side tokens. Deleting a Composio connection record does not always revoke the upstream provider token; for Microsoft/Google-style admin-consented apps, the provider may require direct removal from the provider admin console if revocation is not accepted.
+Use the connected-account revoke endpoint when the goal is to invalidate the provider token. Deleting a Composio connection record does not always revoke that token; for Microsoft/Google-style admin-consented apps, the provider may require direct removal from the admin console if revocation is not accepted.

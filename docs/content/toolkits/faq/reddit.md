@@ -6,9 +6,9 @@ For Claude Code Reddit MCP OAuth callback failures on the legacy MCP path, switc
 
 Reddit uses OAuth 2.0. For more control, create the Reddit auth config with your own Reddit client ID and client secret instead of relying on managed/default credentials. This is the recommended setup for production-style usage because it gives the user control over their Reddit app and credentials.
 
-## Reddit toolkit behavior can change when Reddit changes its API or enforcement policies
+## What should I know about Reddit app and account policy limits?
 
-The Reddit toolkit depends on Reddit's underlying APIs and policy enforcement. Changes or restrictions from Reddit can affect toolkit behavior, and Reddit does not guarantee stable API behavior for all use cases. For production usage, use your own Reddit credentials to maximize control, and account for Reddit's spam and responsible builder policies when designing automations.
+Reddit can enforce app, account, subreddit, spam, rate-limit, and policy controls that affect automation. For production usage, use your own Reddit client ID and client secret so you control the Reddit app, redirect settings, and allowed scopes. When a Reddit tool starts failing, check the Reddit app status, granted scopes, subreddit permissions, account restrictions, and automation volume before retrying the same request repeatedly.
 
 ## Older Reddit Create Post tool versions may require `flair_id`
 
