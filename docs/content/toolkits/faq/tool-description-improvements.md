@@ -29,3 +29,16 @@ Verification:
 - Current `APOLLO_PEOPLE_ENRICHMENT` metadata already lists the strong identifier options and notes that name-only inputs frequently return no matches.
 - Current `APOLLO_BULK_PEOPLE_ENRICHMENT` metadata says unmatched records can be valid no-match outcomes, but does not explain the `details` array shape or identifier guidance.
 - The Apollo toolkit KB evidence says bulk enrichment records belong inside a `details` array and that HTTP success can still include a missing or `null` match.
+
+## Asana: ASANA_GET_TASK_COMMENTS
+
+Reason to keep out of the FAQ: this is a tool-slug and parameter-shape clarity issue. The durable fix belongs in tool metadata or custom-tool guidance, not as a standalone Asana FAQ.
+
+Suggested tool description:
+
+`ASANA_GET_TASK_COMMENTS` retrieves comments for an Asana task. Use the namespaced Asana slug `ASANA_GET_TASK_COMMENTS`, not an unscoped `GET_TASK_COMMENTS` slug, and pass the Asana task ID/GID as a string. For custom toolkit-based tools that call Asana directly, use `https://app.asana.com/api/1.0` as the base URL and include the required `Authorization` header.
+
+Verification:
+
+- The Asana toolkit KB says failures came from using an unscoped task-comments slug and passing a numeric task ID.
+- Current public toolkit data includes Asana task comment creation and Asana triggers, but does not expose a task-comment retrieval action in the generated toolkit dataset.
