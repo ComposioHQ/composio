@@ -1,0 +1,85 @@
+---
+title: Custom OAuth webhooks
+description: Bring your own OAuth app to a realtime trigger — register Composio's ingress URL with the provider so events can reach your triggers.
+keywords: [custom oauth, byo oauth, webhook endpoint, ingress, webhook ingress, signing secret, slack app, notion integration, realtime triggers]
+---
+
+This page is only for **realtime triggers where you bring your own OAuth app**. With Composio-managed OAuth, ingress is already set up and you can skip this entirely.
+
+Some providers only deliver events to URLs you've registered on your OAuth app. When you bring your own app, you register Composio's ingress URL there once, so events can reach Composio. You need this only when the trigger type's `requires_webhook_endpoint_setup` flag is `true`.
+
+Each OAuth app you bring gets its own ingress URL within a project. A single OAuth app can serve at most one Composio project: providers accept only one callback URL per OAuth app, and each ingress URL routes to a single project. In return, every project becomes its own webhook tenant, with its own ingress rate limit, project-scoped credentials, clean fan-out (events reach only that project's trigger instances), and per-project metering. Every inbound event is signature-checked at ingress before any trigger fires — unsigned or tampered requests are rejected with `400`, so third parties can't spoof events onto your triggers.
+
+<Callout type="warn">
+**Sharing one OAuth app across projects?** Consolidate to a single project or register separate OAuth apps per project before continuing.
+</Callout>
+
+The setup is four API calls against the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) — the full walkthrough is in the dropdown below. For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
+
+<ForAgent title="webhook endpoint API">
+
+**The ingress URL**
+
+Each endpoint's ingress URL has the shape:
+
+```
+https://backend.composio.dev/api/v3.1/webhook_ingress/{toolkit_slug}/{we_xxx}/trigger_event
+```
+
+Never construct it by hand — use the `webhook_url` returned by the create call in step 2.
+
+**Step 1 — discover what credentials the endpoint needs**
+
+The `setup_fields` in the schema response tell you exactly what to collect from the provider's app dashboard:
+
+```bash
+curl "https://backend.composio.dev/api/v3.1/webhook_endpoints/schema?toolkit_slug=slack" \
+  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>"
+```
+
+For Slack it returns `webhook_signing_secret` (Slack app → Basic Information → App Credentials → Signing Secret) and `app_token` (Basic Information → App-Level Tokens, scope `authorizations:read`; required for DMs, private channels, and reactions — omit for public-channel-only).
+
+**Step 2 — create the endpoint**
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/webhook_endpoints" \
+  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{ "toolkit_slug": "slack", "client_id": "<YOUR_OAUTH_CLIENT_ID>" }'
+```
+
+Hold on to `id` (the `<ENDPOINT_ID>` below) and `webhook_url` from the response. The call is **idempotent per (toolkit_slug, client_id) within a project** — repeating it returns the existing endpoint without rotating the URL or wiping the secret.
+
+**Step 3 — store the credentials (before touching the provider dashboard)**
+
+`PATCH` all the fields the schema returned in one request:
+
+```bash
+curl -X PATCH "https://backend.composio.dev/api/v3.1/webhook_endpoints/<ENDPOINT_ID>" \
+  -H "x-api-key: <YOUR_COMPOSIO_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{ "data": { "webhook_signing_secret": "<SIGNING_SECRET>", "app_token": "xapp-..." } }'
+```
+
+Order matters: if the provider posts to the URL before a secret is stored, every request fails with `400`, and the provider may auto-disable the endpoint after a window of consecutive failures (Slack: ~36 hours).
+
+**Step 4 — point the provider's app dashboard at the URL**
+
+Paste `webhook_url` into the provider dashboard (Slack → Event Subscriptions → Request URL; Notion → the integration's Webhook Endpoints). Verification challenges (Slack `url_verification`, Notion's token) are answered by Composio automatically — no handshake code on your side. Then create the trigger as usual.
+
+**Updating, rotating, inspecting**
+
+- `PATCH .../webhook_endpoints/<ENDPOINT_ID>` updates single fields, preserving the rest — this is how you rotate a signing secret.
+- `POST` to the same URL **replaces** `data` wholesale: any field you omit is cleared.
+- The `webhook_url` is immutable for the endpoint's lifetime — rotation is a `PATCH`, never a new endpoint.
+- `GET .../webhook_endpoints/<ENDPOINT_ID>` inspects one; `GET .../webhook_endpoints` lists every endpoint in the project.
+- Repeat verification handshakes are rejected after the endpoint is verified, so a forged challenge can't silently swap the signing secret.
+
+</ForAgent>
+
+## Next
+
+<Cards>
+<Card icon={<Database />} title="Receiving events" href="/docs/triggers/receiving-events" description="Stand up your endpoint: local development, production, the payload, handling, and signature verification." />
+<Card icon={<Key />} title="Triggers" href="/docs/triggers" description="Create triggers and manage them over their lifecycle." />
+</Cards>

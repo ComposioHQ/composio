@@ -34,8 +34,9 @@ const REDIRECTS = [
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
   { from: "/docs/welcome", to: "/docs/quickstart" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
-  { from: "/docs/workbench", to: "/docs/sandbox/remote" },
-  { from: "/docs/sandbox", to: "/docs/sandbox/remote" },
+  { from: "/docs/workbench", to: "/docs/sandbox" },
+  { from: "/docs/sandbox/remote", to: "/docs/sandbox" },
+  { from: "/docs/sandbox/local", to: "/docs/sandbox/local-sandbox" },
   { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
 ];
@@ -70,5 +71,7 @@ describe("Redirects - destinations are valid", () => {
     }
 
     expect(failures).toEqual([]);
-  });
+    // Sequentially fetching every destination outruns bun's default 5s test
+    // timeout on a dev server, where pages compile on first hit.
+  }, 60_000);
 });

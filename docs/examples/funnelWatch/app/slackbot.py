@@ -72,7 +72,8 @@ _MENTION_RE = re.compile(r"<@([A-Z0-9]+)(?:\|[^>]*)?>")
 def _extract(data: dict) -> dict:
     """Pull text/channel/user/bot from a (flexible) Slack event payload."""
     event = data.get("event") or data.get("message") or data
-    raw = event.get("text") or data.get("text") or ""
+    # Bound the input before any regex work — inbound text is attacker-controlled.
+    raw = (event.get("text") or data.get("text") or "")[:4000]
     channel = (event.get("channel") or event.get("channel_id")
                or data.get("channel") or data.get("channel_id"))
     user = event.get("user") or event.get("user_id") or data.get("user")
@@ -129,7 +130,10 @@ def process_inbound(volume: Volume, payload: dict) -> dict:
         ack = "🔎 On it — pulling the latest numbers…"
         _recent_replies.append(_norm(ack))
         slack.send_message(volume, ack, channel=msg["channel"])
-        reply = agent.answer(msg["text"], _context(volume))
+        # Same depth as the dashboard chat: the full agent loop (sandbox + tools)
+        # with a deterministic fallback. We're on a worker thread, so the slow
+        # path can't block the webhook.
+        reply = agent.deep_answer(volume, msg["text"], _context(volume))
         result = {"intent": "answer", "reply": reply}
 
     _recent_replies.append(_norm(reply))

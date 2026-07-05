@@ -31,7 +31,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 ## Triggers and webhooks
 
 - **Triggers** — receive structured payloads when something happens in a connected app (webhook or polling). → [Triggers](/docs/triggers)
-- **Setting up triggers** — create, manage, and subscribe to trigger events. → [Creating triggers](/docs/setting-up-triggers/creating-triggers), [Subscribing to events](/docs/setting-up-triggers/subscribing-to-events), [Managing triggers](/docs/setting-up-triggers/managing-triggers)
+- **Setting up triggers** — create, manage, and subscribe to trigger events. → [Creating triggers](/docs/triggers#creating-triggers), [Receiving events](/docs/triggers/receiving-events), [Managing triggers](/docs/triggers#managing-triggers)
 - **Webhook verification** — verify inbound webhook signatures. → [Webhook verification](/docs/webhook-verification)
 
 ## Extending sessions

@@ -9,6 +9,13 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  experimental: {
+    // Cap Turbopack's in-memory task cache. Without a limit the dev server's
+    // module graph grows unbounded (~5 GB observed) and the process eventually
+    // dies with a V8 OOM under sustained page compiles. Costs an occasional
+    // slower rebuild after a GC pass.
+    turbopackMemoryLimit: 3 * 1024 * 1024 * 1024,
+  },
   turbopack: {
     root: __dirname,
     resolveAlias: {
@@ -135,7 +142,7 @@ const config = {
       },
       {
         source: '/docs/subscribing-to-connection-expiry-events',
-        destination: '/docs/triggers#receiving-events',
+        destination: '/docs/triggers/receiving-events',
         permanent: true,
       },
       {
@@ -155,7 +162,7 @@ const config = {
       },
       {
         source: '/docs/webhook-verification',
-        destination: '/docs/triggers#verifying-signatures',
+        destination: '/docs/triggers/receiving-events#verifying-signatures',
         permanent: true,
       },
       {
@@ -229,7 +236,7 @@ const config = {
       },
       {
         source: '/docs/setting-up-triggers/subscribing-to-events',
-        destination: '/docs/triggers#receiving-events',
+        destination: '/docs/triggers/receiving-events',
         permanent: true,
       },
       {
@@ -239,12 +246,12 @@ const config = {
       },
       {
         source: '/docs/setting-up-triggers/custom-oauth-webhooks',
-        destination: '/docs/triggers#custom-oauth-webhooks',
+        destination: '/docs/triggers/custom-oauth-webhooks',
         permanent: true,
       },
       {
         source: '/docs/sandbox/local',
-        destination: '/docs/sandbox#local-sandbox',
+        destination: '/docs/sandbox/local-sandbox',
         permanent: true,
       },
       {
@@ -1085,4 +1092,6 @@ const config = {
 // `withEve` mounts the Eve docs assistant (agent/) on same-origin /eve/v1/*
 // routes and runs the agent alongside the Next.js app in one Vercel deploy.
 // Requires Node 24+ (see package.json engines / .node-version).
-export default withEve(withMDX(config));
+// DOCS_AGENT=0 skips the Eve docs-assistant runtime (~1.3 GB in dev) for
+// content-only sessions; production and default dev keep it on.
+export default process.env.DOCS_AGENT === '0' ? withMDX(config) : withEve(withMDX(config));

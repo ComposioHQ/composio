@@ -375,6 +375,13 @@ const ts =
   `// lib/docs.ts so eve bundles it into the deployed service (agent/ but not content/).\n` +
   `export default JSON.parse(\n  ${JSON.stringify(json)},\n) as unknown;\n`;
 const out = join(ROOT, 'agent', 'lib', 'docs-index.ts');
+// Skip the write when nothing changed: an unconditional write on every boot
+// dirties the file's mtime, forcing Turbopack AND the eve watcher to recompile
+// a 1.8 MB module for no reason.
+if (existsSync(out) && readFileSync(out, 'utf8') === ts) {
+  console.log('[build-agent-index] unchanged — skipping write');
+  process.exit(0);
+}
 writeFileSync(out, ts);
 console.log(
   `[build-agent-index] wrote ${pages.length} pages + ${toolkits.length} toolkits + ${search.entries.length} BM25 rows (${Math.round(json.length / 1024)} KB) -> ${out}`

@@ -1,0 +1,361 @@
+---
+title: Receiving events
+description: "Stand up the endpoint that receives trigger events: develop locally, register your production webhook, parse the payload, handle events idempotently, and verify signatures."
+keywords: [webhook, webhook url, receive events, realtime, polling, payload, handling events, signature verification, dedup, idempotent, local development, tunnel]
+---
+
+Once a [trigger is created](/docs/triggers#creating-triggers), its events come to you as the same payload, whether you're testing locally or running in production. Develop against your local handler first, then point Composio at your production URL when you ship.
+
+Two delivery facts shape how you write handlers: delivery is **at-least-once** (the same event can arrive more than once) and events can arrive **out of order**. Design handlers to be idempotent — the dropdown under [Handling events](#handling-events) has the dedup recipe.
+
+## Realtime vs polling
+
+Under the hood, Composio learns about events in one of two ways. You don't configure this. It's a property of the trigger type, and it only affects how quickly an event reaches you.
+
+| Kind | How Composio learns about the event | Latency | Examples |
+|---|---|---|---|
+| **Realtime** | The provider pushes the event to Composio the moment it happens. | Near-instant | Slack, Asana, Notion, Outlook |
+| **Polling** | Composio checks the provider on a schedule. | Up to ~15 min on Composio-managed auth | Gmail, Google Calendar |
+
+Either way, the event lands in the same place: your webhook URL, in the same payload shape.
+
+## Develop locally
+
+`subscribe()` streams events straight to your process over a WebSocket — no webhook URL, no tunnel, no signing. It's the fastest way to eyeball what a trigger sends, but it bypasses your real webhook handler, so use it only for prototyping:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+subscription = composio.triggers.subscribe()
+
+@subscription.handle(trigger_id="your_trigger_id")
+def handle_event(data):
+    print(f"Event received: {data}")
+
+subscription.wait_forever()
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+await composio.triggers.subscribe(
+  data => {
+    console.log('Event received:', data);
+  },
+  { triggerId: 'your_trigger_id' }
+);
+```
+  </Tab>
+</Tabs>
+
+For anything you intend to ship, forward events to your real handler instead. The Composio CLI streams realtime events and forwards each one to your local URL, signed exactly like production:
+
+```bash
+composio dev triggers listen --forward "http://localhost:8000/webhooks/composio"
+```
+
+Alternatively, expose your local server with [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (`cloudflared tunnel --url http://localhost:8000`) or [ngrok](https://ngrok.com) (`ngrok http 8000`) and register the printed URL as your webhook URL.
+
+<ForAgent title="local development">
+
+**Transport decision**
+
+Webhook is the production default: decoupled, survives your restarts, Composio can retry while you redeploy. `subscribe()` is tied to your process lifetime (misses events while down, not for serverless) — keep it for throwaway local iteration. In dev, prefer `composio dev triggers listen --forward ...`: it signs like production and exercises your real handler.
+
+**Signing in the CLI forwarder**
+
+Forwarded events are signed with `COMPOSIO_WEBHOOK_SECRET` if it's set in the environment; otherwise the CLI prints a generated secret to verify against.
+
+**Tunnel URLs are ephemeral**
+
+Quick tunnels mint a new URL on every restart, and the registered webhook URL goes dead with the old one — re-register the webhook URL after each tunnel restart. The CLI forwarder has no public URL to rot.
+
+</ForAgent>
+
+## Go to production
+
+Register your webhook URL once per project. Composio then `POST`s every trigger event to it:
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+from composio import Composio
+
+composio = Composio()
+
+subscription = composio.triggers.set_webhook_subscription(
+    webhook_url="https://your-app.com/webhooks/composio",
+)
+print(f"Delivering events to {subscription['webhook_url']}")
+# Store subscription['secret'] to verify signatures
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+const subscription = await composio.triggers.setWebhookSubscription({
+  webhookUrl: 'https://your-app.com/webhooks/composio',
+});
+console.log(`Delivering events to ${subscription.webhookUrl}`);
+// Store subscription.secret to verify signatures
+```
+  </Tab>
+</Tabs>
+
+Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
+
+## Webhook payload shape
+
+Every trigger event arrives in the same envelope. `metadata` tells you where the event came from; `data` holds the event itself, in the shape the trigger type declares.
+
+```json
+{
+  "id": "msg_abc123",
+  "type": "composio.trigger.message",
+  "metadata": {
+    "log_id": "log_abc123",
+    "trigger_slug": "GITHUB_COMMIT_EVENT",
+    "trigger_id": "ti_xyz789",
+    "connected_account_id": "ca_def456",
+    "auth_config_id": "ac_xyz789",
+    "user_id": "user-id-123435"
+  },
+  "data": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane"
+  },
+  "timestamp": "2026-01-15T10:30:00Z"
+}
+```
+
+<Callout>
+Webhook payloads are versioned. `parse()` and `verifyWebhook()` auto-detect the version, so version differences never reach your handler code.
+</Callout>
+
+<ForAgent title="legacy payload formats">
+
+**V2 (legacy)** — metadata fields are mixed into the `data` object alongside event data:
+
+```json
+{
+  "type": "github_commit_event",
+  "data": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane",
+    "connection_id": "ca_def456",
+    "connection_nano_id": "cn_abc123",
+    "trigger_nano_id": "tn_xyz789",
+    "trigger_id": "ti_xyz789",
+    "user_id": "user-id-123435"
+  },
+  "timestamp": "2026-01-15T10:30:00Z",
+  "log_id": "log_abc123"
+}
+```
+
+**V1 (legacy)** — event data lives under `payload`, identifiers at the top level:
+
+```json
+{
+  "trigger_name": "github_commit_event",
+  "trigger_id": "ti_xyz789",
+  "connection_id": "ca_def456",
+  "payload": {
+    "commit_sha": "a1b2c3d",
+    "message": "fix: resolve null pointer",
+    "author": "jane"
+  },
+  "log_id": "log_abc123"
+}
+```
+
+Detection heuristic: `metadata` present → V3; `data` with `connection_id` inside → V2; top-level `payload` + `trigger_name` → V1. The `composio.trigger.disabled` event is V3-only.
+
+</ForAgent>
+
+## Handling events
+
+In your handler, pass the incoming request to `parse()`. It returns the typed, normalized payload. Pass `verifySecret` and it verifies the signature first, so one call both authenticates and parses.
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+  <Tab value="Python">
+```python
+import os
+from composio import Composio
+
+composio = Composio()
+
+@app.post("/webhooks/composio")
+async def webhook_handler(request: Request):
+    # On async frameworks (FastAPI) read the raw body and pass body=/headers=.
+    # On sync frameworks (Flask, Django) you can pass the request directly.
+    # Use the raw body so the signature verifies. Omit verify_secret to skip it.
+    result = composio.triggers.parse(
+        body=await request.body(),
+        headers=request.headers,
+        verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"],
+    )
+
+    if result["raw_payload"]["type"] == "composio.trigger.message":
+        event = result["payload"]
+        if event["trigger_slug"] == "GITHUB_COMMIT_EVENT":
+            data = event["payload"]
+            print(f"New commit by {data['author']}: {data['message']}")
+
+    return {"status": "ok"}
+```
+  </Tab>
+  <Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+
+// Next.js App Router, Hono, or any Fetch-style handler
+export async function POST(request: Request) {
+  // parse() takes a Fetch Request (shown) or an Express-style { body, headers }.
+  // Pass the raw body so the signature verifies; omit verifySecret to skip it.
+  const result = await composio.triggers.parse(request, {
+    verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+  });
+
+  if (result.rawPayload.type === 'composio.trigger.message') {
+    const event = result.payload;
+    if (event.triggerSlug === 'GITHUB_COMMIT_EVENT') {
+      const data = event.payload;
+      console.log(`New commit by ${data.author}: ${data.message}`);
+    }
+  }
+
+  return Response.json({ status: 'ok' });
+}
+```
+  </Tab>
+</Tabs>
+
+<Callout>
+Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
+</Callout>
+
+Each trigger type declares the shape of the `data` it sends. 
+
+<ForAgent title="handling events">
+Inspect it before you write your handler with `get_type()`/`getType()` (the `payload` field), `composio triggers info "GITHUB_COMMIT_EVENT"` from the CLI, or generate typed stubs with `composio generate --toolkits github`.
+
+**Endpoint topology: one endpoint, dispatch on slug**
+
+Run a single `POST /webhooks/composio` endpoint and dispatch on `metadata.trigger_slug`. Adding an event source becomes a one-line handler entry. Target the V3 payload: read `metadata.trigger_slug` + `data`.
+
+```python
+raw = await request.body()                 # raw bytes FIRST, before any parsing
+result = composio.triggers.parse(body=raw, headers=request.headers,
+                                 verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"])
+slug = result["payload"]["trigger_slug"]   # dispatch on this
+```
+
+**Metadata field reference**
+
+| `metadata` field | What it tells you |
+|-------|-------------------|
+| `trigger_id` | Which trigger instance fired this event |
+| `trigger_slug` | The trigger type (for example `GITHUB_COMMIT_EVENT`) |
+| `connected_account_id` | Which connected account it belongs to |
+| `user_id` | Which user it's for |
+| `auth_config_id` | Which auth config was used |
+| `log_id` | Stable id for this delivery — use it (or the `webhook-id` header) as the dedup key |
+
+**Deliveries repeat and arrive out of order**
+
+- Dedup on a stable id — the `webhook-id` header or `metadata.log_id` — before side effects; keep a bounded seen-set.
+- Events can arrive concurrently and out of order. Handlers must be order-independent and safe under parallel calls; lock-guard shared state.
+
+**Polling vs realtime is invisible in your code**
+
+Same endpoint, same envelope, same handler. What differs: latency (poll interval, up to ~15 min) and first-enable behavior — a polling trigger may emit a burst on creation. Don't special-case delivery; do account for latency and a possible startup burst.
+
+**Loop guard**
+
+If a trigger can observe your own output (e.g. a channel-message trigger sees the bot's own replies), naive handling loops forever. Combine two guards: detect bot/app messages (`bot_id` / `app_id` / `subtype == "bot_message"` in the event data) *and* dedup against a bounded set of recently-sent replies — the inbound payload doesn't always carry a bot marker.
+
+**Trigger granularity (noise vs coverage)**
+
+A channel-message trigger fires on *every* message. For a bot in busy shared channels, prefer a DM or @mention trigger type; a dedicated bot channel + channel-message works for demos.
+
+**Responding to events**
+
+When the handler executes a tool in response (e.g. `SLACK_SEND_MESSAGE`): the message argument is `markdown_text`, not `text`; the bot must be a member of the target channel (`/invite @app`) and channel **IDs** (`C0...`) are more reliable than `#names` (`channel_not_found` usually means name-vs-id or missing membership).
+
+**Field lessons (from building [FunnelWatch](/examples/funnelwatch))**
+
+- **Never accept "secret configured, signature missing."** The tempting dev shim `if not secret or not signature: accept` is an injection hole — anyone who finds the URL just omits the header. Fail closed: reject unsigned when a secret exists, and gate local unsigned tools (simulators, curl) behind an explicit env flag instead. If verification *can't run* (SDK client unavailable), return 503 — don't fall through to accept.
+- **Verify with `parse()`, not hand-rolled HMAC.** The homegrown version accretes encoding guesses (`whsec_` prefix stripping, raw-vs-base64 keys, `v1,` splitting) that `parse(verify_secret=...)` already handles, along with replay tolerance and payload-version detection.
+- **Persist the dedup set.** Retries cluster around restarts — exactly when an in-memory deque has forgotten everything. A tiny table (`INSERT OR IGNORE` on the `webhook-id`, pruned by age) is enough. Dedup *before* side effects: a replayed `payment_succeeded` double-counts revenue.
+- **Ack fast; do slow work off the request path.** An `async` handler that calls an LLM inline blocks the whole event loop — every other delivery and endpoint stalls behind one reply. And a handler slower than the delivery timeout causes retries, which arrive as duplicates (see above). Return 200 immediately; run replies on a worker thread and analytics in a coalescing background cycle.
+
+</ForAgent>
+
+## Verifying signatures
+
+Composio signs every webhook request. `parse({ verifySecret })` verifies the signature for you (and `verifyWebhook()` does the same at a lower level), so most handlers need nothing more. Store the webhook secret securely as `COMPOSIO_WEBHOOK_SECRET`; fetch it from the [webhook subscription](/reference/api-reference/webhook-subscriptions/getWebhookSubscriptionsById) any time, or [rotate it](/reference/api-reference/webhook-subscriptions/postWebhookSubscriptionsByIdRotateSecret) if it leaks.
+
+If you're not using the Composio SDK, verify manually — the full recipe is in the dropdown below.
+
+<ForAgent title="verifying signatures manually">
+
+Every request includes `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. Compute `HMAC-SHA256` over `{webhook-id}.{webhook-timestamp}.{rawBody}` with your secret, base64-encode, and compare:
+
+```python
+import hmac
+import hashlib
+import base64
+import json
+import os
+
+def verify_webhook(webhook_id: str, webhook_timestamp: str, body: str, signature: str) -> dict:
+    secret = os.getenv("COMPOSIO_WEBHOOK_SECRET", "")
+    signing_string = f"{webhook_id}.{webhook_timestamp}.{body}"
+    expected = base64.b64encode(
+        hmac.new(secret.encode(), signing_string.encode(), hashlib.sha256).digest()
+    ).decode()
+    received = signature.split(",", 1)[1] if "," in signature else signature
+    if not hmac.compare_digest(expected, received):
+        raise ValueError("Invalid webhook signature")
+
+    payload = json.loads(body)
+    # V3 payload
+    return {
+        "trigger_slug": payload["metadata"]["trigger_slug"],
+        "data": payload["data"],
+    }
+```
+
+The gotchas that make signatures "never match":
+
+- **HMAC the raw request bytes**, captured before any JSON parsing or re-serialization. A re-serialized body reorders keys and the signature fails.
+- The secret may carry a `whsec_` prefix — try both the raw secret and the base64-decoded remainder after stripping the prefix.
+- The `webhook-signature` header is `v1,<sig>` (possibly space-separated multiples) — compare against the part after the comma.
+- Reject requests whose `webhook-timestamp` is too old to block replays. The SDK's `parse()` and `verifyWebhook()` enforce a 300-second tolerance by default; pass `tolerance` to change it, or `0` to disable.
+
+Verification policy: in dev, **enforce-when-present** (verify signed Composio traffic, let unsigned local test tools through) keeps local POSTs working; in production, always enforce and sign internal callers.
+</ForAgent>
+
+## Next
+
+<Cards>
+<Card icon={<Database />} title="Managing triggers" href="/docs/triggers#managing-triggers" description="List, pause, resume, and delete trigger instances — and hear about automatic disables." />
+<Card icon={<Key />} title="Custom OAuth webhooks" href="/docs/triggers/custom-oauth-webhooks" description="Bring your own OAuth app to a realtime trigger: register Composio's ingress URL with the provider." />
+</Cards>

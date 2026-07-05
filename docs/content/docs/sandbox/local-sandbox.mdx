@@ -1,0 +1,72 @@
+---
+title: Local sandbox
+description: Run your agent's code in your own infrastructure while Composio keeps handling auth and tool discovery
+keywords: [local sandbox, local workbench, security boundary, self-hosted sandbox, code execution, helper contract, e2b]
+experimental: true
+related:
+  - title: Local sandbox PR reviewer
+    href: /examples/local-sandbox-pr-reviewer
+    description: "A worked example: clone a PR into a sandbox you own and post one grounded review."
+---
+
+A **local sandbox** runs your agent's code in your own infrastructure instead of Composio's [hosted sandbox](/docs/sandbox), so code execution never leaves your security boundary.
+
+<LocalSandboxBoundary />
+
+Reach for a local sandbox when:
+
+- **Sensitive code or data.** The agent runs untrusted code or touches data that can't leave your infrastructure.
+- **You already run sandboxes.** You'd rather run agent code in your own VM, container, or CI worker than a hosted runtime.
+- **You need your own filesystem and shell.** The task installs packages, runs a build, or shells out to local tools.
+
+If none of that applies, use the [hosted sandbox](/docs/sandbox): it's the same helper surface with no infrastructure to run.
+
+You create a [session](/docs/how-composio-works) with the remote sandbox turned off, and Composio hands you back a Python helper module plus the environment it needs. You run both inside your own sandbox; every tool call still routes through Composio, so auth and discovery stay managed. Most of the [built-in helpers](/docs/sandbox#built-in-helpers) work identically — only the file helpers (`upload_local_file`, `smart_file_extract`), which depend on the managed `/mnt/files` mount, are remote-only for now. The full setup contract is in the dropdown below.
+
+<Callout type="warn">
+The sandbox is your security boundary. The helper reaches Composio with your project `COMPOSIO_API_KEY`, which acts across every connection on the project. Isolate the sandbox like anything else holding a project credential, and rotate the key if a run could have leaked it.
+</Callout>
+
+<ForAgent title="local sandbox setup">
+
+To run agent code in your own infrastructure instead of the hosted sandbox:
+
+1. Create the session with the remote sandbox disabled: `workbench.enable: false` (the remote sandbox and a local one can't both run for a single session).
+2. Pass the session to `experimental_createLocalWorkbenchSession` from `@composio/experimental/workbench`. It throws if the session still has the remote workbench enabled.
+
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+import { experimental_createLocalWorkbenchSession } from '@composio/experimental/workbench';
+
+const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+const session = await composio.create('user_123', {
+  toolkits: ['github'],
+  workbench: { enable: false },
+});
+
+const { helperSource, env } = await experimental_createLocalWorkbenchSession(composio, session);
+```
+
+You get back two things:
+
+- `helperSource` — a Python helper module, as source you write into your sandbox (for example as `composio_helper.py`). It exposes the same in-sandbox helper surface, with the same signatures — but here the agent **imports** them (`from composio_helper import run_composio_tool, invoke_llm, web_search`) instead of using pre-loaded globals.
+- `env` — the environment variables that helper needs to reach Composio from inside your box. Pass them to the process you run the agent in.
+
+Helper availability in a local sandbox: `run_composio_tool`, `invoke_llm`, `web_search` work; `proxy_execute` works but needs a proxy-execute-scoped key; `upload_local_file` and `smart_file_extract` are remote-only (they depend on the managed `/mnt/files` mount). Every `run_composio_tool` call routes back through the Tool Router under the session's connections.
+
+Security: `env` injects your project `COMPOSIO_API_KEY` into the sandbox, and any code or output there can read it. That key acts across every connection on the project — the sandbox is your security boundary. The API ships under the `experimental_` prefix, so the surface may change.
+
+**API reference**
+
+`experimental_createLocalWorkbenchSession` and the rest of the experimental workbench surface: [Experimental](/reference/sdk-reference/typescript/experimental).
+
+</ForAgent>
+
+## Next
+
+<Cards>
+<Card icon={<Code />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a PR into a sandbox you own and post one grounded review." />
+<Card icon={<Database />} title="Hosted sandbox" href="/docs/sandbox" description="The managed environment: built-in helpers, files and mounts, compute tiers." />
+</Cards>
