@@ -4,7 +4,7 @@ Apollo API keys can be limited to specific endpoint groups. A tool can return HT
 
 This can affect gated search, enrichment, usage, and outreach tools such as `APOLLO_PEOPLE_SEARCH`, `APOLLO_ORGANIZATION_SEARCH`, `APOLLO_SEARCH_ACCOUNTS`, `APOLLO_SEARCH_OUTREACH_EMAILS`, `APOLLO_PEOPLE_ENRICHMENT`, `APOLLO_BULK_PEOPLE_ENRICHMENT`, `APOLLO_ORGANIZATION_ENRICHMENT`, `APOLLO_BULK_ORGANIZATION_ENRICHMENT`, and `APOLLO_VIEW_API_USAGE_STATS`.
 
-Check that the connected account was created with the Apollo API key in the `generic_api_key` field. In Apollo, confirm that the key has the relevant endpoint access or has **Set as master key** turned on. Also check the Apollo plan, API access, and credit limits for the operation you are running. `APOLLO_GET_AUTH_STATUS` can succeed even when a gated tool returns 403, so treat it as a credential-validity check, not proof that the key can run every Apollo tool.
+In Apollo, make sure the API key has access to the relevant endpoint group or has **Set as master key** turned on. If the Apollo plan does not include the requested API feature, the tool can still return 403 until that access is enabled in Apollo.
 
 ## Why can APOLLO_PEOPLE_ENRICHMENT work while APOLLO_BULK_PEOPLE_ENRICHMENT returns no match?
 
