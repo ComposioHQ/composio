@@ -1,6 +1,6 @@
 ## Why can Apollo search or enrichment tools return HTTP 403?
 
-Composio's Apollo tools use the Apollo API key on the connected account. Apollo API keys can be scoped to individual endpoint groups or created as master keys. If a Composio Apollo tool returns HTTP 403 or `Forbidden`, the key may be valid but not allowed to perform that specific search, enrichment, usage, or outreach operation.
+Apollo API keys can be scoped to individual endpoint groups or created as master keys. If a Composio Apollo tool returns HTTP 403 or `Forbidden`, the key may be valid but not allowed to perform that specific search, enrichment, usage, or outreach operation.
 
 In Composio, this can appear on `APOLLO_PEOPLE_SEARCH`. The same permission or plan-access pattern can also affect gated Apollo tools such as `APOLLO_ORGANIZATION_SEARCH`, `APOLLO_SEARCH_ACCOUNTS`, `APOLLO_SEARCH_OUTREACH_EMAILS`, `APOLLO_PEOPLE_ENRICHMENT`, `APOLLO_BULK_PEOPLE_ENRICHMENT`, `APOLLO_ORGANIZATION_ENRICHMENT`, `APOLLO_BULK_ORGANIZATION_ENRICHMENT`, and `APOLLO_VIEW_API_USAGE_STATS`.
 
