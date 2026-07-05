@@ -6,11 +6,11 @@ For a step-by-step guide on creating and configuring your own Confluence OAuth c
 
 If Confluence OAuth fails with the managed app, compare the scopes configured in the auth config with the scopes configured on the Atlassian OAuth app. A mismatch can break connection. Use your own OAuth app with the correct scopes, or replace the auth config scopes with the supported Confluence scope set and reconnect.
 
-## How should I handle confluence custom OAuth should keep scopes aligned with Composio defaults and endpoint type?
+## Confluence custom OAuth should keep scopes aligned with Composio defaults and endpoint type
 
 For Confluence custom OAuth, keep Atlassian scopes aligned with the scopes Composio expects. Classic and granular scopes differ depending on whether the underlying Confluence endpoint is v1 or v2. Incorrect substitutions such as using an irrelevant space scope can cause tool execution errors even if OAuth completes.
 
-## What should I know about Add `offline_access` to Confluence auth configs when refresh tokens?
+## When should I add `offline_access` to Confluence auth configs?
 
 For Confluence OAuth, include the `offline_access` scope in the auth config and then create a new connected account. `offline_access` enables token refresh, so adding it to an existing auth config only affects new connections after users reconnect.
 
@@ -22,11 +22,11 @@ For Confluence tool execution, pass the connected account ID. Do not pass the au
 
 Use `CONFLUENCE_GET_PAGE_BY_ID` to retrieve Confluence page content by page ID. This is the tool for page body retrieval.
 
-## How should I handle `CONFLUENCE_UPDATE_PAGE` should be paired with `CONFLUENCE_GET_PAGE_VERSIONS` for versioned updates?
+## `CONFLUENCE_UPDATE_PAGE` should be paired with `CONFLUENCE_GET_PAGE_VERSIONS` for versioned updates
 
 Confluence page updates require the correct page version. Pair `CONFLUENCE_UPDATE_PAGE` with `CONFLUENCE_GET_PAGE_VERSIONS` so the agent can fetch the latest required version and then update the page. By default, the agent should update over the latest version unless a specific version is requested.
 
-## How should I handle download Confluence attachments by first getting attachment IDs?
+## Download Confluence attachments by first getting attachment IDs
 
 Use `CONFLUENCE_GET_ATTACHMENTS` to list attachments and get the attachment ID, then pass that ID to `CONFLUENCE_DOWNLOAD_ATTACHMENT` to download the file.
 
@@ -34,6 +34,6 @@ Use `CONFLUENCE_GET_ATTACHMENTS` to list attachments and get the attachment ID, 
 
 For supported MCP deployments, scopes can be retrieved from the `annotations` field in the `listTools` API response.
 
-## What should I know about Atlassian/Confluence OAuth, use the same redirect URI in auth config and Atlassian app?
+## How should I configure the Atlassian/Confluence OAuth redirect URI?
 
-The redirect URI in the Composio auth config and the Atlassian OAuth app must match. For v3, `https://backend.composio.dev/api/v3/toolkits/auth/callback` as the correct callback path and noted that `https://backend.composio.dev/api/v3/auth-apps/add` was incorrect.
+The redirect URI in the Composio auth config and the Atlassian OAuth app must match. For v3, use `https://backend.composio.dev/api/v3/toolkits/auth/callback` as the callback path. Do not use `https://backend.composio.dev/api/v3/auth-apps/add` for v3 Confluence OAuth.

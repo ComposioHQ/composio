@@ -12,7 +12,7 @@ Microsoft Graph's send endpoint returns an HTTP 202 with no message details. To 
 
 ## What's the @odata.context / @odata URL?
 
-The `@odata.context` URL provides metadata about the response (entity set, service version, and schema info) to help clients interpret the payload structure. It's primarily used for pagination and data parsing — not as a direct URL to the resource itself.
+The `@odata.context` URL provides metadata about the response (entity set, service version, and schema info) to help clients interpret the payload structure. It's primarily used for pagination and data parsing, not as a direct URL to the resource itself.
 
 ---
 
@@ -20,7 +20,7 @@ The `@odata.context` URL provides metadata about the response (entity set, servi
 
 Outlook tools authenticate through the Microsoft account/OAuth flow in a browser. If the user only uses Outlook desktop, they still need to log into the underlying Microsoft/Outlook account in the browser to complete OAuth. Desktop and cloud use the same account, so once the account is authenticated, the tools can operate against that mailbox.
 
-## How should I handle connect MCP exposes meta-tools, not individual Outlook tools, by design?
+## Connect MCP exposes meta-tools, not individual Outlook tools, by design
 
 `connect.composio.dev/mcp` uses Tool Router architecture, so it intentionally exposes meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`. The agent discovers and executes Outlook tools at runtime through those meta-tools. If a user needs specific Outlook tools without meta-tool round trips, use SDK direct execution or create a focused MCP config with selected Outlook tools.
 
@@ -32,7 +32,7 @@ For Outlook shared mailbox operations, pass the shared mailbox address, for exam
 
 If an Outlook MCP config fails due to older/bad tool slugs, update the MCP config to remove invalid slugs and include only current supported tools in `allowed_tools`. This can be done through the dashboard or the MCP patch endpoint.
 
-## How should I handle outlook multi-account sessions require explicit per-call `account` selection and aliases?
+## Outlook multi-account sessions require explicit per-call `account` selection and aliases
 
 For multi-account Outlook sessions, every connected account needs a unique non-null alias, the session should set `multi_account.enable=true` and `require_explicit_selection=true`, and the LLM must set the `account` field on each item in `COMPOSIO_MULTI_EXECUTE_TOOL.tools[]`. Without explicit selection, Tool Router cannot disambiguate and may default to one account.
 
@@ -40,7 +40,7 @@ For multi-account Outlook sessions, every connected account needs a unique non-n
 
 For Outlook 403s, look up required scopes with `/api/v3/tools/get_scopes_required` using the exact Outlook tool slug, not the toolkit name. For example `OUTLOOK_GET_MAILBOX_SETTINGS` requires `MailboxSettings.ReadWrite`. After adding scopes to the auth config, refresh the existing connection through the connected-account refresh endpoint or create a new connection so the new scopes are granted.
 
-## What should I know about You does not let users configure Outlook scopes directly?
+## What should For You users know about Outlook scope configuration?
 
 On For You, users cannot configure OAuth scopes directly. If an Outlook For You user needs an extra scope, the scope may need to be added on the account side before the user reconnects Outlook.
 
@@ -57,11 +57,11 @@ For the Composio-managed Outlook app, Microsoft's in-flow `sign in as an admin` 
 
 Your own verified-publisher Azure app can improve branding and control, and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not remove the admin-consent requirement: each tenant's user-consent policy and the exact scopes requested still decide whether admin consent is needed.
 
-## How should I handle outlook/Gmail email attachments through SDK should be passed as file paths?
+## Outlook/Gmail email attachments through SDK should be passed as file paths
 
 When using SDK automatic file handling for email attachments, pass the local file path directly in the `attachment`/`attachments` argument. Do not pass only a filename or raw content fields unless the tool schema explicitly asks for them.
 
-## How should I handle outlook trigger issues can be stale subscriptions/no trigger logs or provider-side account-specific failures?
+## Outlook trigger issues can be stale subscriptions/no trigger logs or provider-side account-specific failures
 
 When Outlook triggers stop, check whether the connected account has active trigger logs and webhook subscriptions. If a specific account has stale triggers with no logs/subscriptions, reconnect or recreate the trigger. If Composio sees no provider warnings/errors and only one Outlook account is affected, the user should also check with Microsoft/Outlook support while Composio investigates.
 

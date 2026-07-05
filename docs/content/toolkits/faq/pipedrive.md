@@ -24,7 +24,7 @@ For Pipedrive custom OAuth, enable the app in Composio and complete setup there 
 
 Use the user's own Pipedrive OAuth credentials or API-key auth when they need control over app approval, scopes, branding, or production availability.
 
-## How should I handle hosted auth links can collect Pipedrive required fields?
+## Hosted auth links can collect Pipedrive required fields
 
 Use hosted auth links when you want Composio to collect required provider-specific fields during connection initiation. You can also inspect the auth config/toolkit metadata to see the expected input fields before starting the Pipedrive connection.
 
@@ -32,6 +32,6 @@ Use hosted auth links when you want Composio to collect required provider-specif
 
 When initiating a Pipedrive connection through SDK/API, pass `callback_url` or `callbackUrl` in the connection initiation call. Composio redirects the user to that URL after the provider authentication flow completes.
 
-## How should I handle pipedrive has trigger support?
+## Pipedrive has trigger support
 
 Pipedrive has trigger support. Check the toolkit page for the currently available trigger list.

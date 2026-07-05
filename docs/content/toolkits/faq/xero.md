@@ -22,7 +22,7 @@ Remove the deprecated/invalid Xero scopes `accounting.journals.read`, `accountin
 
 Toolkits that can process payments may be flagged under Payment Processing by Claude policy, which blocks Xero in that session. Users can still access Xero through Composio outside that restricted Claude/Cowork path, such as via the Composio CLI or Platform flows.
 
-## How should I handle connect MCP discovers Xero tools through meta-tools instead of preloading every tool?
+## Connect MCP discovers Xero tools through meta-tools instead of preloading every tool
 
 Connect MCP uses meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL` to discover and execute toolkit-specific tools dynamically. For Xero, the expected flow is: ask/search for the task such as `get Xero contacts`, let the agent discover the relevant Xero tool, then execute it through the multi-execute tool. This avoids loading 1000+ tools into context up front.
 

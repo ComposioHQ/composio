@@ -6,34 +6,34 @@ For a step-by-step guide on creating and configuring your own Stripe OAuth crede
 
 Composio supports the Stripe toolkit with OAuth2 and API-key auth modes. The marketplace entry is available on the Stripe toolkit page.
 
-## What should I know about Stripe API-key auth, use the Stripe secret key from Developers -> API Keys -> Standard keys?
+## Which Stripe API key should I use for API-key auth?
 
 For Stripe API-key auth, use the Stripe secret key from Stripe Dashboard -> Developers -> API Keys -> Standard keys -> Secret key. In API/SDK connection payloads, the auth config field may need to be passed as `api_key`.
 
-## How should I handle one Stripe MCP/API-key connection maps to one Stripe account unless the user uses Stripe Connect?
+## One Stripe MCP/API-key connection maps to one Stripe account unless the user uses Stripe Connect
 
 Stripe usually uses different API keys for separate accounts, so one connected account/MCP server has access to one Stripe account. If the user uses Stripe Connect, the platform can consolidate connected accounts under one platform API key and may better fit multi-account workflows.
 
-## How should I handle MRR can be calculated from `STRIPE_LIST_SUBSCRIPTIONS`?
+## MRR can be calculated from `STRIPE_LIST_SUBSCRIPTIONS`
 
 Use `STRIPE_LIST_SUBSCRIPTIONS` to retrieve subscription data, then calculate MRR from the returned subscriptions in the agent/application layer.
 
-## How should I handle duplicate Stripe trigger events can be caused by stale webhook records left in Stripe?
+## Duplicate Stripe trigger events can be caused by stale webhook records left in Stripe
 
 If Stripe sends duplicate trigger payloads, check Stripe webhook/event destinations in the Stripe dashboard. Duplicate webhook destinations can cause duplicate event deliveries. Disable or delete extra Stripe webhook destinations so only the intended destination remains active.
 
-## How should I handle some Stripe triggers worked with API-key auth but failed with OAuth on verified-account/webhook permissions?
+## Some Stripe triggers worked with API key auth but failed with OAuth on verified-account/webhook permissions
 
 If Stripe trigger creation fails under OAuth but works with API-key auth, check Stripe account verification and webhook permissions. OAuth-connected accounts may not be permitted to configure webhook endpoints depending on the Stripe account state and granted permissions.
 
-## How should I handle A Stripe trigger should create a corresponding subscription/webhook in Stripe?
+## A Stripe trigger should create a corresponding subscription/webhook in Stripe
 
 When troubleshooting missing Stripe checkout webhook events, verify both sides: confirm the trigger was created in Composio, then check whether the corresponding webhook/subscription was created in the user's Stripe dashboard. Recreating the trigger can be a valid recovery step if the webhook subscription was not created correctly.
 
-## How should I handle additional Stripe endpoints can be added as toolkit requests?
+## Additional Stripe endpoints can be added as toolkit requests
 
 If a Stripe endpoint/tool is missing, submit the exact endpoints needed through the toolkit request flow. Useful examples include balance transactions, search for charges, cash balance, credit balances, coupons, and payouts.
 
-## How should I handle stripe tokens may not be revocable programmatically through provider APIs?
+## Stripe tokens may not be revocable programmatically through provider APIs
 
 For Stripe OAuth connections, provider-side programmatic revocation may not be available. If Composio cannot revoke the token through the provider API, the user should remove the connected app manually from Stripe/app settings as part of the revocation process.

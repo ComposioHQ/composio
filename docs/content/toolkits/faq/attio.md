@@ -10,18 +10,18 @@ If an Attio endpoint is not covered by the built-in toolkit, create a custom too
 
 Composio does not support arbitrary custom metadata on auth configs. As a workaround, set a meaningful authConfig name when creating it, such as a company name or reference ID, and use that name for identification.
 
-## How should I handle missing Attio OAuth scopes?
+## Missing Attio OAuth scopes
 
 First confirm whether the user is using Composio's managed OAuth app or their own Attio OAuth app. If the managed app does not include the required Attio scopes, use the user's own Attio OAuth app where those scopes are configured and approved.
 
-## How should I handle missing Attio meeting and call-recording get-by-id tools?
+## Missing Attio meeting and call-recording get-by-id tools
 
 If Attio get-by-id tools for meetings and call recordings are missing, submit the exact endpoints through the tool request flow. Useful examples include `GET /v2/meetings/{id}`, `GET /v2/call_recordings/{id}`, and `GET /v2/call_recordings/{id}/transcript`.
 
-## How should I handle top-level `$` parameter names in Attio schemas?
+## Top-level `$` parameter names in Attio schemas
 
 For schema failures caused by top-level `$`-prefixed parameter names, update to the latest tool schema/toolkit version. Current schemas avoid top-level `$` prefixes that some model providers reject. Nested `$` prefixes may still be accepted depending on the provider.
 
-## How should I handle attio OAuth tokens cannot be programmatically revoked by Composio?
+## Attio OAuth tokens cannot be programmatically revoked by Composio
 
 Attio is in the group of providers where Composio cannot programmatically revoke OAuth tokens because the provider does not offer a revocation API for that flow. For Attio, instruct end users to remove the connection manually in the provider's app settings, then re-authorize as needed.

@@ -10,7 +10,7 @@ PostHog is API-key based in Composio. Use the user's PostHog API key when creati
 
 For EU or self-hosted PostHog instances, configure the PostHog `subdomain` or instance value instead of assuming the default cloud host. When supported by the auth flow, set the value during auth config or connection setup.
 
-## What should I pass for auth config into Tool Router sessions; platform-created auth configs are not automatically usable?
+## How do I pass PostHog auth configs into Tool Router sessions?
 
 When using PostHog through Tool Router MCP, include the auth config in the Tool Router session so the generated MCP URL has the correct auth config details. Auth configs or connected accounts created on the platform side are not automatically available inside every Tool Router session unless they are passed/associated correctly.
 
@@ -18,10 +18,10 @@ When using PostHog through Tool Router MCP, include the auth config in the Tool 
 
 `/api/v3/auth_configs` lists the active auth configs/integrations already created in the project. If PostHog is missing or the response is empty, create a PostHog auth config/integration first, then connect the account to it.
 
-## How should I handle API-key connections may show active without live credential validation?
+## API key connections may show active without live credential validation
 
 For API-key/token auth, Composio may mark the connection `ACTIVE` once the required fields are present. That does not guarantee the PostHog API key is valid until a provider call is made. If tool execution fails later, verify the key directly with PostHog and recreate/update the connection with valid credentials.
 
-## How should I handle fetch PostHog tool schema to see required fields for a tool call?
+## Fetch PostHog tool schema to see required fields for a tool call
 
 If a PostHog tool call fails because of missing or mixed-up parameters, fetch the tool schema by slug, for example `/api/v3/tools/POSTHOG_CREATE_PROJECT_INSIGHTS_WITH_FORMAT_OPTION`, using the project API key. The schema response shows the required fields and expected shapes for that tool call.

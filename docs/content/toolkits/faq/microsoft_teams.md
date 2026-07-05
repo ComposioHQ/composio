@@ -1,8 +1,8 @@
-## How should I handle microsoft Teams delegated permissions should be checked with `get_scopes_required` and `toolkit_versions[microsoft_teams]=latest`?
+## Microsoft Teams delegated permissions should be checked with `get_scopes_required` and `toolkit_versions[microsoft_teams]=latest`
 
 For Microsoft Teams scope checks, call `/api/v3/tools/get_scopes_required` with the exact tool slug and include `toolkit_versions[microsoft_teams]=latest` when needed. Without the explicit toolkit version, the API may return data from the old `00000000_00` version.
 
-## How should I handle invalid OAuth scope: `ChannelMessage.Read.Group`?
+## Invalid OAuth scope: `ChannelMessage.Read.Group`
 
 If Microsoft Teams OAuth fails before consent with:
 
@@ -17,7 +17,7 @@ To fix the OAuth config:
 - Remove `ChannelMessage.Read.Group` from the OAuth auth config scopes and use `ChannelMessage.Read.All`, `Group.Read.All`, or `Group.ReadWrite.All` according to the latest tool scope response.
 - If an existing auth config already includes the bad scope, update/recreate it and reconnect. Existing connected accounts may need refresh/reconnect depending on how the user propagates scope changes.
 
-## How should I handle `MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS` and `MICROSOFT_TEAMS_CREATE_MEETING` can work with delegated user scopes?
+## `MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS` and `MICROSOFT_TEAMS_CREATE_MEETING` can work with delegated user scopes
 
 `MICROSOFT_TEAMS_CHATS_GET_ALL_CHATS` can use `Chat.ReadBasic`, `Chat.Read`, or `Chat.ReadWrite`. `MICROSOFT_TEAMS_CREATE_MEETING` requires `OnlineMeetings.ReadWrite`. Confirm exact required scopes with the latest versioned scope endpoint before changing auth config scopes.
 
@@ -33,7 +33,7 @@ For Microsoft Teams one-on-one chat creation, pass two users, not one. Also make
 
 For Microsoft Teams MCP, the user ID in the MCP server URL/query params must match the user ID attached to the connected account. If the connection is bound to an email/GUID, use that value in the MCP URL or create a new server/connection with the desired user ID.
 
-## How should I handle teams chat tools return 400/403/404 when user IDs or chat membership do not match Microsoft Graph expectations?
+## Teams chat tools return 400/403/404 when user IDs or chat membership do not match Microsoft Graph expectations
 
 For `MICROSOFT_TEAMS_LIST_USER_CHAT_MESSAGES`, a 400 commonly means `user_id` was not passed as a GUID or UPN. For chat members tools, 403/404 often means the connected user is not part of the meeting chat or the chat ID is not in that user's scope. Use `MICROSOFT_TEAMS_LIST_USERS` to find valid user IDs and verify the connected user is a participant in the target chat.
 
@@ -41,10 +41,10 @@ For `MICROSOFT_TEAMS_LIST_USER_CHAT_MESSAGES`, a 400 commonly means `user_id` wa
 
 When fetching Microsoft Teams tools by toolkit, the default list may return only 20 tools. Increase the `limit` parameter or search for exact tool slugs to retrieve the full set.
 
-## How should I handle some Microsoft Teams slugs were restored as deprecated aliases with replacement descriptions?
+## Some Microsoft Teams slugs were restored as deprecated aliases with replacement descriptions
 
 Some older Microsoft Teams slugs are deprecated aliases with descriptions pointing to replacement slugs. If a Teams slug disappears or changes, check the latest toolkit version/changelog and prefer the replacement slug.
 
-## How should I handle tool Router memory for Microsoft Teams should be a list under the toolkit key?
+## Tool Router memory for Microsoft Teams should be a list under the toolkit key
 
 When passing Tool Router memory for Microsoft Teams, use a real list under the `microsoft_teams` key, for example `"memory": { "microsoft_teams": ["Session id..."] }`. Do not pass escaped square brackets as a string.

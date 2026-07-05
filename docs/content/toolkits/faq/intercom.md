@@ -10,7 +10,7 @@ When an Intercom workflow needs scopes that are not available on the hosted OAut
 
 For Intercom company listing through Composio, keep `per_page` at 60 or lower. The generic Intercom pagination page can be misleading for this endpoint; Composio verified the list companies endpoint limit as 60 and updated the field description accordingly.
 
-## How should I handle update Python SDK packages when Intercom tool schemas fail on reserved parameter names?
+## Update Python SDK packages when Intercom tool schemas fail on reserved parameter names
 
 If Intercom tool schemas fail because of reserved parameter names, update both `composio` and `composio-langchain` to the latest available versions.
 
@@ -18,6 +18,6 @@ If Intercom tool schemas fail because of reserved parameter names, update both `
 
 If an Intercom API request is slow enough to exceed proxy/edge timeout behavior, prefer the built-in Intercom tool when available, or call the Intercom API directly from a custom tool by fetching the connection access token and injecting it during execution.
 
-## How should I handle intercom OAuth tokens cannot be programmatically revoked by Composio?
+## Intercom OAuth tokens cannot be programmatically revoked by Composio
 
 Intercom is one of the providers where Composio cannot programmatically revoke OAuth tokens because the provider does not expose a supported revocation API for this flow. For Intercom connections, ask end users to remove the connection manually from Intercom's app settings and then re-authorize if needed.

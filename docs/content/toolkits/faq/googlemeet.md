@@ -42,7 +42,7 @@ For Meet space creation/settings through Google Super, include the Meet scopes h
 
 ![Google Cloud product details page showing the Enable button for Google Meet REST API.](/images/kb/toolkits/googlemeet/google-meet-api-enable-button.png)
 
-## How should I handle fetch transcript entries by first resolving the conference record?
+## Fetch transcript entries by first resolving the conference record
 
 Start by resolving the conference record, either with GOOGLEMEET_GET_CONFERENCE_RECORD_FOR_MEET when you have the meeting code, or with GOOGLEMEET_LIST_CONFERENCE_RECORDS when listing available records. Use the resulting conferenceRecord_id with GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID, then use the conference record and transcript values to list transcript entries. Prefer GOOGLEMEET_GET_TRANSCRIPTS_BY_CONFERENCE_RECORD_ID over the older/misdescribed GOOGLEMEET_GET_CONFERENCE_TRANSCRIPTS path.
 

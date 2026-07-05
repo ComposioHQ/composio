@@ -28,11 +28,11 @@ WhatsApp OAuth2 auth still requires `generic_id`, and that value is the WhatsApp
 
 For WhatsApp OAuth with your own Meta app, create a Meta developer app, enable the Business use case, configure the WhatsApp product, and publish the app so users can connect to it. The Meta app/account used during connection should match the account that owns or can access the WhatsApp Business setup.
 
-## How should I handle meta OAuth errors can require adding the Composio redirect URI in the Meta app?
+## Meta OAuth errors can require adding the Composio redirect URI in the Meta app
 
 For Meta OAuth apps, add the Composio redirect URI to the correct redirect/callback URI field in the Meta developer app. OAuth failures during callback can happen when the app does not allow the redirect URI used by the Composio auth config.
 
-## How should I handle whatsApp template messages require an existing template before sending?
+## WhatsApp template messages require an existing template before sending
 
 Sending a WhatsApp template message requires a template to already exist in WhatsApp/Meta. The send-template tool sends an existing template by name/language and parameters; it does not remove the need to create and approve the template first.
 
@@ -44,7 +44,7 @@ Support for `components` was added to the WhatsApp send-template flow in a newer
 
 For WhatsApp send-message actions, make sure the action arguments contain the actual `phone_number_id` and recipient `to_number`. Placeholder values in the tool arguments will fail even if the connected account itself is active.
 
-## How should I handle reading WhatsApp replies?
+## Reading WhatsApp replies
 
 WhatsApp does not expose every reply-reading flow as a normal API action in the toolkit. The better product shape is a trigger/webhook for events such as message or reply received. Where a first-party WhatsApp trigger is not available for the exact use case, TimelinesAI may be an alternative because it includes WhatsApp-related trigger support.
 

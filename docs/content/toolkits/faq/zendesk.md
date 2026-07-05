@@ -6,23 +6,23 @@ For a step-by-step guide on creating and configuring your own Zendesk OAuth cred
 
 Zendesk still supports OAuth and users can connect using their own Zendesk OAuth app credentials. For production usage, or when Composio's default Zendesk OAuth app is under verification or has an auth issue, use a custom auth app / own developer app credentials to create the auth config.
 
-## How should I handle zendesk OAuth setup does not require manually entering an access token?
+## Zendesk OAuth setup does not require manually entering an access token
 
 For Zendesk OAuth, the access token is injected automatically after the OAuth flow completes; users do not need to manually enter it. Redirect URI can be optional depending on the auth-config setup, but if Zendesk requires one, configure the Composio auth redirect URL in the Zendesk OAuth app.
 
-## How should I handle zendesk connections require the account subdomain?
+## Zendesk connections require the account subdomain
 
 Zendesk requires the account subdomain during connection initiation. Pass the Zendesk site prefix, not the full URL, as `subdomain`. Composio uses that field to construct Zendesk URLs.
 
-## How should I handle initiate Zendesk OAuth connections by passing `subdomain` in config values?
+## Initiate Zendesk OAuth connections by passing `subdomain` in config values
 
 When initiating a Zendesk OAuth connected account, pass `subdomain` in the connection config values. For the current SDK shape, use `config={"auth_scheme":"OAUTH2","val":{"subdomain":"<site-name>"}}`; older examples used `connected_account_params={"subdomain":"<site-name>"}`.
 
-## How should I handle zendesk API-key/basic auth initiation passes `subdomain` and base64 encoded credentials?
+## Zendesk API-key/basic auth initiation passes `subdomain` and base64 encoded credentials
 
 For Zendesk API-key/basic auth connection initiation, pass the Zendesk `subdomain` and `basic_encoded` credential value in the connection data. The `basic_encoded` value should be the base64 encoding of the Zendesk email/token credential form requested by the auth config.
 
-## How should I handle include `toolkit_versions` when listing Zendesk tools through the API?
+## Include `toolkit_versions` when listing Zendesk tools through the API
 
 When listing Zendesk tools through the API, include the toolkit version query parameter. For example, use `toolkit_versions=latest&toolkit_slug=zendesk&limit=1000`. Without the toolkit version query, the API response may not show the expected tool set.
 

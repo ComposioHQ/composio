@@ -1,6 +1,6 @@
 ## What does the Composio + Slack integration do?
 
-Composio turns Slack's API into ready-to-use tools that AI agents and automations can call. With the integration you can send and read messages, manage channels, upload files, react to events, search conversations, and more — all through a unified platform. Composio supports two toolkits: **Slack** (authenticate as a user for workspace-level actions) and **Slackbot** (authenticate as a bot for in-channel messaging, app mentions, and slash commands). Developers connect their Slack workspace once and then orchestrate any combination of these actions from their agents or workflows.
+Composio turns Slack's API into ready-to-use tools that AI agents and automations can call. With the integration you can send and read messages, manage channels, upload files, react to events, search conversations, and more through a unified platform. Composio supports two toolkits: **Slack** (authenticate as a user for workspace-level actions) and **Slackbot** (authenticate as a bot for in-channel messaging, app mentions, and slash commands). Developers connect their Slack workspace once and then orchestrate any combination of these actions from their agents or workflows.
 
 ## How does Composio handle my Slack data?
 
@@ -20,7 +20,7 @@ When a member of a Slack workspace tries to install a non-Marketplace app.
 
 ## Do I have to be a Workspace Owner to install the app?
 
-In some cases — yes. For example, when installing non-Marketplace apps, you'll need to be an owner to install directly and complete the connection. As a member, you'd need to either request approval, or ask the owner to disable **Require approved apps**.
+In some cases, yes. For example, when installing non-Marketplace apps, you'll need to be an owner to install directly and complete the connection. As a member, you'd need to either request approval, or ask the owner to disable **Require approved apps**.
 
 ## Why am I being asked to submit a request during auth?
 
@@ -31,7 +31,7 @@ Because **Require approved apps** is enabled in the workspace's **App Management
 Two ways:
 
 - Disable both **Require apps from Slack Marketplace** and **Require approved apps** in the workspace's app management settings.
-- Use the workspace's own OAuth app — recommended and safest. See [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
+- Use the workspace's own OAuth app, which is recommended and safest. See [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
 
 ## What is the difference between Slack and Slackbot toolkits?
 
@@ -67,11 +67,11 @@ See [Triggers](/docs/triggers).
 
 For the Slack toolkit, `scopes` refers to bot-user scopes. If the use case is to operate as the actual Slack user, pass the permissions in `user_scopes` on the auth config credentials. Slack is special because it separates bot scopes from user scopes. For user-token tools, set `credentials.user_scopes`; the bot `scopes` field may not matter if the Slack application has no bot-user tools for that use case.
 
-## How should I handle revoked Slack tokens can remain ACTIVE briefly before expiring?
+## Revoked Slack tokens can remain ACTIVE briefly before expiring
 
 A Slack connected account may stay `ACTIVE` for about two refresh cycles after token revocation. This is an intentional retry mechanism to avoid expiring accounts too aggressively because providers can return transient auth errors. Depending on the toolkit, the account should be marked `EXPIRED` after roughly two failed refresh attempts, about 30 minutes. If Slack returns `account_inactive`, that may indicate the connected Slack account itself is inactive rather than only a token-revocation case.
 
-## How should I handle download Slack file content using file ID?
+## Download Slack file content using file ID
 
 Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the Slack file ID, which starts with `F` such as `F123ABCDEF0`. The tool returns downloadable file content plus metadata such as name, mimetype, and size. If the file ID is unknown, first call `SLACK_LIST_FILES_WITH_FILTERS_IN_SLACK` to find file IDs, then pass the selected ID to the download tool.
 
@@ -79,7 +79,7 @@ Slack file download is supported through `SLACK_DOWNLOAD_SLACK_FILE`. Pass the S
 
 Slack's `assistant.search.context` requires the Slack OAuth app to have the Agents & AI Apps feature enabled, and the Slack workspace must be on Business+ or higher. Verify workspace support by calling `assistant.search.info`; if `is_ai_search_enabled` is `false`, the workspace plan or feature enablement is the blocker. A user can unblock with their own Slack OAuth app that has Agents & AI Apps enabled, but they still need Business+ on the workspace.
 
-## How should I handle Slack Marketplace warnings during OAuth?
+## Slack Marketplace warnings during OAuth
 
 Slack may show warnings for non-Marketplace apps depending on workspace policy. The OAuth flow can still work if the workspace allows the app. If the workspace requires Marketplace-approved apps or admin approval, use the workspace's own Slack OAuth app or ask a workspace admin to approve the app.
 
@@ -89,7 +89,7 @@ Slack may show warnings for non-Marketplace apps depending on workspace policy. 
 
 Use the Slack V2 triggers for message events. `SLACK_CHANNEL_MESSAGE_RECEIVED` is intended for channel messages, and `SLACK_DIRECT_MESSAGE_RECEIVED` is intended for DMs. Slack V2 triggers include dedicated endpoints, signature verification, better DM handling, and richer filtering. Older V1 Slack trigger slugs may still work, but V2 is the recommended path for new setups.
 
-## How should I handle slack trigger delivery depends on the Slack app event subscription webhook URL?
+## Slack trigger delivery depends on the Slack app event subscription webhook URL
 
 When Slack trigger events stop unexpectedly, check whether the Slack OAuth app's Event Subscriptions `webhook_url` was changed. If the webhook URL or other Slack app event-subscription settings changed, Slack may stop delivering events to Composio even though the trigger instance was previously working.
 
@@ -109,6 +109,6 @@ The `attachments` field on Slack scheduled messages refers to Slack's legacy sec
 
 `admin.conversations:write` is an enterprise/admin-level Slack scope. For APIs such as `admin.conversations.delete`, the Slack workspace must be on an Enterprise plan. If a user cannot use channel deletion/admin conversation tools, first confirm the Slack workspace plan and whether the app has the required admin scope.
 
-## How should I handle slackbot token rotation can make externally cached tokens expire quickly?
+## Slackbot token rotation can make externally cached tokens expire quickly
 
 Slackbot tokens are usually long-lived, but if Slack token rotation is enabled, a given access token may only remain valid for about two refreshes, often under 30 minutes. Composio auto-refreshes tokens on a fixed cadence, about every 15 minutes, not every time the connected account is fetched. If your backend uses provider tokens directly, fetch the connected account frequently enough to get a fresh token instead of caching a token for long periods. Alternatively, migrate to a Slack app where token rotation is not enabled if that better fits the workflow.

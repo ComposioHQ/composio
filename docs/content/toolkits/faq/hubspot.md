@@ -115,13 +115,13 @@ Use your own HubSpot OAuth app credentials/custom auth config. That gives contro
 
 The default managed HubSpot OAuth app is intended to make setup easy for users getting started with Composio. If the warning blocks your users, use your own HubSpot OAuth app credentials in a custom Composio auth config. That lets you control the OAuth app identity and verification posture shown during OAuth.
 
-Link the user to the HubSpot custom OAuth/BYOA guide (`https://composio.dev/auth/hubspot`) and remind them to use the Composio callback URL shown in the auth config, currently `https://backend.composio.dev/api/v3/toolkits/auth/callback`.
+Use the HubSpot custom OAuth/BYOA guide (`https://composio.dev/auth/hubspot`) and the Composio callback URL shown in the auth config, usually `https://backend.composio.dev/api/v3/toolkits/auth/callback`.
 
-## What must HubSpot scopes do?
+## How should HubSpot scopes match app configuration?
 
 HubSpot requires scopes to be declared in the app configuration before OAuth. The scope set on the Composio auth config should match the HubSpot app settings; HubSpot will not dynamically adjust scopes at connection time.
 
-## How should I handle hubSpot OAuth token-fetch 400: check client secret and required-scope alignment?
+## HubSpot OAuth token-fetch 400: check client secret and required-scope alignment
 
 First check the HubSpot OAuth client secret. If the secret was rotated or copied from the wrong HubSpot app, HubSpot can fail token exchange with a 400.
 
@@ -137,30 +137,30 @@ For Composio-managed HubSpot auth configs, do not change the default scope set. 
 
 If a required HubSpot scope is not available on the managed OAuth app, use your own HubSpot OAuth app where the scope is configured in HubSpot and requested by the Composio auth config.
 
-## How should I handle old HubSpot SDK/toolkit versions use old double-prefixed slugs?
+## Old HubSpot SDK/toolkit versions use old double-prefixed slugs
 
 Update the SDK and explicitly use the latest HubSpot toolkit version. Older versions used slugs like `HUBSPOT_HUBSPOT_LIST_CONTACTS`; newer versions use slugs like `HUBSPOT_LIST_CONTACTS`.
 
-## How should I handle hubSpot auth loops can be caused by HubSpot-side workspace/login state?
+## HubSpot auth loops can be caused by HubSpot-side workspace/login state
 
 If the HubSpot flow loops while Composio works on its side, retry while logged into the correct HubSpot workspace and confirm the OAuth app is public/configured correctly.
 
-## How should I handle composio does not provide HubSpot field-level permissions; restrict by user/session/tools instead?
+## Composio does not provide HubSpot field-level permissions; restrict by user/session/tools instead
 
 Composio does not provide HubSpot field-level permissions inside a single tool call. Approximate this with user-scoped sessions, deciding which users connect HubSpot, and filtering allowed toolkits/tools per session, such as read-only tools for some users and update tools for others.
 
-## How should I handle hubSpot marketing campaign objects do not expose a properties API like CRM objects?
+## HubSpot marketing campaign objects do not expose a properties API like CRM objects
 
 For HubSpot marketing objects such as campaigns, HubSpot does not expose a properties API in the same way it does for CRM objects. Users may need to inspect/configure these from the HubSpot portal.
 
-## How should I handle hubSpot triggers require each user’s own app ID and developer API key?
+## HubSpot triggers require each user’s own app ID and developer API key
 
 HubSpot webhook APIs need the specific HubSpot app that should receive webhook notifications. For user HubSpot triggers, `app_id` and developer API key are required because each user needs their own HubSpot app for webhook delivery.
 
-## How should I handle HubSpot trigger configuration changes?
+## HubSpot trigger configuration changes
 
 After HubSpot trigger configuration changes, old trigger instances may need to be deleted and recreated so they pick up the new behavior/configuration.
 
-## How should I handle deleting a HubSpot connected account disconnects it and stops token refresh?
+## Deleting a HubSpot connected account disconnects it and stops token refresh
 
 Deleting the connected account disconnects the HubSpot account from Composio and stops refreshing that access token.

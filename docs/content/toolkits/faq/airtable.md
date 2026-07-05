@@ -2,7 +2,7 @@
 
 For a step-by-step guide on creating and configuring your own Airtable OAuth credentials with Composio, see [How to create OAuth credentials for Airtable](https://composio.dev/auth/airtable).
 
-## How should I handle connect Airtable to Claude using MCP?
+## Connect Airtable to Claude using MCP
 
 Airtable can be connected to Claude through Composio MCP. Create or use an MCP server with Airtable tools selected, add the MCP server configuration to Claude, and complete the Airtable account connection from the MCP/connect flow.
 
@@ -18,14 +18,14 @@ When Airtable connected accounts expire, inspect the refresh error from Airtable
 
 The expiry reason "Connection initiation did not complete within 10 minutes" means the user opened or initiated the connection but did not finish the authentication flow within ten minutes. It is a generic connected-account timeout across toolkits, not an Airtable-specific error. Start a fresh connection/initiation link and complete the OAuth flow within the allowed window.
 
-## How should I handle missing Airtable tools may be caused by default list limits or TS SDK not requesting latest?
+## Missing Airtable tools may be caused by default list limits or TS SDK not requesting latest
 
 If Airtable tools appear missing, first increase the tools list limit or paginate because the default response may only return the first page of tools. In Python, listing tools with a higher limit returns the expected tools. In TypeScript, pass `toolkit_versions: "latest"` when listing tools until the SDK handles that automatically. Also note that old names such as `create_multiple_records` and `create_record` were deprecated in favor of current uppercase slugs such as `AIRTABLE_CREATE_RECORDS`.
 
-## How should I handle AIRTABLE_UPDATE_MULTIPLE_RECORDS updates at most 10 records per call?
+## AIRTABLE_UPDATE_MULTIPLE_RECORDS updates at most 10 records per call
 
 `AIRTABLE_UPDATE_MULTIPLE_RECORDS` can update a maximum of 10 Airtable records at a time. For larger updates, split the records into batches of 10 and execute multiple calls while respecting Airtable's API rate limits.
 
-## How should I handle Airtable MCP schema validation failures?
+## Airtable MCP schema validation failures
 
 If an Airtable MCP server fails schema validation for specific create/base/table/field-style tools, rebuild or deploy the MCP server with only the Airtable tools needed for the workflow. Keeping the selected tool set smaller can let the rest of the Airtable MCP server continue working while you isolate the schema that the client rejects.

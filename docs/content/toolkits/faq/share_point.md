@@ -10,13 +10,13 @@ Treat the current SharePoint toolkit and the SharePoint Graph toolkit as separat
 
 SharePoint REST is not deprecated just because SharePoint Add-Ins / Azure ACS are retiring. Microsoft still documents SharePoint REST/CSOM as valid when Graph does not cover the needed functionality. Graph is the unified Microsoft 365 API and is usually better for cross-service or client-secret S2S flows, but it does not have perfect parity with SharePoint REST.
 
-## How should I handle `/teams/` SharePoint sites require the server-relative Subsite path?
+## `/teams/` SharePoint sites require the server-relative Subsite path
 
 If a user's SharePoint site URL is under `/teams/<site>` instead of `/sites/<site>`, do not tell them to pass only `<site>` in the SharePoint Subsite field. A bare subsite value is interpreted as `/sites/<site>` by the toolkit.
 
 Re-initiate or reconnect the SharePoint account and set SharePoint Subsite to the full server-relative path, for example `/teams/<site>`. For per-call overrides, pass `site_name: "/teams/<site>"`.
 
-## How do I create Folder: OData type-name error?
+## SharePoint folder creation OData type-name error
 
 SharePoint REST folder creation requires the SharePoint folder metadata type. If a direct REST or Proxy Execute folder creation call fails with:
 
@@ -37,7 +37,7 @@ An entry without a type name was found, but no expected type was specified.
 
 Send the request with `SP.Folder` metadata, or create the folder manually in SharePoint.
 
-## How should I handle sharePoint REST app-only client credentials use certificate auth?
+## SharePoint REST app-only client credentials use certificate auth
 
 For the current Composio `share_point` toolkit, client credentials and certificate-based authentication are the same app-only path: client credentials is implemented with certificate-based authentication.
 

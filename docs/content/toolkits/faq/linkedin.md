@@ -16,7 +16,7 @@ LinkedIn restricts certain scope combinations. For example, `w_member_social` an
 
 LinkedIn 426 `NONEXISTENT_VERSION` errors usually mean the request is using an older LinkedIn API version header. In Composio, this often happens when calls run on the base toolkit version `00000000_00` or another older pinned version. Specify the latest LinkedIn toolkit version on tool calls, or pin to the current fixed version if needed. If the error persists after switching to the latest version, collect a failed call `logId` or request ID so the actual `LinkedIn-Version` header can be verified.
 
-## How should I handle fetch modern LinkedIn tools with `toolkit_slug=linkedin` and `toolkit_versions=latest`?
+## Fetch modern LinkedIn tools with `toolkit_slug=linkedin` and `toolkit_versions=latest`
 
 The v3 tools-list endpoint defaults to the base toolkit version when no toolkit version is specified, which can return only legacy LinkedIn slugs. Use the singular filter `toolkit_slug=linkedin`; plural or alternate filters such as `toolkit_slugs`, `toolkits`, `app`, or `app_names` may be ignored. Add `toolkit_versions=latest` or an explicit version such as `20240624_00`. Example: `GET /api/v3/tools?toolkit_slug=linkedin&toolkit_versions=latest&limit=100`.
 

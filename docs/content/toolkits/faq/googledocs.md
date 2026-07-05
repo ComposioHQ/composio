@@ -30,7 +30,7 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## How should I handle `GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN` accepts GitHub-Flavored Markdown and HTML tables?
+## `GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN` accepts GitHub-Flavored Markdown and HTML tables
 
 `GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN` accepts GitHub-Flavored Markdown. Markdown tables should work, and HTML tables can also be passed in the markdown payload when a table shape is needed.
 
@@ -50,15 +50,15 @@ Google may block OAuth consent when an app requests unverified sensitive scopes.
 
 For connections using Composio-managed Google OAuth apps, provider tokens are fully redacted regardless of the project masking setting. To access raw tokens, create a custom auth config with the user's own Google OAuth client credentials; custom auth configs can respect the project masking toggle. Prefer tool execution or Proxy Execute when possible instead of reading tokens directly.
 
-## How should I handle multiple Google accounts require multi-account support or distinct connected account/user selection?
+## Multiple Google accounts require multi-account support or distinct connected account/user selection
 
 With the default single-account integration behavior, only one account for the same service may be active at a time. To support multiple Google accounts in parallel, the integration owner must enable/manage multiple connected accounts and select the intended account via `user_id` or `connected_account_id`.
 
-## How should I handle tool Router v2 sessions require connected accounts to belong to the same user/entity?
+## Tool Router v2 sessions require connected accounts to belong to the same user/entity
 
 Tool Router v2 sessions are scoped to a single `user_id`. Every connected account passed into that session must belong to the same entity, otherwise validation fails with `ToolRouterV2_InvalidConnectedAccountIds`. Reconnect the outlier Google account under the same `user_id` or create a separate session.
 
-## How should I handle specify Google auth config IDs at session creation so Manage Connection uses the intended configs?
+## Specify Google auth config IDs at session creation so Manage Connection uses the intended configs
 
 When creating a Composio session, pass `auth_configs` keyed by toolkit slug, such as `gmail`, `googledrive`, or `googlecalendar`. If specified, Manage Connection uses those auth configs directly instead of picking a default config.
 

@@ -2,7 +2,7 @@
 
 For Wrike task update or assignment fields, pass the Wrike user `id` value rather than the `accountId`. Wrike's API validates the user `id` shown in the user object, not the account ID.
 
-## How should I handle wrike task responses expose multiple user-id fields and can resolve names?
+## Wrike task responses expose multiple user-id fields and can resolve names
 
 Wrike task data can contain several user-id fields, including `authorIds`, `responsibleIds`, `sharedIds`, and `followerIds`. For fetch-task results, use the `resolve_user_names` parameter, which is enabled by default, to return those ids along with their names. If identifying the creator specifically, check `authorIds`.
 

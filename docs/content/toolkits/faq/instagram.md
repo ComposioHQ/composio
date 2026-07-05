@@ -2,7 +2,7 @@
 
 Instagram connection goes through Facebook Login, where the user selects which Instagram accounts and Facebook Pages to grant access to. Once Instagram issues the token, it is bound to the specific account selected in that OAuth flow. Composio cannot repoint that token server-side to another Instagram account. To switch accounts, reconnect and select the intended Instagram account/page in the Facebook picker.
 
-## How should I handle instagram uses Business Login and only supported/verified scopes should be configured?
+## Instagram uses Business Login and only supported/verified scopes should be configured
 
 The Instagram toolkit uses Instagram API with Business Login for Instagram. OAuth errors commonly happen when unsupported or unverified scopes are configured. Prefer the default scopes where possible, because they are intended to cover the toolkit's supported actions. If configuring custom scopes, use only Meta-supported Instagram Business Login permissions and remove unsupported scopes such as `user_profile`.
 
@@ -33,11 +33,11 @@ For custom Meta/Instagram OAuth apps, make sure the redirect URI is added in the
 
 For Instagram DM workflows in clients like n8n or Claude, use Composio For You's Connect MCP endpoint `https://connect.composio.dev/mcp`. Add it as a custom connector with no auth headers; the OAuth flow starts automatically, then the user can authorize Instagram from the client flow.
 
-## How should I handle instagram reply-to-comment may require a scope not available in the managed OAuth app?
+## Instagram reply-to-comment may require a scope not available in the managed OAuth app
 
 If Instagram Reply to Comment requires a Meta permission that is not available on the managed OAuth app, use the user's own Meta OAuth app where that permission is configured and approved.
 
-## How should I handle `INSTAGRAM_POST_IG_MEDIA_COMMENTS` failures can be caused by an incorrect `ig_media_id`?
+## `INSTAGRAM_POST_IG_MEDIA_COMMENTS` failures can be caused by an incorrect `ig_media_id`
 
 If `INSTAGRAM_POST_IG_MEDIA_COMMENTS` fails while the tool works in a direct test, verify the `ig_media_id` being passed. An incorrect media ID can cause the action to fail even though the tool itself is working.
 

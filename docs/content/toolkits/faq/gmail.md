@@ -85,7 +85,7 @@ The Gmail metadata scope cannot be used when requesting full email content. Remo
 
 For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenticated connected account.
 
-## How should I handle `GMAIL_SEND_EMAIL` accepts at least one of `to`, `cc`, or `bcc`?
+## `GMAIL_SEND_EMAIL` accepts at least one of `to`, `cc`, or `bcc`
 
 `GMAIL_SEND_EMAIL` no longer needs a single required recipient field. At least one recipient channel such as `to` / `recipient_email`, `cc`, or `bcc` can be supplied, which keeps the tool flexible for different email composition flows.
 
@@ -93,7 +93,7 @@ For Gmail tool calls, `me` can be used as the `user_id` to refer to the authenti
 
 Temporary S3/file instances are short-lived. Use `files.upload` before tool execution via the SDK or MCP flow, then pass the resulting `FileUploadable`/uploaded file object to the agent/tool call.
 
-## How should I handle gmail attachments can make send-email slow enough to hit SDK request timeouts?
+## Gmail attachments can make send-email slow enough to hit SDK request timeouts
 
 `GMAIL_SEND_EMAIL` accepts attachments as uploaded Composio file references, not signed URLs or JSON strings. The action downloads the uploaded file, builds the MIME message, base64-url encodes it, and posts it to Gmail. Attachment sends can therefore take materially longer than small text-only sends.
 
@@ -101,11 +101,11 @@ If a user reports `GMAIL_SEND_EMAIL` hanging or duplicate sends with attachments
 
 We found this can happen when the client times out before the backend finishes the tool call. Since GMAIL_SEND_EMAIL is non-idempotent, a retry can create another sent email. Until this is fixed at the SDK/API level, disable retries for this call path and use a longer request timeout or server-side idempotency on your side where possible.
 
-## How should I handle reduce Gmail fetch payload size with `include_payload=false`, `verbose=false`, `only_ids`, query, and limits?
+## Reduce Gmail fetch payload size with `include_payload=false`, `verbose=false`, `only_ids`, query, and limits
 
 For Gmail fetch/list flows, reduce payload by setting `include_payload=false` and `verbose=false` where supported. For very lightweight flows, use `only_ids=true` and then fetch selected messages separately. Also use `max_results` and Gmail `query` filters to keep result sets small.
 
-## How should I handle verbose Gmail thread results cannot select custom fields and may not be chronological?
+## Verbose Gmail thread results cannot select custom fields and may not be chronological
 
 Custom field selection is not supported in that verbose mode because it would increase payload size and latency. When `verbose=true`, thread work can run concurrently, so returned results may be ordered by completion rather than strict chronology.
 
@@ -117,11 +117,11 @@ Use the `from_email` parameter on `GMAIL_SEND_EMAIL` to choose the Gmail send-as
 
 For Gmail label operations and trigger label filters that require IDs, pass the label ID rather than the display name. Use `GMAIL_LIST_LABELS` to retrieve IDs.
 
-## How should I handle patch Gmail label colors with `background_color` and accepted color values?
+## Patch Gmail label colors with `background_color` and accepted color values
 
 To patch a label color, use the label ID and pass background color as an object field such as `{ "background_color": "#FFFF0000" }`. Gmail only accepts specific label color values from the Gmail API reference.
 
-## How should I handle filter Gmail new-message trigger by label/query instead of label IDs?
+## Filter Gmail new-message trigger by label/query instead of label IDs
 
 For Gmail new-message trigger setup, use a Gmail query such as `label:sent OR label:category_personal` to filter matching messages. This avoids depending on label IDs for that trigger path.
 

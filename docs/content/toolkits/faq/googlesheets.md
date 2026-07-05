@@ -46,15 +46,15 @@ Scopes cannot always be added to an existing Google Sheets integration if the re
 
 Google shows `This app is blocked` when the requested scopes are not verified for the OAuth app being used. With Composio's default Google OAuth app, use the default approved scopes and do not add extra scopes unless they are verified on that app. If the user needs granular or additional sensitive/restricted scopes, they should use their own Google OAuth credentials where those scopes are configured and verified.
 
-## How should I handle google Sheets access cannot be restricted at folder level through Composio?
+## Google Sheets access cannot be restricted at folder level through Composio
 
 Composio does not add folder-level spreadsheet restrictions, and Google's API access model does not support Sheets access scoped to a Drive folder in that way. Access is managed at the account/spreadsheet level through OAuth scopes and file sharing. Use scopes and spreadsheet/account permissions rather than expecting a folder-level Sheets restriction.
 
-## How should I handle fetch more than the default 20 Google Sheets tools with `limit`?
+## Fetch more than the default 20 Google Sheets tools with `limit`
 
 `get_raw_composio_tools` returns 20 tools by default. Pass a larger `limit` to fetch the full Google Sheets tool set, for example `.get_raw_composio_tools(toolkits=["GOOGLESHEETS"], limit=1000)`.
 
-## How should I handle google Sheets MCP may require the spreadsheet ID instead of searching by name?
+## Google Sheets MCP may require the spreadsheet ID instead of searching by name
 
 The Google Sheets MCP flow referenced did not support searching through spreadsheets by name. Provide the spreadsheet ID directly in the chat/tool call when asking for operations like getting sheet names.
 
@@ -62,7 +62,7 @@ The Google Sheets MCP flow referenced did not support searching through spreadsh
 
 Use `GOOGLESHEETS_BATCH_UPDATE` when updating or adding values to an existing sheet. If the workflow starts from structured JSON and needs to create/populate a sheet, use `GOOGLESHEETS_SHEET_FROM_JSON`.
 
-## How should I handle execute Google Sheets tools by passing the exact tool slug?
+## Execute Google Sheets tools by passing the exact tool slug
 
 When executing Google Sheets tools, pass the exact slug directly as the tool identifier, for example `composio.tools.execute("GOOGLESHEETS_LIST_TABLES", executePayload)`. If a wrapper parameter like `params.toolIdentifier` is used, verify it resolves to the exact tool slug.
 

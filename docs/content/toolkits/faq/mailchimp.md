@@ -6,7 +6,7 @@ When connecting Mailchimp, pass the correct server prefix. It is the part of the
 
 For Mailchimp API connection configuration, send `connectionConfig.subdomain` with the server prefix value, or use the legacy alias `dc`. Do not send `server_prefix`; that key is ignored by the validator and may fall back to a default such as `us21`. The UI label may say Server Prefix, but the API field name is `subdomain`.
 
-## How should I handle some Mailchimp tools require at least the Mailchimp Essentials plan?
+## Some Mailchimp tools require at least the Mailchimp Essentials plan
 
 If Mailchimp tools fail despite the connection looking correct, check the user's Mailchimp plan. Some Mailchimp API/tool capabilities require at least the Mailchimp Essentials plan. A free Mailchimp account may not be enough for the requested tool flow.
 
@@ -14,6 +14,6 @@ If Mailchimp tools fail despite the connection looking correct, check the user's
 
 When using Proxy Execute with Mailchimp custom connection data, include both the OAuth access token and Mailchimp `subdomain`/server prefix. The endpoint can then be called through `/api/v3/tools/execute/proxy` with `toolkitSlug: "mailchimp"`, `authScheme: "OAUTH2"`, and `val` containing `access_token` plus `subdomain` such as `us20`.
 
-## How should I handle mailchimp has trigger support in the supported-trigger toolkit list?
+## Mailchimp has trigger support in the supported-trigger toolkit list
 
 Mailchimp appears in the supported-trigger toolkit list. If a user asks for a specific Mailchimp trigger, verify the exact trigger/event exists in the current toolkit; if it does not, collect the use case and file a toolkit request.

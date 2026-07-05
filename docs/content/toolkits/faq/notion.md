@@ -22,7 +22,7 @@ It depends on the integration type. OAuth apps (public) let users select which p
 
 ## How do I set up the Notion webhook ingress endpoint?
 
-With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned — just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
+With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned, so just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
 
 1. **Create the endpoint.**
 
@@ -54,7 +54,7 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 `NOTION_GET_PAGE` is not the current valid slug. Use `NOTION_RETRIEVE_PAGE`, and verify available Notion tools from the marketplace/tool listing.
 
-## How should I handle notion database trigger fires for new pages, not updates?
+## Notion database trigger fires for new pages, not updates
 
 In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.
 
@@ -62,11 +62,11 @@ In manual testing, the Notion trigger fired when pages were added to the watched
 
 Notion does not model access as normal OAuth scopes. Page/database access is granted per Notion integration/OAuth client ID through Notion “Capabilities” and workspace grants. If multiple Composio auth configs use the same underlying Notion integration, page authorization can overlap.
 
-## How should I handle specifying a different auth config affects get/use lookup, not existing Notion token refresh?
+## Specifying a different auth config affects get/use lookup, not existing Notion token refresh
 
 Existing connected accounts under a different auth config continue to refresh and work. Specifying an auth config affects which connection get/use functions look for; it does not rewrite refresh behavior for already-valid connected accounts.
 
-## How should I handle notion 401 can be caused by invalid refresh token after user/admin revokes integration?
+## Notion 401 can be caused by invalid refresh token after user/admin revokes integration
 
 A Notion refresh failure with “Invalid refresh token” is usually a token revocation issue. Common causes are the user disconnecting the integration in Notion settings or a workspace admin removing/blocking the integration.
 
@@ -74,6 +74,6 @@ A Notion refresh failure with “Invalid refresh token” is usually a token rev
 
 `NOTION_FETCH_NOTION_DATA` is not valid. Use `NOTION_FETCH_DATA` instead.
 
-## How should I handle large unfiltered Notion responses can hurt agent quality?
+## Large unfiltered Notion responses can hurt agent quality
 
 Large response payloads and overly complex structures can degrade agent behavior. Prefer narrower fetches/filters where available and track product improvements for simpler response structures.

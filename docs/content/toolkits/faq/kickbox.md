@@ -1,4 +1,4 @@
-## How should I handle single verification auth and EU endpoint checks?
+## Single verification auth and EU endpoint checks
 
 For `KICKBOX_SINGLE_VERIFICATION_API`, the Composio credential field is `generic_api_key`. For direct/custom credential execution, users should pass:
 

@@ -1,4 +1,4 @@
-## How should I handle API Coverage?
+## API Coverage
 
 - `/stockprice`
 - `/intraday`

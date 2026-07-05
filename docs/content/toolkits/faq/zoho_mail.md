@@ -10,7 +10,7 @@ For Zoho Mail connection issues, verify the region passed during connection init
 
 Treat Zoho Mail `account_id` values as strings, not integers. Zoho account IDs can exceed JavaScript's safe integer limit, and numeric coercion can silently truncate them before the tool call reaches Zoho. If a user sees unexpected account IDs or tool failures with long IDs, verify the schema and payload preserve `account_id` as a string.
 
-## How should I handle zoho Mail attachment download support should be treated as a feature request when absent?
+## Zoho Mail attachment download support should be treated as a feature request when absent
 
 If a user needs Zoho Mail attachment download and the current toolkit does not expose that action, submit the exact attachment-download use case through the tool request flow.
 

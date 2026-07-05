@@ -1,6 +1,6 @@
 ## How does Gemini shared quota work?
 
-Gemini toolkit quota has historically been backed by shared Composio credentials, so users can hit shared-provider quota limits. If a user needs independent quota management, use BYOK or custom API key support when available.
+Gemini no-auth toolkit calls use Composio-managed Gemini credentials at execution time, so provider quota is shared across usage on that runtime key. If you see Gemini 429 or `RESOURCE_EXHAUSTED` errors, reduce concurrency, retry with exponential backoff, and use a BYOK/custom-key auth path if one is available for your setup and you need isolated quota.
 
 ## How is Gemini no-auth toolkit usage logged?
 
@@ -18,15 +18,15 @@ For Gemini video generation, use supported Veo models such as `veo-3.1-generate-
 
 Gemini video generation is asynchronous. Wait until the operation completes with `GEMINI_GET_VIDEOS_OPERATION` or use `GEMINI_WAIT_FOR_VIDEO`; the completed result should include a temporary publicly accessible `s3url` that can be viewed or downloaded.
 
-## How should I handle disable automatic file handling when Gemini generated files should remain as URLs/content?
+## Disable automatic file handling when Gemini generated files should remain as URLs/content
 
 Composio SDKs automatically handle file upload/download by default. For Gemini generated images or similar file outputs, disable automatic file handling with `autoUploadDownloadFiles: false` / `auto_upload_download_files=False` where supported, or update to a version that supports that option.
 
-## How should I handle gemini can use Composio Tool Router through any MCP client?
+## Gemini can use Composio Tool Router through any MCP client
 
 Tool Router can be used with any MCP client or framework/LLM that supports tool calling or MCP. For Gemini, initialize Composio with `GeminiProvider`, create a session, then connect to the session MCP URL and headers using a streamable HTTP MCP client.
 
-## How should I handle gemini CLI MCP issues may be client-side; Claude can be a more stable fallback?
+## Gemini CLI MCP issues may be client-side; Claude can be a more stable fallback
 
 If a Composio MCP server URL returns tools but Gemini CLI still fails, the behavior may be in the Gemini client. Try the latest Gemini CLI version, or use another MCP client as a fallback.
 

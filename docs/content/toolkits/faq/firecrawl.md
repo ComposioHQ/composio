@@ -1,4 +1,4 @@
-## How should I handle firecrawl uses API-key auth, not OAuth; provide a Firecrawl API key?
+## Firecrawl uses API key auth, not OAuth; provide a Firecrawl API key
 
 Firecrawl does not use a Composio-managed OAuth/test connector flow. It is an API-key toolkit, so the user needs a Firecrawl API key, and in many cases their own Firecrawl subscription/account. If an MCP client does not prompt for the key, provide it through the connection flow or explicitly tell the agent/client to use the Firecrawl API key for authentication.
 
@@ -6,11 +6,11 @@ Firecrawl does not use a Composio-managed OAuth/test connector flow. It is an AP
 
 For Firecrawl API-key auth, create the connected account with `authScheme: "API_KEY"` and a value object containing `status: "ACTIVE"` and `generic_api_key: "fc-..."`. The exact required key names can be checked from the toolkit metadata/connection initiation fields.
 
-## How should I handle FIRECRAWL_SEARCH may be hidden by default tool list limits?
+## FIRECRAWL_SEARCH may be hidden by default tool list limits
 
 If `FIRECRAWL_SEARCH` or other Firecrawl tools are missing from a tools list, increase the list limit or paginate. The default list can return only the first 20 tools, so request a higher limit such as `limit=1000` when fetching Firecrawl tools.
 
-## How should I handle batch fewer URLs or raise timeout for long Firecrawl scrape jobs?
+## Batch fewer URLs or raise timeout for long Firecrawl scrape jobs
 
 For Firecrawl scrape timeouts, reduce the number of links per request, such as batching 1-2 links at a time for complex pages, or increase the scrape timeout if the tool call supports it. A useful starting timeout is `120000` milliseconds for roughly a 2-minute timeout.
 
