@@ -175,7 +175,7 @@ export async function GET() {
 
 > **For AI agents:** Give your agent tools it can call directly with \`composio.create(user_id)\` + \`session.tools()\` and a provider package (e.g. \`composio_openai\`, \`@composio/openai\`). To connect over MCP instead, create the session with \`mcp: true\` and read \`session.mcp.url\` from any MCP-compatible client. Every page below has a \`For AI agents\` section with implementation details — read it before writing code.
 
-> **Discovery:** append \`.md\` to any docs URL for clean markdown. Toolkit docs for 1000+ apps: \`https://docs.composio.dev/toolkits/{slug}.md\`. Search instead of scanning: \`GET https://docs.composio.dev/api/docs-search?q=<query>\`. Install the agent skill once per repo: https://docs.composio.dev/skill.md
+> **Discovery:** append \`.md\` to any docs URL for clean markdown. Toolkit docs for 1000+ apps: \`https://docs.composio.dev/toolkits/{slug}.md\`. Search instead of scanning: \`GET https://docs.composio.dev/api/docs-search?q=<query>\`. Install the agent skill once per repo: https://docs.composio.dev/skill.md. Full machine setup (CLI, login, onboarding): https://docs.composio.dev/onboard.md
 
 ${docsTree}
 

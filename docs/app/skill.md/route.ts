@@ -64,6 +64,12 @@ you don't repeat known mistakes.
 - **Verify your work** with the CLI: \`composio execute <SLUG> --dry-run\`,
   \`composio dev triggers listen --forward <url>\`.
 
+## Machine setup
+
+If Composio isn't installed/logged-in on this machine yet, fetch
+https://docs.composio.dev/onboard.md and follow it (installs the CLI, browser
+login, account onboarding, agent skills).
+
 ## Starting points
 
 - Quickstart: https://docs.composio.dev/docs/quickstart.md
