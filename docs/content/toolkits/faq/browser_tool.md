@@ -1,7 +1,7 @@
 ## Browser Tool profiles do not work in Zero Data Retention projects
 
-Browser Tool profiles rely on persisted browser state, such as cookies, local storage, and session data. This is what lets a browser session stay signed in or keep the same profile context across browser actions.
+If a Browser Tool task returns `403 - Profiles are not available for Zero Data Retention projects`, the task is trying to use a persistent browser profile in a project that is configured not to retain execution data.
 
-Projects configured for Zero Data Retention, or for removing execution data, cannot retain that profile state. In those projects, profile-backed Browser Tool usage can fail or behave as if no reusable browser profile is available.
+Browser profiles are the saved browser environment behind logged-in or stateful browser automation. They can include cookies, local storage, session data, and other browser state needed to keep the same website session across actions. Projects configured for Zero Data Retention, or for removing execution data, cannot retain that profile state.
 
-Use Browser Tool from a project where your data-retention policy allows execution data to be stored, or change the project's log/data visibility setting where policy allows. In the dashboard, check Project Settings / Log storage configuration. In the API, the related setting is `log_visibility_setting: show_all`.
+This is a project data-retention setting issue, not an OAuth reconnect, Browser Tool version, or provider credential issue. Use Browser Tool from a project where your data-retention policy allows browser profile state to be stored, or change the project's log/data visibility setting where policy allows. In the dashboard, check Project Settings / Log storage configuration. In the API, the related setting is `log_visibility_setting: show_all`.
