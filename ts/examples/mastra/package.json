@@ -23,10 +23,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.13",
+    "@ai-sdk/openai": "^4.0.7",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
-    "@mastra/core": "^1.46.0",
+    "@mastra/core": "catalog:",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

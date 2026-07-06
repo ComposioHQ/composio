@@ -58,7 +58,7 @@ const _home = join(homedir(), '.composio');
 
 function getCurrentBinaryAssetName(): string | undefined {
   const platform = getPlatform();
-  const rawArch = getArch();
+  const rawArch: string = getArch();
   if (platform !== 'darwin' && platform !== 'linux') return undefined;
 
   const arch = rawArch === 'arm64' || rawArch === 'aarch64' ? 'aarch64' : rawArch;
