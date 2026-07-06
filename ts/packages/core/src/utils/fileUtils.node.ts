@@ -7,7 +7,7 @@ import logger from './logger';
 import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
-import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths.node';
+import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
 
 /**

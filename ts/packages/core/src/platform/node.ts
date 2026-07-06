@@ -38,6 +38,10 @@ export const platform = {
     return fs.existsSync(filePath);
   },
 
+  realpathSync(filePath: string): string {
+    return fs.realpathSync(filePath);
+  },
+
   mkdirSync(dirPath: string): void {
     fs.mkdirSync(dirPath, { recursive: true });
   },
