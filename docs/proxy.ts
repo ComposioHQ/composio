@@ -51,6 +51,13 @@ export function proxy(request: NextRequest) {
 
   const response = NextResponse.next();
   response.headers.set('x-pathname', pathname);
+
+  // Advertise the markdown twin on content pages so agents that fetched the
+  // HTML URL (e.g. a link a human pasted) discover the clean `.md` version.
+  if (/^\/(docs|examples|reference|toolkits)(\/|$)/.test(pathname)) {
+    response.headers.set('Link', `<${pathname}.md>; rel="alternate"; type="text/markdown"`);
+  }
+
   return response;
 }
 
