@@ -8,6 +8,24 @@ import typing as t
 from composio.core.types import ToolkitVersion, ToolkitVersionParam, ToolkitVersions
 
 
+def normalize_toolkit_slug(toolkit_slug: str) -> str:
+    """
+    Canonicalizes a toolkit slug into the form used as a version-map key.
+
+    Toolkit slugs are matched case-insensitively. This is the single source of
+    truth for that rule: every write into a version map (env vars, user-supplied
+    dicts) and every read out of one MUST go through this helper so the two sides
+    can never drift apart and silently miss a configured pin.
+
+    Kept intentionally equivalent to the TypeScript SDK's ``normalizeToolkitSlug``
+    (see ts/packages/core/src/utils/toolkitVersion.ts).
+
+    :param toolkit_slug: The slug/name of the toolkit, in any casing
+    :return: The normalized (lowercase) slug used as a version-map key
+    """
+    return toolkit_slug.lower()
+
+
 def get_toolkit_version(
     toolkit_slug: str, toolkit_versions: t.Optional[ToolkitVersionParam] = None
 ) -> ToolkitVersion:
@@ -23,9 +41,11 @@ def get_toolkit_version(
     if isinstance(toolkit_versions, str):
         return toolkit_versions
 
-    # If toolkit_versions is a dict mapping, look up the specific toolkit version
+    # If toolkit_versions is a dict mapping, look up the specific toolkit version.
+    # The map is keyed by normalized slugs, so normalize the lookup too
+    # (see normalize_toolkit_slug for why).
     if isinstance(toolkit_versions, dict) and len(toolkit_versions) > 0:
-        return toolkit_versions.get(toolkit_slug, "latest")
+        return toolkit_versions.get(normalize_toolkit_slug(toolkit_slug), "latest")
 
     # Else use 'latest'
     return "latest"
@@ -55,14 +75,15 @@ def get_toolkit_versions(
     for key, value in os.environ.items():
         if key.startswith("COMPOSIO_TOOLKIT_VERSION_"):
             toolkit_name = key.replace("COMPOSIO_TOOLKIT_VERSION_", "")
-            toolkit_versions_from_env[toolkit_name.lower()] = value
+            toolkit_versions_from_env[normalize_toolkit_slug(toolkit_name)] = value
 
-    # If the provided default versions is a dict, normalize the keys to be lower case
-    # Use user provided values as overrides
+    # Normalize keys via normalize_toolkit_slug (the same helper the lookup uses);
+    # user-provided values override env.
     user_provided_toolkit_versions: ToolkitVersions = {}
     if default_versions and isinstance(default_versions, dict):
         user_provided_toolkit_versions = {
-            key.lower(): value for key, value in default_versions.items()
+            normalize_toolkit_slug(key): value
+            for key, value in default_versions.items()
         }
 
     # Final toolkit versions
