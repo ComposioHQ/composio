@@ -16,6 +16,15 @@ export type {
 } from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { normalizeToolArguments } from './utils/toolArguments';
+// Sensitive-file-upload denylist guard. This is the single canonical
+// implementation; downstream packages (e.g. `@composio/cli`) import it here so
+// every local-file upload path enforces the same denylist. Safe in the edge
+// bundle: the module routes filesystem access through `#platform`.
+export {
+  assertSafeFileUploadPath,
+  isBlockedSensitiveFileUploadPath,
+  BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
+} from './utils/sensitiveFileUploadPaths';
 export {
   sanitizeSchemaPropertyKeys,
   restoreOriginalKeys,

@@ -16,7 +16,7 @@ const createMockNodeOs = <P extends NodeJS.Platform>(platform: P, arch: string) 
     NodeOs.make({
       homedir: '/mock/home',
       platform: platform as NodeJS.Platform,
-      arch,
+      arch: arch as NodeJS.Architecture,
     })
   );
 

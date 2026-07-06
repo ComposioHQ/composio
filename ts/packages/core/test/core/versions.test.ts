@@ -283,15 +283,17 @@ describe('Version Management', () => {
         expect(result).toBe('latest');
       });
 
-      it('should be case-sensitive for toolkit slugs', () => {
+      it('should resolve the lookup slug case-insensitively', () => {
+        // Version maps are keyed by normalized (lowercase) slugs (write side
+        // covered by 'should normalize toolkit names to lowercase'), so the read
+        // side must resolve any casing instead of falling back to 'latest'.
         const toolkitVersions = {
           github: '20250902_00',
-          GITHUB: 'latest',
         };
 
         expect(getToolkitVersion('github', toolkitVersions)).toBe('20250902_00');
-        expect(getToolkitVersion('GITHUB', toolkitVersions)).toBe('latest');
-        expect(getToolkitVersion('GitHub', toolkitVersions)).toBe('latest'); // not found
+        expect(getToolkitVersion('GITHUB', toolkitVersions)).toBe('20250902_00');
+        expect(getToolkitVersion('GitHub', toolkitVersions)).toBe('20250902_00');
       });
     });
 
