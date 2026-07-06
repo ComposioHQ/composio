@@ -16,7 +16,7 @@ You cannot add new scopes to the managed app, and you cannot remove scopes that 
 
 Use your own HubSpot OAuth app when you need a different scope set, your own app name and branding on the consent screen, tighter control over app review and rollout, or a production setup owned by your team. For setup steps, see [How to create OAuth credentials for HubSpot](https://composio.dev/auth/hubspot).
 
-## How do HubSpot scopes work in Composio?
+## How do scopes work in HubSpot?
 
 The scope category must match between Composio and your HubSpot developer app.
 
@@ -89,74 +89,10 @@ After changing scopes, reconnect affected HubSpot accounts. Existing connected a
 - **Webhook setup errors:** HubSpot webhooks require a public app with an App ID and Developer API Key. Private or internal apps cannot receive webhooks.
 - **Refresh or expiry errors:** Common causes include the user revoking the app in HubSpot, HubSpot app credentials changing, the refresh token being invalidated, or the connected account being reauthorized with a different app configuration. After rotating custom OAuth credentials or changing the HubSpot developer app, reconnect affected HubSpot accounts.
 
----
-
-## What should I know about Minimum HubSpot contact scopes?
-
-For HubSpot CRM contacts, the minimum scopes are `crm.objects.contacts.read` and `crm.objects.contacts.write`. Sensitive contact fields require the corresponding sensitive scopes such as `crm.objects.contacts.sensitive.read` and `.write`.
-
-## When should I use Composio scopes API or HubSpot docs to find required HubSpot scopes?
-
-Use HubSpot’s own scopes documentation and Composio’s scopes/tools API to map actions to required scopes. This is better than guessing scopes manually.
-
-## What is needed for HubSpot trigger setup?
-
-For HubSpot webhook/trigger setup, get the app ID from HubSpot’s webhook app documentation / developer app settings and use it when configuring triggers.
-
-## When should I use custom HubSpot credentials for white-label auth?
-
-Use your own HubSpot OAuth app credentials/custom auth config. That gives control over branding/consent and avoids relying on the Composio managed app for the user-facing OAuth screen.
-
-## What should I do if HubSpot shows an unverified app warning?
-
-The default managed HubSpot OAuth app is intended to make setup easy for users getting started with Composio, but it is still awaiting HubSpot approval. Composio is working on the approval, but there is no concrete ETA because the final review timeline depends on HubSpot.
-
-If the warning blocks your rollout, use your own HubSpot OAuth app credentials in a custom Composio auth config. That lets you control the OAuth app identity, review status, and consent screen shown to your users.
-
-Use the HubSpot custom OAuth/BYOA guide (`https://composio.dev/auth/hubspot`) and the Composio callback URL shown in the auth config, usually `https://backend.composio.dev/api/v3/toolkits/auth/callback`.
-
-## How do scopes work in HubSpot?
-
-HubSpot scopes must match how they are configured on the HubSpot OAuth app.
-
-Required scopes configured on the HubSpot app must be requested during connection through Composio `scopes`, which maps to HubSpot's OAuth `scope` parameter. If a required HubSpot app scope is missing from the connection request, HubSpot can reject the install with a scope mismatch error.
-
-For Composio-managed HubSpot auth, use the default managed scope set. Do not add or remove managed auth scopes unless Composio has explicitly updated the managed HubSpot app to support that scope shape. If you need a different scope set, use your own HubSpot OAuth app in a custom auth config.
-
-Optional scopes should be configured as optional in the HubSpot app and requested through Composio `optional_scopes`, which maps to HubSpot's `optional_scope` parameter. HubSpot can grant optional scopes when the selected account has access to the relevant HubSpot product or tier, and omit them when it does not.
-
-## HubSpot OAuth token-fetch 400: check client secret and required-scope alignment
-
-First check the HubSpot OAuth client secret. If the secret was rotated or copied from the wrong HubSpot app, HubSpot can fail token exchange with a 400.
-
-Then check scope alignment. HubSpot is strict about required scopes:
-
-- Required scopes configured on the HubSpot app must be present in the OAuth request/install URL `scope` parameter for successful installation.
-- If the Composio auth config requests required scopes that do not match your own HubSpot app's configured required scopes, authorization/token exchange can fail.
-- Optional scopes should be requested through HubSpot's `optional_scope` parameter. If the selected HubSpot account/user cannot grant an optional scope, HubSpot can omit it and the resulting token will not include that scope.
-
-For Composio-managed HubSpot auth configs, do not change the default scope set. If the user needs a different required/optional scope configuration, they need to use their own HubSpot OAuth app through a custom Composio auth config.
-
-## What should I know about HubSpot scopes?
-
-If a required HubSpot scope is not available on the managed OAuth app, use your own HubSpot OAuth app where the scope is configured in HubSpot and requested by the Composio auth config.
-
 ## HubSpot auth loops can be caused by HubSpot-side workspace/login state
 
 If the HubSpot flow loops while Composio works on its side, retry while logged into the correct HubSpot workspace and confirm the OAuth app is public/configured correctly.
 
-## Composio does not provide HubSpot field-level permissions; restrict by user/session/tools instead
-
-Composio does not provide HubSpot field-level permissions inside a single tool call. Approximate this with user-scoped sessions, deciding which users connect HubSpot, and filtering allowed toolkits/tools per session, such as read-only tools for some users and update tools for others.
-
 ## HubSpot triggers require each user’s own app ID and developer API key
 
 HubSpot webhook APIs need the specific HubSpot app that should receive webhook notifications. For user HubSpot triggers, `app_id` and developer API key are required because each user needs their own HubSpot app for webhook delivery.
-
-## HubSpot trigger configuration changes
-
-After HubSpot trigger configuration changes, old trigger instances may need to be deleted and recreated so they pick up the new behavior/configuration.
-
-## Deleting a HubSpot connected account disconnects it and stops token refresh
-
-Deleting the connected account disconnects the HubSpot account from Composio and stops refreshing that access token.

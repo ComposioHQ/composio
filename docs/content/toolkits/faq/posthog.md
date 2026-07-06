@@ -3,27 +3,11 @@
 
 For a step-by-step guide on creating and configuring your own PostHog OAuth credentials with Composio, see [How to create OAuth credentials for PostHog](https://composio.dev/auth/posthog).
 
-## How does PostHog authentication work?
+## How do I configure the PostHog region for US or EU Cloud?
 
 
-PostHog is API-key based in Composio. Use the user's PostHog API key when creating the connection. For connected-account creation, pass the key in the API-key auth state, for example with `generic_api_key` or the required field name returned by toolkit metadata.
+Set the PostHog region on the connection. Use `us` for US Cloud or `eu` for EU Cloud. Do not pass a full URL such as `https://eu.posthog.com`; the toolkit builds the host as `<region>.posthog.com` from the region value.
 
-## How do I configure PostHog subdomain for EU or self-hosted instances?
+This matters because the PostHog API host is different for US and EU Cloud, and region is connection-specific rather than one fixed auth-config value for every connected account. A connection that should call `eu.posthog.com` but is left on the default `us` region can fail or return data from the wrong PostHog environment.
 
-
-For EU or self-hosted PostHog instances, configure the PostHog `subdomain` or instance value instead of assuming the default cloud host. When supported by the auth flow, set the value during auth config or connection setup.
-
-## How do I pass PostHog auth configs into Tool Router sessions?
-
-
-When using PostHog through Tool Router MCP, include the auth config in the Tool Router session so the generated MCP URL has the correct auth config details. Auth configs or connected accounts created on the platform side are not automatically available inside every Tool Router session unless they are passed/associated correctly.
-
-## How do I create a PostHog integration/auth config before expecting it in auth_configs API results?
-
-
-`/api/v3/auth_configs` lists the active auth configs/integrations already created in the project. If PostHog is missing or the response is empty, create a PostHog auth config/integration first, then connect the account to it.
-
-## API key connections may show active without live credential validation
-
-
-For API-key/token auth, Composio may mark the connection `ACTIVE` once the required fields are present. That does not guarantee the PostHog API key is valid until a provider call is made. If tool execution fails later, verify the key directly with PostHog and recreate/update the connection with valid credentials.
+In the Link flow, the user sees a prefilled Region field while connecting and can choose the correct region. In the Initiate flow, set the region during connected-account creation. Existing connections were migrated to keep their current region, so they do not need to reconnect only because of this field change.

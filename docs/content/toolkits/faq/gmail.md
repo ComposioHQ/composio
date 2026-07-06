@@ -57,26 +57,8 @@ This approach works for any tool whose parameters accept file uploads. See [Auto
 
 If a user on Composio-managed Gmail auth hits Google's "app is blocked" / unverified-app screen after adding `gmail.settings.basic`, use your own Google OAuth app verified for `https://www.googleapis.com/auth/gmail.settings.basic`, then reconnect.
 
-## What should I know about the `gmail.send` scope?
-
-`https://www.googleapis.com/auth/gmail.send` can send messages, but it is a granular sensitive scope and requires Google verification. The broader `https://mail.google.com/` scope gives full mailbox access and can cover send use cases, but it is broader than many users want.
-
-## How do I configure Gmail scopes on managed auth config as a comma-joined scopes string?
-
-When creating the Gmail auth config, pass the desired Gmail scopes in `credentials.scopes`, typically as a comma-joined string. Example scopes include `gmail.send`, `gmail.readonly`, `gmail.compose`, `gmail.modify`, and `gmail.labels`.
-
 ## When should I avoid `gmail.metadata` when fetching full Gmail email content?
 
-The Gmail metadata scope cannot be used when requesting full email content. Remove `https://www.googleapis.com/auth/gmail.metadata` and use a scope that allows message content access, such as `https://mail.google.com/`, when full payload/body data is needed.
+Use `https://www.googleapis.com/auth/gmail.metadata` only when the app needs message metadata such as labels and headers, not message bodies or payload content. Gmail treats `gmail.metadata` as a restricted metadata-only scope, and it is not compatible with broader content-access scopes such as `gmail.readonly`, `gmail.modify`, or `mail.google.com` in the same OAuth request.
 
-## Gmail attachments can make send-email slow enough to hit SDK request timeouts
-
-`GMAIL_SEND_EMAIL` accepts attachments as uploaded Composio file references, not signed URLs or JSON strings. The action downloads the uploaded file, builds the MIME message, base64-url encodes it, and posts it to Gmail. Attachment sends can therefore take materially longer than small text-only sends.
-
-If a user reports `GMAIL_SEND_EMAIL` hanging or duplicate sends with attachments:
-
-We found this can happen when the client times out before the backend finishes the tool call. Since GMAIL_SEND_EMAIL is non-idempotent, a retry can create another sent email. Until this is fixed at the SDK/API level, disable retries for this call path and use a longer request timeout or server-side idempotency on your side where possible.
-
-## When should I use `googlesuper` for one Google auth across Gmail, Calendar, Drive-style use cases?
-
-The `googlesuper` toolkit can cover multi-service Google use cases with one Google auth app instead of separate toolkit connections, depending on the tools needed.
+If a tool needs full email content, remove `gmail.metadata` from the auth config and request a Gmail scope that allows message content access. Then reconnect the account so the new scope set is granted.

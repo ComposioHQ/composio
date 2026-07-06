@@ -16,35 +16,17 @@ The `@odata.context` URL provides metadata about the response (entity set, servi
 
 ---
 
-## What do Outlook desktop users need for OAuth?
-
-Outlook tools authenticate through the Microsoft account/OAuth flow in a browser. If the user only uses Outlook desktop, they still need to log into the underlying Microsoft/Outlook account in the browser to complete OAuth. Desktop and cloud use the same account, so once the account is authenticated, the tools can operate against that mailbox.
-
-## Connect MCP exposes meta-tools, not individual Outlook tools, by design
-
-`connect.composio.dev/mcp` uses Tool Router architecture, so it intentionally exposes meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`. The agent discovers and executes Outlook tools at runtime through those meta-tools. If a user needs specific Outlook tools without meta-tool round trips, use SDK direct execution or create a focused MCP config with selected Outlook tools.
-
-## When should I use `get_scopes_required` with Outlook tool slugs, then refresh/reconnect after scope changes?
-
-For Outlook 403s, look up required scopes with `/api/v3/tools/get_scopes_required` using the exact Outlook tool slug, not the toolkit name. For example `OUTLOOK_GET_MAILBOX_SETTINGS` requires `MailboxSettings.ReadWrite`. After adding scopes to the auth config, refresh the existing connection through the connected-account refresh endpoint or create a new connection so the new scopes are granted.
-
-## What should For You users know about Outlook scope configuration?
-
-On For You, users cannot configure OAuth scopes directly. If an Outlook For You user needs an extra scope, the scope may need to be added on the account side before the user reconnects Outlook.
-
-## When do Outlook/Microsoft apps need tenant admin consent?
+## Why do Outlook connections show "Needs Admin Approval" or "admin approval required"?
 
 Microsoft/Outlook admin-consent issues are Microsoft 365 tenant-level approval problems, not something fixed by changing only the Composio connection. Adding delegated permissions to an Azure app registration is not the same as granting tenant admin consent. Once a tenant admin grants consent for the requested permissions, affected users should start a fresh normal Outlook connection flow with their own accounts; the admin does not need to connect every user individually.
 
-Two concrete ways an admin can approve:
+Two concrete ways an admin can approve are:
 
 1. **App Registration / OAuth app level:** in Microsoft Entra / Azure Portal, go to **App registrations**, open the OAuth app, go to **API permissions**, click **Grant admin consent for [Tenant Name]**, then confirm/save.
 2. **Enterprise Applications / org level:** in Microsoft Entra / Azure Portal, go to **Enterprise applications**, find the Composio/Outlook app or the user's own service principal, open **Permissions** / admin-consent controls, then grant admin consent for the organization.
 
-For the Composio-managed Outlook app, Microsoft's in-flow `sign in as an admin` / `Connectez-vous avec ce compte` link is also a real tenant-admin consent path. If the admin signs in through that same OAuth attempt, that attempt may connect the admin's mailbox, not the original user's mailbox; treat that connected account as the admin's and have the original user start a fresh Connect flow afterward. Incomplete/pending Outlook connection attempts expire after about 10 minutes, so an expired non-admin attempt cannot be resumed. Nothing needs to happen on Composio's side between the admin grant and the user's retry: no cache clear, webhook, or manual status change.
+![Microsoft Entra API permissions page showing the Grant admin consent action](/images/kb/toolkits/outlook/outlook-admin-consent-api-permissions.png)
 
-Your own verified-publisher Azure app can improve branding and control, and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not remove the admin-consent requirement: each tenant's user-consent policy and the exact scopes requested still decide whether admin consent is needed.
+Microsoft may also show an in-flow `sign in as an admin` / `Connectez-vous avec ce compte` option on the OAuth screen. Treat that as a secondary path, not the first recommendation. If an admin signs in through the same OAuth attempt, that attempt may connect the admin's mailbox instead of the original user's mailbox. After tenant-wide consent is granted, the original user should start a fresh Outlook connection flow with their own account.
 
-## Outlook trigger issues can be stale subscriptions/no trigger logs or provider-side account-specific failures
-
-When Outlook triggers stop, check whether the connected account has active trigger logs and webhook subscriptions. If a specific account has stale triggers with no logs/subscriptions, reconnect or recreate the trigger. If Composio sees no provider warnings/errors and only one Outlook account is affected, the user should also check with Microsoft/Outlook support while Composio investigates.
+For custom Microsoft OAuth apps, a verified publisher can improve branding and may reduce consent friction in tenants that allow user consent for verified publishers and the requested delegated permissions. It does not remove the admin-consent requirement in every tenant; each Microsoft 365 tenant's user-consent policy and the exact scopes requested still decide whether admin approval is needed.

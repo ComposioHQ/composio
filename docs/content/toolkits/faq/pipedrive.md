@@ -4,34 +4,16 @@ For a step-by-step guide on creating and configuring your own Pipedrive OAuth cr
 
 ## Why am I seeing "App not found" when connecting Pipedrive?
 
-If Pipedrive OAuth shows "App not found", use your own Pipedrive OAuth app credentials or API-key auth and start a fresh connection.
+Pipedrive usually shows "App not found" when the OAuth app used for the connection is not approved or available for that user/workspace.
+
+If you are using managed Pipedrive OAuth, this means the managed OAuth app is still under Pipedrive review/verification. If you are using your own Pipedrive OAuth app, check the app's approval/verification status in Pipedrive and make sure the user is authorizing the same app configured in the auth config. After the app is approved or corrected, start a fresh connection.
 
 ---
 
-## Why can Claude block Pipedrive in some sessions?
+## How should I connect with my own Pipedrive OAuth app?
 
-If Claude reports `[Session Restriction] Toolkit 'pipedrive' is disabled for this session`, use Composio through Claude Code or Cowork via the Composio CLI path while direct access is restricted.
+Create the OAuth app in Pipedrive Developer Hub, then use that app's client ID and client secret in a Pipedrive custom OAuth auth config.
 
-## What is required for Pipedrive OAuth initiation?
+Do not start the user connection by clicking **Install and Test** inside Pipedrive's OAuth app settings. That button starts Pipedrive's own test/install flow, not the Composio connection flow, and can send the user to the callback URL without the Composio auth config context.
 
-When initiating a Pipedrive OAuth connection, pass the Pipedrive workspace subdomain/domain expected by the auth config. If the account URL is `your-company.pipedrive.com`, pass `your-company` rather than the full hostname.
-
-## Do not install the Pipedrive app directly from Pipedrive OAuth settings?
-
-For Pipedrive custom OAuth, enable the app in Composio and complete setup there with the user's own developer app credentials. Do not try to install the app directly from Pipedrive's OAuth app settings. During the Composio flow, provide the Pipedrive subdomain when requested.
-
-## When should I use custom credentials or API key for Pipedrive?
-
-Use the user's own Pipedrive OAuth credentials or API-key auth when they need control over app approval, scopes, branding, or production availability.
-
-## Hosted auth links can collect Pipedrive required fields
-
-Use hosted auth links when you want Composio to collect required provider-specific fields during connection initiation. You can also inspect the auth config/toolkit metadata to see the expected input fields before starting the Pipedrive connection.
-
-## What should I pass for `callback_url` when initiating Pipedrive auth to redirect users after authentication?
-
-When initiating a Pipedrive connection through SDK/API, pass `callback_url` or `callbackUrl` in the connection initiation call. Composio redirects the user to that URL after the provider authentication flow completes.
-
-## Pipedrive has trigger support
-
-Pipedrive has trigger support. Check the toolkit page for the currently available trigger list.
+After saving the custom auth config, start the connection from Composio and enter the Pipedrive subdomain when prompted. If Pipedrive shows "App not found", verify that the client ID and secret match the same Pipedrive OAuth app, that the app is approved/available for the user, and that the redirect URI matches the Pipedrive auth setup guide.

@@ -1,15 +1,26 @@
 ## How do I set up custom OAuth credentials for Salesforce?
 
-
 For a step-by-step guide on creating and configuring your own Salesforce OAuth credentials with Composio, see [How to create OAuth credentials for Salesforce](https://composio.dev/auth/salesforce).
 
-## Why can't I find items I created in Salesforce?
+## `URL_NOT_RESET` usually means Salesforce subdomain was not configured and defaulted to `login`
 
+`URL_NOT_RESET` can happen when the Salesforce org requires a specific My Domain value but the connection is using the generic `login` default or an incomplete subdomain. The default `login` value is fine for most Salesforce flows, but for org-specific failures recheck the Salesforce domain/subdomain values on the connection, pass the correct My Domain subdomain, and retry on the latest toolkit version if the issue was seen on an older pinned version.
 
-Created records may not appear in a given Salesforce view. Use search to confirm they exist.
+## Why do I see `OAUTH_APPROVAL_ERROR_GENERIC` or `app must be installed into org` in Salesforce OAuth?
+
+These errors usually mean Salesforce is blocking OAuth because the connected app has not been installed or approved for the org. The user may see `OAUTH_APPROVAL_ERROR_GENERIC`, or the callback URL may include `error=invalid_client&error_description=app+must+be+installed+into+org`.
+
+Ask a Salesforce org admin to approve or install the connected app. In Salesforce Setup, search for **External Client App Settings** or **OAuth Connected App Usage**, find the app, and use the install/approval action shown by Salesforce. After the admin approves the app, the user should retry the OAuth connection.
+
+![Salesforce OAuth approval error showing OAUTH_APPROVAL_ERROR_GENERIC and app must be installed into org.](/images/kb/toolkits/salesforce/salesforce-oauth-approval-error.png)
+
+![Salesforce Setup search showing External Client App Settings for connected app approval.](/images/kb/toolkits/salesforce/salesforce-external-client-app-settings.png)
+
+## Salesforce allows only five active refresh tokens per user per app
+
+Salesforce allows only five active refresh tokens per user per connected app. When the same Salesforce user connects a sixth time, Salesforce can revoke the oldest refresh token, which makes older Composio connected accounts fail with token errors. Also check whether the user changed their password, revoked the app, changed connected app refresh-token policy away from `valid until revoked`, or has org-level session policies that invalidate tokens.
 
 ## How do I query relationships like Pricebooks and Opportunities?
-
 
 Use SOQL subqueries to traverse relationships. For example, Products → Pricebooks → Opportunities:
 
@@ -21,67 +32,14 @@ FROM Opportunity
 
 ## What fields are required when connecting Salesforce?
 
-
 You need your subdomain (e.g., `your-company.my`) and instance endpoint `/services/data/v61.0`. If you see `URL_NOT_RESET`, replace the `login` subdomain with your organization's subdomain.
 
-![Salesforce hosted connection form showing the instance endpoint and Salesforce subdomain fields.](/images/kb/toolkits/salesforce/salesforce-hosted-auth-fields.png)
-
 ## What happens to deprecated Salesforce tools?
-
 
 Deprecated tools continue to work until removed. Check tool descriptions for "DEPRECATED:" markers.
 
 ---
 
-## What does Salesforce require for OAuth setup?
+## Why can't I find items I created in Salesforce?
 
-
-Salesforce is one of the OAuth toolkits where users should bring their own developer credentials rather than relying on Composio-managed OAuth. Create a Salesforce connected app/developer app, configure it according to the Salesforce auth guide, and use those credentials in the Composio authConfig.
-
-## What fields are needed when initiating a Salesforce connection?
-
-
-Salesforce accepts additional connection initiation fields. Fetch the toolkit by slug (`/api/v3.1/toolkits/salesforce`) to inspect the expected fields, and fetch the connected account to see the same fields after connection. The important Salesforce fields are `My Domain Subdomain` and `Instance endpoint`. If you are initiating directly through the SDK/API, pass these fields through `.initiate()` rather than waiting for the hosted connection UI.
-
-## Salesforce subdomain defaults to `login`; use the My Domain/API prefix when needed
-
-
-For Salesforce, the default subdomain value is `login`, and that works in most cases. If the default or a simple org label fails, Composio needs the Salesforce login/API domain prefix rather than the full browser URL.
-
-Use these formats:
-
-- Default case: keep `login`.
-- Standard My Domain URL: for `https://your-company.my.salesforce.com/...`, pass `your-company.my`.
-- Developer Edition / Lightning URL: for `https://<org>.develop.lightning.force.com/...`, the matching OAuth/My Domain host is usually `https://<org>.develop.my.salesforce.com/...`, so pass `<org>.develop.my`.
-
-If the user enters only `<org>`, Composio may generate `<org>.salesforce.com`, which can fail before OAuth with a browser DNS error such as `DNS_PROBE_FINISHED_NXDOMAIN`.
-
-## `URL_NOT_RESET` usually means Salesforce subdomain was not configured and defaulted to `login`
-
-
-`URL_NOT_RESET` can happen when the Salesforce org requires a specific My Domain value but the connection is using the generic `login` default or an incomplete subdomain. The default `login` value is fine for most Salesforce flows, but for org-specific failures recheck the Salesforce domain/subdomain values on the connection, pass the correct My Domain subdomain, and retry on the latest toolkit version if the issue was seen on an older pinned version.
-
-## When should I use hosted auth for Salesforce required fields, or direct `.initiate()` when you want to prefill them yourself?
-
-
-The Salesforce field collection interface is part of Hosted Authentication / the connection link flow. If you want Composio to collect required fields, use hosted auth. If your app already knows the Salesforce instance/subdomain values, skip that interface and call `.initiate()` directly with the required fields. Use `.refresh()` to regenerate the auth URL for an already initiated connection; `.link()` starts a new connection. If you truly need multiple connections for the same `user_id`, pass `allow_multiple=True` to `.initiate()`.
-
-## When does a Salesforce org admin need to approve the connected app?
-
-
-Salesforce connected app usage restrictions can require an org admin to install or approve the connected app before org users can authenticate. Check whether the error URL includes `error=invalid_client&error_description=app+must+be+installed+into+org`. In Salesforce Setup, go to OAuth Connected App Usage and look for the app with an Install button in the Actions column. After the admin installs/enables the app, users should retry authentication.
-
-## Salesforce allows only five active refresh tokens per user per app
-
-
-Salesforce allows only five active refresh tokens per user per connected app. When the same Salesforce user connects a sixth time, Salesforce can revoke the oldest refresh token, which makes older Composio connected accounts fail with token errors. Also check whether the user changed their password, revoked the app, changed connected app refresh-token policy away from `valid until revoked`, or has org-level session policies that invalidate tokens.
-
-## How should I map Salesforce actions to OAuth scopes?
-
-
-Composio does not maintain a precise granular scope map for every Salesforce action because Salesforce implementations vary heavily by org and many actions rely on SOQL rather than resource-specific endpoints. Users can use Salesforce's granular OAuth scopes instead of `full`, but should explicitly include the `refresh_token` scope so Composio can refresh the connection. If the exact tool set is known, compare those actions against Salesforce's documented OAuth scopes before requesting broad access.
-
-## Which redirect URL should I use for Salesforce custom auth?
-
-
-Use Composio's toolkit auth callback URL as the authorized redirect URI for custom Salesforce OAuth configuration: `https://backend.composio.dev/api/v3/toolkits/auth/callback`. For SDK-direct flows, the post-auth user redirect can separately be passed as `callback_url` / `callbackUrl` during connection initiation.
+Created records may not appear in a given Salesforce view. Use search to confirm they exist.

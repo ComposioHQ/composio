@@ -23,21 +23,3 @@ By default, the consent screen uses Composio's OAuth app. To show your own app n
 ## Why am I getting 401 errors on tool calls?
 
 The user's access token is no longer valid. Common causes: the user revoked access, changed their password or 2FA, a Workspace admin policy changed, or Google's refresh token limit (~50 per account) was exceeded. Re-authenticating the user typically resolves this.
-
----
-
-## Connect MCP exposes a curated Google Drive tool set and discovers the rest through meta-tools
-
-This is expected for Connect MCP. The endpoint exposes a curated direct tool set so the assistant does not load hundreds or thousands of tools into context. Less common or higher-risk Google Drive actions, including `GOOGLEDRIVE_DELETE_FOLDER_OR_FILE` and `GOOGLEDRIVE_EMPTY_TRASH`, are still supported but should be discovered at runtime with `COMPOSIO_SEARCH_TOOLS` and executed with `COMPOSIO_MULTI_EXECUTE_TOOL`.
-
-## Google Drive downloads use temporary presigned URLs with configurable URL TTL and short-lived storage
-
-Downloaded files are staged in temporary S3-backed storage and exposed through presigned URLs. The default presigned URL TTL is 1 hour, and that URL expiration can be customized in Project Settings -> File TTL. The staged files themselves are short lived and are deleted from Composio storage after about 24 hours / one day.
-
-## When should I use custom Google OAuth credentials when managed credentials are not verified for the requested scope?
-
-Google can block the OAuth flow when the OAuth app is not verified for the requested sensitive or restricted scope. If the managed Composio Google OAuth app is not verified for the scope the user needs, create and use custom Google OAuth credentials where that scope is configured and verified on the user's own Google Cloud project. Also verify that the authConfig scopes are the intended custom scopes and not accidentally broader than needed.
-
-## Tool Router v2 sessions require all connected accounts to belong to the same entity
-
-Tool Router v2 sessions are scoped to a single entity/user ID. Every connected account included in a session must belong to that same entity, otherwise validation can fail with `ToolRouterV2_InvalidConnectedAccountIds`. Reconnect Google Drive under the same user/entity as the Gmail and Calendar accounts before combining them in one session. If needed, specify auth config IDs while creating the session so Manage Connection uses the intended auth config for each toolkit.

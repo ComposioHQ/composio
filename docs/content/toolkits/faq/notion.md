@@ -53,15 +53,3 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 ## Notion database trigger fires for new pages, not updates
 
 In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.
-
-## How does Notion page and database access work?
-
-Notion does not model access as normal OAuth scopes. Page/database access is granted per Notion integration/OAuth client ID through Notion “Capabilities” and workspace grants. If multiple Composio auth configs use the same underlying Notion integration, page authorization can overlap.
-
-## Specifying a different auth config affects get/use lookup, not existing Notion token refresh
-
-Existing connected accounts under a different auth config continue to refresh and work. Specifying an auth config affects which connection get/use functions look for; it does not rewrite refresh behavior for already-valid connected accounts.
-
-## Notion 401 can be caused by invalid refresh token after user/admin revokes integration
-
-A Notion refresh failure with “Invalid refresh token” is usually a token revocation issue. Common causes are the user disconnecting the integration in Notion settings or a workspace admin removing/blocking the integration.

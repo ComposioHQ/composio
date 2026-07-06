@@ -27,9 +27,3 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 ## Why am I getting "Quota Exhausted" or "rate limit exhausted"?
 
 Google enforces per-minute and daily request quotas. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
-
----
-
-## Does Google Slides support one trigger in Composio?
-
-Google Slides is listed as a trigger-capable toolkit in Composio with one supported trigger.

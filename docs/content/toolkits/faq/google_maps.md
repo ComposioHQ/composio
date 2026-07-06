@@ -31,15 +31,3 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 `GOOGLE_MAPS_MAPS_EMBED_API` is API-key based. Google's Maps Embed API requires an API key on each request; OAuth2 is not the auth path for this tool.
 
 You must use an API-key connection to use this tool.
-
-## Google Maps OAuth can be blocked by sensitive cloud-platform scope
-
-Check whether the OAuth app requests the sensitive `https://www.googleapis.com/auth/cloud-platform` scope. If the Google OAuth app has not been verified, users who are not listed as test users and are outside the registering organization can be blocked by Google. Either complete Google verification or ensure the affected users are allowed test/org users for that OAuth app.
-
-## Recreate Google Maps auth configs after default OAuth app updates
-
-If Google Maps authentication fails while using the default Composio OAuth app and the default app has been updated, create a new auth config and reconnect. Existing auth configs may continue using the older app configuration.
-
-## Google Maps APIs may require billing and quota management in GCP
-
-Most Google APIs used through Composio are generally free to access, but Google Maps is an exception: Maps APIs can require billing on the Google Cloud project. If usage exceeds limits, users may need to request higher limits in their own Google project.

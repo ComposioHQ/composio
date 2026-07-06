@@ -30,10 +30,8 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## Why do Google Meet calls return 403 on a conference resource?
+## Why do Google Meet calls return 403 on conference records or artifacts?
 
-For a Google Meet API error like "Permission denied on resource Conference (or it might not exist)", verify that the signed-in connected account has access to the conference/artifact and that the conference record exists. A useful sanity check is to run the official Google Meet API cURL with the connected account access token from the Composio connected account details and compare the provider response with the Composio tool result.
+Google Meet conference records and artifacts are provider-side resources. If a tool returns an error such as "Permission denied on resource Conference (or it might not exist)", verify that the conference record exists, the connected Google account can access that meeting or artifact, and the workspace edition supports the artifact being requested.
 
-## Why are Google Workspace Enterprise features required for Meet recordings?
-
-The Google account must be on a Google Workspace Enterprise plan to record meetings. Without meeting recording support on the workspace/account, recordings and related transcripts will not be available through the Google Meet APIs or Composio Google Meet tools.
+For recordings specifically, Google only makes recording available on supported Google Workspace editions such as Business Standard/Plus, Enterprise Standard/Plus, Education Plus, Essentials, Enterprise Essentials, and Enterprise Essentials Plus. Recording also has to be enabled by the Workspace admin, and artifacts are saved to the meeting organizer's Drive.
