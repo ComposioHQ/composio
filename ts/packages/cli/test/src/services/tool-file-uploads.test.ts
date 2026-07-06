@@ -41,6 +41,30 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     expect(createPresignedURL).not.toHaveBeenCalled();
   });
 
+  it('surfaces CLI-appropriate remediation, not the SDK-only opt-out, in the block error', async () => {
+    const client = makeClient(vi.fn());
+
+    // The CLI has no `sensitiveFileUploadProtection` opt-out (by design), so the
+    // error must not point users at that non-existent knob (issue #3763 review #2/#3).
+    await expect(
+      uploadToolInputFiles({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+        inputSchema,
+        client,
+      })
+    ).rejects.toThrowError(/has no opt-out/i);
+
+    await expect(
+      uploadToolInputFiles({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+        inputSchema,
+        client,
+      })
+    ).rejects.not.toThrowError(/sensitiveFileUploadProtection/);
+  });
+
   it('refuses credential-like basenames (.env) even outside a sensitive directory', async () => {
     const createPresignedURL = vi.fn();
     const client = makeClient(createPresignedURL);

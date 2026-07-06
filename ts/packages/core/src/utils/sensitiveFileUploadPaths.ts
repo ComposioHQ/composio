@@ -92,19 +92,30 @@ function getSensitiveFileUploadPathBlockReason(
 }
 
 /**
+ * Default remediation hint appended to the block message. Assumes an SDK caller
+ * that exposes `sensitiveFileUploadProtection`. Callers without such an opt-out
+ * (e.g. `@composio/cli`) should pass their own `remediation` so the message does
+ * not advertise an option the caller cannot honor.
+ */
+const DEFAULT_REMEDIATION =
+  `To upload from this path anyway, set sensitiveFileUploadProtection: false on Composio ` +
+  `(not recommended) or use a copy outside sensitive locations.`;
+
+/**
  * @throws {ComposioSensitiveFilePathBlockedError} if the path is not allowed
  */
 export function assertSafeFileUploadPath(
   filePath: string,
-  options?: { additionalDenySegments?: string[] }
+  options?: { additionalDenySegments?: string[]; remediation?: string }
 ): void {
   const reason = getSensitiveFileUploadPathBlockReason(filePath, options?.additionalDenySegments);
   if (reason) {
+    const remediation = options?.remediation ?? DEFAULT_REMEDIATION;
     throw new ComposioSensitiveFilePathBlockedError(
-      `Refusing to upload: ${reason}. ` +
-        `To upload from this path anyway, set sensitiveFileUploadProtection: false on Composio ` +
-        `(not recommended) or use a copy outside sensitive locations.`,
-      { meta: { filePath, reason } }
+      `Refusing to upload: ${reason}. ${remediation}`,
+      {
+        meta: { filePath, reason },
+      }
     );
   }
 }
