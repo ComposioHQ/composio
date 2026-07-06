@@ -41,10 +41,11 @@ const mcpClient = new MastraMCPClient({
 });
 
 // 5. Retrieve tools.
-const tools = await mcpClient.getTools();
+const tools = await mcpClient.listTools();
 
 // 6. Pass tools to Mastra-specific Agent.
 const agent = new MastraAgent({
+  id: 'gmail-mcp-assistant',
   name: 'Gmail Assistant',
   instructions: `
     You are a helpful Gmail assistant that fetches and summarizes emails.

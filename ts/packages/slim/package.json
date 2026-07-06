@@ -92,7 +92,7 @@
   ],
   "license": "ISC",
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": ">=3.25.76 <5"
   },
   "devDependencies": {
     "@composio/core": "workspace:*"
@@ -104,7 +104,7 @@
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.5.0",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },
   "repository": {

@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { createMCPClient } from "@ai-sdk/mcp"
+import { createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 import { stepCountIs, streamText } from 'ai';
@@ -12,13 +12,14 @@ const composio = new Composio({
 // 2. Create an MCP session
 console.log('🔄 Creating toolrouter session...');
 const session = await composio.create('default', {
-  toolkits: ['gmail'], 
+  toolkits: ['gmail'],
   manageConnections: true,
+  mcp: true,
   tools: {
-    'gmail': {
+    gmail: {
       enable: ['GMAIL_FETCH_EMAILS'],
-    }
-  }
+    },
+  },
 });
 
 const { mcp, sessionId } = session;
@@ -32,8 +33,8 @@ const mcpClient = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: mcp.headers
-  }
+    headers: mcp.headers,
+  },
 });
 
 // 4. Retrieve tools.
@@ -48,7 +49,7 @@ const stream = streamText({
   model: openai('gpt-5.2'),
   prompt: `Fetch my latest received email from Gmail and summarize it.`,
   stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
+  onStepFinish: step => {
     if (step.toolCalls.length > 0) {
       for (let i = 0; i < step.toolCalls.length; i++) {
         const toolCall = step.toolCalls[i];

@@ -27,6 +27,13 @@ import {
   type InvokeAgentTarget,
 } from 'src/services/run-subagent-shared';
 
+type LegacySetSessionModelConnection = {
+  readonly unstable_setSessionModel?: (params: {
+    readonly sessionId: string;
+    readonly modelId: string;
+  }) => Promise<unknown>;
+};
+
 const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null => {
   if (target === 'claude') {
     return resolveRunCompanionAssetPath({
@@ -606,8 +613,14 @@ export const invokeAcpSubAgent = async ({
     });
 
     if (typeof options.model === 'string' && options.model.trim().length > 0) {
+      const setSessionModel = (connection as LegacySetSessionModelConnection)
+        .unstable_setSessionModel;
       try {
-        await connection.unstable_setSessionModel({
+        if (typeof setSessionModel !== 'function') {
+          throw new Error('ACP session model selection is not supported by this connection');
+        }
+
+        await setSessionModel.call(connection, {
           sessionId: session.sessionId,
           modelId: options.model.trim(),
         });

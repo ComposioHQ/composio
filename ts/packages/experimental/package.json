@@ -55,7 +55,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "typebox": "1.1.38"
+    "typebox": "1.3.3"
   },
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@earendil-works/pi-coding-agent": "0.79.8",
+    "@earendil-works/pi-coding-agent": "^0.80.3",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
