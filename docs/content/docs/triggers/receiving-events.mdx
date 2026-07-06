@@ -63,6 +63,8 @@ composio dev triggers listen --forward "http://localhost:8000/webhooks/composio"
 
 Alternatively, expose your local server with [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (`cloudflared tunnel --url http://localhost:8000`) or [ngrok](https://ngrok.com) (`ngrok http 8000`) and register the printed URL as your webhook URL.
 
+<ExampleCallout href="/examples/funnelwatch#run-it">See how we run the whole trigger pipeline locally with a tunnel and a simulated event stream.</ExampleCallout>
+
 <ForAgent title="local development">
 
 **Transport decision**
@@ -253,6 +255,8 @@ Composio delivers other project events (like [connection expiry](/docs/authentic
 
 Each trigger type declares the shape of the `data` it sends. 
 
+<ExampleCallout href="/examples/funnelwatch#know-the-moment-something-moves">See how we verify, dedup, and route webhook events in a business intelligence agent.</ExampleCallout>
+
 <ForAgent title="handling events">
 Inspect it before you write your handler with `get_type()`/`getType()` (the `payload` field), `composio triggers info "GITHUB_COMMIT_EVENT"` from the CLI, or generate typed stubs with `composio generate --toolkits github`.
 
@@ -314,6 +318,8 @@ Composio signs every webhook request. `parse({ verifySecret })` verifies the sig
 
 If you're not using the Composio SDK, verify manually — the full recipe is in the dropdown below.
 
+<ExampleCallout href="/examples/general-agent-with-pi#serve-the-webhook">See how a team Slack bot verifies every trigger signature and hands slow work off the response path.</ExampleCallout>
+
 <ForAgent title="verifying signatures manually">
 
 Every request includes `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. Compute `HMAC-SHA256` over `{webhook-id}.{webhook-timestamp}.{rawBody}` with your secret, base64-encode, and compare:
@@ -352,10 +358,3 @@ The gotchas that make signatures "never match":
 
 Verification policy: in dev, **enforce-when-present** (verify signed Composio traffic, let unsigned local test tools through) keeps local POSTs working; in production, always enforce and sign internal callers.
 </ForAgent>
-
-## Next
-
-<Cards>
-<Card icon={<Database />} title="Managing triggers" href="/docs/triggers#managing-triggers" description="List, pause, resume, and delete trigger instances — and hear about automatic disables." />
-<Card icon={<Key />} title="Custom OAuth webhooks" href="/docs/triggers/custom-oauth-webhooks" description="Bring your own OAuth app to a realtime trigger: register Composio's ingress URL with the provider." />
-</Cards>

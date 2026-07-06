@@ -55,6 +55,8 @@ You only pass a `user_id`. Composio resolves that user's connected account for t
 
 You can also create triggers from the dashboard: go to [Auth Configs](https://dashboard.composio.dev/~/project/auth-configs), select the auth config, open **Active Triggers**, and click **Create Trigger**.
 
+<ExampleCallout href="/examples/funnelwatch#know-the-moment-something-moves">See how we provision triggers idempotently to stream six SaaS event feeds into one webhook.</ExampleCallout>
+
 <ForAgent title="creating triggers">
 
 **Discover slugs — never guess**
@@ -156,6 +158,8 @@ You aren't the only one who can disable a trigger: Composio automatically disabl
 Deleting a trigger is permanent. Use `disable()` instead to temporarily stop receiving events.
 </Callout>
 
+<ExampleCallout href="/examples/funnelwatch#know-the-moment-something-moves">See how we page the team when Composio disables a trigger, instead of going quietly blind.</ExampleCallout>
+
 <ForAgent title="managing triggers">
 
 **Hearing about automatic disables**
@@ -183,11 +187,3 @@ Trigger setup belongs in an idempotent script — check `list_active()` for the 
 Manage instances: [list active](/reference/api-reference/triggers/getTriggerInstancesActive), [enable or disable](/reference/api-reference/triggers/patchTriggerInstancesManageByTriggerId), [delete](/reference/api-reference/triggers/deleteTriggerInstancesManageByTriggerId). SDK methods: [Python](/reference/sdk-reference/python/triggers), [TypeScript](/reference/sdk-reference/typescript/triggers).
 
 </ForAgent>
-
-## Next
-
-<Cards>
-<Card icon={<Database />} title="Receiving events" href="/docs/triggers/receiving-events" description="Stand up your endpoint: local development, production, the payload, handling, and signature verification." />
-<Card icon={<Key />} title="Custom OAuth webhooks" href="/docs/triggers/custom-oauth-webhooks" description="Bring your own OAuth app to a realtime trigger: register Composio's ingress URL with the provider." />
-<Card icon={<Key />} title="Authentication" href="/docs/authentication" description="Set up the auth config and connected account a trigger needs" />
-</Cards>

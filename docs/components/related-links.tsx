@@ -23,12 +23,19 @@ export function RelatedLinks({ items }: { items: RelatedLink[] }) {
         {items.map((item) => (
           <li key={item.href}>
             <Link href={item.href} className="group flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-fd-foreground transition-colors group-hover:text-fd-primary">
-                {item.title}
+              <span className="flex flex-col gap-0.5">
+                <span
+                  key="title"
+                  className="text-sm font-medium text-fd-foreground transition-colors group-hover:text-fd-primary"
+                >
+                  {item.title}
+                </span>
+                {item.description && (
+                  <span key="description" className="text-xs leading-snug text-fd-muted-foreground">
+                    {item.description}
+                  </span>
+                )}
               </span>
-              {item.description && (
-                <span className="text-xs leading-snug text-fd-muted-foreground">{item.description}</span>
-              )}
             </Link>
           </li>
         ))}

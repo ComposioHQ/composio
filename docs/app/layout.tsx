@@ -7,6 +7,7 @@ import localFont from 'next/font/local';
 import { PostHogProvider } from '@/components/posthog-provider';
 import CustomSearchDialog from '@/components/custom-search-dialog';
 import { ScrollReset } from '@/components/scroll-reset';
+import { SafeNextLink } from '@/components/safe-next-link';
 import { source, referenceSource } from '@/lib/source';
 
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
@@ -114,6 +115,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         <Analytics />
         <PostHogProvider>
           <RootProvider
+            components={{ Link: SafeNextLink }}
             theme={{
               defaultTheme: 'dark',
               attribute: 'class',

@@ -38,11 +38,14 @@ export function DocsHeroV2() {
               className="flex items-center gap-2.5 rounded-md border border-fd-border bg-fd-card px-4 py-3 text-[15px] text-fd-foreground no-underline transition-colors hover:border-fd-foreground/15 hover:bg-fd-accent/40"
               href={href}
             >
-              <Icon
-                aria-hidden="true"
-                className="size-4 text-[var(--composio-brand)]"
-              />
-              {label}
+              <span className="flex items-center gap-2.5">
+                <Icon
+                  key="icon"
+                  aria-hidden="true"
+                  className="size-4 text-[var(--composio-brand)]"
+                />
+                <span key="label">{label}</span>
+              </span>
             </Link>
           ))}
         </div>

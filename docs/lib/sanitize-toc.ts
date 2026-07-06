@@ -7,7 +7,7 @@ type TocEntry = {
 
 function sanitizeTitle(title: unknown) {
   if (typeof title !== 'string') return title;
-  return title.replace(/\s+Experimental\s*$/i, '').trim();
+  return title.replace(/\s+\(?(Experimental|Legacy)\)?\s*$/i, '').trim();
 }
 
 function sanitizeEntry(entry: TocEntry): TocEntry {

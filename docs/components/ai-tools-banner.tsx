@@ -76,8 +76,10 @@ export function AIToolsBanner() {
                 rel="noopener noreferrer"
                 className="text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"
               >
-                Skills.sh
-                <ExternalLink aria-hidden="true" className="ml-1 inline h-2.5 w-2.5" />
+                <span>
+                  <span key="label">Skills.sh</span>
+                  <ExternalLink key="icon" aria-hidden="true" className="ml-1 inline h-2.5 w-2.5" />
+                </span>
               </Link>
               <Link
                 href="https://github.com/composiohq/skills"
@@ -85,8 +87,10 @@ export function AIToolsBanner() {
                 rel="noopener noreferrer"
                 className="text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"
               >
-                GitHub
-                <ExternalLink aria-hidden="true" className="ml-1 inline h-2.5 w-2.5" />
+                <span>
+                  <span key="label">GitHub</span>
+                  <ExternalLink key="icon" aria-hidden="true" className="ml-1 inline h-2.5 w-2.5" />
+                </span>
               </Link>
             </div>
           </div>
@@ -100,8 +104,10 @@ export function AIToolsBanner() {
                 href="/docs/cli"
                 className="inline-flex items-center gap-1 text-fd-muted-foreground hover:text-[var(--composio-orange)] transition-colors"
               >
-                <Terminal aria-hidden="true" className="h-2.5 w-2.5" />
-                CLI Reference
+                <span className="inline-flex items-center gap-1">
+                  <Terminal key="icon" aria-hidden="true" className="h-2.5 w-2.5" />
+                  <span key="label">CLI Reference</span>
+                </span>
               </Link>
             </div>
           </div>
@@ -114,17 +120,21 @@ export function AIToolsBanner() {
             href="/llms.txt"
             className="group flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-background dark:bg-fd-background/30 px-3 py-1.5 transition-all hover:border-[var(--composio-orange)]/40"
           >
-            <FileText aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground group-hover:text-[var(--composio-orange)] transition-colors" />
-            <span className="text-[12.5px] font-medium text-fd-foreground">llms.txt</span>
-            <span className="text-[10px] text-fd-muted-foreground">Index</span>
+            <span className="flex items-center gap-1.5">
+              <FileText key="icon" aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground group-hover:text-[var(--composio-orange)] transition-colors" />
+              <span key="label" className="text-[12.5px] font-medium text-fd-foreground">llms.txt</span>
+              <span key="meta" className="text-[10px] text-fd-muted-foreground">Index</span>
+            </span>
           </Link>
           <Link
             href="/llms-full.txt"
             className="group flex items-center gap-1.5 rounded-lg border border-fd-border bg-fd-background dark:bg-fd-background/30 px-3 py-1.5 transition-all hover:border-[var(--composio-orange)]/40"
           >
-            <FileText aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground group-hover:text-[var(--composio-orange)] transition-colors" />
-            <span className="text-[12.5px] font-medium text-fd-foreground">llms-full.txt</span>
-            <span className="text-[10px] text-fd-muted-foreground">Complete</span>
+            <span className="flex items-center gap-1.5">
+              <FileText key="icon" aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-fd-muted-foreground group-hover:text-[var(--composio-orange)] transition-colors" />
+              <span key="label" className="text-[12.5px] font-medium text-fd-foreground">llms-full.txt</span>
+              <span key="meta" className="text-[10px] text-fd-muted-foreground">Complete</span>
+            </span>
           </Link>
         </div>
       </div>

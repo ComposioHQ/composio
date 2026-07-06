@@ -240,11 +240,19 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 :root {
   /* Brand — deep electric blue, shared with composio.dev + dashboard */
   --composio-brand: #0007cd;
+  --composio-link-hover: #1e7aff; /* hover: noticeably brighter, nudged toward cyan */
   --composio-orange: var(--composio-brand); /* legacy alias — kept for back-compat */
   --composio-sidebar: #fbfbfb;
   --composio-radius: 0.375rem;
@@ -304,6 +312,7 @@ html {
   /* Lift the brand blue on dark backgrounds — `#0007cd` is too dark
      against the subdued blue-black surface scale. */
   --composio-brand: #5B8BF0;
+  --composio-link-hover: #87c7ff; /* hover: brighter + slightly cyan of the brand blue */
   --composio-orange: var(--composio-brand);
 
   --composio-surface-0: #080b10;
@@ -456,9 +465,23 @@ pre {
   text-decoration: none;
 }
 
+:is(.prose, [data-fumadocs-body]) a:not([data-card]):hover {
+  color: var(--composio-link-hover);
+}
+
 /* Heading anchors stay neutral */
 .prose :is(h1, h2, h3, h4) a {
   color: inherit;
+}
+
+.prose :is(h1, h2, h3, h4) > a[data-card] {
+  border-radius: var(--composio-radius);
+  transition: color 160ms ease;
+}
+
+.prose :is(h1, h2, h3, h4) > a[data-card]:hover svg,
+.prose :is(h1, h2, h3, h4) > a[data-card]:focus-visible svg {
+  color: var(--composio-link-hover);
 }
 
 a:focus-visible {
@@ -487,18 +510,26 @@ a:focus-visible {
   display: none;
 }
 
+.docs-section-sidebar {
+  --docs-nav-font-size: 0.875rem;
+  --docs-nav-text: #b8c3d4;
+  --docs-nav-text-muted: #96a3b7;
+}
+
 /* Sidebar nav items */
 #nd-sidebar [data-radix-scroll-area-viewport] a,
 #nd-sidebar [data-radix-scroll-area-viewport] button {
   padding: 0.375rem 0.5rem;
   border-radius: var(--composio-radius);
-  color: var(--color-fd-foreground);
+  color: var(--docs-nav-text, var(--color-fd-foreground)) !important;
+  font-size: var(--docs-nav-font-size) !important;
   transition: background-color 0.15s ease;
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
 #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
   background-color: rgba(0, 0, 0, 0.05);
+  color: var(--composio-link-hover) !important;
 }
 
 .dark #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
@@ -507,7 +538,7 @@ a:focus-visible {
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
-  color: var(--composio-orange);
+  color: var(--composio-brand) !important;
 }
 
 /* Section-grouped docs sidebar: top-level chapter names stay visible,
@@ -515,10 +546,10 @@ a:focus-visible {
 .docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label {
   margin-top: 0.25rem;
   font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.765625rem;
+  font-size: var(--docs-nav-font-size) !important;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--color-fd-foreground);
+  color: var(--docs-nav-text) !important;
 }
 
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div:first-child > .docs-sidebar-folder-label {
@@ -527,7 +558,7 @@ a:focus-visible {
 
 .docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label[data-active="true"] {
   background: var(--composio-surface-2);
-  color: var(--color-fd-foreground);
+  color: var(--composio-brand) !important;
 }
 
 .docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label[data-active="true"]::before {
@@ -625,13 +656,18 @@ a:focus-visible {
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a,
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div button {
   font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.765625rem;
+  font-size: var(--docs-nav-font-size) !important;
   letter-spacing: 0;
-  color: var(--color-fd-muted-foreground);
+  color: var(--docs-nav-text-muted) !important;
 }
 
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a[data-active="true"] {
   color: var(--composio-brand);
+}
+
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
+  color: var(--composio-link-hover) !important;
 }
 
 /* CLI commands table — prevent command column from wrapping */
@@ -643,11 +679,11 @@ a:focus-visible {
 #nd-sidebar p.inline-flex {
   margin-top: 1.75rem !important;
   margin-bottom: 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-fd-muted-foreground);
+  color: var(--docs-nav-text-muted, var(--color-fd-muted-foreground)) !important;
 }
 
 /* First section header - less top margin */
@@ -976,12 +1012,7 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
 }
 
 .docs-section-sidebar #nd-toc > h3 {
-  display: inline-flex;
-  padding: 0.7rem 1rem 0.45rem;
-  color: var(--color-fd-foreground);
-  font-size: 0.765625rem;
-  font-weight: 400;
-  letter-spacing: 0;
+  display: none !important;
 }
 
 .docs-section-sidebar #nd-toc [style*="mask-image"] {
@@ -992,11 +1023,11 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
   position: relative;
   min-height: 0;
   padding-block: 0.375rem !important;
-  padding-inline-start: 1rem !important;
   border-radius: 0;
-  background: transparent;
-  color: var(--color-fd-muted-foreground);
-  font-size: 0.765625rem;
+  background-color: transparent;
+  color: var(--docs-nav-text-muted) !important;
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--docs-nav-font-size) !important;
   font-weight: 400;
   line-height: 1.45;
   letter-spacing: 0;
@@ -1004,16 +1035,35 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
 }
 
 .docs-section-sidebar #nd-toc a:hover {
-  color: var(--color-fd-foreground);
+  color: var(--composio-link-hover) !important;
 }
 
 .docs-section-sidebar #nd-toc a[data-active="true"] {
-  background: var(--composio-surface-2);
-  color: var(--color-fd-foreground);
+  background-color: transparent !important;
+  color: var(--composio-brand) !important;
 }
 
 .docs-section-sidebar #nd-toc a[data-active="true"]::before {
   content: none;
+}
+
+.for-agent-content {
+  max-height: 18rem;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  border: 1px solid color-mix(in oklab, var(--color-fd-foreground) 8%, transparent);
+  border-radius: var(--composio-radius);
+  background-color: color-mix(in oklab, var(--color-fd-background) 96%, #000 4%);
+  scrollbar-gutter: stable;
+}
+
+.dark .for-agent-content {
+  background-color: color-mix(in oklab, var(--color-fd-background) 88%, #000 12%);
+}
+
+.for-agent-content:hover,
+.for-agent-content:focus-within {
+  overflow-y: auto;
 }
 
 @media (max-width: 1279px) {
@@ -1505,4 +1555,21 @@ html:not(.dark) .terminal-theme-claude {
 .diff-copy-button:focus-visible {
   outline: 2px solid light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.25));
   outline-offset: 1px;
+}
+
+/* ExampleCallout — light-blue bordered tile linking a docs subsection to the
+   example-writeup section that demonstrates it (components/example-callout.tsx). */
+/* Specificity must beat the prose/fumadocs-body link color rules. */
+:is(.prose, [data-fumadocs-body]) a.example-callout:not([data-card]),
+:is(.prose, [data-fumadocs-body]) a.example-callout:not([data-card]):hover,
+.example-callout {
+  --example-accent: #669bb3;
+  border: 1px solid rgb(102 155 179 / 0.45);
+  background-color: rgb(102 155 179 / 0.08);
+  color: var(--example-accent);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.example-callout:hover {
+  border-color: var(--example-accent);
+  background-color: rgb(102 155 179 / 0.14);
 }

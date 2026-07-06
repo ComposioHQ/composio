@@ -14,7 +14,7 @@ import { LegacyBadge } from '@/components/legacy-badge';
 import { ExperimentalBadge } from '@/components/experimental-badge';
 import { DocsNextLink } from '@/components/docs-next-link';
 import { groupSidebarSections } from '@/lib/group-sidebar-sections';
-import { getNextDocsPage } from '@/lib/docs-next-page';
+import { getAdjacentDocsPages } from '@/lib/docs-next-page';
 import { sanitizeToc } from '@/lib/sanitize-toc';
 
 const docsNavigationTree = groupSidebarSections(source.pageTree);
@@ -27,9 +27,9 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const data = page.data as any;
   const MDX = data.body;
   const isLanding = !params.slug || params.slug.length === 0;
-  const nextPage = isLanding
-    ? undefined
-    : getNextDocsPage(docsNavigationTree, page.url);
+  const adjacentPages = isLanding
+    ? {}
+    : getAdjacentDocsPages(docsNavigationTree, page.url);
 
   return (
     <DocsPage
@@ -41,6 +41,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
       tableOfContent={{
         enabled: !isLanding && data.full !== true,
         style: 'clerk',
+        header: data.legacy ? <LegacyBadge inline /> : undefined,
       }}
     >
       {!isLanding && (
@@ -58,7 +59,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
             a: createRelativeLink(source, page),
           })}
         />
-        <DocsNextLink page={nextPage} />
+        <DocsNextLink previous={adjacentPages.previous} next={adjacentPages.next} />
         {!isLanding && <EditOnGitHub path={`docs/content/docs/${page.path}`} />}
       </DocsBody>
     </DocsPage>

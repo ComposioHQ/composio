@@ -44,6 +44,7 @@ import { MediaSplit } from '@/components/media-split';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import { ForAgent } from '@/components/for-agent';
+import { ExampleCallout } from '@/components/example-callout';
 import { ExperimentalBadge } from '@/components/experimental-badge';
 import {
   ShieldCheck,
@@ -140,6 +141,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
     ForAgent,
+    ExampleCallout,
     ExperimentalBadge,
     // Lucide icons
     ShieldCheck,

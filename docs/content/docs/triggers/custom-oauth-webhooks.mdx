@@ -16,6 +16,8 @@ Each OAuth app you bring gets its own ingress URL within a project. A single OAu
 
 The setup is four API calls against the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) — the full walkthrough is in the dropdown below. For setup notes specific to each toolkit, see its FAQ section, for example [Slack](/toolkits/slack) or [Notion](/toolkits/notion).
 
+<ExampleCallout href="/examples/standup-slackbot#make-your-custom-slack-bot">See how a standup bot brings its own Slack app instead of posting as Composio.</ExampleCallout>
+
 <ForAgent title="webhook endpoint API">
 
 **The ingress URL**
@@ -76,10 +78,3 @@ Paste `webhook_url` into the provider dashboard (Slack → Event Subscriptions �
 - Repeat verification handshakes are rejected after the endpoint is verified, so a forged challenge can't silently swap the signing secret.
 
 </ForAgent>
-
-## Next
-
-<Cards>
-<Card icon={<Database />} title="Receiving events" href="/docs/triggers/receiving-events" description="Stand up your endpoint: local development, production, the payload, handling, and signature verification." />
-<Card icon={<Key />} title="Triggers" href="/docs/triggers" description="Create triggers and manage them over their lifecycle." />
-</Cards>

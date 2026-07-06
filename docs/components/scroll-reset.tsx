@@ -22,7 +22,11 @@ export function ScrollReset() {
       return;
     }
     if (window.location.hash) return;
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+
+    window.scrollTo({ top: 0, left: 0, behavior });
   }, [pathname]);
 
   return null;

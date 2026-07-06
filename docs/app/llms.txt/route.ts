@@ -31,63 +31,74 @@ function nodeText(name: ReactNode): string | null {
   return null;
 }
 
-/**
- * A section is legacy/deprecated when its separator heading says so (e.g.
- * "Direct Tool Execution Guides (Legacy)"). We omit those sections from the
- * default LLM index so code generators reach for the current session-based
- * APIs, not deprecated ones.
- */
-function isLegacySeparator(name: ReactNode): boolean {
-  const text = nodeText(name);
-  return text != null && /legacy|deprecated/i.test(text);
+function nodeHasVisiblePage(node: TreeNode, legacyUrls: Set<string>): boolean {
+  if (node.type === 'separator') return false;
+  if (node.type === 'page') return !legacyUrls.has(node.url);
+
+  return (
+    (node.index !== undefined && !legacyUrls.has(node.index.url)) ||
+    node.children.some((child) => nodeHasVisiblePage(child, legacyUrls))
+  );
 }
 
 /**
  * Walk the fumadocs page tree and generate a markdown index.
  * Separators become ## headings, pages become URL entries, folders recurse.
- * Legacy/deprecated sections (and everything under them) are skipped.
+ * Legacy/deprecated pages are skipped based on frontmatter.
  */
-function walkPageTree(nodes: TreeNode[], depth = 2): string {
+function renderNode(node: TreeNode, legacyUrls: Set<string>, depth: number): string[] {
   const lines: string[] = [];
-  let skippingSection = false;
+
+  if (!nodeHasVisiblePage(node, legacyUrls)) return lines;
+
+  if (node.type === 'page') {
+    lines.push(`- https://docs.composio.dev${node.url}.md`);
+    return lines;
+  }
+
+  if (node.type === 'folder') {
+    const text = nodeText(node.name);
+    if (text) lines.push('', `${'#'.repeat(depth)} ${text}`, '');
+    if (node.index && !legacyUrls.has(node.index.url)) {
+      lines.push(`- https://docs.composio.dev${node.index.url}.md`);
+    }
+    for (const child of node.children) {
+      lines.push(...renderNode(child, legacyUrls, depth + 1));
+    }
+  }
+
+  return lines;
+}
+
+function walkPageTree(nodes: TreeNode[], legacyUrls: Set<string>, depth = 2): string {
+  const lines: string[] = [];
+  let sectionName: ReactNode | undefined;
+  let sectionNodes: TreeNode[] = [];
+
+  function flushSection() {
+    const sectionLines = sectionNodes.flatMap((node) => renderNode(node, legacyUrls, depth + 1));
+    const text = nodeText(sectionName);
+
+    if (sectionLines.length > 0) {
+      if (text) lines.push('', `${'#'.repeat(depth)} ${text}`, '');
+      lines.push(...sectionLines);
+    }
+
+    sectionName = undefined;
+    sectionNodes = [];
+  }
 
   for (const node of nodes) {
     if (node.type === 'separator') {
-      // A separator starts a new section; skip it and its pages when legacy.
-      skippingSection = isLegacySeparator(node.name);
-      if (skippingSection) continue;
-      const text = nodeText(node.name);
-      if (text) {
-        lines.push('', `${'#'.repeat(depth)} ${text}`, '');
-      }
+      flushSection();
+      sectionName = node.name;
       continue;
     }
 
-    if (skippingSection) continue;
-
-    switch (node.type) {
-      case 'page':
-        lines.push(`- https://docs.composio.dev${node.url}.md`);
-        break;
-
-      case 'folder': {
-        // Folders are sub-sections within separator sections, so one level deeper
-        const text = nodeText(node.name);
-        if (text) {
-          lines.push('', `${'#'.repeat(depth + 1)} ${text}`, '');
-        }
-        // If folder has an index page, include it
-        if (node.index) {
-          lines.push(`- https://docs.composio.dev${node.index.url}.md`);
-        }
-        // Recurse into children
-        if (node.children.length > 0) {
-          lines.push(walkPageTree(node.children, depth + 1));
-        }
-        break;
-      }
-    }
+    sectionNodes.push(node);
   }
+
+  flushSection();
 
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -99,7 +110,12 @@ function formatPage(page: any) {
 
 export async function GET() {
   try {
-    const docsTree = walkPageTree(source.pageTree.children as TreeNode[]);
+    const legacyUrls = new Set(
+      source.getPages()
+        .filter((page) => (page.data as { legacy?: boolean }).legacy === true)
+        .map((page) => page.url),
+    );
+    const docsTree = walkPageTree(source.pageTree.children as TreeNode[], legacyUrls);
 
     const examplesPages = examplesSource.getPages();
     const referencePages = referenceSource.getPages();

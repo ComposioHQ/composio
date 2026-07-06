@@ -12,7 +12,7 @@
     "predev": "bun scripts/build-agent-index.ts",
     "dev": "next dev",
     "start": "next start",
-    "types:check": "bun scripts/build-agent-index.ts && fumadocs-mdx && next typegen && tsc --noEmit",
+    "types:check": "bun scripts/build-agent-index.ts && node ./node_modules/next/dist/bin/next typegen && node ./node_modules/fumadocs-mdx/dist/bin.js && node ./node_modules/typescript/bin/tsc --noEmit",
     "postinstall": "fumadocs-mdx && bun scripts/patch-eve-snapshot-skip.ts",
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",

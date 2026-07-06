@@ -178,8 +178,17 @@ export function QuickstartFlow({ children }: QuickstartFlowProps) {
               href="/docs/providers"
               className="flex items-center gap-3 rounded-lg border border-dashed border-fd-border px-3 py-2.5 transition-all hover:bg-fd-accent/50 hover:border-fd-muted-foreground"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center text-fd-muted-foreground">→</span>
-              <span className="text-sm font-medium text-fd-muted-foreground">Other providers</span>
+              <span className="flex items-center gap-3">
+                <span
+                  key="icon"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center text-fd-muted-foreground"
+                >
+                  →
+                </span>
+                <span key="label" className="text-sm font-medium text-fd-muted-foreground">
+                  Other providers
+                </span>
+              </span>
             </Link>
           </div>
           {/* Portal target for integration tabs header */}

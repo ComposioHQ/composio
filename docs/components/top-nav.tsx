@@ -27,22 +27,26 @@ export function TopNav() {
       <div className="flex h-14 items-center px-6 gap-6">
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <Image
-            src="/Composio Logo.svg"
-            alt="Composio"
-            width={110}
-            height={20}
-            className="dark:hidden"
-            priority
-          />
-          <Image
-            src="/Composio Logo Dark.svg"
-            alt="Composio"
-            width={110}
-            height={20}
-            className="hidden dark:block"
-            priority
-          />
+          <span className="flex items-center">
+            <Image
+              key="light"
+              src="/Composio Logo.svg"
+              alt="Composio"
+              width={110}
+              height={20}
+              className="dark:hidden"
+              priority
+            />
+            <Image
+              key="dark"
+              src="/Composio Logo Dark.svg"
+              alt="Composio"
+              width={110}
+              height={20}
+              className="hidden dark:block"
+              priority
+            />
+          </span>
         </Link>
 
         {/* Nav Items */}
@@ -66,4 +70,3 @@ export function TopNav() {
     </header>
   );
 }
-
