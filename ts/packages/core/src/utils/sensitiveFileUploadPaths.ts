@@ -1,9 +1,13 @@
 /**
  * Blocks accidental upload of local files from well-known secret/credential locations
  * during auto file upload (and {@link getFileDataAfterUploadingToS3}).
+ *
+ * This is the single canonical guard shared by the core SDK and downstream
+ * packages (e.g. `@composio/cli`). Filesystem access goes through the `#platform`
+ * abstraction so this module stays free of static `node:*` imports and is safe to
+ * re-export from the package root (edge/workerd builds included).
  */
-import * as path from 'node:path';
-import fs from 'node:fs';
+import { platform } from '#platform';
 import { ComposioSensitiveFilePathBlockedError } from '../errors/FileModifierErrors';
 
 /**
@@ -26,15 +30,17 @@ const SECRET_LIKE_BASENAME = /^(\.env(\.|$)|\.netrc$|\.pgpass$)/i;
 /** Default SSH private key basenames (public keys like id_rsa.pub are allowed). */
 const DEFAULT_PRIVATE_KEY_BASENAME = /^id_(rsa|ed25519|ecdsa|dsa|ecdsa_sk)(\.old)?$/i;
 
+const isWindows = typeof process !== 'undefined' && process.platform === 'win32';
+
 /**
  * Returns normalized path segments, resolving symlinks when the path exists.
  */
 function normalizePathSegments(filePath: string): string[] {
-  const absolute = path.resolve(filePath);
+  const absolute = platform.resolvePath(filePath);
   let resolved = absolute;
   try {
-    if (fs.existsSync(absolute)) {
-      resolved = fs.realpathSync(absolute);
+    if (platform.existsSync(absolute)) {
+      resolved = platform.realpathSync(absolute);
     }
   } catch {
     // If realpath fails (e.g. race), use resolved path
@@ -58,16 +64,15 @@ function getSensitiveFileUploadPathBlockReason(
   additionalDenySegments?: string[]
 ): string | null {
   const segments = normalizePathSegments(filePath);
-  const isWin = process.platform === 'win32';
   const deny = new Set(
     [
       ...BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS,
       ...(additionalDenySegments ?? []).map(s => s.trim()).filter(Boolean),
-    ].map(s => (isWin ? s.toLowerCase() : s))
+    ].map(s => (isWindows ? s.toLowerCase() : s))
   );
 
   // Windows: compare segments case-insensitively; map once instead of toLowerCase per iteration.
-  const segmentsForMatch = isWin ? segments.map(s => s.toLowerCase()) : segments;
+  const segmentsForMatch = isWindows ? segments.map(s => s.toLowerCase()) : segments;
   for (let i = 0; i < segments.length; i++) {
     if (deny.has(segmentsForMatch[i]!)) {
       return `path segment "${segments[i]}" is in the sensitive file upload denylist`;

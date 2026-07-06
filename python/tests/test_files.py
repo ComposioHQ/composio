@@ -4,6 +4,8 @@ These tests ensure that the FileHelper class correctly handles JSON schemas
 that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 """
 
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
@@ -28,6 +30,7 @@ from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
     ResponseTooLargeError,
+    SensitiveFilePathBlockedError,
 )
 
 
@@ -2793,3 +2796,54 @@ class TestEnhanceSchemaDescriptionsEmptySchema:
         assert description != "Search term"
         assert "string" in description
         assert "required" in description
+
+
+class TestFromPathSensitiveGuard:
+    """`FileUploadable.from_path` is the single upload primitive in the Python
+    SDK; the sensitive-path denylist must fire there before any file read or
+    network round-trip (parity with the TS core SDK and the CLI fix for
+    issue #3746 / GHSA-hp3h-89pf-5q58)."""
+
+    def test_from_path_blocks_ssh_private_key(self, mock_client):
+        p = Path.home() / ".ssh" / "id_rsa"
+        with pytest.raises(SensitiveFilePathBlockedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(p),
+                tool="GMAIL_SEND_EMAIL",
+                toolkit="gmail",
+            )
+        # The guard runs before the SDK contacts the API for a presigned URL.
+        mock_client.post.assert_not_called()
+
+    def test_from_path_blocks_dotenv_basename(self, mock_client):
+        p = Path(tempfile.gettempdir()) / ".env"
+        with pytest.raises(SensitiveFilePathBlockedError):
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(p),
+                tool="GMAIL_SEND_EMAIL",
+                toolkit="gmail",
+            )
+        mock_client.post.assert_not_called()
+
+    def test_from_path_opt_out_disables_guard(self, mock_client):
+        """`sensitive_file_upload_protection=False` restores the legacy
+        (unguarded) behavior; the denylist no longer raises for that path."""
+        # A non-existent basename under `.ssh`: the `.ssh` segment still trips the
+        # denylist when protection is on, but the file never exists, so with
+        # protection off we deterministically hit the missing-file path (no real
+        # key read, no network) rather than the block error.
+        p = Path.home() / ".ssh" / "composio-does-not-exist-guard-test"
+        with pytest.raises(Exception) as exc_info:
+            FileUploadable.from_path(
+                client=mock_client,
+                file=str(p),
+                tool="GMAIL_SEND_EMAIL",
+                toolkit="gmail",
+                sensitive_file_upload_protection=False,
+            )
+        assert not isinstance(exc_info.value, SensitiveFilePathBlockedError)
+        # Guard skipped, so the failure is downstream (missing file), before any
+        # presigned-URL request.
+        mock_client.post.assert_not_called()

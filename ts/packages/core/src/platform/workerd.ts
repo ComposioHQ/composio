@@ -49,6 +49,12 @@ export const platform: Platform = {
     return false;
   },
 
+  realpathSync(filePath: string): string {
+    // No filesystem in edge runtimes: cannot resolve symlinks, so return the
+    // input unchanged. Local-path uploads don't happen on workerd anyway.
+    return filePath;
+  },
+
   mkdirSync(_dirPath: string): void {
     // No-op in edge runtimes - directories cannot be created
   },
