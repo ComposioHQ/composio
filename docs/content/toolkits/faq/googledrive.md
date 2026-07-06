@@ -30,10 +30,6 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 This is expected for Connect MCP. The endpoint exposes a curated direct tool set so the assistant does not load hundreds or thousands of tools into context. Less common or higher-risk Google Drive actions, including `GOOGLEDRIVE_DELETE_FOLDER_OR_FILE` and `GOOGLEDRIVE_EMPTY_TRASH`, are still supported but should be discovered at runtime with `COMPOSIO_SEARCH_TOOLS` and executed with `COMPOSIO_MULTI_EXECUTE_TOOL`.
 
-## Google Drive watch/change webhooks require a public endpoint
-
-Google Drive webhook payloads need to be delivered to a public domain or publicly reachable endpoint. A private-domain listener is not sufficient for Composio's server to send the webhook payload.
-
 ## Google Drive downloads use temporary presigned URLs with configurable URL TTL and short-lived storage
 
 Downloaded files are staged in temporary S3-backed storage and exposed through presigned URLs. The default presigned URL TTL is 1 hour, and that URL expiration can be customized in Project Settings -> File TTL. The staged files themselves are short lived and are deleted from Composio storage after about 24 hours / one day.
@@ -45,7 +41,3 @@ Google can block the OAuth flow when the OAuth app is not verified for the reque
 ## Tool Router v2 sessions require all connected accounts to belong to the same entity
 
 Tool Router v2 sessions are scoped to a single entity/user ID. Every connected account included in a session must belong to that same entity, otherwise validation can fail with `ToolRouterV2_InvalidConnectedAccountIds`. Reconnect Google Drive under the same user/entity as the Gmail and Calendar accounts before combining them in one session. If needed, specify auth config IDs while creating the session so Manage Connection uses the intended auth config for each toolkit.
-
-## Managed Google Drive credentials may use narrower Drive scopes than full-drive access
-
-Composio's default Google Drive credentials can use a narrower scope such as `drive.file`, which allows access to files the app creates or is explicitly granted. If the product needs broader full-drive access such as the `drive` scope, use the user's own Google OAuth credentials with that scope enabled and verified instead of relying on the managed app scopes.

@@ -6,14 +6,6 @@ Google Ads was changed so the developer token lives on the auth config itself, n
 
 ![Google Ads auth config form showing the developer token field under custom developer credentials.](/images/kb/toolkits/googleads/google-ads-developer-token-auth-config.png)
 
-## What is required for Google Ads API requests?
-
-
-
-Google Ads API requests require both an OAuth access token and a Google Ads developer token. Shared managed credentials can hit shared Google Ads quota or access limits. For production reliability, users should use their own Google Ads developer token where possible.
-
-![Google Ads connection form showing the customer ID and developer token fields.](/images/kb/toolkits/googleads/google-ads-connection-fields.png)
-
 ## What can cause Google Ads 429s?
 
 

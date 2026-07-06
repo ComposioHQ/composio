@@ -30,14 +30,6 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## How do I configure Meet scopes and enable the Google Meet API before creating Meet spaces?
-
-For Meet space creation/settings through Google Super, include the Meet scopes https://www.googleapis.com/auth/meetings.space.created and https://www.googleapis.com/auth/meetings.space.settings in the auth config, then initiate a new connection so the new scopes are granted. Also enable the Google Meet API in the Google Cloud Console project backing the OAuth app.
-
-![Google Cloud API Library search results showing the Google Meet REST API result.](/images/kb/toolkits/googlemeet/google-meet-api-library-result.png)
-
-![Google Cloud product details page showing the Enable button for Google Meet REST API.](/images/kb/toolkits/googlemeet/google-meet-api-enable-button.png)
-
 ## Why do Google Meet calls return 403 on a conference resource?
 
 For a Google Meet API error like "Permission denied on resource Conference (or it might not exist)", verify that the signed-in connected account has access to the conference/artifact and that the conference record exists. A useful sanity check is to run the official Google Meet API cURL with the connected account access token from the Composio connected account details and compare the provider response with the Composio tool result.

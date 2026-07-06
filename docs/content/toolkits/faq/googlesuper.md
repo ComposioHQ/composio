@@ -22,10 +22,6 @@ By default, the consent screen uses Composio's OAuth app. To show your own app n
 
 ---
 
-## When should I use Google Super?
-
-Google Super is a unified/superset toolkit for Google Workspace services. It can cover tools across Gmail, Google Calendar, Google Meet, and related Google APIs through one Google Super connection when the required scopes are configured.
-
 ## What is needed for Google Meet through Google Super?
 
 To use Google Meet tools through Google Super, configure the required Meet scopes in the Google Super auth config, create a new connection for the scope changes to apply, and enable the Google Meet API in Google Cloud Console. Common Meet scopes include `https://www.googleapis.com/auth/meetings.space.created` and `https://www.googleapis.com/auth/meetings.space.settings`.
@@ -49,7 +45,3 @@ For Google Super Sheets 404s, first verify the spreadsheet ID, confirm the sheet
 ## `Connection initiation did not complete within 10 minutes` means OAuth consent was not completed, not token refresh failure
 
 If expired connections share status reason `Connection initiation did not complete within 10 minutes`, the OAuth flow was initiated but the user did not complete consent within the 10-minute window. No provider tokens were issued in that case, so it is not a 1-2 week refresh token expiry problem.
-
-## Google users can deselect scopes during consent; Composio marks active if token exchange succeeds
-
-Google lets users selectively deselect scopes during consent. Composio marks the connection active as long as token exchange succeeds, even if the final granted scopes are a subset of the auth config's requested scopes. The auth config scopes are the blueprint, but the final permissions are decided by the end user on the consent screen.

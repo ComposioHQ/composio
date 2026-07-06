@@ -30,10 +30,6 @@ Google enforces per-minute and daily request quotas. If you're using Composio's 
 
 ---
 
-## What must custom Google Slides OAuth apps configure?
-
-When using a custom Google developer app for Google Slides, the app must be verified for the sensitive Google scopes it requests. Without verification, Google may block or warn on the OAuth consent flow.
-
 ## Does Google Slides support one trigger in Composio?
 
 Google Slides is listed as a trigger-capable toolkit in Composio with one supported trigger.
