@@ -1,19 +1,5 @@
-## Discord and DiscordBot use different token types
+## Why can DiscordBot return 401 on the default app?
 
-Discord has two different authorization models: a user token represents an individual Discord user, while a bot token represents a bot account inside Discord. Composio separates these into different toolkits because the credentials and API behavior are different. Use the Discord toolkit for user-authorized actions and DiscordBot when the workflow needs to act as a Discord bot.
+DiscordBot tool calls can return `401 {"message":"401: Unauthorized","code":0}` even when the connected account is active if the connection uses the default DiscordBot app.
 
-## DiscordBot 401s on active connections
-
-When DiscordBot tool calls return 401 on an active connection, first identify whether the auth config uses a bot-token-capable setup and whether the Discord app has the permissions required by the action. For production bots, use the user's own Discord app credentials so they control the bot token, scopes, permissions, and server installation.
-
-## What do Discord message triggers need?
-
-Discord's REST endpoint for channel messages requires a bot token in the Authorization header. OAuth user tokens, even with message-related scopes, do not satisfy that REST API requirement. Use a bot-token-capable Discord connection for bot/channel-message automation. Adding more OAuth user scopes does not turn a Discord user token into a bot token.
-
-## Verify Discord auth config scopes when bot actions do not respond
-
-For DiscordBot behavior that does not respond as expected, verify that the Discord auth config includes the necessary scopes and permissions for the action being tested. Discord's OAuth2 documentation should be used as the source for the required scopes. If scopes look correct and the issue persists, collect the connected account ID or log ID for troubleshooting.
-
-## What should I know about multiple connected accounts for the same app?
-
-For workflows that need separate Discord identities, use distinct users or explicit connected accounts in session-based flows. Do not rely on one app context to implicitly switch between multiple Discord identities.
+The default app currently has a managed bot-token issue: Discord is rejecting the shared bot token behind that app, so the connection flow can complete while bot API calls still fail. Use your own Discord app credentials in a custom DiscordBot auth config for now. Reconnect through that custom config before retrying the DiscordBot tool call.

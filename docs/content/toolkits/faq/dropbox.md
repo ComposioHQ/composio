@@ -1,27 +1,3 @@
 ## How do I set up custom OAuth credentials for Dropbox?
 
 For a step-by-step guide on creating and configuring your own Dropbox OAuth credentials with Composio, see [How to create OAuth credentials for Dropbox](https://composio.dev/auth/dropbox).
-
-## When should I use custom Dropbox OAuth credentials for production instead of the default test app?
-
-Composio's default Dropbox OAuth credentials are intended for testing, not production-scale user onboarding. If users hit a Dropbox app user-limit error or need a production launch path, they should create their own Dropbox OAuth2 app credentials, configure a new Composio integration/auth config with those credentials, and have users connect through that integration. Dropbox approval or user-limit changes are controlled by Dropbox and may not have a reliable ETA.
-
-## Recreate older Dropbox integrations after Composio updates the default OAuth credentials
-
-If an older Dropbox integration/auth config keeps failing after Dropbox default credentials were updated, create a new Dropbox integration and reconnect accounts to it. Existing integrations may continue using the older OAuth app credentials, including old user-limit behavior, while newly created integrations pick up the updated credentials.
-
-## Allow the Composio auth-app redirect URL in the Dropbox app
-
-For Dropbox OAuth setup, make sure the Dropbox app allows the Composio auth-app redirect URL `https://backend.composio.dev/api/v1/auth-apps/add`. Initiating the connection may happen through a connected-accounts endpoint, but the redirect URL Dropbox must allow is the auth-app callback URL used by Composio.
-
-## Initiate Dropbox OAuth connections with entityId, authMode, integrationId, and redirectUri
-
-When initiating a Dropbox OAuth connection through the SDK, pass `entityId`, `authMode: "OAUTH2"`, `integrationId`, and `redirectUri` to `toolset.connectedAccounts.initiate`. Also confirm that the ID used is the integration ID from Dashboard > Apps > the app > Integrations.
-
-## What should I know about Dropbox triggers?
-
-If the Dropbox toolkit page does not list triggers for the event you need, submit the exact Dropbox event and workflow through the tool request flow.
-
-## Dropbox connections use Dropbox native OAuth, not Microsoft/Azure/Outlook login
-
-The Dropbox integration uses Dropbox's native OAuth2 flow, so users authenticate through Dropbox's login page. Composio cannot add Microsoft, Azure, or Outlook as alternative identity providers for Dropbox because the authentication method is controlled by Dropbox's API. If the user's Dropbox Business tenant has SSO configured with Microsoft/Azure AD, that SSO behavior must be configured in Dropbox, not in Composio.
