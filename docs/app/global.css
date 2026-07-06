@@ -653,21 +653,28 @@ a:focus-visible {
   }
 }
 
+/* Flat sidebar hierarchy: sub-pages are one step smaller and dimmed; only
+   the active page (and hover) renders full-strength. */
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a,
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div button {
   font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
-  font-size: var(--docs-nav-font-size) !important;
+  font-size: calc(var(--docs-nav-font-size) - 1px) !important;
   letter-spacing: 0;
   color: var(--docs-nav-text-muted) !important;
 }
 
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a[data-active="true"] {
-  color: var(--composio-brand);
+  color: var(--composio-brand) !important;
 }
 
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
 .docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
   color: var(--composio-link-hover) !important;
+}
+
+/* Section labels: full size, slightly dimmed unless their section is active. */
+.docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label:not([data-active="true"]) {
+  color: var(--docs-nav-text-muted, var(--color-fd-muted-foreground)) !important;
 }
 
 /* CLI commands table — prevent command column from wrapping */

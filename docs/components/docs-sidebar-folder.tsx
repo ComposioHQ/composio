@@ -96,14 +96,19 @@ export function DocsSidebarFolder({
   const path = useTreePath();
   const pathname = normalizePath(usePathname());
   const active = path.includes(item) || nodeContainsPath(item, pathname);
+  const open = item.defaultOpen === true || active;
 
   return (
     <SidebarFolder active={active} collapsible={false}>
       <FolderLink item={item} active={active} />
+      {/* `defaultOpen: true` (meta.json or ALWAYS_OPEN_SECTIONS) reveals this
+          folder's children whenever the folder is visible; otherwise children
+          disclose progressively while the folder is active. Non-recursive:
+          each nested folder decides for itself. */}
       <div
-        aria-hidden={!active}
-        data-open={active ? 'true' : 'false'}
-        inert={!active}
+        aria-hidden={!open}
+        data-open={open ? 'true' : 'false'}
+        inert={!open}
         className="docs-sidebar-folder-content"
       >
         <div className="docs-sidebar-folder-content-inner">
