@@ -3,12 +3,20 @@ import { Config, ConfigProvider, Effect } from 'effect';
 import { FetchHttpClient, HttpClient } from '@effect/platform';
 import { withHttpServer } from 'test/__utils__/http-server';
 import {
+  DOCS_SKILL_NAME,
   inferSkillReleaseChannel,
+  installDocsSkill,
   resolveInstalledSkillName,
   resolveSkillReleaseTag,
   resolveTargetSkillPath,
   type SkillReleaseChannel,
 } from 'src/effects/install-skill';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { Layer } from 'effect';
+import { NodeOs } from 'src/services/node-os';
+import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 
 const makeResolveEffect = (
@@ -220,5 +228,73 @@ describe('install-skill', () => {
       vi.unstubAllGlobals();
       vi.restoreAllMocks();
     }
+  });
+});
+
+describe('installDocsSkill', () => {
+  const SKILL_BODY = `---\nname: ${DOCS_SKILL_NAME}\ndescription: docs discovery\n---\n\n# Building with Composio\n`;
+
+  const runInstall = (baseUrl: string, home: string) =>
+    installDocsSkill({ target: 'claude' }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          FetchHttpClient.layer,
+          TerminalUITest,
+          Layer.succeed(NodeOs, new NodeOs({ homedir: home, arch: 'arm64', platform: 'darwin' }))
+        )
+      ),
+      Effect.withConfigProvider(
+        ConfigProvider.fromMap(new Map([['DOCS_SKILL_URL', `${baseUrl}/skill.md`]]))
+      ),
+      Effect.scoped
+    );
+
+  it('[When] the docs skill is served [Then] writes SKILL.md and links the agent target', async () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-skill-'));
+    await withHttpServer(
+      (req, res) => {
+        res.setHeader('content-type', 'text/markdown');
+        res.end(SKILL_BODY);
+      },
+      async baseUrl => {
+        await Effect.runPromise(runInstall(baseUrl, home));
+
+        const installed = path.join(home, '.agents', 'skills', DOCS_SKILL_NAME, 'SKILL.md');
+        expect(fs.readFileSync(installed, 'utf8')).toBe(SKILL_BODY);
+
+        const link = path.join(home, '.claude', 'skills', DOCS_SKILL_NAME);
+        expect(fs.lstatSync(link).isSymbolicLink()).toBe(true);
+        expect(fs.readFileSync(path.join(link, 'SKILL.md'), 'utf8')).toBe(SKILL_BODY);
+      }
+    );
+  });
+
+  it('[When] the docs site is down [Then] fails without writing anything', async () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-skill-'));
+    await withHttpServer(
+      (req, res) => {
+        res.statusCode = 503;
+        res.end('nope');
+      },
+      async baseUrl => {
+        const exit = await Effect.runPromiseExit(runInstall(baseUrl, home));
+        expect(exit._tag).toBe('Failure');
+        expect(fs.existsSync(path.join(home, '.agents', 'skills', DOCS_SKILL_NAME))).toBe(false);
+      }
+    );
+  });
+
+  it('[When] the response is not the skill [Then] refuses to install it', async () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-skill-'));
+    await withHttpServer(
+      (req, res) => {
+        res.end('<html>surprise, a captive portal</html>');
+      },
+      async baseUrl => {
+        const exit = await Effect.runPromiseExit(runInstall(baseUrl, home));
+        expect(exit._tag).toBe('Failure');
+        expect(fs.existsSync(path.join(home, '.agents', 'skills', DOCS_SKILL_NAME))).toBe(false);
+      }
+    );
   });
 });

@@ -16,6 +16,11 @@ import decompress from 'decompress';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
+export const DOCS_SKILL_NAME = 'composio-docs';
+/** Fetched fresh from the docs site so the skill never goes stale with releases. */
+const DOCS_SKILL_URL = Config.string('DOCS_SKILL_URL').pipe(
+  Config.withDefault('https://docs.composio.dev/skill.md')
+);
 export type SkillReleaseChannel = CliReleaseChannel;
 export type SkillInstallTarget = 'claude' | 'codex' | 'cursor' | 'dust' | 'openclaw';
 
@@ -205,26 +210,95 @@ export const installSkill = (options?: {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 
-    // Create agent-specific symlink — always replace any existing entry.
-    fs.mkdirSync(path.dirname(targetSkillPath), { recursive: true });
-    try {
-      const stat = fs.lstatSync(targetSkillPath);
-      // Entry exists (symlink, broken symlink, or directory) — remove it
-      if (stat.isSymbolicLink()) {
-        fs.unlinkSync(targetSkillPath);
-      } else if (stat.isDirectory()) {
-        fs.rmSync(targetSkillPath, { recursive: true, force: true });
-      } else {
-        fs.unlinkSync(targetSkillPath);
-      }
-    } catch {
-      // lstatSync throws if nothing exists at the path — that's fine
-    }
-    const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
-    fs.symlinkSync(relativeTarget, targetSkillPath);
+    linkSkillIntoTarget({ agentSkillDir, targetSkillPath });
 
     yield* ui.log.success(`Installed ${skillName} skill for ${targetLabel(target)}`);
   });
+
+/** Create the agent-specific symlink, replacing any existing entry. */
+const linkSkillIntoTarget = ({
+  agentSkillDir,
+  targetSkillPath,
+}: {
+  agentSkillDir: string;
+  targetSkillPath: string;
+}): void => {
+  fs.mkdirSync(path.dirname(targetSkillPath), { recursive: true });
+  try {
+    const stat = fs.lstatSync(targetSkillPath);
+    // Entry exists (symlink, broken symlink, or directory) — remove it
+    if (stat.isSymbolicLink()) {
+      fs.unlinkSync(targetSkillPath);
+    } else if (stat.isDirectory()) {
+      fs.rmSync(targetSkillPath, { recursive: true, force: true });
+    } else {
+      fs.unlinkSync(targetSkillPath);
+    }
+  } catch {
+    // lstatSync throws if nothing exists at the path — that's fine
+  }
+  const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
+  fs.symlinkSync(relativeTarget, targetSkillPath);
+};
+
+/**
+ * Install the composio-docs skill: teaches agents how to discover Composio's
+ * documentation (llms.txt, .md endpoints, docs search). Fetched live from the
+ * docs site — unlike the CLI skill it isn't coupled to a release — and linked
+ * into the selected agent's skills directory like any other skill.
+ */
+export const installDocsSkill = (options: { readonly target: SkillInstallTarget }) =>
+  Effect.gen(function* () {
+    const os = yield* NodeOs;
+    const ui = yield* TerminalUI;
+    const httpClient = yield* HttpClient.HttpClient;
+    const url = yield* DOCS_SKILL_URL;
+    const home = os.homedir;
+    const target = options.target;
+
+    const response = yield* httpClient
+      .get(url)
+      .pipe(
+        Effect.catchAll(error =>
+          Effect.fail(new Error(`Failed to fetch docs skill from ${url}: ${error}`))
+        )
+      );
+    if (response.status < 200 || response.status >= 300) {
+      return yield* Effect.fail(new Error(`Docs skill not available (HTTP ${response.status})`));
+    }
+    const body = yield* response.text.pipe(
+      Effect.catchAll(() => Effect.fail(new Error('Failed to read docs skill body')))
+    );
+    if (!body.includes(DOCS_SKILL_NAME)) {
+      return yield* Effect.fail(new Error('Docs skill content looks wrong; not installing'));
+    }
+
+    const agentSkillDir = path.join(home, '.agents', 'skills', DOCS_SKILL_NAME);
+    fs.mkdirSync(agentSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(agentSkillDir, 'SKILL.md'), body);
+
+    const targetSkillPath = resolveTargetSkillPath({ home, skillName: DOCS_SKILL_NAME, target });
+    linkSkillIntoTarget({ agentSkillDir, targetSkillPath });
+
+    yield* ui.log.success(`Installed ${DOCS_SKILL_NAME} skill for ${targetLabel(target)}`);
+  });
+
+/**
+ * Wrapped version that catches all errors and logs a warning instead of failing.
+ */
+export const installDocsSkillSafe = (options: { readonly target: SkillInstallTarget }) =>
+  installDocsSkill(options).pipe(
+    Effect.sandbox,
+    Effect.catchAll(cause =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* Effect.logDebug('Docs skill install failed:', cause);
+        yield* ui.log.warn(
+          `Could not install ${DOCS_SKILL_NAME} skill for ${targetLabel(options.target)} (non-fatal)`
+        );
+      })
+    )
+  );
 
 /**
  * Wrapped version that catches all errors and logs a warning instead of failing.

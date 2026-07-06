@@ -2,7 +2,11 @@ import { Command, Options } from '@effect/cli';
 import { Effect, Fiber, Option } from 'effect';
 import { APP_VERSION } from 'src/constants';
 import { browserLogin } from 'src/commands/login.cmd';
-import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
+import {
+  inferSkillReleaseChannel,
+  installDocsSkillSafe,
+  installSkillSafe,
+} from 'src/effects/install-skill';
 import { ComposioUserContext } from 'src/services/user-context';
 import { TerminalUI } from 'src/services/terminal-ui';
 import {
@@ -77,7 +81,11 @@ const installTargets = (targets: ReadonlyArray<OnboardingTarget>) =>
         installSkillSafe({
           channel: inferSkillReleaseChannel(APP_VERSION),
           target: target.id,
-        }),
+        }).pipe(
+          // The docs skill rides along: it teaches the agent how to find
+          // Composio's documentation. Both installs are non-fatal.
+          Effect.zipRight(installDocsSkillSafe({ target: target.id }))
+        ),
       { concurrency: 1 }
     );
   });

@@ -48,7 +48,12 @@ import {
   resolveCommandProject,
 } from 'src/services/command-project';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
+import {
+  DOCS_SKILL_NAME,
+  installDocsSkill,
+  installSkill,
+  type SkillInstallTarget,
+} from 'src/effects/install-skill';
 import { formatSkillInstallTargetList, isSkillInstallTarget } from 'src/onboarding/targets';
 import {
   experimental,
@@ -505,6 +510,9 @@ export const runWithConfig = Effect.gen(function* () {
     if (installSkillRequest) {
       if (installSkillRequest._tag === 'error') {
         return Effect.fail(new Error(installSkillRequest.message));
+      }
+      if (installSkillRequest.skillName === DOCS_SKILL_NAME) {
+        return installDocsSkill({ target: installSkillRequest.target });
       }
       return installSkill({
         skillName: installSkillRequest.skillName,

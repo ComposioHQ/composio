@@ -1491,6 +1491,7 @@ export function printRootHelp(
           `  ${dim('# Manually install the composio skill when auto-install fails')}`,
           `  ${name} --install-skill claude`,
           `  ${name} --install-skill composio-cli codex`,
+          `  ${name} --install-skill composio-docs claude`,
           '',
           `  ${dim('# Run a multi-step script with Promise.all')}`,
           `  ${name} run '`,
