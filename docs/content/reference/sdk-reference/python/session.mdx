@@ -206,4 +206,18 @@ def update(toolkits: Union[session_patch_params.Toolkits, 'Omit'] = ..., tools: 
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L81)
+### delete()
+
+Delete this session.  Deleted sessions immediately stop being retrievable or executable. An already-deleted session surfaces the backend 404.
+
+```python
+def delete() -> ToolRouterSessionDeleteResponse
+```
+
+**Returns**
+
+`ToolRouterSessionDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L85)

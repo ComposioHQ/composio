@@ -50,16 +50,6 @@ The list endpoint supports pagination with `limit` and `cursor`; getting a proje
 
 ## Project settings
 
-Each project has settings that control security, logging, and display behavior. These endpoints use your **project API key** (`x-api-key`), not the org key.
+Each project has settings that control security, logging, and display behavior. The project detail endpoints return current configuration for inspection. Use **Settings > Project Settings** in the [dashboard](https://dashboard.composio.dev/~/project/settings/general) to update project settings.
 
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "mask_secret_keys_in_connected_account": false,
-    "log_visibility_setting": "show_all"
-  }'
-```
-
-Notable security setting: `require_mcp_api_key`, when `true`, requires MCP server requests to include a valid `x-api-key` header. This defaults to `true` for organizations created on or after March 5, 2026. You can also view and update project settings from **Settings > Project Settings** in the [dashboard](https://dashboard.composio.dev/~/project/settings/general).
+Notable security setting: `require_mcp_api_key`, when `true`, requires MCP server requests to include a valid `x-api-key` header. This defaults to `true` for organizations created on or after March 5, 2026.

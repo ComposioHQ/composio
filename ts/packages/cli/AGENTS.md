@@ -148,16 +148,20 @@ Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from
 
 ## CLI Design Guidelines
 
-Principles for arguments, flags, help, output, errors, interactivity, config precedence:
+Principles for arguments, flags, help, output, errors, interactivity, configuration, and exit codes:
 
-- Cursor rules: `ts/packages/cli/.cursor/rules/cli-design-guidelines.mdc`
-- Claude skill: `/workspace/zen/skills/create-cli/` (also available as `/create-cli`)
+- Use the repo-local `cli-command` skill for command design, implementation, Effect patterns, output conventions, and source-reference guidance.
+- Use the repo-local `cli-e2e` skill for Docker-based CLI end-to-end tests under `ts/e2e-tests/cli/`.
 
 Use these when adding new commands or making UX decisions.
 
+## Client Cache Sync
+
+When modifying `src/services/composio-clients.ts`, inspect `src/services/composio-clients-cached.ts` in the same change. The cached repository is a layer wrapper over `ComposioToolkitsRepository`; method additions, removals, signature changes, and new exported error types must stay in sync. Decide for each new method whether it should be cached or passed through. Validation-style methods are usually passthrough; fetch methods are usually cached.
+
 ## Recording CLI Demos
 
-New commands should ship with VHS recordings (SVG + asciicast). Workflow:
+User-facing CLI commands should ship with VHS recordings (SVG + asciicast) when the command changes a documented workflow, introduces a new visible command surface, or needs demo coverage in release notes. Small internal wiring changes and hidden developer-only helpers can skip recordings if the PR says why. Workflow:
 
 1. Add entry to `recordings/recordings.yaml` (fields: `name`, `command`, `description`, `sleepAfterEnter`, `height: dynamic` for long output).
 2. Run `bun scripts/record.ts` — requires `COMPOSIO_API_KEY` and `vhs` on `PATH`.
@@ -181,7 +185,7 @@ Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users
 
 ### Stable (via changeset)
 
-1. Create changeset PR (`.changeset/<name>.md` with `"@composio/cli": patch`)
+1. Create a CLI release changeset PR only when intentionally promoting CLI binary behavior through the stable release flow (`.changeset/<name>.md` with `"@composio/cli": patch`). Ordinary CLI source fixes still follow the repo rule: add a changeset only when the release path requires one.
 2. Merge into `next`
 3. Changeset bot opens "Release: update version" PR bumping `package.json`
 4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)

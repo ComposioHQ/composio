@@ -11,7 +11,7 @@ Reach for these endpoints to register where Composio should send events, to filt
 
 Each subscription is addressed by its `id`. You can update its URL and filters with `PATCH`, delete it, and rotate its signing secret with `/webhook_subscriptions/{id}/rotate_secret` if the secret leaks.
 
-Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Webhook verification](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) for the SDK and manual verification flows.
+Every webhook request Composio sends includes `webhook-id`, `webhook-timestamp`, and `webhook-signature` headers. Store the secret as `COMPOSIO_WEBHOOK_SECRET` and verify each payload before trusting it. See [Verifying signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures) for the SDK and manual verification flows.
 
 ## Event types
 

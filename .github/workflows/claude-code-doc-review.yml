@@ -9,6 +9,10 @@ on:
     - "docs/components/**/*.tsx"
     - "docs/app/**/*.tsx"
     - "docs/app/**/*.css"
+
+permissions:
+  contents: read
+
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -26,13 +30,13 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 1
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@fbda2eb1bdc90d319b8d853f5deb53bca199a7c1 # v1.0.140
+      uses: anthropics/claude-code-action@769e3bdff9bb7ecfb51bad4c9cba23d6f5fc5ea5 # v1.0.163
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         track_progress: true # Forces tag mode with tracking comments
@@ -41,11 +45,11 @@ jobs:
         # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
         # model: "claude-opus-4-20250514"
 
-        # Review instructions in docs/.claude/agents/docs-reviewer.md
+        # Review instructions in docs/agent-guidance/agents/docs-reviewer.md
         prompt: |
-          Review this PR using the guidelines in docs/.claude/agents/docs-reviewer.md
+          Review this PR using the guidelines in docs/agent-guidance/agents/docs-reviewer.md
 
-          1. Read docs/.claude/agents/docs-reviewer.md for full review criteria
+          1. Read docs/agent-guidance/agents/docs-reviewer.md for full review criteria
           2. Run `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD` to see changes
           3. Apply the review checklist to changed files
           4. If issues: Comment with specific fixes. If none: Approve with "Looks good"

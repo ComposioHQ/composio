@@ -258,11 +258,9 @@ e2e(import.meta.url, {
           // @ts-expect-error Property 'additionalProperties' does not exist on type.
           expect(convertedBack.additionalProperties).toEqual({ type: 'string' });
           // @ts-expect-error Property 'properties' does not exist on type.
-          expect((convertedBack.properties as Record<string, unknown>)?.strictChild).toBeDefined();
-          // @ts-expect-error Property 'properties' does not exist on type.
-          expect(
-            (convertedBack.properties as Record<string, unknown>)?.flexibleChild
-          ).toBeDefined();
+          const convertedProperties = convertedBack.properties as Record<string, unknown>;
+          expect(convertedProperties?.strictChild).toBeDefined();
+          expect(convertedProperties?.flexibleChild).toBeDefined();
 
           const validData = {
             strictChild: { name: 'John' },

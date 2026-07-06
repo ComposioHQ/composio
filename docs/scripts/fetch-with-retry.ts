@@ -13,8 +13,9 @@
  * Network-level errors thrown by `fetch` (DNS, connection reset, …) are retried
  * the same way and re-thrown once attempts are exhausted.
  *
- * Why this exists: `generate-toolkits.ts` issues ~3000 requests per run, which
- * exceeds the staging limit of 2000 requests/minute. Without backoff the run
+ * Why this exists: `generate-toolkits.ts` issues ~6500 requests per run (3 per
+ * toolkit across a ~2.1k catalog), which exceeds the staging limit of 2000
+ * requests/minute. Without backoff the run
  * fails with `429`, and `generate-meta-tools.ts` (which runs next) inherits the
  * exhausted window. See docs/scripts/README.md.
  *

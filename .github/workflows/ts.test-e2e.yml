@@ -20,6 +20,13 @@ on:
       - 'toolchain-versions.json'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
   TURBO_TELEMETRY_DEBUG: 1
@@ -34,7 +41,7 @@ jobs:
       deno: ${{ steps.versions.outputs.deno }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Read versions
         id: versions
@@ -65,17 +72,21 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
+          {
+            echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}"
+            echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}"
+            echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -83,7 +94,34 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
+
       - name: Pre-build Docker image for e2e tests
+        if: steps.api-keys.outputs.available == 'true'
         run: |
           docker build -f ts/e2e-tests/_utils/Dockerfile.node \
             --build-arg NODE_VERSION=${{ matrix.node-version }} \
@@ -94,6 +132,7 @@ jobs:
             .
 
       - name: Run Node.js E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:node
 
   # Deno E2E tests, running in Docker to isolate environment
@@ -118,13 +157,15 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
+          {
+            echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}"
+            echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}"
+            echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Deno
         uses: denoland/setup-deno@667a34cdef165d8d2b2e98dde39547c9daac7282 # v2.0.4
@@ -134,6 +175,8 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -141,7 +184,34 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
+
       - name: Run Deno E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:deno
 
   # CLI E2E tests, running in scratch Docker to isolate environment
@@ -158,23 +228,53 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
+          {
+            echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}"
+            echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}"
+            echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         id: setup-toolchain
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm run build:packages
+
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY COMPOSIO_USER_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
 
       - name: Pre-build Docker image for CLI e2e tests
         run: |
@@ -190,6 +290,7 @@ jobs:
             .
 
       - name: Run CLI E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:cli
 
   # Cloudflare Workerd E2E tests
@@ -205,17 +306,20 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Normalize Composio API keys
         run: |
-          echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}" >> "$GITHUB_ENV"
-          echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}" >> "$GITHUB_ENV"
+          {
+            echo "COMPOSIO_USER_API_KEY=${COMPOSIO_USER_API_KEY}"
+            echo "COMPOSIO_API_KEY=${COMPOSIO_API_KEY}"
+            echo "COMPOSIO_BASE_URL=${COMPOSIO_BASE_URL}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
+          enable-turbo-cache: 'true'
           node-version: '22.22.3'
 
       - name: Install Dependencies
@@ -224,20 +328,34 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
-      - name: Verify API Key
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         run: |
-          if [ -z "$COMPOSIO_API_KEY" ]; then
-            echo "::error::COMPOSIO_API_KEY is not set"
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
             exit 1
           fi
-          echo "✅ COMPOSIO_API_KEY is configured"
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "::error::OPENAI_API_KEY is not set"
-            exit 1
-          fi
-          echo "✅ OPENAI_API_KEY is configured"
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
 
       - name: Run Cloudflare Workers E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:cloudflare
         env:
           COMPOSIO_USER_API_KEY: ${{ secrets.COMPOSIO_USER_API_KEY }}

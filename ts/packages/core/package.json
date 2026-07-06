@@ -1,7 +1,7 @@
 {
   "name": "@composio/core",
   "type": "module",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "",
   "main": "src/index.ts",
   "publishConfig": {
@@ -103,7 +103,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": ">=3.25.76 <5"
   },
   "dependencies": {
     "@composio/client": "catalog:",
@@ -112,7 +112,7 @@
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.5.0",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

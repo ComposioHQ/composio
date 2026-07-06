@@ -4,6 +4,7 @@ import { getEnvsWithPrefix, getEnvVariable } from './env';
 import logger from './logger';
 import { ComposioError } from '../errors/ComposioError';
 import { ToolkitVersion, ToolkitVersionParam, ToolkitVersions } from '../types/tool.types';
+import { normalizeToolkitSlug } from './toolkitVersion';
 import { platform } from '#platform';
 
 // File path helpers
@@ -82,16 +83,16 @@ export function getToolkitVersionsFromEnv(
   const envPrefixedVersions = getEnvsWithPrefix(`COMPOSIO_TOOLKIT_VERSION_`);
   const toolkitVersionsFromEnv = Object.entries(envPrefixedVersions).reduce((acc, [key, value]) => {
     const toolkitName = key.replace('COMPOSIO_TOOLKIT_VERSION_', '');
-    acc[toolkitName.toLowerCase()] = value as ToolkitVersion;
+    acc[normalizeToolkitSlug(toolkitName)] = value as ToolkitVersion;
     return acc;
   }, {} as ToolkitVersions);
 
-  // if the provided default versions is an object, normalize the keys to be lower case
-  // use user provided values as overrides
+  // normalize keys via normalizeToolkitSlug (the same helper the lookup uses);
+  // user provided values act as overrides
   let userProvidedToolkitVersions = {};
   if (defaultVersions && typeof defaultVersions === 'object') {
     userProvidedToolkitVersions = Object.fromEntries(
-      Object.entries(defaultVersions).map(([key, value]) => [key.toLowerCase(), value])
+      Object.entries(defaultVersions).map(([key, value]) => [normalizeToolkitSlug(key), value])
     );
   }
 

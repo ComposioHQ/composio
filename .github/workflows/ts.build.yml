@@ -9,6 +9,7 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -20,10 +21,18 @@ on:
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
       - 'mise.lock'
+      - 'turbo.jsonc'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'tsdown.config.base.ts'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
@@ -36,10 +45,12 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

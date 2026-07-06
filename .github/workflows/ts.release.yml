@@ -5,6 +5,9 @@ on:
   push:
     branches: [next]
 
+permissions:
+  contents: read
+
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
   TURBO_TELEMETRY_DEBUG: 1
@@ -26,11 +29,11 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0 # Required for git show HEAD^ when comparing published package versions
           token: ${{ steps.app-token.outputs.token }}

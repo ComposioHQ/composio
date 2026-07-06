@@ -1,1 +1,0 @@
-../../../.claude/skills/cli-test/SKILL.md

@@ -7,6 +7,9 @@ on:
     types: [apollo-production-deploy]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
@@ -24,11 +27,11 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ steps.app-token.outputs.token }}
 
@@ -77,6 +80,14 @@ jobs:
 
           echo "Configured staging API endpoints"
 
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - name: Install dependencies
         run: bun install
 
@@ -96,14 +107,14 @@ jobs:
         id: changes
         run: |
           cd ..
-          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
-          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null; then
+          git add -N docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
+          if git diff --quiet docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No changes detected"
           else
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
-            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/reference/meta-tools/ 2>/dev/null || true
+            git diff --stat docs/public/data/ docs/public/openapi.json docs/public/openapi-v3.json docs/content/reference/api-reference/ docs/content/reference/v3/api-reference/ docs/content/toolkits/meta-tools/ 2>/dev/null || true
           fi
 
       - name: Create Pull Request
@@ -122,7 +133,7 @@ jobs:
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
             - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from staging
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
-            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/reference/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
+            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
           base: next
           add-paths: |
@@ -131,7 +142,7 @@ jobs:
             docs/public/openapi-v3.json
             docs/content/reference/api-reference/
             docs/content/reference/v3/api-reference/
-            docs/content/reference/meta-tools/
+            docs/content/toolkits/meta-tools/
 
       - name: Request review from trigger actor
         if: steps.create-pr.outputs.pull-request-number

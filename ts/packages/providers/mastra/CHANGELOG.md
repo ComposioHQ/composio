@@ -1,5 +1,11 @@
 # @composio/mastra
 
+## 0.10.1
+
+### Patch Changes
+
+- cddd66c: Update the supported `@mastra/core` peer dependency range.
+
 ## 0.10.0
 
 ### Minor Changes

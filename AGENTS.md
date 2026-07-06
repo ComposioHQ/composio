@@ -1,259 +1,101 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents (Codex, Claude Code, etc.) when working with code in this repository.
+Repository guidance for Codex, Claude Code, Cursor, pi.dev, and other AI coding agents.
 
-## Overview
+## Scope
 
-This is the Composio SDK v3 repository containing both TypeScript and Python SDKs. The main development focus is on the TypeScript SDK located in `/ts/` directory. The project uses a monorepo structure with multiple packages and examples.
+This is the Composio SDK v3 monorepo. Most product code lives in `ts/` and `python/`; docs live in `docs/`. Branch new work from `next` and target PRs at `next` unless the user says otherwise.
 
-## Notes
+## First Steps
 
-- For documentation tasks, refer to `docs/CLAUDE.md`
-- Vendor submodules in `ts/vendor/` are **read-only reference only** — do not modify them
+1. Read the nearest nested `AGENTS.md` before editing a subtree.
+2. Preserve unrelated dirty work. Do not revert, delete, or reformat files outside the requested scope.
+3. Treat `.agents/skills` as the canonical local skill tree. `.claude/skills` is a compatibility symlink and must not be edited as a separate copy.
+4. Do not edit generated SDK surfaces or vendor trees — see [Generated And Vendored Paths](#generated-and-vendored-paths).
+5. Verify every command you write against the current `package.json`, `Makefile`, `noxfile.py`, or workflow file.
 
-## Common Development Commands
+## Skill Routing
 
-### Build and Development
+Use the smallest relevant skill:
+
+- `repo-guidance`: repo layout, branch/PR workflow, changesets, generated files, or cross-repo maintenance.
+- `skill-maintenance`: adding or changing local skills, skill references, compatibility mirrors, or validation.
+- `bug-fixing`: fixing a defect and choosing regression tests.
+- `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
+- `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
+- `eve`: durable backend AI agents built with the eve framework.
+- `typescript-sdk`, `typescript-testing`, `typescript-providers`: TypeScript SDK/core/provider work.
+- `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.
+- `python-sdk`, `python-testing`, `python-providers`, `python-release`: Python SDK/provider/testing/release work.
+
+## Repository Map
+
+```text
+ts/                         TypeScript SDK workspace
+  packages/core/            @composio/core
+  packages/providers/       TypeScript provider adapters
+  packages/cli/             Effect-based CLI
+  e2e-tests/                Docker runtime and CLI E2E tests
+python/                     Python SDK and provider packages
+docs/                       Fumadocs documentation site
+.agents/skills/             Canonical local agent skills
+docs/agent-guidance/        Neutral docs-agent context and workflow instructions
+docs/decisions/             Neutral docs decisions and ADR-style records
+```
+
+## Generated And Vendored Paths
+
+Do not hand-edit these. They are regenerated or vendored, and edits will be overwritten. They are also marked `linguist-generated`/`linguist-vendored` in `.gitattributes`.
+
+- `ts/vendor/**` — vendored read-only snapshots of Effect and Clack (git submodules); reference only.
+- `ts/packages/cli-local-tools/vendor/**` — vendored local-tool sources (git submodules).
+- `ts/packages/core/generated/**`, `ts/packages/core/pack/generated/**` — generated SDK surfaces produced by `composio generate` / the build pipeline.
+- `pnpm-lock.yaml`, `uv.lock`, `**/bun.lock` — package-manager lockfiles; change them by running the package manager, never by hand.
+
+## Common Commands
+
+Use `mise install` for the pinned toolchain. pnpm is managed through mise, not Corepack.
 
 ```bash
-pnpm build              # Build all packages
-pnpm build:packages     # Build only TypeScript packages
-pnpm clean              # Clean build artifacts
-pnpm lint               # Lint code
-pnpm lint:fix           # Lint and auto-fix
-pnpm format             # Format code
-pnpm test               # Run tests
+pnpm install
+pnpm build
+pnpm build:packages
+pnpm lint
+pnpm format
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+pnpm test:e2e:cli
+pnpm validate:agent-skills
+pnpm validate:skill-routing
 ```
 
-### Package Management
+Python commands run from `python/` unless otherwise noted:
 
 ```bash
-mise install            # Install Node, Bun, Deno, pnpm, Python, uv (one-time; needs mise — https://mise.jdx.dev/installing-mise.html)
-pnpm install            # Install dependencies
-pnpm check:peer-deps    # Check peer dependencies
-pnpm update:peer-deps   # Update peer dependencies
-```
-
-### Creating New Components
-
-```bash
-pnpm create:provider <provider-name> [--agentic]
-pnpm create:example <example-name>
-```
-
-### Release Management
-
-```bash
-pnpm changeset            # Create changeset for releases
-pnpm changeset:version    # Version packages
-pnpm changeset:release    # Publish packages
-```
-
-## Project Architecture
-
-### Repository Structure
-
-```
-composio/
-├── ts/                      # TypeScript SDK (main development)
-│   ├── packages/
-│   │   ├── core/           # Core SDK functionality
-│   │   ├── providers/      # AI provider integrations (OpenAI, Anthropic, etc.)
-│   │   ├── cli/           # Command-line interface (Effect.ts + @clack/prompts)
-│   │   ├── json-schema-to-zod/ # Schema conversion utility
-│   │   └── ts-builders/   # TypeScript code generation utilities
-│   ├── vendor/            # Read-only reference submodules (Effect, Clack)
-│   └── examples/          # Usage examples for different providers
-├── python/                # Python SDK
-├── docs/                  # Documentation (Fumadocs)
-└── examples/              # Cross-platform examples
-```
-
-### Core Packages
-
-**@composio/core** — Main SDK functionality:
-
-- `src/composio.ts` — Main Composio class
-- `src/models/` — Core models (Tools, Toolkits, ConnectedAccounts, etc.)
-- `src/provider/` — Base provider implementations
-- `src/services/` — Internal services (telemetry, pusher)
-- `src/types/` — TypeScript type definitions
-- `src/utils/` — Utility functions and helpers
-
-**Provider Packages** — AI integrations:
-
-- `@composio/openai`, `@composio/anthropic`, `@composio/google`
-- `@composio/langchain`, `@composio/vercel`, `@composio/mastra`
-
-### Key Concepts
-
-- **Tools** — Individual functions (e.g., GITHUB_CREATE_REPO, GMAIL_SEND_EMAIL)
-- **Toolkits** — Collections of related tools grouped by service (github, gmail, slack)
-- **Connected Accounts** — User authentication/authorization for external services
-- **Auth Configs** — Configuration for different authentication methods
-- **Custom Tools** — User-defined tools with custom logic
-- **Providers** — Integrations with AI frameworks (OpenAI, Anthropic, etc.)
-- **Modifiers** — Middleware to transform tool inputs/outputs
-
-## Development Workflow
-
-### Testing
-
-- Unit tests use **Vitest** — run with `pnpm test`
-- Tests are in `test/` directories within each package
-- Mock implementations in `test/utils/mocks/`
-
-### Code Quality
-
-- **ESLint** — config in `eslint.config.mjs`
-- **Prettier** — for code formatting
-- **TypeScript** — strict mode enabled
-- **Husky** — pre-commit hooks for quality checks
-
-### TypeScript E2E Tests
-
-```bash
-pnpm test:e2e              # All (Node.js + Deno + Cloudflare)
-pnpm test:e2e:node         # Node.js ESM and require(esm) interop (Docker)
-pnpm test:e2e:deno         # Deno npm: specifier compatibility (Docker)
-pnpm test:e2e:cloudflare   # Cloudflare Workers
-```
-
-## Environment Variables
-
-```bash
-COMPOSIO_API_KEY            # Required: Your Composio API key
-COMPOSIO_BASE_URL           # Optional: Custom API base URL
-COMPOSIO_LOG_LEVEL          # Optional: silent, error, warn, info, debug
-COMPOSIO_DISABLE_TELEMETRY  # Optional: Set to "true" to disable telemetry
-```
-
-## Key Files and Locations
-
-- **Main SDK Entry**: `ts/packages/core/src/index.ts`
-- **Core Composio Class**: `ts/packages/core/src/composio.ts`
-- **Type Definitions**: `ts/packages/core/src/types/`
-- **Error Classes**: `ts/packages/core/src/errors/`
-- **Documentation**: `docs/`
-- **Build Configs**: `turbo.jsonc`, `tsconfig.base.json`, `tsdown.config.base.ts`
-
-## Common Patterns
-
-### Tool Execution
-
-```typescript
-const composio = new Composio({ apiKey: 'your-key' });
-const result = await composio.tools.execute('TOOL_NAME', {
-  userId: 'user-id',
-  arguments: {
-    /* tool args */
-  },
-});
-```
-
-### Provider Integration
-
-```typescript
-import { OpenAIProvider } from '@composio/openai';
-const provider = new OpenAIProvider({ apiKey: 'openai-key' });
-const tools = await composio.tools.get('user-id', { toolkits: ['github'] });
-const wrappedTools = provider.wrapTools(tools);
-```
-
-### Custom Tool Creation
-
-```typescript
-import { Composio, experimental_createTool } from '@composio/core';
-import { z } from 'zod';
-
-const composio = new Composio();
-
-// Custom tools are session-scoped: define a local tool, then attach it when
-// creating a Tool Router session. Use `extendsToolkit` + `ctx.proxyExecute`
-// to inherit a toolkit's managed auth and call its API.
-const myTool = experimental_createTool('MY_TOOL', {
-  name: 'My Tool',
-  description: 'Tool description',
-  inputParams: z.object({
-    param: z.string().describe('Parameter description'),
-  }),
-  execute: async input => {
-    return { result: input.param };
-  },
-});
-
-const session = await composio.create('user-id', {
-  experimental: { customTools: [myTool] }
-});
-```
-
-## Python SDK Development
-
-### Setup
-
-```bash
-cd python
-make env                 # Create virtual env with all dependencies
+make env
 source .venv/bin/activate
+make fmt
+make chk
+make tst
+make snt
+make build
 ```
 
-### Commands
+## Release And Package Notes
 
-```bash
-make fmt       # Format code (ruff)
-make chk       # Check linting and type issues
-make tst       # Run tests
-make snt       # Run sanity tests
-make build     # Build packages
-```
+- TypeScript package releases use Changesets. Add a changeset only when published TypeScript packages change.
+- Documentation-only and agent-guidance-only changes do not need a changeset.
+- Python release metadata lives in `python/pyproject.toml`, `python/setup.py`, and `uv.lock`.
+- Bumping generated clients is manual. Verify the package version is published before changing pins.
 
-### Code Quality
+## Local Guidance Files
 
-- **Formatter**: Ruff (Black-compatible, 88 char line length)
-- **Linter**: Ruff
-- **Type Checker**: mypy with strict optional typing
-- **Test Framework**: pytest with markers (core, openai, langchain, agno)
-- **Python Version**: >=3.10, <4
-
-## Maintenance Tasks
-
-### When Updating GitHub Actions
-
-Toolchain versions are coalesced in `mise.toml`. To check the current values:
-
-- **Node.js**: `mise current node`
-- **Bun**: `mise current bun`
-- **Deno**: `mise current deno`
-- **Python**: `mise current python`
-- **uv**: `mise current uv`
-- **pnpm**: `mise current npm:pnpm`
-
-To bump, edit `mise.toml`, then run:
-
-```bash
-mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
-```
-
-Commit `mise.lock` with the version bump. The "Prerequisites" section in `ts/docs/internal/release.md` references `mise.toml` so it stays current automatically.
-
-### When Bumping the Generated SDK Client (`@composio/client` / `composio-client`)
-
-The Stainless-generated clients are published from separate repos (`ComposioHQ/composio-base-ts` → `@composio/client` on npm; `ComposioHQ/composio-base-py` → `composio-client` on PyPI). **Nothing auto-bumps them here** — there is no Stainless→consumer bot, and Dependabot does not touch the pnpm `catalog:` pin (TS) or the exact `composio-client==` pin (Python). Bumping is manual, and the pin lives in **multiple files that must move together**:
-
-1. **Confirm the version is actually published first.** Check `npm view @composio/client version` / `pip index versions composio-client`. The Python PyPI publish in `composio-base-py` can fail silently (e.g. `403 Forbidden` from a stale `PYPI_TOKEN`) even when the GitHub release/tag exists — verify the package resolves before bumping.
-
-2. **TypeScript** — edit the catalog pin, refresh the lockfile, add a changeset:
-   ```bash
-   # edit pnpm-workspace.yaml -> catalog: '@composio/client'
-   pnpm install --lockfile-only          # updates pnpm-lock.yaml
-   # add a patch changeset for @composio/core and @composio/cli (both consume it)
-   ```
-
-3. **Python** — the pin lives in **three** places; update all of them or `uv sync` / published metadata will be inconsistent:
-   - `python/pyproject.toml` (`dependencies`)
-   - `python/setup.py` (`install_requires`) — easy to miss; setuptools fallback metadata
-   - root `uv.lock` — regenerate from the workspace root: `uv lock --upgrade-package composio-client`
-
-4. **A version bump is not enough across a breaking regen.** The generated client can remove or restructure modules between releases (e.g. `composio-client` 1.41.0 deleted `types.tool_router_create_session_params`), which surfaces as an *import-time* `ModuleNotFoundError` that reds every job importing the SDK. After bumping, actually import/typecheck the consuming code (`uv run --package composio python -c "import composio"`, `pnpm typecheck`) and migrate any references the new client dropped. Prefer decoupling from churny generated types — define small local TypedDicts instead of importing internal client submodules.
-
-This monorepo uses pnpm workspaces and Turbo for efficient builds and development.
+- TypeScript workspace: `ts/AGENTS.md`
+- Core SDK: `ts/packages/core/AGENTS.md`
+- TypeScript providers: `ts/packages/providers/AGENTS.md`
+- CLI: `ts/packages/cli/AGENTS.md`
+- E2E tests: `ts/e2e-tests/AGENTS.md`
+- Python SDK: `python/AGENTS.md`
+- Python providers: `python/providers/AGENTS.md`
+- Docs: `docs/AGENTS.md`

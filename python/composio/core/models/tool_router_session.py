@@ -36,7 +36,6 @@ from composio.client.types import Tool
 from composio.core.models._modifiers import Modifiers, apply_modifier_by_type
 from composio.core.models.connected_accounts import ConnectionRequest
 from composio.core.models.custom_tool import find_custom_tool_map_entry_by_final_slug
-from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.custom_tool_execution import (
     execute_custom_tool,
     find_custom_tool,
@@ -48,11 +47,16 @@ from composio.core.models.custom_tool_types import (
     RegisteredCustomTool,
     RegisteredCustomToolkit,
 )
+from composio.core.models.experimental import ACL_ONLY_FOR_SHARED_ERROR_FRAGMENT
 from composio.core.models.inline_custom_tools_payload import (
     inline_custom_tools_execute_experimental,
     inline_custom_tools_search_experimental,
 )
 from composio.core.models.session_context import SessionContextImpl, proxy_execute_impl
+from composio.core.models.tool_router_session_delete import (
+    ToolRouterSessionDeleteResponse,
+    delete_tool_router_session,
+)
 from composio.core.models.tools import ToolExecuteParams, ToolExecutionResponse
 from composio.core.provider import TTool, TToolCollection
 from composio.core.provider.base import BaseProvider
@@ -885,6 +889,15 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             preload=preload,
         )
         self.preload = _session_preload_config(response.config.preload)
+
+    def delete(self) -> ToolRouterSessionDeleteResponse:
+        """
+        Delete this session.
+
+        Deleted sessions immediately stop being retrievable or executable. An
+        already-deleted session surfaces the backend 404.
+        """
+        return delete_tool_router_session(self._client, self.session_id)
 
 
 class ToolRouterSessionWithMcp(ToolRouterSession[TTool, TToolCollection]):

@@ -1,7 +1,7 @@
 {
   "name": "@composio/slim",
   "type": "module",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Slim Composio core package without packaged source or docs",
   "main": "dist/index.mjs",
   "publishConfig": {
@@ -78,7 +78,7 @@
   ],
   "scripts": {
     "clean": "git clean -xdf dist generated node_modules",
-    "build": "pnpm --filter @composio/core build && rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
+    "build": "rm -rf dist generated && cp -R ../core/dist ./dist && rm -rf dist/docs && if [ -d ../core/generated ]; then cp -R ../core/generated ./generated; fi",
     "test": "node -e \"import('./dist/index.mjs').then(() => console.log('@composio/slim import ok'))\""
   },
   "keywords": [
@@ -92,7 +92,10 @@
   ],
   "license": "ISC",
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": ">=3.25.76 <5"
+  },
+  "devDependencies": {
+    "@composio/core": "workspace:*"
   },
   "dependencies": {
     "@composio/client": "catalog:",
@@ -101,7 +104,7 @@
     "openai": "catalog:",
     "picocolors": "catalog:",
     "pusher-js": "^8.5.0",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },
   "repository": {

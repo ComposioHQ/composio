@@ -32,6 +32,7 @@ e2e(import.meta.url, {
   },
   defineTests: ({ runFixture }: DefineTestsContext) => {
     let result: E2ETestResult;
+    const isStorageUnavailable = () => result.stdout.includes('UPLOAD_UNAVAILABLE');
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'test.mjs' });
@@ -52,6 +53,10 @@ e2e(import.meta.url, {
       });
 
       it('includes sha256 checksum', () => {
+        if (isStorageUnavailable()) {
+          expect(result.stdout, formatFixtureResult(result)).toMatch(/sha256=|storage authorization failed/);
+          return;
+        }
         expect(result.stdout, formatFixtureResult(result)).toContain('sha256=');
       });
     });

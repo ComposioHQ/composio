@@ -14,6 +14,10 @@ inputs:
     description: 'Enable pnpm/tool cache'
     required: false
     default: 'true'
+  enable-turbo-cache:
+    description: 'Cache .turbo build outputs'
+    required: false
+    default: 'false'
 
 outputs:
   node-version:
@@ -92,6 +96,17 @@ runs:
         key: ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
+
+    - name: Cache turbo build outputs
+      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: .turbo/cache
+        # Keyed per job: concurrent jobs save different task graphs under the
+        # same commit, and actions/cache is first-writer-wins on exact keys.
+        key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-${{ github.job }}-
 
     - name: Report versions
       id: versions

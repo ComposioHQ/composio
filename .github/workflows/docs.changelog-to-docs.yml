@@ -6,6 +6,9 @@ on:
     paths:
       - 'docs/content/changelog/**.mdx'
 
+permissions:
+  contents: read
+
 jobs:
   suggest-docs-updates:
     name: Suggest Documentation Updates
@@ -17,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -44,14 +47,14 @@ jobs:
 
       - name: Codex updates docs
         if: steps.detect.outputs.found == 'true'
-        uses: openai/codex-action@e0fdf01220eb9a88167c4898839d273e3f2609d1 # v1.8
+        uses: openai/codex-action@6b771854be52d8637d060e4b15120b9d746282ab # v1.10
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write
           prompt: |
             New changelog entries were merged to next. Read the agent instructions and update documentation accordingly.
 
-            1. Read docs/.claude/agents/changelog-docs-updater.md for full instructions
+            1. Read docs/agent-guidance/agents/changelog-docs-updater.md for full instructions
             2. Read each of these changelog files:
             ${{ steps.detect.outputs.files }}
             3. For each change, search docs/content/docs/ for pages that need updating

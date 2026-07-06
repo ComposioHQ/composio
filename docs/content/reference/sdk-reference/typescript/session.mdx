@@ -87,6 +87,29 @@ customTools(options?: { toolkit?: string }): RegisteredCustomTool[]
 
 ---
 
+### delete()
+
+Delete this session.
+
+Deleted sessions immediately stop being retrievable or executable. Deleting
+an already-deleted session surfaces the backend 404.
+
+```typescript
+async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolRouterSessionDeleteResponse>`
+
+---
+
 ### execute()
 
 Execute a tool within the session.

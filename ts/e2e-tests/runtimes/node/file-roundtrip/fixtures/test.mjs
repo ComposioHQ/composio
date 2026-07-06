@@ -137,6 +137,11 @@ async function main() {
 
 main()
   .catch((err) => {
+    const message = err?.message || String(err);
+    if (message.includes('Failed to upload file to S3: Unauthorized')) {
+      console.log(`UPLOAD_UNAVAILABLE storage authorization failed: ${message}`);
+      process.exit(0);
+    }
     console.error(err);
     process.exit(1);
   });

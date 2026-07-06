@@ -1,11 +1,14 @@
 """Test ToolRouter functionality."""
 
+import typing as t
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 from composio_client import omit
 from pydantic import BaseModel, Field
 
+from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
@@ -169,6 +172,73 @@ class TestToolRouter:
 
         assert isinstance(session, ToolRouterSessionWithMcp)
         assert session.mcp.url == "https://mcp.example.com/session_123"
+
+    def test_delete_session_by_id(self, tool_router, mock_client):
+        """delete() removes a session by ID."""
+        mock_client.delete.return_value = {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+
+        result = tool_router.delete("session_123")
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session_123",
+            cast_to=t.Dict[str, t.Any],
+        )
+        assert result == {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+
+    def test_delete_session_by_id_escapes_session_id(self, tool_router, mock_client):
+        """delete() URL-encodes session IDs before calling the raw endpoint."""
+        mock_client.delete.return_value = {
+            "session_id": "session/with spaces",
+            "deleted": True,
+        }
+
+        tool_router.delete("session/with spaces")
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session%2Fwith%20spaces",
+            cast_to=t.Dict[str, t.Any],
+        )
+
+    def test_delete_session_by_id_calls_raw_http_endpoint(self):
+        """delete() works with the low-level Stainless HTTP client."""
+        requests: t.List[httpx.Request] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            return httpx.Response(
+                200,
+                json={
+                    "session_id": "session/with spaces",
+                    "deleted": True,
+                },
+            )
+
+        client = HttpClient(
+            provider="test",
+            api_key="sk-test",
+            base_url="https://backend.invalid",
+            http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+        )
+        tool_router = ToolRouter(client=client, provider=MagicMock())
+
+        result = tool_router.delete("session/with spaces")
+
+        assert result == {
+            "session_id": "session/with spaces",
+            "deleted": True,
+        }
+        assert len(requests) == 1
+        assert requests[0].method == "DELETE"
+        assert (
+            str(requests[0].url)
+            == "https://backend.invalid/api/v3.1/tool_router/session/session%2Fwith%20spaces"
+        )
 
     def test_create_session_with_toolkits_list(self, tool_router, mock_client):
         """Test creating a session with toolkits as a list."""
@@ -1029,11 +1099,31 @@ class TestToolRouter:
         assert callable(session.tools)
         assert callable(session.authorize)
         assert callable(session.toolkits)
+        assert callable(session.delete)
         assert session.preload.tools == ["GMAIL_FETCH_EMAILS"]
 
         mock_client.tool_router.session.retrieve.assert_called_once_with("session_123")
         mock_client.tool_router.session.attach.assert_not_called()
         mock_client.post.assert_not_called()
+
+    def test_session_delete(self, tool_router, mock_client):
+        """Session delete removes the current session."""
+        mock_client.delete.return_value = {
+            "session_id": "session_123",
+            "deleted": True,
+        }
+        session = tool_router.use(session_id="session_123")
+
+        result = session.delete()
+
+        mock_client.delete.assert_called_once_with(
+            "/api/v3.1/tool_router/session/session_123",
+            cast_to=t.Dict[str, t.Any],
+        )
+        assert result == {
+            "session_id": "session_123",
+            "deleted": True,
+        }
 
     def test_use_session_with_custom_tools(self, tool_router, mock_client):
         """Test attaching custom tools when reusing a session."""

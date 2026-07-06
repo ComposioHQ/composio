@@ -9,6 +9,7 @@ import json
 import keyword
 import typing as t
 import uuid
+from functools import reduce
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
@@ -580,21 +581,16 @@ def get_signature_format_from_schema_params(
             param_type = param_allOf[0].get("type", None)
         if param_oneOf is not None or param_anyOf is not None:
             param_types = [ptype.get("type") for ptype in (param_oneOf or param_anyOf)]
-            if len(param_types) == 1:
-                annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]
-            elif len(param_types) == 2:
-                # Check as redefinition and union was incompatible
-                # @karan to check if this is the right way to do it
-                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                annotation: t.Type = t.Union[t1, t2]  # type: ignore
-            elif len(param_types) == 3:
-                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                t3: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[2]]  # type: ignore
-                annotation: t.Type = t.Union[t1, t2, t3]  # type: ignore
+            # Map each option to a Python type, falling back to t.Any for options
+            # that are missing a "type" key or use an unrecognized type, then build
+            # a Union for any count of members (no 1/2/3-member cap).
+            mapped_types: t.List[t.Any] = [
+                PYDANTIC_TYPE_TO_PYTHON_TYPE.get(ptype, t.Any) for ptype in param_types
+            ]
+            if len(mapped_types) == 1:
+                annotation = mapped_types[0]
             else:
-                raise ValueError("Invalid 'oneOf' schema")
+                annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
             param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]

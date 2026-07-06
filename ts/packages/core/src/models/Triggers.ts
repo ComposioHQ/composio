@@ -40,7 +40,7 @@ import {
 } from '../types/triggers.types';
 import logger from '../utils/logger';
 import { telemetry } from '../telemetry/Telemetry';
-import { ComposioConnectedAccountNotFoundError, ValidationError } from '../errors';
+import { ValidationError } from '../errors';
 import { PusherService } from '../services/pusher/Pusher';
 import {
   ComposioTriggerTypeNotFoundError,
@@ -328,6 +328,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     body?: TriggerInstanceUpsertParams,
     requestOptions?: ComposioRequestOptions
   ): Promise<TriggerInstanceUpsertResponse> {
+    if (!userId?.trim()) {
+      throw new ValidationError(`A non-empty userId is required to create a trigger`);
+    }
+
     const parsedBody = TriggerInstanceUpsertParamsSchema.safeParse(body ?? {});
 
     if (!parsedBody.success) {
@@ -336,14 +340,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       });
     }
 
-    // Get the connected account id from the user id
-    let triggerType: TriggersTypeRetrieveResponse;
-    let toolkitSlug: string;
+    // Validate the trigger slug up-front so callers get a clear client-side
+    // `ComposioTriggerTypeNotFoundError`. The Python SDK mirrors this behavior.
     try {
-      triggerType = await this.getType(slug, requestOptions);
-      toolkitSlug = triggerType.toolkit.slug;
+      await this.getType(slug, requestOptions);
     } catch (error) {
-      // for some reason, the triggers types list endpoint returns 400 for invalid user ids
+      // The trigger types endpoint returns 400 (not 404) for an unknown slug.
       if (error instanceof APIError && (error.status === 400 || error.status === 404)) {
         throw new ComposioTriggerTypeNotFoundError(`Trigger type ${slug} not found`, {
           cause: error,
@@ -353,79 +355,17 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
             `Visit the toolkit page to see the available triggers`,
           ],
         });
-      } else {
-        throw error;
-      }
-    }
-
-    // Attempt to get connected account ID
-    let connectedAccountId: string | undefined = body?.connectedAccountId;
-
-    try {
-      const connectedAccountListParams = {
-        user_ids: [userId],
-        toolkit_slugs: [toolkitSlug],
-      };
-      const { items: connectedAccounts } = await withCancellation(
-        () => this.client.connectedAccounts.list(connectedAccountListParams, requestOptions),
-        requestOptions?.signal
-      );
-
-      if (connectedAccounts.length === 0) {
-        throw new ComposioConnectedAccountNotFoundError(
-          `No connected account found for user ${userId} for toolkit ${toolkitSlug}`,
-          {
-            cause: new Error(`No connected account found for user ${userId}`),
-            possibleFixes: [`Create a new connected account for user ${userId}`],
-          }
-        );
-      }
-
-      const accountExists = connectedAccounts.some(acc => acc.id === connectedAccountId);
-      // if the connected account id is provided and it does not exist, throw an error
-      if (connectedAccountId && !accountExists) {
-        throw new ComposioConnectedAccountNotFoundError(
-          `Connected account ID ${connectedAccountId} not found for user ${userId}`,
-          {
-            cause: new Error(
-              `Connected account ID ${connectedAccountId} not found for user ${userId}`
-            ),
-            possibleFixes: [
-              `Create a new connected account for user ${userId}`,
-              `Verify the connected account ID`,
-            ],
-          }
-        );
-      }
-
-      // if the connected account id is not provided, use the first connected account
-      if (!connectedAccountId) {
-        connectedAccountId = connectedAccounts[0].id;
-        logger.warn(
-          `[Warn] Multiple connected accounts found for user ${userId}, using the first one. Pass connectedAccountId to select a specific account.`
-        );
-      }
-    } catch (error) {
-      if (error instanceof APIError && [400, 404].includes(error.status)) {
-        throw new ComposioConnectedAccountNotFoundError(
-          `No connected account found for user ${userId} for toolkit ${toolkitSlug}`,
-          {
-            cause: error,
-            possibleFixes: [`Create a new connected account for user ${userId}`],
-          }
-        );
       }
       throw error;
     }
 
-    // Forward user_id so 2FA-enabled projects can verify the pinned connected
-    // account is owned by this user (backends without 2FA ignore it). The
-    // `& { user_id }` bridges until @composio/client regenerates from the
-    // updated OpenAPI spec; drop it once the field lands on the generated type.
-    const upsertParams: ClientTriggerInstanceUpsertParams & {
-      user_id?: string;
-    } = {
-      connected_account_id: connectedAccountId,
+    // Pass `user_id` straight through: when `connected_account_id` is omitted the
+    // backend resolves the first active connection for this user and the
+    // trigger's toolkit, mirroring tool execution. When 2FA is enabled and
+    // `connected_account_id` is pinned, the backend validates that `user_id`
+    // owns it.
+    const upsertParams: ClientTriggerInstanceUpsertParams = {
+      connected_account_id: parsedBody.data.connectedAccountId,
       trigger_config: parsedBody.data.triggerConfig,
       toolkit_versions: this.toolkitVersions,
       user_id: userId,

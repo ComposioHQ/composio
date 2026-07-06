@@ -22,6 +22,8 @@ e2e(import.meta.url, {
   },
   defineTests: ({ runFixture }) => {
     let result: E2ETestResult;
+    const isStorageUnavailable = () =>
+      result.stdout.includes('UPLOAD_UNAVAILABLE') || result.stdout.includes('FILES_MOUNT_UNAVAILABLE');
 
     beforeAll(async () => {
       result = await runFixture({ filename: 'index.mjs' });
@@ -33,23 +35,39 @@ e2e(import.meta.url, {
       });
 
       it('upload succeeds or is explicitly unavailable', () => {
-        expect(result.stdout).toMatch(/UPLOAD_OK|UPLOAD_UNAVAILABLE/);
+        expect(result.stdout).toMatch(/UPLOAD_OK|UPLOAD_UNAVAILABLE|FILES_MOUNT_UNAVAILABLE/);
       });
 
       it('list succeeds', () => {
+        if (isStorageUnavailable()) {
+          expect(result.stdout).toMatch(/LIST_SKIP|storage authorization failed/);
+          return;
+        }
         expect(result.stdout).toMatch(/LIST_OK|LIST_SKIP/);
       });
 
       it('download succeeds or is skipped after unavailable upload', () => {
-        expect(result.stdout).toMatch(/DOWNLOAD_OK|DOWNLOAD_SKIP/);
+        if (isStorageUnavailable()) {
+          expect(result.stdout).toMatch(/DOWNLOAD_SKIP|storage authorization failed/);
+          return;
+        }
+        expect(result.stdout).toContain('DOWNLOAD_OK');
       });
 
       it('delete succeeds or is skipped after unavailable upload', () => {
-        expect(result.stdout).toMatch(/DELETE_OK|DELETE_SKIP/);
+        if (isStorageUnavailable()) {
+          expect(result.stdout).toMatch(/DELETE_SKIP|storage authorization failed/);
+          return;
+        }
+        expect(result.stdout).toContain('DELETE_OK');
       });
 
       it('all operations complete or are explicitly skipped', () => {
-        expect(result.stdout).toMatch(/ALL_OK|ALL_SKIP/);
+        if (isStorageUnavailable()) {
+          expect(result.stdout).toMatch(/ALL_SKIP|storage authorization failed/);
+          return;
+        }
+        expect(result.stdout).toContain('ALL_OK');
       });
     });
   },

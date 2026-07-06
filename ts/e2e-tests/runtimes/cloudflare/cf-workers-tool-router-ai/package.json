@@ -18,11 +18,11 @@
     "wrangler": "catalog:"
   },
   "dependencies": {
-    "@ai-sdk/mcp": "^1.0.1",
-    "@ai-sdk/openai": "^3.0.11",
+    "@ai-sdk/mcp": "^2.0.7",
+    "@ai-sdk/openai": "^4.0.7",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "ai": "catalog:",
-    "hono": "^4.10.3"
+    "hono": "catalog:"
   }
 }

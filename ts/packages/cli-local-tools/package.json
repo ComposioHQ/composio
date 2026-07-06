@@ -37,14 +37,14 @@
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "catalog:",
     "decompress": "^4.2.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/decompress": "^4.2.7",
-    "@types/node": "^24.0.1",
-    "chrome-devtools-mcp": "0.24.0",
+    "@types/node": "^26.1.0",
+    "chrome-devtools-mcp": "1.5.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

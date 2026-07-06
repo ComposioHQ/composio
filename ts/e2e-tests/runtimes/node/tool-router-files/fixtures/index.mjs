@@ -115,6 +115,11 @@ async function main() {
 }
 
 main().catch(err => {
-  console.log('ERROR:', err?.message || err);
+  const message = err?.message || String(err);
+  if (message.includes('Failed to upload file: Unauthorized')) {
+    console.log(`FILES_MOUNT_UNAVAILABLE storage authorization failed: ${message}`);
+    process.exit(0);
+  }
+  console.log('ERROR:', message);
   process.exit(1);
 });
