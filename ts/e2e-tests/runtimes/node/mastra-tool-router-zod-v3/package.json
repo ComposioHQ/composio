@@ -14,7 +14,7 @@
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.13.0",
-    "ai": "catalog:",
+    "ai": "^6.0.219",
     "zod": "3.25.76"
   },
   "devDependencies": {

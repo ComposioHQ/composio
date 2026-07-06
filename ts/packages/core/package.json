@@ -103,7 +103,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": ">=3.25.76 <5"
   },
   "dependencies": {
     "@composio/client": "catalog:",

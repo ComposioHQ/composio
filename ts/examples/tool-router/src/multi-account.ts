@@ -18,8 +18,8 @@ const session = await composio.create('user_123', {
   },
 });
 
-// Set an alias on a connected account for easier identification
-await composio.connectedAccounts.update('ca_abc123', {
+// Set an alias while authorizing a connected account for easier identification.
+await session.authorize('gmail', {
   alias: 'work-gmail',
 });
 

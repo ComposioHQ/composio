@@ -27,11 +27,14 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
+    "@mastra/mcp": "^1.13.0",
+    "ai": "^6.0.219",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/bun": "catalog:",
+    "@types/node": "^26.1.0",
     "typescript": "catalog:"
   }
 }

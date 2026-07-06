@@ -92,7 +92,7 @@
   ],
   "license": "ISC",
   "peerDependencies": {
-    "zod": "^3.25 || ^4"
+    "zod": ">=3.25.76 <5"
   },
   "devDependencies": {
     "@composio/core": "workspace:*"

@@ -1,29 +1,30 @@
 import { openai } from '@ai-sdk/openai';
-import { experimental_createMCPClient as createMCPClient } from '@ai-sdk/mcp';
+import { createMCPClient } from '@ai-sdk/mcp';
 import { Composio } from '@composio/core';
 import { stepCountIs, streamText } from 'ai';
 import ora from 'ora';
 
 const composio = new Composio();
-const trProgress = ora("Creating tool router session...").start();
+const trProgress = ora('Creating tool router session...').start();
 const { mcp } = await composio.create('default', {
-  toolkits: ['gmail'], 
+  toolkits: ['gmail'],
   manageConnections: true,
+  mcp: true,
   tools: {
-    'gmail': {
+    gmail: {
       enable: ['GMAIL_FETCH_EMAILS'],
-    }
-  }
+    },
+  },
 });
 trProgress.succeed(`Tool router session created: ${mcp.url}`);
 
-const mcpProgress = ora("Retrieving tools from MCP...").start();
+const mcpProgress = ora('Retrieving tools from MCP...').start();
 const client = await createMCPClient({
   transport: {
     type: 'http',
     url: mcp.url,
-    headers: mcp.headers
-  }
+    headers: mcp.headers,
+  },
 });
 
 const tools = await client.tools();
@@ -34,7 +35,7 @@ const stream = await streamText({
   model: openai('gpt-4o-mini'),
   prompt: 'Summarize my latest received email from gmail.',
   stopWhen: stepCountIs(10),
-  onStepFinish: (step) => {
+  onStepFinish: step => {
     if (step.toolCalls.length > 0) {
       for (const toolCall of step.toolCalls) {
         console.log(`🔧 Executed ${toolCall.toolName}`);

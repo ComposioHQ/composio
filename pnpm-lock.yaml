@@ -64,8 +64,8 @@ catalogs:
       specifier: ^4.1.9
       version: 4.1.9
     ai:
-      specifier: ^6.0.219
-      version: 6.0.219
+      specifier: ^7.0.14
+      version: 7.0.14
     dotenv:
       specifier: ^17.4.2
       version: 17.4.2
@@ -304,7 +304,7 @@ importers:
         version: link:../../../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       hono:
         specifier: 'catalog:'
         version: 4.12.27
@@ -446,7 +446,7 @@ importers:
         specifier: ^1.13.0
         version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(zod@3.25.76)
       ai:
-        specifier: 'catalog:'
+        specifier: ^6.0.219
         version: 6.0.219(zod@3.25.76)
       zod:
         specifier: 3.25.76
@@ -474,7 +474,7 @@ importers:
         specifier: ^1.13.0
         version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
-        specifier: 'catalog:'
+        specifier: ^6.0.219
         version: 6.0.219(zod@4.4.3)
       zod:
         specifier: ^4.4.3
@@ -551,9 +551,15 @@ importers:
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@mastra/core':
+        specifier: 'catalog:'
+        version: 1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.13.0
         version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+      ai:
+        specifier: ^6.0.219
+        version: 6.0.219(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -767,6 +773,12 @@ importers:
       '@mastra/core':
         specifier: 'catalog:'
         version: 1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      '@mastra/mcp':
+        specifier: ^1.13.0
+        version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+      ai:
+        specifier: ^6.0.219
+        version: 6.0.219(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -777,12 +789,18 @@ importers:
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
 
   ts/examples/mcp:
     dependencies:
+      '@ai-sdk/mcp':
+        specifier: ^2.0.7
+        version: 2.0.7(zod@4.4.3)
       '@ai-sdk/openai':
         specifier: ^4.0.7
         version: 4.0.7(zod@4.4.3)
@@ -797,7 +815,7 @@ importers:
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -805,6 +823,9 @@ importers:
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -822,7 +843,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -921,7 +942,7 @@ importers:
         version: 0.12.0(@aws-sdk/credential-provider-node@3.972.62)(@cfworker/json-schema@4.1.1)(@smithy/signature-v4@5.6.2)(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -944,6 +965,9 @@ importers:
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -961,7 +985,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -983,7 +1007,7 @@ importers:
         version: link:../../packages/providers/vercel
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -1039,7 +1063,7 @@ importers:
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -1053,6 +1077,9 @@ importers:
       '@types/bun':
         specifier: 'catalog:'
         version: 1.3.14
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1378,17 +1405,22 @@ importers:
         version: 4.4.3
 
   ts/packages/providers/anthropic:
-    dependencies:
-      '@anthropic-ai/sdk':
-        specifier: ^0.52.0
-        version: 0.52.0
-      '@mastra/mcp':
-        specifier: ^1.13.0
-        version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
     devDependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.110.0
+        version: 0.110.0(zod@4.4.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../../core
+      '@mastra/core':
+        specifier: 'catalog:'
+        version: 1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      '@mastra/mcp':
+        specifier: ^1.13.0
+        version: 1.13.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+      ai:
+        specifier: ^6.0.219
+        version: 6.0.219(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
         version: 0.22.3(@arethetypeswrong/core@0.18.4)(@typescript/native-preview@7.0.0-dev.20260703.1)(publint@0.3.21)(tsx@4.22.5)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))
@@ -1505,6 +1537,9 @@ importers:
       '@mastra/core':
         specifier: 'catalog:'
         version: 1.49.0(@cfworker/json-schema@4.1.1)(ai@6.0.219(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      ai:
+        specifier: ^6.0.219
+        version: 6.0.219(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
         version: 0.22.3(@arethetypeswrong/core@0.18.4)(@typescript/native-preview@7.0.0-dev.20260703.1)(publint@0.3.21)(tsx@4.22.5)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))
@@ -1565,7 +1600,7 @@ importers:
         version: link:../../core
       ai:
         specifier: 'catalog:'
-        version: 6.0.219(zod@4.4.3)
+        version: 7.0.14(zod@4.4.3)
       tsdown:
         specifier: 'catalog:'
         version: 0.22.3(@arethetypeswrong/core@0.18.4)(@typescript/native-preview@7.0.0-dev.20260703.1)(publint@0.3.21)(tsx@4.22.5)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))
@@ -1603,7 +1638,7 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       zod:
-        specifier: ^3.25 || ^4
+        specifier: '>=3.25.76 <5'
         version: 4.4.3
       zod-to-json-schema:
         specifier: 'catalog:'
@@ -1662,6 +1697,12 @@ packages:
   '@ai-sdk/gateway@3.0.143':
     resolution: {integrity: sha512-RCH60KsUaNiZkI/fBuyau4yvYrVBIEgAcN+Ain94QpL1kVm28GduQzFKfGffAiJU2We0ZrmN4BHkoCZzACK96Q==}
     engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/gateway@4.0.11':
+    resolution: {integrity: sha512-ZdZzQnBxYfjJpWpSNkV+rRWycwTBhxyvwGvxcwx9g+WQoy3MK2xNahSySEgP9hD/X2xY9jkjd0xB67oDE3rLMA==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -1821,10 +1862,6 @@ packages:
     peerDependenciesMeta:
       zod:
         optional: true
-
-  '@anthropic-ai/sdk@0.52.0':
-    resolution: {integrity: sha512-d4c+fg+xy9e46c8+YnrrgIQR45CZlAi7PwdzIfDXDM6ACxEZli1/fxhURsq30ZpMZy6LvSkr41jGq5aF5TD7rQ==}
-    hasBin: true
 
   '@anthropic-ai/sdk@0.91.1':
     resolution: {integrity: sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw==}
@@ -4186,6 +4223,12 @@ packages:
   ai@6.0.219:
     resolution: {integrity: sha512-rtTDz99Rc9HsstSJ7YdO8DX7DQwS442N2vQ5jOopXDdo4qfkLrtIRpORdztFMOZxX/XjBzHRlvqF6eMg3cpyLA==}
     engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@7.0.14:
+    resolution: {integrity: sha512-qA82fZyD4xh9IDB+s3SvwbjwjR+GGRmJjTYMwON1uROj8vPDIQbPTZLLq6ZWTVESn9daeH1GMv0zKfVLwNU2sQ==}
+    engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
@@ -6926,6 +6969,13 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
+  '@ai-sdk/gateway@4.0.11(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
+      '@vercel/oidc': 3.2.0
+      zod: 4.4.3
+
   '@ai-sdk/mcp@2.0.7(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.2
@@ -7138,8 +7188,6 @@ snapshots:
       standardwebhooks: 1.0.0
     optionalDependencies:
       zod: 4.4.3
-
-  '@anthropic-ai/sdk@0.52.0': {}
 
   '@anthropic-ai/sdk@0.91.1(zod@4.4.3)':
     dependencies:
@@ -9583,6 +9631,13 @@ snapshots:
       '@ai-sdk/provider': 3.0.13
       '@ai-sdk/provider-utils': 4.0.35(zod@4.4.3)
       '@opentelemetry/api': 1.9.1
+      zod: 4.4.3
+
+  ai@7.0.14(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.11(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
       zod: 4.4.3
 
   ajv-formats@3.0.1(ajv@8.20.0):

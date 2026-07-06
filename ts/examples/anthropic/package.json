@@ -19,7 +19,9 @@
     "@composio/anthropic": "workspace:*",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
+    "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.13.0",
+    "ai": "^6.0.219",
     "dotenv": "catalog:",
     "zod": "^4.4.3",
     "zod-to-json-schema": "catalog:"

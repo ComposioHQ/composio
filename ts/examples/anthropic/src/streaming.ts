@@ -88,16 +88,7 @@ async function main() {
               ...toolUseBlocks,
             ],
           },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'tool_result',
-                tool_use_id: toolUseBlocks[0].id,
-                content: toolResults[0],
-              },
-            ],
-          },
+          ...toolResults,
         ],
       })
       .on('text', text => {

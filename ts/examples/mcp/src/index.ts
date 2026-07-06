@@ -1,8 +1,9 @@
+import { createMCPClient } from '@ai-sdk/mcp';
 import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
 import { VercelProvider } from '@composio/vercel';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { experimental_createMCPClient as createMCPClient, stepCountIs, streamText } from 'ai';
+import { stepCountIs, streamText } from 'ai';
 import 'dotenv/config';
 
 // 1. Initialize Composio.
