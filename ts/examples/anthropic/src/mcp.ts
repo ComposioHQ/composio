@@ -22,45 +22,35 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const provider = new AnthropicProvider({ cacheTools: true });
+
 // Initialize Composio with the Anthropic provider
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new AnthropicProvider({ cacheTools: true }),
+  provider,
 });
 
 const authConfigId = '<auth_config_id>'; // Use your auth config ID
-const connectedAccountId = '<connected_account_id>'; // Replace it with the connected account id
+const externalUserId = '<external_user_id>'; // Replace it with your user ID
 const allowedTools = ['GMAIL_FETCH_EMAILS'];
 
 // Create an MCP server with Gmail toolkit
-const mcpConfig = await composio.mcp.create(
-  'gmail-anthropic-' + Date.now(),
-  {
-    toolkits: [{
+const mcpConfig = await composio.mcp.create('gmail-anthropic-' + Date.now(), {
+  toolkits: [
+    {
+      toolkit: 'gmail',
       authConfigId,
-    }],
-    allowedTools,
-  }
-);
+    },
+  ],
+  allowedTools,
+});
 
 console.log(`✅ MCP server created: ${mcpConfig.id}`);
 console.log(`🔧 Available toolkits: ${mcpConfig.allowedTools.join(', ')}`);
 
-// Get server instance with connected accounts (using convenience method)
-const servers = await mcpConfig.getServer({
-  userId: connectedAccountId,
-  connectedAccountIds: {
-    gmail: connectedAccountId,
-  },
-});
-
-// Alternative: You can also use the standalone method
-// const servers = await composio.mcp.getServer(mcpConfig.id, {
-//   userId: connectedAccountId,
-//   connectedAccountIds: {
-//     "gmail": connectedAccountId,
-//   }
-// });
+// Generate a user-scoped MCP endpoint and adapt it for Anthropic's MCP beta.
+const mcp = await mcpConfig.generate(externalUserId);
+const servers = provider.wrapMcpServerResponse([{ name: mcp.name, url: mcp.url }]);
 
 console.log('\n=== Fetching and Summarizing Recent Emails ===');
 

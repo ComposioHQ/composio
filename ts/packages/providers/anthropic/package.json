@@ -41,12 +41,16 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
+    "@anthropic-ai/sdk": "^0.110.0",
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@mastra/mcp": "^0.12.0"
+    "@mastra/mcp": "^1.13.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@composio/core": "workspace:*",
+    "@mastra/core": "catalog:",
+    "@mastra/mcp": "^1.13.0",
+    "ai": "^6.0.219",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

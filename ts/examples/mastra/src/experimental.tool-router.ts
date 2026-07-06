@@ -12,12 +12,12 @@ const composio = new Composio({
 
 const externalUserId = '<external_user_id>'; // Replace it with the user id id
 
-// 2. Create an tool router session
-const mcpSession = await composio.experimental.toolRouter.createSession(externalUserId, {
-  toolkits: ["gmail"],
-  manuallyManageConnections: true,
+// 2. Create a session with a user-scoped MCP endpoint.
+const session = await composio.create(externalUserId, {
+  toolkits: ['gmail'],
+  manageConnections: true,
+  mcp: true,
 });
-
 
 // 3. Create a Mastra-specific MCP client.
 //    This client needs to remain "alive" not be dropped by the GC until
@@ -25,16 +25,20 @@ const mcpSession = await composio.experimental.toolRouter.createSession(external
 const mcpClient = new MastraMCPClient({
   servers: {
     composio: {
-      url: new URL(mcpSession.url),
+      url: new URL(session.mcp.url),
+      requestInit: {
+        headers: session.mcp.headers,
+      },
     },
   },
 });
 
 // 4. Retrieve tools.
-const tools = await mcpClient.getTools();
+const tools = await mcpClient.listTools();
 
 // 5. Pass tools to Mastra-specific Agent.
 const agent = new MastraAgent({
+  id: 'gmail-tool-router-assistant',
   name: 'Gmail Assistant',
   instructions: `
     You are a helpful Gmail assistant that fetches and summarizes emails.

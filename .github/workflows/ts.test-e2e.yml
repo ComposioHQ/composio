@@ -24,6 +24,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 # Print Turborepo telemetry events to the logs instead of sending them.
 env:
   TURBO_TELEMETRY_DEBUG: 1
@@ -93,6 +96,8 @@ jobs:
 
       - name: Check API keys
         id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         run: |
           missing=()
           for name in COMPOSIO_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY; do
@@ -103,8 +108,8 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
-              echo "::notice::Skipping secret-backed Node.js E2E tests for Dependabot; missing ${missing[*]}."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
               exit 0
             fi
 
@@ -179,7 +184,34 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
+
       - name: Run Deno E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:deno
 
   # CLI E2E tests, running in scratch Docker to isolate environment
@@ -218,6 +250,32 @@ jobs:
       - name: Build
         run: pnpm run build:packages
 
+      - name: Check API keys
+        id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        run: |
+          missing=()
+          for name in COMPOSIO_API_KEY OPENAI_API_KEY COMPOSIO_USER_API_KEY; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
+              exit 0
+            fi
+
+            printf '::error::%s is not set\n' "${missing[@]}"
+            exit 1
+          fi
+
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "✅ API keys are configured"
+
       - name: Pre-build Docker image for CLI e2e tests
         run: |
           CLI_VERSION=$(node -p "require('./ts/packages/cli/package.json').version")
@@ -232,6 +290,7 @@ jobs:
             .
 
       - name: Run CLI E2E Tests
+        if: steps.api-keys.outputs.available == 'true'
         run: pnpm run test:e2e:cli
 
   # Cloudflare Workerd E2E tests
@@ -271,6 +330,8 @@ jobs:
 
       - name: Check API keys
         id: api-keys
+        env:
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         run: |
           missing=()
           for name in COMPOSIO_API_KEY OPENAI_API_KEY; do
@@ -281,8 +342,8 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
-              echo "::notice::Skipping secret-backed Cloudflare E2E tests for Dependabot; missing ${missing[*]}."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ] || [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Skipping secret-backed E2E tests; missing ${missing[*]}."
               exit 0
             fi
 
