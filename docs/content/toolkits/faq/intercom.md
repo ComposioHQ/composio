@@ -3,11 +3,6 @@
 
 Composio does not control how Intercom Fin retrieves knowledge inside Intercom. For this use case, either push MCP-derived content into Fin's Content Library by creating and managing Intercom External Pages, or build a custom AI agent with Composio SDKs that connects to both the MCP server and Intercom for support workflows such as replying to conversations, creating tickets, and managing contacts.
 
-## When should I use a custom Intercom developer app for additional scopes?
-
-
-When an Intercom workflow needs scopes that are not available on the hosted OAuth app, users can create the integration with their own Intercom developer account/app and configure the required scopes there.
-
 ## When should I avoid proxy execute for slow Intercom API calls that can hit Cloudflare 520 timeouts?
 
 

@@ -35,11 +35,6 @@ For Jira/Atlassian OAuth, configure the same redirect URI in both the Composio a
 
 Atlassian OAuth 2.0 requires `audience=api.atlassian.com` in the authorization URL. Without this parameter, Atlassian may not honor `offline_access`, meaning no refresh token is returned and the access token expires without being refreshable. If Jira credentials expire immediately, check whether the connected account is missing `offline_access` and whether the Jira OAuth config includes the required `audience` parameter. API key auth with Atlassian email + API token can provide stable non-expiring credentials when that fits the workflow.
 
-## What is required for self-hosted Jira?
-
-
-For self-hosted Jira, configure the connection with the user's self-hosted subdomain during setup. If the correct subdomain/base URL is supplied, the connection setup should work like other Jira configurations.
-
 ## Composio manages Jira OAuth tokens but does not store Jira API response payloads
 
 
