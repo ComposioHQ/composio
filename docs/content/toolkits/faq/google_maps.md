@@ -30,7 +30,7 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 `GOOGLE_MAPS_MAPS_EMBED_API` is API-key based. Google's Maps Embed API requires an API key on each request; OAuth2 is not the auth path for this tool.
 
-Use an API-key auth config, or pass the `api_key` parameter directly when executing the tool.
+You must use an API-key connection to use this tool.
 
 ## Google Maps OAuth can be blocked by sensitive cloud-platform scope
 
