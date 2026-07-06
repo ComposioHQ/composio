@@ -43,6 +43,20 @@ Verification:
 - The Asana toolkit KB says failures came from using an unscoped task-comments slug and passing a numeric task ID.
 - Current public toolkit data includes Asana task comment creation and Asana triggers, but does not expose a task-comment retrieval action in the generated toolkit dataset.
 
+## Browser Tool: BROWSER_TOOL_CREATE_TASK profile creation and persistent session state
+
+Reason to keep out of the FAQ: this is a tool-description/runtime clarity issue that needs a retest before becoming public troubleshooting guidance. The durable fix belongs in `BROWSER_TOOL_CREATE_TASK` metadata or runtime error handling, not a standalone FAQ.
+
+Suggested tool description:
+
+`BROWSER_TOOL_CREATE_TASK` creates or reuses a browser session backed by a persistent browser profile so cookies, local storage, and login/session state can be preserved when the same session is reused. If task creation fails with `403 - Profiles are not available for Zero Data Retention projects`, the likely failure point is browser profile creation before the task starts, not website credentials, OAuth reconnect, or task instructions. Retest the profile-creation path before publishing customer-facing guidance, and verify which project/environment retention setting controls profile availability.
+
+Verification:
+
+- Mercury `BROWSER_TOOL_CREATE_TASK` calls `get_or_create_profile_from_metadata`, then creates a session with that profile before posting the task.
+- ClickHouse tool execution logs for `BROWSER_TOOL_CREATE_TASK` show stack traces ending at `create_profile` with `BrowserUseError: Failed to create profile: 403 - {"detail":"Profiles are not available for Zero Data Retention projects."}`.
+- Sampled current project configs did not independently prove that a specific `logVisibilitySetting` value is the definitive user-side fix, so do not publish this as a FAQ until the behavior is retested.
+
 ## Additional Tool Improvement Candidates From FAQ Audit
 
 These entries were moved out of public toolkit FAQs because they are better handled as tool metadata, schema, slug, or missing-tool coverage improvements.
