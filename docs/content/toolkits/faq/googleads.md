@@ -18,7 +18,9 @@ Google Ads API requests require both an OAuth access token and a Google Ads deve
 
 
 
-A Google Ads 429 / `RESOURCE_EXHAUSTED` can come from Google's own API limits or from Composio-managed OAuth/developer-token capacity when that managed app/token is shared across users. Low usage on the user's own account can still hit the shared managed-app quota. It is not necessarily a Composio billing-plan/tool-call quota issue. First confirm whether the user uses Composio-managed OAuth or their own credentials/authConfig. If they are on the managed app, advise moving to their own Google Ads OAuth credentials/developer token for isolated quota and production-scale usage.
+A Google Ads 429 / `RESOURCE_EXHAUSTED` is an upstream Google Ads API limit, not a Composio billing-plan or tool-call quota. Google Ads enforces limits on the underlying developer token, account, request pattern, service, and resource usage.
+
+This can happen with Composio-managed credentials or with custom Google Ads credentials. Reduce request volume, add backoff, simplify expensive queries, and use an owned Google Ads OAuth app/developer token for production isolation where possible.
 
 ## Google Ads MCC/sub-account targeting
 

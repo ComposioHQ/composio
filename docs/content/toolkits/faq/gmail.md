@@ -53,14 +53,6 @@ This approach works for any tool whose parameters accept file uploads. See [Auto
 
 ---
 
-## How do I create Gmail custom OAuth auth config, then initiate a connection with callback URL?
-
-Create the Gmail auth config first with the custom OAuth credentials, then initiate a connected account using that auth config. The callback URL is supplied during connection initiation, while the OAuth client ID/secret and redirect URI live on the auth config.
-
-## When should I use your own OAuth app for unverified sensitive Gmail scopes?
-
-Composio managed Gmail OAuth is not verified for every sensitive Gmail scope. If a user needs sensitive granular scopes that are not verified on the managed app, use their own Google OAuth app with those scopes verified in Google Cloud Console.
-
 ## Why can Gmail filter setup show an app-blocked error?
 
 If a user on Composio-managed Gmail auth hits Google's "app is blocked" / unverified-app screen after adding `gmail.settings.basic`, use your own Google OAuth app verified for `https://www.googleapis.com/auth/gmail.settings.basic`, then reconnect.

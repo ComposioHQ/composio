@@ -28,7 +28,9 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 ## What is required for the Maps Embed API?
 
-`GOOGLE_MAPS_MAPS_EMBED_API` requires API-key authentication. Use an auth config whose auth mode is `api-key`, or pass the `api_key` parameter directly when making the tool call.
+`GOOGLE_MAPS_MAPS_EMBED_API` is API-key based. Google's Maps Embed API requires an API key on each request; OAuth2 is not the auth path for this tool.
+
+Use an API-key auth config, or pass the `api_key` parameter directly when executing the tool.
 
 ## Google Maps OAuth can be blocked by sensitive cloud-platform scope
 
