@@ -973,6 +973,38 @@ Reason to keep out of the FAQ: this is better represented in tool metadata, sche
 
 Candidate note: Canvas response schema improvements are not universal across all fetch/list tools yet. Some recently updated or newly released tools have response schemas, but older Canvas tools may still differ. Treat these response shapes as tool/version-specific and pin or upgrade versions carefully when response shape stability matters.
 
+## Canvas: Canvas action 401s should point to action scopes and token permissions
+
+Tool slug(s): Toolkit-level tool metadata or auth metadata
+
+Reason to keep out of the FAQ: this belongs in auth/tool metadata and scope guidance, not as a standalone public FAQ.
+
+Candidate note: For Canvas 401 or unauthorized responses, check whether the connected account token has the scope and Canvas-side permissions required by the specific action. For example, `CANVAS_GET_USER_PROFILE` requires profile-read access for the target Canvas user. Tool metadata should make per-action Canvas scope/permission needs explicit where possible.
+
+## Canvas: Canvas OAuth credentials must match the configured Canvas base URL
+
+Tool slug(s): Toolkit-level auth metadata
+
+Reason to keep out of the FAQ: this is auth-config form guidance rather than a customer-facing toolkit FAQ.
+
+Candidate note: Canvas OAuth client ID/client secret must belong to the same Canvas deployment/base URL configured for the auth config or connection. Improve auth field descriptions so users know to keep the Canvas domain, base URL, and OAuth credentials from the same Canvas instance.
+
+## Canvas: Account-level endpoints require Canvas account admin access
+
+Tool slug(s): `CANVAS_GET_ACCOUNTS`, account-level Canvas tools
+
+Reason to keep out of the FAQ: this is best shown in the affected account-level tool descriptions and permission notes.
+
+Candidate note: Account-level Canvas endpoints such as `CANVAS_GET_ACCOUNTS` require Canvas account administrator permissions. Tool descriptions for account-level actions should say that unauthorized responses can be caused by the connected Canvas user lacking account admin access.
+
+## Canvas: Course analytics tools should mention valid course IDs and instance support
+
+Tool slug(s): Canvas course analytics tools
+
+Reason to keep out of the FAQ: this is better as action-level metadata on the analytics tools than as a public troubleshooting FAQ.
+
+Candidate note: Canvas course-level analytics/participation tools should tell users to pass a valid Canvas course ID from `CANVAS_LIST_COURSES` or `CANVAS_GET_SINGLE_COURSE`. If the course ID is valid and the provider still returns 404, the Canvas instance may not expose that analytics endpoint for the course/account.
+
 ## Dropbox: What should I pass for file paths to SDK attachment arguments rather than base64/file metadata objects?
 
 Tool slug(s): Toolkit-level tool metadata or missing-tool coverage
