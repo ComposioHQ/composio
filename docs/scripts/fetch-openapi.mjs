@@ -89,6 +89,17 @@ function cleanOperationIds(paths) {
  * Post-process a spec: remove CookieAuth, normalize unions, fix nullable.
  */
 function postProcessSpec(spec) {
+  // Pin the server to production. The published docs must always show the
+  // production base URL in their curl examples, regardless of which environment
+  // the source spec was fetched from (a staging fetch would otherwise bake a
+  // staging server URL into the committed reference).
+  spec.servers = [
+    {
+      url: 'https://backend.composio.dev',
+      description: 'PRODUCTION API',
+    },
+  ];
+
   // Filter tags list
   if (spec.tags) {
     spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.includes(tag.name));
