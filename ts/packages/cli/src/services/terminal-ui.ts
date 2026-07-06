@@ -94,7 +94,7 @@ export interface TerminalUI {
 
   /**
    * Present a multi-select list to the user.
-   * In non-interactive mode, returns the provided defaults.
+   * In non-interactive mode (piped), returns the provided default values.
    */
   readonly multiselect: <Value>(
     message: string,
@@ -235,10 +235,10 @@ const makeLive: TerminalUI = {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             options: [...options] as any,
             initialValues: [...defaults],
-            required: false,
             output: process.stderr,
           });
-          return typeof result === 'symbol' ? defaults : result;
+          // p.multiselect returns Value[] | symbol (symbol on cancel)
+          return Array.isArray(result) ? result : defaults;
         })
       : Effect.succeed(defaults)) as TerminalUI['multiselect'],
 

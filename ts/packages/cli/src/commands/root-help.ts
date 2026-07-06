@@ -162,7 +162,7 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 // ── Account commands ───────────────────────────────────────────────────
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
-  tagged({ name: 'onboard', description: 'Set up Composio and detected coding agents' }),
+  tagged({ name: 'onboard', description: 'Set up login and detected agent skills' }),
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
@@ -831,7 +831,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   login: {
     usage:
       'composio login [--poll] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
-    description: 'Log in to the Composio CLI session.',
+    description:
+      'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
       {
         name: '--key <text>',
@@ -854,23 +855,23 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       { name: '-y, --yes', description: 'Skip org picker; use current org' },
       {
         name: '--no-skill-install',
-        description: 'Deprecated no-op; use the option on composio onboard',
+        description: 'Skip installing the composio-cli skill for Claude Code',
       },
     ],
   },
   onboard: {
-    usage: 'composio onboard [-y, --yes] [--no-skill-install] [--targets text]',
+    usage: 'composio onboard [-y, --yes] [--targets text] [--no-skill-install]',
     description:
-      'Set up your account in the browser and install Composio skills for detected coding agents.',
+      'Set up Composio in one flow: detected agents, browser login/onboarding, mandatory email connection, and skill install.',
     options: [
       {
         name: '--targets <text>',
-        description: 'Detected agents to configure, comma-separated',
+        description: 'Comma-separated detected agents to set up, e.g. claude,codex,cursor',
       },
     ],
     flags: [
-      { name: '-y, --yes', description: 'Install for every detected agent without prompting' },
-      { name: '--no-skill-install', description: 'Skip agent skill installation' },
+      { name: '-y, --yes', description: 'Accept detected defaults without prompts' },
+      { name: '--no-skill-install', description: 'Skip installing skills into detected agents' },
     ],
   },
   logout: {

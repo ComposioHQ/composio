@@ -49,11 +49,7 @@ import {
 } from 'src/services/command-project';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
-import {
-  formatSkillInstallTargetList,
-  isSkillInstallTarget,
-  ONBOARDING_TARGETS,
-} from 'src/onboarding/targets';
+import { formatSkillInstallTargetList, isSkillInstallTarget } from 'src/onboarding/targets';
 import {
   experimental,
   type CommandVisibility,
@@ -185,8 +181,6 @@ const findNestedSubcommandMismatch = (
 };
 
 const ROOT_INSTALL_SKILL_FLAGS = ['--install-skill', '--instal-skill'] as const;
-const SKILL_INSTALL_TARGETS = ONBOARDING_TARGETS.map(target => target.id);
-
 type RootInstallSkillRequest =
   | {
       _tag: 'parsed';
@@ -224,7 +218,7 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: `Invalid target for --install-skill. Expected one of: ${SKILL_INSTALL_TARGETS.join(', ')}.`,
+            message: `Invalid target for --install-skill. Expected one of: ${formatSkillInstallTargetList().replace(/\|/g, ', ')}.`,
           };
         }
         return { _tag: 'parsed', target };
@@ -235,7 +229,7 @@ export const parseRootInstallSkillRequest = (
         if (!isSkillInstallTarget(target)) {
           return {
             _tag: 'error',
-            message: `Invalid target for --install-skill. Expected one of: ${SKILL_INSTALL_TARGETS.join(', ')}.`,
+            message: `Invalid target for --install-skill. Expected one of: ${formatSkillInstallTargetList().replace(/\|/g, ', ')}.`,
           };
         }
         return { _tag: 'parsed', skillName, target };

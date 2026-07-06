@@ -1,44 +1,60 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { Effect } from 'effect';
+import { NodeOs } from 'src/services/node-os';
 import type { SkillInstallTarget } from 'src/effects/install-skill';
 
 export type OnboardingTarget = {
   readonly id: SkillInstallTarget;
   readonly label: string;
-  readonly markerDirectory: string;
+  readonly markerPath: string;
 };
 
-export const ONBOARDING_TARGETS: ReadonlyArray<OnboardingTarget> = [
-  { id: 'claude', label: 'Claude Code', markerDirectory: '.claude' },
-  { id: 'codex', label: 'Codex', markerDirectory: '.codex' },
-  { id: 'cursor', label: 'Cursor', markerDirectory: '.cursor' },
-  { id: 'dust', label: 'Dust', markerDirectory: '.dust' },
-  { id: 'openclaw', label: 'OpenClaw', markerDirectory: '.openclaw' },
+export const ONBOARDING_TARGETS: ReadonlyArray<{
+  readonly id: SkillInstallTarget;
+  readonly label: string;
+  readonly marker: (home: string) => string;
+}> = [
+  { id: 'claude', label: 'Claude Code', marker: home => path.join(home, '.claude') },
+  { id: 'codex', label: 'Codex', marker: home => path.join(home, '.codex') },
+  { id: 'cursor', label: 'Cursor', marker: home => path.join(home, '.cursor') },
+  { id: 'dust', label: 'Dust', marker: home => path.join(home, '.dust') },
+  { id: 'openclaw', label: 'OpenClaw', marker: home => path.join(home, '.openclaw') },
 ];
 
-const SKILL_INSTALL_TARGETS = ONBOARDING_TARGETS.map(target => target.id);
-
 export const isSkillInstallTarget = (value: string): value is SkillInstallTarget =>
-  (SKILL_INSTALL_TARGETS as ReadonlyArray<string>).includes(value);
+  ONBOARDING_TARGETS.some(target => target.id === value);
 
-export const formatSkillInstallTargetList = (): string => SKILL_INSTALL_TARGETS.join('|');
+export const formatSkillInstallTargetList = (): string =>
+  ONBOARDING_TARGETS.map(target => target.id).join('|');
 
 export const targetLabel = (target: SkillInstallTarget): string =>
-  ONBOARDING_TARGETS.find(candidate => candidate.id === target)?.label ?? target;
+  ONBOARDING_TARGETS.find(item => item.id === target)?.label ?? target;
 
-export const detectOnboardingTargets = (home: string): ReadonlyArray<OnboardingTarget> =>
-  ONBOARDING_TARGETS.filter(target => fs.existsSync(path.join(home, target.markerDirectory)));
+export const detectOnboardingTargets = Effect.gen(function* () {
+  const os = yield* NodeOs;
+  const home = os.homedir;
 
-export const parseTargetList = (value: string): ReadonlyArray<SkillInstallTarget> => {
-  const targets = value
-    .split(',')
-    .map(target => target.trim().toLowerCase())
-    .filter(Boolean);
-  const invalid = targets.filter(target => !isSkillInstallTarget(target));
-  if (invalid.length > 0) {
-    throw new Error(
-      `Unsupported onboarding target${invalid.length === 1 ? '' : 's'}: ${invalid.join(', ')}. Expected: ${SKILL_INSTALL_TARGETS.join(', ')}.`
-    );
+  return ONBOARDING_TARGETS.flatMap(target => {
+    const markerPath = target.marker(home);
+    return fs.existsSync(markerPath)
+      ? [{ id: target.id, label: target.label, markerPath } satisfies OnboardingTarget]
+      : [];
+  });
+});
+
+export const parseTargetList = (
+  raw: string | undefined,
+  detected: ReadonlyArray<OnboardingTarget>
+): ReadonlyArray<OnboardingTarget> => {
+  if (!raw?.trim()) {
+    return detected;
   }
-  return [...new Set(targets)] as ReadonlyArray<SkillInstallTarget>;
+
+  const requested = raw
+    .split(',')
+    .map(item => item.trim().toLowerCase())
+    .filter(Boolean);
+  const requestedSet = new Set(requested);
+  return detected.filter(target => requestedSet.has(target.id));
 };

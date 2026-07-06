@@ -42,7 +42,7 @@ describe('CLI: composio login', () => {
 
   describe('login --help', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows session and direct-login flags without removed browser flags', () =>
+      it.scoped('[Then] shows session, direct-login flags and no removed flags', () =>
         Effect.gen(function* () {
           yield* cli(['login', '--help']);
           const lines = yield* MockConsole.getLines();

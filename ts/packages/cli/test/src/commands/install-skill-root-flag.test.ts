@@ -30,19 +30,6 @@ describe('CLI: --install-skill', () => {
     });
   });
 
-  it('accepts Cursor and Dust targets', () => {
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'cursor'])).toEqual(
-      {
-        _tag: 'parsed',
-        target: 'cursor',
-      }
-    );
-    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'dust'])).toEqual({
-      _tag: 'parsed',
-      target: 'dust',
-    });
-  });
-
   it('accepts the root flag after leading global options', () => {
     expect(
       parseRootInstallSkillRequest([
@@ -70,6 +57,19 @@ describe('CLI: --install-skill', () => {
       _tag: 'error',
       message:
         'Missing target for --install-skill. Usage: composio --install-skill [skill-name] <claude|codex|cursor|dust|openclaw>',
+    });
+  });
+
+  it('accepts newly supported targets', () => {
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'cursor'])).toEqual(
+      {
+        _tag: 'parsed',
+        target: 'cursor',
+      }
+    );
+    expect(parseRootInstallSkillRequest(['node', 'composio', '--install-skill', 'dust'])).toEqual({
+      _tag: 'parsed',
+      target: 'dust',
     });
   });
 

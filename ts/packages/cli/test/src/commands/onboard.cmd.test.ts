@@ -1,72 +1,98 @@
-import { describe, expect, it, layer } from '@effect/vitest';
+import * as path from 'node:path';
+import { FileSystem } from '@effect/platform';
+import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { afterEach } from 'vitest';
-import { detectOnboardingTargets, parseTargetList } from 'src/onboarding/targets';
+import { afterEach, vi } from 'vitest';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { detectOnboardingTargets, parseTargetList } from 'src/onboarding/targets';
+import { NodeOs } from 'src/services/node-os';
 
-const temporaryHomes: string[] = [];
-
-const makeTemporaryHome = () => {
-  const home = mkdtempSync(path.join(tmpdir(), 'composio-onboard-'));
-  temporaryHomes.push(home);
-  return home;
+const setTtyState = (state: { stdin: boolean; stdout: boolean; stderr: boolean }) => {
+  const descriptors = {
+    stdin: Object.getOwnPropertyDescriptor(process.stdin, 'isTTY'),
+    stdout: Object.getOwnPropertyDescriptor(process.stdout, 'isTTY'),
+    stderr: Object.getOwnPropertyDescriptor(process.stderr, 'isTTY'),
+  };
+  Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: state.stdin });
+  Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: state.stdout });
+  Object.defineProperty(process.stderr, 'isTTY', { configurable: true, value: state.stderr });
+  return () => {
+    if (descriptors.stdin) Object.defineProperty(process.stdin, 'isTTY', descriptors.stdin);
+    else delete (process.stdin as { isTTY?: boolean }).isTTY;
+    if (descriptors.stdout) Object.defineProperty(process.stdout, 'isTTY', descriptors.stdout);
+    else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    if (descriptors.stderr) Object.defineProperty(process.stderr, 'isTTY', descriptors.stderr);
+    else delete (process.stderr as { isTTY?: boolean }).isTTY;
+  };
 };
 
 describe('CLI: composio onboard', () => {
   afterEach(() => {
-    for (const home of temporaryHomes.splice(0)) {
-      rmSync(home, { recursive: true, force: true });
-    }
-  });
-
-  it('detects every supported agent marker', () => {
-    const home = makeTemporaryHome();
-    for (const marker of ['.claude', '.codex', '.cursor', '.dust', '.openclaw']) {
-      mkdirSync(path.join(home, marker));
-    }
-
-    expect(detectOnboardingTargets(home).map(target => target.id)).toEqual([
-      'claude',
-      'codex',
-      'cursor',
-      'dust',
-      'openclaw',
-    ]);
-  });
-
-  it('parses and deduplicates requested targets', () => {
-    expect(parseTargetList('cursor, claude, cursor')).toEqual(['cursor', 'claude']);
-    expect(() => parseTargetList('cursor,zed')).toThrow(/Unsupported onboarding target: zed/);
+    vi.restoreAllMocks();
   });
 
   layer(TestLive())(it => {
-    it.scoped('prints the browser onboarding handoff in non-interactive mode', () =>
+    it.scoped('[When] detecting targets [Then] returns all detected supported agents', () =>
       Effect.gen(function* () {
-        yield* cli(['onboard', '--yes', '--no-skill-install']);
+        const os = yield* NodeOs;
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.makeDirectory(path.join(os.homedir, '.claude'), { recursive: true });
+        yield* fs.makeDirectory(path.join(os.homedir, '.codex'), { recursive: true });
+        yield* fs.makeDirectory(path.join(os.homedir, '.cursor'), { recursive: true });
+        yield* fs.makeDirectory(path.join(os.homedir, '.dust'), { recursive: true });
+        yield* fs.makeDirectory(path.join(os.homedir, '.openclaw'), { recursive: true });
 
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toContain('Logging you in...');
-        expect(output).toContain(
-          'https://dashboard.composio.dev/?cliKey=te00st11-d0c4-4efa-8117-c638886063e0&onboarding=1&email=1'
-        );
-        expect(output).toContain(
-          'Email connection and consent are completed in the browser onboarding flow.'
-        );
-        expect(output).toContain('composio link <toolkit>');
+        const detected = yield* detectOnboardingTargets;
+        expect(detected.map(target => target.id)).toEqual([
+          'claude',
+          'codex',
+          'cursor',
+          'dust',
+          'openclaw',
+        ]);
       })
     );
+  });
 
-    it.scoped('shows onboard options in command help', () =>
+  layer(TestLive())(it => {
+    it.scoped('[When] targets are filtered [Then] only detected requested targets remain', () =>
       Effect.gen(function* () {
-        yield* cli(['onboard', '--help']);
-        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
-        expect(output).toContain('--targets');
-        expect(output).toContain('--no-skill-install');
-        expect(output).toContain('--yes');
+        const os = yield* NodeOs;
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.makeDirectory(path.join(os.homedir, '.claude'), { recursive: true });
+        yield* fs.makeDirectory(path.join(os.homedir, '.cursor'), { recursive: true });
+
+        const detected = yield* detectOnboardingTargets;
+        expect(parseTargetList('cursor,codex', detected).map(target => target.id)).toEqual([
+          'cursor',
+        ]);
       })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped(
+      '[When] non-interactive and skill install is skipped [Then] prints login handoff',
+      () =>
+        Effect.gen(function* () {
+          const restoreTty = setTtyState({ stdin: false, stdout: true, stderr: true });
+          try {
+            yield* cli(['onboard', '--yes', '--no-skill-install']);
+          } finally {
+            restoreTty();
+          }
+
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('-- composio onboard --');
+          expect(output).toContain('Logging you in..');
+          expect(output).toContain('Open this URL in your browser to log in:');
+          expect(output).toContain(
+            'https://dashboard.composio.dev/?cliKey=te00st11-d0c4-4efa-8117-c638886063e0'
+          );
+          expect(output).toContain(
+            'Email connection and scan consent are completed in the browser onboarding.'
+          );
+        })
     );
   });
 });

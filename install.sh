@@ -394,18 +394,18 @@ rm -f "$install_err"
 if [[ $install_agent = true ]]; then
     echo
     info "Setting up Composio agent login..."
-    if ! "$exe" login --agent; then
+    if ! "$exe" login --agent --no-skill-install; then
         error 'Failed to sign up/log in as a Composio agent. If this CLI is already signed in as a regular user, run `composio logout` and then `composio signup` or `composio agent login <composio_agent_key>`.'
     fi
-elif [[ -t 1 && -t 2 && -r /dev/tty ]]; then
+elif [[ -t 0 && -t 1 && -t 2 ]]; then
     echo
     info "Starting Composio onboarding..."
-    if ! "$exe" onboard </dev/tty; then
-        warn 'Onboarding did not finish. Run `composio onboard` to continue.'
+    if ! "$exe" onboard; then
+        warn 'Onboarding did not complete. Run `composio onboard` to try again.'
     fi
 else
     echo
-    info "Run onboarding from an interactive terminal:"
+    info "To finish setup, run:"
     info_bold "  composio onboard"
 fi
 
