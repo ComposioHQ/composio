@@ -5,8 +5,6 @@ If this appears while connecting QuickBooks and the auth config includes the `co
 
 That scope requires payment-module access in QuickBooks. If you do not need payment tools, remove `com.intuit.quickbooks.payment` from the auth config and reconnect. If you do need payment tools, enable QuickBooks Payments for that company/account, then start a fresh connection.
 
----
-
 ## Why can Claude block QuickBooks in consumer MCP sessions?
 
 

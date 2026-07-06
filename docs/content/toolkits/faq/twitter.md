@@ -19,7 +19,6 @@ Twitter enforces plan-based access tiers. Check your project's product and plan 
 
 Your developer account or project may not have the required access level for the endpoint. Check your enrollment and access tier in the Twitter Developer Portal.
 
----
 
 ## What length limits apply to Twitter/X posts?
 

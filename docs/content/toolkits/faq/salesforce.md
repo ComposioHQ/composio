@@ -38,7 +38,6 @@ You need your subdomain (e.g., `your-company.my`) and instance endpoint `/servic
 
 Deprecated tools continue to work until removed. Check tool descriptions for "DEPRECATED:" markers.
 
----
 
 ## Why can't I find items I created in Salesforce?
 

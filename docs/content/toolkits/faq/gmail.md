@@ -51,7 +51,6 @@ result = composio.tools.execute(
 
 This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
 
----
 
 ## Why can Gmail filter setup show an app-blocked error?
 

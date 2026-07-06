@@ -53,7 +53,6 @@ For the Slack toolkit, set `as_user=True` to post as the authenticated user. For
 
 See [Triggers](/docs/triggers).
 
----
 
 ## Slack Marketplace warnings during OAuth
 

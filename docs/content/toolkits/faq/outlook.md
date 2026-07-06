@@ -14,7 +14,6 @@ Microsoft Graph's send endpoint returns an HTTP 202 with no message details. To 
 
 The `@odata.context` URL provides metadata about the response (entity set, service version, and schema info) to help clients interpret the payload structure. It's primarily used for pagination and data parsing, not as a direct URL to the resource itself.
 
----
 
 ## Why do Outlook connections show "Needs Admin Approval" or "admin approval required"?
 

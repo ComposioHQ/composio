@@ -1,3 +1,3 @@
-## Where is the DocuSign auth guide?
+## How do I create my own DocuSign OAuth app?
 
-Use the DocuSign auth guide at https://composio.dev/auth/docusign when users need Composio DocuSign authentication setup steps.
+Create and configure your own DocuSign OAuth app when you want to use your own DocuSign credentials with Composio. For the setup steps, see [How to create OAuth credentials for DocuSign](https://composio.dev/auth/docusign).

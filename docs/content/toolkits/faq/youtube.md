@@ -7,5 +7,3 @@ For a step-by-step guide on creating and configuring your own Google OAuth crede
 YouTube enforces strict API quotas. If you use the managed/default OAuth app, that quota can be shared across users, so production workloads can hit provider quota limits faster than expected.
 
 For production, create your own Google Cloud OAuth app and use those credentials in the YouTube auth config. That gives your project its own YouTube API quota and lets you control scopes, branding, and quota increase requests in Google Cloud.
-
----

@@ -8,7 +8,6 @@ Pipedrive usually shows "App not found" when the OAuth app used for the connecti
 
 If you are using managed Pipedrive OAuth, this means the managed OAuth app is still under Pipedrive review/verification. If you are using your own Pipedrive OAuth app, check the app's approval/verification status in Pipedrive and make sure the user is authorizing the same app configured in the auth config. After the app is approved or corrected, start a fresh connection.
 
----
 
 ## How should I connect with my own Pipedrive OAuth app?
 

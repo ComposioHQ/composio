@@ -19,5 +19,3 @@ Sending a WhatsApp template message requires a template to already exist in What
 ## Why is my WhatsApp connection failing with "Missing required fields"?
 
 Ensure all required fields are provided when initiating the connection. See the [WhatsApp authentication details](https://docs.composio.dev/toolkits/whatsapp#authentication-details).
-
----
