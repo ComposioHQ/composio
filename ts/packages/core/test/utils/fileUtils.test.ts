@@ -431,6 +431,21 @@ describe('fileUtils', () => {
       ).rejects.toThrow(ComposioSensitiveFilePathBlockedError);
     });
 
+    it('treats a local path that merely starts with "http" as a path, not a URL', async () => {
+      // Regression test: a naive `.startsWith('http')` check would misclassify
+      // this as a URL and skip the local-path denylist entirely.
+      await expect(
+        getFileDataAfterUploadingToS3(path.join('http_export', '.aws', 'creds'), {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        })
+      ).rejects.toThrow(ComposioSensitiveFilePathBlockedError);
+
+      // It must not have been routed through the URL-fetch branch.
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it('should handle fetch errors for URLs', async () => {
       mockFetch.mockResolvedValue({
         ok: false,
