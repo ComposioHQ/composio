@@ -16,8 +16,8 @@
   },
   "servers": [
     {
-      "url": "http://staging-apollo.composio.dev",
-      "description": "STAGING API"
+      "url": "https://backend.composio.dev",
+      "description": "PRODUCTION API"
     }
   ],
   "tags": [
