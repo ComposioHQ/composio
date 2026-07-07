@@ -219,11 +219,15 @@ The bot posts the result back as a draft the member can confirm or edit:
 
 ## The whole project
 
-<RepoBrowser source="standup" caption={null} />
+The complete, deployable bot lives in its own repo, ready to clone and ship:
+
+<Cards>
+  <Card title="ComposioHQ/standup-slackbot" href="https://github.com/ComposioHQ/standup-slackbot" description="The full daily standup bot: the Vercel cron and interactivity handler, the tool-router draft agent, and the one-time setup script. Clone it, copy standup.config.example.ts to standup.config.ts, and deploy." />
+</Cards>
 
 ## Run it
 
-Edit `standup.config.ts` with your team (each member's Slack email and timezone, plus your channel and GitHub org), set your four environment variables, run `npx tsx scripts/setup.ts` once to connect your bot, then `vercel deploy`.
+Copy `standup.config.example.ts` to `standup.config.ts` and fill in your team (each member's Slack email and timezone, plus your channel and GitHub org), set your four environment variables, run `npx tsx scripts/setup.ts` once to connect your bot, then `vercel deploy`.
 <Cards>
   <Card title="Configuring sessions" href="/docs/configuring-sessions" description="What a session can scope: toolkits, tools, connections, and connection management" />
   <Card title="White-labeling authentication" href="/docs/white-labeling-authentication" description="Ship a bot under your own app's name, icon, and credentials" />

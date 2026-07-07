@@ -2,7 +2,6 @@ import { preloadFile } from '@pierre/diffs/ssr';
 import { RepoBrowserClient, type RepoFile } from './repo-browser-client';
 import slackBot from '@/lib/slack-bot-source.json';
 import localWorkbench from '@/lib/local-workbench-source.json';
-import standup from '@/lib/standup-bot-source.json';
 
 interface SourceFile {
   path: string;
@@ -15,7 +14,6 @@ interface SourceFile {
 const SOURCES = {
   'slack-bot': slackBot,
   'local-workbench': localWorkbench,
-  standup,
 } as const;
 
 /**
