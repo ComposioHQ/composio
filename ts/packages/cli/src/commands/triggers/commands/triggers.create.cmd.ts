@@ -20,13 +20,20 @@ const triggerConfig = Options.text('trigger-config').pipe(
   Options.optional
 );
 
+const ifMissing = Options.boolean('if-missing').pipe(
+  Options.withDefault(false),
+  Options.withDescription(
+    'Skip creation when an active instance of this trigger type already exists (idempotent setup)'
+  )
+);
+
 /**
  * Create a trigger instance.
  */
 export const triggersCmd$Create = Command.make(
   'create',
-  { triggerName, connectedAccountId, triggerConfig },
-  ({ triggerName, connectedAccountId, triggerConfig }) =>
+  { triggerName, connectedAccountId, triggerConfig, ifMissing },
+  ({ triggerName, connectedAccountId, triggerConfig, ifMissing }) =>
     Effect.gen(function* () {
       if (!(yield* requireAuth)) return;
 
@@ -57,6 +64,39 @@ export const triggersCmd$Create = Command.make(
           yield* ui.log.step(
             'Example:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
           );
+          return;
+        }
+      }
+
+      if (ifMissing) {
+        // Re-runnable setup scripts must not mint duplicate instances —
+        // duplicates mean duplicate webhook deliveries.
+        const existing = yield* repo
+          .listActiveTriggers({
+            trigger_names: [triggerName.value],
+            show_disabled: false,
+            limit: 1,
+          })
+          .pipe(
+            Effect.asSome,
+            Effect.catchTag(
+              'services/HttpServerError',
+              handleHttpServerError(ui, {
+                fallbackMessage: 'Failed to check for existing trigger instances.',
+                hint: 'Retry without --if-missing, or list instances with:\n> composio dev triggers status',
+                fallbackValue: Option.none(),
+              })
+            )
+          );
+        if (Option.isNone(existing)) {
+          return;
+        }
+        const existingItems = existing.value.items ?? [];
+        if (existingItems.length > 0) {
+          yield* ui.log.success(
+            `Trigger "${triggerName.value}" already active - skipping (--if-missing)`
+          );
+          yield* ui.output(JSON.stringify(existingItems[0], null, 2));
           return;
         }
       }

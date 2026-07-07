@@ -6,6 +6,8 @@ import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
 import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
+import { docsCmd } from './docs.cmd';
+import { statusCmd } from './status.cmd';
 import { loginCmd } from './login.cmd';
 import { onboardCmd } from './onboard.cmd';
 import { signupCmd } from './signup.cmd';
@@ -68,6 +70,8 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(versionCmd),
   tagged(upgradeCmd),
   tagged(whoamiCmd),
+  tagged(statusCmd),
+  tagged(docsCmd),
   tagged(loginCmd),
   tagged(onboardCmd),
   tagged(signupCmd),
@@ -171,7 +175,19 @@ const findNestedSubcommandMismatch = (
     }
 
     if (path.length === 1) {
-      return undefined;
+      // Hidden argv-matched utilities (`composio debug ...`, see isDebug*
+      // matchers below) bypass the visible command tree — let them through.
+      if (token === 'debug') {
+        return undefined;
+      }
+      // Unknown root command. Newer CLIs add commands (e.g. `onboard`, `docs`),
+      // so a stale install is the most common cause — teach the fix.
+      const available = children.map(([name]) => name).sort();
+      return ValidationError.commandMismatch(
+        HelpDoc.p(
+          `Unknown command '${token}'. If it was added in a newer CLI, run \`composio upgrade\` first. Available commands: ${formatSubcommandChoices(available)}`
+        )
+      );
     }
 
     const available = children.map(([name]) => name).sort();

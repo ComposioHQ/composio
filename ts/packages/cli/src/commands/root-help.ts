@@ -152,6 +152,10 @@ const OTHER_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
     name: 'composio artifacts cwd',
     description: 'Print the cwd-scoped session artifact directory',
   }),
+  tagged({
+    name: 'composio docs <query>',
+    description: 'Search the Composio docs; --page prints a page as markdown',
+  }),
 ];
 
 const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
@@ -166,6 +170,7 @@ const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
+  tagged({ name: 'status', description: 'Setup status: version, login, agents, skills (JSON)' }),
   tagged({ name: 'orgs', description: 'Manage current organization context (list, switch)' }),
   tagged({ name: 'version', description: 'Display CLI version' }),
   tagged({ name: 'upgrade', description: 'Upgrade CLI to the latest version' }),
@@ -877,6 +882,22 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   logout: {
     usage: 'composio logout',
     description: 'Log out from the Composio CLI session.',
+  },
+  status: {
+    usage: 'composio status',
+    description:
+      'One-shot setup probe: CLI version, login state, detected agents, and installed skills as JSON on stdout.',
+  },
+  docs: {
+    usage: 'composio docs <query> | composio docs --page <path>',
+    description:
+      'Search the Composio documentation from the terminal (JSON results with .md URLs on stdout), or print a docs page as markdown with --page.',
+    options: [
+      {
+        name: '--page <path>',
+        description: 'Print a docs page as markdown, e.g. --page /docs/triggers',
+      },
+    ],
   },
   whoami: {
     usage: 'composio whoami',

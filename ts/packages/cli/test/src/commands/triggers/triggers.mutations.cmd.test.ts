@@ -151,3 +151,55 @@ describe('CLI: composio dev triggers mutations', () => {
     }
   );
 });
+
+describe('CLI: composio dev triggers create --if-missing', () => {
+  const existingItem = {
+    id: 'ti_existing',
+    trigger_name: 'GMAIL_NEW_GMAIL_MESSAGE',
+    user_id: 'user_1',
+    connected_account_id: 'con_123',
+    disabled_at: null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+
+  layer(TestLive({ ...dangerousDevConfig, triggersData: { items: [existingItem] } }))(
+    '[Given] an active instance of the trigger type already exists',
+    it => {
+      it.scoped('[Then] skips creation and prints the existing instance', () =>
+        Effect.gen(function* () {
+          yield* cli([
+            'dev',
+            'triggers',
+            'create',
+            'GMAIL_NEW_GMAIL_MESSAGE',
+            '--if-missing',
+            '--dangerously-allow',
+          ]);
+          const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+          expect(output).toContain('already active - skipping');
+          expect(output).toContain('ti_existing');
+          expect(output).not.toContain('Trigger created');
+        })
+      );
+    }
+  );
+
+  layer(TestLive(dangerousDevConfig))('[Given] no active instance exists', it => {
+    it.scoped('[Then] creates the trigger normally', () =>
+      Effect.gen(function* () {
+        yield* cli([
+          'dev',
+          'triggers',
+          'create',
+          'GMAIL_NEW_GMAIL_MESSAGE',
+          '--connected-account-id',
+          'con_123',
+          '--if-missing',
+          '--dangerously-allow',
+        ]);
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).toContain('Trigger created');
+      })
+    );
+  });
+});
