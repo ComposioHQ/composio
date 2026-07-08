@@ -17,7 +17,28 @@ Do these in order. Nothing here is hard — it's mostly shipping what's built.
 - Deploying docs makes `/onboard.md`, `/skill.md`, and `/api/docs-search`
   live. Until then the one-line prompt has nothing to fetch.
 
-## 3. Test the whole thing once, for real
+## 3. Build the login + onboarding flow on the dashboard (dashboard repo)
+
+The CLI's browser login opens `<dashboard URL>?cliKey=<session-id>` and then
+polls for up to 10 minutes until the dashboard links that session. The
+dashboard side has to carry the rest of the flow:
+
+- **Login linking:** recognize the `cliKey` param, let the user log in (or
+  reuse their existing browser session), and link the CLI session so the
+  terminal's poll completes. Some of this exists today — audit first.
+- **First-time account onboarding:** if the account hasn't onboarded yet,
+  run it right there in the browser: connect email, scan consent, and show
+  suggested connections. The CLI already assumes this — `composio onboard`
+  prints "Email connection and scan consent are completed in the browser
+  onboarding."
+- **Hand the user back:** end with a clear "you're done — return to your
+  terminal" screen so the loop closes.
+
+Plan: audit what the dashboard already does with `cliKey`, build the missing
+onboarding steps behind it, and keep the flow short — an agent is sitting in
+the terminal waiting on the poll, and it gives up after 10 minutes.
+
+## 4. Test the whole thing once, for real
 
 On a fresh machine (or after deleting `~/.composio` and `~/.agents/skills`):
 
@@ -26,7 +47,7 @@ On a fresh machine (or after deleting `~/.composio` and `~/.agents/skills`):
 2. Confirm: CLI installs → browser opens for login → skills appear in
    `~/.agents/skills/` → `composio status` shows everything true.
 
-## 4. Nice-to-haves (specced, not started)
+## 5. Nice-to-haves (specced, not started)
 
 All specced in `docs/improve-one-shotting.md` on the `improve-llm-txt` branch:
 
