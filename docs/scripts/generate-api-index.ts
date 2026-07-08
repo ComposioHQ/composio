@@ -31,6 +31,7 @@ interface OpenAPIOperation {
   tags?: string[];
   description?: string;
   operationId?: string;
+  deprecated?: boolean;
   'x-api-version'?: string;
 }
 
@@ -77,6 +78,11 @@ function getOperationsByTag(spec: OpenAPISpec): Record<string, OperationEntry[]>
 
   for (const [path, methods] of Object.entries(spec.paths)) {
     for (const [method, operation] of Object.entries(methods)) {
+      // Deprecated operations are hidden from the reference (mirrors the
+      // per-tag HIDDEN_TAGS skip below, but keyed off `operation.deprecated`).
+      // Dropping the op here removes its row from the endpoints table and,
+      // transitively, from activeTagSlugs when a tag is left with zero ops.
+      if (operation.deprecated === true) continue;
       if (operation.tags) {
         for (const tag of operation.tags) {
           if (!tagOps[tag]) tagOps[tag] = [];

@@ -37,6 +37,10 @@ const REDIRECTS = [
   { from: "/docs/sandbox", to: "/docs/sandbox/remote" },
   { from: "/docs/custom-tools-and-toolkits", to: "/docs/extending-sessions/custom-tools-and-toolkits" },
   { from: "/docs/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
+  // Deprecated OpenAPI operations redirect to their tag section index
+  // (derived from operation.deprecated in the committed specs).
+  { from: "/reference/api-reference/files/getFilesList", to: "/reference/api-reference/files" },
+  { from: "/reference/v3/api-reference/files/getFilesList", to: "/reference/v3/api-reference/files" },
 ];
 
 describe("Redirects - key patterns", () => {

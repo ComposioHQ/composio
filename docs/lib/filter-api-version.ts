@@ -7,6 +7,8 @@
  * For v3.0: lift V3 folder contents to the top, hide v3.1-only nodes.
  */
 
+import { getDeprecatedReferenceUrls } from './deprecated-ops.mjs';
+
 interface PageTreeNode {
   type: 'page' | 'folder' | 'separator';
   name?: unknown;
@@ -25,12 +27,14 @@ interface PageTreeRoot {
  * API-reference tags that we intentionally hide on our side even though the
  * upstream OpenAPI spec (from hermes) still includes them. Matched by tag slug.
  *
- * Hiding happens in two places that must stay in sync:
- *  - `scripts/generate-api-index.ts` skips generating (and deletes) their
- *    `index.mdx` overview pages.
- *  - `filterHiddenTags` (below) drops their folders/pages from the reference
- *    page tree so the fumadocs-openapi operation pages disappear from the
- *    sidebar, llms.txt walk, and search.
+ * Hiding happens in two places that must stay in sync, and now covers both
+ * hidden tags *and* individually deprecated operations:
+ *  - `scripts/generate-api-index.ts` skips generating (and deletes) hidden
+ *    tags' `index.mdx` overview pages, and skips deprecated ops' table rows.
+ *  - `filterHiddenTags` (below) drops hidden tags' folders/pages *and*
+ *    deprecated operation pages from the reference page tree so the
+ *    fumadocs-openapi operation pages disappear from the sidebar, llms.txt
+ *    walk, and search.
  */
 export const HIDDEN_API_TAGS: ReadonlySet<string> = new Set([
   'consumer',
@@ -53,10 +57,20 @@ function isHiddenTagUrl(url: string): boolean {
   return false;
 }
 
+/**
+ * True if a URL should be hidden from the reference — either it belongs to a
+ * hidden tag or it is a `deprecated: true` operation URL (derived from the
+ * committed specs via `lib/deprecated-ops.mjs`). Kept in sync with the flat
+ * page-list filter `isHiddenReferenceUrl` in `lib/source.ts`.
+ */
+function isHiddenTagUrlOrDeprecated(url: string): boolean {
+  return isHiddenTagUrl(url) || getDeprecatedReferenceUrls().has(url);
+}
+
 /** True if a node (page or folder) belongs entirely to a hidden tag. */
 function isHiddenTagNode(node: PageTreeNode): boolean {
   if (node.type === 'page' && typeof node.url === 'string') {
-    return isHiddenTagUrl(node.url);
+    return isHiddenTagUrlOrDeprecated(node.url);
   }
   if (node.type === 'folder') {
     if (node.index && isHiddenTagNode(node.index)) return true;

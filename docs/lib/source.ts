@@ -5,15 +5,22 @@ import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
+import { getDeprecatedReferenceUrls } from './deprecated-ops.mjs';
 
 /**
- * True if a reference URL belongs to an intentionally-hidden API tag
- * (consumer, invite-codes) in either v3.1 or v3.0. These tags exist in the
- * upstream OpenAPI spec but are hidden on our side. The page tree is filtered
- * via `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
+ * True if a reference URL should be hidden from the flat page list — either it
+ * belongs to an intentionally-hidden API tag (consumer, invite-codes) or it is
+ * a `deprecated: true` operation URL (derived from the committed specs via
+ * `lib/deprecated-ops.mjs`), in either v3.1 or v3.0. Hidden tags exist in the
+ * upstream OpenAPI spec but are hidden on our side; deprecated ops are retained
+ * in the spec but hidden per-operation. The page tree is filtered via
+ * `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
  * `getPages()` list (consumed by validate-links, llms.mdx, sitemap) in sync.
  */
 function isHiddenReferenceUrl(url: string): boolean {
+  if (getDeprecatedReferenceUrls().has(url)) {
+    return true;
+  }
   for (const tag of HIDDEN_API_TAGS) {
     if (
       url.startsWith(`/reference/api-reference/${tag}/`) ||
@@ -85,10 +92,11 @@ export async function getReferenceSource() {
       },
     });
 
-    // Exclude intentionally-hidden API tags (consumer, invite-codes) from the
-    // flat page list so validate-links, llms.mdx, llms.txt, and sitemap skip
-    // their fumadocs-openapi operation pages. The sidebar tree is filtered
-    // separately via prepareTree (lib/filter-api-version.ts).
+    // Exclude intentionally-hidden API tags (consumer, invite-codes) and
+    // deprecated operations from the flat page list so validate-links,
+    // llms.mdx, llms.txt, and sitemap skip their fumadocs-openapi operation
+    // pages. The sidebar tree is filtered separately via prepareTree
+    // (lib/filter-api-version.ts).
     const originalGetPages = loaded.getPages.bind(loaded);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (loaded as any).getPages = (...args: Parameters<typeof originalGetPages>) =>

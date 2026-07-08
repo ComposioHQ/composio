@@ -2,6 +2,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createMDX } from 'fumadocs-mdx/next';
 import { withEve } from 'eve/next';
+import { getDeprecatedReferenceRedirects } from './lib/deprecated-ops.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const withMDX = createMDX();
@@ -407,6 +408,11 @@ const config = {
         destination: '/docs/providers/custom-providers/python',
         permanent: true,
       },
+      // Deprecated OpenAPI operations are hidden from the reference; their old
+      // deep links 308-redirect to the operation's tag section index (derived
+      // from `operation.deprecated === true` in the committed specs, so future
+      // deprecations redirect with no code change). See lib/deprecated-ops.mjs.
+      ...getDeprecatedReferenceRedirects(),
       // API reference redirects
       {
         source: '/api-reference',
