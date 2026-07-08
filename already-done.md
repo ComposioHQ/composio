@@ -32,13 +32,36 @@ Everything below is written, tested, and pushed. Nothing is released yet.
 
 ## Docs website (branch: `improve-llm-txt`)
 
+This branch is all about **documentation discovery** — making sure an agent
+can find the right Composio doc without a human pasting it in:
+
 - `/onboard.md` — the setup playbook the one-line prompt points at.
-- `/skill.md` — the docs skill. It explains how to install itself.
-- `/api/docs-search?q=...` — search endpoint any agent can call.
-- `llms.txt` rewritten: every link now has a title and description; there are
-  smaller full-text files so agents don't have to load one giant 170k-token
-  file.
-- Every docs page's `.md` version now ends with links to related pages.
+- `/skill.md` — the docs skill. Installed once per repo (or automatically by
+  `composio onboard`), it teaches an agent everything below. It explains how
+  to install itself, so "install the skill from this URL" is a full
+  instruction.
+- `/api/docs-search?q=...` — public search over every docs page and all
+  1000+ toolkits. Returns title, description, snippet, and the `.md` URL for
+  each hit, so an agent goes from question to the right page in one call.
+  Also usable from the terminal via `composio docs` (CLI branch).
+- `llms.txt` rewritten: every link now has a title and description (an agent
+  can pick the right page instead of guessing from URLs); the legacy v3 API
+  reference moved into an "Optional" section; and it advertises the search
+  endpoint, the `/toolkits/{slug}.md` pattern, the skill, and the playbook.
+- Smaller full-text files with token counts — `/llms-docs.txt` (~90k),
+  `/llms-examples.txt` (~10k), `/llms-reference.txt` (~65k) — so agents don't
+  have to swallow the one giant 170k-token `/llms-full.txt`.
+- Every docs page's `.md` version now ends with links to related pages and
+  the next/previous page, so an agent can keep navigating without going back
+  to the index.
+- Every HTML docs page sends a header advertising its markdown twin, so an
+  agent that fetches a normal link a human pasted discovers the clean `.md`
+  version. (Appending `.md` to any docs URL, or sending
+  `Accept: text/markdown`, already worked.)
+- `docs/improve-one-shotting.md` — the spec for the follow-up work (MCP
+  server, SDK error links, CLI skill-install channel).
+
+Verified: link checker 0 errors, typecheck clean, every endpoint fetched live.
 
 ## Docs content + design (branches: `dv-example-docs`, `prettier-docs-v2`)
 
