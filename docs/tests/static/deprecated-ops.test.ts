@@ -23,6 +23,7 @@ import {
   getDeprecatedReferenceRedirects,
 } from "../../lib/deprecated-ops.mjs";
 import { prepareTree } from "../../lib/filter-api-version";
+import { isHiddenReferenceUrl } from "../../lib/source";
 
 const DOCS_ROOT = join(import.meta.dir, "../..");
 const REFERENCE_DIR = join(DOCS_ROOT, "content/reference");
@@ -155,6 +156,81 @@ describe("Deprecated ops — hidden URLs + tree filter (U2, R1/R4/R5)", () => {
     expect(deprecatedUrlsFromSpec(spec, "api-reference")).toEqual([]);
   });
 
+  test("multi-tag deprecated op is hidden under every tag it carries", () => {
+    // groupBy:'tag' renders one page per tag, so both tag URLs must be hidden.
+    const spec = {
+      paths: {
+        "/x": {
+          get: { deprecated: true, operationId: "getX", tags: ["Alpha", "Beta"] },
+          post: { operationId: "postX", tags: ["Beta"] },
+        },
+      },
+    };
+    expect(deprecatedUrlsFromSpec(spec, "api-reference")).toEqual([
+      "/reference/api-reference/alpha/getX",
+      "/reference/api-reference/beta/getX",
+    ]);
+  });
+
+  test("all-deprecated folder (index + every child deprecated) is dropped, sibling survives (v3.1)", () => {
+    const tree = {
+      children: [
+        {
+          type: "folder",
+          name: "files",
+          index: { type: "page", name: "i", url: "/reference/api-reference/files/getFilesList" },
+          children: [
+            { type: "page", name: "g", url: "/reference/api-reference/files/getFilesList" },
+          ],
+        },
+        {
+          type: "folder",
+          name: "projects",
+          children: [
+            { type: "page", name: "p", url: "/reference/api-reference/projects/getProjects" },
+          ],
+        },
+      ],
+    };
+    const result = prepareTree(tree as never, "3.1") as { children: Array<{ name?: string }> };
+    const urls = collectUrls(result);
+    expect(urls).not.toContain("/reference/api-reference/files/getFilesList");
+    expect(urls).toContain("/reference/api-reference/projects/getProjects");
+    // The whole folder is removed, not left as a dead empty sidebar entry.
+    expect(result.children.some((n) => n.name === "files")).toBe(false);
+  });
+
+  test("all-deprecated folder is dropped, sibling survives (v3.0)", () => {
+    const tree = {
+      children: [
+        {
+          type: "folder",
+          name: "v3",
+          children: [
+            {
+              type: "folder",
+              name: "files",
+              index: { type: "page", name: "i", url: "/reference/v3/api-reference/files/getFilesList" },
+              children: [
+                { type: "page", name: "g", url: "/reference/v3/api-reference/files/getFilesList" },
+              ],
+            },
+            {
+              type: "folder",
+              name: "projects",
+              children: [
+                { type: "page", name: "p", url: "/reference/v3/api-reference/projects/getProjects" },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const urls = collectUrls(prepareTree(tree as never, "3.0"));
+    expect(urls).not.toContain("/reference/v3/api-reference/files/getFilesList");
+    expect(urls).toContain("/reference/v3/api-reference/projects/getProjects");
+  });
+
   test("edge: tree with no deprecated nodes is left intact", () => {
     const tree = {
       children: [
@@ -201,6 +277,32 @@ describe("Deprecated ops — redirects (U3, R3/R4/R5)", () => {
     expect(deprecatedRedirectsFromSpec(spec, "api-reference")).toEqual([
       { source: "/reference/api-reference/ghost/getX", destination: "/reference", permanent: true },
     ]);
+  });
+
+  test("multi-tag deprecated op redirects per tag, respecting the per-tag survivor check", () => {
+    const spec = {
+      paths: {
+        "/x": {
+          get: { deprecated: true, operationId: "getX", tags: ["Alpha", "Beta"] },
+          post: { operationId: "postX", tags: ["Beta"] },
+        },
+      },
+    };
+    // Beta keeps a surviving op (postX) -> tag index; Alpha is all-deprecated -> /reference.
+    expect(deprecatedRedirectsFromSpec(spec, "api-reference")).toEqual([
+      { source: "/reference/api-reference/alpha/getX", destination: "/reference", permanent: true },
+      { source: "/reference/api-reference/beta/getX", destination: "/reference/api-reference/beta", permanent: true },
+    ]);
+  });
+});
+
+describe("Deprecated ops — flat page-list filter (U2, source.ts)", () => {
+  test("isHiddenReferenceUrl hides deprecated URLs (both versions) and hidden tags, not normal ops", () => {
+    expect(isHiddenReferenceUrl("/reference/api-reference/files/getFilesList")).toBe(true);
+    expect(isHiddenReferenceUrl("/reference/v3/api-reference/files/getFilesList")).toBe(true);
+    expect(isHiddenReferenceUrl("/reference/api-reference/files/postFilesUploadRequest")).toBe(false);
+    // Pre-existing hidden-tag behavior is preserved alongside the new deprecated check.
+    expect(isHiddenReferenceUrl("/reference/api-reference/consumer/getConsumer")).toBe(true);
   });
 });
 

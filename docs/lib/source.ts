@@ -17,7 +17,7 @@ import { getDeprecatedReferenceUrls } from './deprecated-ops.mjs';
  * `prepareTree` (lib/filter-api-version.ts); this mirror keeps the flat
  * `getPages()` list (consumed by validate-links, llms.mdx, sitemap) in sync.
  */
-function isHiddenReferenceUrl(url: string): boolean {
+export function isHiddenReferenceUrl(url: string): boolean {
   if (getDeprecatedReferenceUrls().has(url)) {
     return true;
   }

@@ -67,7 +67,10 @@ function isHiddenTagUrlOrDeprecated(url: string): boolean {
   return isHiddenTagUrl(url) || getDeprecatedReferenceUrls().has(url);
 }
 
-/** True if a node (page or folder) belongs entirely to a hidden tag. */
+/**
+ * True if a node (page or folder) is hidden — a page belonging to a hidden tag
+ * or a deprecated operation, or a folder whose index/every child is hidden.
+ */
 function isHiddenTagNode(node: PageTreeNode): boolean {
   if (node.type === 'page' && typeof node.url === 'string') {
     return isHiddenTagUrlOrDeprecated(node.url);
@@ -81,7 +84,10 @@ function isHiddenTagNode(node: PageTreeNode): boolean {
   return false;
 }
 
-/** Recursively drops folders/pages whose tag slug is in HIDDEN_API_TAGS. */
+/**
+ * Recursively drops hidden nodes: pages whose tag slug is in HIDDEN_API_TAGS,
+ * deprecated operation pages, and folders that contain only such pages.
+ */
 function filterHiddenTags(nodes: PageTreeNode[]): PageTreeNode[] {
   return nodes
     .filter((node) => !isHiddenTagNode(node))

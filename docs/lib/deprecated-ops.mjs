@@ -92,7 +92,11 @@ function tagsWithSurvivingOps(spec) {
 }
 
 /**
- * Reference URLs for every deprecated operation in a single spec.
+ * Reference URLs for every deprecated operation in a single spec. Because
+ * fumadocs-openapi is configured with `groupBy: 'tag'`, an operation renders one
+ * page per tag it carries, so a URL is derived for *each* of the op's tags
+ * (mirroring `scripts/generate-api-index.ts`, which drops the op from every
+ * tag's table) — not just `tags[0]`.
  * @param {OpenAPISpec} spec
  * @param {string} baseDir e.g. `api-reference` (v3.1) or `v3/api-reference` (v3.0)
  * @returns {string[]}
@@ -102,19 +106,21 @@ export function deprecatedUrlsFromSpec(spec, baseDir) {
   const urls = [];
   for (const operation of operations(spec)) {
     if (operation.deprecated !== true) continue;
-    const tag = operation.tags?.[0];
     const operationId = operation.operationId;
-    if (!tag || !operationId) continue;
-    urls.push(`/reference/${baseDir}/${slugify(tag)}/${operationId}`);
+    if (!operationId) continue;
+    for (const tag of operation.tags ?? []) {
+      urls.push(`/reference/${baseDir}/${slugify(tag)}/${operationId}`);
+    }
   }
   return urls;
 }
 
 /**
- * Redirect entries for every deprecated operation in a single spec. Each
- * deprecated op URL 308-redirects to its tag section index; if that tag has no
- * surviving non-deprecated op (its index page was removed), it falls back to
- * `/reference` (KTD-2).
+ * Redirect entries for every deprecated operation in a single spec. Because
+ * `groupBy: 'tag'` renders one page per tag, a redirect is emitted for each of
+ * the op's tags. Each deprecated op URL 308-redirects to that tag's section
+ * index; if the tag has no surviving non-deprecated op (its index page was
+ * removed), it falls back to `/reference`.
  * @param {OpenAPISpec} spec
  * @param {string} baseDir
  * @returns {RedirectEntry[]}
@@ -126,17 +132,18 @@ export function deprecatedRedirectsFromSpec(spec, baseDir) {
   const seen = new Set();
   for (const operation of operations(spec)) {
     if (operation.deprecated !== true) continue;
-    const tag = operation.tags?.[0];
     const operationId = operation.operationId;
-    if (!tag || !operationId) continue;
-    const tagSlug = slugify(tag);
-    const source = `/reference/${baseDir}/${tagSlug}/${operationId}`;
-    if (seen.has(source)) continue;
-    seen.add(source);
-    const destination = surviving.has(tagSlug)
-      ? `/reference/${baseDir}/${tagSlug}`
-      : '/reference';
-    redirects.push({ source, destination, permanent: true });
+    if (!operationId) continue;
+    for (const tag of operation.tags ?? []) {
+      const tagSlug = slugify(tag);
+      const source = `/reference/${baseDir}/${tagSlug}/${operationId}`;
+      if (seen.has(source)) continue;
+      seen.add(source);
+      const destination = surviving.has(tagSlug)
+        ? `/reference/${baseDir}/${tagSlug}`
+        : '/reference';
+      redirects.push({ source, destination, permanent: true });
+    }
   }
   return redirects;
 }
