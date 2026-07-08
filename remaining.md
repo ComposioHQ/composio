@@ -41,13 +41,9 @@ All specced in `docs/improve-one-shotting.md` on the `improve-llm-txt` branch:
 
 ## Things to know (so you don't trip)
 
-- Work happens in the worktree `~/.codex/worktrees/c1d8/composio`, which
-  switches branches often — check `git branch --show-current` before editing.
 - Never use `bun patch` on the `eve` package in docs — it corrupts it. The
   existing postinstall script (`docs/scripts/patch-eve-snapshot-skip.ts`)
   handles the one needed patch.
 - The `security/snyk` CI failure on #3732 is an org quota limit, not a code
   problem.
-- `revise-onboarding-plan.md` at the repo root is old scratch planning —
-  superseded by these two files; safe to delete.
 - Everything is pushed; there are no local-only commits or stashes anywhere.
