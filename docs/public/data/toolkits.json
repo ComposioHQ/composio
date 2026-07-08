@@ -374,7 +374,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -5136,7 +5136,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -5483,7 +5483,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -5834,7 +5834,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -6269,7 +6269,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -7219,7 +7219,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -7948,7 +7948,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -9609,7 +9609,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -10215,7 +10215,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -10767,7 +10767,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -11099,7 +11099,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -12405,7 +12405,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -12799,7 +12799,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -13053,7 +13053,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -14011,7 +14011,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -14715,7 +14715,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -15332,7 +15332,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -18325,7 +18325,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -18975,7 +18975,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -19157,7 +19157,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -19369,7 +19369,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -19712,7 +19712,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -20066,7 +20066,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -21019,7 +21019,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -21848,7 +21848,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -23103,7 +23103,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -23254,7 +23254,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -25096,7 +25096,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -26009,7 +26009,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -28276,7 +28276,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -28535,7 +28535,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -28717,7 +28717,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -29271,7 +29271,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -31083,7 +31083,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -31990,7 +31990,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -33178,7 +33178,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -33592,7 +33592,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -40317,7 +40317,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -40512,7 +40512,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -42798,7 +42798,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -44013,7 +44013,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -45637,7 +45637,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -46255,7 +46255,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -46396,7 +46396,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -46809,7 +46809,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -47946,7 +47946,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -49214,7 +49214,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -53347,7 +53347,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -54299,7 +54299,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -58481,7 +58481,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -58798,7 +58798,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -59196,7 +59196,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -59382,7 +59382,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -61737,7 +61737,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -61882,7 +61882,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -62290,7 +62290,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -64927,7 +64927,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -66655,7 +66655,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -68052,7 +68052,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -68324,7 +68324,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -70243,7 +70243,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -70463,7 +70463,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -71544,7 +71544,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -72101,7 +72101,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -75307,7 +75307,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -75514,7 +75514,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -75579,7 +75579,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -76444,7 +76444,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -77132,7 +77132,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -77309,7 +77309,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -78740,7 +78740,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -79105,7 +79105,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -79444,7 +79444,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -79805,7 +79805,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -80064,7 +80064,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -80449,7 +80449,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -81108,7 +81108,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -81393,7 +81393,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -81780,7 +81780,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -81868,7 +81868,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -82219,7 +82219,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -83828,7 +83828,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -84059,7 +84059,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -84621,7 +84621,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -84735,7 +84735,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -85182,7 +85182,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -85860,7 +85860,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -87229,7 +87229,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -88882,7 +88882,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -89302,7 +89302,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -89661,7 +89661,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -90193,7 +90193,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -90258,7 +90258,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -90485,7 +90485,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -90944,7 +90944,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -91436,7 +91436,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -91657,7 +91657,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -91731,7 +91731,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -97913,7 +97913,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -98084,7 +98084,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -99222,7 +99222,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -99520,7 +99520,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -99851,7 +99851,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -99925,7 +99925,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -100745,7 +100745,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -100958,7 +100958,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -101142,7 +101142,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -101520,7 +101520,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -101625,7 +101625,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -101771,7 +101771,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -102130,7 +102130,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -102285,7 +102285,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -102642,7 +102642,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -102816,7 +102816,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -103103,7 +103103,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -103168,7 +103168,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -103233,7 +103233,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -103493,7 +103493,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104174,7 +104174,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104325,7 +104325,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104656,7 +104656,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104792,7 +104792,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104857,7 +104857,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -104972,7 +104972,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -105078,7 +105078,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -106781,7 +106781,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -106966,7 +106966,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -107469,7 +107469,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -108240,7 +108240,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -109396,7 +109396,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -109986,7 +109986,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -110051,7 +110051,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -110143,7 +110143,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -110646,7 +110646,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -111498,7 +111498,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -112218,7 +112218,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -112534,7 +112534,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -112816,7 +112816,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -114926,7 +114926,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -116998,7 +116998,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -117073,7 +117073,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -117291,7 +117291,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -117452,7 +117452,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -118544,7 +118544,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -119275,7 +119275,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -121080,7 +121080,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -124930,7 +124930,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -125260,7 +125260,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -126276,7 +126276,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -130367,7 +130367,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -131318,7 +131318,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -132162,7 +132162,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -138847,7 +138847,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -144073,7 +144073,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -146833,7 +146833,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -148927,7 +148927,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -151115,7 +151115,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -154511,7 +154511,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -155843,7 +155843,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -157725,7 +157725,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -160187,7 +160187,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -162609,7 +162609,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -164540,7 +164540,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -169364,7 +169364,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -170416,7 +170416,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -174539,7 +174539,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -175564,7 +175564,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -176018,7 +176018,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -176887,7 +176887,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -180342,7 +180342,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -181092,7 +181092,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -181778,7 +181778,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -182400,7 +182400,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -182523,7 +182523,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -184089,7 +184089,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -186363,7 +186363,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -187861,7 +187861,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -188452,7 +188452,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -188791,7 +188791,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189167,7 +189167,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189233,7 +189233,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189322,7 +189322,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189596,7 +189596,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189716,7 +189716,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189828,7 +189828,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -189894,7 +189894,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -190143,7 +190143,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -190259,7 +190259,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -191227,7 +191227,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -191345,7 +191345,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -192191,7 +192191,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -194484,7 +194484,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -196613,7 +196613,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -198585,7 +198585,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -201188,7 +201188,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -203752,7 +203752,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -204271,7 +204271,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -204592,7 +204592,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -209367,7 +209367,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -210801,7 +210801,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -212340,7 +212340,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -213271,7 +213271,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -216562,7 +216562,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -216668,7 +216668,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -219440,7 +219440,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -219870,7 +219870,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -220516,7 +220516,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -221078,7 +221078,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -221183,7 +221183,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -224036,7 +224036,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -225346,7 +225346,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -226693,7 +226693,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -226922,7 +226922,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -231442,7 +231442,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -234125,7 +234125,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -234307,7 +234307,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -234437,7 +234437,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -234592,7 +234592,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -235432,7 +235432,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -236221,7 +236221,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -236337,7 +236337,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -240199,7 +240199,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -240444,7 +240444,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -241083,7 +241083,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -245135,7 +245135,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -246578,7 +246578,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -248012,7 +248012,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -248789,7 +248789,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -249224,7 +249224,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -249778,7 +249778,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -250231,7 +250231,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -250642,7 +250642,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -251372,7 +251372,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -256479,7 +256479,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -259531,7 +259531,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -259726,7 +259726,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -260091,7 +260091,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -261232,7 +261232,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -263158,7 +263158,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -265284,7 +265284,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -266377,7 +266377,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -270507,7 +270507,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -271021,7 +271021,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -271589,7 +271589,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -272663,7 +272663,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -272830,7 +272830,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -273732,7 +273732,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -274304,7 +274304,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -274594,7 +274594,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -277682,7 +277682,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -278068,7 +278068,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -279279,7 +279279,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -279679,7 +279679,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -281340,7 +281340,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -281499,7 +281499,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -281706,7 +281706,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -283028,7 +283028,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -285490,7 +285490,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -285668,7 +285668,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -289723,7 +289723,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -289885,7 +289885,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -291069,7 +291069,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -291463,7 +291463,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -291715,7 +291715,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -294372,7 +294372,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -295037,7 +295037,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -295611,7 +295611,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -296186,7 +296186,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",
@@ -296610,7 +296610,7 @@
                 "type": "string",
                 "description": "Add this Redirect URL to your app's OAuth allow list.",
                 "required": false,
-                "default": "https://staging-backend.composio.dev/api/v1/auth-apps/add"
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
               },
               {
                 "name": "scopes",

@@ -11,8 +11,9 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
+import { PRODUCTION_API_V3_URL, stripStagingHosts } from './production-api.mjs';
 
-const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
+const API_BASE = process.env.COMPOSIO_API_BASE || PRODUCTION_API_V3_URL;
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 if (!API_KEY) {
@@ -332,10 +333,13 @@ async function main() {
 
   console.log('\n');
 
-  // Write full file (for detail pages - read from filesystem)
+  // Write full file (for detail pages - read from filesystem).
+  // Rewrite any staging host to production: this data is fetched from staging in
+  // the docs-update workflow, and auth-config `default` URLs would otherwise
+  // publish staging endpoints. The light file below carries no URLs.
   await writeFile(
     join(OUTPUT_DIR, 'toolkits.json'),
-    JSON.stringify(toolkits, null, 2)
+    stripStagingHosts(JSON.stringify(toolkits, null, 2))
   );
 
   // Write light file (for landing page - imported in client component)

@@ -20,8 +20,9 @@ import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
+import { PRODUCTION_API_V3_URL, stripStagingHosts } from './production-api.mjs';
 
-const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
+const API_BASE = process.env.COMPOSIO_API_BASE || PRODUCTION_API_V3_URL;
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 if (!API_KEY) {
@@ -221,7 +222,7 @@ async function main() {
   metaTools.sort((a, b) => a.slug.localeCompare(b.slug));
 
   // 1. Write JSON data
-  await writeFile(join(DATA_DIR, 'meta-tools.json'), JSON.stringify(metaTools, null, 2));
+  await writeFile(join(DATA_DIR, 'meta-tools.json'), stripStagingHosts(JSON.stringify(metaTools, null, 2)));
   console.log(`\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`);
 
   // 2. Clean old generated MDX files and regenerate
