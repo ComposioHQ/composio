@@ -43,13 +43,6 @@ Everything below is written, tested, and pushed. Nothing is released yet.
   CLI can fix itself.
 - `composio whoami` already prints account info as JSON when piped.
 
-## Recovered work
-
-- Earlier onboarding work (the onboard command refactor and its tests) had
-  been stranded in a GitHub Desktop stash on a stale branch. It was safely
-  recovered into this branch, and the stale branch was deleted (local and
-  remote).
-
 ## Quality
 
 - Full test suite: 736 tests pass, including new tests for the docs skill
