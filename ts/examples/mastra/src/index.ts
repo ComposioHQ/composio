@@ -16,6 +16,7 @@ import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
 import { MastraProvider } from '@composio/mastra';
 import { Agent } from '@mastra/core/agent';
+import { stepCountIs } from 'ai';
 import 'dotenv/config';
 
 const composio = new Composio({
@@ -44,9 +45,11 @@ const agent = new Agent({
   tools,
 });
 
-const { text } = await agent.generate([
-  { role: 'user', content: 'Tell me about the HackerNews user `pg`.' },
-]);
+// Allow the agent a few steps to call the tool and then summarize the result.
+const { text } = await agent.generate(
+  [{ role: 'user', content: 'Tell me about the HackerNews user `pg`.' }],
+  { stopWhen: stepCountIs(10) }
+);
 
 // This example doubles as a test: a healthy run returns non-empty text.
 if (!text || text.trim().length === 0) {

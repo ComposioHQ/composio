@@ -19,6 +19,7 @@ import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
 import { MastraProvider } from '@composio/mastra';
 import { Agent } from '@mastra/core/agent';
+import { stepCountIs } from 'ai';
 import 'dotenv/config';
 
 const composio = new Composio({
@@ -43,9 +44,14 @@ const agent = new Agent({
   tools,
 });
 
-const { text } = await agent.generate([
-  { role: 'user', content: 'What are the current top 3 HackerNews stories? Give me their titles.' },
-]);
+// Tool Router is a multi-step flow: the agent calls the router's search +
+// multi-execute meta-tools, then summarizes. Without a step budget the run
+// stops after the first tool call and returns empty text, so allow several
+// steps (matches the Mastra tool-router e2e reference).
+const { text } = await agent.generate(
+  [{ role: 'user', content: 'What are the current top 3 HackerNews stories? Give me their titles.' }],
+  { stopWhen: stepCountIs(10) }
+);
 
 // This example doubles as a test: a healthy run returns non-empty text.
 if (!text || text.trim().length === 0) {
