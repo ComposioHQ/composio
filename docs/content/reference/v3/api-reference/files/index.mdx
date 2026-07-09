@@ -18,6 +18,10 @@ This keeps large payloads out of request bodies. Tools receive a file reference 
 File uploads are a two-step flow. Call the upload-request endpoint to mint a presigned URL, then upload the file contents directly to that URL. The API never receives the raw bytes.
 </Callout>
 
+Presigned URLs expire separately from the underlying staged file. By default, signed file URLs are valid for 1 hour (`3600` seconds). You can change this URL TTL in **Project Settings > File TTL**.
+
+Files staged for tool execution are stored in temporary object storage and automatically cleaned up after 24 hours. If a presigned URL expires before the file is cleaned up, request a fresh URL or re-run the tool.
+
 If your agent works with files inside a session, prefer the session file mount, where the sandbox exposes uploaded files to running code. See the [remote sandbox](/docs/sandbox/remote) for the sandbox helpers (`upload_local_file`, `smart_file_extract`) that build on this storage.
 
 These endpoints use your project API key in the `x-api-key` header.

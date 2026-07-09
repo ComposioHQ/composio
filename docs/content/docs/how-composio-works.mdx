@@ -84,6 +84,8 @@ Handle large responses and bulk operations in the remote sandbox. Instead of stu
 
 The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task.
 
+The session record can persist without expiring, but sandbox resources have their own lifecycle. See the [remote sandbox](/docs/sandbox/remote) for sandbox and `/mnt/files/` retention details.
+
 ## How sessions behave
 
 Every `create()` call returns a new session ID. Use it for a fresh task context.

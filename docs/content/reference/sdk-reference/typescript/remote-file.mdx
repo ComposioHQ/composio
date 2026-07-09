@@ -21,6 +21,8 @@ const result = await composio.remoteFile.list();
 | `mountRelativePath` | `string` | Relative path within the mount (e.g. "report.pdf") |
 | `sandboxMountPrefix` | `string` | Absolute mount path inside the sandbox (e.g. /mnt/files) |
 
+`expiresAt` is the expiry time for the presigned download URL, not the storage cleanup time for the file. See the [remote sandbox](/docs/sandbox/remote#files-and-mounts) for mount retention details.
+
 ## Methods
 
 ### blob()
