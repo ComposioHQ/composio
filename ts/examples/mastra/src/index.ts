@@ -1,70 +1,57 @@
 /**
- * Mastra Example
+ * Mastra × Composio — direct tools
  *
- * This example demonstrates how to use Composio SDK for mastra.
+ * Fetches a Composio tool as a Mastra tool and lets a Mastra Agent call it.
+ * Uses the unauthenticated HACKERNEWS toolkit, so no connected account is
+ * required — set only the two keys below and run.
  *
  * Prerequisites:
- * 1. Set up your COMPOSIO_API_KEY in the .env file
- * 2. Set up your OPENAI_API_KEY in the .env file
- * 3. Run the example: pnpm start
+ *   - COMPOSIO_API_KEY   (https://app.composio.dev)
+ *   - OPENAI_API_KEY     (or swap the model — see README)
+ *
+ * Run:
+ *   bun ts/examples/mastra/src/index.ts
  */
-import { MastraProvider } from '@composio/mastra';
-import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
 import { Composio } from '@composio/core';
+import { MastraProvider } from '@composio/mastra';
+import { Agent } from '@mastra/core/agent';
 import 'dotenv/config';
 
-/**
- * Initialize Composio
- */
 const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new MastraProvider(),
 });
 
-/**
- * Get the tools from Composio
- * Attach beforeExecute and afterExecute hooks to the tools for logging
- */
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
-    console.log(
-      `🔄 Modifying schema for tool ${toolSlug}/${toolkitSlug} with schema ${JSON.stringify(schema)}`
-    );
-    return schema;
-  },
-  beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
-    console.log(
-      `🔄 Executing tool ${toolSlug}/${toolkitSlug} with input ${JSON.stringify(params)}`
-    );
+// Fetch a single tool from the unauthenticated HackerNews toolkit.
+// The modifiers below are optional — they show the schema/execution hooks.
+const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER_BY_USERNAME', {
+  beforeExecute: ({ toolSlug, params }) => {
+    console.log(`🔧 executing ${toolSlug} with ${JSON.stringify(params.arguments)}`);
     return params;
   },
-  afterExecute: ({ toolSlug, toolkitSlug, result }) => {
-    console.log(
-      `✅ Tool ${toolSlug}/${toolkitSlug} executed successfully with output ${JSON.stringify(result)}`
-    );
+  afterExecute: ({ toolSlug, result }) => {
+    console.log(`✅ ${toolSlug} finished`);
     return result;
   },
 });
 
-/**
- * Create the mastra agent
- */
-const hackernewsAgent = new Agent({
-  id: 'test-mastra',
-  name: 'Weather Agent',
-  instructions:
-    'You are a helpful assistant that can use the Hackernews API to get user information.',
-  model: openai('gpt-4o-mini'),
-  tools: tools,
+const agent = new Agent({
+  id: 'hackernews-agent',
+  name: 'HackerNews Agent',
+  instructions: 'You are a helpful assistant that looks up HackerNews users.',
+  model: openai('gpt-5-mini'),
+  tools,
 });
 
-/**
- * Generate a response from the agent
- */
-const { text } = await hackernewsAgent.generate([
-  { role: 'user', content: 'Tell me about the user `pg` on hackernews' },
+const { text } = await agent.generate([
+  { role: 'user', content: 'Tell me about the HackerNews user `pg`.' },
 ]);
 
-console.log('\n🤖 Agent Response:\n');
+// This example doubles as a test: a healthy run returns non-empty text.
+if (!text || text.trim().length === 0) {
+  throw new Error('Agent returned empty output — expected a non-empty response.');
+}
+
+console.log('\n🤖 Agent response:\n');
 console.log(text);

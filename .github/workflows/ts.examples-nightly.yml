@@ -1,0 +1,65 @@
+name: Examples Nightly (staging)
+
+# Executes the provider examples against the STAGING backend with real
+# credentials. Non-blocking by design: it runs on a schedule (and on demand),
+# never as a required PR check, so staging/LLM flakiness cannot gate merges.
+on:
+  schedule:
+    - cron: '0 6 * * *' # 06:00 UTC nightly
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Staging is not a secret; the API keys are.
+  COMPOSIO_BASE_URL: https://staging-backend.composio.dev
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  examples-staging:
+    name: Examples against staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK packages
+        run: pnpm run build:packages
+
+      # On the schedule the secret must be present. Without this, a rotated/renamed/
+      # empty COMPOSIO_API_KEY would make smoke self-skip (exit 0) and every LLM step
+      # no-op, leaving the whole "regression net" green while testing nothing.
+      - name: Require COMPOSIO_API_KEY on scheduled runs
+        if: ${{ github.event_name == 'schedule' && env.COMPOSIO_API_KEY == '' }}
+        run: |
+          echo "::error::COMPOSIO_API_KEY is empty on a scheduled run — smoke would no-op and mask regressions."
+          exit 1
+
+      # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.
+      # Self-skips when the secret is absent (e.g. fork-triggered dispatch).
+      - name: Mastra smoke (wrapping + tool-router)
+        run: pnpm --filter mastra-example run smoke
+
+      # Full agent run — only when an LLM key is configured.
+      - name: Mastra direct-tools example
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: bun ts/examples/mastra/src/index.ts
+
+      - name: Mastra tool-router example
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: bun ts/examples/mastra/src/tool-router.ts
