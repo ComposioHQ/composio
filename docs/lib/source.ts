@@ -5,6 +5,7 @@ import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
+import { FILE_BUILDS } from './file-builds';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -271,6 +272,35 @@ export function mdxToCleanMarkdown(content: string): string {
   result = result.replace(
     /<ConnectClientOption[^>]*\bname="([^"]*)"[^>]*>/g,
     (_, name) => `## ${name}\n`
+  );
+
+  // FileBuildup renders an example's file growing step by step. The JSX can't
+  // serialize to markdown, so the .md an agent reads would otherwise lose every
+  // line of real code. Emit the actual source from the FILE_BUILDS registry:
+  // `<FileBuildup name="bot" step={2} />` -> the full file at that step;
+  // without `step` -> the final complete file.
+  result = result.replace(
+    /<FileBuildup\s+name="([^"]+)"(?:\s+step=\{(\d+)\})?\s*\/>/g,
+    (_, name: string, step?: string) => {
+      const build = FILE_BUILDS[name];
+      if (!build || !build.stages?.length) return '';
+      const lang = /\.tsx?$/.test(build.file)
+        ? 'typescript'
+        : /\.py$/.test(build.file)
+          ? 'python'
+          : '';
+      const idx = step ? Number(step) - 1 : build.stages.length - 1;
+      const stage = build.stages[idx];
+      if (!stage) return '';
+      const label = step ? ` — step ${step}: ${stage.title}` : ' — complete file';
+      return `\n**\`${build.file}\`${label}**\n\n\`\`\`${lang}\n${stage.code.trim()}\n\`\`\`\n`;
+    }
+  );
+
+  // RepoBrowser is an interactive file tree; point agents at the real repo instead.
+  result = result.replace(
+    /<RepoBrowser\b[^>]*\/>/g,
+    '\n> The complete project is on GitHub: [composio-slack-bot](https://github.com/ComposioHQ/composio-slack-bot).\n'
   );
 
   result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
