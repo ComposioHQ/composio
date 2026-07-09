@@ -10,13 +10,16 @@
  *   cd ts/examples/mastra && bun run cf:dev     # then GET http://localhost:8787/
  * Deploy config: wrangler.jsonc
  */
-import { runHackerNewsAgent, type HackerNewsAgentEnvironment } from './hackernews-agent';
+import {
+  runToolRouterHackerNewsAgent,
+  type ToolRouterHackerNewsAgentEnvironment,
+} from './hackernews-agent/tool-router';
 
-export type Env = Required<HackerNewsAgentEnvironment>;
+export type Env = Required<ToolRouterHackerNewsAgentEnvironment>;
 
 export default {
   async fetch(_request: Request, env: Env): Promise<Response> {
-    const text = await runHackerNewsAgent(env, 'tool-router');
+    const text = await runToolRouterHackerNewsAgent(env);
 
     return new Response(text, {
       headers: { 'content-type': 'text/plain; charset=utf-8' },

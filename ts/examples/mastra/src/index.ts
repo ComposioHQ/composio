@@ -14,9 +14,9 @@
  */
 import 'dotenv/config';
 
-import { runHackerNewsAgent } from './hackernews-agent';
+import { runDirectHackerNewsAgent } from './hackernews-agent/direct';
 
-const text = await runHackerNewsAgent(process.env, 'direct');
+const text = await runDirectHackerNewsAgent(process.env);
 
 console.log('\n🤖 Agent response:\n');
 console.log(text);
