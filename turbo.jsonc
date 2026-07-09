@@ -74,6 +74,11 @@
       "dependsOn": ["^build"],
       "cache": false
     },
+    "lint": {},
+    "cf:dry-run": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "//#clean": {
       "cache": false
     },

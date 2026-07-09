@@ -8,6 +8,7 @@ on:
       - 'ts/packages/core/**'
       - 'ts/packages/providers/**'
       - 'eslint.config.mjs'
+      - 'package.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.examples.yml'
       - 'mise.toml'
@@ -20,6 +21,7 @@ on:
       - 'ts/packages/core/**'
       - 'ts/packages/providers/**'
       - 'eslint.config.mjs'
+      - 'package.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.examples.yml'
       - 'mise.toml'
@@ -64,4 +66,4 @@ jobs:
 
       # Prove the Cloudflare Workers entry bundles without secrets or deploying.
       - name: Cloudflare Workers dry-run build
-        run: pnpm --filter mastra-example run cf:dry-run
+        run: pnpm exec turbo cf:dry-run --filter='./ts/examples/*'

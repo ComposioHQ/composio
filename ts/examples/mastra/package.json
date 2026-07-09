@@ -14,6 +14,7 @@
     "cf:dev": "wrangler dev",
     "cf:dry-run": "wrangler deploy --dry-run --outdir dist-worker",
     "typecheck": "tsc --noEmit -p ./tsconfig.json && tsc --noEmit -p ./tsconfig.worker.json",
+    "lint": "eslint src --ext .ts,.tsx",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
