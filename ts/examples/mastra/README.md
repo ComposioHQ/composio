@@ -19,11 +19,11 @@ cp .env.example .env   # then fill in COMPOSIO_API_KEY and OPENAI_API_KEY
 
 ## Examples
 
-| File | What it shows | Run |
-| --- | --- | --- |
-| `src/index.ts` | Direct tools: fetch one Composio tool as a Mastra tool | `bun ts/examples/mastra/src/index.ts` |
-| `src/tool-router.ts` | **Tool Router** (v1-canonical): `composio.sessions.create(...)` → `session.tools()` | `bun ts/examples/mastra/src/tool-router.ts` |
-| `src/cloudflare.ts` | The same wrapping path on the **Cloudflare Workers** runtime | `bun run cf:dev` (then `GET localhost:8787/`) |
+| File                 | What it shows                                                                       | Run                                           |
+| -------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------- |
+| `src/index.ts`       | Direct tools: fetch one Composio tool as a Mastra tool                              | `bun ts/examples/mastra/src/index.ts`         |
+| `src/tool-router.ts` | **Tool Router** (v1-canonical): `composio.sessions.create(...)` → `session.tools()` | `bun ts/examples/mastra/src/tool-router.ts`   |
+| `src/cloudflare.ts`  | The same Tool Router agent path on the **Cloudflare Workers** runtime               | `bun run cf:dev` (then `GET localhost:8787/`) |
 
 From this folder you can also use `pnpm start` (index), `pnpm tool-router`, and
 `pnpm cf:dev`.
@@ -46,8 +46,9 @@ model: anthropic('claude-haiku-4-5'),
 - **Node/Bun:** `src/index.ts` and `src/tool-router.ts` read keys from
   `process.env` via `dotenv`.
 - **Cloudflare Workers:** `src/cloudflare.ts` reads keys from the Worker `env`
-  binding (no `process.env`). Provide the key with
-  `wrangler secret put COMPOSIO_API_KEY`. CI validates the Worker build with
+  binding (no `process.env`). Provide both keys with
+  `wrangler secret put COMPOSIO_API_KEY` and
+  `wrangler secret put OPENAI_API_KEY`. CI validates the Worker build with
   `wrangler deploy --dry-run`.
 
 ## Support

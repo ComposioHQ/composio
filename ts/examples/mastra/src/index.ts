@@ -12,49 +12,11 @@
  * Run:
  *   bun ts/examples/mastra/src/index.ts
  */
-import { openai } from '@ai-sdk/openai';
-import { Composio } from '@composio/core';
-import { MastraProvider } from '@composio/mastra';
-import { Agent } from '@mastra/core/agent';
-import { stepCountIs } from 'ai';
 import 'dotenv/config';
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
-});
+import { runHackerNewsAgent } from './hackernews-agent';
 
-// Fetch a single tool from the unauthenticated HackerNews toolkit.
-// The modifiers below are optional — they show the schema/execution hooks.
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER_BY_USERNAME', {
-  beforeExecute: ({ toolSlug, params }) => {
-    console.log(`🔧 executing ${toolSlug} with ${JSON.stringify(params.arguments)}`);
-    return params;
-  },
-  afterExecute: ({ toolSlug, result }) => {
-    console.log(`✅ ${toolSlug} finished`);
-    return result;
-  },
-});
-
-const agent = new Agent({
-  id: 'hackernews-agent',
-  name: 'HackerNews Agent',
-  instructions: 'You are a helpful assistant that looks up HackerNews users.',
-  model: openai('gpt-5-mini'),
-  tools,
-});
-
-// Allow the agent a few steps to call the tool and then summarize the result.
-const { text } = await agent.generate(
-  [{ role: 'user', content: 'Tell me about the HackerNews user `pg`.' }],
-  { stopWhen: stepCountIs(10) }
-);
-
-// This example doubles as a test: a healthy run returns non-empty text.
-if (!text || text.trim().length === 0) {
-  throw new Error('Agent returned empty output — expected a non-empty response.');
-}
+const text = await runHackerNewsAgent(process.env, 'direct');
 
 console.log('\n🤖 Agent response:\n');
 console.log(text);
