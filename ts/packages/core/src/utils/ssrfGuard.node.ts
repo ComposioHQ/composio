@@ -95,12 +95,18 @@ const isBlockedIpv6 = (ip: string): boolean => {
   if (h.every(x => x === 0)) return true;
   if (h.slice(0, 7).every(x => x === 0) && h[7] === 1) return true;
 
-  // IPv4-mapped (::ffff:0:0/96) and NAT64 (64:ff9b::/96): validate embedded IPv4
-  const isMapped =
-    h[0] === 0 && h[1] === 0 && h[2] === 0 && h[3] === 0 && h[4] === 0 && h[5] === 0xffff;
+  // Addresses that embed an IPv4 address in their low 32 bits must be validated
+  // against the IPv4 blocklist, otherwise `::127.0.0.1` / `::169.254.169.254`
+  // (and mapped/NAT64 forms) would pass as "public" IPv6 and reach internal
+  // targets. Covers:
+  //   - IPv4-mapped     ::ffff:0:0/96  (h[5] === 0xffff)
+  //   - IPv4-compatible ::/96          (deprecated, h[5] === 0) — incl. ::a.b.c.d
+  //   - NAT64           64:ff9b::/96
+  const highBitsZero = h[0] === 0 && h[1] === 0 && h[2] === 0 && h[3] === 0 && h[4] === 0;
+  const isMappedOrCompat = highBitsZero && (h[5] === 0xffff || h[5] === 0);
   const isNat64 =
     h[0] === 0x0064 && h[1] === 0xff9b && h[2] === 0 && h[3] === 0 && h[4] === 0 && h[5] === 0;
-  if (isMapped || isNat64) {
+  if (isMappedOrCompat || isNat64) {
     return isBlockedIpv4Long((((h[6] << 16) >>> 0) | h[7]) >>> 0);
   }
 

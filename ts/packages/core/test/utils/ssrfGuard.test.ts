@@ -38,7 +38,7 @@ describe('isBlockedIp', () => {
     }
   });
 
-  it('blocks IPv6 loopback, ULA, link-local, and mapped internal addresses', () => {
+  it('blocks IPv6 loopback, ULA, link-local, and mapped/compat internal addresses', () => {
     for (const ip of [
       '::1',
       '::',
@@ -47,14 +47,22 @@ describe('isBlockedIp', () => {
       'fe80::1',
       '::ffff:127.0.0.1',
       '::ffff:169.254.169.254',
+      // IPv4-compatible ::/96 (deprecated) — the bypass Bugbot flagged
+      '::127.0.0.1',
+      '::169.254.169.254',
+      '::10.0.0.1',
+      // ...and their normalized hex forms (what dns.lookup / URL parsing yield)
+      '::7f00:1', // ::127.0.0.1
+      '::a9fe:a9fe', // ::169.254.169.254
     ]) {
       expect(isBlockedIp(ip), ip).toBe(true);
     }
   });
 
-  it('allows public IPv6 and IPv4-mapped-public addresses', () => {
-    expect(isBlockedIp('2606:4700:4700::1111')).toBe(false);
-    expect(isBlockedIp('::ffff:8.8.8.8')).toBe(false);
+  it('allows public IPv6 and public IPv4-mapped/compat addresses', () => {
+    for (const ip of ['2606:4700:4700::1111', '::ffff:8.8.8.8', '::8.8.8.8', '::808:808']) {
+      expect(isBlockedIp(ip), ip).toBe(false);
+    }
   });
 
   it('fails closed for non-IP strings', () => {
