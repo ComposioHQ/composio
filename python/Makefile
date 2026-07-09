@@ -1,4 +1,4 @@
-.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference bump build format check sanity test
+.PHONY: clean-build sync provider create-provider env fmt chk snt tst type_inference dead-code bump build format check sanity test
 
 clean-build:
 	@rm -rf dist/ build/
@@ -52,6 +52,9 @@ fmt:
 
 chk:
 	@nox -s chk
+
+dead-code:
+	@nox -s dead_code
 
 snt:
 	@nox -s snt
