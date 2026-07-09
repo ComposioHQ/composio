@@ -8,11 +8,11 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
-    "start:node": "tsx src/index.ts",
+    "tool-router": "bun src/tool-router.ts",
     "dev": "bun --watch src/index.ts",
-    "start:mcp": "bun --watch src/mcp.ts",
-    "start:node:mcp": "tsx src/mcp.ts",
-    "dev:mcp": "tsx watch src/mcp.ts",
+    "cf:dev": "wrangler dev",
+    "cf:dry-run": "wrangler deploy --dry-run --outdir dist-worker",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json && tsc --noEmit -p ./tsconfig.worker.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -27,14 +27,15 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.13.0",
     "ai": "^6.0.219",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "^26.1.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wrangler": "catalog:"
   }
 }

@@ -10,12 +10,13 @@ export default [
       'ts/packages/**/acp-adapters/**',
       'ts/packages/**/node_modules/**',
       'node_modules/**',
-      'examples/',
+      'ts/examples/**/dist/**',
+      'ts/examples/**/dist-worker/**',
       'scripts/**',
       '**/test/**',
     ],
   },
-  { files: ['ts/packages/**/*.ts'] },
+  { files: ['ts/packages/**/*.ts', 'ts/examples/**/*.ts'] },
   { languageOptions: { globals: globals.browser } },
   ...tseslint.configs.recommended,
   {
@@ -67,6 +68,14 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    // Examples are console-driven references. Keep type-safety rules
+    // (no-explicit-any, unused-vars) but drop console noise.
+    files: ['ts/examples/**/*.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 ];
