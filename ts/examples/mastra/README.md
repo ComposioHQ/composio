@@ -15,7 +15,7 @@ cp .env.example .env   # then fill in COMPOSIO_API_KEY and OPENAI_API_KEY
 ```
 
 - `COMPOSIO_API_KEY` — [Composio dashboard](https://app.composio.dev)
-- `OPENAI_API_KEY` — the examples default to OpenAI (`gpt-5.2`)
+- `OPENAI_API_KEY` — the examples default to OpenAI (`gpt-5-mini`)
 
 ## Examples
 

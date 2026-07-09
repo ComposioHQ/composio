@@ -40,7 +40,7 @@ const agent = new Agent({
   id: 'hackernews-agent',
   name: 'HackerNews Agent',
   instructions: 'You are a helpful assistant that looks up HackerNews users.',
-  model: openai('gpt-5.2'),
+  model: openai('gpt-5-mini'),
   tools,
 });
 

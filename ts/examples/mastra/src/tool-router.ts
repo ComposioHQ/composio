@@ -39,7 +39,7 @@ const agent = new Agent({
   name: 'HackerNews Router Agent',
   instructions:
     'You are a helpful assistant. Use the available Composio tools to search for and read HackerNews data before answering.',
-  model: openai('gpt-5.2'),
+  model: openai('gpt-5-mini'),
   tools,
 });
 
