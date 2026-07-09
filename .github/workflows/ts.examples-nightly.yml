@@ -57,7 +57,7 @@ jobs:
       # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.
       # Self-skips when the secret is absent (e.g. fork-triggered dispatch).
       - name: ${{ matrix.provider }} smoke (wrapping + tool-router)
-        run: pnpm --filter ${{ matrix.provider }}-example run smoke
+        run: pnpm --filter ${{ matrix.provider }}-example --fail-if-no-match run smoke
 
       # Full agent run — only when an LLM key is configured.
       - name: ${{ matrix.provider }} direct-tools example
