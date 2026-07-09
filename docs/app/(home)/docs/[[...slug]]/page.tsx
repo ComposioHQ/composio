@@ -36,7 +36,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
     >
       {!isLanding && (
         <>
-          {data.legacy && <LegacyBadge />}
+          {data.legacy && <LegacyBadge date={data.legacyDate} />}
           {data.experimental && <ExperimentalBadge />}
           <DocsTitle>{data.title}</DocsTitle>
           <PageActions path={page.url} />
