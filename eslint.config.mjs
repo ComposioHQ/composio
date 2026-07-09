@@ -72,10 +72,22 @@ export default [
   },
   {
     // Examples are console-driven references. Keep type-safety rules
-    // (no-explicit-any, unused-vars) but drop console noise.
+    // (no-explicit-any, unused-vars) but drop console noise. The Buffer/crypto
+    // restrictions above target SDK/Workers source; Node example scripts may
+    // legitimately use Node built-ins, so relax them here (see KTD6).
     files: ['ts/examples/**/*.ts'],
     rules: {
       'no-console': 'off',
+      'no-restricted-globals': 'off',
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    // The Cloudflare Workers entry stays portable: no Node globals even though
+    // nodejs_compat is enabled. Re-apply the restriction dropped just above.
+    files: ['ts/examples/**/cloudflare.ts'],
+    rules: {
+      'no-restricted-globals': ['error', 'Buffer'],
     },
   },
 ];

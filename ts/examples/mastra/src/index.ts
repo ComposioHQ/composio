@@ -48,5 +48,10 @@ const { text } = await agent.generate([
   { role: 'user', content: 'Tell me about the HackerNews user `pg`.' },
 ]);
 
+// This example doubles as a test: a healthy run returns non-empty text.
+if (!text || text.trim().length === 0) {
+  throw new Error('Agent returned empty output — expected a non-empty response.');
+}
+
 console.log('\n🤖 Agent response:\n');
 console.log(text);

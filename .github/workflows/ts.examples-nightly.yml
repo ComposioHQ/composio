@@ -41,6 +41,15 @@ jobs:
       - name: Build SDK packages
         run: pnpm run build:packages
 
+      # On the schedule the secret must be present. Without this, a rotated/renamed/
+      # empty COMPOSIO_API_KEY would make smoke self-skip (exit 0) and every LLM step
+      # no-op, leaving the whole "regression net" green while testing nothing.
+      - name: Require COMPOSIO_API_KEY on scheduled runs
+        if: ${{ github.event_name == 'schedule' && env.COMPOSIO_API_KEY == '' }}
+        run: |
+          echo "::error::COMPOSIO_API_KEY is empty on a scheduled run — smoke would no-op and mask regressions."
+          exit 1
+
       # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.
       # Self-skips when the secret is absent (e.g. fork-triggered dispatch).
       - name: Mastra smoke (wrapping + tool-router)
