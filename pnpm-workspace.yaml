@@ -15,7 +15,6 @@ packages:
   - ts/packages/slim
   - ts/packages/providers/*
   - ts/packages/ts-builders
-  - ts/packages/wrappers/*
 
 allowBuilds:
   '@google/genai': false
