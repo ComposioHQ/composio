@@ -9,9 +9,13 @@ export interface HackerNewsAgentEnvironment {
   OPENAI_API_KEY?: string;
 }
 
-export type HackerNewsAgentMode = 'direct' | 'tool-router';
+type HackerNewsAgentMode = 'direct' | 'tool-router';
 
-function requireKey(value: string | undefined, name: keyof HackerNewsAgentEnvironment): string {
+function requireKey(
+  env: HackerNewsAgentEnvironment,
+  name: keyof HackerNewsAgentEnvironment
+): string {
+  const value = env[name];
   if (!value) {
     throw new Error(`${name} is required to run the HackerNews agent.`);
   }
@@ -23,8 +27,10 @@ export async function runHackerNewsAgent(
   env: HackerNewsAgentEnvironment,
   mode: HackerNewsAgentMode
 ): Promise<string> {
+  const composioApiKey = requireKey(env, 'COMPOSIO_API_KEY');
+  const openaiApiKey = requireKey(env, 'OPENAI_API_KEY');
   const composio = new Composio({
-    apiKey: requireKey(env.COMPOSIO_API_KEY, 'COMPOSIO_API_KEY'),
+    apiKey: composioApiKey,
     provider: new MastraProvider(),
   });
 
@@ -48,7 +54,7 @@ export async function runHackerNewsAgent(
 
   const isDirect = mode === 'direct';
   const openai = createOpenAI({
-    apiKey: requireKey(env.OPENAI_API_KEY, 'OPENAI_API_KEY'),
+    apiKey: openaiApiKey,
   });
   const agent = new Agent({
     id: isDirect ? 'hackernews-agent' : 'hackernews-router-agent',

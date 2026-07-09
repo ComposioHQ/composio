@@ -30,16 +30,20 @@ From this folder you can also use `pnpm start` (index), `pnpm tool-router`, and
 
 ## Using Anthropic instead of OpenAI
 
-Swap the model import and set `ANTHROPIC_API_KEY`:
+The shared model setup lives in `src/hackernews-agent.ts`. Replace the OpenAI
+provider there and add `ANTHROPIC_API_KEY` to `HackerNewsAgentEnvironment`:
 
 ```ts
-// import { openai } from '@ai-sdk/openai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { createAnthropic } from '@ai-sdk/anthropic';
 // ...
+const anthropic = createAnthropic({
+  apiKey: requireKey(env, 'ANTHROPIC_API_KEY'),
+});
 model: anthropic('claude-haiku-4-5'),
 ```
 
-(You'll also need to add `@ai-sdk/anthropic` to the dependencies.)
+Add `@ai-sdk/anthropic` to the dependencies and configure the Anthropic key in
+the Node environment or Worker bindings, depending on the runtime.
 
 ## Runtime notes
 

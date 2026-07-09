@@ -10,12 +10,9 @@
  *   cd ts/examples/mastra && bun run cf:dev     # then GET http://localhost:8787/
  * Deploy config: wrangler.jsonc
  */
-import { runHackerNewsAgent } from './hackernews-agent';
+import { runHackerNewsAgent, type HackerNewsAgentEnvironment } from './hackernews-agent';
 
-export interface Env {
-  COMPOSIO_API_KEY: string;
-  OPENAI_API_KEY: string;
-}
+export type Env = Required<HackerNewsAgentEnvironment>;
 
 export default {
   async fetch(_request: Request, env: Env): Promise<Response> {
