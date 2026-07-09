@@ -431,10 +431,20 @@ ${page.data.description || ''}`;
     ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
-  const guardrails = includeGuardrails ? getGuardrails(page.data.llmGuardrails) : '';
+  // Legacy pages (frontmatter `legacy: true`) document point-in-time migrations
+  // and may show outdated APIs. Mark the .md so an agent reading it knows, and
+  // skip the "enforce the CURRENT patterns" guardrail block — appending it to a
+  // legacy guide contradicts the guide's own (older) content.
+  const isLegacy = page.data.legacy === true;
+  const legacyNote = isLegacy
+    ? `\n> **Legacy${page.data.legacyDate ? ` · written ${page.data.legacyDate}` : ''}.** This is a point-in-time migration/legacy guide and may describe outdated APIs. For current guidance, see https://docs.composio.dev.\n`
+    : '';
+
+  const guardrails =
+    includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 
   return `# ${page.data.title} (${page.url})
-
+${legacyNote}
 ${cleanContent}${footer}${guardrails}`;
 }
 
