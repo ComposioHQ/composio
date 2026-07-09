@@ -20,28 +20,28 @@ Set two environment variables:
 Create a session for your user, pass its tools to the AI SDK, and cap the run with `stopWhen`:
 
 ```typescript
-import { anthropic } from "@ai-sdk/anthropic";
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
-import { generateText, stepCountIs } from "ai";
+import { anthropic } from '@ai-sdk/anthropic';
+import { Composio } from '@composio/core';
+import { VercelProvider } from '@composio/vercel';
+import { generateText, stepCountIs } from 'ai';
 
 const composio = new Composio({ provider: new VercelProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.create("user_123");
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const { text } = await generateText({
-  model: anthropic("claude-sonnet-4-6"),
+  model: anthropic('claude-sonnet-4-6'),
   tools,
-  prompt: "Summarize my emails from today",
+  prompt: 'Summarize my emails from today',
   stopWhen: stepCountIs(10),
 });
 
 console.log(text);
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
 
 ## Strict mode
 

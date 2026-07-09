@@ -141,7 +141,7 @@ connection_request = session.authorize(
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 // ---cut---
 const connectionRequest = await session.authorize("gmail", {
   callbackUrl: "https://your-app.com/callback",

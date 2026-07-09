@@ -91,7 +91,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
     // toolkits not listed here still use Composio managed auth
@@ -125,7 +125,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
     google: "ac_your_google_config",

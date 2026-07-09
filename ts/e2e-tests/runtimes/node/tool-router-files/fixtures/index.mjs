@@ -19,7 +19,7 @@ function isStorageUploadUnavailable(err) {
 
 async function main() {
   // Create a session (hackernews is public, no auth needed; files mount is always available)
-  const session = await composio.create('e2e-tool-router-files-user', {
+  const session = await composio.sessions.create('e2e-tool-router-files-user', {
     toolkits: ['hackernews'],
     manageConnections: false,
   });

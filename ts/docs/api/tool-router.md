@@ -39,7 +39,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 
 // Create a session for a user with access to Gmail tools
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -60,7 +60,7 @@ const composio = new Composio({
 });
 
 // Create a session for a user with access to Gmail tools
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -72,7 +72,7 @@ const tools = await session.tools();
 
 ### Basic Session Creation
 
-Use `composio.create()` to create a new Tool Router session:
+Use `composio.sessions.create()` to create a new Tool Router session:
 
 ```typescript
 import { Composio } from '@composio/core';
@@ -80,7 +80,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio();
 
 // Create a session with Gmail access
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -90,10 +90,10 @@ console.log('MCP URL:', session.mcp.url);
 
 ### Using an Existing Session
 
-If you have an existing session ID, you can retrieve it using `composio.use()`:
+If you have an existing session ID, you can retrieve it using `composio.sessions.use()`:
 
 ```typescript
-const session = await composio.use('existing_session_id');
+const session = await composio.sessions.use('existing_session_id');
 
 // Access session properties
 console.log(session.sessionId);
@@ -110,17 +110,17 @@ Specify which toolkits to enable or disable in the session.
 
 ```typescript
 // Simple array of toolkit slugs to enable
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'slack', 'github'],
 });
 
 // Explicit enabled configuration
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: { enable: ['gmail', 'slack'] },
 });
 
 // Disable specific toolkits (enable all others)
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: { disable: ['calendar'] },
 });
 ```
@@ -130,7 +130,7 @@ const session = await composio.create('user_123', {
 Fine-grained control over which tools are available within toolkits. Configure tools per toolkit using the toolkit slug as the key.
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'slack'],
   tools: {
     // Configure tools per toolkit
@@ -150,7 +150,7 @@ const session = await composio.create('user_123', {
 Global tags to filter tools by their behavior hints. Tags can be overridden per toolkit in the `tools` configuration.
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'github'],
   // Global tags applied to all toolkits
   tags: ['readOnlyHint', 'idempotentHint'],
@@ -169,7 +169,7 @@ Available tags:
 Map toolkits to specific authentication configurations:
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'github'],
   authConfigs: {
     gmail: 'ac_gmail_work',
@@ -183,7 +183,7 @@ const session = await composio.create('user_123', {
 Map toolkits to specific connected account IDs:
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   connectedAccounts: {
     gmail: 'ca_abc123',
@@ -197,13 +197,13 @@ Control how connections are managed within the session:
 
 ```typescript
 // Boolean: enable/disable automatic connection management
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   manageConnections: true, // default
 });
 
 // Object: fine-grained control
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   manageConnections: {
     enable: true,
@@ -218,7 +218,7 @@ const session = await composio.create('user_123', {
 The `waitForConnections` property (new in v0.4.0) allows the tool router session to wait for users to complete authentication before proceeding to the next step. When set to `true`, the session will block execution until all required connections are established.
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'slack'],
   manageConnections: {
     enable: true,
@@ -234,7 +234,7 @@ Configure workbench behavior for tool execution:
 
 ```typescript
 // Disable workbench entirely — no code execution tools in the session
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   workbench: {
     enable: false
@@ -242,7 +242,7 @@ const session = await composio.create('user_123', {
 });
 
 // Fine-tune workbench settings
-const session2 = await composio.create('user_123', {
+const session2 = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   workbench: {
     enable: true, // default
@@ -265,7 +265,7 @@ Configure experimental features for the session. These features are not stable a
 #### Assistive Prompt
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   experimental: {
     assistivePrompt: {
@@ -340,7 +340,7 @@ const devTools = experimental_createToolkit('DEV_TOOLS', {
 **Creating a session with custom tools:**
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   experimental: {
     customTools: [grep, getImportant],
@@ -583,7 +583,7 @@ const composio = new Composio({
   provider: new VercelProvider(),
 });
 
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -613,7 +613,7 @@ import { stepCountIs, streamText } from 'ai';
 
 // No provider needed when using MCP
 const composio = new Composio();
-const { mcp } = await composio.create('user_123', {
+const { mcp } = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
   manageConnections: true,
   tools: {
@@ -670,7 +670,7 @@ const llm = new ChatOpenAI({
   model: 'gpt-4o',
 });
 
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -709,7 +709,7 @@ import { Composio } from '@composio/core';
 // No provider needed when using MCP
 const composio = new Composio();
 
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -752,7 +752,7 @@ import { Composio } from '@composio/core';
 // No provider needed when using MCP
 const composio = new Composio();
 
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -786,7 +786,7 @@ When a user needs to connect a toolkit, use the `authorize()` method:
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
 });
 
@@ -817,7 +817,7 @@ Use the `toolkits()` method to check connection states:
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 
 // Get all toolkits
 const toolkits = await session.toolkits();
@@ -910,13 +910,13 @@ These types include the `sessionId` in their parameters, allowing you to track a
 
 ```typescript
 // Store session ID after creation
-const session = await composio.create('user_123', config);
+const session = await composio.sessions.create('user_123', config);
 await redis.set(`session:user_123`, session.sessionId);
 
 // Retrieve existing session
 const sessionId = await redis.get(`session:user_123`);
 if (sessionId) {
-  const session = await composio.use(sessionId);
+  const session = await composio.sessions.use(sessionId);
 }
 ```
 
@@ -1046,7 +1046,7 @@ interface SessionExecuteMetaModifiers {
 The new `waitForConnections` property allows sessions to wait for users to complete authentication before proceeding:
 
 ```typescript
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'slack'],
   manageConnections: {
     enable: true,

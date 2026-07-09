@@ -5,7 +5,7 @@ keywords: [session, direct execution, tool router, meta tools, architecture, dec
 legacy: true
 ---
 
-A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
+A **session** is the runtime context Composio creates for one of your users. In TypeScript, use `composio.sessions.create(userId)`; Python uses `composio.create(user_id)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
 **Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
@@ -28,7 +28,7 @@ Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring
 
 ## Sessions
 
-`composio.create()` returns [meta tools](/docs/how-composio-works#meta-tools):
+Creating a session returns [meta tools](/docs/how-composio-works#meta-tools):
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -52,7 +52,7 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
   provider: new OpenAIProvider(),
 });
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 const tools = await session.tools();
 // Returns meta tools like COMPOSIO_SEARCH_TOOLS, COMPOSIO_MANAGE_CONNECTIONS,
 // COMPOSIO_MULTI_EXECUTE_TOOL, COMPOSIO_REMOTE_WORKBENCH, etc.
@@ -101,7 +101,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   toolkits: ["github", "gmail"],
   authConfigs: { github: "ac_my_config" },
   connectedAccounts: { gmail: ["ca_work"] },

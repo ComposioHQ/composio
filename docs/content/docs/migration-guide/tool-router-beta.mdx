@@ -54,7 +54,7 @@ session = composio.create(
 const session = await composio.experimental.toolRouter.createSession('user_123');
 
 // Stable (after)
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 ```
 </Tab>
 </Tabs>
@@ -87,7 +87,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create('user_123',
+const session = await composio.sessions.create('user_123',
     {
         authConfigs: {
             github: "ac_your_github_config",

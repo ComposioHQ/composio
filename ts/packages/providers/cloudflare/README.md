@@ -26,7 +26,7 @@ export default {
     });
 
     // Create a session for your user
-    const session = await composio.create('user_123');
+    const session = await composio.sessions.create('user_123');
     const tools = await session.tools();
 
     const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
