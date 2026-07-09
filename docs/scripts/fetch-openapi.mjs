@@ -56,6 +56,14 @@ function filterPaths(paths) {
         continue;
       }
 
+      // Hide deprecated endpoints. They stay available in the API for existing
+      // integrations, but we don't want the reference to advertise them and drive
+      // new usage — same treatment as x-internal.
+      if (operation.deprecated === true) {
+        removedCount++;
+        continue;
+      }
+
       if (tags.length > 1) {
         operation.tags = [tags[0]];
       }
