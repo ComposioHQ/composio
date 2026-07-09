@@ -140,12 +140,12 @@ import { defineChannel } from 'eve';
 import { composio } from '../../composio';
 
 export default defineChannel({
-  // Composio POSTs trigger events to your webhook. Verify the signature, then
-  // hand the facts to the agent and let it text on your behalf.
+  // Composio POSTs trigger events to your webhook. parse() verifies the
+  // signature and returns the typed payload; hand the facts to the agent
+  // and let it text on your behalf.
   async webhook(req, { send }) {
-    const event = await composio.triggers.verifyWebhook({
-      ...req,
-      secret: process.env.COMPOSIO_WEBHOOK_SECRET,
+    const { payload: event } = await composio.triggers.parse(req, {
+      verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
     });
     await send(
       `Linear issue assigned to me: "${event.payload.title}". ` +
@@ -155,11 +155,17 @@ export default defineChannel({
 });
 ```
 
-Create the trigger once, then it runs on its own. Reuse the same `composio` client from `composio.ts`:
+Point Composio at your webhook and create the trigger, once each. Reuse the same `composio` client from `composio.ts`:
 
 ```ts title="agent/setup-triggers.ts"
 // @noErrors
 import { composio } from '../composio';
+
+// Register the webhook URL once per project; store the returned
+// secret as COMPOSIO_WEBHOOK_SECRET.
+const subscription = await composio.triggers.setWebhookSubscription({
+  webhookUrl: `${process.env.APP_URL}/webhook`,
+});
 
 // Use the exact slug from the Composio triggers catalog.
 const trigger = await composio.triggers.create('user_123', 'LINEAR_ISSUE_ASSIGNED');
@@ -181,9 +187,8 @@ import { composio } from '../../composio';
 
 export default defineChannel({
   async webhook(req, { send }) {
-    const event = await composio.triggers.verifyWebhook({
-      ...req,
-      secret: process.env.COMPOSIO_WEBHOOK_SECRET,
+    const { payload: event } = await composio.triggers.parse(req, {
+      verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
     });
     await send(
       `New email from ${event.payload.from}: "${event.payload.subject}". ` +
