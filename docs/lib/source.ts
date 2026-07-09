@@ -436,15 +436,18 @@ ${page.data.description || ''}`;
   // skip the "enforce the CURRENT patterns" guardrail block — appending it to a
   // legacy guide contradicts the guide's own (older) content.
   const isLegacy = page.data.legacy === true;
-  const legacyNote = isLegacy
-    ? `\n> **Legacy${page.data.legacyDate ? ` · written ${page.data.legacyDate}` : ''}.** This is a point-in-time migration/legacy guide and may describe outdated APIs. For current guidance, see https://docs.composio.dev.\n`
-    : '';
+  const written = page.data.written;
+  const topNote = isLegacy
+    ? `\n> **Legacy${written ? ` · written ${written}` : ''}.** This is a point-in-time migration/legacy guide and may describe outdated APIs. For current guidance, see https://docs.composio.dev.\n`
+    : written
+      ? `\n> _Written ${written}._\n`
+      : '';
 
   const guardrails =
     includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 
   return `# ${page.data.title} (${page.url})
-${legacyNote}
+${topNote}
 ${cleanContent}${footer}${guardrails}`;
 }
 
