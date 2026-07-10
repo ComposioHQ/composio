@@ -1377,8 +1377,8 @@ importers:
         specifier: ^0.80.3
         version: 0.80.3(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(supports-color@10.2.2)(ws@8.21.0)(zod@4.4.3)
       eve:
-        specifier: ^0.11.0
-        version: 0.11.10(@opentelemetry/api@1.9.0)(ai@7.0.0-beta.178(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.1)(miniflare@4.20260701.0)(rollup@4.62.2)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.22.5)(yaml@2.9.0))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1))
+        specifier: ^0.12.0
+        version: 0.12.3(@opentelemetry/api@1.9.0)(ai@7.0.0-beta.178(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.1)(miniflare@4.20260701.0)(rollup@4.62.2)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.22.5)(yaml@2.9.0))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1))
       tsdown:
         specifier: 'catalog:'
         version: 0.22.3(@arethetypeswrong/core@0.18.4)(@typescript/native-preview@7.0.0-dev.20260703.1)(publint@0.3.21)(tsx@4.22.5)(typescript@6.0.3)(unrun@0.2.27(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1))
@@ -4862,8 +4862,8 @@ packages:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
 
-  eve@0.11.10:
-    resolution: {integrity: sha512-vMjqknf+8pSL4kpm8uQI6N1r7KcLDqJuouN6updVqELlfWU7ndVNJ5rxBagM8C202owuh5JtCVnnxyHEz7EPFA==}
+  eve@0.12.3:
+    resolution: {integrity: sha512-SEMC0WiCT0tNd+8Tm1IUbTNTHmzHoeyX5UBOtFVi+E6dIWGarIzDkGllUwkpwnb5ZylKZnF8TriR3bufO4bwfw==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -10347,7 +10347,7 @@ snapshots:
 
   etag@1.8.1: {}
 
-  eve@0.11.10(@opentelemetry/api@1.9.0)(ai@7.0.0-beta.178(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.1)(miniflare@4.20260701.0)(rollup@4.62.2)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.22.5)(yaml@2.9.0))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1)):
+  eve@0.12.3(@opentelemetry/api@1.9.0)(ai@7.0.0-beta.178(zod@4.4.3))(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.1)(miniflare@4.20260701.0)(rollup@4.62.2)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.22.5)(yaml@2.9.0))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1)):
     dependencies:
       ai: 7.0.0-beta.178(zod@4.4.3)
       nitro: 3.0.260610-beta(dotenv@17.4.2)(jiti@2.7.0)(lru-cache@11.5.1)(miniflare@4.20260701.0)(rollup@4.62.2)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.22.5)(yaml@2.9.0))(wrangler@4.107.0(@cloudflare/workers-types@4.20260702.1))

@@ -766,10 +766,22 @@ export class ToolRouterSession<
       );
     }
 
-    const [localResults, remoteResult] = await Promise.all([
+    const [localResults, remoteOutcome] = await Promise.all([
       Promise.all(localPromises),
-      remotePromise,
+      remotePromise
+        ? remotePromise.then(result => ({ result })).catch(error => ({ error }))
+        : undefined,
     ]);
+
+    const remoteTransportFailed = !!remoteOutcome && 'error' in remoteOutcome;
+    const remoteTransportError = remoteTransportFailed ? remoteOutcome.error : null;
+    const remoteErrorMessage = remoteTransportFailed
+      ? (remoteTransportError instanceof Error
+          ? remoteTransportError.message
+          : String(remoteTransportError)) || 'Remote tool execution failed'
+      : null;
+    const remoteResult =
+      remoteOutcome && 'result' in remoteOutcome ? remoteOutcome.result : undefined;
 
     // If only local tools, return the single/first result unwrapped
     if (remoteIndices.length === 0 && localResults.length === 1) {
@@ -784,9 +796,15 @@ export class ToolRouterSession<
         ? remoteResult.data
         : {}
     ) as Record<string, unknown>;
-    const remoteResults = (
-      Array.isArray(remoteData.results) ? remoteData.results : []
-    ) as unknown[];
+    const remoteResults = remoteErrorMessage
+      ? remoteIndices.map(index => ({
+          response: { successful: false, data: {}, error: remoteErrorMessage },
+          tool_slug: parsed[index].tool_slug,
+          error: remoteErrorMessage,
+        }))
+      : ((Array.isArray(remoteData.results) ? remoteData.results : []) as Array<
+          Record<string, unknown>
+        >);
 
     // Build local result entries matching backend format
     const localEntries = localResults.map(({ index, result }) => ({
@@ -796,20 +814,22 @@ export class ToolRouterSession<
         ...(result.error ? { error: result.error } : {}),
       },
       tool_slug: parsed[index].tool_slug,
+      index,
       ...(result.error ? { error: result.error } : {}),
     }));
 
-    // Merge and re-index sequentially so there are no collisions
+    // Restore original request order, then re-index sequentially so there are no collisions.
     const merged: Array<Record<string, unknown>> = [
-      ...(remoteResults as Array<Record<string, unknown>>),
-      ...localEntries,
-    ];
-    const allResults = merged.map(
-      (entry, i): Record<string, unknown> => ({
+      ...remoteResults.map((entry, remotePosition) => ({
         ...entry,
-        index: i,
-      })
-    );
+        index: remoteIndices[remotePosition] ?? remotePosition,
+      })),
+      ...localEntries,
+    ].sort((a, b) => Number(a.index) - Number(b.index));
+    const allResults = merged.map((entry, i): Record<string, unknown> => ({
+      ...entry,
+      index: i,
+    }));
     const failedCount = allResults.filter(r => r.error).length;
     const mergedData: Record<string, unknown> = {
       ...remoteData,
@@ -817,13 +837,15 @@ export class ToolRouterSession<
     };
     if (
       localEntries.length > 0 &&
-      ['total_count', 'success_count', 'error_count'].some(key => key in remoteData)
+      (remoteErrorMessage ||
+        ['total_count', 'success_count', 'error_count'].some(key => key in remoteData))
     ) {
       mergedData.total_count = allResults.length;
       mergedData.success_count = allResults.length - failedCount;
       mergedData.error_count = failedCount;
     }
-    const remoteError = typeof remoteResult?.error === 'string' ? remoteResult.error : null;
+    const remoteError =
+      remoteErrorMessage ?? (typeof remoteResult?.error === 'string' ? remoteResult.error : null);
     const hasAnyError = localResults.some(r => r.result.error) || !!remoteError;
 
     return {

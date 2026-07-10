@@ -33,8 +33,6 @@ import { LocalSandboxBoundary } from '@/components/local-sandbox-boundary';
 import { FileBuildup } from '@/components/file-buildup';
 import { RepoBrowser } from '@/components/repo-browser';
 import { AppLogo } from '@/components/standup-example';
-import { ImessageRepoBrowser } from '@/components/imessage-repo-browser';
-import { ImessageFileBuildup } from '@/components/imessage-file-buildup';
 import { ImessageFlow } from '@/components/imessage-flow';
 import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
@@ -132,8 +130,6 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     FileBuildup,
     RepoBrowser,
     AppLogo,
-    ImessageRepoBrowser,
-    ImessageFileBuildup,
     ImessageFlow,
     WorkbenchFlow,
     AuthConfigFlow,

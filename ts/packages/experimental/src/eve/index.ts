@@ -6,10 +6,10 @@
  *
  * @module experimental/eve
  */
-export { EveProvider } from "./provider";
-export type { EveProviderOptions, EveTool, EveToolCollection } from "./provider";
-export { defineComposioTools } from "./resolver";
-export { denyEveToolCall } from "./hooks";
+export { EveProvider, requireApprovalForTools } from './provider';
+export type { EveNeedsApproval, EveProviderOptions, EveTool, EveToolCollection } from './provider';
+export { defineComposioTools } from './resolver';
+export { denyEveToolCall } from './hooks';
 export type {
   EveHook,
   EveAuthLinkHook,
@@ -17,4 +17,4 @@ export type {
   EveAuthLinkContext,
   EveHookControls,
   EveProviderHooks,
-} from "./hooks";
+} from './hooks';

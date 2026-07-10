@@ -714,6 +714,12 @@ describe('ToolRouterSession execution routing', () => {
       expect(findResult(results, 'LOCAL_META_ADS_GET_AD_ACCOUNTS')).toBeDefined();
       expect(findResult(results, 'GMAIL_SEND_EMAIL')).toBeDefined();
       expect(findResult(results, 'SLACK_POST_MESSAGE')).toBeDefined();
+      expect(results.map((entry: any) => entry.tool_slug)).toEqual([
+        'LOCAL_GET_USER_CONTEXT',
+        'GMAIL_SEND_EMAIL',
+        'LOCAL_META_ADS_GET_AD_ACCOUNTS',
+        'SLACK_POST_MESSAGE',
+      ]);
 
       const backendTools = toolsInstance.executeSessionTool.mock.calls[0][1].arguments.tools;
       expect(backendTools).toHaveLength(2);
@@ -725,6 +731,30 @@ describe('ToolRouterSession execution routing', () => {
       expect(localExecute).toHaveBeenCalled();
       expect(sessionExecute).toHaveBeenCalled();
       expect(result.successful).toBe(true);
+    });
+
+    it('should preserve successful local results when remote transport fails', async () => {
+      const { executeFn, toolsInstance } = await setupMultiExecute(mockClient, [customToolHandle]);
+
+      toolsInstance.executeSessionTool.mockRejectedValueOnce(new Error('remote unavailable'));
+
+      const result = await executeFn('COMPOSIO_MULTI_EXECUTE_TOOL', {
+        tools: [
+          { tool_slug: 'LOCAL_GET_USER_CONTEXT', arguments: { category: 'safe-retry' } },
+          { tool_slug: 'GMAIL_SEND_EMAIL', arguments: { to: 'a@b.com' } },
+        ],
+        sync_response_to_workbench: false,
+      });
+
+      expect(result.successful).toBe(false);
+      expect(localExecute).toHaveBeenCalledTimes(1);
+      expect(findResult(result.data.results, 'LOCAL_GET_USER_CONTEXT')).toMatchObject({
+        response: { successful: true, data: { local_result: true } },
+      });
+      expect(findResult(result.data.results, 'GMAIL_SEND_EMAIL')).toMatchObject({
+        response: { successful: false, error: 'remote unavailable' },
+        error: 'remote unavailable',
+      });
     });
 
     it('should recompute remote counters when local results are merged', async () => {

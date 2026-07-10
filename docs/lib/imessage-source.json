@@ -22,7 +22,7 @@
   {
     "path": "imessage/applescript.ts",
     "composio": false,
-    "contents": "import { execFile } from \"node:child_process\";\nimport { promisify } from \"node:util\";\n\nconst run = promisify(execFile);\n\n// Runs an AppleScript via osascript. Extra args are passed as `on run {\u2026}`\n// parameters (not interpolated), so values can't break or inject into the script.\nexport async function runAppleScript(script: string, args: string[] = []): Promise<string> {\n  const { stdout } = await run(\"osascript\", [\"-e\", script, ...args], {\n    maxBuffer: 1024 * 1024 * 16,\n  });\n  return stdout;\n}\n"
+    "contents": "import { execFile } from \"node:child_process\";\nimport { promisify } from \"node:util\";\n\nconst run = promisify(execFile);\n\n// Runs an AppleScript via osascript. `--` ends osascript option parsing; extra\n// values then become `on run {\u2026}` parameters and are never parsed as source.\nexport async function runAppleScript(script: string, args: string[] = []): Promise<string> {\n  const { stdout } = await run(\"osascript\", [\"-e\", script, \"--\", ...args], {\n    maxBuffer: 1024 * 1024 * 16,\n    timeout: 60_000,\n  });\n  return stdout;\n}\n"
   },
   {
     "path": "imessage/index.ts",
@@ -32,7 +32,7 @@
   {
     "path": "composio.ts",
     "composio": true,
-    "contents": "import { Composio } from '@composio/core';\nimport { EveProvider } from '@composio/experimental/eve';\nimport { createImessageToolkit } from './imessage';\n\nexport const composio = new Composio({ provider: new EveProvider() });\n\nexport const session = composio.sessions.create('user_123', {\n  experimental: { customToolkits: [createImessageToolkit()] },\n});\n"
+    "contents": "import { Composio } from '@composio/core';\nimport { EveProvider, requireApprovalForTools } from '@composio/experimental/eve';\nimport { createImessageToolkit } from './imessage';\n\nexport const composio = new Composio({\n  provider: new EveProvider({\n    needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),\n  }),\n});\n\nexport const session = composio.sessions.create('user_123', {\n  experimental: { customToolkits: [createImessageToolkit()] },\n});\n"
   },
   {
     "path": "agent/tools/composio.ts",

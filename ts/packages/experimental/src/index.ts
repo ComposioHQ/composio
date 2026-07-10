@@ -1,11 +1,10 @@
 /**
  * Experimental Composio integrations and helpers.
  *
- * Includes the Pi provider for @earendil-works/pi-coding-agent and the eve
- * provider for the eve agent framework.
+ * The root export remains the Pi provider for backwards compatibility.
+ * Framework-specific integrations are also available through subpath exports.
  *
  * @packageDocumentation
  * @module experimental
  */
 export * from './pi/index';
-export * from './eve/index';

@@ -1,6 +1,6 @@
 /**
  * Cumulative stages of the iMessage SEND tool, built up one piece at a time.
- * Each stage's `code` is the full file at that point; <ImessageFileBuildup>
+ * Each stage's `code` is the full file at that point; <FileBuildup>
  * diffs consecutive stages so the reader watches the tool grow.
  */
 export interface BuildStage {
@@ -57,31 +57,43 @@ export const sendMessage = experimental_createTool('SEND', {
 `;
 
 const wiringClient = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental/eve';
+import { EveProvider, requireApprovalForTools } from '@composio/experimental/eve';
 
-export const composio = new Composio({ provider: new EveProvider() });
+export const composio = new Composio({
+  provider: new EveProvider({
+    needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),
+  }),
+});
 `;
 
 const wiringSession = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental/eve';
+import { EveProvider, requireApprovalForTools } from '@composio/experimental/eve';
 
-export const composio = new Composio({ provider: new EveProvider() });
+export const composio = new Composio({
+  provider: new EveProvider({
+    needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),
+  }),
+});
 
 export const session = composio.sessions.create('user_123');
 `;
 
 const wiringToolkit = `import { Composio } from '@composio/core';
-import { EveProvider } from '@composio/experimental/eve';
+import { EveProvider, requireApprovalForTools } from '@composio/experimental/eve';
 import { createImessageToolkit } from './imessage';
 
-export const composio = new Composio({ provider: new EveProvider() });
+export const composio = new Composio({
+  provider: new EveProvider({
+    needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),
+  }),
+});
 
 export const session = composio.sessions.create('user_123', {
   experimental: { customToolkits: [createImessageToolkit()] },
 });
 `;
 
-export const FILE_BUILDS = {
+export const FILE_BUILDS: Record<string, { file: string; stages: BuildStage[] }> = {
   wiring: {
     file: 'composio.ts',
     stages: [
@@ -116,14 +128,16 @@ export const FILE_BUILDS = {
       },
       {
         title: 'Typed inputs',
-        description: 'Declare the input schema with zod/v3, which the Composio custom-tool API expects.',
+        description:
+          'Declare the input schema with zod/v3, which the Composio custom-tool API expects.',
         code: typed,
       },
       {
         title: 'Send via AppleScript',
-        description: 'The execute runs locally on your Mac, driving Messages.app through osascript.',
+        description:
+          'The execute runs locally on your Mac, driving Messages.app through osascript.',
         code: full,
       },
     ],
   },
-} as const;
+};

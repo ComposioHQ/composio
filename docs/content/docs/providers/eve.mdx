@@ -63,7 +63,7 @@ import { session } from '../session';
 export default defineComposioTools(session);
 ```
 
-`defineComposioTools(session)` returns a `step.started` dynamic resolver and memoizes `session.tools()`. It resolves per step, not per session, because the wrapped `execute` holds a live function eve keeps only for step-scoped tools. The fetch is cached, so it runs once per session.
+`defineComposioTools(session)` returns a `step.started` dynamic resolver and memoizes `session.tools()`. It resolves per step because the wrapped `execute` holds a live function eve keeps only for step-scoped tools. The fetch is cached per resolved Composio session, and transient failures are retried on the next step. For a multi-user channel, pass a resolver instead: `defineComposioTools((ctx) => sessionFor(ctx.session.auth.current?.principalId))`.
 
 </Step>
 </Steps>
@@ -90,7 +90,7 @@ const provider = new EveProvider({
       ctx.request.args.toolkits = ['github'];
       return next();
     },
-    execute: async (ctx, next) => {
+    remoteBash: async (ctx, next) => {
       if (String(ctx.request.args.command ?? '').includes('rm -rf')) {
         return ctx.deny('Destructive commands are blocked.');
       }
@@ -106,18 +106,43 @@ const provider = new EveProvider({
 
 Available hooks, each keyed on `EveProviderHooks`:
 
-| Hook | Wraps |
-| ---- | ----- |
-| `search` | `COMPOSIO_SEARCH_TOOLS` |
-| `manageConnections` | `COMPOSIO_MANAGE_CONNECTIONS` |
-| `execute` | `COMPOSIO_MULTI_EXECUTE_TOOL` and `COMPOSIO_EXECUTE_TOOL` |
-| `remoteWorkbench` | `COMPOSIO_REMOTE_WORKBENCH` |
-| `remoteBash` | `COMPOSIO_REMOTE_BASH_TOOL` |
-| `onAuthLink` | Any auth link found in a result |
+| Hook                | Wraps                                                     |
+| ------------------- | --------------------------------------------------------- |
+| `search`            | `COMPOSIO_SEARCH_TOOLS`                                   |
+| `manageConnections` | `COMPOSIO_MANAGE_CONNECTIONS`                             |
+| `execute`           | `COMPOSIO_MULTI_EXECUTE_TOOL` and `COMPOSIO_EXECUTE_TOOL` |
+| `remoteWorkbench`   | `COMPOSIO_REMOTE_WORKBENCH`                               |
+| `remoteBash`        | `COMPOSIO_REMOTE_BASH_TOOL`                               |
+| `onAuthLink`        | Any auth link found in a result                           |
 
 `ctx.request` carries the meta-tool's raw `{ slug, args }`, and `ctx.deny` is also exported as `denyEveToolCall(reason)`.
 
+### Require approval
+
+Map Composio tools onto eve's durable approval flow with `needsApproval`. The callback receives the original Composio tool plus eve's approval context:
+
+```typescript
+// @noErrors
+import { EveProvider, requireApprovalForTools } from '@composio/experimental/eve';
+
+const provider = new EveProvider({
+  needsApproval: requireApprovalForTools('LOCAL_IMESSAGE_SEND'),
+});
+```
+
+When this returns `true`, eve pauses before execution and asks the user to approve the call. `requireApprovalForTools` protects both direct calls and matching entries inside `COMPOSIO_MULTI_EXECUTE_TOOL`. Use an exact slug allowlist for side-effecting tools rather than approving every tool in a toolkit.
+
 ## Next
 
-<Card icon={<BookOpen />} title="iMessage on eve" href="/examples/imessage-agent" description="A full example: a custom toolkit for local iMessage plus the eve provider, on one session." />
-<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
+<Card
+  icon={<BookOpen />}
+  title="iMessage on eve"
+  href="/examples/imessage-agent"
+  description="A full example: a custom toolkit for local iMessage plus the eve provider, on one session."
+/>
+<Card
+  icon={<BookOpen />}
+  title="What is a session?"
+  href="/docs/how-composio-works"
+  description="How sessions scope users, tools, and auth, and how to reuse them across requests."
+/>
