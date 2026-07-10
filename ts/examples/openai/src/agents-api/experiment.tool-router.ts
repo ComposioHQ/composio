@@ -13,9 +13,11 @@ const composio = new Composio({
 
 const externalUserId = 'default';
 
-// 2. Create an tool router session
+// 2. Create a tool router session.
+// HACKERNEWS is unauthenticated, so it works with the repository's shared
+// staging key without requiring a connected Gmail or GitHub account.
 const session = await composio.sessions.create(externalUserId, {
-  toolkits: ['gmail', 'github'],
+  toolkits: ['hackernews'],
   mcp: true,
 });
 
@@ -27,7 +29,7 @@ const tools: HostedMCPTool[] = [
     serverUrl: session.mcp.url,
     requireApproval: {
       never: {
-        toolNames: ['GMAIL_FETCH_EMAILS'],
+        toolNames: ['HACKERNEWS_GET_USER_BY_USERNAME'],
       },
     },
   }),
@@ -35,26 +37,25 @@ const tools: HostedMCPTool[] = [
 
 // 4. Pass tools to OpenAI-specific Agent.
 const agent = new OpenAIAgent({
-  name: 'Gmail Assistant',
+  name: 'HackerNews Assistant',
   instructions: `
-    You are a helpful Gmail assistant that fetches and summarizes emails.
-    When fetching emails, provide a clear summary of the results including sender, subject, and date.
-    Be concise and provide actionable information based on the email content.
+    You are a helpful HackerNews assistant that looks up user profiles.
+    Be concise and summarize the user's HackerNews profile clearly.
   `,
   model: 'gpt-4o-mini',
   tools: tools,
 });
 
 // 5. Execute the OpenAI-specific agent.
-// Fetch and summarize recent emails
-console.log('\n=== Fetching and Summarizing Recent Emails ===');
-const emailResponse = await run(
+// Fetch a HackerNews user profile.
+console.log('\n=== Fetching HackerNews User Profile ===');
+const response = await run(
   agent,
-  'Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email'
+  'Look up the HackerNews user `pg` and summarize their profile.'
 );
-console.log('\n📬 Email Summary:');
+console.log('\n📰 HackerNews Profile:');
 
-const output = emailResponse.output.filter(({ type }) => type === 'message').at(0);
+const output = response.output.filter(({ type }) => type === 'message').at(0);
 
 // @ts-ignore
 console.log(output?.content[0].text);
