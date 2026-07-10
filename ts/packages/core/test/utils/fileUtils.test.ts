@@ -42,6 +42,13 @@ vi.mock('path', async importOriginal => {
   };
 });
 
+// Mock DNS resolution so the SSRF guard treats test hosts as public without
+// hitting the network. (URL uploads route through ssrfSafeFetch, which resolves
+// the host and rejects private/internal addresses.)
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
+}));
+
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -107,7 +114,10 @@ describe('fileUtils', () => {
       });
 
       expect(result.name).toBe('document.pdf');
-      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, { signal: undefined });
+      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, {
+        signal: undefined,
+        redirect: 'manual',
+      });
     });
 
     it('should generate filename when URL has no filename', async () => {
