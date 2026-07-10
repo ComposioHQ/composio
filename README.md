@@ -141,7 +141,7 @@ Everything published from this repo:
 |---------|-------------|
 | [`@composio/core`](ts/packages/core) | TypeScript SDK |
 | [`@composio/slim`](ts/packages/slim) | `@composio/core` without packaged source or docs; same API, smaller install |
-| [`composio` CLI](ts/packages/cli) | Standalone CLI binary, installed via [composio.dev/install](https://composio.dev/install) |
+| [`composio` CLI](ts/packages/cli) | Standalone CLI binary: `curl -fsSL https://composio.dev/install \| bash` |
 | [`@composio/experimental`](ts/packages/experimental) | Experimental integrations, including the Pi provider |
 | [`@composio/json-schema-to-zod`](ts/packages/json-schema-to-zod) | JSON Schema to Zod conversion |
 | `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare |
