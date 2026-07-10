@@ -45,6 +45,7 @@ import { ApiEndpointsTable } from '@/components/api-endpoints-table';
 import { ClaudeMockUI } from '@/components/claude-mock-ui';
 import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
 import { MediaSplit } from '@/components/media-split';
+import { PackageInstall } from '@/components/package-install';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import {
@@ -143,6 +144,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ClaudeMockUI,
     InChatAuthTerminal,
     MediaSplit,
+    PackageInstall,
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
     // Lucide icons
