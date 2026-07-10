@@ -1,0 +1,39 @@
+name: Publish MCP server
+
+# Updates the io.github.ComposioHQ/composio entry in the MCP registry
+# (which backs the github.com/mcp card) from the repo-root server.json.
+#
+# Trigger options:
+#   - release: published  -> auto-publish whenever a GitHub release is cut
+#   - workflow_dispatch   -> an admin can publish on demand from the Actions tab
+#
+# Remember to bump "version" in server.json before publishing; the registry
+# rejects re-publishing an already-published version.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write   # required for GitHub OIDC auth to the MCP registry
+  contents: read
+
+jobs:
+  publish:
+    # Only the canonical repo may publish; forks (and this PR's fork) must not.
+    if: github.repository == 'ComposioHQ/composio'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar -xz mcp-publisher
+
+      - name: Authenticate to the MCP registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish
