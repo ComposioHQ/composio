@@ -29,8 +29,8 @@ allowBuilds:
 catalog:
   '@ai-sdk/openai': ^4.0.7
   '@arethetypeswrong/cli': ^0.18.4
-  '@clack/core': '^1.4.2'
-  '@clack/prompts': '^1.6.0'
+  '@clack/core': '^1.4.3'
+  '@clack/prompts': '^1.7.0'
   '@cloudflare/vitest-pool-workers': 0.18.0
   '@cloudflare/workers-types': ^4.20260702.1
   '@composio/client': 0.1.0-alpha.75
@@ -42,7 +42,7 @@ catalog:
   '@effect/platform-node': ^0.107.0
   '@effect/platform-node-shared': ^0.60.0
   '@effect/vitest': ^0.29.0
-  '@mastra/core': ^1.49.0
+  '@mastra/core': ^1.50.1
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
   '@typescript/native-preview': 7.0.0-dev.20260703.1
@@ -55,10 +55,10 @@ catalog:
   pnpm: ^11.9.0
   publint: ^0.3.21
   tsdown: ^0.22.3
-  tsx: ^4.22.5
+  tsx: ^4.23.0
   typescript: ^6.0.3
-  '@vitest/ui': ^4.1.9
-  vitest: ^4.1.9
+  '@vitest/ui': ^4.1.10
+  vitest: ^4.1.10
   wrangler: ^4.107.0
   zod: ^4.4.3
   zod-to-json-schema: ^3.25.2
