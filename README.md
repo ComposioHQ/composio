@@ -29,7 +29,7 @@ This is the Composio SDK monorepo. It contains:
 
 - **[`@composio/core`](ts/packages/core)**: TypeScript SDK
 - **[`composio`](python)**: Python SDK
-- **[`@composio/cli`](ts/packages/cli)**: the `composio` CLI for searching, executing, and scripting tools from your shell
+- **[`composio` CLI](ts/packages/cli)**: search, execute, and script tools from your shell
 - **Provider adapters** for OpenAI Agents, Claude Agent SDK, Vercel AI SDK, LangChain, and [more](#providers)
 
 ## Quickstart
@@ -105,7 +105,7 @@ curl -fsSL https://composio.dev/install | bash
 composio login
 ```
 
-Also available via `brew install ComposioHQ/tap/composio` or `npm install -g @composio/cli`. Use `composio search` to find tools, `composio execute` to run them, `composio link` to connect accounts, and `composio run` to script workflows in TypeScript. See the [CLI docs](https://docs.composio.dev/docs/cli).
+Also available via `brew install ComposioHQ/tap/composio`. Use `composio search` to find tools, `composio execute` to run them, `composio link` to connect accounts, and `composio run` to script workflows in TypeScript. See the [CLI docs](https://docs.composio.dev/docs/cli).
 
 ## Providers
 
@@ -141,7 +141,7 @@ Everything published from this repo:
 |---------|-------------|
 | [`@composio/core`](ts/packages/core) | TypeScript SDK |
 | [`@composio/slim`](ts/packages/slim) | `@composio/core` without packaged source or docs; same API, smaller install |
-| [`@composio/cli`](ts/packages/cli) | The `composio` CLI, shipped as standalone binaries, a Homebrew tap, and on npm |
+| [`composio` CLI](ts/packages/cli) | Standalone CLI binary, installed via the install script or Homebrew |
 | [`@composio/experimental`](ts/packages/experimental) | Experimental integrations, including the Pi provider |
 | [`@composio/json-schema-to-zod`](ts/packages/json-schema-to-zod) | JSON Schema to Zod conversion |
 | `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare |
