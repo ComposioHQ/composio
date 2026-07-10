@@ -1,25 +1,9 @@
+import { extractComposioConnectLinks } from '../auth-links';
 import { runHook } from './hooks';
 import { hookControls } from './results';
 import type { PiAuthLinkContext, PiHookControls, PiSessionToolCapabilities } from './types';
 
-export const extractComposioConnectLinks = (value: unknown): string[] => {
-  const text = stringifyUnknown(value);
-  const connectLinks = text.match(/https:\/\/connect\.composio\.dev\/[^\s<>)"']+/gi) ?? [];
-  const genericLinks =
-    text.match(/https:\/\/[^\s<>)"']*composio[^\s<>)"']*\/link\/[^\s<>)"']+/gi) ?? [];
-  return [
-    ...new Set([...connectLinks, ...genericLinks].map(url => url.replace(/[.,;:!?]+$/g, ''))),
-  ];
-};
-
-const stringifyUnknown = (value: unknown): string => {
-  if (typeof value === 'string') return value;
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
+export { extractComposioConnectLinks } from '../auth-links';
 
 export const applyAuthLinkHandlers = async (
   capabilities: PiSessionToolCapabilities,

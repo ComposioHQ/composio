@@ -159,6 +159,25 @@ describe('EveProvider', () => {
     ).toBe(true);
   });
 
+  it('finds auth links in circular data containing bigint values', async () => {
+    const circular: Record<string, unknown> = {
+      connectionUrl: 'https://connect.composio.dev/link_123',
+      sequence: 1n,
+    };
+    circular.self = circular;
+
+    const onAuthLink = vi.fn((_ctx, next) => next());
+    const provider = new EveProvider({ hooks: { onAuthLink } });
+    const wrapped = provider.wrapTools(
+      [tool('COMPOSIO_MANAGE_CONNECTIONS')],
+      vi.fn(async () => ok(circular))
+    );
+
+    await wrapped.COMPOSIO_MANAGE_CONNECTIONS.execute({}, {} as never);
+
+    expect(onAuthLink.mock.calls[0]?.[0].url).toBe('https://connect.composio.dev/link_123');
+  });
+
   it('finds auth links in errors even when data cannot be serialized', async () => {
     const circular: Record<string, unknown> = {};
     circular.self = circular;

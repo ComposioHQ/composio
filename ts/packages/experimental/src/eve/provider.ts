@@ -24,23 +24,48 @@ export type EveNeedsApproval = (
   context: NeedsApprovalContext<Record<string, unknown>>
 ) => boolean;
 
+const MULTI_EXECUTE_TOOL_SLUG = 'COMPOSIO_MULTI_EXECUTE_TOOL';
+
+const toEveInputSchema = (tool: Tool, strict?: boolean): Record<string, JsonValue> => {
+  const params = tool.inputParameters;
+  if (!params) return { type: 'object', properties: {} };
+  if (!strict || params.type !== 'object') return params as Record<string, JsonValue>;
+
+  return removeNonRequiredProperties({
+    ...params,
+    properties: { ...params.properties },
+  }) as Record<string, JsonValue>;
+};
+
+const toEveApprovalPolicy = (
+  tool: Tool,
+  approvalPolicy?: EveNeedsApproval
+): EveTool['needsApproval'] => {
+  if (!approvalPolicy) return undefined;
+  return context => approvalPolicy(tool, context);
+};
+
+const isProtectedToolItem = (item: unknown, protectedSlugs: ReadonlySet<string>): boolean => {
+  if (typeof item !== 'object' || item === null) return false;
+
+  const toolSlug = (item as Record<string, unknown>).tool_slug;
+  if (typeof toolSlug !== 'string') return false;
+
+  return protectedSlugs.has(toolSlug.toUpperCase());
+};
+
 /** Require approval for direct calls and matching entries inside a multi-execute call. */
 export const requireApprovalForTools = (...toolSlugs: string[]): EveNeedsApproval => {
   const protectedSlugs = new Set(toolSlugs.map(slug => slug.toUpperCase()));
   return (tool, context) => {
-    if (protectedSlugs.has(tool.slug.toUpperCase())) return true;
-    if (tool.slug !== 'COMPOSIO_MULTI_EXECUTE_TOOL') return false;
+    const normalizedToolSlug = tool.slug.toUpperCase();
+    if (protectedSlugs.has(normalizedToolSlug)) return true;
+    if (normalizedToolSlug !== MULTI_EXECUTE_TOOL_SLUG) return false;
 
-    const tools = context.toolInput?.tools;
-    return (
-      Array.isArray(tools) &&
-      tools.some(
-        item =>
-          typeof item === 'object' &&
-          item !== null &&
-          protectedSlugs.has(String((item as Record<string, unknown>).tool_slug).toUpperCase())
-      )
-    );
+    const requestedTools = context.toolInput?.tools;
+    if (!Array.isArray(requestedTools)) return false;
+
+    return requestedTools.some(item => isProtectedToolItem(item, protectedSlugs));
   };
 };
 
@@ -62,21 +87,13 @@ export class EveProvider extends BaseAgenticProvider<
   }
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): EveTool {
-    const params = tool.inputParameters;
-    const inputSchema =
-      this.options.strict && params?.type === 'object'
-        ? removeNonRequiredProperties({
-            ...params,
-            properties: { ...params.properties },
-          })
-        : (params ?? { type: 'object', properties: {} });
+    const inputSchema = toEveInputSchema(tool, this.options.strict);
+    const needsApproval = toEveApprovalPolicy(tool, this.options.needsApproval);
 
     return defineTool({
       description: tool.description ?? tool.name,
-      inputSchema: inputSchema as Record<string, JsonValue>,
-      needsApproval: this.options.needsApproval
-        ? context => this.options.needsApproval?.(tool, context) ?? false
-        : undefined,
+      inputSchema,
+      needsApproval,
       execute: (input, context: ToolContext) =>
         applyHooks(
           this.options.hooks ?? {},

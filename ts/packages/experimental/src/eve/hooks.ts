@@ -1,5 +1,6 @@
 import type { ExecuteToolFn, ToolExecuteResponse } from '@composio/core';
 import type { ToolContext } from 'eve/tools';
+import { extractComposioConnectLinks } from '../auth-links';
 
 type MaybePromise<T> = T | Promise<T>;
 type Next = () => Promise<ToolExecuteResponse>;
@@ -51,31 +52,18 @@ const HOOK_BY_SLUG = {
 
 type MetaSlug = keyof typeof HOOK_BY_SLUG;
 
-const CONNECT_LINK = /https:\/\/connect\.composio\.dev\/[^\s<>)"']+/gi;
-const GENERIC_LINK = /https:\/\/[^\s<>)"']*composio[^\s<>)"']*\/link\/[^\s<>)"']+/gi;
-
-const safeStringify = (value: unknown): string => {
-  const seen = new WeakSet<object>();
-  try {
-    return (
-      JSON.stringify(value, (_key, item: unknown) => {
-        if (typeof item === 'bigint') return item.toString();
-        if (typeof item === 'object' && item !== null) {
-          if (seen.has(item)) return '[Circular]';
-          seen.add(item);
-        }
-        return item;
-      }) ?? ''
-    );
-  } catch {
-    return typeof value === 'string' ? value : '';
-  }
+const hookForSlug = (hooks: EveProviderHooks, slug: string): EveHook | undefined => {
+  const hookName = HOOK_BY_SLUG[slug as MetaSlug];
+  if (!hookName) return undefined;
+  return hooks[hookName];
 };
 
 const extractAuthLinks = (result: ToolExecuteResponse): string[] => {
-  const text = [safeStringify(result.data), safeStringify(result.error)].join(' ');
-  const links = [...(text.match(CONNECT_LINK) ?? []), ...(text.match(GENERIC_LINK) ?? [])];
-  return [...new Set(links.map(url => url.replace(/[.,;:!?]+$/g, '')))];
+  const links = new Set(extractComposioConnectLinks(result.data));
+  for (const link of extractComposioConnectLinks(result.error)) {
+    links.add(link);
+  }
+  return Array.from(links);
 };
 
 const runHook = async <C>(
@@ -84,9 +72,17 @@ const runHook = async <C>(
   getDefault: Next
 ): Promise<ToolExecuteResponse> => {
   if (!hook) return getDefault();
+
   let pending: Promise<ToolExecuteResponse> | undefined;
-  const next: Next = () => (pending ??= getDefault());
-  return (await hook(ctx, next)) ?? pending ?? next();
+  const next: Next = () => {
+    if (!pending) pending = getDefault();
+    return pending;
+  };
+
+  const hookResult = await hook(ctx, next);
+  if (hookResult !== undefined && hookResult !== null) return hookResult;
+  if (pending) return pending;
+  return next();
 };
 
 export async function applyHooks(
@@ -98,10 +94,8 @@ export async function applyHooks(
 ): Promise<ToolExecuteResponse> {
   const context = { slug, eve: eveContext };
   const ctx: EveHookContext = { request: { slug, args }, context, deny: denyEveToolCall };
-  const name = HOOK_BY_SLUG[slug as MetaSlug] as (typeof HOOK_BY_SLUG)[MetaSlug] | undefined;
-  const result = await runHook(name ? hooks[name] : undefined, ctx, () =>
-    executeTool(ctx.request.slug, ctx.request.args)
-  );
+  const hook = hookForSlug(hooks, slug);
+  const result = await runHook(hook, ctx, () => executeTool(ctx.request.slug, ctx.request.args));
 
   const { onAuthLink } = hooks;
   if (!onAuthLink) return result;
