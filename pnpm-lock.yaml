@@ -187,7 +187,7 @@ importers:
         specifier: ^8.62.1
         version: 8.62.1(eslint@9.39.4(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       vitest:
-        specifier: 4.1.10
+        specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.0)(@vitest/ui@4.1.10)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
       zod:
         specifier: 'catalog:'
