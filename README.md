@@ -29,7 +29,7 @@ This is the Composio SDK monorepo. It contains:
 
 - **[`@composio/core`](ts/packages/core)**: TypeScript SDK
 - **[`composio`](python)**: Python SDK
-- **[`@composio/cli`](ts/packages/cli)**: `composio` CLI — search, execute, and script tools from your shell
+- **[`@composio/cli`](ts/packages/cli)**: the `composio` CLI for searching, executing, and scripting tools from your shell
 - **Provider adapters** for OpenAI Agents, Claude Agent SDK, Vercel AI SDK, LangChain, and [more](#providers)
 
 ## Quickstart
@@ -92,11 +92,11 @@ print(result.final_output)
 
 By default a session gets meta tools that discover, authenticate, and execute app tools at runtime, so you don't load hundreds of tool definitions into context. Store `session.session_id` and reuse it with `composio.use()` across turns. See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
 
-**Prefer MCP?** Every session also exposes a hosted MCP endpoint — pass `mcp: true` to `composio.create()` and point Claude, Cursor, or any MCP client at `session.mcp.url`. See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
+**Prefer MCP?** Every session also exposes a hosted MCP endpoint. Pass `mcp: true` to `composio.create()` and point Claude, Cursor, or any MCP client at `session.mcp.url`. See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
 
 ## CLI
 
-The `composio` CLI runs Composio from your shell — and gives coding agents like Claude Code a local tool surface.
+The `composio` CLI runs Composio from your shell and gives coding agents like Claude Code a local tool surface.
 
 ```bash
 curl -fsSL https://composio.dev/install | bash
@@ -153,7 +153,7 @@ pnpm build
 pnpm test
 ```
 
-Python commands run from `python/` — see [`python/README.md`](python/README.md). We welcome contributions to both SDKs; read the [contribution guidelines](CONTRIBUTING.md) before submitting pull requests.
+Python commands run from `python/`; see [`python/README.md`](python/README.md). We welcome contributions to both SDKs; read the [contribution guidelines](CONTRIBUTING.md) before submitting pull requests.
 
 ## Support
 
@@ -164,4 +164,4 @@ Python commands run from `python/` — see [`python/README.md`](python/README.md
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
