@@ -1,0 +1,12 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ComposioHQ/composio",
+  "description": "Connect AI agents to 1000+ apps with managed authentication and tool-calling.",
+  "version": "1.0.5",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://connect.composio.dev/mcp"
+    }
+  ]
+}
