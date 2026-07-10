@@ -1,124 +1,71 @@
 # @composio/google
 
-Google GenAI Provider for Composio SDK.
-
-## Features
-
-- **Google GenAI Integration**: Seamless integration with Google's Generative AI models (Gemini)
-- **Function Calling Support**: Convert Composio tools to Google GenAI function declarations
-- **Type Safety**: Full TypeScript support with proper type definitions
-- **Execution Modifiers**: Support for transforming tool inputs and outputs
-- **Flexible Authentication**: Support for custom authentication parameters
-- **Streaming Support**: First-class support for streaming responses
+Adapts Composio tools to Gemini function declarations for the Google GenAI SDK (`@google/genai`) and executes the function calls the model returns.
 
 ## Installation
 
 ```bash
 npm install @composio/core @composio/google @google/genai
-# or
-yarn add @composio/core @composio/google @google/genai
-# or
-pnpm add @composio/core @composio/google @google/genai
 ```
 
-## Environment Variables
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `GOOGLE_API_KEY` (from https://aistudio.google.com/apikey) in your environment.
 
-Required environment variables:
+## Quickstart
 
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `GEMINI_API_KEY`: Your Google AI API key
-
-Optional environment variables:
-
-- `GOOGLE_PROJECT_ID`: Your Google Cloud project ID (for custom deployments)
-- `GOOGLE_LOCATION`: Your Google Cloud location (for custom deployments)
-
-## Quick Start
+Create a session for your user, pass its tools to Gemini as function declarations, and run the loop: execute each function call with `composio.provider.executeToolCall`, feed the result back, and repeat until the model replies with text.
 
 ```typescript
 import { Composio } from '@composio/core';
 import { GoogleProvider } from '@composio/google';
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenAI, type Part } from '@google/genai';
 
-// Initialize Google GenAI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Initialize Composio with Google provider
 const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
   provider: new GoogleProvider(),
 });
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
 
-// Get available tools
-const tools = await composio.tools.get('user123', {
-  toolkits: ['gmail', 'calendar'],
-  limit: 10,
+// Create a session for your user
+const session = await composio.create('user_123');
+const tools = await session.tools();
+
+const chat = ai.chats.create({
+  model: 'gemini-3-pro-preview',
+  config: {
+    tools: [{ functionDeclarations: tools }],
+  },
 });
-```
 
-## Examples
+let response = await chat.sendMessage({
+  message: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+});
 
-Check out our complete example implementations:
-
-- [Basic Google Integration](../../examples/google/src/index.ts)
-
-## API Reference
-
-### GoogleProvider Class
-
-The `GoogleProvider` class extends `BaseNonAgenticProvider` and provides Google GenAI-specific functionality.
-
-#### Methods
-
-##### `wrapTool(tool: Tool): GoogleTool`
-
-Wraps a Composio tool in the Google GenAI function declaration format.
-
-```typescript
-const wrappedTool = provider.wrapTool(composioTool);
-```
-
-##### `wrapTools(tools: Tool[]): GoogleGenAIToolCollection`
-
-Wraps multiple Composio tools in the Google GenAI function declaration format.
-
-```typescript
-const wrappedTools = provider.wrapTools(composioTools);
-```
-
-##### `executeToolCall(userId: string, tool: GoogleGenAIFunctionCall, options?: ExecuteToolFnOptions, modifiers?: ExecuteToolModifiers): Promise<string>`
-
-Executes a tool call from Google GenAI and returns the result as a JSON string.
-
-```typescript
-const result = await provider.executeToolCall('user123', functionCall, options, modifiers);
-```
-
-#### Types
-
-```typescript
-interface GoogleGenAIFunctionCall {
-  name: string;
-  args: Record<string, unknown>;
+// Agentic loop: keep executing tool calls until the model responds with text
+while (response.functionCalls && response.functionCalls.length > 0) {
+  const parts: Part[] = [];
+  for (const fc of response.functionCalls) {
+    const result = await composio.provider.executeToolCall('user_123', {
+      name: fc.name || '',
+      args: (fc.args || {}) as Record<string, unknown>,
+    });
+    parts.push({
+      functionResponse: {
+        id: fc.id,
+        name: fc.name,
+        response: JSON.parse(result),
+      },
+    });
+  }
+  response = await chat.sendMessage({ message: parts });
 }
 
-type GoogleTool = {
-  name: string;
-  description: string;
-  parameters: Schema;
-};
-
-type GoogleGenAIToolCollection = GoogleTool[];
+console.log(response.text);
 ```
 
-## Contributing
+## Tool execution
 
-We welcome contributions! Please see our [Contributing Guide](../../CONTRIBUTING.md) for more details.
+Gemini function calling is non-agentic; the model returns function calls and you execute them. `GoogleProvider` exposes `executeToolCall(userId, functionCall, options?, modifiers?)`, which takes a `{ name, args }` pair and returns the tool result as a JSON string. The constructor takes no options.
 
-## License
+## Links
 
-ISC License
-
-## Support
-
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
+- [Google provider docs](https://docs.composio.dev/docs/providers/google)
+- [Composio documentation](https://docs.composio.dev)
