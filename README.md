@@ -42,7 +42,7 @@ Create a session for a user, hand its tools to your agent, and let the agent tak
 npm install @composio/core @composio/openai-agents @openai/agents
 ```
 
-> `@composio/core` intentionally packages its TypeScript source and SDK docs so the installed package is inspectable. If you want a smaller install with the same API, use [`@composio/slim`](ts/packages/slim).
+> `@composio/core` intentionally packages its TypeScript source and SDK docs so the installed package is inspectable to coding agents. If you want a smaller install with the same API, use [`@composio/slim`](ts/packages/slim).
 
 ```typescript
 import { Composio } from "@composio/core";
