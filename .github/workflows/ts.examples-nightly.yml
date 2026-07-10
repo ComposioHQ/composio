@@ -25,10 +25,11 @@ jobs:
   examples-staging:
     name: ${{ matrix.provider }} examples against staging
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        provider: [mastra]
+        provider: [mastra, openai]
 
     steps:
       - name: Checkout Code
@@ -45,13 +46,13 @@ jobs:
       - name: Build SDK packages
         run: pnpm run build:packages
 
-      # On the schedule the secret must be present. Without this, a rotated/renamed/
-      # empty COMPOSIO_API_KEY would make smoke self-skip (exit 0) and every LLM step
-      # no-op, leaving the whole "regression net" green while testing nothing.
-      - name: Require COMPOSIO_API_KEY on scheduled runs
-        if: ${{ github.event_name == 'schedule' && env.COMPOSIO_API_KEY == '' }}
+      # Both secrets must be present for scheduled and manually dispatched
+      # validation. Otherwise smoke can self-skip and the LLM steps can no-op,
+      # leaving the whole regression net green while testing nothing.
+      - name: Require staging credentials
+        if: ${{ env.COMPOSIO_API_KEY == '' || env.OPENAI_API_KEY == '' }}
         run: |
-          echo "::error::COMPOSIO_API_KEY is empty on a scheduled run — smoke would no-op and mask regressions."
+          echo "::error::COMPOSIO_API_KEY and OPENAI_API_KEY are required for examples validation."
           exit 1
 
       # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.

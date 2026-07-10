@@ -14,8 +14,9 @@ const composio = new Composio({
 const externalUserId = 'default';
 
 // 2. Create an tool router session
-const mcpSession = await composio.experimental.toolRouter.createSession(externalUserId, {
-  toolkits: ["gmail", "github"],
+const session = await composio.sessions.create(externalUserId, {
+  toolkits: ['gmail', 'github'],
+  mcp: true,
 });
 
 // 3. Retrieve the MCP server instance for the tool router
@@ -23,7 +24,7 @@ const mcpSession = await composio.experimental.toolRouter.createSession(external
 const tools: HostedMCPTool[] = [
   hostedMcpTool({
     serverLabel: 'composio tool router',
-    serverUrl: mcpSession.url,
+    serverUrl: session.mcp.url,
     requireApproval: {
       never: {
         toolNames: ['GMAIL_FETCH_EMAILS'],
