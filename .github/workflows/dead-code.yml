@@ -1,0 +1,107 @@
+name: Dead Code
+
+# Surfaces likely-dead code on every PR so orphaned files/exports/deps get
+# noticed instead of rotting (see the root Dockerfile cleanup, #3783).
+#
+# Report-only by design: every job writes findings to the run's Step Summary
+# and never fails the build. These tools carry false positives (public API
+# surface, dynamic imports, import-map targets), so a red X here would train
+# people to ignore it. Tighten a job to blocking only once its config is
+# refined enough that a clean run is the steady state.
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'ts/**'
+      - 'python/**'
+      - '.github/actions/**'
+      - '.github/workflows/**'
+      - '.github/scripts/check-orphan-ci.sh'
+      - 'knip.json'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+  pull_request:
+    branches: [master, next]
+    paths:
+      - 'ts/**'
+      - 'python/**'
+      - '.github/actions/**'
+      - '.github/workflows/**'
+      - '.github/scripts/check-orphan-ci.sh'
+      - 'knip.json'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  knip:
+    name: TypeScript (knip)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run knip (report-only)
+        run: |
+          {
+            echo '## Knip — TypeScript dead code'
+            echo ''
+            echo 'Unused files, exports, types and dependencies. False positives'
+            echo 'usually mean a missing `entry` in `knip.json`; vet before deleting.'
+            echo ''
+            echo '```'
+            pnpm dlx knip@5 --no-exit-code --no-progress 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  vulture:
+    name: Python (vulture)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Python with UV
+        uses: ./.github/actions/setup-python-uv
+
+      - name: Run vulture (report-only)
+        run: |
+          {
+            echo '## Vulture — Python dead code'
+            echo ''
+            echo 'Likely-unused functions, classes and variables. Suppress'
+            echo 'confirmed false positives in `python/config/vulture_allowlist.py`.'
+            echo ''
+            echo '```'
+            (cd python && uv run nox -s dead_code) 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  orphaned-ci:
+    name: GitHub Actions (orphan check)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Check for orphaned workflows and composite actions
+        run: bash .github/scripts/check-orphan-ci.sh >> "$GITHUB_STEP_SUMMARY"

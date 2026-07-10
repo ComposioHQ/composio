@@ -12,5 +12,6 @@
     "moduleResolution": "bundler",
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/cloudflare.ts"]
 }

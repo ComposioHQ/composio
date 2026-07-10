@@ -1,70 +1,22 @@
 /**
- * Mastra Example
+ * Mastra × Composio — direct tools
  *
- * This example demonstrates how to use Composio SDK for mastra.
+ * Fetches a Composio tool as a Mastra tool and lets a Mastra Agent call it.
+ * Uses the unauthenticated HACKERNEWS toolkit, so no connected account is
+ * required — set only the two keys below and run.
  *
  * Prerequisites:
- * 1. Set up your COMPOSIO_API_KEY in the .env file
- * 2. Set up your OPENAI_API_KEY in the .env file
- * 3. Run the example: pnpm start
+ *   - COMPOSIO_API_KEY   (https://app.composio.dev)
+ *   - OPENAI_API_KEY     (or swap the model — see README)
+ *
+ * Run:
+ *   bun ts/examples/mastra/src/index.ts
  */
-import { MastraProvider } from '@composio/mastra';
-import { Agent } from '@mastra/core/agent';
-import { openai } from '@ai-sdk/openai';
-import { Composio } from '@composio/core';
 import 'dotenv/config';
 
-/**
- * Initialize Composio
- */
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
-});
+import { runDirectHackerNewsAgent } from './hackernews-agent/direct';
 
-/**
- * Get the tools from Composio
- * Attach beforeExecute and afterExecute hooks to the tools for logging
- */
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  modifySchema: ({ toolSlug, toolkitSlug, schema }) => {
-    console.log(
-      `🔄 Modifying schema for tool ${toolSlug}/${toolkitSlug} with schema ${JSON.stringify(schema)}`
-    );
-    return schema;
-  },
-  beforeExecute: ({ toolSlug, toolkitSlug, params }) => {
-    console.log(
-      `🔄 Executing tool ${toolSlug}/${toolkitSlug} with input ${JSON.stringify(params)}`
-    );
-    return params;
-  },
-  afterExecute: ({ toolSlug, toolkitSlug, result }) => {
-    console.log(
-      `✅ Tool ${toolSlug}/${toolkitSlug} executed successfully with output ${JSON.stringify(result)}`
-    );
-    return result;
-  },
-});
+const text = await runDirectHackerNewsAgent(process.env);
 
-/**
- * Create the mastra agent
- */
-const hackernewsAgent = new Agent({
-  id: 'test-mastra',
-  name: 'Weather Agent',
-  instructions:
-    'You are a helpful assistant that can use the Hackernews API to get user information.',
-  model: openai('gpt-4o-mini'),
-  tools: tools,
-});
-
-/**
- * Generate a response from the agent
- */
-const { text } = await hackernewsAgent.generate([
-  { role: 'user', content: 'Tell me about the user `pg` on hackernews' },
-]);
-
-console.log('\n🤖 Agent Response:\n');
+console.log('\n🤖 Agent response:\n');
 console.log(text);
