@@ -297,7 +297,14 @@ export function mdxToCleanMarkdown(content: string): string {
     }
   );
 
-  // RepoBrowser is an interactive file tree; point agents at the real repo instead.
+  // RepoBrowser is an interactive file tree. The iMessage page intentionally
+  // shows a source slice while its public runnable fixture is still pending.
+  result = result.replace(
+    /<RepoBrowser\b(?=[^>]*\bsource="imessage")[^>]*\/>/g,
+    '\n> The iMessage code browser is an implementation slice, not a standalone fixture. The complete runnable project will be published in the Composio examples repo.\n'
+  );
+
+  // Point the existing Slack browser at its real repository.
   result = result.replace(
     /<RepoBrowser\b[^>]*\/>/g,
     '\n> The complete project is on GitHub: [composio-slack-bot](https://github.com/ComposioHQ/composio-slack-bot).\n'

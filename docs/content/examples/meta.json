@@ -5,6 +5,7 @@
     "index",
     "general-agent-with-pi",
     "standup-slackbot",
-    "local-sandbox-pr-reviewer"
+    "local-sandbox-pr-reviewer",
+    "imessage-agent"
   ]
 }

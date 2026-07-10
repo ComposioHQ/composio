@@ -1,0 +1,266 @@
+---
+title: iMessage custom toolkit with eve
+description: Walk through an agent that texts on your behalf from your own Mac. A Composio custom toolkit wraps local iMessage in-process, and the eve provider puts it on the same session as the whole Composio catalog.
+keywords:
+  [custom toolkit, imessage, local tools, eve, provider, session, custom tools, macOS, applescript]
+full: true
+gallery:
+  categories: [General agents, Background agents]
+  logos: [gmail, linear, github]
+  featured: true
+  order: 3
+---
+
+Most Composio toolkits call a remote API. Some capabilities only exist on one machine, and iMessage is the classic case: there's no iMessage cloud API, so the agent has to run on your Mac and drive Messages.app directly.
+
+This example builds exactly that: a terminal agent that **texts on your behalf from your own Mac** and reaches the rest of your apps (Gmail, Calendar, GitHub, Slack) through the Composio catalog in the same breath.
+
+```
+you  ›  read my last email and text Shams a summary
+you  ›  text mom i'm running 10 min late
+you  ›  what did Lena and I last text about?
+```
+
+The pattern is the takeaway, not iMessage specifically. It comes together from a handful of Composio pieces:
+
+1. **A custom toolkit** wraps local iMessage (send, contacts, history, memory) as Composio tools.
+2. **In-process execution** runs each tool right on your Mac through `session.execute`, with no remote API.
+3. **One session** puts those local tools on the same surface as the 1000+ app catalog.
+4. **The eve provider** turns `session.tools()` into [eve](https://github.com/vercel/eve)-native tools, so `eve dev` can call them.
+5. **Triggers** let an outside event wake the agent and reach your phone, with in-chat auth through `COMPOSIO_MANAGE_CONNECTIONS` for any app you haven't connected.
+
+<ImessageFlow />
+
+Below you build the integration core: the custom toolkit first, then the wiring that puts it on a session, then triggers, then a browse of the relevant source. You bring a Composio API key and a Mac. Composio brings the catalog.
+
+## Setup
+
+You need a [Composio API key](https://dashboard.composio.dev) and macOS (the iMessage tools drive Messages.app, Contacts.app, and the local `chat.db`).
+
+<Steps>
+<Step>
+**Install**
+
+```bash
+npm install @composio/core @composio/experimental eve
+```
+
+</Step>
+<Step>
+**Configure**
+
+```txt title=".env.local"
+COMPOSIO_API_KEY=xxxxxxxxx
+```
+
+</Step>
+<Step>
+**Grant macOS permissions** (prompted on first use): Automation for Messages, Contacts access, and Full Disk Access to read `chat.db`.
+</Step>
+</Steps>
+
+## The custom toolkit
+
+A custom toolkit is a named group of custom tools. Each tool declares an input schema and an `execute` that runs locally. Here is `SEND`, which shells out to AppleScript to drive Messages.app:
+
+<FileBuildup name="send" />
+
+Group your tools into a toolkit. The full project also ships `FIND_CONTACT` (fuzzy contact lookup over Contacts.app), `READ_MESSAGES` (recent messages from `chat.db`), and `RECALL`/`REMEMBER` (per-contact memory), each built the same way:
+
+```ts title="imessage/index.ts"
+// @noErrors
+import { experimental_createToolkit } from '@composio/core';
+import { sendMessage } from './send-message';
+import { findContact } from './find-contact';
+import { readMessages } from './read-messages';
+import { recallContact, rememberContact } from './memory-tools';
+
+export function createImessageToolkit() {
+  return experimental_createToolkit('IMESSAGE', {
+    name: 'iMessage',
+    description:
+      "Send and read iMessages, look up contacts, and remember people, locally on the user's Mac.",
+    tools: [sendMessage, findContact, readMessages, recallContact, rememberContact],
+  });
+}
+```
+
+The toolkit depends only on `@composio/core`, so it drops into any Composio agent. Custom tools execute in-process through `session.execute`, which is why they aren't on the MCP URL yet.
+
+## Wire it up
+
+Set the [eve provider](/docs/providers/eve) on the client and register the toolkit on the session. `composio.ts` grows in three steps, one Composio concept each:
+
+### Create the client with the eve provider
+
+The provider is what makes `session.tools()` return eve-native tools instead of raw Composio tools. Its approval policy pauses every iMessage send before the local AppleScript runs.
+
+<FileBuildup name="wiring" step={1} />
+
+### Scope a session to the user
+
+`sessions.create` gives this user their own toolset, already wired to the full Composio catalog.
+
+<FileBuildup name="wiring" step={2} />
+
+### Register the local toolkit
+
+Pass the custom toolkit through `experimental.customToolkits`, and the local iMessage tools join the catalog on the same session.
+
+<FileBuildup name="wiring" step={3} />
+
+Now hand that session to eve. eve discovers tools from files, so `defineComposioTools(session)` returns the resolver that exposes `session.tools()`. One line:
+
+```ts title="agent/tools/composio.ts"
+// @noErrors
+import { defineComposioTools } from '@composio/experimental/eve';
+import { session } from '../../composio';
+
+export default defineComposioTools(session);
+```
+
+```ts title="agent/agent.ts"
+// @noErrors
+import { defineAgent } from 'eve';
+
+export default defineAgent({
+  model: 'google/gemini-2.5-flash',
+});
+```
+
+That's the whole integration. Run `eve dev` and talk to it. The agent can text a contact, read a thread, and act across every connected app, with auth handled in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+## Extend it: triggers
+
+The agent can text, so anything that can wake the agent can reach your phone. Composio **triggers** turn an external event into an agent run: subscribe to an app event, point Composio's webhook at your app, and act on each event with the same iMessage tools.
+
+For example, surface a Linear assignment and ask the user whether to inspect it. The first turn contains no issue title or body, so third-party text does not cross into the agent prompt before the user opts in:
+
+```ts title="agent/channels/triggers.ts"
+// @noErrors
+import { defineChannel, POST } from 'eve/channels';
+import { composio } from '../../composio';
+
+export default defineChannel({
+  routes: [
+    POST('/webhook', async (req, { send }) => {
+      const { payload: event } = await composio.triggers.parse(req, {
+        verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+      });
+      if (event.userId !== 'user_123' || event.triggerSlug !== 'LINEAR_ISSUE_ASSIGNED') {
+        return new Response(null, { status: 202 });
+      }
+      await send(
+        `A verified Linear assignment event arrived. Ask whether I want to inspect it. ` +
+          `Do not call tools in this turn. Event reference: ${event.uuid}.`,
+        {
+          auth: {
+            authenticator: 'composio-webhook',
+            principalType: 'service',
+            principalId: event.userId,
+            attributes: { triggerSlug: event.triggerSlug },
+          },
+          continuationToken: event.uuid,
+        }
+      );
+      return new Response(null, { status: 202 });
+    }),
+  ],
+});
+```
+
+Point Composio at your webhook and create the trigger, once each. Reuse the same `composio` client from `composio.ts`:
+
+```ts title="agent/setup-triggers.ts"
+// @noErrors
+import { composio } from '../composio';
+
+// Register the webhook URL once per project; store the returned
+// secret as COMPOSIO_WEBHOOK_SECRET.
+const subscription = await composio.triggers.setWebhookSubscription({
+  webhookUrl: `${process.env.APP_URL}/webhook`,
+});
+
+// Use the exact slug from the Composio triggers catalog.
+const trigger = await composio.triggers.create('user_123', 'LINEAR_ISSUE_ASSIGNED');
+console.log(`Trigger created: ${trigger.triggerId}`);
+```
+
+Run it once with `npx tsx agent/setup-triggers.ts`, and the webhook handler above takes over from there.
+
+Swap the trigger and the prompt to create another reflex. Keep the first turn content-free, then fetch third-party content only after the user asks to continue.
+
+## More reflexes
+
+The prompt is where each reflex earns its keep, but the webhook should not turn untrusted content into instructions. Here is the same two-step gate for Gmail:
+
+```ts title="agent/channels/triggers.ts"
+// @noErrors
+import { defineChannel, POST } from 'eve/channels';
+import { composio } from '../../composio';
+
+export default defineChannel({
+  routes: [
+    POST('/webhook', async (req, { send }) => {
+      const { payload: event } = await composio.triggers.parse(req, {
+        verifySecret: process.env.COMPOSIO_WEBHOOK_SECRET,
+      });
+      if (event.userId !== 'user_123' || event.triggerSlug !== 'GMAIL_NEW_GMAIL_MESSAGE') {
+        return new Response(null, { status: 202 });
+      }
+      await send(
+        `A verified Gmail event arrived. Ask whether I want to inspect the email. ` +
+          `Do not call tools in this turn. Event reference: ${event.uuid}.`,
+        {
+          auth: {
+            authenticator: 'composio-webhook',
+            principalType: 'service',
+            principalId: event.userId,
+            attributes: { triggerSlug: event.triggerSlug },
+          },
+          continuationToken: event.uuid,
+        }
+      );
+      return new Response(null, { status: 202 });
+    }),
+  ],
+});
+```
+
+If the user continues, the agent can fetch the email in a separate turn and require approval before any side effect. A few more patterns worth wiring up with the same gate:
+
+- **Stand-up nudge.** A calendar event ten minutes out texts you the agenda and the meeting link, pulled straight from the invite.
+- **Review request.** A new GitHub review request texts you the PR title and a one-line read of the diff, so you can reply "approve" from your phone.
+- **Money in.** A successful Stripe payment texts you the amount and the customer, no dashboard required.
+- **Cover for me.** A Slack mention while you're away texts a teammate and asks them to take a look.
+
+Use the exact slug from the Composio triggers catalog for each. Signature verification proves the event came through Composio; it does not make an email subject, issue title, or other third-party text trustworthy. Reject unexpected users and trigger slugs, keep external content out of the initial prompt, and require approval before side effects such as sending a message.
+
+## Browse the project
+
+The key files, in one place. The custom toolkit and the session wiring carry the integration, the eve provider is imported from `@composio/experimental/eve`, and the rest is local macOS glue.
+
+<RepoBrowser
+  source="imessage"
+  caption="a slice of the real project; the Composio files do the work"
+  heightClass="min-h-[420px] max-h-[640px]"
+/>
+
+The complete, runnable project will be published in the Composio examples repo.
+
+## Run it
+
+The browser above is an implementation slice, not a standalone fixture: it omits the project's package manifest and supporting `handles`, `chat-db`, and `memory` modules. The complete runnable project will be published in the Composio examples repo. Until then, use the provider walkthrough on this page in an existing eve app and treat the iMessage source as a reference for the local toolkit. The first send or contact lookup prompts for macOS permission, and the first time the agent needs an app you haven't connected, it returns an auth link in chat through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+<Cards>
+  <Card
+    title="eve provider"
+    href="/docs/providers/eve"
+    description="EveProvider, the defineComposioTools resolver, and the (ctx, next) hooks."
+  />
+  <Card
+    title="Custom tools and toolkits"
+    href="/docs/extending-sessions/custom-tools-and-toolkits"
+    description="Build and register your own in-process Composio tools."
+  />
+</Cards>

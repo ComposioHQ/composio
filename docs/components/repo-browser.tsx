@@ -3,6 +3,7 @@ import { RepoBrowserClient, type RepoFile } from './repo-browser-client';
 import slackBot from '@/lib/slack-bot-source.json';
 import localWorkbench from '@/lib/local-workbench-source.json';
 import standup from '@/lib/standup-bot-source.json';
+import imessage from '@/lib/imessage-source.json';
 
 interface SourceFile {
   path: string;
@@ -16,6 +17,7 @@ const SOURCES = {
   'slack-bot': slackBot,
   'local-workbench': localWorkbench,
   standup,
+  imessage,
 } as const;
 
 /**
@@ -30,9 +32,11 @@ const SOURCES = {
 export async function RepoBrowser({
   source = 'slack-bot',
   caption = 'a slice of the real project, the Composio files do the work',
+  heightClass,
 }: {
   source?: keyof typeof SOURCES;
   caption?: string | null;
+  heightClass?: string;
 }) {
   const data = SOURCES[source] as SourceFile[];
 
@@ -50,7 +54,7 @@ export async function RepoBrowser({
           {caption}
         </div>
       ) : null}
-      <RepoBrowserClient files={files} />
+      <RepoBrowserClient files={files} heightClass={heightClass} />
     </div>
   );
 }
