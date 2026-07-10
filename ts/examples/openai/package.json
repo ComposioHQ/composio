@@ -2,11 +2,19 @@
   "name": "openai-example",
   "private": true,
   "version": "0.1.10-alpha.0",
-  "description": "",
-  "main": "index.js",
+  "type": "module",
+  "description": "Runnable OpenAI examples for Composio tools and Tool Router",
+  "main": "src/index.ts",
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "start": "bun src/index.ts",
+    "tool-router": "bun src/tool-router.ts",
+    "smoke": "bun src/smoke.ts",
+    "dev": "bun --watch src/index.ts",
+    "cf:dev": "wrangler dev",
+    "cf:dry-run": "wrangler deploy --dry-run --outdir dist-worker",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json && tsc --noEmit -p ./tsconfig.worker.json",
+    "lint": "eslint src --ext .ts,.tsx",
     "start:chat-completion": "bun src/chat-completions.ts",
     "start:assistant": "bun src/assistants.ts",
     "start:agents": "bun src/agents-api/index.ts",
@@ -29,7 +37,9 @@
     "zod-to-json-schema": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wrangler": "catalog:"
   }
 }
