@@ -6,7 +6,12 @@ import typing as t
 import typing_extensions as te
 
 from composio import exceptions
-from composio.client import DEFAULT_MAX_RETRIES, APIEnvironment, HttpClient
+from composio.client import (
+    DEFAULT_MAX_RETRIES,
+    APIEnvironment,
+    HttpClient,
+    OnDeprecation,
+)
 from composio.core.models import (
     AuthConfigs,
     ConnectedAccounts,
@@ -44,6 +49,8 @@ class SDKConfig(te.TypedDict):
     sensitive_file_upload_protection: te.NotRequired[bool]
     file_upload_path_deny_segments: te.NotRequired[t.Sequence[str]]
     file_upload_dirs: te.NotRequired[t.Union[t.Sequence[str], t.Literal[False]]]
+    disable_deprecation_warnings: te.NotRequired[bool]
+    on_deprecation: te.NotRequired[OnDeprecation]
 
 
 class Composio(t.Generic[TTool, TToolCollection], WithLogger):
@@ -148,6 +155,10 @@ class Composio(t.Generic[TTool, TToolCollection], WithLogger):
             base_url=kwargs.get("base_url") or os.environ.get("COMPOSIO_BASE_URL"),
             timeout=kwargs.get("timeout"),
             max_retries=kwargs.get("max_retries", DEFAULT_MAX_RETRIES),
+            disable_deprecation_warnings=kwargs.get(
+                "disable_deprecation_warnings", False
+            ),
+            on_deprecation=kwargs.get("on_deprecation"),
         )
         self.provider = actual_provider
         sensitive_file_upload_protection: bool = kwargs.get(

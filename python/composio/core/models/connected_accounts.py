@@ -4,7 +4,6 @@ import functools
 import logging
 import time
 import typing as t
-import warnings
 
 import typing_extensions as te
 from composio_client import BadRequestError, omit
@@ -30,10 +29,6 @@ logger = logging.getLogger(__name__)
 _TERMINAL_CONNECTION_STATES: t.FrozenSet[str] = frozenset(
     {"FAILED", "EXPIRED", "REVOKED"}
 )
-
-# One-time-per-process guard so long-running services don't spam the deprecation
-# warning on every initiate() call.
-_legacy_initiate_warning_emitted = False
 
 
 class ConnectionRequest(Resource):
@@ -543,42 +538,17 @@ class ConnectedAccounts:
         if alias is not None:
             connection["alias"] = alias
 
-        # Use `with_raw_response.create` so we can read the SEC-339
-        # `Deprecation` header (RFC 9745) the apollo retiring branch sets —
-        # that header is emitted only when the auth config is Composio-managed
-        # AND on a redirectable OAuth scheme, so it's the canonical signal
-        # that this caller needs to migrate. Custom auth configs and non-OAuth
-        # schemes never see the header, eliminating the false-positive warning
-        # that an auth_scheme-only check produced for link()-unaffected callers.
-        deprecation_header: t.Optional[str] = None
+        # Deprecation of this endpoint is surfaced generically by the SDK-wide
+        # response interceptor (see `composio.client.HttpClient`), which reads
+        # the `Deprecation`/`Sunset`/`Link` headers apollo emits on the retiring
+        # branch. No endpoint-specific check is needed here.
         try:
-            ca_client = self._client.connected_accounts
-            raw_create = getattr(
-                getattr(ca_client, "with_raw_response", None), "create", None
+            response = self._client.connected_accounts.create(
+                auth_config={"id": auth_config_id},
+                connection=t.cast(
+                    connected_account_create_params.Connection, connection
+                ),
             )
-            if callable(raw_create):
-                raw = raw_create(
-                    auth_config={"id": auth_config_id},
-                    connection=t.cast(
-                        connected_account_create_params.Connection, connection
-                    ),
-                )
-                response = raw.parse() if callable(getattr(raw, "parse", None)) else raw
-                headers = getattr(raw, "headers", None)
-                if headers is not None and hasattr(headers, "get"):
-                    value = headers.get("Deprecation") or headers.get("deprecation")
-                    if isinstance(value, str):
-                        deprecation_header = value
-            else:
-                # Test mocks may not stub `with_raw_response`. Fall back to
-                # the parsed-only path; the deprecation gate stays off (no
-                # header to read).
-                response = ca_client.create(
-                    auth_config={"id": auth_config_id},
-                    connection=t.cast(
-                        connected_account_create_params.Connection, connection
-                    ),
-                )
         except BadRequestError as error:
             # When the server has flipped this org to the retired path, the
             # legacy endpoint returns 400 with a stable migration message.
@@ -593,25 +563,6 @@ class ConnectedAccounts:
                     message
                 ) from error
             raise
-
-        # Warn once per process when apollo flags this response as on the
-        # retiring path. Header presence is a 1:1 signal — custom auth
-        # configs and non-OAuth schemes get a clean response and stay silent,
-        # fixing the false-positive that auth_scheme-based detection
-        # produced.
-        global _legacy_initiate_warning_emitted
-        if not _legacy_initiate_warning_emitted and deprecation_header:
-            _legacy_initiate_warning_emitted = True
-            warnings.warn(
-                "composio.connected_accounts.initiate() will stop working "
-                "for this auth config on or before 2026-07-03 (see Sunset "
-                "header on the response). Switch to "
-                "composio.connected_accounts.link() — same return shape, "
-                "same allow_multiple semantics. "
-                "https://docs.composio.dev/docs/changelog/2026/04/24",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
         return ConnectionRequest(
             id=response.id,

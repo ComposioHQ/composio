@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > Versions between `0.8.11` and `0.13.0` were released without CHANGELOG entries. See the [Git commit log](https://github.com/ComposioHQ/composio/commits/next/python) for changes in that window.
 
+## [0.17.2] - 2026-07-10
+
+### Added
+- **Automatic API deprecation warnings**: the SDK now inspects standard deprecation-signalling headers on every API response and emits a one-time `DeprecationWarning` per deprecated operation — `Deprecation` (RFC 9745), `Sunset` (RFC 8594, drives escalated wording as the removal date approaches/passes), and `Link; rel="successor-version"`/`rel="deprecation"` (RFC 8288). Warnings dedupe by HTTP method + route template so repeated calls (and calls with different path params) collapse to one warning. Detection is header-driven and endpoint-agnostic, so any endpoint deprecated server-side is surfaced with no SDK release required.
+  - New `Composio(..., disable_deprecation_warnings=True)` option to silence the warnings.
+  - New `Composio(..., on_deprecation=callback)` hook that receives a structured `{method, path, deprecated_at, sunset, successor}` payload for custom telemetry.
+
+### Changed
+- **`initiate()` deprecation check migrated to the generic interceptor**: the endpoint-specific `Deprecation`-header gate added in 0.13.1 is removed; `connected_accounts.initiate()` deprecation is now surfaced by the SDK-wide response interceptor like every other endpoint. The typed `ComposioLegacyConnectedAccountsEndpointRetiredError` for the retired-path 400 is unchanged.
+- Bumped the Python SDK and provider packages from `0.17.1` to `0.17.2`.
+
 ## [0.17.1] - 2026-06-28
 
 ### Added

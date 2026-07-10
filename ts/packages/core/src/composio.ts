@@ -12,6 +12,7 @@ import { getSDKConfig, getToolkitVersionsFromEnv } from './utils/sdk';
 import logger from './utils/logger';
 import { COMPOSIO_LOG_LEVEL, IS_DEVELOPMENT_OR_CI } from './utils/constants';
 import { checkForLatestVersionFromNPM } from './utils/version';
+import { createDeprecationInterceptor, type DeprecationInfo } from './utils/deprecation';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
@@ -118,6 +119,32 @@ export type ComposioConfig<
    * @default false
    */
   disableVersionCheck?: boolean;
+  /**
+   * Whether to silence automatic API deprecation warnings.
+   *
+   * By default the SDK inspects every API response for standard deprecation
+   * signalling headers (`Deprecation`/`Sunset`/`Link`) and logs a one-time
+   * warning per deprecated operation. Set this to `true` to suppress those
+   * warnings (the {@link onDeprecation} hook, if provided, is also skipped).
+   * @example true, false
+   * @default false
+   */
+  disableDeprecationWarnings?: boolean;
+  /**
+   * Optional hook invoked once per deprecated operation, so applications can
+   * route API deprecations to their own telemetry instead of (or in addition
+   * to) the logged warning.
+   *
+   * @example
+   * ```typescript
+   * const composio = new Composio({
+   *   onDeprecation: ({ method, path, sunset, successor }) => {
+   *     metrics.increment('composio.deprecation', { tags: [`${method} ${path}`] });
+   *   },
+   * });
+   * ```
+   */
+  onDeprecation?: (info: DeprecationInfo) => void;
   /**
    * The versions of the toolkits to use for tool execution and retrieval.
    * Omit to use 'latest' for all toolkits.
@@ -347,6 +374,13 @@ export class Composio<
       baseURL: baseURLParsed,
       defaultHeaders: defaultHeaders,
       logLevel: COMPOSIO_LOG_LEVEL,
+      // Generic interceptor that surfaces API deprecations (via the standard
+      // `Deprecation`/`Sunset`/`Link` response headers) for any endpoint,
+      // without requiring an SDK release when new endpoints are deprecated.
+      fetch: createDeprecationInterceptor({
+        disabled: this.config.disableDeprecationWarnings,
+        onDeprecation: this.config.onDeprecation,
+      }),
     });
 
     this.tools = new Tools(this.client, this.config);

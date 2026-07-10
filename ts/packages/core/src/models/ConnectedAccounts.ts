@@ -58,10 +58,6 @@ import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
 
-// One-time-per-process guard so long-running services don't spam the deprecation
-// warning on every initiate() call.
-let _legacyInitiateWarningEmitted = false;
-
 /**
  * ConnectedAccounts class
  *
@@ -254,37 +250,15 @@ export class ConnectedAccounts {
     };
 
     let response: ConnectedAccountCreateResponse;
-    let httpResponse: Response | undefined;
     try {
-      // Chain `.withResponse()` so we can read the SEC-339 `Deprecation`
-      // header (RFC 9745) the apollo retiring branch sets — that header is
-      // emitted only when the auth config is Composio-managed AND on a
-      // redirectable OAuth scheme, so it's the canonical signal that this
-      // caller needs to migrate. Custom auth configs and non-OAuth schemes
-      // never see the header, eliminating the false-positive warning that
-      // an `auth_scheme`-only check produced for `link()`-unaffected callers.
-      const apiCall = this.client.connectedAccounts.create(createParams, requestOptions);
-      if (typeof (apiCall as { withResponse?: unknown }).withResponse === 'function') {
-        const resolved = await withCancellation(
-          () =>
-            (
-              apiCall as unknown as {
-                withResponse: () => Promise<{
-                  data: ConnectedAccountCreateResponse;
-                  response: Response;
-                }>;
-              }
-            ).withResponse(),
-          requestOptions?.signal
-        );
-        response = resolved.data;
-        httpResponse = resolved.response;
-      } else {
-        // Test mocks may return a plain Promise without `withResponse`.
-        // Fall back to a naked await; the deprecation gate below stays
-        // off in that case (no header to read).
-        response = await withCancellation(() => apiCall, requestOptions?.signal);
-      }
+      // Deprecation of this endpoint is surfaced generically by the SDK-wide
+      // response interceptor (see `utils/deprecation`), which reads the
+      // `Deprecation`/`Sunset`/`Link` headers apollo emits on the retiring
+      // branch. No endpoint-specific check is needed here.
+      response = await withCancellation(
+        () => this.client.connectedAccounts.create(createParams, requestOptions),
+        requestOptions?.signal
+      );
     } catch (error) {
       // Caller-initiated cancellation must surface as the typed error,
       // not get remapped to the legacy-endpoint error below.
@@ -306,21 +280,6 @@ export class ConnectedAccounts {
         });
       }
       throw error;
-    }
-
-    // Warn once per process when apollo flags this response as on the
-    // retiring path. Header presence is a 1:1 signal — custom auth configs
-    // and non-OAuth schemes get a clean response and stay silent, fixing
-    // the false-positive that auth_scheme-based detection produced.
-    if (!_legacyInitiateWarningEmitted && httpResponse?.headers.get('Deprecation')) {
-      _legacyInitiateWarningEmitted = true;
-      logger.warn(
-        '[Deprecation] composio.connectedAccounts.initiate() will stop ' +
-          'working for this auth config on or before 2026-07-03 (see Sunset ' +
-          'header on the response). Switch to composio.connectedAccounts.link() — ' +
-          'same return shape, same allowMultiple semantics. ' +
-          'https://docs.composio.dev/docs/changelog/2026/04/24'
-      );
     }
 
     const redirectUrl =
