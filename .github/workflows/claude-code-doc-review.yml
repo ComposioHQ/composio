@@ -36,7 +36,7 @@ jobs:
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@769e3bdff9bb7ecfb51bad4c9cba23d6f5fc5ea5 # v1.0.163
+      uses: anthropics/claude-code-action@536f2c32a39763739000b0e1ac69ca2647d97ce9 # v1.0.170
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         track_progress: true # Forces tag mode with tracking comments
