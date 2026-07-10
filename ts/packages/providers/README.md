@@ -1,407 +1,44 @@
-# Composio Providers
+# Composio TypeScript providers
 
-This directory contains various providers that implement the Composio SDK for different platforms and frameworks. Each provider provides a way to interact with the Composio Platform using the specific platform's conventions and requirements.
+Each package in this directory adapts Composio tools to one agent framework's native tool format. You pass a provider to `new Composio({ provider })`, and `session.tools()` returns tools your framework can call directly.
 
-## Types of Providers
+## Packages
 
-Composio SDK supports two types of providers, each with different modifier capabilities:
+| Package | Framework |
+|---------|-----------|
+| [`@composio/openai`](openai) | OpenAI Chat Completions and Responses APIs |
+| [`@composio/openai-agents`](openai-agents) | OpenAI Agents SDK |
+| [`@composio/anthropic`](anthropic) | Anthropic Messages API |
+| [`@composio/claude-agent-sdk`](claude-agent-sdk) | Claude Agent SDK |
+| [`@composio/vercel`](vercel) | Vercel AI SDK |
+| [`@composio/google`](google) | Google GenAI |
+| [`@composio/langchain`](langchain) | LangChain and LangGraph |
+| [`@composio/llamaindex`](llamaindex) | LlamaIndex |
+| [`@composio/mastra`](mastra) | Mastra |
+| [`@composio/cloudflare`](cloudflare) | Cloudflare Workers AI |
 
-### 1. Non-Agentic Providers
+Each package README has an install command and a runnable quickstart.
 
-These providers only support schema modifiers for transforming tool schemas. They are suitable for simple integrations like OpenAI, Anthropic, etc.
+## Provider types
 
-Example implementation:
+Providers extend one of two base classes from `@composio/core`:
 
-```typescript
-import { BaseNonAgenticProvider } from '@composio/core';
-import type { Tool, SchemaModifiersParams } from '@composio/core';
+- **Non-agentic** (`BaseNonAgenticProvider`): format tool schemas for a raw model API (OpenAI, Anthropic, Cloudflare). Your code runs the tool loop, calling helpers like `executeToolCall` or `handleToolCalls` on the provider.
+- **Agentic** (`BaseAgenticProvider`): wrap tools with an execute function baked in (LangChain, LlamaIndex, Mastra, Vercel, OpenAI Agents). The framework runs the tool loop itself.
 
-export class NonAgenticProvider extends BaseNonAgenticProvider {
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool> {
-    // Apply schema modifiers if provided
-    if (modifiers?.schema) {
-      return modifiers.schema(toolSlug, tool);
-    }
-    return tool;
-  }
+## Creating a new provider
 
-  async getTools(): Promise<Tool[]> {
-    // Fetch tools from Composio API
-    const response = await this.client.getTools();
-    return response.data;
-  }
-
-  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool> {
-    // Fetch tool from Composio API
-    const response = await this.client.getToolBySlug(slug);
-    // Apply schema modifiers if provided
-    return this.wrapTool(slug, response.data, modifiers);
-  }
-}
-```
-
-### 2. Agentic Providers
-
-These providers support full modifier capabilities, making them suitable for complex integrations like Vercel, Langchain, etc. They support:
-
-1. **Schema Modifiers**: Transform tool schemas using `TransformToolSchemaModifier`
-2. **Execution Modifiers**: Transform tool execution behavior
-   - `beforeExecute`: Transform input parameters before execution
-   - `afterExecute`: Transform output after execution
-3. **Execute Modifiers**: Used during tool execution
-   - `beforeExecute`: Transform input parameters
-   - `afterExecute`: Transform output
-
-Example implementation:
-
-```typescript
-import { BaseAgenticProvider } from '@composio/core';
-import type { Tool, ModifiersParams, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
-
-export class AgenticProvider extends BaseAgenticProvider {
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool> {
-    let wrappedTool = tool;
-
-    // Apply schema modifiers if provided
-    if (modifiers?.schema) {
-      wrappedTool = modifiers.schema(toolSlug, wrappedTool);
-    }
-
-    return wrappedTool;
-  }
-
-  async getTools(modifiers?: ModifiersParams): Promise<Tool[]> {
-    // Fetch tools from Composio API
-    const response = await this.client.getTools();
-    // Apply modifiers to each tool
-    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
-  }
-
-  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool> {
-    // Fetch tool from Composio API
-    const response = await this.client.getToolBySlug(slug);
-    // Apply modifiers
-    return this.wrapTool(slug, response.data, modifiers);
-  }
-
-  async executeTool(
-    tool: Tool,
-    params: ToolExecuteParams,
-    modifiers?: ModifiersParams
-  ): Promise<ToolExecuteResponse> {
-    let executeParams = params;
-
-    // Apply beforeExecute modifier if provided
-    if (modifiers?.beforeExecute) {
-      executeParams = modifiers.beforeExecute(tool.slug, executeParams);
-    }
-
-    // Execute the tool
-    const response = await this.client.executeTool(tool.slug, executeParams);
-
-    // Apply afterExecute modifier if provided
-    if (modifiers?.afterExecute) {
-      return modifiers.afterExecute(tool.slug, response.data);
-    }
-
-    return response.data;
-  }
-}
-```
-
-## Creating a New Provider
-
-To create a new provider, you can use the provided script:
+Scaffold a package from the repository root:
 
 ```bash
-# Create a non-agentic provider (default)
-pnpm run create-provider <your-provider-name>
-
-# Create an agentic provider
-pnpm run create-provider <your-provider-name> --agentic
+pnpm create:provider <provider-name> [--agentic]
 ```
 
-The script will create a new provider with the following structure:
+This creates `ts/packages/providers/<provider-name>` with `src/index.ts`, `package.json`, and build config. Implement `wrapTool` and `wrapTools` (plus `executeToolCall` for non-agentic providers), then add tests covering wrapping and execution handling.
 
-```
-<provider-name>/
-├── src/
-│   └── index.ts      # Provider implementation
-├── package.json      # Package configuration
-├── tsconfig.json     # TypeScript configuration
-├── tsup.config.ts    # Build configuration
-└── README.md         # Provider documentation
-```
+If you are building an adapter outside this repo, see the [custom providers guide](https://docs.composio.dev/docs/providers/custom-providers).
 
-## Required Methods
+## Links
 
-Each provider must implement the following methods:
-
-### For Non-Agentic Providers
-
-```typescript
-class NonAgenticProvider extends BaseNonAgenticProvider {
-  // Wrap a tool with schema modifiers
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool>;
-
-  // Get all available tools
-  async getTools(modifiers?: SchemaModifiersParams): Promise<Tool[]>;
-
-  // Get a specific tool by slug
-  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool>;
-}
-```
-
-### For Agentic Providers
-
-```typescript
-class AgenticProvider extends BaseAgenticProvider {
-  // Wrap a tool with modifiers
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool>;
-
-  // Get all available tools
-  async getTools(modifiers?: ModifiersParams): Promise<Tool[]>;
-
-  // Get a specific tool by slug
-  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool>;
-
-  // Execute a tool with modifiers
-  async executeTool(
-    tool: Tool,
-    params: ToolExecuteParams,
-    modifiers?: ModifiersParams
-  ): Promise<ToolExecuteResponse>;
-}
-```
-
-## Modifier Types
-
-### Schema Modifiers (Both Types)
-
-```typescript
-type SchemaModifiersParams = {
-  schema?: TransformToolSchemaModifier;
-};
-
-type TransformToolSchemaModifier = (toolSlug: string, tool: Tool) => Tool;
-```
-
-### Execution Modifiers (Agentic Only)
-
-```typescript
-type ModifiersParams = {
-  schema?: TransformToolSchemaModifier;
-  beforeExecute?: beforeExecuteModifier;
-  afterExecute?: afterExecuteModifier;
-};
-
-type beforeExecuteModifier = (toolSlug: string, params: ToolExecuteParams) => ToolExecuteParams;
-type afterExecuteModifier = (
-  toolSlug: string,
-  response: ToolExecuteResponse
-) => ToolExecuteResponse;
-```
-
-## Best Practices
-
-1. **Type Safety**: Always use TypeScript and ensure proper type definitions for all methods and parameters.
-2. **Error Handling**: Implement proper error handling for API calls and tool execution.
-3. **Documentation**: Document your provider's features, requirements, and usage examples.
-4. **Testing**: Write tests for your provider implementation.
-5. **Modifier Support**:
-   - For non-agentic providers, implement schema modifiers to transform tool schemas
-   - For agentic providers, implement both schema and execution modifiers for full control over tool behavior
-
-## Example Implementation
-
-Here's a complete example of a non-agentic provider implementation:
-
-```typescript
-import { BaseNonAgenticProvider } from '@composio/core';
-import type { Tool, SchemaModifiersParams } from '@composio/core';
-
-export class OpenAIProvider extends BaseNonAgenticProvider {
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: SchemaModifiersParams): Promise<Tool> {
-    // Apply schema modifiers if provided
-    if (modifiers?.schema) {
-      return modifiers.schema(toolSlug, tool);
-    }
-    return tool;
-  }
-
-  async getTools(modifiers?: SchemaModifiersParams): Promise<Tool[]> {
-    // Fetch tools from Composio API
-    const response = await this.client.getTools();
-    // Apply modifiers to each tool
-    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
-  }
-
-  async getToolBySlug(slug: string, modifiers?: SchemaModifiersParams): Promise<Tool> {
-    // Fetch tool from Composio API
-    const response = await this.client.getToolBySlug(slug);
-    // Apply modifiers
-    return this.wrapTool(slug, response.data, modifiers);
-  }
-}
-```
-
-And here's a complete example of an agentic provider implementation:
-
-```typescript
-import { BaseAgenticProvider } from '@composio/core';
-import type { Tool, ModifiersParams, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
-
-export class VercelProvider extends BaseAgenticProvider {
-  async wrapTool(toolSlug: string, tool: Tool, modifiers?: ModifiersParams): Promise<Tool> {
-    let wrappedTool = tool;
-
-    // Apply schema modifiers if provided
-    if (modifiers?.schema) {
-      wrappedTool = modifiers.schema(toolSlug, wrappedTool);
-    }
-
-    return wrappedTool;
-  }
-
-  async getTools(modifiers?: ModifiersParams): Promise<Tool[]> {
-    // Fetch tools from Composio API
-    const response = await this.client.getTools();
-    // Apply modifiers to each tool
-    return Promise.all(response.data.map(tool => this.wrapTool(tool.slug, tool, modifiers)));
-  }
-
-  async getToolBySlug(slug: string, modifiers?: ModifiersParams): Promise<Tool> {
-    // Fetch tool from Composio API
-    const response = await this.client.getToolBySlug(slug);
-    // Apply modifiers
-    return this.wrapTool(slug, response.data, modifiers);
-  }
-
-  async executeTool(
-    tool: Tool,
-    params: ToolExecuteParams,
-    modifiers?: ModifiersParams
-  ): Promise<ToolExecuteResponse> {
-    let executeParams = params;
-
-    // Apply beforeExecute modifier if provided
-    if (modifiers?.beforeExecute) {
-      executeParams = modifiers.beforeExecute(tool.slug, executeParams);
-    }
-
-    // Execute the tool
-    const response = await this.client.executeTool(tool.slug, executeParams);
-
-    // Apply afterExecute modifier if provided
-    if (modifiers?.afterExecute) {
-      return modifiers.afterExecute(tool.slug, response.data);
-    }
-
-    return response.data;
-  }
-}
-```
-
-## Usage Examples
-
-### Using a Non-Agentic Provider
-
-```typescript
-import { Composio } from '@composio/core';
-import { OpenAIProvider } from '@composio/openai-provider';
-import type { Tool } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new OpenAIProvider(),
-});
-
-// Get a tool with schema modifiers
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
-  schema: (toolSlug: string, tool: Tool) => ({
-    ...tool,
-    description: 'Search HackerNews posts with improved description',
-    inputParameters: {
-      ...tool.inputParameters,
-      limit: {
-        type: 'number',
-        description: 'Maximum number of posts to return',
-      },
-    },
-  }),
-});
-```
-
-### Using an Agentic Provider
-
-```typescript
-import { Composio } from '@composio/core';
-import { VercelProvider } from '@composio/vercel-provider';
-import type { Tool, ToolExecuteParams, ToolExecuteResponse } from '@composio/core';
-
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new VercelProvider(),
-});
-
-// Get a tool with full modifier support
-const tool = await composio.getToolBySlug('HACKERNEWS_SEARCH_POSTS', {
-  // Schema modifier
-  schema: (toolSlug: string, tool: Tool) => ({
-    ...tool,
-    description: 'Search HackerNews posts with improved description',
-    inputParameters: {
-      ...tool.inputParameters,
-      limit: {
-        type: 'number',
-        description: 'Maximum number of posts to return',
-      },
-    },
-  }),
-  // Execution modifiers
-  beforeExecute: (toolSlug: string, params: ToolExecuteParams) => ({
-    ...params,
-    arguments: {
-      ...params.arguments,
-      limit: Math.min((params.arguments?.limit as number) || 10, 100),
-    },
-  }),
-  afterExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
-    ...response,
-    data: {
-      ...response.data,
-      posts: (response.data?.posts as any[]).map(post => ({
-        ...post,
-        url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
-      })),
-    },
-  }),
-});
-
-// Execute the tool with execution modifiers
-const result = await composio.provider.executeTool(
-  tool,
-  {
-    arguments: { query: 'AI', limit: 20 },
-  },
-  {
-    beforeExecute: (toolSlug: string, params: ToolExecuteParams) => ({
-      ...params,
-      arguments: {
-        ...params.arguments,
-        limit: Math.min((params.arguments?.limit as number) || 10, 100),
-      },
-    }),
-    afterExecute: (toolSlug: string, response: ToolExecuteResponse) => ({
-      ...response,
-      data: {
-        ...response.data,
-        posts: (response.data?.posts as any[]).map(post => ({
-          ...post,
-          url: post.url || `https://news.ycombinator.com/item?id=${post.id}`,
-        })),
-      },
-    }),
-  }
-);
-```
+- [Provider docs](https://docs.composio.dev/docs/providers)
+- [Composio documentation](https://docs.composio.dev)

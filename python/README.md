@@ -1,490 +1,141 @@
-![Composio Banner](https://github.com/user-attachments/assets/9ba0e9c1-85a4-4b51-ae60-f9fe7992e819)
+<p align="center">
+  <a href="https://composio.dev">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://brand.composio.dev/logos/Logomark-White.svg">
+      <img alt="Composio logo" src="https://brand.composio.dev/logos/Logomark-Black.svg" width="96">
+    </picture>
+  </a>
+</p>
 
-# Composio
+# Composio Python SDK
 
-The Composio Python SDK allows you to interact with the Composio Platform. It provides a powerful and flexible way to manage and execute tools, handle authentication, and integrate with various AI frameworks and platforms.
+Composio gives your AI agents 1000+ pre-authenticated toolkits, per-user sessions, authentication, triggers, and a sandbox. This package is the Python SDK.
 
-[Learn more about the SDK from our docs](https://docs.composio.dev)
+- [Documentation](https://docs.composio.dev)
+- [Quickstart](https://docs.composio.dev/docs/quickstart)
+- [Dashboard](https://dashboard.composio.dev) (grab your `COMPOSIO_API_KEY` from [Settings](https://dashboard.composio.dev/settings))
 
-## Core Features
+## Install
 
-- **Tools**: Manage and execute tools within the Composio ecosystem. Includes functionality to list, retrieve, and execute tools.
-- **Toolkits**: Organize and manage collections of tools for specific use cases.
-- **Triggers**: Create and manage event triggers that can execute tools based on specific conditions.
-- **AuthConfigs**: Configure authentication providers and settings.
-- **ConnectedAccounts**: Manage third-party service connections.
-- **ActionExecution**: Track and manage the execution of actions within the platform.
-- **Provider Integrations**: Built-in support for OpenAI, Anthropic, LangChain, CrewAI, AutoGen, and more.
-
-## Installation
+Requires Python 3.10+.
 
 ```bash
 pip install composio
-# or
-pip install composio-core
 ```
 
-### Provider-Specific Installations
+## Quickstart
 
-For specific AI framework integrations:
+Create a session for one of your users and hand its tools to your agent:
+
+```python
+from composio import Composio
+
+composio = Composio()  # reads COMPOSIO_API_KEY, or pass api_key=...
+
+session = composio.create(user_id="user_123")
+tools = session.tools()  # OpenAI-format tool definitions by default
+```
+
+By default a session gets meta tools that discover, authenticate, and execute app tools at runtime, so you don't load hundreds of tool definitions into context. Store `session.session_id` and reuse the session across turns:
+
+```python
+session = composio.use(session_id)
+```
+
+See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
+
+## Use with an agent framework
+
+Provider packages adapt `session.tools()` to your framework's native tool format. With [OpenAI Agents](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai_agents):
 
 ```bash
-# OpenAI integration
-pip install composio-openai
-
-# LangChain integration  
-pip install composio-langchain
-
-# CrewAI integration
-pip install composio-crewai
-
-# Anthropic integration
-pip install composio-anthropic
-
-# AutoGen integration
-pip install composio-autogen
-
-# And many more...
+pip install composio composio-openai-agents openai-agents
 ```
 
-## Getting Started
-
-### Basic Usage with OpenAI
-
 ```python
-import os
 from composio import Composio
-from openai import OpenAI
+from composio_openai_agents import OpenAIAgentsProvider
+from agents import Agent, Runner
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+composio = Composio(provider=OpenAIAgentsProvider())
 
-# Initialize Composio with your API key
-composio = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-def main():
-    try:
-        # Fetch tools - single tool or multiple tools
-        tools = composio.tools.get(user_id="default", slug="HACKERNEWS_GET_USER")
-        # Or fetch multiple tools: composio.tools.get(user_id="default", toolkits=["hackernews"])
-
-        query = "Find information about the HackerNews user 'pg'"
-
-        # Create chat completion with tools
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {
-                    "role": "system", 
-                    "content": "You are a helpful assistant that can use tools to answer questions."
-                },
-                {"role": "user", "content": query}
-            ],
-            tools=tools,
-            tool_choice="auto"
-        )
-
-        # Handle tool calls if the assistant decides to use them
-        if response.choices[0].message.tool_calls:
-            print("🔧 Assistant is using tool:", response.choices[0].message.tool_calls[0].function.name)
-            
-            # Execute the tool call
-            tool_result = composio.provider.handle_tool_calls(
-                response=response,
-                user_id="default"
-            )
-            
-            print("✅ Tool execution result:", tool_result)
-            
-            # Get final response from assistant with tool result
-            final_response = openai_client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful assistant that can use tools to answer questions."
-                    },
-                    {"role": "user", "content": query},
-                    response.choices[0].message,
-                    {
-                        "role": "tool",
-                        "tool_call_id": response.choices[0].message.tool_calls[0].id,
-                        "content": str(tool_result)
-                    }
-                ]
-            )
-            
-            print("🤖 Final response:", final_response.choices[0].message.content)
-        else:
-            print("🤖 Response:", response.choices[0].message.content)
-            
-    except Exception as error:
-        print("❌ Error:", error)
-
-if __name__ == "__main__":
-    main()
-```
-
-### Using with Provider Integrations
-
-#### OpenAI Provider
-
-```python
-from composio_openai import OpenAIProvider
-from openai import OpenAI
-from composio import Composio
-
-# Initialize with OpenAI provider
-openai_client = OpenAI()
-composio = Composio(provider=OpenAIProvider())
-
-# Define task
-task = "Star a repo composiohq/composio on GitHub"
-
-# Get GitHub tools that are pre-configured
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
-
-# Get response from the LLM
-response = openai_client.chat.completions.create(
-    model="gpt-4o-mini",
+agent = Agent(
+    name="Personal Assistant",
+    instructions="You are a helpful assistant. Use Composio tools to take action.",
     tools=tools,
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": task},
-    ],
 )
 
-# Execute the function calls
-result = composio.provider.handle_tool_calls(response=response, user_id="default")
-print(result)
+result = Runner.run_sync(starting_agent=agent, input="Summarize my emails from today")
+print(result.final_output)
 ```
 
-#### LangChain Integration
+Other Python providers: [`composio-openai`](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai), [`composio-anthropic`](https://github.com/ComposioHQ/composio/tree/next/python/providers/anthropic), [`composio-claude-agent-sdk`](https://github.com/ComposioHQ/composio/tree/next/python/providers/claude_agent_sdk), [`composio-langchain`](https://github.com/ComposioHQ/composio/tree/next/python/providers/langchain), [`composio-langgraph`](https://github.com/ComposioHQ/composio/tree/next/python/providers/langgraph), [`composio-llamaindex`](https://github.com/ComposioHQ/composio/tree/next/python/providers/llamaindex), [`composio-crewai`](https://github.com/ComposioHQ/composio/tree/next/python/providers/crewai), [`composio-autogen`](https://github.com/ComposioHQ/composio/tree/next/python/providers/autogen), [`composio-gemini`](https://github.com/ComposioHQ/composio/tree/next/python/providers/gemini), [`composio-google`](https://github.com/ComposioHQ/composio/tree/next/python/providers/google), [`composio-google-adk`](https://github.com/ComposioHQ/composio/tree/next/python/providers/google_adk). Don't see yours? [Build a custom provider](https://docs.composio.dev/docs/providers/custom-providers).
 
-```python
-from composio_langchain import ComposioToolSet
-from langchain_openai import ChatOpenAI
+## MCP
 
-# Initialize the toolset
-toolset = ComposioToolSet()
-
-# Get tools for a specific toolkit
-tools = toolset.get_tools(toolkits=["GITHUB"])
-
-# Initialize LLM
-llm = ChatOpenAI(model="gpt-4o")
-
-# Create agent with tools
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain.prompts import ChatPromptTemplate
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant"),
-    ("user", "{input}"),
-    ("assistant", "{agent_scratchpad}")
-])
-
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools)
-
-# Execute task
-result = agent_executor.invoke({"input": "Star the composiohq/composio repository"})
-print(result)
-```
-
-## Configuration
-
-The Composio constructor accepts the following configuration options:
-
-```python
-from composio import Composio
-from composio.core.provider import OpenAIProvider
-
-composio = Composio(
-    api_key="your-api-key",  # Your Composio API key
-    base_url="https://api.composio.dev",  # Custom API base URL (optional)
-    timeout=60,  # Request timeout in seconds
-    max_retries=3,  # Maximum number of retries
-    allow_tracking=True,  # Enable/disable telemetry (default: True)
-    file_download_dir="./downloads",  # Directory for file downloads
-    provider=OpenAIProvider(),  # Custom provider (default: OpenAIProvider)
-    toolkit_versions={ "github": "12202025_01" }  # Toolkit versions to use
-)
-```
-
-## Modifiers
-
-Composio SDK supports powerful modifiers to transform tool schemas and execution behavior.
-
-### Schema Modifiers
-
-Schema modifiers allow you to transform tool schemas before they are used:
-
-```python
-from composio import schema_modifier
-from composio.types import Tool
-
-@schema_modifier(tools=["HACKERNEWS_GET_USER"])
-def modify_schema(tool: str, toolkit: str, schema: Tool) -> Tool:
-    # Perform modifications on the schema
-    schema["description"] = "Enhanced HackerNews user lookup with additional features"
-    schema["parameters"]["properties"]["include_karma"] = {
-        "type": "boolean",
-        "description": "Include user karma in response",
-        "default": True
-    }
-    return schema
-
-# Use the modifier when getting tools
-tools = composio.tools.get(
-    user_id="default",
-    slug="HACKERNEWS_GET_USER",
-    modifiers=[modify_schema]
-)
-```
-
-### Execution Modifiers
-
-Transform tool execution behavior with before and after execute modifiers:
-
-```python
-from composio import before_execute, after_execute
-from composio.types import ToolExecuteParams, ToolExecutionResponse
-
-@before_execute(tools=["HACKERNEWS_GET_USER"])
-def before_execute_modifier(
-    tool: str,
-    toolkit: str, 
-    params: ToolExecuteParams
-) -> ToolExecuteParams:
-    # Transform input before execution
-    print(f"Executing {tool} with params: {params}")
-    return params
-
-@after_execute(tools=["HACKERNEWS_GET_USER"])
-def after_execute_modifier(
-    tool: str,
-    toolkit: str,
-    response: ToolExecutionResponse
-) -> ToolExecutionResponse:
-    # Transform output after execution
-    return {
-        **response,
-        "data": {
-            **response["data"],
-            "processed_at": "2024-01-01T00:00:00Z"
-        }
-    }
-
-# Execute tool with modifiers
-response = composio.tools.execute(
-    user_id="default",
-    slug="HACKERNEWS_GET_USER", 
-    arguments={"username": "pg"},
-    modifiers=[before_execute_modifier, after_execute_modifier]
-)
-```
-
-## Connected Accounts
-
-Composio SDK provides a powerful way to manage third-party service connections through Connected Accounts. This feature allows you to authenticate with various services and maintain those connections.
-
-### Creating a Connected Account
-
-```python
-from composio import Composio
-from composio.types import auth_scheme
-
-composio = Composio(api_key=os.getenv("COMPOSIO_API_KEY"))
-
-# Create a connected account with OAuth
-connection_request = composio.connected_accounts.initiate(
-    user_id="user123",
-    auth_config_id="ac_12343544",  # You can create it from the dashboard
-    callback_url="https://your-app.com/callback",
-    data={
-        # Additional data for the connection
-        "scope": ["read", "write"]
-    }
-)
-
-# Wait for the connection to be established
-# Default timeout is 60 seconds
-connected_account = connection_request.wait_for_connection()
-print(connected_account)
-```
-
-### API Key Authentication
-
-```python
-# Create a connected account with API Key
-connection_request = composio.connected_accounts.initiate(
-    user_id="user123", 
-    auth_config_id="ac_12343544",
-    config=auth_scheme.api_key(
-        options={
-            "api_key": "your-api-key-here"
-        }
-    )
-)
-```
-
-### Managing Connected Accounts
-
-```python
-# List all connected accounts
-accounts = composio.connected_accounts.list(user_id="user123")
-
-# Get a specific connected account
-account = composio.connected_accounts.get("account_id")
-
-# Enable/Disable a connected account
-composio.connected_accounts.enable("account_id")
-composio.connected_accounts.disable("account_id")
-
-# Refresh credentials
-composio.connected_accounts.refresh("account_id")
-
-# Delete a connected account
-composio.connected_accounts.delete("account_id")
-```
-
-### Connection Statuses
-
-Connected accounts can have the following statuses:
-
-- `ACTIVE`: Connection is established and working
-- `INACTIVE`: Connection is temporarily disabled  
-- `PENDING`: Connection is being processed
-- `INITIATED`: Connection request has started
-- `EXPIRED`: Connection credentials have expired
-- `FAILED`: Connection attempt failed
-
-## Tools and Toolkits
-
-### Working with Tools
-
-```python
-# Get tools by toolkit
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
-
-# Get tools by search
-tools = composio.tools.get(user_id="default", search="user")
-
-# Get tools by toolkit and search
-tools = composio.tools.get(user_id="default", toolkits=["GITHUB"], search="star")
-
-# Execute a tool directly
-response = composio.tools.execute(
-    user_id="default",
-    slug="HACKERNEWS_GET_USER",
-    arguments={"username": "pg"}
-)
-print(response)
-```
-
-### Proxy Calls
-
-Make direct API calls through connected accounts:
-
-```python
-# Execute proxy call (GitHub API)
-proxy_response = composio.tools.proxy(
-    endpoint="/repos/composiohq/composio/issues/1",
-    method="GET", 
-    connected_account_id="ac_1234",  # Use connected account for GitHub
-    parameters=[
-        {
-            "name": "Accept",
-            "value": "application/vnd.github.v3+json", 
-            "type": "header"
-        }
-    ]
-)
-print(proxy_response)
-```
-
-## Authentication Schemes
-
-Composio supports various authentication schemes:
-
-- OAuth2
-- OAuth1  
-- OAuth1a
-- API Key
-- Basic Auth
-- Bearer Token
-- Google Service Account
-- And more...
-
-## Environment Variables
-
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `COMPOSIO_BASE_URL`: Custom API base URL
-- `COMPOSIO_LOGGING_LEVEL`: Logging level (silent, error, warn, info, debug)
-- `DEVELOPMENT`: Development mode flag
-- `COMPOSIO_TOOLKIT_VERSION_<TOOLKITNAME>`: Version of the specific toolkit
-- `CI`: CI environment flag
-
-## MCP (Model Context Protocol)
-
-Create MCP servers for seamless integration with Claude, Cursor, and other MCP-compatible tools:
+Every session also exposes a hosted MCP endpoint. Pass `mcp=True` and point Claude, Cursor, or any MCP client at it:
 
 ```python
 from composio import Composio
 
 composio = Composio()
 
-# Create MCP server
-mcp_server = composio.mcp.create(
-    "my-mcp-server",
-    toolkits=["github", "gmail"],
-    manually_manage_connections=False
-)
-
-# Generate server instance for a user
-server_instance = mcp_server.generate("user123")
-print(f"MCP Server URL: {server_instance['url']}")
+session = composio.create(user_id="user_123", mcp=True)
+print(session.mcp.url)      # MCP endpoint for this session
+print(session.mcp.headers)  # auth headers for the endpoint
 ```
 
-## Supported AI Frameworks
+See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
 
-Composio provides dedicated integrations for popular AI frameworks:
+## Authentication
 
-- **OpenAI** - Direct integration with OpenAI's API
-- **LangChain** - Tools and agents for LangChain workflows
-- **LangGraph** - State machine workflows with LangGraph
-- **CrewAI** - Multi-agent systems with CrewAI
-- **AutoGen** - Microsoft's AutoGen framework
-- **Anthropic** - Claude integration
-- **Google AI** - Gemini and other Google AI services
-- **LlamaIndex** - RAG and data framework integration
+Sessions manage connections for you by default; the agent walks the user through OAuth with the session's meta tools. To drive the flow yourself, authorize a toolkit from the session:
 
-## Error Handling
+```python
+connection_request = session.authorize("gmail")
+print(connection_request.redirect_url)  # send the user here to approve access
+connection_request.wait_for_connection()
+```
+
+See [authentication](https://docs.composio.dev/docs/authentication) for auth configs, custom OAuth apps, and connection lifecycle.
+
+## Triggers
+
+Subscribe to events from connected apps (new email, new commit, and so on) and react to them:
 
 ```python
 from composio import Composio
-from composio.exceptions import ComposioError, ApiKeyNotProvidedError
 
-try:
-    composio = Composio()  # Will raise ApiKeyNotProvidedError if no API key
-    tools = composio.tools.get(user_id="default", toolkits=["GITHUB"])
-except ApiKeyNotProvidedError:
-    print("Please provide COMPOSIO_API_KEY environment variable")
-except ComposioError as e:
-    print(f"Composio error: {e}")
-except Exception as e:
-    print(f"Unexpected error: {e}")
+composio = Composio()
+
+trigger = composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id="user_123",
+    trigger_config={"owner": "composiohq", "repo": "composio"},
+)
+
+subscription = composio.triggers.subscribe()
+
+@subscription.handle(trigger_id=trigger.trigger_id)
+def handle_event(data):
+    print("Event received:", data)
+
+subscription.wait_forever()
 ```
 
-## Contributing
+`subscribe()` streams events over a WebSocket for local development. In production, register a webhook URL and parse deliveries with `composio.triggers.parse()`. See [setting up triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers).
 
-We welcome contributions! Please see our [Contributing Guide](../CONTRIBUTING.md) for more details.
+## Development
 
-## License
-
-Apache License 2.0
+This package lives in the [Composio SDK monorepo](https://github.com/ComposioHQ/composio) under `python/`. See the [contribution guidelines](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md) to get set up.
 
 ## Support
 
-For support, please visit our [Documentation](https://docs.composio.dev) or join our [Discord Community](https://discord.gg/composio).
+- [Documentation](https://docs.composio.dev)
+- [Python SDK reference](https://docs.composio.dev/reference/sdk-reference/python)
+- [Discord community](https://discord.gg/composio)
+- [Open an issue](https://github.com/ComposioHQ/composio/issues)
+- [support@composio.dev](mailto:support@composio.dev)
