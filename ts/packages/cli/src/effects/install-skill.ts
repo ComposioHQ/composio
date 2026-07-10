@@ -11,7 +11,7 @@ import {
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
-import decompress from 'decompress';
+import extractZip from 'extract-zip';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
@@ -190,7 +190,7 @@ export const installSkill = (options?: {
       fs.writeFileSync(zipPath, new Uint8Array(zipData));
 
       yield* Effect.tryPromise({
-        try: () => decompress(zipPath, tmpDir),
+        try: () => extractZip(zipPath, { dir: tmpDir }),
         catch: error => new Error(`Failed to extract skill zip: ${error}`),
       });
 

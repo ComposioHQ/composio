@@ -16,14 +16,17 @@ Build your first AI agent with Composio Tools. You'll create a [session](/docs/h
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
-```bash
-pip install python-dotenv composio composio-openai-agents openai-agents
-```
+<PackageInstall ecosystem="python" packages="python-dotenv composio composio-openai-agents openai-agents" />
 </Tab>
 <Tab value="TypeScript">
-```bash
-npm install @composio/core @composio/openai-agents @openai/agents
-```
+<PackageInstall
+  packages="@composio/core @composio/openai-agents @openai/agents"
+  comment={[
+    '@composio/core ships its docs and TypeScript source in the package,',
+    'so it is inspectable to coding agents.',
+    'Use @composio/slim for a smaller install with the same API.',
+  ]}
+/>
 </Tab>
 </Tabs>
 </Step>
@@ -159,14 +162,17 @@ readline.close();
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
-```bash
-pip install python-dotenv composio composio-claude-agent-sdk claude-agent-sdk
-```
+<PackageInstall ecosystem="python" packages="python-dotenv composio composio-claude-agent-sdk claude-agent-sdk" />
 </Tab>
 <Tab value="TypeScript">
-```bash
-npm install dotenv @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk
-```
+<PackageInstall
+  packages="dotenv @composio/core @composio/claude-agent-sdk @anthropic-ai/claude-agent-sdk"
+  comment={[
+    '@composio/core ships its docs and TypeScript source in the package,',
+    'so it is inspectable to coding agents.',
+    'Use @composio/slim for a smaller install with the same API.',
+  ]}
+/>
 </Tab>
 </Tabs>
 </Step>
@@ -324,9 +330,14 @@ readline.close();
 <Step>
 <StepTitle>Install</StepTitle>
 
-```bash
-npm install @composio/core @composio/vercel ai @ai-sdk/anthropic
-```
+<PackageInstall
+  packages="@composio/core @composio/vercel ai @ai-sdk/anthropic"
+  comment={[
+    '@composio/core ships its docs and TypeScript source in the package,',
+    'so it is inspectable to coding agents.',
+    'Use @composio/slim for a smaller install with the same API.',
+  ]}
+/>
 </Step>
 
 <Step>

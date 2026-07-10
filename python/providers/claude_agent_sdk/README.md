@@ -1,98 +1,64 @@
-# Composio Claude Code Agents Provider
+# composio-claude-agent-sdk
 
-Use Composio tools with the Claude Code Agents SDK.
+Adapts Composio tools to the [Claude Agent SDK](https://platform.claude.com/docs/en/agent-sdk/python), exposing them to Claude through an in-process MCP server.
 
 ## Installation
 
-### Prerequisites
-
-1. **Claude Code CLI**: The Claude Agent SDK requires Claude Code to be installed:
-
-   ```bash
-   # macOS/Linux/WSL
-   curl -fsSL https://claude.ai/install.sh | bash
-
-   # or via Homebrew
-   brew install --cask claude-code
-
-   # or via npm
-   npm install -g @anthropic-ai/claude-code
-   ```
-
-2. **Anthropic API Key**: Set your API key as an environment variable:
-   ```bash
-   export ANTHROPIC_API_KEY="your-api-key"
-   ```
-
-### Install the package
-
 ```bash
-pip install composio-claude-agent-sdk
+pip install composio composio-claude-agent-sdk claude-agent-sdk
 ```
 
-## Usage
+The Claude Agent SDK also requires the Claude Code CLI: `npm install -g @anthropic-ai/claude-code`.
+
+Set `COMPOSIO_API_KEY` (from the [dashboard](https://dashboard.composio.dev/settings)) and `ANTHROPIC_API_KEY` in your environment.
+
+## Quickstart
 
 ```python
 import asyncio
+
 from composio import Composio
 from composio_claude_agent_sdk import ClaudeAgentSDKProvider
-from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    TextBlock,
+    create_sdk_mcp_server,
+    query,
+)
 
-# Initialize Composio with the Claude Code Agents provider
 composio = Composio(provider=ClaudeAgentSDKProvider())
 
+# Each session is scoped to one of your users
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+server = create_sdk_mcp_server(name="composio", version="1.0.0", tools=tools)
+
+
 async def main():
-    # Get tools from Composio
-    tools = composio.tools.get(
-        user_id="default",
-        toolkits=["gmail"],
+    options = ClaudeAgentOptions(
+        system_prompt="You are a helpful assistant. Use tools to complete tasks.",
+        permission_mode="bypassPermissions",
+        mcp_servers={"composio": server},
     )
+    async for message in query(prompt="Summarize my emails from today", options=options):
+        if isinstance(message, AssistantMessage):
+            for block in message.content:
+                if isinstance(block, TextBlock):
+                    print(block.text)
 
-    # Create an MCP server configuration with the tools
-    mcp_server = composio.provider.create_mcp_server(tools)
-
-    # Run a Claude agent with access to Composio tools
-    async for message in query(
-        prompt="Fetch my latest email from Gmail",
-        options=ClaudeAgentOptions(
-            mcp_servers={"composio": mcp_server},
-            permission_mode="bypassPermissions",
-        ),
-    ):
-        if message.type == "assistant":
-            print(message.message)
 
 asyncio.run(main())
 ```
 
-## API Reference
+For multi-turn use, store `session.session_id` and reuse it with `composio.use(session_id)` instead of calling `create()` again.
 
-### ClaudeCodeAgentsProvider
+## How tools are exposed
 
-The main provider class for integrating Composio tools with Claude Code Agents SDK.
-
-#### Constructor Options
-
-```python
-ClaudeCodeAgentsProvider(
-    server_name: str = "composio",  # Name for the MCP server
-    server_version: str = "1.0.0",  # Version for the MCP server
-)
-```
-
-#### Methods
-
-- `wrap_tool(tool, execute_tool)` - Wraps a single Composio tool as a Claude Agent SDK MCP tool
-- `wrap_tools(tools, execute_tool)` - Wraps multiple Composio tools
-- `create_mcp_server(wrapped_tools)` - Creates an MCP server configuration from wrapped tools
-
-## Environment Variables
-
-- `COMPOSIO_API_KEY` - Your Composio API key (get one at https://app.composio.dev)
-- `ANTHROPIC_API_KEY` - Your Anthropic API key (get one at https://console.anthropic.com)
+`session.tools()` returns `SdkMcpTool` objects that plug straight into `create_sdk_mcp_server`. The provider also ships `composio.provider.create_mcp_server(tools)` if you prefer a preconfigured server (name `composio`, customizable via `ClaudeAgentSDKProvider(server_name=..., server_version=...)`).
 
 ## Links
 
-- [Composio Documentation](https://docs.composio.dev)
-- [Claude Agent SDK Documentation](https://platform.claude.com/docs/en/agent-sdk/python)
-- [GitHub Repository](https://github.com/ComposioHQ/composio)
+- [Quickstart](https://docs.composio.dev/docs/quickstart)
+- [Composio documentation](https://docs.composio.dev)

@@ -36,7 +36,16 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
     >
       {!isLanding && (
         <>
-          {data.legacy && <LegacyBadge />}
+          {(data.legacy || data.written) && (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              {data.legacy && <LegacyBadge />}
+              {data.written && (
+                <span className="not-prose text-xs font-medium text-fd-muted-foreground">
+                  Written {data.written}
+                </span>
+              )}
+            </div>
+          )}
           {data.experimental && <ExperimentalBadge />}
           <DocsTitle>{data.title}</DocsTitle>
           <PageActions path={page.url} />

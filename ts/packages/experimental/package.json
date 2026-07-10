@@ -30,6 +30,10 @@
     "./workbench": {
       "types": "./dist/workbench/index.d.mts",
       "default": "./dist/workbench/index.mjs"
+    },
+    "./eve": {
+      "types": "./dist/eve/index.d.mts",
+      "default": "./dist/eve/index.mjs"
     }
   },
   "files": [
@@ -49,21 +53,33 @@
     "experimental",
     "pi",
     "coding-agent",
+    "eve",
     "tools",
     "agent"
   ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "safe-stable-stringify": "^2.5.0",
     "typebox": "1.3.3"
   },
   "peerDependencies": {
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@earendil-works/pi-coding-agent": ">=0.79.0 <1.0.0"
+    "@earendil-works/pi-coding-agent": ">=0.79.0 <1.0.0",
+    "eve": ">=0.12.0 <1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "eve": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@earendil-works/pi-coding-agent": "^0.80.3",
+    "eve": "^0.12.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",

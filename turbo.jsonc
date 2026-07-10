@@ -74,6 +74,12 @@
       "dependsOn": ["^build"],
       "cache": false
     },
+    "lint": {
+      "inputs": ["$TURBO_DEFAULT$", "../../../eslint.config.mjs"]
+    },
+    "cf:dry-run": {
+      "dependsOn": ["^build"]
+    },
     "//#clean": {
       "cache": false
     },
