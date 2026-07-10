@@ -193,8 +193,8 @@ function Lane({ label, accent = false }: { label: string; accent?: boolean }) {
 }
 
 /**
- * Directional connector shown between columns. Horizontal arrow on desktop,
- * vertical on stacked mobile so the flow still reads top-to-bottom.
+ * Desktop-only directional connector shown between columns. On mobile, the
+ * stacked columns read top-to-bottom without a connector.
  */
 function Connector({ accent = false }: { accent?: boolean }) {
   const color = accent ? 'bg-[var(--composio-brand)]/40' : 'bg-fd-border';
