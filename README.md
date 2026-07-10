@@ -42,6 +42,8 @@ Create a session for a user, hand its tools to your agent, and let the agent tak
 npm install @composio/core @composio/openai-agents @openai/agents
 ```
 
+> `@composio/core` intentionally packages its TypeScript source and SDK docs so the installed package is inspectable. If you want a smaller install with the same API, use [`@composio/slim`](ts/packages/slim).
+
 ```typescript
 import { Composio } from "@composio/core";
 import { OpenAIAgentsProvider } from "@composio/openai-agents";
@@ -111,25 +113,40 @@ A provider adapts Composio tools to your agent framework's native tool format:
 
 | Provider | TypeScript | Python |
 |----------|:----------:|:------:|
-| OpenAI | [`@composio/openai`](https://www.npmjs.com/package/@composio/openai) | [`composio-openai`](https://pypi.org/project/composio-openai/) |
-| OpenAI Agents | [`@composio/openai-agents`](https://www.npmjs.com/package/@composio/openai-agents) | [`composio-openai-agents`](https://pypi.org/project/composio-openai-agents/) |
-| Anthropic | [`@composio/anthropic`](https://www.npmjs.com/package/@composio/anthropic) | [`composio-anthropic`](https://pypi.org/project/composio-anthropic/) |
-| Claude Agent SDK | [`@composio/claude-agent-sdk`](https://www.npmjs.com/package/@composio/claude-agent-sdk) | [`composio-claude-agent-sdk`](https://pypi.org/project/composio-claude-agent-sdk/) |
-| Vercel AI SDK | [`@composio/vercel`](https://www.npmjs.com/package/@composio/vercel) | — |
-| Google GenAI | [`@composio/google`](https://www.npmjs.com/package/@composio/google) | [`composio-gemini`](https://pypi.org/project/composio-gemini/), [`composio-google`](https://pypi.org/project/composio-google/) |
-| Google ADK | — | [`composio-google-adk`](https://pypi.org/project/composio-google-adk/) |
-| LangChain | [`@composio/langchain`](https://www.npmjs.com/package/@composio/langchain) | [`composio-langchain`](https://pypi.org/project/composio-langchain/) |
-| LangGraph | via `@composio/langchain` | [`composio-langgraph`](https://pypi.org/project/composio-langgraph/) |
-| LlamaIndex | [`@composio/llamaindex`](https://www.npmjs.com/package/@composio/llamaindex) | [`composio-llamaindex`](https://pypi.org/project/composio-llamaindex/) |
-| Mastra | [`@composio/mastra`](https://www.npmjs.com/package/@composio/mastra) | — |
-| Pi | [`@composio/experimental`](https://www.npmjs.com/package/@composio/experimental)* | — |
-| Cloudflare Workers AI | [`@composio/cloudflare`](https://www.npmjs.com/package/@composio/cloudflare) | — |
-| CrewAI | — | [`composio-crewai`](https://pypi.org/project/composio-crewai/) |
-| AutoGen | — | [`composio-autogen`](https://pypi.org/project/composio-autogen/) |
+| OpenAI | [`@composio/openai`](ts/packages/providers/openai) | [`composio-openai`](python/providers/openai) |
+| OpenAI Agents | [`@composio/openai-agents`](ts/packages/providers/openai-agents) | [`composio-openai-agents`](python/providers/openai_agents) |
+| Anthropic | [`@composio/anthropic`](ts/packages/providers/anthropic) | [`composio-anthropic`](python/providers/anthropic) |
+| Claude Agent SDK | [`@composio/claude-agent-sdk`](ts/packages/providers/claude-agent-sdk) | [`composio-claude-agent-sdk`](python/providers/claude_agent_sdk) |
+| Vercel AI SDK | [`@composio/vercel`](ts/packages/providers/vercel) | — |
+| Google GenAI | [`@composio/google`](ts/packages/providers/google) | [`composio-gemini`](python/providers/gemini), [`composio-google`](python/providers/google) |
+| Google ADK | — | [`composio-google-adk`](python/providers/google_adk) |
+| LangChain | [`@composio/langchain`](ts/packages/providers/langchain) | [`composio-langchain`](python/providers/langchain) |
+| LangGraph | via `@composio/langchain` | [`composio-langgraph`](python/providers/langgraph) |
+| LlamaIndex | [`@composio/llamaindex`](ts/packages/providers/llamaindex) | [`composio-llamaindex`](python/providers/llamaindex) |
+| Mastra | [`@composio/mastra`](ts/packages/providers/mastra) | — |
+| Pi | [`@composio/experimental`](ts/packages/experimental)* | — |
+| Cloudflare Workers AI | [`@composio/cloudflare`](ts/packages/providers/cloudflare) | — |
+| CrewAI | — | [`composio-crewai`](python/providers/crewai) |
+| AutoGen | — | [`composio-autogen`](python/providers/autogen) |
 
 \* *The [Pi provider](https://docs.composio.dev/docs/providers/pi) is experimental and ships from `@composio/experimental`.*
 
 Don't see your framework? [Build a custom provider](https://docs.composio.dev/docs/providers/custom-providers), or skip providers entirely and connect over [MCP](https://docs.composio.dev/docs/sessions-via-mcp).
+
+## All packages
+
+Everything published from this repo:
+
+| Package | Description |
+|---------|-------------|
+| [`@composio/core`](ts/packages/core) | TypeScript SDK |
+| [`@composio/slim`](ts/packages/slim) | `@composio/core` without packaged source or docs; same API, smaller install |
+| [`@composio/cli`](ts/packages/cli) | The `composio` CLI, shipped as standalone binaries, a Homebrew tap, and on npm |
+| [`@composio/experimental`](ts/packages/experimental) | Experimental integrations, including the Pi provider |
+| [`@composio/json-schema-to-zod`](ts/packages/json-schema-to-zod) | JSON Schema to Zod conversion |
+| `@composio/*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel, Google, LangChain, LlamaIndex, Mastra, Cloudflare |
+| [`composio`](python) | Python SDK |
+| `composio-*` [provider adapters](#providers) | OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Gemini, Google, Google ADK, LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen |
 
 ## Repository layout
 
