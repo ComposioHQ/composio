@@ -2,7 +2,7 @@
 
 Slim build of the Composio TypeScript core SDK.
 
-`@composio/core` intentionally publishes SDK docs and TypeScript source for users who want an inspectable/debuggable package. `@composio/slim` publishes the same built runtime/type artifacts without the packaged `docs/` or `src/` trees.
+`@composio/core` intentionally ships its TypeScript source and SDK docs inside the npm package so coding agents (and humans) can inspect and debug the SDK straight from `node_modules`. That inspectability costs install size. `@composio/slim` publishes the same built runtime and type artifacts without the packaged `src/` and `docs/` trees, so it installs smaller while behaving identically.
 
 ```bash
 pnpm add @composio/slim
