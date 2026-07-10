@@ -15,7 +15,7 @@
     "@mastra/core": "catalog:",
     "@mastra/mcp": "^1.13.0",
     "ai": "^6.0.219",
-    "zod": "3.25.76"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"
