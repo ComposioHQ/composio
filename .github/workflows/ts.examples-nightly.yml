@@ -23,8 +23,12 @@ env:
 
 jobs:
   examples-staging:
-    name: Examples against staging
+    name: ${{ matrix.provider }} examples against staging
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [mastra]
 
     steps:
       - name: Checkout Code
@@ -52,14 +56,14 @@ jobs:
 
       # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.
       # Self-skips when the secret is absent (e.g. fork-triggered dispatch).
-      - name: Mastra smoke (wrapping + tool-router)
-        run: pnpm --filter mastra-example run smoke
+      - name: ${{ matrix.provider }} smoke (wrapping + tool-router)
+        run: pnpm --filter ${{ matrix.provider }}-example --fail-if-no-match run smoke
 
       # Full agent run — only when an LLM key is configured.
-      - name: Mastra direct-tools example
+      - name: ${{ matrix.provider }} direct-tools example
         if: ${{ env.OPENAI_API_KEY != '' }}
-        run: bun ts/examples/mastra/src/index.ts
+        run: bun ts/examples/${{ matrix.provider }}/src/index.ts
 
-      - name: Mastra tool-router example
+      - name: ${{ matrix.provider }} tool-router example
         if: ${{ env.OPENAI_API_KEY != '' }}
-        run: bun ts/examples/mastra/src/tool-router.ts
+        run: bun ts/examples/${{ matrix.provider }}/src/tool-router.ts

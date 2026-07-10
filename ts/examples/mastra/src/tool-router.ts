@@ -15,48 +15,11 @@
  * Run:
  *   bun ts/examples/mastra/src/tool-router.ts
  */
-import { openai } from '@ai-sdk/openai';
-import { Composio } from '@composio/core';
-import { MastraProvider } from '@composio/mastra';
-import { Agent } from '@mastra/core/agent';
-import { stepCountIs } from 'ai';
 import 'dotenv/config';
 
-const composio = new Composio({
-  apiKey: process.env.COMPOSIO_API_KEY,
-  provider: new MastraProvider(),
-});
+import { runToolRouterHackerNewsAgent } from './hackernews-agent/tool-router';
 
-// Canonical session creation. `composio.sessions.create(...)` is the v1 surface;
-// the bare `composio.create(...)` alias is deprecated.
-const session = await composio.sessions.create('example-user', {
-  toolkits: ['hackernews'],
-});
-
-const tools = await session.tools();
-
-const agent = new Agent({
-  id: 'hackernews-router-agent',
-  name: 'HackerNews Router Agent',
-  instructions:
-    'You are a helpful assistant. Use the available Composio tools to search for and read HackerNews data before answering.',
-  model: openai('gpt-5-mini'),
-  tools,
-});
-
-// Tool Router is a multi-step flow: the agent calls the router's search +
-// multi-execute meta-tools, then summarizes. Without a step budget the run
-// stops after the first tool call and returns empty text, so allow several
-// steps (matches the Mastra tool-router e2e reference).
-const { text } = await agent.generate(
-  [{ role: 'user', content: 'What are the current top 3 HackerNews stories? Give me their titles.' }],
-  { stopWhen: stepCountIs(10) }
-);
-
-// This example doubles as a test: a healthy run returns non-empty text.
-if (!text || text.trim().length === 0) {
-  throw new Error('Agent returned empty output — expected a non-empty response.');
-}
+const text = await runToolRouterHackerNewsAgent(process.env);
 
 console.log('\n🤖 Agent response:\n');
 console.log(text);
