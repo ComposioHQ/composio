@@ -110,9 +110,10 @@ The `Composio` instance also exposes `composio.toolkits`, `composio.triggers`, `
 ## Support
 
 - [Documentation](https://docs.composio.dev)
+- [TypeScript SDK reference](https://docs.composio.dev/reference/sdk-reference/typescript)
 - [Discord community](https://discord.gg/composio)
 - [Open an issue](https://github.com/ComposioHQ/composio/issues)
 
 ## License
 
-ISC
+MIT

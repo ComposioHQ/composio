@@ -135,6 +135,7 @@ This package lives in the [Composio SDK monorepo](https://github.com/ComposioHQ/
 ## Support
 
 - [Documentation](https://docs.composio.dev)
+- [Python SDK reference](https://docs.composio.dev/reference/sdk-reference/python)
 - [Discord community](https://discord.gg/composio)
 - [Open an issue](https://github.com/ComposioHQ/composio/issues)
 - [support@composio.dev](mailto:support@composio.dev)

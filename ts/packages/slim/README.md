@@ -14,4 +14,4 @@ import { Composio } from '@composio/slim';
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 ```
 
-The API mirrors `@composio/core` for consumers that prefer a smaller installed package.
+The API mirrors `@composio/core` for consumers that prefer a smaller installed package. See the [`@composio/core` README](https://github.com/ComposioHQ/composio/tree/next/ts/packages/core) for usage.
