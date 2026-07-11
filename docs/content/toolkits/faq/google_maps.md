@@ -24,7 +24,6 @@ By default, the consent screen uses Composio's OAuth app. To show your own app n
 
 The user's access token is no longer valid. Common causes: the user revoked access, changed their password or 2FA, a Workspace admin policy changed, or Google's refresh token limit (~50 per account) was exceeded. Re-authenticating the user typically resolves this.
 
-
 ## What is required for the Maps Embed API?
 
 `GOOGLE_MAPS_MAPS_EMBED_API` is API-key based. Google's Maps Embed API requires an API key on each request; OAuth2 is not the auth path for this tool.

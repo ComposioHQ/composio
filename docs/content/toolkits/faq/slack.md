@@ -1,3 +1,7 @@
+## What does the Composio + Slack integration do?
+
+Composio turns Slack's API into ready-to-use tools that AI agents and automations can call. With the integration you can send and read messages, manage channels, upload files, react to events, search conversations, and more — all through a unified platform. Composio supports two toolkits: **Slack** (authenticate as a user for workspace-level actions) and **Slackbot** (authenticate as a bot for in-channel messaging, app mentions, and slash commands). Developers connect their Slack workspace once and then orchestrate any combination of these actions from their agents or workflows.
+
 ## How does Composio handle my Slack data?
 
 Composio executes API calls on behalf of your connected account. All data is encrypted and subject to a 30-day retention policy. Authentication tokens are encrypted at rest and scoped to the permissions you grant during the OAuth flow. For full details on data handling, retention, and third-party data practices, see our [Privacy Policy](https://composio.dev/privacy).
@@ -53,7 +57,6 @@ For the Slack toolkit, set `as_user=True` to post as the authenticated user. For
 
 See [Triggers](/docs/triggers).
 
-
 ## Slack Marketplace warnings during OAuth
 
 Slack may show a Marketplace warning when the OAuth app is not listed or approved in Slack Marketplace. The OAuth flow can still work if the workspace allows non-Marketplace apps, but workspaces with stricter app policies may require admin approval before the connection can complete.
@@ -65,7 +68,3 @@ Composio is working on Marketplace review for the managed Slack app. Until that 
 ## Do I have to be a Workspace Owner to install the app?
 
 In some cases — yes. For example, when installing non-Marketplace apps, you'll need to be an owner to install directly and complete the connection. As a member, you'd need to either request approval, or ask the owner to disable **Require approved apps**.
-
-## What does the Composio + Slack integration do?
-
-Composio turns Slack's API into ready-to-use tools that AI agents and automations can call. With the integration you can send and read messages, manage channels, upload files, react to events, search conversations, and more — all through a unified platform. Composio supports two toolkits: **Slack** (authenticate as a user for workspace-level actions) and **Slackbot** (authenticate as a bot for in-channel messaging, app mentions, and slash commands). Developers connect their Slack workspace once and then orchestrate any combination of these actions from their agents or workflows.

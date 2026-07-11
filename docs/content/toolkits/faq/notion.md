@@ -48,7 +48,6 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
-
 ## Notion database trigger fires for new pages, not updates
 
 In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.

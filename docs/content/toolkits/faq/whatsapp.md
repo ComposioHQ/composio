@@ -1,6 +1,6 @@
 ## Why isn't my WhatsApp message being delivered?
 
-WhatsApp has a 24-hour user service window. Recipients only receive messages within 24 hours of their last message to you. To message outside this window, use a template message.
+WhatsApp has a 24-hour customer service window. Recipients only receive messages within 24 hours of their last message to you. To message outside this window, use a template message.
 
 ## Can I use a personal WhatsApp account with the WhatsApp toolkit?
 
