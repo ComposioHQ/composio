@@ -14,7 +14,6 @@ Microsoft Graph's send endpoint returns an HTTP 202 with no message details. To 
 
 The `@odata.context` URL provides metadata about the response (entity set, service version, and schema info) to help clients interpret the payload structure. It's primarily used for pagination and data parsing, not as a direct URL to the resource itself.
 
-
 ## Why do Outlook connections show "Needs Admin Approval" or "admin approval required"?
 
 Microsoft/Outlook admin-consent issues are Microsoft 365 tenant-level approval problems, not something fixed by changing only the Composio connection. Adding delegated permissions to an Azure app registration is not the same as granting tenant admin consent. Once a tenant admin grants consent for the requested permissions, affected users should start a fresh normal Outlook connection flow with their own accounts; the admin does not need to connect every user individually.
