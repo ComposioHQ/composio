@@ -97,8 +97,8 @@ catalogs:
       specifier: ^6.0.3
       version: 6.0.3
     uniku:
-      specifier: 0.3.1
-      version: 0.3.1
+      specifier: 0.2.0
+      version: 0.2.0
     vitest:
       specifier: ^4.1.10
       version: 4.1.10
@@ -1200,7 +1200,7 @@ importers:
         version: 28.0.0
       uniku:
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.2.0
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -1285,7 +1285,7 @@ importers:
         version: 6.0.3
       uniku:
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.2.0
       vitest:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.1.0)(@vitest/ui@4.1.10)(vite@7.3.1(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
@@ -1346,7 +1346,7 @@ importers:
         version: 7.8.5
       uniku:
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.2.0
       zod-to-json-schema:
         specifier: 'catalog:'
         version: 3.25.2(zod@4.4.3)
@@ -1663,7 +1663,7 @@ importers:
         version: 7.8.5
       uniku:
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.2.0
       zod:
         specifier: '>=3.25.76 <5'
         version: 4.4.3
@@ -6748,8 +6748,8 @@ packages:
   unified@11.0.5:
     resolution: {integrity: sha512-xKvGhPWw3k84Qjh8bI3ZeJjqnyadK+GEFtazSfZv/rKeTkTjOJho6mFqh2SM96iIcZokxiOpg78GazTSg8+KHA==}
 
-  uniku@0.3.1:
-    resolution: {integrity: sha512-lMKBDGZBceRxQT8BMfiEvbaCH2QF7EWgQhYNkoga0x/J/1GxggHNlHwOx1vNDEyx7k9PqLI/JsqIl3APbID/1w==}
+  uniku@0.2.0:
+    resolution: {integrity: sha512-zZMrf9a0gV4QwtiabwH19Kz/2ifJvU7vUjH8lBFBoZyWzMS7jZ+qbsP8/y83YOp4mO34zXDjspuLBwk0uK30Rw==}
     engines: {node: '>=20.19.0'}
 
   unique-string@3.0.0:
@@ -12523,7 +12523,7 @@ snapshots:
       trough: 2.2.0
       vfile: 6.0.3
 
-  uniku@0.3.1:
+  uniku@0.2.0:
     dependencies:
       '@noble/hashes': 2.2.0
 
