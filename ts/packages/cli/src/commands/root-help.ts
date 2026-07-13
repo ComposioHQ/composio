@@ -163,6 +163,8 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
   tagged({ name: 'login', description: 'Log in to Composio' }),
+  tagged({ name: 'signup', description: 'Create and log in with a Composio agent identity' }),
+  tagged({ name: 'agent', description: 'Manage a Composio agent identity' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
   tagged({ name: 'orgs', description: 'Manage current organization context (list, switch)' }),
@@ -829,7 +831,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
 
   login: {
     usage:
-      'composio login [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
+      'composio login [--agent] [--no-browser] [--poll] [--no-wait] [--key text] [--user-api-key text] [--org text] [-y, --yes] [--no-skill-install]',
     description:
       'Log in to the Composio CLI session. By default, also installs the composio-cli skill for Claude Code.',
     options: [
@@ -847,6 +849,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       },
     ],
     flags: [
+      {
+        name: '--agent',
+        description: 'Restore or create a browserless Composio agent identity and log in',
+      },
       { name: '--no-browser', description: 'Login without browser interaction' },
       {
         name: '--poll',

@@ -7,6 +7,20 @@ import { afterEach, vi } from 'vitest';
 describe('CLI: composio whoami', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    process.exitCode = undefined;
+  });
+
+  layer(TestLive())('without credentials', it => {
+    it.scoped('[Given] a clean home [Then] exits nonzero and prints unauthenticated JSON', () =>
+      Effect.gen(function* () {
+        yield* cli(['whoami']);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('You are not logged in yet');
+        expect(output).toContain('"authenticated":false');
+        expect(process.exitCode).toBe(1);
+      })
+    );
   });
 
   const testConfigProvider = ConfigProvider.fromMap(

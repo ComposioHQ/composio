@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { Command } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
@@ -25,7 +26,20 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
 
       yield* ctx.data.apiKey.pipe(
         Option.match({
-          onNone: () => ui.log.warn('You are not logged in yet. Please run `composio login`.'),
+          onNone: () =>
+            Effect.gen(function* () {
+              process.exitCode = 1;
+              yield* ui.log.warn('You are not logged in yet. Please run `composio login`.');
+              yield* ui.output(
+                JSON.stringify({
+                  authenticated: false,
+                  account_type: null,
+                  email: null,
+                  current_org_name: null,
+                  enhanced_controls_enabled: null,
+                })
+              );
+            }),
           onSome: apiKey =>
             Effect.gen(function* () {
               const sessionInfo = yield* getSessionInfoByUserApiKey({
@@ -71,6 +85,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               );
               yield* ui.output(
                 JSON.stringify({
+                  authenticated: true,
                   account_type: accountType,
                   email: email ?? null,
                   current_org_name: orgName ?? null,

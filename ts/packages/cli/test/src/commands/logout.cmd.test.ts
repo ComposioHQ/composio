@@ -5,7 +5,7 @@ import path from 'node:path';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { UserDataWithDefaults } from 'src/models/user-data';
-import { writeStoredAgentIdentity } from 'src/services/agents';
+import { LEGACY_AGENT_CONFIG_FILE_NAME, writeStoredAgentIdentity } from 'src/services/agents';
 import { extendConfigProvider } from 'src/services/config';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -155,12 +155,15 @@ describe('CLI: composio logout', () => {
       it.scoped('[Then] --force removes user and agent credentials', () =>
         Effect.gen(function* () {
           const ctx = yield* setupLoggedInAgent;
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          const legacyPath = path.join(cacheDir, LEGACY_AGENT_CONFIG_FILE_NAME);
+          yield* fs.writeFileString(legacyPath, '{"agent_key":"cak_legacy"}\n');
 
           yield* cli(['logout', '--force']);
 
-          const fs = yield* FileSystem.FileSystem;
-          const cacheDir = yield* setupCacheDir;
           const agentConfigExists = yield* fs.exists(path.join(cacheDir, 'agent.json'));
+          const legacyAgentConfigExists = yield* fs.exists(legacyPath);
           const userConfigRaw = yield* fs.readFileString(
             path.join(cacheDir, constants.USER_CONFIG_FILE_NAME),
             'utf8'
@@ -170,6 +173,7 @@ describe('CLI: composio logout', () => {
           expect(output).toContain('removed stored Composio agent key');
           expect(ctx.isLoggedIn()).toBeFalsy();
           expect(agentConfigExists).toBe(false);
+          expect(legacyAgentConfigExists).toBe(false);
           expect(JSON.parse(userConfigRaw)).toHaveProperty('api_key', null);
         })
       );

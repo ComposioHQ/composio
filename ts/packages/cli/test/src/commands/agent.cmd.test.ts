@@ -1,11 +1,17 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Effect, Exit, Option } from 'effect';
 import path from 'node:path';
 import { afterEach, vi } from 'vitest';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
-import { writeStoredAgentIdentity } from 'src/services/agents';
+import {
+  AGENT_SIGNUP_IDEMPOTENCY_FILE_NAME,
+  getOrSignupReadyAgent,
+  LEGACY_AGENT_CONFIG_FILE_NAME,
+  signupAgent,
+  writeStoredAgentIdentity,
+} from 'src/services/agents';
 import { ComposioUserContext } from 'src/services/user-context';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -83,6 +89,7 @@ describe('CLI: composio agent', () => {
           'utf8'
         );
         const agentConfigRaw = yield* fs.readFileString(path.join(cacheDir, 'agent.json'), 'utf8');
+        const agentConfigInfo = yield* fs.stat(path.join(cacheDir, 'agent.json'));
 
         expect(JSON.parse(userConfigRaw)).toMatchObject({
           api_key: 'uak_agent',
@@ -93,6 +100,90 @@ describe('CLI: composio agent', () => {
           agent_key: 'cak_test_agent',
           composio: { user_api_key: 'uak_agent' },
         });
+        if (process.platform !== 'win32') {
+          expect(agentConfigInfo.mode & 0o777).toBe(0o600);
+        }
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('stores a failed signup idempotency key with owner-only permissions', () =>
+      Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+          new Response(JSON.stringify({ message: 'signup unavailable' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+
+        const exit = yield* Effect.exit(signupAgent());
+        expect(Exit.isFailure(exit)).toBe(true);
+
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const info = yield* fs.stat(path.join(cacheDir, AGENT_SIGNUP_IDEMPOTENCY_FILE_NAME));
+        if (process.platform !== 'win32') {
+          expect(info.mode & 0o777).toBe(0o600);
+        }
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('migrates and refreshes a legacy identity instead of minting a duplicate', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const cacheDir = yield* setupCacheDir;
+        const legacyPath = path.join(cacheDir, LEGACY_AGENT_CONFIG_FILE_NAME);
+        const canonicalPath = path.join(cacheDir, 'agent.json');
+        yield* fs.writeFileString(
+          legacyPath,
+          JSON.stringify({
+            ...agentSignupResponse,
+            agent_key: 'cak_legacy',
+            composio_agent_key: undefined,
+          })
+        );
+        yield* fs.chmod(legacyPath, 0o644);
+
+        let signupRequested = false;
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (requestInput, init) => {
+          const url =
+            typeof requestInput === 'string'
+              ? requestInput
+              : requestInput instanceof URL
+                ? requestInput.toString()
+                : requestInput.url;
+          if (url.includes('/api/signup')) signupRequested = true;
+          if (url.includes('/api/whoami')) {
+            expect(new Headers(init?.headers).get('authorization')).toBe('Bearer cak_legacy');
+            return new Response(
+              JSON.stringify({
+                ...agentSignupResponse,
+                agent_key: 'cak_legacy',
+                composio_agent_key: 'cak_legacy',
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            );
+          }
+          return new Response(JSON.stringify({ message: 'unexpected request' }), { status: 500 });
+        });
+
+        const identity = yield* getOrSignupReadyAgent();
+        expect(identity.agent_key).toBe('cak_legacy');
+        expect(signupRequested).toBe(false);
+        expect(yield* fs.exists(legacyPath)).toBe(true);
+        expect(JSON.parse(yield* fs.readFileString(canonicalPath, 'utf8'))).toMatchObject({
+          agent_key: 'cak_legacy',
+          composio_agent_key: 'cak_legacy',
+        });
+        if (process.platform !== 'win32') {
+          const info = yield* fs.stat(canonicalPath);
+          expect(info.mode & 0o777).toBe(0o600);
+          const legacyInfo = yield* fs.stat(legacyPath);
+          expect(legacyInfo.mode & 0o777).toBe(0o600);
+        }
       })
     );
   });

@@ -4,8 +4,11 @@ import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
+import { NodeOs } from 'src/services/node-os';
 
 export const AGENT_CONFIG_FILE_NAME = 'agent.json';
+export const LEGACY_AGENT_CONFIG_FILE_NAME = 'anonymous_user_data.json';
+export const AGENT_SIGNUP_IDEMPOTENCY_FILE_NAME = 'agent-signup-idempotency-key';
 export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
@@ -123,37 +126,100 @@ export const agentConfigPath = Effect.gen(function* () {
   return path.join(cacheDir, AGENT_CONFIG_FILE_NAME);
 });
 
+const restrictPrivateFilePermissions = (filePath: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const os = yield* NodeOs;
+    const restrictPermissions = fs.chmod(filePath, 0o600);
+    yield* os.platform === 'win32'
+      ? restrictPermissions.pipe(
+          Effect.catchAll(error =>
+            Effect.logDebug(`Could not restrict permissions for ${filePath}:`, error)
+          )
+        )
+      : restrictPermissions;
+  });
+
+const writePrivateFileString = (filePath: string, contents: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    yield* fs.writeFileString(filePath, contents, { mode: 0o600 });
+    yield* restrictPrivateFilePermissions(filePath);
+  });
+
+const readAgentIdentityFile = (filePath: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    return yield* fs.readFileString(filePath, 'utf8').pipe(
+      Effect.map(raw => Option.some(normalizeAgentIdentity(readJson(raw)))),
+      Effect.catchAll(error =>
+        Effect.gen(function* () {
+          yield* Effect.logDebug(`Failed to read agent identity from ${filePath}:`, error);
+          return Option.none<AgentIdentity>();
+        })
+      )
+    );
+  });
+
 export const readStoredAgentIdentity = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
+  const cacheDir = yield* setupCacheDir;
   const configPath = yield* agentConfigPath;
 
   const exists = yield* fs.exists(configPath);
-  if (!exists) return Option.none<AgentIdentity>();
+  if (exists) {
+    yield* restrictPrivateFilePermissions(configPath);
+    return yield* readAgentIdentityFile(configPath);
+  }
 
-  return yield* fs.readFileString(configPath, 'utf8').pipe(
-    Effect.map(raw => Option.some(normalizeAgentIdentity(readJson(raw)))),
-    Effect.catchAll(error =>
-      Effect.gen(function* () {
-        yield* Effect.logDebug('Failed to read agent identity:', error);
-        return Option.none<AgentIdentity>();
-      })
-    )
-  );
+  const legacyPath = path.join(cacheDir, LEGACY_AGENT_CONFIG_FILE_NAME);
+  if (!(yield* fs.exists(legacyPath))) return Option.none<AgentIdentity>();
+
+  yield* restrictPrivateFilePermissions(legacyPath);
+  const legacy = yield* readAgentIdentityFile(legacyPath);
+  if (Option.isNone(legacy) || !getAgentKey(legacy.value)) {
+    return Option.none<AgentIdentity>();
+  }
+
+  const migrated = yield* writeStoredAgentIdentity(legacy.value);
+  return Option.some(migrated);
 });
 
 export const writeStoredAgentIdentity = (identity: AgentIdentity) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
     const configPath = yield* agentConfigPath;
     const normalized = normalizeAgentIdentity(identity);
-    yield* fs.writeFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
+    yield* writePrivateFileString(configPath, `${JSON.stringify(normalized, null, 2)}\n`);
     return normalized;
   });
 
 export const removeStoredAgentIdentity = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
+  const cacheDir = yield* setupCacheDir;
   const configPath = yield* agentConfigPath;
-  yield* fs.remove(configPath).pipe(Effect.catchAll(() => Effect.void));
+  const legacyPath = path.join(cacheDir, LEGACY_AGENT_CONFIG_FILE_NAME);
+  yield* Effect.all(
+    [configPath, legacyPath].map(filePath =>
+      fs.remove(filePath).pipe(Effect.catchAll(() => Effect.void))
+    )
+  );
+});
+
+const getOrCreateAgentSignupIdempotencyKey = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const cacheDir = yield* setupCacheDir;
+  const keyPath = path.join(cacheDir, AGENT_SIGNUP_IDEMPOTENCY_FILE_NAME);
+  if (yield* fs.exists(keyPath)) {
+    const existing = (yield* fs.readFileString(keyPath, 'utf8')).trim();
+    if (existing) {
+      yield* writePrivateFileString(keyPath, `${existing}\n`);
+      return { key: existing, keyPath };
+    }
+  }
+
+  const key = globalThis.crypto.randomUUID();
+  yield* writePrivateFileString(keyPath, `${key}\n`);
+  return { key, keyPath };
 });
 
 const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
@@ -185,12 +251,17 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
 
 export const signupAgent = (params: { wait?: boolean } = {}) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
     const wait = params.wait ?? true;
+    const idempotency = yield* getOrCreateAgentSignupIdempotencyKey;
     const payload = yield* fetchAgentJson(`/api/signup${wait ? '' : '?wait=0'}`, {
       method: 'POST',
+      headers: { 'Idempotency-Key': idempotency.key },
       body: JSON.stringify({}),
     });
-    return yield* writeStoredAgentIdentity(normalizeAgentIdentity(payload));
+    const identity = yield* writeStoredAgentIdentity(normalizeAgentIdentity(payload));
+    yield* fs.remove(idempotency.keyPath).pipe(Effect.catchAll(() => Effect.void));
+    return identity;
   });
 
 export const fetchAgentWhoami = (agentKey: string) =>
