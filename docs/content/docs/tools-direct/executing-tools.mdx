@@ -14,6 +14,26 @@ LLMs on their own can only do generation. Tool calling changes that by letting t
 
 In Composio, every **tool** is a single API action—fully described with schema, parameters, and return type. Tools live inside **toolkits** like Gmail, Slack, or GitHub, and Composio handles authentication and user scoping.
 
+## Canceling TypeScript requests
+
+TypeScript SDK methods accept an `AbortSignal` in their trailing request options. Aborted requests throw `ComposioRequestCancelledError`, so cancellation can be handled separately from execution failures:
+
+```typescript
+import { Composio, ComposioRequestCancelledError } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your_composio_api_key' });
+
+try {
+  await composio.toolkits.get({}, { signal: AbortSignal.timeout(5_000) });
+} catch (error) {
+  if (error instanceof ComposioRequestCancelledError) {
+    console.log('Request canceled');
+  }
+}
+```
+
+Use an `AbortController` when application code decides when to cancel. Custom tools receive the same signal as `ctx.signal` and should pass it to cancellable work.
+
 <Callout type="info">
 **User Scoping**: All tools are scoped to a specific user - that's why every example includes a `user_id`. Learn how to structure User IDs in [User scoping](/docs/how-composio-works). Each user must authenticate with their respective services (Gmail, Calendar, etc.) - see [Authentication](/docs/tools-direct/authenticating-tools).
 </Callout>
