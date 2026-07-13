@@ -590,7 +590,7 @@ const handleLegacyAuthConfigLink = (params: {
     if (!canContinue) return;
 
     if (params.noWait) {
-      yield* showRedirectUrl(params.ui, redirectUrl);
+      yield* showRedirectUrl(params.ui, redirectUrl, { manual: true });
       yield* params.ui.output(
         JSON.stringify(
           {
@@ -796,7 +796,7 @@ const runConnectedAccountsLink = (params: {
     if (!canContinue) return;
 
     if (params.noWait) {
-      yield* showRedirectUrl(ui, redirectUrl);
+      yield* showRedirectUrl(ui, redirectUrl, { manual: true });
       yield* ui.output(
         JSON.stringify(
           {
