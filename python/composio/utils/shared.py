@@ -596,7 +596,13 @@ def get_signature_format_from_schema_params(
             param_default = param_schema.get("default", "")
         elif isinstance(param_type, list):
             annotation = _annotation_from_json_schema_type(param_type)
-            param_default = param_schema.get("default", "")
+            scalar_type = param_type[0] if len(param_type) == 1 else None
+            if isinstance(scalar_type, str) and scalar_type in FALLBACK_VALUES:
+                param_default = param_schema.get(
+                    "default", FALLBACK_VALUES[scalar_type]
+                )
+            else:
+                param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
