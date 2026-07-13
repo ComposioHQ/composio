@@ -520,6 +520,59 @@ describe('deduplicateJsonSchemaRequiredArrays', () => {
     expect(schema.properties.options.required).toEqual(['enabled', 'enabled']);
   });
 
+  it('does not normalize literal instance values', () => {
+    const sharedValue = {
+      type: 'object',
+      required: ['preserve', 'preserve'],
+      properties: { preserve: { type: 'string' } },
+    };
+    const schema = {
+      type: 'object',
+      required: ['value', 'value'],
+      properties: {
+        schemaValue: sharedValue,
+        value: {
+          const: sharedValue,
+          default: { required: ['preserve', 'preserve'] },
+          enum: [{ required: ['preserve', 'preserve'] }],
+          examples: [{ required: ['preserve', 'preserve'] }],
+        },
+      },
+    };
+
+    const normalized = deduplicateJsonSchemaRequiredArrays(schema);
+
+    expect(normalized).toMatchObject({
+      required: ['value'],
+      properties: {
+        schemaValue: { required: ['preserve'] },
+        value: {
+          const: { required: ['preserve', 'preserve'] },
+          default: { required: ['preserve', 'preserve'] },
+          enum: [{ required: ['preserve', 'preserve'] }],
+          examples: [{ required: ['preserve', 'preserve'] }],
+        },
+      },
+    });
+    expect(normalized.properties.value.const).not.toBe(schema.properties.value.const);
+  });
+
+  it('fails predictably for schemas nested beyond the supported depth', () => {
+    const defaultValue: Record<string, unknown> = {};
+    let cursor = defaultValue;
+    for (let i = 0; i <= 512; i++) {
+      cursor.child = {};
+      cursor = cursor.child as Record<string, unknown>;
+    }
+
+    expect(() =>
+      deduplicateJsonSchemaRequiredArrays({
+        type: 'object',
+        properties: { value: { default: defaultValue } },
+      })
+    ).toThrow('JSON Schema exceeds maximum nesting depth of 512');
+  });
+
   it('normalizes schemas at the shared ToolSchema API boundary', () => {
     const tool = ToolSchema.parse({
       slug: 'TEST_TOOL',

@@ -64,6 +64,35 @@ describe('OpenAIProvider', () => {
         },
       });
     });
+
+    it('deduplicates required entries without mutating the input schema', () => {
+      const tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string' },
+            filters: {
+              type: 'object',
+              properties: { status: { type: 'string' } },
+              required: ['status', 'status'],
+            },
+          },
+          required: ['query', 'query'],
+        },
+      } as Tool;
+
+      const wrapped = provider.wrapTool(tool);
+
+      expect(wrapped.function.parameters).toMatchObject({
+        required: ['query'],
+        properties: { filters: { required: ['status'] } },
+      });
+      expect(tool.inputParameters).toMatchObject({
+        required: ['query', 'query'],
+        properties: { filters: { required: ['status', 'status'] } },
+      });
+    });
   });
 
   describe('wrapTools', () => {

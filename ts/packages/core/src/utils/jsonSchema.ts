@@ -269,16 +269,26 @@ export function dereferenceJsonSchema<T = unknown>(
  * reapply it at their own emission boundary.
  */
 export function deduplicateJsonSchemaRequiredArrays<T = unknown>(schema: T): T {
-  const seen = new WeakMap<object, unknown>();
+  const seenSchemaValues = new WeakMap<object, unknown>();
+  const seenInstanceValues = new WeakMap<object, unknown>();
+  const instanceValueKeywords = new Set(['const', 'default', 'enum', 'examples']);
 
-  function walk(value: unknown): unknown {
+  function walk(value: unknown, isSchema: boolean, depth = 0): unknown {
+    if (depth > MAX_NODE_DEPTH) {
+      throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
+    }
+
+    const seen = isSchema ? seenSchemaValues : seenInstanceValues;
+
     if (Array.isArray(value)) {
       const existing = seen.get(value);
       if (existing) return existing;
 
       const clone: unknown[] = [];
       seen.set(value, clone);
-      clone.push(...value.map(walk));
+      for (const item of value) {
+        clone.push(walk(item, isSchema, depth + 1));
+      }
       return clone;
     }
 
@@ -293,14 +303,17 @@ export function deduplicateJsonSchemaRequiredArrays<T = unknown>(schema: T): T {
       Object.defineProperty(clone, key, {
         configurable: true,
         enumerable: true,
-        value: key === 'required' && Array.isArray(child) ? [...new Set(child)] : walk(child),
+        value:
+          isSchema && key === 'required' && Array.isArray(child)
+            ? [...new Set(walk(child, false, depth + 1) as unknown[])]
+            : walk(child, isSchema && !instanceValueKeywords.has(key), depth + 1),
         writable: true,
       });
     }
     return clone;
   }
 
-  return walk(schema) as T;
+  return walk(schema, true) as T;
 }
 
 /**
