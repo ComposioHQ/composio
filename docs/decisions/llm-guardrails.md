@@ -6,7 +6,7 @@ Inject invisible guardrail instructions into every `.md` response so AI code gen
 
 ## Problem
 
-LLMs that crawl or receive Composio docs generate code using the old direct tool execution pattern (`composio.tools.get()`, `composio.provider.handle_tool_calls()`) instead of the current session-based pattern (`composio.create()`, `session.tools()`).
+LLMs that crawl or receive Composio docs generate code using the old direct tool execution pattern (`composio.tools.get()`, `composio.provider.handle_tool_calls()`) instead of the current session-based pattern (TypeScript's `composio.sessions.create()` and `session.tools()`).
 
 ## Architecture
 
@@ -29,7 +29,7 @@ Pages control which guardrails they get:
 
 | Frontmatter value | What gets appended |
 |---|---|
-| *(omitted — default)* | `SESSION_GUARDRAILS` — full "use composio.create() + session.tools()" instructions, ALWAYS/NEVER rules, deprecated patterns, verification checklist |
+| *(omitted — default)* | `SESSION_GUARDRAILS` — full "use composio.sessions.create() + session.tools()" instructions, ALWAYS/NEVER rules, deprecated patterns, verification checklist |
 | `llmGuardrails: "direct-execution"` | `DIRECT_EXECUTION_GUARDRAILS` — acknowledges direct execution is valid, but strongly recommends sessions unless user explicitly asks for it |
 | `llmGuardrails: "none"` | Nothing |
 

@@ -89,7 +89,7 @@ const composio = new Composio({
   provider: new OpenAIAgentsProvider(),
 });
 
-const session = await composio.create("default", {
+const session = await composio.sessions.create("default", {
   toolkits: ["gmail"],
   experimental: {
     customTools: [getUser, createDraft],

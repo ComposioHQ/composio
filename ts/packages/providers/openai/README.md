@@ -25,7 +25,7 @@ const composio = new Composio({
 const client = new OpenAI();
 
 // Create a session for your user
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 let response = await client.responses.create({
@@ -34,7 +34,8 @@ let response = await client.responses.create({
   input: [
     {
       role: 'user',
-      content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+      content:
+        "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
     },
   ],
 });

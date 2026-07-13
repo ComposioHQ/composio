@@ -25,7 +25,7 @@ const composio = new Composio({
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY! });
 
 // Create a session for your user
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const chat = ai.chats.create({
@@ -36,7 +36,8 @@ const chat = ai.chats.create({
 });
 
 let response = await chat.sendMessage({
-  message: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  message:
+    "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
 });
 
 // Agentic loop: keep executing tool calls until the model responds with text
