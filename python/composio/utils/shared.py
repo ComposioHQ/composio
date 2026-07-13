@@ -587,12 +587,15 @@ def get_signature_format_from_schema_params(
             # that are missing a "type" key or use an unrecognized type, then build
             # a Union for any count of members (no 1/2/3-member cap).
             mapped_types: t.List[t.Any] = [
-                PYDANTIC_TYPE_TO_PYTHON_TYPE.get(ptype, t.Any) for ptype in param_types
+                _annotation_from_json_schema_type(ptype) for ptype in param_types
             ]
             if len(mapped_types) == 1:
                 annotation = mapped_types[0]
             else:
                 annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
+            param_default = param_schema.get("default", "")
+        elif isinstance(param_type, list):
+            annotation = _annotation_from_json_schema_type(param_type)
             param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
@@ -623,6 +626,27 @@ def get_signature_format_from_schema_params(
             continue
         none_default_parameters.append(parameter)
     return default_parameters + none_default_parameters
+
+
+def _annotation_from_json_schema_type(schema_type: t.Any) -> t.Any:
+    """Convert a JSON Schema ``type`` value to a Python annotation.
+
+    JSON Schema Draft 2020-12 and OpenAPI 3.1 allow ``type`` to be an array,
+    including inside ``anyOf`` and ``oneOf`` branches.  Keep that form from
+    reaching the scalar dictionary lookup, where a list would be unhashable.
+    """
+    if isinstance(schema_type, list):
+        mapped_types = [_annotation_from_json_schema_type(item) for item in schema_type]
+        if not mapped_types:
+            return t.Any
+        if len(mapped_types) == 1:
+            return mapped_types[0]
+        return reduce(lambda left, right: t.Union[left, right], mapped_types)
+
+    if isinstance(schema_type, str):
+        return PYDANTIC_TYPE_TO_PYTHON_TYPE.get(schema_type, t.Any)
+
+    return t.Any
 
 
 def get_pydantic_signature_format_from_schema_params(
