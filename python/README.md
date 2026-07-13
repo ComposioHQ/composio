@@ -13,6 +13,7 @@ Composio gives your AI agents 1000+ pre-authenticated toolkits, per-user session
 
 - [Documentation](https://docs.composio.dev)
 - [Quickstart](https://docs.composio.dev/docs/quickstart)
+- [Changelog](https://docs.composio.dev/reference/changelog)
 - [Dashboard](https://dashboard.composio.dev) (grab your `COMPOSIO_API_KEY` from [Settings](https://dashboard.composio.dev/settings))
 
 ## Install
@@ -136,6 +137,7 @@ This package lives in the [Composio SDK monorepo](https://github.com/ComposioHQ/
 
 - [Documentation](https://docs.composio.dev)
 - [Python SDK reference](https://docs.composio.dev/reference/sdk-reference/python)
+- [Changelog](https://docs.composio.dev/reference/changelog)
 - [Discord community](https://discord.gg/composio)
 - [Open an issue](https://github.com/ComposioHQ/composio/issues)
 - [support@composio.dev](mailto:support@composio.dev)

@@ -1,0 +1,63 @@
+---
+title: "Python SDK 0.14.0 removes the legacy custom-tool registry"
+description: "Python SDK 0.14.0 removes the legacy in-memory custom-tool registry. Tool Router custom tools remain the supported path."
+date: "2026-06-16"
+---
+
+Python SDK `composio` `0.14.0` removes the legacy `composio.tools.custom_tool` registry. It was an older, separate custom-tool path that duplicated the Tool Router model and made it unclear which execution surface a tool belonged to.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.14.0` |
+
+### Breaking change
+
+<Callout type="warn">
+**Breaking change**
+
+`composio.tools.custom_tool`, `core.models.custom_tools`, and their legacy execution wiring were removed. Use `composio.experimental.tool()` and `composio.experimental.Toolkit` with a Tool Router session instead.
+</Callout>
+
+The current custom-tool APIs support inline execution and Tool Router preload, attach, and reuse flows. They are the only custom-tool path supported by the SDK.
+
+### Migration
+
+1. Replace `@composio.tools.custom_tool` with `@composio.experimental.tool`.
+2. Change the tool signature from a request object plus execution callback to `input, ctx`.
+3. Attach the tool when creating the session through `experimental.custom_tools`.
+
+Before:
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+
+@composio.tools.custom_tool
+def add_two_numbers(request: AddTwoNumbersInput) -> int:
+    return request.a + request.b
+```
+
+After:
+
+```python
+from composio import Composio
+
+composio = Composio()
+
+
+@composio.experimental.tool
+def add_two_numbers(input: AddTwoNumbersInput, ctx):
+    return {"result": input.a + input.b}
+
+
+session = composio.create(
+    user_id="user_123",
+    experimental={"custom_tools": [add_two_numbers]},
+)
+```
+
+For a tool that calls a toolkit API, set `extends_toolkit` on the decorator and use `ctx.proxy_execute(...)` from the function body.

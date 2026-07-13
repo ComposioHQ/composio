@@ -1,0 +1,23 @@
+---
+title: "Python SDK 0.13.1 adds experimental shared connections"
+description: "Python SDK 0.13.1 adds experimental shared connected accounts, ACL helpers, and fixes legacy initiate warnings."
+date: "2026-05-13"
+---
+
+Python SDK `composio` `0.13.1` adds experimental shared connected accounts. A shared connection can be pinned in a Tool Router session and used by another `user_id` only when its per-user ACL permits it.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.13.1` |
+
+### Shared connections
+
+Create a shared connection with `connected_accounts.link(..., experimental={...})`, update its ACL with `experimental.update_acl(...)`, and use the same experimental shape from `session.authorize(...)`. `connected_accounts.list()` also accepts the `PRIVATE`, `SHARED`, and `ALL` account-type filters.
+
+<Callout>
+Shared connections are experimental. Their shape may change, so pin a specific SDK version if your application depends on the current API.
+</Callout>
+
+This release also fixes false-positive `initiate()` deprecation warnings for custom and non-OAuth auth configs, preserves null-only `anyOf` schema branches, and adds typed errors for invalid shared-connection operations.
