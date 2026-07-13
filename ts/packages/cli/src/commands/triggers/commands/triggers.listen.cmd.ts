@@ -2,6 +2,7 @@ import { Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import path from 'node:path';
+import { uuidv4 } from 'uniku/uuid/v4';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -77,7 +78,7 @@ const out = Options.text('out').pipe(
   Options.optional
 );
 
-const randomUUID = () => crypto.randomUUID();
+const generateUuid = () => uuidv4();
 
 const signWebhookPayload = async ({
   secret,
@@ -183,7 +184,7 @@ export const triggersCmd$Listen = Command.make(
       const realtime = yield* TriggersRealtime;
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);
-      const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
+      const generatedWebhookSecret = `composio-forward-secret-${generateUuid()}`;
       const webhookSecret = process.env.COMPOSIO_WEBHOOK_SECRET ?? generatedWebhookSecret;
       const outputFilePathOption = Option.getOrUndefined(out);
       const outputFilePath = outputFilePathOption ? path.resolve(outputFilePathOption) : undefined;
@@ -282,7 +283,7 @@ export const triggersCmd$Listen = Command.make(
                 const webhookId =
                   typeof eventData.id === 'string' && eventData.id.length > 0
                     ? eventData.id
-                    : randomUUID();
+                    : generateUuid();
                 const webhookTimestamp = `${Math.floor(Date.now() / 1000)}`;
                 const webhookSignature = yield* Effect.tryPromise({
                   try: () =>

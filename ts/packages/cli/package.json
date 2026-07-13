@@ -107,6 +107,7 @@
     "source-map-js": "^1.2.1",
     "superjson": "^2.2.6",
     "ts-morph": "^28.0.0",
+    "uniku": "^0.3.1",
     "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",

@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import { uuidv4 } from 'uniku/uuid/v4';
 import { Entry } from '../src/core/entry';
 import { KeyringError } from '../src/core/errors';
 import { setDefaultStore, unsetDefaultStore } from '../src/core/store';
@@ -48,9 +48,9 @@ suite('ffi: MacOSSecurityFFIStore roundtrip', () => {
   });
 
   it('roundtrips a password', async () => {
-    const entry = new Entry(`com.composio.cli.ffi.${randomUUID()}`, 'default');
+    const entry = new Entry(`com.composio.cli.ffi.${uuidv4()}`, 'default');
     try {
-      const password = `ffi-${randomUUID()}`;
+      const password = `ffi-${uuidv4()}`;
       await entry.setPassword(password);
       expect(await entry.getPassword()).toBe(password);
     } finally {
@@ -63,7 +63,7 @@ suite('ffi: MacOSSecurityFFIStore roundtrip', () => {
   });
 
   it('overwrites on repeated setPassword without duplicate error', async () => {
-    const entry = new Entry(`com.composio.cli.ffi.${randomUUID()}`, 'default');
+    const entry = new Entry(`com.composio.cli.ffi.${uuidv4()}`, 'default');
     try {
       await entry.setPassword('first');
       await entry.setPassword('second');
@@ -79,14 +79,14 @@ suite('ffi: MacOSSecurityFFIStore roundtrip', () => {
   });
 
   it('throws NoEntry for a missing credential', async () => {
-    const entry = new Entry(`com.composio.cli.ffi.nonexistent.${randomUUID()}`, 'default');
+    const entry = new Entry(`com.composio.cli.ffi.nonexistent.${uuidv4()}`, 'default');
     await expect(entry.getPassword()).rejects.toSatisfy(
       (err: unknown) => err instanceof KeyringError && err.kind === 'NoEntry'
     );
   });
 
   it('roundtrips arbitrary binary bytes', async () => {
-    const entry = new Entry(`com.composio.cli.ffi.bin.${randomUUID()}`, 'default');
+    const entry = new Entry(`com.composio.cli.ffi.bin.${uuidv4()}`, 'default');
     try {
       const bytes = new Uint8Array(256);
       for (let i = 0; i < 256; i++) bytes[i] = i;
@@ -103,7 +103,7 @@ suite('ffi: MacOSSecurityFFIStore roundtrip', () => {
   });
 
   it('delete then read throws NoEntry', async () => {
-    const entry = new Entry(`com.composio.cli.ffi.del.${randomUUID()}`, 'default');
+    const entry = new Entry(`com.composio.cli.ffi.del.${uuidv4()}`, 'default');
     await entry.setPassword('x');
     await entry.deleteCredential();
     await expect(entry.getPassword()).rejects.toSatisfy(

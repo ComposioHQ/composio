@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
+import { uuidv4 } from 'uniku/uuid/v4';
 import { APP_VERSION } from 'src/constants';
 import { resolveCommandProject } from 'src/services/command-project';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
@@ -417,7 +418,7 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
-        const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
+        const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? uuidv4();
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
         const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';

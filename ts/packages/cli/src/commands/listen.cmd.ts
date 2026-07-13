@@ -3,6 +3,7 @@ import { FileSystem } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { Deferred, Effect, Option, Runtime } from 'effect';
 import path from 'node:path';
+import { nanoid } from 'uniku/nanoid';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -185,7 +186,7 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
     }
   }
 
-  return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  return `${Date.now()}-${nanoid(8)}`;
 };
 
 const resolveFallbackArtifactsDir = () => resolveArtifactsRoot();

@@ -5,6 +5,7 @@ import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Effect, Option } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
+import { uuidv4 } from 'uniku/uuid/v4';
 import {
   detectNativeUiCallerAgent,
   requestNativeUiPermissionDecision,
@@ -119,7 +120,7 @@ const writeCacheFile = async (cache: CacheFile): Promise<void> => {
   const targetPath = cachePath();
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
-  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
+  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${uuidv4()}.tmp`;
   try {
     await fs.writeFile(
       tempPath,
@@ -766,7 +767,7 @@ const requestPermissionInBrowser = (params: {
   readonly agent: NativeUiCallerAgent;
 }): Promise<PermissionDecision> =>
   new Promise((resolve, reject) => {
-    const token = crypto.randomUUID();
+    const token = uuidv4();
     let settled = false;
 
     const settle = (decision: PermissionDecision) => {

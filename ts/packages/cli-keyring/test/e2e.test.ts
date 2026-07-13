@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import { uuidv4 } from 'uniku/uuid/v4';
 import { Entry } from '../src/core/entry';
 import { KeyringError } from '../src/core/errors';
 import { createDefaultStore, setDefaultStore } from '../src/index';
@@ -25,7 +25,7 @@ suite('e2e: real OS keystore', () => {
     setDefaultStore(await createDefaultStore());
   });
 
-  const service = `com.composio.cli.test.${randomUUID()}`;
+  const service = `com.composio.cli.test.${uuidv4()}`;
   const user = 'default';
   const entry = new Entry(service, user);
 
@@ -40,7 +40,7 @@ suite('e2e: real OS keystore', () => {
   });
 
   it('roundtrips a password', async () => {
-    const password = `test-${randomUUID()}`;
+    const password = `test-${uuidv4()}`;
     await entry.setPassword(password);
     expect(await entry.getPassword()).toBe(password);
   });

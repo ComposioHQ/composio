@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';
+import { nanoid } from 'uniku/nanoid';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
@@ -60,7 +61,7 @@ const cwdHash = (cwd: string): string => {
 };
 
 const createProbablyMyCliSessionId = (cwd: string): string => {
-  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+  const random = nanoid(10);
   return `cli_s_${cwdHash(cwd)}_${random}`;
 };
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawn } from 'node:child_process';
 import { Effect } from 'effect';
+import { uuidv4 } from 'uniku/uuid/v4';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 import * as constants from 'src/constants';
 
@@ -124,7 +125,7 @@ const getOrCreateInstallId = (): string => {
         return parsed.install_id;
       }
     }
-    const installId = crypto.randomUUID();
+    const installId = uuidv4();
     fs.writeFileSync(
       filePath,
       JSON.stringify(
@@ -139,7 +140,7 @@ const getOrCreateInstallId = (): string => {
     );
     return installId;
   } catch {
-    return crypto.randomUUID();
+    return uuidv4();
   }
 };
 

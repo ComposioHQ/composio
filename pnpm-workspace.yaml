@@ -69,6 +69,7 @@ minimumReleaseAgeExclude:
   - '@mastra/core'
   - '@composio/client'
   - chrome-devtools-mcp
+  - uniku
 
 peerDependencyRules:
   allowedVersions:

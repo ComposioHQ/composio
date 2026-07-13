@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { Effect, Option } from 'effect';
+import { nanoid } from 'uniku/nanoid';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 
@@ -32,7 +33,7 @@ export type CliSessionArtifacts = {
   readonly historyFilePath: string;
 };
 
-const randomToken = (length = 8) => crypto.randomUUID().replace(/-/g, '').slice(0, length);
+const randomToken = (length = 8) => nanoid(length);
 
 const sanitizeArtifactName = (value: string): string =>
   value.replace(/[^A-Z0-9_]+/gi, '_').replace(/^_+|_+$/g, '') || 'ARTIFACT';

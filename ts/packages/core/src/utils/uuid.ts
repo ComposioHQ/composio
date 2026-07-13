@@ -1,7 +1,10 @@
+import { nanoid } from 'uniku/nanoid';
+import { uuidv4 } from 'uniku/uuid/v4';
+
 export function getRandomUUID(): string {
-  return globalThis.crypto.randomUUID();
+  return uuidv4();
 }
 
 export function getRandomShortId(): string {
-  return getRandomUUID().slice(0, 8).replace(/-/g, '');
+  return nanoid(8);
 }

@@ -1,4 +1,5 @@
 import type { CliCommandTelemetryContext, TrackEvent } from './types';
+import { uuidv4 } from 'uniku/uuid/v4';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
@@ -347,7 +348,7 @@ export const createCliCommandTelemetryContext = (
   startedAt: Date.now(),
   runId:
     extractCommandPath(argv) === 'run'
-      ? (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
+      ? (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? uuidv4())
       : undefined,
 });
 

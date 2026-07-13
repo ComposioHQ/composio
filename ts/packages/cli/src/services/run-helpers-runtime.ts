@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
+import { nanoid } from 'uniku/nanoid';
 import { z } from 'zod';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import type { MasterKind } from 'src/services/master-detector';
@@ -188,7 +189,7 @@ export const installRunHelpers = async ({
     helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
   const perfDebugStart = Date.now();
   let perfDebugSeq = 0;
-  const executeId = () => crypto.randomUUID().slice(0, 8);
+  const executeId = () => nanoid(8);
   const proxySessionCache = new Map<string, string>();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
     /\/$/,
