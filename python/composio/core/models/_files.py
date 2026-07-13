@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import datetime
 import hashlib
 import logging
 import os
 import typing as t
+import uuid
 from pathlib import Path
 from urllib.parse import unquote, urlparse
-import uuid
-import datetime
 
 import requests
 import typing_extensions as te
@@ -25,17 +25,18 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
+from composio.utils.logging import WithLogger
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
+from composio.utils.ssrf_guard import assert_safe_fetch_target
 from composio.utils.upload_dir_allowlist import (
     assert_path_inside_upload_dirs,
 )
-from composio.utils.logging import WithLogger
 
 if t.TYPE_CHECKING:
-    from .tools import ToolExecutionResponse
     from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
+    from .tools import ToolExecutionResponse
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _FILE_UPLOAD = "/api/v3/files/upload/request"
@@ -266,6 +267,7 @@ def _fetch_file_from_url(
     """Fetch file content from a URL with security protections.
 
     Security features:
+    - Public-address validation (prevents SSRF)
     - Response size limiting (prevents memory exhaustion)
     - Redirects disabled (prevents redirect-based attacks)
     - Separate connect/read timeouts
@@ -281,6 +283,8 @@ def _fetch_file_from_url(
         ResponseTooLargeError: If response exceeds max_size
         ErrorUploadingFile: If fetch fails for other reasons
     """
+    assert_safe_fetch_target(url)
+
     # Make request without following redirects
     try:
         response = requests.get(

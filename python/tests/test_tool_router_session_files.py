@@ -10,7 +10,11 @@ from composio.core.models.tool_router_session_files import (
     RemoteFile,
     ToolRouterSessionFilesMount,
 )
-from composio.exceptions import RemoteFileDownloadError, ValidationError
+from composio.exceptions import (
+    ComposioBlockedInternalUrlError,
+    RemoteFileDownloadError,
+    ValidationError,
+)
 
 
 @pytest.fixture
@@ -137,6 +141,26 @@ class TestToolRouterSessionFilesMount:
                 mock_client.tool_router.session.files.create_upload_url.call_args[1]
             )
             assert call_kwargs["mount_relative_path"] == "report.pdf"
+
+    def test_upload_from_url_blocks_internal_target(self, files_mount, mock_client):
+        """URL uploads reject internal targets before making an HTTP request."""
+        with (
+            patch(
+                "composio.core.models.tool_router_session_files.assert_safe_fetch_target",
+                side_effect=ComposioBlockedInternalUrlError(
+                    "Refusing to fetch a non-public address"
+                ),
+            ) as mock_guard,
+            patch(
+                "composio.core.models.tool_router_session_files.requests.get"
+            ) as mock_get,
+        ):
+            with pytest.raises(ComposioBlockedInternalUrlError):
+                files_mount.upload("http://127.0.0.1/private.txt")
+
+        mock_guard.assert_called_once_with("http://127.0.0.1/private.txt")
+        mock_get.assert_not_called()
+        mock_client.tool_router.session.files.create_upload_url.assert_not_called()
 
     def test_download(self, files_mount, mock_client):
         """Test download returns RemoteFile."""

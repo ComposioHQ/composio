@@ -6,27 +6,28 @@ that use anyOf, oneOf, allOf, or $ref instead of direct 'type' properties.
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import requests
 
 from composio.client.types import Tool, tool_list_response
 from composio.core.models._files import (
+    _MAX_FILENAME_LENGTH,
     FileDownloadable,
     FileHelper,
     FileUploadable,
-    _is_url,
-    _get_extension_from_mimetype,
-    _generate_timestamped_filename,
-    _truncate_filename,
     _fetch_file_from_url,
-    _upload_bytes_to_s3,
+    _generate_timestamped_filename,
+    _get_extension_from_mimetype,
+    _is_url,
     _sanitize_url_for_logging,
-    _MAX_FILENAME_LENGTH,
+    _truncate_filename,
+    _upload_bytes_to_s3,
 )
 from composio.core.models.base import allow_tracking
 from composio.exceptions import (
+    ComposioBlockedInternalUrlError,
     ErrorDownloadingFile,
     ErrorUploadingFile,
     ResponseTooLargeError,
@@ -40,6 +41,13 @@ def disable_telemetry():
     token = allow_tracking.set(False)
     yield
     allow_tracking.reset(token)
+
+
+@pytest.fixture(autouse=True)
+def mock_ssrf_guard():
+    """Keep existing file-fetch tests hermetic while testing the guard separately."""
+    with patch("composio.core.models._files.assert_safe_fetch_target") as mock_guard:
+        yield mock_guard
 
 
 @pytest.fixture
@@ -1551,7 +1559,7 @@ class TestFetchFileFromUrl:
     """Test cases for _fetch_file_from_url function."""
 
     @patch("composio.core.models._files.requests.get")
-    def test_fetch_file_from_url_success(self, mock_get):
+    def test_fetch_file_from_url_success(self, mock_get, mock_ssrf_guard):
         """Test successful file fetch from URL."""
         mock_response = MagicMock()
         mock_response.ok = True
@@ -1568,12 +1576,27 @@ class TestFetchFileFromUrl:
         assert content == b"test file content"
         assert mimetype == "image/jpeg"
         assert filename == "image.jpg"
+        mock_ssrf_guard.assert_called_once_with("https://example.com/image.jpg")
         mock_get.assert_called_once_with(
             "https://example.com/image.jpg",
             stream=True,
             allow_redirects=False,
             timeout=(5, 60),
         )
+
+    @patch("composio.core.models._files.requests.get")
+    def test_fetch_file_from_url_blocks_internal_target(
+        self, mock_get, mock_ssrf_guard
+    ):
+        """Internal targets are rejected before making an HTTP request."""
+        mock_ssrf_guard.side_effect = ComposioBlockedInternalUrlError(
+            "Refusing to fetch a non-public address"
+        )
+
+        with pytest.raises(ComposioBlockedInternalUrlError):
+            _fetch_file_from_url("http://169.254.169.254/latest/meta-data/")
+
+        mock_get.assert_not_called()
 
     @patch("composio.core.models._files.requests.get")
     def test_fetch_file_from_url_with_charset_in_content_type(self, mock_get):
