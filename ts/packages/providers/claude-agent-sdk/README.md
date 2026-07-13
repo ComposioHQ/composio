@@ -18,38 +18,38 @@ Set two environment variables:
 Create a session for your user, serve its tools through an SDK MCP server, and query Claude:
 
 ```typescript
-import { Composio } from "@composio/core";
-import { ClaudeAgentSDKProvider } from "@composio/claude-agent-sdk";
-import { createSdkMcpServer, query } from "@anthropic-ai/claude-agent-sdk";
+import { Composio } from '@composio/core';
+import { ClaudeAgentSDKProvider } from '@composio/claude-agent-sdk';
+import { createSdkMcpServer, query } from '@anthropic-ai/claude-agent-sdk';
 
 const composio = new Composio({ provider: new ClaudeAgentSDKProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.create("user_123");
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const customServer = createSdkMcpServer({
-  name: "composio",
-  version: "1.0.0",
+  name: 'composio',
+  version: '1.0.0',
   tools,
 });
 
 for await (const stream of query({
-  prompt: "Summarize my emails from today",
+  prompt: 'Summarize my emails from today',
   options: {
     mcpServers: { composio: customServer },
-    permissionMode: "bypassPermissions",
+    permissionMode: 'bypassPermissions',
   },
 })) {
-  if (stream.type === "assistant") {
+  if (stream.type === 'assistant') {
     for (const block of stream.message.content) {
-      if (block.type === "text") process.stdout.write(block.text);
+      if (block.type === 'text') process.stdout.write(block.text);
     }
   }
 }
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
 
 ## How it works
 

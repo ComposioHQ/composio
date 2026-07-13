@@ -19,6 +19,7 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 
 type AiToolCollection = Record<string, AiTextGenerationToolInput>;
@@ -97,10 +98,11 @@ export class CloudflareProvider extends BaseNonAgenticProvider<
    * ```
    */
   wrapTool(tool: Tool): AiTextGenerationToolInput {
+    const inputParameters = deduplicateJsonSchemaRequiredArrays(tool.inputParameters);
     const formattedSchema: AiTextGenerationToolInput['function'] = {
       name: tool.slug!,
       description: tool.description!,
-      parameters: tool.inputParameters as unknown as {
+      parameters: inputParameters as unknown as {
         type: 'object';
         properties: {
           [key: string]: {

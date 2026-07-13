@@ -111,7 +111,23 @@ describe('OpenAIResponsesProvider', () => {
       const wrapped = strictProvider.wrapTool(mockTool) as MockedOpenAITool;
 
       expect(wrapped.strict).toBe(true);
-      expect(wrapped.parameters).toEqual(mockTool.inputParameters);
+      expect(wrapped.parameters).toEqual({
+        ...mockTool.inputParameters,
+        additionalProperties: false,
+      });
+      expect(mockTool.inputParameters).not.toHaveProperty('additionalProperties');
+    });
+
+    it('deduplicates required entries for directly wrapped tools', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          ...mockTool.inputParameters!,
+          required: ['input', 'input'],
+        },
+      }) as MockedOpenAITool;
+
+      expect(wrapped.parameters.required).toEqual(['input']);
     });
   });
 

@@ -24,7 +24,7 @@ const AUTH_CONFIG = process.env.COMPOSIO_SLACKBOT_AUTH_CONFIG_ID!;
 
 // Connect the bot's own Slack app once, so it can post and DM as the bot.
 async function main() {
-  const session = await composio.create('default', {
+  const session = await composio.sessions.create('default', {
     authConfigs: { slackbot: AUTH_CONFIG },
   });
 
@@ -46,7 +46,7 @@ const AUTH_CONFIG = process.env.COMPOSIO_SLACKBOT_AUTH_CONFIG_ID!;
 
 // Connect the bot's own Slack app once, so it can post and DM as the bot.
 async function main() {
-  const session = await composio.create('default', {
+  const session = await composio.sessions.create('default', {
     authConfigs: { slackbot: AUTH_CONFIG },
   });
 
@@ -152,7 +152,7 @@ const TOOLKITS = ['github', 'linear', 'notion', 'googlecalendar', 'slack'];
 // write their standup. session.tools() returns Composio's research meta-tools
 // (search / execute / workbench), scoped to those toolkits.
 export async function generateDraft(memberEmail: string) {
-  const session = await composio.create(memberEmail, { toolkits: TOOLKITS });
+  const session = await composio.sessions.create(memberEmail, { toolkits: TOOLKITS });
   const tools = await session.tools();
 
   const { text } = await generateText({
@@ -186,7 +186,7 @@ export async function generateDraft(memberEmail: string) {
   // manageConnections:false strips the connection meta-tools. The agent drafts
   // from whatever the member already connected and never starts an OAuth flow
   // mid-draft: if a tool needs auth, it's simply not in the session.
-  const session = await composio.create(memberEmail, {
+  const session = await composio.sessions.create(memberEmail, {
     toolkits: TOOLKITS,
     manageConnections: false,
   });

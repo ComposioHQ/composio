@@ -68,7 +68,7 @@ async function runPi(tools: unknown, prompt: string) {
 const runAgent = `
 // The smallest agent: one session, its tools, one prompt.
 export async function runAgent(userId: string, prompt: string) {
-  const session = await composio.create(userId);
+  const session = await composio.sessions.create(userId);
   const tools = piProvider.createSessionTools({
     sessionId: session.sessionId,
     search: (params) => session.search(params),
@@ -88,9 +88,9 @@ const threadKey = (event: IncomingTriggerPayload) =>
 async function sessionForThread(event: IncomingTriggerPayload) {
   const key = threadKey(event);
   const existing = threads.get(key);
-  if (existing) return { session: await composio.use(existing.sessionId), memory: existing };
+  if (existing) return { session: await composio.sessions.use(existing.sessionId), memory: existing };
 
-  const session = await composio.create(event.userId, {
+  const session = await composio.sessions.create(event.userId, {
     manageConnections: { enable: true, callbackUrl, waitForConnections: true },
   });
   const memory = { sessionId: session.sessionId, history: [] as { role: string; content: string }[] };
@@ -109,9 +109,9 @@ const threadKey = (event: IncomingTriggerPayload) =>
 async function sessionForThread(event: IncomingTriggerPayload) {
   const key = threadKey(event);
   const existing = threads.get(key);
-  if (existing) return { session: await composio.use(existing.sessionId), memory: existing };
+  if (existing) return { session: await composio.sessions.use(existing.sessionId), memory: existing };
 
-  const session = await composio.create(event.userId, {
+  const session = await composio.sessions.create(event.userId, {
     // Pin the shared Slack connection; the session still resolves every other
     // toolkit against this user's own connections.
     connectedAccounts: { slackbot: [SHARED_SLACK_CONNECTION_ID] },
@@ -345,7 +345,7 @@ const authConfig = await composio.authConfigs.create('slackbot', {
 
 const installAuthorize = `
 // One connection for the whole workspace: authorize it as SHARED.
-const setup = await composio.create('setup:workspace-bot', {
+const setup = await composio.sessions.create('setup:workspace-bot', {
   toolkits: ['slackbot'],
   authConfigs: { slackbot: authConfig.id },
   manageConnections: true,

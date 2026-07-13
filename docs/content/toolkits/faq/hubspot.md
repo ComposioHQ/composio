@@ -1,10 +1,10 @@
 ## Why do users see a "Connecting an unverified app" warning?
 
-HubSpot shows this warning when the OAuth app being installed has not been approved by HubSpot's ecosystem review process. The OAuth connection can still work, but HubSpot asks the user to explicitly accept the risk before continuing.
+HubSpot shows this warning because the default Composio-managed HubSpot OAuth app is still awaiting HubSpot approval. The connection can still work, but HubSpot asks the user to explicitly accept the warning before continuing.
 
-For Composio-managed HubSpot auth, this depends on Composio's HubSpot app approval status. We are actively working through HubSpot's approval process and expect this to be resolved in the near future. Once the Composio HubSpot app is approved by HubSpot, this warning should stop appearing for new installs that use the approved app.
+Composio is working on getting the default HubSpot OAuth app approved, but there is no concrete ETA because the final review timeline depends on HubSpot.
 
-For custom auth, the warning depends on your own HubSpot developer app. If your users see this warning with custom credentials, submit your HubSpot app for the relevant HubSpot approval or listing flow.
+If this warning blocks your rollout, use your own HubSpot OAuth app credentials in a custom Composio auth config. That lets you control the app identity, review status, and consent screen shown to your users.
 
 ## Should I use Composio-managed auth or my own HubSpot OAuth app?
 
@@ -16,7 +16,7 @@ You cannot add new scopes to the managed app, and you cannot remove scopes that 
 
 Use your own HubSpot OAuth app when you need a different scope set, your own app name and branding on the consent screen, tighter control over app review and rollout, or a production setup owned by your team. For setup steps, see [How to create OAuth credentials for HubSpot](https://composio.dev/auth/hubspot).
 
-## How do HubSpot scopes work in Composio?
+## How do scopes work in HubSpot?
 
 The scope category must match between Composio and your HubSpot developer app.
 
@@ -89,4 +89,10 @@ After changing scopes, reconnect affected HubSpot accounts. Existing connected a
 - **Webhook setup errors:** HubSpot webhooks require a public app with an App ID and Developer API Key. Private or internal apps cannot receive webhooks.
 - **Refresh or expiry errors:** Common causes include the user revoking the app in HubSpot, HubSpot app credentials changing, the refresh token being invalidated, or the connected account being reauthorized with a different app configuration. After rotating custom OAuth credentials or changing the HubSpot developer app, reconnect affected HubSpot accounts.
 
----
+## HubSpot auth loops can be caused by HubSpot-side workspace/login state
+
+If the HubSpot flow loops while Composio works on its side, retry while logged into the correct HubSpot workspace and confirm the OAuth app is public/configured correctly.
+
+## HubSpot triggers require each user’s own app ID and developer API key
+
+HubSpot webhook APIs need the specific HubSpot app that should receive webhook notifications. For user HubSpot triggers, `app_id` and developer API key are required because each user needs their own HubSpot app for webhook delivery.

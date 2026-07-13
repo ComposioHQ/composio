@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Link, Check } from 'lucide-react';
+import { resolveCopyLinkUrl } from '@/lib/copy-link';
 
 interface CopyLinkProps {
   href: string;
@@ -13,7 +14,7 @@ export function CopyLink({ href, children, className }: CopyLinkProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    const fullUrl = `${window.location.origin}${href}`;
+    const fullUrl = resolveCopyLinkUrl(href, window.location.href);
     await navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

@@ -18,28 +18,28 @@ Set two environment variables:
 Create a session for your user, hand its tools to an agent, and run it:
 
 ```typescript
-import { Composio } from "@composio/core";
-import { OpenAIAgentsProvider } from "@composio/openai-agents";
-import { Agent, run } from "@openai/agents";
+import { Composio } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
+import { Agent, run } from '@openai/agents';
 
 const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.create("user_123");
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const agent = new Agent({
-  name: "Personal Assistant",
-  instructions: "You are a helpful personal assistant. Use Composio tools to take action.",
-  model: "gpt-5.2",
+  name: 'Personal Assistant',
+  instructions: 'You are a helpful personal assistant. Use Composio tools to take action.',
+  model: 'gpt-5.2',
   tools,
 });
 
-const result = await run(agent, "Summarize my emails from today");
+const result = await run(agent, 'Summarize my emails from today');
 console.log(result.finalOutput);
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
 
 ## Strict mode
 

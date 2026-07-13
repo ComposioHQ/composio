@@ -29,7 +29,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   toolkits: ["gmail"],
   multiAccount: {
     enable: true,
@@ -76,7 +76,7 @@ personal_connection = personal_auth.wait_for_connection()
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   toolkits: ["gmail"],
   multiAccount: { enable: true },
 });
@@ -118,7 +118,7 @@ connection_request = session.authorize("gmail", alias="work-gmail")
 // @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 // ---cut---
 const connectionRequest = await session.authorize("gmail", { alias: "work-gmail" });
 ```
@@ -176,7 +176,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.create("user_123", {
+const session = await composio.sessions.create("user_123", {
   connectedAccounts: {
     gmail: ["ca_work_gmail_id"],
     github: ["ca_personal_github_id"],
@@ -205,7 +205,7 @@ for toolkit in toolkits.items:
 // @noErrors
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 // ---cut---
 const toolkits = await session.toolkits();
 

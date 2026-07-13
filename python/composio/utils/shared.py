@@ -446,6 +446,8 @@ def json_schema_to_model(
     :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
+    if model_name is None:
+        model_name = "GeneratedModel"
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(

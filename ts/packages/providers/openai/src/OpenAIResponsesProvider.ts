@@ -19,6 +19,7 @@ import {
   removeNonRequiredProperties,
   McpUrlResponse,
   normalizeToolArguments,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 
 export type OpenAiTool = OpenAI.Responses.FunctionTool;
@@ -119,7 +120,7 @@ export class OpenAIResponsesProvider extends BaseNonAgenticProvider<
    * ```
    */
   override wrapTool(tool: Tool): OpenAiTool {
-    const inputParams = tool.inputParameters;
+    const inputParams = deduplicateJsonSchemaRequiredArrays(tool.inputParameters);
 
     const parameters =
       this.strict && inputParams?.type === 'object'

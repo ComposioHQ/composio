@@ -21,7 +21,7 @@ const composio = new Composio({ apiKey });
 
 async function main() {
   const userId = `e2e-tool-router-pagination-${Date.now()}`;
-  const session = await composio.create(userId);
+  const session = await composio.sessions.create(userId);
 
   const page1 = await session.toolkits({ limit: 2 });
   if (page1.items.length !== 2) {

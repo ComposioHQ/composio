@@ -51,34 +51,11 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
 
-      - name: Configure staging API endpoints
-        env:
-          COMPOSIO_BASE_URL_STAGING: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-        run: |
-          staging_base="${COMPOSIO_BASE_URL_STAGING%/}"
-
-          if [ -z "$staging_base" ]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING is not set"
-            exit 1
-          fi
-
-          if [[ "$staging_base" == "https://backend.composio.dev" || "$staging_base" == "https://backend.composio.dev/"* ]]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING points at production"
-            exit 1
-          fi
-
-          staging_origin="${staging_base%/api/v3.1}"
-          staging_origin="${staging_origin%/api/v3}"
-          staging_v3_base="$staging_origin/api/v3"
-          staging_v31_base="$staging_origin/api/v3.1"
-
-          {
-            echo "COMPOSIO_API_BASE=$staging_v3_base"
-            echo "OPENAPI_SPEC_URL=$staging_v3_base/openapi.json"
-            echo "OPENAPI_V31_SPEC_URL=$staging_v31_base/openapi.json"
-          } >> "$GITHUB_ENV"
-
-          echo "Configured staging API endpoints"
+      # Docs must reflect PRODUCTION. No base-URL override is set here: the
+      # generators default to the production API (docs/scripts/production-api.mjs).
+      # Previously this step pointed the fetch at STAGING, which published staging
+      # hosts (and unreleased content) into the committed docs.
+      # NOTE: requires COMPOSIO_API_KEY to have PRODUCTION read access.
 
       - name: Cache bun dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -131,7 +108,7 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from staging
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
             - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data

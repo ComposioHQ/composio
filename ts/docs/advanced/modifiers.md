@@ -575,7 +575,7 @@ import { SessionExecuteMetaModifiers } from '@composio/core';
 
 const composio = new Composio();
 
-const session = await composio.create('user_123', {
+const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail', 'slack'],
 });
 
