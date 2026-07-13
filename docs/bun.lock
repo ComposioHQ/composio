@@ -17,7 +17,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "diff": "^9.0.0",
-        "eve": "^0.13.3",
+        "eve": "0.18.0",
         "framer-motion": "^12.39.0",
         "fumadocs-core": "^16.4.2",
         "fumadocs-mdx": "^14.2.4",
@@ -1341,7 +1341,7 @@
 
     "etag": ["etag@1.8.1", "", {}, "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg=="],
 
-    "eve": ["eve@0.13.3", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "@sveltejs/kit": "^2.0.0", "ai": "7.0.0-beta.178", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0", "next": "^16.0.0", "nuxt": "^4.0.0", "react": "^19.0.0", "svelte": "^5.0.0", "vite": "^8.0.0", "vue": "^3.5.0" }, "optionalPeers": ["@opentelemetry/api", "@sveltejs/kit", "braintrust", "just-bash", "microsandbox", "next", "nuxt", "react", "svelte", "vite", "vue"], "bin": { "eve": "./bin/eve.js" } }, "sha512-UeDjzBq+j6XhECSW5FJjz8Lin4yw75rOchxbI/rmeRj9c9ldERwH/tb+aQRRzh3ZhnkFITzsBpNyF2arYcEjXQ=="],
+    "eve": ["eve@0.18.0", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0" }, "optionalPeers": ["@opentelemetry/api", "braintrust", "just-bash", "microsandbox"], "bin": { "eve": "./bin/eve.js" } }, "sha512-vEYiZe5D3m1s0UvuS5oSsNaJ10PD3oXzmwY1dLxlRncPjHZNGlmb84fG//KOU/HI6AsQuL3/gvgxUuS48jCRnw=="],
 
     "eventemitter3": ["eventemitter3@4.0.7", "", {}, "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw=="],
 
