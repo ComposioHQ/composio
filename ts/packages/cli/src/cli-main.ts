@@ -38,6 +38,7 @@ import {
 } from 'src/analytics/events';
 import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RequiredLayer = Layer.Layer<any, any, never>;
@@ -108,6 +109,7 @@ const layers = Layer.mergeAll(
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,
   CommandRunner.Default,
+  SetupSkillInstaller.Default,
   TriggersRealtimeLive,
   ProjectContextLive,
   BunContext.layer,

@@ -162,6 +162,7 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 // ── Account commands ───────────────────────────────────────────────────
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
+  tagged({ name: 'setup', description: 'Install agent plugins' }),
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
@@ -867,6 +868,25 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   whoami: {
     usage: 'composio whoami',
     description: 'Display your account information.',
+  },
+  setup: {
+    usage: 'composio setup [--target auto|claude|codex|all] [--yes]',
+    description: 'Install plugins for supported agent hosts.',
+    examples: [
+      'composio setup',
+      'composio setup --target auto --yes',
+      'composio setup --target all',
+      'composio setup status --json',
+    ],
+    options: [
+      { name: '--target <target>', description: 'auto, claude, codex, or all' },
+      { name: '-y, --yes', description: 'Accept setup changes without prompting' },
+    ],
+  },
+  'setup status': {
+    usage: 'composio setup status [--json]',
+    description: 'Inspect agent plugin installation status.',
+    flags: [{ name: '--json', description: 'Print machine-readable JSON' }],
   },
   version: {
     usage: 'composio version',

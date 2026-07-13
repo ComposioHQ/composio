@@ -69,6 +69,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { CommandExecutor } from '@effect/platform';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 export interface TestLiveInput {
   /**
@@ -197,6 +198,9 @@ export interface TestLiveInput {
    * When NOT set, uses a default mock that always returns exit code 0.
    */
   commandRunner?: CommandRunner;
+
+  /** Override setup's Claude skill installer. Defaults to an idempotent no-op. */
+  setupSkillInstaller?: SetupSkillInstaller;
 
   /**
    * Override TerminalUI behavior for tests.
@@ -1235,6 +1239,12 @@ export const TestLayer = (input?: TestLiveInput) =>
           CommandRunner,
           new CommandRunner({
             run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+            capture: () =>
+              Effect.succeed({
+                exitCode: 0,
+                stdout: '',
+                stderr: '',
+              }),
           })
         );
 
@@ -1242,6 +1252,15 @@ export const TestLayer = (input?: TestLiveInput) =>
     const TerminalUILayer = input?.terminalUI
       ? Layer.succeed(TerminalUI, input.terminalUI)
       : TerminalUITest;
+
+    const SetupSkillInstallerTest = Layer.succeed(
+      SetupSkillInstaller,
+      input?.setupSkillInstaller ??
+        new SetupSkillInstaller({
+          isClaudeSkillInstalled: Effect.succeed(false),
+          ensureClaudeSkill: Effect.succeed(false),
+        })
+    );
 
     const _console = yield* MockConsole.make;
 
@@ -1259,6 +1278,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,
+      SetupSkillInstallerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunContext.layer,
