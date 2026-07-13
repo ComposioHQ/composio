@@ -29,6 +29,7 @@ api_base='https://api.example.test'
 archive_url="https://downloads.example.test/$valid_tag/$archive_name"
 curl_log="$tmpdir/curl.log"
 git_log="$tmpdir/git.log"
+composio_log="$tmpdir/composio.log"
 
 cat > "$bin_dir/curl" <<'EOF'
 #!/usr/bin/env bash
@@ -144,6 +145,7 @@ fi
 mkdir -p "$dest"
 cat > "$dest/composio" <<'BIN'
 #!/usr/bin/env bash
+printf '%s\n' "$*" >> "$TEST_COMPOSIO_LOG"
 case "${1:-}" in
 install)
     exit 0
@@ -172,6 +174,7 @@ chmod +x "$bin_dir/git"
 
 export TEST_CURL_LOG="$curl_log"
 export TEST_GIT_LOG="$git_log"
+export TEST_COMPOSIO_LOG="$composio_log"
 export TEST_API_BASE="$api_base"
 export TEST_ARCHIVE_NAME="$archive_name"
 export TEST_ARCHIVE_URL="$archive_url"
@@ -221,6 +224,75 @@ fi
 
 if grep -q "$tag_without_release" "$curl_log"; then
     echo 'Installer attempted to use a tag that was not present in releases.' >&2
+    exit 1
+fi
+
+# --agent should establish the agent identity, then install plugins when a
+# supported host is present.
+cat > "$bin_dir/claude" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$bin_dir/claude"
+: > "$composio_log"
+
+agent_output=$(env \
+    PATH="$bin_dir:/usr/bin:/bin" \
+    HOME="$home_dir" \
+    SHELL="/bin/bash" \
+    COMPOSIO_INSTALL_DIR="$install_dir" \
+    COMPOSIO_GITHUB_URL='https://github.example.test' \
+    COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
+    COMPOSIO_GITHUB_OWNER='FakeOwner' \
+    COMPOSIO_GITHUB_REPO='fake-repo' \
+    bash "$repo_root/install.sh" --agent 2>&1)
+
+if ! grep -qxF 'login --agent --no-skill-install' "$composio_log"; then
+    echo 'Expected install.sh --agent to establish the agent identity first.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+if ! grep -qxF 'setup --target auto --yes' "$composio_log"; then
+    echo 'Expected install.sh --agent to delegate detected hosts to composio setup.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+if ! grep -q 'composio setup status' <<<"$agent_output"; then
+    echo 'Expected agent installer output to recommend setup status.' >&2
+    exit 1
+fi
+
+# A headless/hostless machine must still get a working agent identity without
+# attempting plugin setup when there is no host to configure yet.
+rm "$bin_dir/claude"
+: > "$composio_log"
+
+hostless_output=$(env \
+    PATH="$bin_dir:/usr/bin:/bin" \
+    HOME="$home_dir" \
+    SHELL="/bin/bash" \
+    COMPOSIO_INSTALL_DIR="$install_dir" \
+    COMPOSIO_GITHUB_URL='https://github.example.test' \
+    COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
+    COMPOSIO_GITHUB_OWNER='FakeOwner' \
+    COMPOSIO_GITHUB_REPO='fake-repo' \
+    bash "$repo_root/install.sh" --agent 2>&1)
+
+if ! grep -qxF 'login --agent --no-skill-install' "$composio_log"; then
+    echo 'Expected hostless install.sh --agent to fall back to identity-only login.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+if grep -qxF 'setup --target auto --yes' "$composio_log"; then
+    echo 'Expected hostless install not to invoke plugin setup.' >&2
+    exit 1
+fi
+
+if ! grep -q 'No supported agent host detected' <<<"$hostless_output"; then
+    echo 'Expected hostless fallback to be explicit in installer output.' >&2
     exit 1
 fi
 
