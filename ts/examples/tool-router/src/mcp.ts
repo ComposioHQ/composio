@@ -6,7 +6,7 @@ import ora from 'ora';
 
 const composio = new Composio();
 const trProgress = ora('Creating tool router session...').start();
-const { mcp } = await composio.create('default', {
+const { mcp } = await composio.sessions.create('default', {
   toolkits: ['gmail'],
   manageConnections: true,
   mcp: true,

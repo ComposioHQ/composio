@@ -32,7 +32,7 @@ export default cases.map(row =>
     async test(t) {
       await t.send(row.prompt);
 
-      t.completed();
+      t.succeeded();
       t.noFailedActions();
       // The docs channel now injects eager search context before the model step,
       // so a good answer may not need an explicit search_docs tool call.
