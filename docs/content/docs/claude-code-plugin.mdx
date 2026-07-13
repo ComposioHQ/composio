@@ -28,6 +28,11 @@ If the CLI is not already installed, run:
 
 ```bash
 curl -fsSL https://composio.dev/install | bash
+```
+
+The installer adds `composio` to your `PATH`. Open a new terminal, or source the shell profile printed by the installer, before continuing:
+
+```bash
 composio login
 composio setup --target claude
 ```
@@ -56,7 +61,7 @@ If you need to register the plugin directly in Claude Code, add the marketplace:
 In Claude Code, run:
 
 ```text
-/plugin marketplace add ComposioHQ/composio-plugin-cc
+/plugin marketplace add https://github.com/ComposioHQ/composio-plugin-cc.git
 ```
 
 This adds Composio's GitHub-hosted marketplace. It does not install the plugin yet.

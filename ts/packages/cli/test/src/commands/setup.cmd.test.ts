@@ -67,7 +67,7 @@ describe('CLI: composio setup', () => {
             'plugin',
             'marketplace',
             'add',
-            'ComposioHQ/composio-plugin-cc',
+            'https://github.com/ComposioHQ/composio-plugin-cc.git',
             '--scope',
             'user',
           ]);
@@ -130,7 +130,7 @@ describe('CLI: composio setup', () => {
             'plugin',
             'marketplace',
             'add',
-            'ComposioHQ/composio-plugin-openai',
+            'https://github.com/ComposioHQ/composio-plugin-openai.git',
             '--json',
           ]);
           expect(codexCommands).not.toContainEqual([
@@ -162,7 +162,8 @@ describe('CLI: composio setup', () => {
         stdout: JSON.stringify([
           {
             name: 'composio',
-            source: { source: 'github', repo: 'ComposioHQ/composio-plugin-cc' },
+            source: 'git',
+            url: 'https://github.com/ComposioHQ/composio-plugin-cc.git',
           },
         ]),
       };
@@ -319,7 +320,7 @@ describe('CLI: composio setup', () => {
           'plugin',
           'marketplace',
           'add',
-          'ComposioHQ/composio-plugin-openai',
+          'https://github.com/ComposioHQ/composio-plugin-openai.git',
           '--json',
         ]);
         expect(codexFreshCommands).toContainEqual([

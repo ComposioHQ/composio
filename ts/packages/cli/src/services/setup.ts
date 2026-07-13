@@ -9,13 +9,13 @@ export type AgentHost = Exclude<SetupTarget, 'auto' | 'all'>;
 
 export const CLAUDE_PLUGIN_MARKETPLACE = {
   name: 'composio',
-  source: 'ComposioHQ/composio-plugin-cc',
+  source: 'https://github.com/ComposioHQ/composio-plugin-cc.git',
   plugin: 'composio@composio',
 } as const;
 
 export const CODEX_PLUGIN_MARKETPLACE = {
   name: 'composio',
-  source: 'ComposioHQ/composio-plugin-openai',
+  source: 'https://github.com/ComposioHQ/composio-plugin-openai.git',
   plugin: 'composio@composio',
 } as const;
 
@@ -132,6 +132,7 @@ const marketplaceIsConfigured = (adapter: SetupTargetAdapter, output: string): b
   const records = recordsFrom(parsed, adapter.target === 'codex' ? 'marketplaces' : undefined);
   return records.some(record => {
     const repo = typeof record.repo === 'string' ? record.repo : undefined;
+    const url = typeof record.url === 'string' ? record.url : undefined;
     const nestedSource = asRecord(record.source);
     const marketplaceSource = asRecord(record.marketplaceSource);
     const source =
@@ -140,7 +141,7 @@ const marketplaceIsConfigured = (adapter: SetupTargetAdapter, output: string): b
       (typeof nestedSource?.source === 'string' ? nestedSource.source : undefined) ??
       (typeof marketplaceSource?.source === 'string' ? marketplaceSource.source : undefined);
     const expected = normalizeGitHubRepository(adapter.marketplace.source);
-    return [repo, source].some(
+    return [repo, url, source].some(
       candidate =>
         typeof candidate === 'string' && normalizeGitHubRepository(candidate) === expected
     );
