@@ -1,6 +1,7 @@
 import atexit
 import functools
 import queue as q
+import re
 import threading as tr
 import time
 import typing as t
@@ -11,6 +12,44 @@ import typing_extensions as te
 TELEMETRY_URL = "https://telemetry.composio.dev/v1"
 METRIC_ENDPOINT = f"{TELEMETRY_URL}/metrics/invocations"
 ERROR_ENDPOINT = f"{TELEMETRY_URL}/errors"
+REDACTED = "[REDACTED]"
+
+_URL_QUERY_PATTERN = re.compile(r"(\bhttps?://[^\s?#'\"]+)\?[^\s'\"]*", re.IGNORECASE)
+_AUTH_CREDENTIAL_PATTERN = re.compile(
+    r"\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+", re.IGNORECASE
+)
+_SECRET_PAIR_PATTERN = re.compile(
+    r"\b(authorization|api[-_]?key|apikey|x-api-key|access[-_]?token|"
+    r"refresh[-_]?token|client[-_]?secret|secret|password|passwd|pwd)\b"
+    r"(\s*[:=]+\s*)([\"']?)([^\s\"',}&]+)\3",
+    re.IGNORECASE,
+)
+
+
+@t.overload
+def redact_sensitive_text(value: None) -> None: ...
+
+
+@t.overload
+def redact_sensitive_text(value: str) -> str: ...
+
+
+def redact_sensitive_text(value: t.Optional[str]) -> t.Optional[str]:
+    """Redact common secret shapes from free-form telemetry text."""
+    if not value:
+        return value
+
+    output = _URL_QUERY_PATTERN.sub(lambda match: f"{match.group(1)}?{REDACTED}", value)
+    output = _AUTH_CREDENTIAL_PATTERN.sub(
+        lambda match: f"{match.group(1)} {REDACTED}", output
+    )
+    return _SECRET_PAIR_PATTERN.sub(
+        lambda match: (
+            f"{match.group(1)}{match.group(2)}{match.group(3)}"
+            f"{REDACTED}{match.group(3)}"
+        ),
+        output,
+    )
 
 
 class ErrorData(te.TypedDict):
@@ -86,6 +125,32 @@ class TelemetryData(te.TypedDict):
 EventType: t.TypeAlias = t.Literal["metric", "error"]
 Event = t.Tuple[EventType, TelemetryData]
 EventQueue: t.TypeAlias = q.Queue[Event]
+
+
+def _redact_error_event(event: Event) -> Event:
+    """Return an error event with sanitized free-form fields."""
+    event_type, payload = event
+    error = payload.get("error")
+    if event_type != "error" or error is None:
+        return event
+
+    redacted_error = t.cast(ErrorData, {**error})
+    message = redacted_error.get("message")
+    if message is not None:
+        redacted_error["message"] = redact_sensitive_text(message)
+    stack = redacted_error.get("stack")
+    if stack is not None:
+        redacted_error["stack"] = redact_sensitive_text(stack)
+
+    redacted_payload = t.cast(
+        TelemetryData,
+        {
+            **payload,
+            "error": redacted_error,
+        },
+    )
+    return event_type, redacted_payload
+
 
 _queue: t.Optional[EventQueue] = None
 _event: t.Optional[tr.Event] = None
@@ -163,7 +228,7 @@ def _thread_loop(queue: EventQueue, event: tr.Event):
 
 def push_event(event: Event):
     q, _, _ = _setup()
-    q.put(event)
+    q.put(_redact_error_event(event))
 
 
 def create_event(type: EventType, **payload: te.Unpack[TelemetryData]) -> Event:
