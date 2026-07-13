@@ -96,6 +96,9 @@ catalogs:
     typescript:
       specifier: ^6.0.3
       version: 6.0.3
+    uniku:
+      specifier: ^0.3.1
+      version: 0.3.1
     vitest:
       specifier: ^4.1.10
       version: 4.1.10
@@ -1196,7 +1199,7 @@ importers:
         specifier: ^28.0.0
         version: 28.0.0
       uniku:
-        specifier: ^0.3.1
+        specifier: 'catalog:'
         version: 0.3.1
       zod:
         specifier: 'catalog:'
@@ -1281,7 +1284,7 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
       uniku:
-        specifier: ^0.3.1
+        specifier: 'catalog:'
         version: 0.3.1
       vitest:
         specifier: 'catalog:'
@@ -1342,7 +1345,7 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       uniku:
-        specifier: ^0.3.1
+        specifier: 'catalog:'
         version: 0.3.1
       zod-to-json-schema:
         specifier: 'catalog:'
@@ -1659,7 +1662,7 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       uniku:
-        specifier: ^0.3.1
+        specifier: 'catalog:'
         version: 0.3.1
       zod:
         specifier: '>=3.25.76 <5'
