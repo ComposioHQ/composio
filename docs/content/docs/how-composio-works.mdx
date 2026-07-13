@@ -4,7 +4,7 @@ description: What Composio sessions do, and how they scope users, tools, toolkit
 keywords: [session, userID, tools, toolkits, meta tools, mcp, workbench]
 ---
 
-A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. In TypeScript, you create it with `composio.sessions.create(userId)`; Python uses `composio.create(user_id)`. It ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. Create one with `composio.sessions.create(...)` in either SDK. It ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
 
 ## The basics
 
@@ -13,7 +13,7 @@ Create a session for a user, then read its tools formatted for your framework. T
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(user_id="user_123")
+session = composio.sessions.create(user_id="user_123")
 
 tools = session.tools()
 ```
