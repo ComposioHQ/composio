@@ -10,7 +10,8 @@
 <p align="center">
   <a href="https://composio.dev"><b>composio.dev</b></a> •
   <a href="https://docs.composio.dev">Documentation</a> •
-  <a href="https://docs.composio.dev/docs/quickstart">Quickstart</a>
+  <a href="https://docs.composio.dev/docs/quickstart">Quickstart</a> •
+  <a href="https://docs.composio.dev/reference/changelog">Changelog</a>
 </p>
 
 <p align="center">
