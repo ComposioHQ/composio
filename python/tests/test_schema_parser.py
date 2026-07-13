@@ -8,7 +8,7 @@ particularly focusing on the required field propagation bug that was fixed.
 import typing as t
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from pydantic.fields import PydanticUndefined
 
 from composio.utils.shared import (
@@ -322,6 +322,35 @@ class TestJsonSchemaToModel:
         model_class = json_schema_to_model(json_schema)
         instance = model_class(tags=["tag1", "tag2"])
         assert instance.tags == ["tag1", "tag2"]
+
+    @pytest.mark.parametrize(
+        ("title", "expected_model_name"),
+        [
+            ({}, "GeneratedModel"),
+            ({"title": None}, "GeneratedModel"),
+            ({"title": ""}, ""),
+        ],
+    )
+    def test_title_uses_expected_model_name(self, title, expected_model_name):
+        """Missing or null titles must not reach Pydantic's model factory."""
+        json_schema = {
+            **title,
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "value": {"type": "integer"},
+            },
+            "required": ["name"],
+        }
+
+        model_class = json_schema_to_model(json_schema)
+        assert model_class.__name__ == expected_model_name
+        instance = model_class(name="test", value=42)
+        assert instance.name == "test"
+        assert instance.value == 42
+
+        with pytest.raises(ValidationError):
+            model_class()
 
 
 class TestPydanticModelFromParamSchema:
