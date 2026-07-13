@@ -57,7 +57,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 // const tools = await composio.tools.get("user_123", { toolkits: ["GITHUB", "SLACK"] });
 
 // After: create a session with your existing auth configs
-const session = await composio.sessions.create("user_123", {
+const session = await composio.create("user_123", {
   authConfigs: {
     github: "ac_your_github_config",
     slack: "ac_your_slack_config",
@@ -90,7 +90,7 @@ tools = session.tools()
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.sessions.create("user_123");
+const session = await composio.create("user_123");
 // ---cut---
 // Before: manually specifying which tools to fetch
 // const tools = await composio.tools.get("user_123", { toolkits: ["GITHUB"] });
@@ -130,7 +130,7 @@ connected_account = connection_request.wait_for_connection()
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.sessions.create("user_123");
+const session = await composio.create("user_123");
 // ---cut---
 // Before: manual auth flow
 // const connectionRequest = await composio.connectedAccounts.link("user_123", "ac_your_github_config", {
@@ -186,7 +186,7 @@ import { Composio } from '@composio/core';
 
 // After: no version management needed
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.sessions.create("user_123");
+const session = await composio.create("user_123");
 ```
 </Tab>
 </Tabs>
@@ -217,7 +217,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.sessions.create("user_123", {
+const session = await composio.create("user_123", {
   toolkits: ["github", "gmail", "slack"],
   authConfigs: {
     github: "ac_your_github_config",
@@ -252,7 +252,7 @@ session = composio.create(
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
-const session = await composio.sessions.create("user_123", {
+const session = await composio.create("user_123", {
   authConfigs: {
     gmail: "ac_your_gmail_config",
   },

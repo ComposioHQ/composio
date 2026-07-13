@@ -11,7 +11,7 @@ const composio = new Composio({
 
 // 2. Create an MCP session
 console.log('🔄 Creating toolrouter session...');
-const session = await composio.sessions.create('default', {
+const session = await composio.create('default', {
   toolkits: ['gmail'],
   manageConnections: true,
   mcp: true,

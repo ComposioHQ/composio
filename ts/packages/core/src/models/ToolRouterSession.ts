@@ -94,7 +94,8 @@ const AuthorizeOptionsSchema = z.object({
 
 /**
  * A Composio session — the object returned by `composio.sessions.create(...)`
- * and `composio.sessions.use(...)`.
+ * and `composio.sessions.use(...)` (also reachable via the top-level
+ * `composio.create(...)` / `composio.use(...)` aliases).
  *
  * This is the canonical session surface. Use it to fetch session-scoped tools,
  * authorize toolkits, search, and execute tools. The public return type is

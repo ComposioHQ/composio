@@ -16,7 +16,7 @@ const composio = new Composio({
 });
 
 // Create a session with gmail only
-const session = await composio.sessions.create("session-update-demo", {
+const session = await composio.create("session-update-demo", {
   toolkits: ["gmail"],
   manageConnections: false,
 });

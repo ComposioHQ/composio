@@ -115,7 +115,7 @@ export type CreateCustomToolParams<T extends AnyZodSchema> = z.infer<
 
 /**
  * Custom tool definition returned from `createCustomTool()`.
- * Pass to `composio.sessions.create(userId, { experimental: { customTools: [...] } })` to bind to a session.
+ * Pass to `composio.create(userId, { experimental: { customTools: [...] } })` to bind to a session.
  */
 export interface CustomTool {
   readonly slug: string;
@@ -173,7 +173,7 @@ export type CreateCustomToolkitParams = z.infer<typeof CreateCustomToolkitBaseSc
 
 /**
  * Custom toolkit definition returned from `createCustomToolkit()`.
- * Pass to `composio.sessions.create(userId, { experimental: { customToolkits: [...] } })`.
+ * Pass to `composio.create(userId, { experimental: { customToolkits: [...] } })`.
  */
 export interface CustomToolkit {
   readonly slug: string;
