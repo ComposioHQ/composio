@@ -9,7 +9,7 @@ keywords: [session, toolkits, auth configs, connected accounts]
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(user_id="user_123")
+session = composio.sessions.create(user_id="user_123")
 ```
 </Tab>
 <Tab value="TypeScript">
@@ -34,13 +34,13 @@ To limit a session to specific toolkits, pass an array of toolkit slugs. The age
 <Tab value="Python">
 ```python
 # Using array format
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits=["github", "gmail", "slack"]
 )
 
 # Using object format with enable key
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits={"enable": ["github", "gmail", "slack"]}
 )
@@ -71,7 +71,7 @@ To keep every toolkit discoverable except a few, use the `disable` syntax. This 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits={"disable": ["exa", "firecrawl"]}
 )
@@ -106,7 +106,7 @@ composio = Composio(
     provider=OpenAIAgentsProvider(),
 )
 
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits=["gmail"],
     tools={
@@ -169,7 +169,7 @@ composio = Composio(
     provider=OpenAIAgentsProvider(),
 )
 
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits=["gmail"],
     tools={
@@ -245,7 +245,7 @@ To enable only specific tools, pass an `enable` list per toolkit:
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     tools={
         # Only these Gmail tools will be available
@@ -278,7 +278,7 @@ The shorthand array syntax is equivalent to `enable`:
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     tools={
         "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
@@ -307,7 +307,7 @@ To keep every tool in a toolkit except a few, use `disable`:
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     tools={
         # All Slack tools except delete
@@ -352,13 +352,13 @@ To apply tag filters across all toolkits, pass `tags` at the session level:
 <Tab value="Python">
 ```python
 # Only include read-only and idempotent tools
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     tags=["readOnlyHint", "idempotentHint"]
 )
 
 # Enable some tags, disable others
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     tags={
         "enable": ["readOnlyHint"],
@@ -393,7 +393,7 @@ To override the global tags for a specific toolkit, set `tags` inside that toolk
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     # Global: only read-only tools
     tags=["readOnlyHint"],
@@ -455,7 +455,7 @@ composio = Composio(
     provider=OpenAIAgentsProvider(),
 )
 
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     toolkits=["gmail"],
     preload={
@@ -512,7 +512,7 @@ Use your own OAuth credentials instead of Composio's defaults. Pass an auth conf
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     auth_configs={
         "github": "ac_your_github_config",
@@ -545,7 +545,7 @@ When a user has multiple connected accounts for the same toolkit, specify which 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     connected_accounts={
         "gmail": ["ca_work_gmail"],
@@ -592,7 +592,7 @@ By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent e
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     sandbox={
         "enable": False
@@ -645,7 +645,7 @@ Defaults to `standard` when omitted.
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     sandbox={
         "sandbox_size": "large",
