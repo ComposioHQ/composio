@@ -75,10 +75,14 @@ const list = Options.boolean('list').pipe(
 const showRedirectUrl = (
   ui: TerminalUI,
   redirectUrl: string,
-  options?: { readonly emitRaw?: boolean }
+  options?: { readonly emitRaw?: boolean; readonly manual?: boolean }
 ) =>
   Effect.gen(function* () {
-    yield* ui.log.step('Redirecting you to the authorization page');
+    yield* ui.log.step(
+      options?.manual
+        ? 'Open this URL in your browser to authorize'
+        : 'Redirecting you to the authorization page'
+    );
     yield* ui.note(redirectUrl, 'Redirect URL');
     if (options?.emitRaw) {
       yield* ui.output(redirectUrl);
@@ -93,7 +97,7 @@ const waitForActiveConnection = (
   noBrowser: boolean
 ) =>
   Effect.gen(function* () {
-    yield* showRedirectUrl(ui, redirectUrl);
+    yield* showRedirectUrl(ui, redirectUrl, { manual: noBrowser });
 
     let urlSchemeValid = false;
     try {
@@ -106,9 +110,7 @@ const waitForActiveConnection = (
     if (!urlSchemeValid) {
       yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
       yield* ui.log.info('Open the URL manually if you trust the source.');
-    } else if (noBrowser) {
-      yield* ui.log.info('Open the URL above in your browser to authorize.');
-    } else {
+    } else if (!noBrowser) {
       yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
         Effect.catchAll(error =>
           Effect.gen(function* () {

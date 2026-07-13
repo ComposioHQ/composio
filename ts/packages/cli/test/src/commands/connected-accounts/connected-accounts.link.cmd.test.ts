@@ -143,6 +143,8 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(parsed?.status).toBe('success');
         expect(parsed?.connected_account_id).toBe('con_test_link');
         expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
+        expect(output).toContain('Open this URL in your browser to authorize');
+        expect(output).not.toContain('Redirecting you to the authorization page');
         expect(vi.mocked(open)).not.toHaveBeenCalled();
       })
     );
