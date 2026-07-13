@@ -11,6 +11,7 @@ import typing as t
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
+from threading import Lock
 from unittest import mock
 
 import typing_extensions as te
@@ -31,6 +32,9 @@ from composio.utils.logging import WithLogger
 from composio.utils.pydantic import none_to_omit
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
+_MAX_CHUNK_INDEX = 1_000
+_CHUNK_TTL_SECONDS = 60.0
+_MAX_PENDING_CHUNKED_EVENTS = 100
 
 """
 export type _TriggerData = {
@@ -424,13 +428,12 @@ _ = {
 }
 
 
-class _ChunkedTriggerEventData(te.TypedDict):
-    """Cunked trigger event data model."""
+class _PendingChunkedTriggerEvent(te.TypedDict):
+    """State retained while a chunked trigger event is incomplete."""
 
-    id: str
-    index: int
-    chunk: str
-    final: bool
+    chunks: t.Dict[int, str]
+    final_index: t.Optional[int]
+    created_at: float
 
 
 class TriggerEventFilters(te.TypedDict):
@@ -585,7 +588,8 @@ class TriggerSubscription(Resource):
         super().__init__(client=client)
         self.client = client
         self._alive = False
-        self._chunks: t.Dict[str, t.Dict[int, str]] = {}
+        self._chunks: t.Dict[str, _PendingChunkedTriggerEvent] = {}
+        self._chunk_lock = Lock()
         self._callbacks: t.List[t.Tuple[TriggerCallback, TriggerEventFilters]] = []
 
     def handle(
@@ -667,15 +671,114 @@ class TriggerSubscription(Resource):
             return None
 
     def _handle_chunked_events(self, event: str) -> None:
-        """Handle chunked events."""
-        data = _ChunkedTriggerEventData(**json.loads(event))  # type: ignore
-        if data["id"] not in self._chunks:
-            self._chunks[data["id"]] = {}
+        """Validate and reassemble an out-of-order chunked event."""
+        try:
+            raw_data = json.loads(event)
+        except (json.JSONDecodeError, TypeError) as error:
+            self.logger.warning(f"Skipping malformed chunked trigger event: {error}")
+            return
 
-        self._chunks[data["id"]][data["index"]] = data["chunk"]
-        if data["final"]:
-            _chunks = self._chunks.pop(data["id"])
-            self._handle_event(event="".join([_chunks[idx] for idx in sorted(_chunks)]))
+        if not isinstance(raw_data, dict):
+            self.logger.warning("Skipping chunked trigger event that is not an object")
+            return
+
+        chunk_id = raw_data.get("id")
+        index = raw_data.get("index")
+        chunk = raw_data.get("chunk")
+        final = raw_data.get("final")
+        if not isinstance(chunk_id, str) or not chunk_id:
+            self.logger.warning("Skipping chunked trigger event with an invalid id")
+            return
+        if (
+            not isinstance(index, int)
+            or isinstance(index, bool)
+            or index < 0
+            or index > _MAX_CHUNK_INDEX
+        ):
+            self.logger.warning("Skipping chunked trigger event with an invalid index")
+            return
+        if not isinstance(chunk, str):
+            self.logger.warning(
+                "Skipping chunked trigger event with an invalid payload"
+            )
+            return
+        if not isinstance(final, bool):
+            self.logger.warning(
+                "Skipping chunked trigger event with an invalid final flag"
+            )
+            return
+
+        now = time.monotonic()
+        assembled: t.Optional[str] = None
+        invalid_reason: t.Optional[str] = None
+
+        with self._chunk_lock:
+            expired_ids = [
+                pending_id
+                for pending_id, pending in self._chunks.items()
+                if now - pending["created_at"] >= _CHUNK_TTL_SECONDS
+            ]
+            for expired_id in expired_ids:
+                del self._chunks[expired_id]
+
+            pending = self._chunks.get(chunk_id)
+            if pending is None:
+                if len(self._chunks) >= _MAX_PENDING_CHUNKED_EVENTS:
+                    oldest_id = min(
+                        self._chunks,
+                        key=lambda pending_id: self._chunks[pending_id]["created_at"],
+                    )
+                    del self._chunks[oldest_id]
+                pending = {
+                    "chunks": {},
+                    "final_index": None,
+                    "created_at": now,
+                }
+                self._chunks[chunk_id] = pending
+
+            final_index = pending["final_index"]
+            if final_index is not None and index > final_index:
+                invalid_reason = "chunk index exceeds the declared final index"
+            elif final:
+                if final_index is not None and final_index != index:
+                    invalid_reason = "conflicting final chunk indices"
+                elif any(chunk_index > index for chunk_index in pending["chunks"]):
+                    invalid_reason = "received chunks beyond the final index"
+                else:
+                    pending["final_index"] = index
+
+            existing = pending["chunks"].get(index)
+            if invalid_reason is None and existing is not None and existing != chunk:
+                invalid_reason = "conflicting duplicate chunk"
+
+            if invalid_reason is not None:
+                del self._chunks[chunk_id]
+            else:
+                pending["chunks"][index] = chunk
+                final_index = pending["final_index"]
+                if (
+                    final_index is not None
+                    and len(pending["chunks"]) == final_index + 1
+                    and all(
+                        chunk_index in pending["chunks"]
+                        for chunk_index in range(final_index + 1)
+                    )
+                ):
+                    assembled = "".join(
+                        pending["chunks"][chunk_index]
+                        for chunk_index in range(final_index + 1)
+                    )
+                    del self._chunks[chunk_id]
+
+        if invalid_reason is not None:
+            self.logger.warning(f"Discarding chunked trigger event: {invalid_reason}")
+        elif assembled is not None:
+            self._handle_event(event=assembled)
+
+    def _clear_chunked_events(self) -> None:
+        """Discard all incomplete chunked events."""
+        with self._chunk_lock:
+            self._chunks.clear()
 
     def _filters_match(
         self,
@@ -780,11 +883,13 @@ class TriggerSubscription(Resource):
 
     def stop(self) -> None:
         """Stop the trigger listener."""
+        self._clear_chunked_events()
         self._connection.disconnect()
         self._alive = False
 
     def restart(self) -> None:
         """Restart the subscription connection"""
+        self._clear_chunked_events()
         self._connection.disconnect()
         self._connection._connect()  # pylint: disable=protected-access
 
@@ -808,6 +913,7 @@ class _SubcriptionBuilder(WithLogger):
         subscription: TriggerSubscription,
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
+            subscription._clear_chunked_events()  # pylint: disable=protected-access
             channel = t.cast(
                 PusherChannel,
                 pusher.subscribe(

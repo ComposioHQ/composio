@@ -1,4 +1,5 @@
 import { Data, Effect, Runtime } from 'effect';
+import { ChunkReassembler } from '@composio/core';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -51,13 +52,6 @@ type PusherCtor = new (
     };
   }
 ) => PusherClient;
-
-type ChunkedRealtimeEvent = {
-  id: string;
-  index: number;
-  chunk: string;
-  final: boolean;
-};
 
 export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   'services/TriggerRealtimeSubscriptionError'
@@ -148,100 +142,27 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             // event id, then joining once the final chunk arrives and every
             // intermediate index is present.
             //
-            // Guard-rails:
-            //  - Reject chunk indices outside [0, MAX_CHUNK_INDEX] to prevent a
-            //    single malformed event from allocating a huge sparse array.
-            //  - Evict incomplete entries older than CHUNK_TTL_MS so that lost
-            //    chunks don't leak memory over long-running sessions.
-            //  - Cap the total number of in-flight reassemblies to bound memory
-            //    usage even under pathological input.
-            const MAX_CHUNK_INDEX = 1_000;
-            const CHUNK_TTL_MS = 60_000;
-            const MAX_PENDING_CHUNKS = 100;
-
-            type PendingChunkedEvent = {
-              chunks: string[];
-              receivedFinal: boolean;
-              createdAt: number;
-            };
-
-            const chunkedEvents = new Map<string, PendingChunkedEvent>();
-
-            // Periodic sweep: drop entries that have been sitting incomplete for
-            // longer than CHUNK_TTL_MS.  Runs every CHUNK_TTL_MS and is cleared
-            // on shutdown.
-            const cleanupInterval = setInterval(() => {
-              const now = Date.now();
-              for (const [id, entry] of chunkedEvents) {
-                if (now - entry.createdAt > CHUNK_TTL_MS) {
-                  chunkedEvents.delete(id);
-                }
-              }
-            }, CHUNK_TTL_MS);
+            const reassembler = new ChunkReassembler();
 
             channel.bind('trigger_to_client', eventData => {
               params.onEvent((eventData ?? {}) as RawRealtimeEvent);
             });
 
             channel.bind('chunked-trigger_to_client', data => {
-              const typed = data as ChunkedRealtimeEvent;
-              if (!typed || typeof typed.id !== 'string' || typeof typed.index !== 'number') {
-                return;
-              }
-
-              // Reject non-integer or out-of-range indices to prevent a single
-              // malformed event from creating a massive sparse array.
-              if (
-                !Number.isInteger(typed.index) ||
-                typed.index < 0 ||
-                typed.index > MAX_CHUNK_INDEX
-              ) {
-                return;
-              }
-
-              if (!chunkedEvents.has(typed.id)) {
-                // If we already have too many in-flight reassemblies, drop the
-                // oldest one to make room.
-                if (chunkedEvents.size >= MAX_PENDING_CHUNKS) {
-                  const oldestId = chunkedEvents.keys().next().value;
-                  if (oldestId !== undefined) chunkedEvents.delete(oldestId);
-                }
-
-                chunkedEvents.set(typed.id, {
-                  chunks: [],
-                  receivedFinal: false,
-                  createdAt: Date.now(),
-                });
-              }
-
-              const current = chunkedEvents.get(typed.id)!;
-              current.chunks[typed.index] = typed.chunk;
-              if (typed.final) {
-                current.receivedFinal = true;
-              }
-
-              // Completeness check: for a dense array, .length equals the
-              // number of defined keys.  For a sparse array (missing chunks),
-              // .length is highestIndex + 1 but Object.keys only counts the
-              // indices that were actually assigned, so the two diverge.
-              if (
-                current.receivedFinal &&
-                current.chunks.length === Object.keys(current.chunks).length
-              ) {
+              const result = reassembler.add(data);
+              if (result.status === 'complete') {
                 try {
-                  const parsed = JSON.parse(current.chunks.join('')) as RawRealtimeEvent;
+                  const parsed = JSON.parse(result.payload) as RawRealtimeEvent;
                   params.onEvent(parsed);
                 } catch {
                   // Silently discard events that fail to parse after chunk reassembly
-                } finally {
-                  chunkedEvents.delete(typed.id);
                 }
               }
             });
 
             return {
               shutdown: async () => {
-                clearInterval(cleanupInterval);
+                reassembler.clear();
                 channel.unbind_all?.();
                 pusher.unsubscribe(channelName);
                 pusher.disconnect();

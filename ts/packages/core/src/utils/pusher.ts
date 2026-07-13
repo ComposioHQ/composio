@@ -1,4 +1,5 @@
 import { PusherSubscriptionError } from '../errors/PusherErrors';
+import { ChunkReassembler } from './chunkReassembler';
 import { CLIENT_PUSHER_KEY } from './constants';
 import logger from './logger';
 
@@ -19,13 +20,6 @@ type PusherClient = {
     bind: (event: string, callback: (error: Error) => void) => void;
     socket_id?: string;
   };
-};
-
-type TChunkedTriggerData = {
-  id: string;
-  index: number;
-  chunk: string;
-  final: boolean;
 };
 
 export type TriggerData = {
@@ -162,52 +156,22 @@ export class PusherUtils {
 
       channel.bind(event, safeCallback);
 
-      // Now the chunked variation. Allows arbitrarily long messages.
-      const events: {
-        [key: string]: { chunks: string[]; receivedFinal: boolean };
-      } = {};
+      const reassembler = new ChunkReassembler();
 
       channel.bind('chunked-' + event, data => {
         try {
-          const typedData = data as TChunkedTriggerData;
-
-          // Validate chunked data
-          if (
-            !typedData ||
-            typeof typedData.id !== 'string' ||
-            typeof typedData.index !== 'number'
-          ) {
-            throw new Error('Invalid chunked trigger data format');
+          const result = reassembler.add(data);
+          if (result.status === 'invalid') {
+            logger.error('Error processing chunked trigger data:', result.reason);
+            return;
           }
-
-          if (!events.hasOwnProperty(typedData.id)) {
-            events[typedData.id] = { chunks: [], receivedFinal: false };
-          }
-
-          const ev = events[typedData.id];
-          ev.chunks[typedData.index] = typedData.chunk;
-
-          if (typedData.final) ev.receivedFinal = true;
-
-          if (ev.receivedFinal && ev.chunks.length === Object.keys(ev.chunks).length) {
-            try {
-              const parsedData = JSON.parse(ev.chunks.join(''));
-              safeCallback(parsedData);
-            } catch (parseError: unknown) {
-              const errorMessage =
-                parseError instanceof Error ? parseError.message : String(parseError);
-              logger.error('Failed to parse chunked data:', errorMessage);
-            } finally {
-              delete events[typedData.id];
-            }
+          if (result.status === 'complete') {
+            const parsedData = JSON.parse(result.payload);
+            safeCallback(parsedData);
           }
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Error processing chunked trigger data:', errorMessage);
-          // Clean up the event data to prevent memory leaks
-          if (data && typeof data === 'object' && 'id' in data) {
-            delete events[data.id as string];
-          }
         }
       });
     } catch (error: unknown) {

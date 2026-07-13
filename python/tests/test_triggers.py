@@ -13,6 +13,7 @@ import pytest
 from composio_client import NotFoundError, omit
 
 from composio import exceptions
+from composio.core.models import triggers as triggers_module
 from composio.core.models.triggers import (
     _MAX_LOGGED_FRAME_CHARS,
     Triggers,
@@ -1341,6 +1342,113 @@ class TestTriggerSubscriptionParsing:
     def subscription(self):
         """Create a TriggerSubscription with a mock client."""
         return TriggerSubscription(client=Mock())
+
+    def test_chunked_event_waits_for_missing_indices(self, subscription):
+        """A final chunk must not dispatch until every preceding chunk exists."""
+        subscription._handle_event = Mock()
+
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 0, "chunk": '{"ok":', "final": False})
+        )
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 2, "chunk": "}", "final": True})
+        )
+
+        subscription._handle_event.assert_not_called()
+
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 1, "chunk": "true", "final": False})
+        )
+
+        subscription._handle_event.assert_called_once_with(event='{"ok":true}')
+        assert subscription._chunks == {}
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"id": ""},
+            {"index": -1},
+            {"index": True},
+            {"index": 1.5},
+            {"index": 1_001},
+            {"chunk": 42},
+            {"final": "false"},
+        ],
+    )
+    def test_chunked_event_rejects_invalid_fields(self, subscription, overrides):
+        """Malformed chunks are ignored without retaining state or dispatching."""
+        subscription._handle_event = Mock()
+        data = {
+            "id": "event-1",
+            "index": 0,
+            "chunk": '{"ok":true}',
+            "final": True,
+            **overrides,
+        }
+
+        subscription._handle_chunked_events(json.dumps(data))
+
+        subscription._handle_event.assert_not_called()
+        assert subscription._chunks == {}
+
+    def test_chunked_event_rejects_chunks_beyond_final_index(self, subscription):
+        """A final index that contradicts retained chunks invalidates the event."""
+        subscription._handle_event = Mock()
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 2, "chunk": "extra", "final": False})
+        )
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 1, "chunk": "}", "final": True})
+        )
+
+        subscription._handle_event.assert_not_called()
+        assert subscription._chunks == {}
+
+    def test_chunked_event_rejects_conflicting_duplicate(self, subscription):
+        """Two different payloads for the same index invalidate the event."""
+        subscription._handle_event = Mock()
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 0, "chunk": "first", "final": False})
+        )
+        subscription._handle_chunked_events(
+            json.dumps(
+                {"id": "event-1", "index": 0, "chunk": "different", "final": False}
+            )
+        )
+
+        subscription._handle_event.assert_not_called()
+        assert subscription._chunks == {}
+
+    def test_chunked_event_expires_incomplete_state(self, subscription, monkeypatch):
+        """Late chunks cannot complete an event after its retention deadline."""
+        subscription._handle_event = Mock()
+        now = 0.0
+        monkeypatch.setattr(triggers_module.time, "monotonic", lambda: now)
+
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 0, "chunk": '{"ok":', "final": False})
+        )
+        now = triggers_module._CHUNK_TTL_SECONDS
+        subscription._handle_chunked_events(
+            json.dumps({"id": "event-1", "index": 1, "chunk": "}", "final": True})
+        )
+
+        subscription._handle_event.assert_not_called()
+        assert set(subscription._chunks) == {"event-1"}
+        assert set(subscription._chunks["event-1"]["chunks"]) == {1}
+
+    def test_chunked_event_caps_pending_reassemblies(self, subscription, monkeypatch):
+        """Starting a new event evicts the oldest state at the configured cap."""
+        monkeypatch.setattr(triggers_module, "_MAX_PENDING_CHUNKED_EVENTS", 1)
+
+        subscription._handle_chunked_events(
+            json.dumps({"id": "old", "index": 0, "chunk": "a", "final": False})
+        )
+        subscription._handle_chunked_events(
+            json.dumps({"id": "new", "index": 0, "chunk": "b", "final": False})
+        )
+
+        assert set(subscription._chunks) == {"new"}
 
     def test_parse_payload_v3_realtime_envelope(self, subscription):
         """A V3 realtime envelope is parsed (no KeyError: 'nanoId')."""

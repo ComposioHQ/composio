@@ -17,6 +17,9 @@ export type {
 } from './utils/jsonSchema';
 export { getExtensionFromMimeType } from './utils/mime';
 export { normalizeToolArguments } from './utils/toolArguments';
+// Canonical chunk reassembly used by both the SDK and CLI realtime clients.
+export { ChunkReassembler } from './utils/chunkReassembler';
+export type { ChunkReassemblerOptions, ChunkReassemblyResult } from './utils/chunkReassembler';
 // Sensitive-file-upload denylist guard. This is the single canonical
 // implementation; downstream packages (e.g. `@composio/cli`) import it here so
 // every local-file upload path enforces the same denylist. Safe in the edge
