@@ -21,6 +21,11 @@ from composio.utils.url_safety import assert_safe_fetch_target, is_blocked_ip
         "::1",
         "fc00::1",
         "::ffff:127.0.0.1",
+        "::127.0.0.1",
+        "::7f00:1",
+        "::169.254.169.254",
+        "64:ff9b::7f00:1",
+        "64:ff9b::a9fe:a9fe",
     ],
 )
 def test_blocks_non_public_addresses(address: str) -> None:
@@ -28,7 +33,14 @@ def test_blocks_non_public_addresses(address: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "address", ["8.8.8.8", "93.184.216.34", "2606:4700:4700::1111"]
+    "address",
+    [
+        "8.8.8.8",
+        "93.184.216.34",
+        "2606:4700:4700::1111",
+        "::8.8.8.8",
+        "64:ff9b::8.8.8.8",
+    ],
 )
 def test_allows_public_addresses(address: str) -> None:
     assert is_blocked_ip(address) is False
