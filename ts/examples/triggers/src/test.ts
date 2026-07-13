@@ -4,7 +4,7 @@ const composio = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const session = await composio.sessions.create('userId', {
+const session = await composio.create('userId', {
   experimental: {
     assistivePrompt: {
       userTimezone: 'America/New_York',
