@@ -97,7 +97,7 @@ catalogs:
       specifier: ^6.0.3
       version: 6.0.3
     uniku:
-      specifier: ^0.3.1
+      specifier: 0.3.1
       version: 0.3.1
     vitest:
       specifier: ^4.1.10

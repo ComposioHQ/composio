@@ -57,7 +57,7 @@ catalog:
   tsdown: ^0.22.3
   tsx: ^4.23.0
   typescript: ^6.0.3
-  uniku: ^0.3.1
+  uniku: 0.3.1
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
   wrangler: ^4.107.0
