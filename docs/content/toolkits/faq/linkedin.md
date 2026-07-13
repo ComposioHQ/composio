@@ -9,5 +9,3 @@ The default OAuth app is shared across users and has strict rate limits. Use you
 ## Why can't I use certain LinkedIn scope combinations?
 
 LinkedIn restricts certain scope combinations. For example, `w_member_social` and `r_organization_admin` cannot be used together. If you need conflicting scopes, create your own OAuth app with the required permissions.
-
----

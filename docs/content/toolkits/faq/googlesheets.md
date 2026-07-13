@@ -22,10 +22,8 @@ By default, the consent screen uses Composio's OAuth app. To show your own app n
 
 ## Why am I getting 401 errors on tool calls?
 
-The user's access token is no longer valid. Common causes: the user revoked access, changed their password or 2FA, a Workspace admin policy changed, or Google's refresh token limit (~50 per account) was exceeded. Re-authenticating the user typically resolves this.
+The user's access token is no longer valid. Common causes: the user revoked access, changed their password or 2FA, a Workspace admin policy changed, or Google's refresh token limit was exceeded. Re-authenticating the user typically resolves this.
 
 ## Why am I getting "Quota Exhausted" or "rate limit exhausted"?
 
-Google enforces per-minute and daily request quotas. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
-
----
+Google enforces per-minute and daily request quotas. These errors may also appear as a 429. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
