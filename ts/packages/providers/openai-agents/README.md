@@ -25,7 +25,7 @@ import { Agent, run } from '@openai/agents';
 const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const agent = new Agent({
@@ -39,7 +39,7 @@ const result = await run(agent, 'Summarize my emails from today');
 console.log(result.finalOutput);
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
 
 ## Strict mode
 

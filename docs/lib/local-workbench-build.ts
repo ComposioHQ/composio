@@ -49,7 +49,7 @@ const stage3 = `${stage2}
 // session to the helper, which validates it's local and gives you the pieces to
 // run code yourself, wherever you choose.
 async function createWorkbench() {
-  const session = await composio.create(userId, {
+  const session = await composio.sessions.create(userId, {
     toolkits: ['github'],
     workbench: { enable: false },
   });

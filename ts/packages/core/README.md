@@ -20,7 +20,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
 // Each session is scoped to one of your users
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 ```
 
@@ -29,7 +29,7 @@ By default a session gives your agent a small set of meta tools that discover, a
 Sessions persist on the server. For multi-turn conversations, store `session.sessionId` and reuse it instead of calling `create()` again:
 
 ```typescript
-const session = await composio.use(sessionId);
+const session = await composio.sessions.use(sessionId);
 ```
 
 See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
@@ -44,7 +44,7 @@ import { OpenAIAgentsProvider } from '@composio/openai-agents';
 
 const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools(); // ready to pass to the OpenAI Agents SDK
 ```
 
@@ -55,7 +55,7 @@ Adapters exist for OpenAI, OpenAI Agents, Anthropic, Claude Agent SDK, Vercel AI
 Every session also exposes a hosted MCP endpoint. Pass `mcp: true` to surface it in the type, then point Claude, Cursor, or any MCP client at it:
 
 ```typescript
-const session = await composio.create('user_123', { mcp: true });
+const session = await composio.sessions.create('user_123', { mcp: true });
 
 console.log(session.mcp.url);
 console.log(session.mcp.headers);

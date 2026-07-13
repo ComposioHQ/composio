@@ -23,7 +23,7 @@ Files are stored in a virtual filesystem attached to the session. Tools executin
 import { Composio } from '@composio/core';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const session = await composio.create('default');
+const session = await composio.sessions.create('default');
 
 // Upload a file
 const file = await session.experimental.files.upload('/path/to/report.pdf');

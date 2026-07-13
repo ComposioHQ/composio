@@ -132,7 +132,7 @@ declare const getUserProfile: ReturnType<typeof experimental_createTool>;
 const composio = new Composio({ apiKey: "your_api_key" });
 // ---cut---
 
-const session = await composio.create("user_1", {
+const session = await composio.sessions.create("user_1", {
   experimental: {
     customTools: [getUserProfile],
   },
@@ -294,7 +294,7 @@ declare const sendPromoEmail: ReturnType<typeof experimental_createTool>;
 const composio = new Composio({ apiKey: "your_api_key" });
 // ---cut---
 
-const session = await composio.create("user_1", {
+const session = await composio.sessions.create("user_1", {
   toolkits: ["gmail"],
   experimental: {
     customTools: [sendPromoEmail],
@@ -439,7 +439,7 @@ declare const userManagement: ReturnType<typeof experimental_createToolkit>;
 const composio = new Composio({ apiKey: "your_api_key" });
 // ---cut---
 
-const session = await composio.create("user_1", {
+const session = await composio.sessions.create("user_1", {
   experimental: {
     customToolkits: [userManagement],
   },
@@ -500,7 +500,7 @@ const replyGuide = experimental_createTool("GET_REPLY_STYLE_GUIDE", {
   execute: async ({ topic }) => ({ topic, tone: "concise and helpful" }),
 });
 
-const session = await composio.create("user_1", {
+const session = await composio.sessions.create("user_1", {
   experimental: {
     customTools: [replyGuide],
   },
@@ -603,7 +603,7 @@ Use these methods to list registered tools and toolkits. Slugs include their fin
 ```typescript
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
-const session = await composio.create("user_1");
+const session = await composio.sessions.create("user_1");
 // ---cut---
 const customTools = session.customTools();
 const customToolkits = session.customToolkits();
@@ -631,7 +631,7 @@ declare const getUserProfile: ReturnType<typeof experimental_createTool>;
 const composio = new Composio({ apiKey: "your_api_key" });
 // ---cut---
 
-const session = await composio.use("session_id", {
+const session = await composio.sessions.use("session_id", {
   customTools: [getUserProfile],
 });
 ```
@@ -659,7 +659,7 @@ Use `session.execute()` to run custom tools directly, outside of an agent loop. 
 ```typescript
 import { Composio } from "@composio/core";
 const composio = new Composio({ apiKey: "your_api_key" });
-const session = await composio.create("user_1");
+const session = await composio.sessions.create("user_1");
 // ---cut---
 const result = await session.execute("GET_USER_PROFILE");
 ```

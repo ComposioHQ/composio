@@ -27,7 +27,7 @@ session = composio.create(user_id="user_123")
 import { Composio } from '@composio/core';
 
 const composio = new Composio();
-const session = await composio.create("user_123");
+const session = await composio.sessions.create("user_123");
 // Tools that need an account return a Connect Link automatically
 ```
 </Tab>

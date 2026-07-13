@@ -62,13 +62,15 @@ abstract class BaseProvider<TMcpResponse> {
 
   /**
    * @public
-   * @deprecated: Will be removed in a future version, once the `experimental.mcp` flag is stabilized. Use `wrapMcpServers` instead.
-   * Optional method to transform MCP URL response into provider-specific format.
-   * Providers can override this method to define custom transformation logic
-   * for MCP server responses.
+   * Optional method to transform an MCP URL response into a provider-specific
+   * format. Providers can override this method to define custom transformation
+   * logic for MCP server responses.
+   *
+   * This is the stable base-provider SPI method for MCP responses in v1. (A
+   * prior `@deprecated` note pointed at a plural `wrapMcpServers` method that
+   * was never added; the singular method is the frozen contract.)
    *
    * @param data - The MCP URL response data
-
    * @returns Transformed response in provider-specific format, or undefined to use default transformation
    */
   wrapMcpServerResponse?(data: McpUrlResponse): TMcpResponse;

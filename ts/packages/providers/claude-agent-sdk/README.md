@@ -25,7 +25,7 @@ import { createSdkMcpServer, query } from '@anthropic-ai/claude-agent-sdk';
 const composio = new Composio({ provider: new ClaudeAgentSDKProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const customServer = createSdkMcpServer({
@@ -49,7 +49,7 @@ for await (const stream of query({
 }
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
 
 ## How it works
 

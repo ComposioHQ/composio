@@ -100,7 +100,7 @@ function validateSlugLength(
  * Create a custom tool for use in tool router sessions.
  *
  * The returned object is a lightweight reference containing the tool's metadata
- * and execute function. Pass it to `composio.create(userId, { experimental: { customTools: [...] } })`
+ * and execute function. Pass it to `composio.sessions.create(userId, { experimental: { customTools: [...] } })`
  * to bind it to a session.
  *
  * Just return the result data from `execute`, or throw an error.

@@ -25,7 +25,7 @@ const composio = new Composio({
 const client = new Anthropic();
 
 // Create a session for your user
-const session = await composio.create('user_123');
+const session = await composio.sessions.create('user_123');
 const tools = await session.tools();
 
 const messages: Anthropic.MessageParam[] = [
