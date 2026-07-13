@@ -528,7 +528,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   }),
   link: {
-    usage: 'composio link [<toolkit>] [--no-wait] [--alias text] [--list]',
+    usage: 'composio link [<toolkit>] [--no-wait] [--no-browser] [--alias text] [--list]',
     description:
       'Connect an external account (GitHub, Gmail, Slack, etc.) so tools can act on your behalf. Opens a browser for OAuth authorization and waits for confirmation.',
     args: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
@@ -543,6 +543,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       {
         name: '--no-wait',
         description: 'Print link info and exit without waiting for authorization',
+      },
+      {
+        name: '--no-browser',
+        description: 'Do not open the browser automatically; print the URL to open manually',
       },
       {
         name: '--list',
