@@ -97,7 +97,7 @@
     "@types/semver": "^7.7.1",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "typedoc": "^0.28.19",
+    "typedoc": "^0.28.20",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
