@@ -17,6 +17,7 @@ import {
   McpUrlResponse,
   McpServerGetResponse,
   normalizeToolArguments,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 import type { Tool as OpenAIAgentTool } from '@openai/agents';
 import { tool as createOpenAIAgentTool } from '@openai/agents';
@@ -122,13 +123,15 @@ export class OpenAIAgentsProvider extends BaseAgenticProvider<
    * ```
    */
   wrapTool(composioTool: ComposioTool, executeTool: ExecuteToolFn): OpenAIAgentTool {
+    const inputParameters = deduplicateJsonSchemaRequiredArrays(composioTool.inputParameters);
+
     return createOpenAIAgentTool({
       name: composioTool.slug,
       description: composioTool.description ?? '',
       parameters: {
         type: 'object',
-        properties: composioTool.inputParameters?.properties || {},
-        required: composioTool.inputParameters?.required || [],
+        properties: inputParameters?.properties || {},
+        required: inputParameters?.required || [],
         additionalProperties: true,
       },
       strict: false,

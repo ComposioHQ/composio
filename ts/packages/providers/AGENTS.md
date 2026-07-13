@@ -25,5 +25,6 @@ pnpm build:packages
 
 - Keep provider-specific behavior inside the provider package.
 - Preserve framework-native tool shapes and naming conventions.
+- Tool schemas obtained through `ToolSchema` are normalized by core. If a provider transforms a raw schema before emitting it, reapply `deduplicateJsonSchemaRequiredArrays` from `@composio/core` at that final schema boundary.
 - Add tests that cover wrapping, execution handling, and version-specific compatibility.
 - Update examples or docs when provider setup or public usage changes.

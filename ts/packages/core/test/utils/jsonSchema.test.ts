@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { dereferenceJsonSchema } from '../../src/utils/jsonSchema';
+import {
+  deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
+} from '../../src/utils/jsonSchema';
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
+import { ToolSchema } from '../../src/types/tool.types';
 
 const containsRef = (value: unknown): boolean => {
   if (value === null || typeof value !== 'object') return false;
@@ -482,5 +486,59 @@ describe('dereferenceJsonSchema', () => {
       expect(out.properties.resolved).toEqual({ type: 'integer' });
       expect(out.properties.dangling).toEqual(PERMISSIVE);
     });
+  });
+});
+
+describe('deduplicateJsonSchemaRequiredArrays', () => {
+  it('deduplicates every required array without mutating the input schema', () => {
+    const schema = {
+      type: 'object',
+      required: ['owner', 'name', 'owner'],
+      properties: {
+        options: {
+          type: 'object',
+          required: ['enabled', 'enabled'],
+          properties: { enabled: { type: 'boolean' } },
+        },
+      },
+    };
+
+    const normalized = deduplicateJsonSchemaRequiredArrays(schema);
+
+    expect(normalized).toEqual({
+      type: 'object',
+      required: ['owner', 'name'],
+      properties: {
+        options: {
+          type: 'object',
+          required: ['enabled'],
+          properties: { enabled: { type: 'boolean' } },
+        },
+      },
+    });
+    expect(schema.required).toEqual(['owner', 'name', 'owner']);
+    expect(schema.properties.options.required).toEqual(['enabled', 'enabled']);
+  });
+
+  it('normalizes schemas at the shared ToolSchema API boundary', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: {
+        type: 'object',
+        required: ['name', 'name'],
+        properties: {
+          name: { type: 'string' },
+          options: {
+            type: 'object',
+            required: ['enabled', 'enabled'],
+            properties: { enabled: { type: 'boolean' } },
+          },
+        },
+      },
+    });
+
+    expect(tool.inputParameters?.required).toEqual(['name']);
+    expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
   });
 });

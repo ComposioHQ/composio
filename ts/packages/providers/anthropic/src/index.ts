@@ -17,6 +17,7 @@ import {
   McpUrlResponse,
   normalizeToolArguments,
   dereferenceJsonSchema,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -37,30 +38,6 @@ export type AnthropicMcpServerGetResponse = {
  * Collection of Anthropic tools
  */
 export type AnthropicToolCollection = AnthropicTool[];
-
-/**
- * JSON Schema 2020-12 requires every `required` array to contain unique
- * entries. Normalize the complete schema because object schemas can occur at
- * any nesting level, including inside arrays and composition keywords.
- */
-function deduplicateRequiredArrays(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(deduplicateRequiredArrays);
-  }
-
-  if (value === null || typeof value !== 'object') {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [
-      key,
-      key === 'required' && Array.isArray(child)
-        ? [...new Set(child)]
-        : deduplicateRequiredArrays(child),
-    ])
-  );
-}
 
 /**
  * Type for Anthropic tool use block in message content
@@ -196,7 +173,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
     // over-long flattened keys). Rewrite offending keys and remember how to undo it.
     const { schema: sanitizedSchema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
-    const schema = deduplicateRequiredArrays(sanitizedSchema) as InputSchema;
+    const schema = deduplicateJsonSchemaRequiredArrays(sanitizedSchema) as InputSchema;
 
     if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
