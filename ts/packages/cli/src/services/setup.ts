@@ -220,11 +220,11 @@ const capture = (executable: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
     return yield* runner.capture(Command.make(executable, ...args)).pipe(
+      Effect.catchAll(() => Effect.succeed<CommandResult | undefined>(undefined)),
       Effect.timeoutFail({
         duration: SETUP_COMMAND_TIMEOUT,
         onTimeout: () => new Error(`${executable} command timed out.`),
-      }),
-      Effect.catchAll(() => Effect.succeed<CommandResult | undefined>(undefined))
+      })
     );
   });
 

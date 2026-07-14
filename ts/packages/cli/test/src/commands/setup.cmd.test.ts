@@ -584,6 +584,11 @@ describe('CLI: composio setup', () => {
         const exit = yield* Fiber.join(fiber);
 
         expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const renderedCause = Cause.pretty(exit.cause);
+          expect(renderedCause).toContain('claude command timed out');
+          expect(renderedCause).not.toContain('not installed or not available on PATH');
+        }
       })
     );
   });
