@@ -63,6 +63,13 @@ const setupBaseCmd = Command.make(
       if (notDetected.length > 0) {
         yield* ui.log.info(`${formatTargets(notDetected)} not detected.`);
       }
+      if (target === 'all' && notDetected.length > 0) {
+        return yield* Effect.fail(
+          new Error(
+            `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`
+          )
+        );
+      }
       if (detected.length === 0) {
         if (!ifPresent || target !== 'auto') {
           return yield* Effect.fail(

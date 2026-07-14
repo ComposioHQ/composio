@@ -427,6 +427,29 @@ describe('CLI: composio setup', () => {
     );
   });
 
+  const partialAllTargets = makeFakeHosts({ claude: { available: true } });
+  layer(TestLive({ commandRunner: partialAllTargets.runner }))(
+    'explicit all-host setup with a missing host',
+    it => {
+      it.scoped('fails before mutating the detected host', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(partialAllTargets.state.claude).toMatchObject({
+            marketplace: 'missing',
+            plugin: 'missing',
+          });
+          expect(
+            partialAllTargets.commands.some(parts =>
+              ['marketplace', 'install', 'enable'].some(operation => parts.includes(operation))
+            )
+          ).toBe(false);
+        })
+      );
+    }
+  );
+
   const uninstallBoth = makeFakeHosts({
     claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
     codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
