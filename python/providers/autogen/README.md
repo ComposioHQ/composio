@@ -5,7 +5,7 @@ Adapts Composio tools to AutoGen `FunctionTool` objects and registers them with 
 ## Installation
 
 ```bash
-pip install composio composio-autogen ag2
+pip install composio composio-autogen 'ag2[openai]'
 ```
 
 Set `COMPOSIO_API_KEY` (from the [dashboard](https://dashboard.composio.dev/settings)) and `OPENAI_API_KEY` in your environment.
