@@ -221,6 +221,12 @@ describe('CLI: composio setup', () => {
           marketplace: 'canonical',
           plugin: 'enabled',
         });
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code detected.');
+        expect(output).toContain(
+          'Successfully installed and enabled the Composio plugin for Claude Code.'
+        );
       })
     );
   });
@@ -234,6 +240,39 @@ describe('CLI: composio setup', () => {
         yield* cli(['setup', '--target', 'codex', '--yes']);
 
         expect(existingCodex.commands.some(parts => parts.includes('add'))).toBe(false);
+      })
+    );
+  });
+
+  const existingClaudeWithStaleSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  let staleSkillRepaired = false;
+  let staleSkillReady = false;
+  const staleSkillInstaller = new SetupSkillInstaller({
+    isClaudeSkillReady: Effect.sync(() => staleSkillReady),
+    ensureClaudeSkill: Effect.sync(() => {
+      staleSkillRepaired = true;
+      staleSkillReady = true;
+      return true;
+    }),
+  });
+  layer(
+    TestLive({
+      commandRunner: existingClaudeWithStaleSkill.runner,
+      setupSkillInstaller: staleSkillInstaller,
+    })
+  )('existing Claude plugin with stale skill', it => {
+    it.scoped('repairs the skill silently without requiring plugin approval', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--target', 'claude']);
+
+        expect(staleSkillRepaired).toBe(true);
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain(
+          'The Composio plugin for Claude Code is already installed and enabled.'
+        );
+        expect(output).not.toContain('skill');
       })
     );
   });
@@ -308,6 +347,10 @@ describe('CLI: composio setup', () => {
         expect(
           autoClaude.commands.some(parts => parts[0] === 'codex' && parts[1] !== '--version')
         ).toBe(false);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code detected.');
+        expect(output).toContain('Codex not detected.');
       })
     );
   });
@@ -324,18 +367,17 @@ describe('CLI: composio setup', () => {
   )('automatic setup with both hosts', it => {
     it.scoped('selects both detected hosts and reports only plugin status', () =>
       Effect.gen(function* () {
-        yield* cli(['setup', '--target', 'auto', '--yes']);
+        yield* cli(['setup', '--target', 'auto']);
 
         expect(autoBoth.commands.some(parts => parts[0] === 'claude')).toBe(true);
         expect(autoBoth.commands.some(parts => parts[0] === 'codex')).toBe(true);
 
         const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code and Codex detected.');
         expect(output).toContain(
-          'The Composio plugin for claude is already installed and enabled.'
+          'The Composio plugin for Claude Code is already installed and enabled.'
         );
-        expect(output).toContain(
-          'The Composio plugin for codex is already installed and enabled.'
-        );
+        expect(output).toContain('The Composio plugin for Codex is already installed and enabled.');
         expect(output).not.toContain('composio-cli skill');
       })
     );
@@ -438,6 +480,18 @@ describe('CLI: composio setup', () => {
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
         );
         expect(Exit.isSuccess(exit)).toBe(true);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code and Codex not detected.');
+      })
+    );
+
+    it.scoped('does not skip an explicitly requested missing host', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--target', 'claude', '--yes', '--if-present'])
+        );
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
   });
@@ -576,12 +630,18 @@ describe('CLI: composio setup', () => {
 
   const nonInteractive = makeFakeHosts({ claude: { available: true } });
   layer(TestLive({ commandRunner: nonInteractive.runner }))('non-interactive approval', it => {
-    it.scoped('requires --yes before inspecting or mutating hosts', () =>
+    it.scoped('inspects first but requires --yes before mutating hosts', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude']));
 
         expect(Exit.isFailure(exit)).toBe(true);
-        expect(nonInteractive.commands).toHaveLength(0);
+        expect(nonInteractive.commands).toContainEqual(['claude', '--version']);
+        expect(nonInteractive.commands).toContainEqual(['claude', 'plugin', 'list', '--json']);
+        expect(
+          nonInteractive.commands.some(parts =>
+            ['add', 'install', 'enable'].some(operation => parts.includes(operation))
+          )
+        ).toBe(false);
       })
     );
   });

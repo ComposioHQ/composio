@@ -1,9 +1,13 @@
 import { Command, Options } from '@effect/cli';
 import { Effect } from 'effect';
 import {
+  detectSetupTargets,
+  inspectSetupTargets,
   installSetupTargets,
-  resolveSetupTargets,
+  isSetupPluginReady,
+  isSetupReady,
   SETUP_TARGETS,
+  type AgentHost,
   type SetupTarget,
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -25,6 +29,14 @@ const ifPresent = Options.boolean('if-present').pipe(
   Options.withDescription('Exit successfully when automatic detection finds no supported host')
 );
 
+const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+};
+
+const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
+  targets.map(target => TARGET_LABELS[target]).join(' and ');
+
 const setupBaseCmd = Command.make(
   'setup',
   { target, yes, ifPresent },
@@ -33,34 +45,70 @@ const setupBaseCmd = Command.make(
       const ui = yield* TerminalUI;
       yield* ui.intro('composio setup');
 
-      if (!yes && !isInteractiveTerminal()) {
-        return yield* Effect.fail(
-          new Error('Non-interactive setup requires `--yes` to approve local changes.')
-        );
-      }
+      const detections = yield* detectSetupTargets(target);
+      const detected = detections.filter(result => result.available).map(result => result.target);
+      const notDetected = detections
+        .filter(result => !result.available)
+        .map(result => result.target);
 
-      const targets = yield* resolveSetupTargets(target, { allowEmpty: ifPresent });
-      if (targets.length === 0) {
+      if (detected.length > 0) {
+        yield* ui.log.success(`${formatTargets(detected)} detected.`);
+      }
+      if (notDetected.length > 0) {
+        yield* ui.log.info(`${formatTargets(notDetected)} not detected.`);
+      }
+      if (detected.length === 0) {
+        if (!ifPresent || target !== 'auto') {
+          return yield* Effect.fail(
+            new Error(
+              'No supported agent host was detected. Install Claude Code or Codex, then rerun `composio setup`.'
+            )
+          );
+        }
         yield* ui.outro('No supported agent host detected; plugin setup skipped.');
         return;
       }
-      if (!yes) {
-        const confirmed = yield* ui.confirm(`Install Composio for ${targets.join(' and ')}?`, {
-          defaultValue: true,
-        });
+
+      const inspected = yield* inspectSetupTargets(detections);
+      for (const status of inspected.filter(isSetupPluginReady)) {
+        yield* ui.log.success(
+          `The Composio plugin for ${TARGET_LABELS[status.target]} is already installed and enabled.`
+        );
+      }
+
+      const pending = inspected.filter(status => !isSetupReady(status));
+      if (pending.length === 0) {
+        yield* ui.outro('Composio setup complete.');
+        return;
+      }
+
+      const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
+      if (!yes && pendingPlugins.length > 0) {
+        if (!isInteractiveTerminal()) {
+          return yield* Effect.fail(
+            new Error('Non-interactive setup requires `--yes` to approve local changes.')
+          );
+        }
+
+        const prompt = `Install the Composio plugin for ${formatTargets(pendingPlugins.map(status => status.target))}?`;
+        const confirmed = yield* ui.confirm(prompt, { defaultValue: true });
         if (!confirmed) {
           yield* ui.outro('Setup cancelled.');
           return;
         }
       }
 
-      const results = yield* installSetupTargets(targets);
+      const results = yield* installSetupTargets(pending);
       for (const result of results) {
-        let pluginMessage = `The Composio plugin for ${result.target} is already installed and enabled.`;
-        if (result.plugin_changed) {
-          pluginMessage = `Configured and enabled the Composio plugin for ${result.target}.`;
-        }
-        yield* ui.log.success(pluginMessage);
+        if (!result.plugin_changed) continue;
+
+        const initial = pending.find(status => status.target === result.target)!;
+        let action = 'configured and enabled';
+        if (!initial.plugin_installed) action = 'installed and enabled';
+        else if (!initial.plugin_enabled) action = 'enabled';
+        yield* ui.log.success(
+          `Successfully ${action} the Composio plugin for ${TARGET_LABELS[result.target]}.`
+        );
       }
 
       yield* ui.outro('Composio setup complete.');

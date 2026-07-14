@@ -63,6 +63,7 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
           yield* installSkill({
             target: 'claude',
             releaseTag,
+            silent: true,
           });
           return true;
         }),

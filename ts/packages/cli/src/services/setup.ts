@@ -19,7 +19,7 @@ const CODEX_PLUGIN_MARKETPLACE = {
   plugin: 'composio@composio',
 } as const;
 
-interface SetupTargetStatus {
+export interface SetupTargetStatus {
   readonly target: AgentHost;
   readonly available: boolean;
   readonly marketplace_configured: boolean;
@@ -29,7 +29,7 @@ interface SetupTargetStatus {
   readonly cli_skill_ready: boolean;
 }
 
-interface SetupTargetResult extends SetupTargetStatus {
+export interface SetupTargetResult extends SetupTargetStatus {
   readonly changed: boolean;
   readonly plugin_changed: boolean;
   readonly skill_changed: boolean;
@@ -51,7 +51,7 @@ interface SetupTargetAdapter {
   readonly skillSource: 'bundled' | 'standalone';
 }
 
-interface InspectedSetupTarget extends SetupTargetStatus {
+export interface InspectedSetupTarget extends SetupTargetStatus {
   readonly marketplace_conflict: boolean;
 }
 
@@ -265,10 +265,10 @@ const requireInspection = <T>(
   return Effect.succeed(inspected);
 };
 
-const inspectAdapter = (adapter: SetupTargetAdapter) =>
+const inspectAdapter = (adapter: SetupTargetAdapter, knownAvailable?: boolean) =>
   Effect.gen(function* () {
     const skillInstaller = yield* SetupSkillInstaller;
-    const available = yield* isAdapterAvailable(adapter);
+    const available = knownAvailable ?? (yield* isAdapterAvailable(adapter));
     if (!available) {
       return {
         target: adapter.target,
@@ -331,12 +331,14 @@ const pluginRepairStep = (
   return undefined;
 };
 
-const isSetupReady = (status: SetupTargetStatus): boolean =>
+export const isSetupPluginReady = (status: SetupTargetStatus): boolean =>
   status.available &&
   status.marketplace_configured &&
   status.plugin_installed &&
-  status.plugin_enabled &&
-  status.cli_skill_ready;
+  status.plugin_enabled;
+
+export const isSetupReady = (status: SetupTargetStatus): boolean =>
+  isSetupPluginReady(status) && status.cli_skill_ready;
 
 const runRequired = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>, operation: string) =>
   Effect.gen(function* () {
@@ -420,39 +422,37 @@ const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHos
   all: ['claude', 'codex'],
 };
 
-export const resolveSetupTargets = (
-  target: SetupTarget,
-  options: { readonly allowEmpty?: boolean } = {}
-) =>
-  Effect.gen(function* () {
-    const fixedTargets = FIXED_TARGETS[target];
-    if (fixedTargets) return fixedTargets;
+export interface SetupTargetDetection {
+  readonly target: AgentHost;
+  readonly available: boolean;
+}
 
-    const statuses = yield* Effect.all(
-      ADAPTER_LIST.map(adapter =>
-        isAdapterAvailable(adapter).pipe(
-          Effect.map(available => ({ target: adapter.target, available }))
+export const detectSetupTargets = (target: SetupTarget) =>
+  Effect.gen(function* () {
+    const targets = FIXED_TARGETS[target] ?? ADAPTER_LIST.map(adapter => adapter.target);
+    return yield* Effect.all(
+      targets.map(target =>
+        isAdapterAvailable(ADAPTERS[target]).pipe(
+          Effect.map(available => ({ target, available }) satisfies SetupTargetDetection)
         )
       )
     );
-    const detected = statuses.filter(status => status.available).map(status => status.target);
-    if (detected.length === 0) {
-      if (options.allowEmpty) return detected;
-      return yield* Effect.fail(
-        new Error(
-          'No supported agent host was detected. Install Claude Code or Codex, or pass `--target claude|codex` after installing it.'
-        )
-      );
-    }
-    return detected;
   });
 
-export const installSetupTargets = (targets: ReadonlyArray<AgentHost>) =>
+export const inspectSetupTargets = (detections: ReadonlyArray<SetupTargetDetection>) =>
   Effect.gen(function* () {
-    const inspected = yield* Effect.forEach(targets, target => inspectAdapter(ADAPTERS[target]));
+    const inspected = yield* Effect.forEach(
+      detections.filter(detection => detection.available),
+      detection => inspectAdapter(ADAPTERS[detection.target], true)
+    );
     yield* Effect.forEach(inspected, status =>
       validateInitialState(ADAPTERS[status.target], status)
     );
+    return inspected;
+  });
+
+export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+  Effect.gen(function* () {
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
       const result = yield* installAdapter(ADAPTERS[status.target], status).pipe(
