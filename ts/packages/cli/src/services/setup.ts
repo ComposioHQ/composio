@@ -445,10 +445,10 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
     }
 
     const final = yield* inspectAdapter(adapter);
-    if (final.plugin_installed || (adapter.skillSource === 'standalone' && final.cli_skill_ready)) {
+    if (final.plugin_installed) {
       return yield* Effect.fail(
         new Error(
-          `Uninstall commands completed, but ${adapter.target} still reports Composio as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
+          `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
         )
       );
     }

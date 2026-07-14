@@ -561,6 +561,31 @@ describe('CLI: composio setup', () => {
     );
   });
 
+  const uninstallWithUnmanagedClaudeSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: uninstallWithUnmanagedClaudeSkill.runner,
+      setupSkillInstaller: new SetupSkillInstaller({
+        isClaudeSkillReady: Effect.succeed(true),
+        hasManagedClaudeSkill: Effect.succeed(false),
+        ensureClaudeSkill: Effect.succeed(false),
+        removeClaudeSkill: Effect.succeed(false),
+      }),
+    })
+  )('uninstall with an unmanaged Claude skill', it => {
+    it.scoped('preserves the skill without treating plugin removal as a failure', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+
+        expect(uninstallWithUnmanagedClaudeSkill.state.claude.plugin).toBe('missing');
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Claude Code.');
+      })
+    );
+  });
+
   const nonInteractiveUninstall = makeFakeHosts({
     claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
   });
