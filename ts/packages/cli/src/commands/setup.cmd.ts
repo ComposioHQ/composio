@@ -1,7 +1,6 @@
 import { Command, Options } from '@effect/cli';
 import { Effect } from 'effect';
 import {
-  inspectSetupTargets,
   installSetupTargets,
   resolveSetupTargets,
   SETUP_TARGETS,
@@ -18,46 +17,6 @@ const yes = Options.boolean('yes').pipe(
   Options.withAlias('y'),
   Options.withDefault(false),
   Options.withDescription('Accept setup changes without prompting')
-);
-
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print machine-readable JSON')
-);
-
-const setupStatusCmd = Command.make('status', { json }).pipe(
-  Command.withDescription('Inspect agent plugin installation status.'),
-  Command.withHandler(({ json }) =>
-    Effect.gen(function* () {
-      const ui = yield* TerminalUI;
-      const targets = yield* inspectSetupTargets;
-      const result = { targets };
-
-      if (!json) {
-        yield* ui.note(
-          [
-            ...targets.map(item => {
-              const state = !item.available
-                ? 'not detected'
-                : !item.plugin_installed
-                  ? 'not installed'
-                  : item.plugin_enabled
-                    ? 'installed and enabled'
-                    : 'installed but disabled';
-              return `${item.target}: ${state}`;
-            }),
-            ...targets
-              .filter(item => item.available)
-              .map(
-                item => `${item.target} CLI skill: ${item.cli_skill_ready ? 'ready' : 'not ready'}`
-              ),
-          ].join('\n'),
-          'Composio setup status'
-        );
-      }
-      yield* ui.output(JSON.stringify(result), { force: json });
-    })
-  )
 );
 
 const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
@@ -84,11 +43,9 @@ const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
           : `The Composio plugin for ${result.target} is already installed and enabled.`
       );
       if (result.target === 'claude') {
-        yield* ui.log.success(
-          result.skill_changed
-            ? 'Installed the composio-cli skill for Claude Code.'
-            : 'The composio-cli skill for Claude Code is already installed.'
-        );
+        if (!result.skill_changed) {
+          yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
+        }
       } else {
         yield* ui.log.success('The Codex plugin includes the composio-cli skill.');
       }
@@ -105,6 +62,5 @@ const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
 );
 
 export const setupCmd = setupBaseCmd.pipe(
-  Command.withDescription('Install Composio plugins for supported agent hosts.'),
-  Command.withSubcommands([setupStatusCmd])
+  Command.withDescription('Install Composio plugins for supported agent hosts.')
 );

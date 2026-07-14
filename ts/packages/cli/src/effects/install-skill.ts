@@ -15,6 +15,7 @@ import extractZip from 'extract-zip';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
+export const SKILL_RELEASE_TAG_FILENAME = '.composio-release-tag';
 export type SkillReleaseChannel = CliReleaseChannel;
 export type SkillInstallTarget = 'claude' | 'codex' | 'openclaw';
 
@@ -63,6 +64,15 @@ export const resolveTargetSkillPath = ({
       return path.join(home, '.codex', 'skills', skillName);
     case 'openclaw':
       return path.join(home, '.openclaw', 'skills', skillName);
+  }
+};
+
+export const readInstalledSkillReleaseTag = (skillDir: string): string | undefined => {
+  try {
+    const value = fs.readFileSync(path.join(skillDir, SKILL_RELEASE_TAG_FILENAME), 'utf8').trim();
+    return value || undefined;
+  } catch {
+    return undefined;
   }
 };
 
@@ -204,6 +214,7 @@ export const installSkill = (options?: {
       fs.rmSync(agentSkillDir, { recursive: true, force: true });
       fs.mkdirSync(path.dirname(agentSkillDir), { recursive: true });
       fs.cpSync(extractedDir, agentSkillDir, { recursive: true });
+      fs.writeFileSync(path.join(agentSkillDir, SKILL_RELEASE_TAG_FILENAME), `${tag}\n`, 'utf8');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

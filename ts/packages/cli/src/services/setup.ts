@@ -46,6 +46,10 @@ interface SetupTargetAdapter {
   readonly pluginEnableArgs: ReadonlyArray<string>;
 }
 
+interface InspectedSetupTarget extends SetupTargetStatus {
+  readonly marketplace_conflict: boolean;
+}
+
 const CLAUDE_ADAPTER: SetupTargetAdapter = {
   target: 'claude',
   executable: 'claude',
@@ -127,10 +131,14 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
   return parts.join('/').toLowerCase();
 };
 
-const marketplaceIsConfigured = (adapter: SetupTargetAdapter, output: string): boolean => {
+const marketplaceState = (
+  adapter: SetupTargetAdapter,
+  output: string
+): { readonly configured: boolean; readonly conflicting: boolean } => {
   const parsed = parseJson(output);
   const records = recordsFrom(parsed, adapter.target === 'codex' ? 'marketplaces' : undefined);
-  return records.some(record => {
+  const expected = normalizeGitHubRepository(adapter.marketplace.source);
+  const sourceMatches = (record: Record<string, unknown>) => {
     const repo = typeof record.repo === 'string' ? record.repo : undefined;
     const url = typeof record.url === 'string' ? record.url : undefined;
     const nestedSource = asRecord(record.source);
@@ -140,12 +148,16 @@ const marketplaceIsConfigured = (adapter: SetupTargetAdapter, output: string): b
       (typeof nestedSource?.repo === 'string' ? nestedSource.repo : undefined) ??
       (typeof nestedSource?.source === 'string' ? nestedSource.source : undefined) ??
       (typeof marketplaceSource?.source === 'string' ? marketplaceSource.source : undefined);
-    const expected = normalizeGitHubRepository(adapter.marketplace.source);
     return [repo, url, source].some(
       candidate =>
         typeof candidate === 'string' && normalizeGitHubRepository(candidate) === expected
     );
-  });
+  };
+  const configured = records.some(sourceMatches);
+  const conflicting = records.some(
+    record => record.name === adapter.marketplace.name && !sourceMatches(record)
+  );
+  return { configured, conflicting };
 };
 
 const pluginState = (
@@ -182,7 +194,8 @@ const inspectAdapter = (adapter: SetupTargetAdapter) =>
         plugin_installed: false,
         plugin_enabled: false,
         cli_skill_ready: false,
-      } satisfies SetupTargetStatus;
+        marketplace_conflict: false,
+      } satisfies InspectedSetupTarget;
     }
 
     const [marketplaces, plugins] = yield* Effect.all([
@@ -195,21 +208,22 @@ const inspectAdapter = (adapter: SetupTargetAdapter) =>
         : { installed: false, enabled: false };
 
     const pluginReady = plugin.installed && plugin.enabled;
+    const marketplace =
+      marketplaces && marketplaces.exitCode === 0
+        ? marketplaceState(adapter, marketplaces.stdout)
+        : { configured: false, conflicting: false };
     return {
       target: adapter.target,
       available: true,
-      marketplace_configured: Boolean(
-        marketplaces &&
-        marketplaces.exitCode === 0 &&
-        marketplaceIsConfigured(adapter, marketplaces.stdout)
-      ),
+      marketplace_configured: marketplace.configured,
       plugin_installed: plugin.installed,
       plugin_enabled: plugin.enabled,
       // Codex loads the composio-cli skill from the plugin package itself. Claude's
       // plugin uses the standalone skill installed from the matching CLI release.
       cli_skill_ready:
         adapter.target === 'codex' ? pluginReady : yield* skillInstaller.isClaudeSkillInstalled,
-    } satisfies SetupTargetStatus;
+      marketplace_conflict: marketplace.conflicting,
+    } satisfies InspectedSetupTarget;
   });
 
 const runRequired = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>, operation: string) =>
@@ -231,6 +245,17 @@ const installAdapter = (adapter: SetupTargetAdapter) =>
       return yield* Effect.fail(
         new Error(
           `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`
+        )
+      );
+    }
+    if (initial.marketplace_conflict) {
+      const removeCommand =
+        adapter.target === 'claude'
+          ? 'claude plugin marketplace remove composio --scope user'
+          : 'codex plugin marketplace remove composio --json';
+      return yield* Effect.fail(
+        new Error(
+          `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${removeCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`
         )
       );
     }
@@ -266,20 +291,35 @@ const installAdapter = (adapter: SetupTargetAdapter) =>
         ? yield* skillInstaller.ensureClaudeSkill
         : false;
 
+    const final = yield* inspectAdapter(adapter);
+    if (
+      !final.available ||
+      !final.marketplace_configured ||
+      !final.plugin_installed ||
+      !final.plugin_enabled ||
+      !final.cli_skill_ready
+    ) {
+      return yield* Effect.fail(
+        new Error(
+          `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`composio setup --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
+        )
+      );
+    }
+
     return {
       target: adapter.target,
-      available: true,
-      marketplace_configured: true,
-      plugin_installed: true,
-      plugin_enabled: true,
-      cli_skill_ready: true,
+      available: final.available,
+      marketplace_configured: final.marketplace_configured,
+      plugin_installed: final.plugin_installed,
+      plugin_enabled: final.plugin_enabled,
+      cli_skill_ready: final.cli_skill_ready,
       changed: pluginChanged || skillChanged,
       plugin_changed: pluginChanged,
       skill_changed: skillChanged,
     } satisfies SetupTargetResult;
   });
 
-export const inspectSetupTargets = Effect.all(ADAPTERS.map(inspectAdapter));
+const inspectSetupTargets = Effect.all(ADAPTERS.map(inspectAdapter));
 
 export const resolveSetupTargets = (target: SetupTarget) =>
   Effect.gen(function* () {

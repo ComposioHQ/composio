@@ -880,17 +880,11 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       'composio setup',
       'composio setup --target auto --yes',
       'composio setup --target all',
-      'composio setup status --json',
     ],
     options: [
       { name: '--target <target>', description: 'auto, claude, codex, or all' },
       { name: '-y, --yes', description: 'Accept setup changes without prompting' },
     ],
-  },
-  'setup status': {
-    usage: 'composio setup status [--json]',
-    description: 'Inspect agent plugin installation status.',
-    flags: [{ name: '--json', description: 'Print machine-readable JSON' }],
   },
   version: {
     usage: 'composio version',

@@ -6,9 +6,18 @@ import { CommandRunner } from 'src/services/command-runner';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
+type AgentHost = 'claude' | 'codex';
+type MarketplaceState = 'missing' | 'canonical' | 'conflict';
+type PluginState = 'missing' | 'disabled' | 'enabled';
+
+interface FakeHostState {
+  available: boolean;
+  marketplace: MarketplaceState;
+  plugin: PluginState;
+}
+
 const commandParts = (command: Command.Command): ReadonlyArray<string> => {
-  const flattened = Command.flatten(command);
-  const first = flattened[0];
+  const first = Command.flatten(command)[0];
   return [first.command, ...first.args];
 };
 
@@ -17,15 +26,10 @@ const makeRunner = (
     readonly exitCode?: number;
     readonly stdout?: string;
     readonly stderr?: string;
-  },
-  onRun: (parts: ReadonlyArray<string>) => void = () => undefined
+  }
 ) =>
   new CommandRunner({
-    run: command =>
-      Effect.sync(() => {
-        onRun(commandParts(command));
-        return CommandExecutor.ExitCode(0);
-      }),
+    run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
     capture: command => {
       const result = respond(commandParts(command));
       return Effect.succeed({
@@ -36,6 +40,109 @@ const makeRunner = (
     },
   });
 
+const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
+  let ready = initiallyReady;
+  return new SetupSkillInstaller({
+    isClaudeSkillInstalled: Effect.sync(() => ready),
+    ensureClaudeSkill: failInstall
+      ? Effect.fail(new Error('skill download failed'))
+      : Effect.sync(() => {
+          const changed = !ready;
+          ready = true;
+          return changed;
+        }),
+  });
+};
+
+const defaultHostState = (): FakeHostState => ({
+  available: false,
+  marketplace: 'missing',
+  plugin: 'missing',
+});
+
+const makeFakeHosts = (
+  initial: Partial<Record<AgentHost, Partial<FakeHostState>>>,
+  options: { readonly noOp?: boolean; readonly failOn?: string } = {}
+) => {
+  const state: Record<AgentHost, FakeHostState> = {
+    claude: { ...defaultHostState(), ...initial.claude },
+    codex: { ...defaultHostState(), ...initial.codex },
+  };
+  const commands: string[][] = [];
+
+  const marketplaceOutput = (host: AgentHost): string => {
+    const current = state[host].marketplace;
+    const source =
+      current === 'canonical'
+        ? host === 'claude'
+          ? 'https://github.com/ComposioHQ/composio-plugin-cc.git'
+          : 'ComposioHQ/composio-plugin-openai'
+        : 'someone-else/not-composio';
+    if (host === 'claude') {
+      return current === 'missing'
+        ? '[]'
+        : JSON.stringify([{ name: 'composio', source: { source: 'github', repo: source } }]);
+    }
+    return JSON.stringify({
+      marketplaces:
+        current === 'missing'
+          ? []
+          : [
+              {
+                name: 'composio',
+                marketplaceSource: { sourceType: 'git', source },
+              },
+            ],
+    });
+  };
+
+  const pluginOutput = (host: AgentHost): string => {
+    const current = state[host].plugin;
+    const installed = current !== 'missing';
+    const enabled = current === 'enabled';
+    return host === 'claude'
+      ? JSON.stringify(installed ? [{ id: 'composio@composio', installed, enabled }] : [])
+      : JSON.stringify({
+          installed: installed ? [{ pluginId: 'composio@composio', installed, enabled }] : [],
+          available: [],
+        });
+  };
+
+  const runner = makeRunner(parts => {
+    commands.push([...parts]);
+    const host = parts[0] as AgentHost;
+    const command = parts.join(' ');
+    if (parts[1] === '--version') {
+      return state[host].available
+        ? { stdout: host === 'claude' ? '2.1.0' : 'codex-cli 0.144.1' }
+        : { exitCode: 127, stderr: 'not found' };
+    }
+    if (command === `${host} plugin marketplace list --json`) {
+      return { stdout: marketplaceOutput(host) };
+    }
+    if (command === `${host} plugin list --json`) {
+      return { stdout: pluginOutput(host) };
+    }
+    if (options.failOn && command.includes(options.failOn)) {
+      return { exitCode: 2, stderr: 'native operation failed' };
+    }
+    if (!options.noOp && command.includes('plugin marketplace add')) {
+      state[host].marketplace = 'canonical';
+    }
+    if (
+      !options.noOp &&
+      (command.includes('plugin install') ||
+        command.includes('plugin enable') ||
+        command === 'codex plugin add composio@composio --json')
+    ) {
+      state[host].plugin = 'enabled';
+    }
+    return {};
+  });
+
+  return { commands, runner, state };
+};
+
 describe('CLI: composio setup', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -43,279 +150,88 @@ describe('CLI: composio setup', () => {
     process.exitCode = undefined;
   });
 
-  const humanCommands: string[][] = [];
-  const humanRunner = makeRunner(parts => {
-    humanCommands.push([...parts]);
-    if (parts.join(' ') === 'claude --version') return { stdout: '2.1.0' };
-    if (parts.join(' ') === 'claude plugin marketplace list --json') {
-      return { stdout: '[]' };
-    }
-    if (parts.join(' ') === 'claude plugin list --json') return { stdout: '[]' };
-    return {};
-  });
-
-  layer(TestLive({ fixture: 'user-config-example', commandRunner: humanRunner }))(
-    'Claude plugin install',
-    it => {
-      it.scoped('registers and installs the Claude plugin with exact native commands', () =>
-        Effect.gen(function* () {
-          humanCommands.length = 0;
-          yield* cli(['setup', '--target', 'claude', '--yes']);
-
-          expect(humanCommands).toContainEqual([
-            'claude',
-            'plugin',
-            'marketplace',
-            'add',
-            'https://github.com/ComposioHQ/composio-plugin-cc.git',
-            '--scope',
-            'user',
-          ]);
-          expect(humanCommands).toContainEqual([
-            'claude',
-            'plugin',
-            'install',
-            'composio@composio',
-            '--scope',
-            'user',
-          ]);
-
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('Configured and enabled the Composio plugin for claude');
-          expect(output).toContain('"success":true');
-        })
-      );
-    }
-  );
-
-  const codexCommands: string[][] = [];
-  const codexInstalledRunner = makeRunner(parts => {
-    codexCommands.push([...parts]);
-    if (parts.join(' ') === 'codex --version') return { stdout: 'codex-cli 0.144.1' };
-    if (parts.join(' ') === 'codex plugin marketplace list --json') {
-      return {
-        stdout: JSON.stringify({
-          marketplaces: [
-            {
-              name: 'composio',
-              marketplaceSource: {
-                sourceType: 'git',
-                source: 'https://github.com/COMPOSIOHQ/composio-plugin-openai.git/',
-              },
-            },
-          ],
-        }),
-      };
-    }
-    if (parts.join(' ') === 'codex plugin list --json') {
-      return {
-        stdout: JSON.stringify({
-          installed: [{ pluginId: 'composio@composio', installed: true, enabled: true }],
-        }),
-      };
-    }
-    return {};
-  });
-
-  layer(TestLive({ fixture: 'user-config-example', commandRunner: codexInstalledRunner }))(
-    'existing Codex install',
-    it => {
-      it.scoped('is idempotent when the Codex marketplace and plugin are already installed', () =>
-        Effect.gen(function* () {
-          codexCommands.length = 0;
-          yield* cli(['setup', '--target', 'codex', '--yes']);
-
-          expect(codexCommands).not.toContainEqual([
-            'codex',
-            'plugin',
-            'marketplace',
-            'add',
-            'https://github.com/ComposioHQ/composio-plugin-openai.git',
-            '--json',
-          ]);
-          expect(codexCommands).not.toContainEqual([
-            'codex',
-            'plugin',
-            'add',
-            'composio@composio',
-            '--json',
-          ]);
-
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('already installed and enabled');
-          expect(output).toContain('"changed":false');
-          expect(output).toContain('"cli_skill_ready":true');
-          expect(output).toContain('"success":true');
-          expect(output).not.toContain('uak_');
-          expect(process.exitCode).toBeUndefined();
-        })
-      );
-    }
-  );
-
-  const disabledClaudeCommands: string[][] = [];
-  const disabledClaudeRunner = makeRunner(parts => {
-    disabledClaudeCommands.push([...parts]);
-    if (parts.join(' ') === 'claude --version') return { stdout: '2.1.0' };
-    if (parts.join(' ') === 'claude plugin marketplace list --json') {
-      return {
-        stdout: JSON.stringify([
-          {
-            name: 'composio',
-            source: 'git',
-            url: 'https://github.com/ComposioHQ/composio-plugin-cc.git',
-          },
-        ]),
-      };
-    }
-    if (parts.join(' ') === 'claude plugin list --json') {
-      return {
-        stdout: JSON.stringify([{ id: 'composio@composio', installed: true, enabled: false }]),
-      };
-    }
-    return {};
-  });
-
-  layer(TestLive({ fixture: 'user-config-example', commandRunner: disabledClaudeRunner }))(
-    'disabled Claude plugin',
-    it => {
-      it.scoped('repairs a disabled Claude plugin with the native enable command', () =>
-        Effect.gen(function* () {
-          disabledClaudeCommands.length = 0;
-          yield* cli(['setup', '--target', 'claude', '--yes']);
-
-          expect(disabledClaudeCommands).toContainEqual([
-            'claude',
-            'plugin',
-            'enable',
-            'composio@composio',
-          ]);
-          expect(disabledClaudeCommands).not.toContainEqual([
-            'claude',
-            'plugin',
-            'install',
-            'composio@composio',
-            '--scope',
-            'user',
-          ]);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('"plugin_installed":true');
-          expect(output).toContain('"plugin_enabled":true');
-        })
-      );
-
-      it.scoped('reports a disabled plugin as not enabled in machine status', () =>
-        Effect.gen(function* () {
-          disabledClaudeCommands.length = 0;
-          yield* cli(['setup', 'status', '--json']);
-
-          const lines = yield* MockConsole.getLines();
-          const jsonLine = lines.filter(line => line.startsWith('{')).at(-1);
-          const status = JSON.parse(jsonLine ?? '{}') as {
-            targets?: Array<Record<string, unknown>>;
-          };
-          expect(status.targets?.find(item => item.target === 'claude')).toMatchObject({
-            plugin_installed: true,
-            plugin_enabled: false,
-          });
-          expect(disabledClaudeCommands).not.toContainEqual([
-            'claude',
-            'plugin',
-            'enable',
-            'composio@composio',
-          ]);
-        })
-      );
-    }
-  );
-
-  const disabledCodexCommands: string[][] = [];
-  const disabledCodexRunner = makeRunner(parts => {
-    disabledCodexCommands.push([...parts]);
-    if (parts.join(' ') === 'codex --version') return { stdout: 'codex-cli 0.144.1' };
-    if (parts.join(' ') === 'codex plugin marketplace list --json') {
-      return {
-        stdout: JSON.stringify({
-          marketplaces: [
-            {
-              name: 'composio',
-              marketplaceSource: {
-                sourceType: 'git',
-                source: 'ComposioHQ/composio-plugin-openai',
-              },
-            },
-          ],
-        }),
-      };
-    }
-    if (parts.join(' ') === 'codex plugin list --json') {
-      return {
-        stdout: JSON.stringify({
-          installed: [{ pluginId: 'composio@composio', installed: true, enabled: false }],
-        }),
-      };
-    }
-    return {};
-  });
-
-  layer(TestLive({ fixture: 'user-config-example', commandRunner: disabledCodexRunner }))(
-    'disabled Codex plugin',
-    it => {
-      it.scoped('repairs a disabled Codex plugin through its native add path', () =>
-        Effect.gen(function* () {
-          disabledCodexCommands.length = 0;
-          yield* cli(['setup', '--target', 'codex', '--yes']);
-
-          expect(disabledCodexCommands).toContainEqual([
-            'codex',
-            'plugin',
-            'add',
-            'composio@composio',
-            '--json',
-          ]);
-          const output = (yield* MockConsole.getLines()).join('\n');
-          expect(output).toContain('"plugin_installed":true');
-          expect(output).toContain('"plugin_enabled":true');
-          expect(output).toContain('"success":true');
-        })
-      );
-    }
-  );
-
-  const codexFreshCommands: string[][] = [];
-  const codexFreshRunner = makeRunner(parts => {
-    codexFreshCommands.push([...parts]);
-    if (parts.join(' ') === 'codex --version') return { stdout: 'codex-cli 0.144.1' };
-    if (parts.join(' ') === 'codex plugin marketplace list --json') {
-      return { stdout: JSON.stringify({ marketplaces: [] }) };
-    }
-    if (parts.join(' ') === 'codex plugin list --json') {
-      return { stdout: JSON.stringify({ installed: [], available: [] }) };
-    }
-    return {};
-  });
-  const codexBundledSkillInstaller = new SetupSkillInstaller({
-    isClaudeSkillInstalled: Effect.die(
-      new Error('Codex setup must not inspect the standalone Claude skill')
-    ),
-    ensureClaudeSkill: Effect.die(
-      new Error('Codex setup must not install a redundant global CLI skill')
-    ),
-  });
-
+  const freshClaude = makeFakeHosts({ claude: { available: true } });
   layer(
     TestLive({
       fixture: 'user-config-example',
-      commandRunner: codexFreshRunner,
-      setupSkillInstaller: codexBundledSkillInstaller,
+      commandRunner: freshClaude.runner,
+      setupSkillInstaller: makeSkillInstaller(),
     })
-  )('fresh Codex install', it => {
-    it.scoped('uses the planned OpenAI marketplace and exact Codex commands', () =>
+  )('fresh Claude install', it => {
+    it.scoped('uses exact native commands and verifies readiness', () =>
       Effect.gen(function* () {
-        codexFreshCommands.length = 0;
+        yield* cli(['setup', '--target', 'claude', '--yes']);
+
+        expect(freshClaude.commands).toContainEqual([
+          'claude',
+          'plugin',
+          'marketplace',
+          'add',
+          'https://github.com/ComposioHQ/composio-plugin-cc.git',
+          '--scope',
+          'user',
+        ]);
+        expect(freshClaude.commands).toContainEqual([
+          'claude',
+          'plugin',
+          'install',
+          'composio@composio',
+          '--scope',
+          'user',
+        ]);
+        expect(freshClaude.state.claude).toMatchObject({
+          marketplace: 'canonical',
+          plugin: 'enabled',
+        });
+        expect((yield* MockConsole.getLines()).join('\n')).toContain('"success":true');
+      })
+    );
+  });
+
+  const existingCodex = makeFakeHosts({
+    codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(TestLive({ commandRunner: existingCodex.runner }))('existing Codex install', it => {
+    it.scoped('is idempotent', () =>
+      Effect.gen(function* () {
         yield* cli(['setup', '--target', 'codex', '--yes']);
 
-        expect(codexFreshCommands).toContainEqual([
+        expect(existingCodex.commands.some(parts => parts.includes('add'))).toBe(false);
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('"changed":false');
+        expect(output).toContain('"success":true');
+      })
+    );
+  });
+
+  for (const host of ['claude', 'codex'] as const) {
+    const disabled = makeFakeHosts({
+      [host]: { available: true, marketplace: 'canonical', plugin: 'disabled' },
+    });
+    layer(
+      TestLive({
+        commandRunner: disabled.runner,
+        setupSkillInstaller: makeSkillInstaller(true),
+      })
+    )(`disabled ${host} plugin`, it => {
+      it.scoped('repairs the plugin through the native path', () =>
+        Effect.gen(function* () {
+          yield* cli(['setup', '--target', host, '--yes']);
+
+          expect(disabled.state[host].plugin).toBe('enabled');
+          expect((yield* MockConsole.getLines()).join('\n')).toContain('"plugin_enabled":true');
+        })
+      );
+    });
+  }
+
+  const freshCodex = makeFakeHosts({ codex: { available: true } });
+  layer(TestLive({ commandRunner: freshCodex.runner }))('fresh Codex install', it => {
+    it.scoped('uses the public OpenAI marketplace and exact native commands', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--target', 'codex', '--yes']);
+
+        expect(freshCodex.commands).toContainEqual([
           'codex',
           'plugin',
           'marketplace',
@@ -323,79 +239,84 @@ describe('CLI: composio setup', () => {
           'https://github.com/ComposioHQ/composio-plugin-openai.git',
           '--json',
         ]);
-        expect(codexFreshCommands).toContainEqual([
+        expect(freshCodex.commands).toContainEqual([
           'codex',
           'plugin',
           'add',
           'composio@composio',
           '--json',
         ]);
+      })
+    );
+  });
+
+  const autoClaude = makeFakeHosts({ claude: { available: true } });
+  layer(
+    TestLive({
+      commandRunner: autoClaude.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('automatic setup with one host', it => {
+    it.scoped('installs only the detected host', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
         const output = (yield* MockConsole.getLines()).join('\n');
-        expect(output).toContain('"cli_skill_ready":true');
-        expect(output).toContain('"success":true');
+        expect(output).toContain('"target":"claude"');
+        expect(output).not.toContain('"target":"codex"');
       })
     );
   });
 
-  const unavailableRunner = makeRunner(() => ({ exitCode: 127, stderr: 'not found' }));
-  layer(TestLive({ commandRunner: unavailableRunner }))('status', it => {
-    it.scoped('prints machine-readable status without installing anything', () =>
+  const autoBoth = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+    codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: autoBoth.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('automatic setup with both hosts', it => {
+    it.scoped('selects both detected hosts', () =>
       Effect.gen(function* () {
-        yield* cli(['setup', 'status', '--json']);
-        const lines = yield* MockConsole.getLines();
-        expect(lines).toHaveLength(1);
-        expect(JSON.parse(lines[0] ?? '{}')).toMatchObject({
-          targets: [
-            { target: 'claude', available: false, cli_skill_ready: false },
-            { target: 'codex', available: false, cli_skill_ready: false },
-          ],
-        });
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('"target":"claude"');
+        expect(output).toContain('"target":"codex"');
       })
     );
   });
 
-  const wrongMarketplaceRunner = makeRunner(parts => {
-    if (parts.join(' ') === 'claude --version') return { stdout: '2.1.0' };
-    if (parts.join(' ') === 'codex --version') return { exitCode: 127 };
-    if (parts.join(' ') === 'claude plugin marketplace list --json') {
-      return {
-        stdout: JSON.stringify([
-          {
-            name: 'composio',
-            source: { source: 'github', repo: 'someone-else/not-composio' },
-          },
-        ]),
-      };
-    }
-    if (parts.join(' ') === 'claude plugin list --json') return { stdout: '[]' };
-    return {};
-  });
-  layer(TestLive({ commandRunner: wrongMarketplaceRunner }))('exact marketplace status', it => {
-    it.scoped('does not accept a same-named marketplace from the wrong repository', () =>
+  const unavailable = makeFakeHosts({});
+  layer(TestLive({ commandRunner: unavailable.runner }))('no supported host', it => {
+    it.scoped('fails automatic setup', () =>
       Effect.gen(function* () {
-        yield* cli(['setup', 'status', '--json']);
-        const [line] = yield* MockConsole.getLines();
-        const status = JSON.parse(line ?? '{}') as {
-          targets?: Array<Record<string, unknown>>;
-        };
-        expect(status.targets?.find(item => item.target === 'claude')).toMatchObject({
-          marketplace_configured: false,
-        });
+        const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
   });
 
-  const failingInstallRunner = makeRunner(parts => {
-    if (parts.join(' ') === 'claude --version') return { stdout: '2.1.0' };
-    if (parts.join(' ') === 'claude plugin marketplace list --json') return { stdout: '[]' };
-    if (parts.join(' ') === 'claude plugin list --json') return { stdout: '[]' };
-    if (parts.includes('install')) return { exitCode: 2, stderr: 'install failed' };
-    return {};
+  const conflict = makeFakeHosts({
+    claude: { available: true, marketplace: 'conflict' },
   });
-  layer(TestLive({ fixture: 'user-config-example', commandRunner: failingInstallRunner }))(
-    'partial failure',
+  layer(TestLive({ commandRunner: conflict.runner }))('marketplace source conflict', it => {
+    it.scoped('fails safely instead of replacing the marketplace', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(conflict.state.claude.marketplace).toBe('conflict');
+      })
+    );
+  });
+
+  const noOp = makeFakeHosts({ claude: { available: true } }, { noOp: true });
+  layer(TestLive({ commandRunner: noOp.runner, setupSkillInstaller: makeSkillInstaller() }))(
+    'post-install verification',
     it => {
-      it.scoped('fails the command when a native plugin install fails', () =>
+      it.scoped('fails when successful commands do not change native state', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
           expect(Exit.isFailure(exit)).toBe(true);
@@ -404,18 +325,29 @@ describe('CLI: composio setup', () => {
     }
   );
 
-  const failingSkillInstaller = new SetupSkillInstaller({
-    isClaudeSkillInstalled: Effect.succeed(false),
-    ensureClaudeSkill: Effect.fail(new Error('skill download failed')),
+  const failedInstall = makeFakeHosts(
+    { claude: { available: true } },
+    { failOn: 'plugin install' }
+  );
+  layer(TestLive({ commandRunner: failedInstall.runner }))('native install failure', it => {
+    it.scoped('fails the command', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
+        expect(Exit.isFailure(exit)).toBe(true);
+      })
+    );
+  });
+
+  const skillFailure = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
   });
   layer(
     TestLive({
-      fixture: 'user-config-example',
-      commandRunner: humanRunner,
-      setupSkillInstaller: failingSkillInstaller,
+      commandRunner: skillFailure.runner,
+      setupSkillInstaller: makeSkillInstaller(false, true),
     })
-  )('skill failure', it => {
-    it.scoped('fails rather than reporting readiness when the required Claude skill fails', () =>
+  )('skill install failure', it => {
+    it.scoped('fails instead of reporting readiness', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);

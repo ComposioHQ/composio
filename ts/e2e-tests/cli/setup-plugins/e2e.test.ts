@@ -15,12 +15,16 @@ set -eu
 mkdir -p /tmp/bin /tmp/host-state
 cp fixtures/fake-agent-host.sh /tmp/bin/${host}
 chmod +x /tmp/bin/${host}
-${host === 'claude' ? 'mkdir -p /tmp/.claude/skills/composio-cli' : ''}
+${
+  host === 'claude'
+    ? `mkdir -p /tmp/.claude/skills/composio-cli /tmp/.agents/skills/composio-cli
+printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag`
+    : ''
+}
 export HOST_STATE_DIR=/tmp/host-state
 export PATH=/tmp/bin:$PATH
 composio setup --target ${host} --yes > first.json
 composio setup --target ${host} --yes > second.json
-composio setup status --json > status.json
 cp /tmp/host-state/commands.log commands.log
 `;
 
@@ -29,12 +33,8 @@ e2e(import.meta.url, {
     cli: ['current'],
   },
   defineTests: ({ runCmd }) => {
-    let claude: E2ETestResultWithFiles<
-      'first.json' | 'second.json' | 'status.json' | 'commands.log'
-    >;
-    let codex: E2ETestResultWithFiles<
-      'first.json' | 'second.json' | 'status.json' | 'commands.log'
-    >;
+    let claude: E2ETestResultWithFiles<'first.json' | 'second.json' | 'commands.log'>;
+    let codex: E2ETestResultWithFiles<'first.json' | 'second.json' | 'commands.log'>;
     let unavailable: E2ETestResult;
 
     beforeAll(async () => {
@@ -42,11 +42,11 @@ e2e(import.meta.url, {
       // these fresh-container cases sequential to avoid same-millisecond names.
       claude = await runCmd({
         command: setupFixture('claude'),
-        files: ['first.json', 'second.json', 'status.json', 'commands.log'],
+        files: ['first.json', 'second.json', 'commands.log'],
       });
       codex = await runCmd({
         command: setupFixture('codex'),
-        files: ['first.json', 'second.json', 'status.json', 'commands.log'],
+        files: ['first.json', 'second.json', 'commands.log'],
       });
       unavailable = await runCmd('composio setup --target auto --yes');
     }, TIMEOUTS.FIXTURE);
@@ -78,17 +78,6 @@ e2e(import.meta.url, {
           targets: Array<{ target: string; changed: boolean; cli_skill_ready: boolean }>;
         };
         const second = JSON.parse(execution.files['second.json']) as typeof first;
-        const status = JSON.parse(execution.files['status.json']) as {
-          targets: Array<{
-            target: string;
-            available: boolean;
-            marketplace_configured: boolean;
-            plugin_installed: boolean;
-            plugin_enabled: boolean;
-            cli_skill_ready: boolean;
-          }>;
-        };
-
         expect(first.success).toBe(true);
         expect(first.targets).toContainEqual(
           expect.objectContaining({ target: host, changed: true, cli_skill_ready: true })
@@ -96,15 +85,6 @@ e2e(import.meta.url, {
         expect(second.targets).toContainEqual(
           expect.objectContaining({ target: host, changed: false, cli_skill_ready: true })
         );
-        expect(status.targets).toContainEqual({
-          target: host,
-          available: true,
-          marketplace_configured: true,
-          plugin_installed: true,
-          plugin_enabled: true,
-          cli_skill_ready: true,
-        });
-
         const commands = execution.files['commands.log'].trim().split('\n');
         expect(commands.filter(command => command === marketplaceCommand)).toHaveLength(1);
         expect(commands.filter(command => command === installCommand)).toHaveLength(1);
