@@ -2204,8 +2204,9 @@ class TestTruncateFilename:
 class TestFetchFileFromUrlWithTruncation:
     """Test cases for _fetch_file_from_url with filename truncation."""
 
+    @patch("composio.core.models._files.assert_safe_fetch_target")
     @patch("composio.core.models._files.requests.get")
-    def test_fetch_truncates_long_filename(self, mock_get):
+    def test_fetch_truncates_long_filename(self, mock_get, _mock_safe_fetch_target):
         """Long filenames from URLs should be truncated."""
         mock_response = MagicMock()
         mock_response.ok = True
@@ -2244,8 +2245,11 @@ class TestFetchFileFromUrlWithTruncation:
 
         assert filename == "photo.jpg"
 
+    @patch("composio.core.models._files.assert_safe_fetch_target")
     @patch("composio.core.models._files.requests.get")
-    def test_fetch_truncates_after_adding_extension(self, mock_get):
+    def test_fetch_truncates_after_adding_extension(
+        self, mock_get, _mock_safe_fetch_target
+    ):
         """Truncation should happen after extension is appended."""
         mock_response = MagicMock()
         mock_response.ok = True
