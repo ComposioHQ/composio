@@ -84,6 +84,18 @@ describe('GoogleProvider', () => {
         },
       });
     });
+
+    it('deduplicates required entries for directly wrapped tools', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          ...mockTool.inputParameters!,
+          required: ['input', 'input'],
+        },
+      });
+
+      expect(wrapped.parameters?.required).toEqual(['input']);
+    });
   });
 
   describe('wrapTools', () => {

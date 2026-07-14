@@ -15,6 +15,7 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
+import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
 import { getDefaultHeaders } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
@@ -206,7 +207,7 @@ export class Composio<
   experimental: Experimental;
   /**
    * Model Context Protocol server management.
-   * @deprecated Use a session's MCP endpoint instead: `composio.sessions.create(userId, { mcp: true })`
+   * @deprecated Use a session's MCP endpoint instead: `composio.create(userId, { mcp: true })`
    * returns a session that exposes `session.mcp.url` / `session.mcp.headers`. MCP is now opt-in
    * per session; this standalone server-management API is kept only for backwards compatibility.
    * Prefer the session MCP endpoint; do not generate new code against `composio.mcp`.
@@ -216,8 +217,8 @@ export class Composio<
   /**
    * Create and reuse Composio sessions.
    *
-   * Use `composio.sessions.create(...)` to create a session and
-   * `composio.sessions.use(...)` to reuse one.
+   * Prefer `composio.sessions.create(...)` for new code. The top-level
+   * `composio.create(...)` method is kept as an alias.
    */
   sessions: Sessions<unknown, unknown, TProvider>;
   /**
@@ -225,6 +226,51 @@ export class Composio<
    * @deprecated Use `composio.sessions` instead — `toolRouter` was renamed to `sessions` and is kept only for backwards compatibility. Prefer `composio.sessions`; do not generate new code against `composio.toolRouter`.
    */
   toolRouter: ToolRouter<unknown, unknown, TProvider>;
+  /**
+   * Creates a new tool router session for a user.
+   * Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+   * should be exposed directly; see `ToolRouterCreateSessionConfig`.
+   *
+   * @param userId {string} The user id to create the session for
+   * @param config {ToolRouterConfig} The config for the tool router session
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
+   *
+   * const composio = new Composio();
+   * const userId = 'user_123';
+   *
+   * const session = await composio.sessions.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * // Backwards-compatible alias:
+   * const same = await composio.create(userId, {
+   *  manageConnections: true,
+   * });
+   *
+   * console.log(session.sessionId);
+   * console.log(session.url);
+   * console.log(session.tools());
+   * ```
+   */
+  create: Sessions<unknown, unknown, TProvider>['create'];
+
+  /**
+   * Use an existing tool router session
+   *
+   * @param id {string} The id of the session to use
+   * @param options {object} Custom tools / toolkits to attach to the session
+   * @param requestOptions {ComposioRequestOptions} Per-request cancellation
+   *   options. The supplied AbortSignal aborts the underlying session
+   *   retrieve/attach call only. Subsequent session method calls accept
+   *   their own per-call requestOptions.
+   * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
+   */
+  use: Sessions<unknown, unknown, TProvider>['use'];
+
   /**
    * Creates a new instance of the Composio SDK.
    *
@@ -317,6 +363,16 @@ export class Composio<
     this.experimental = new Experimental(this.client);
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
+
+    /**
+     * Initialize session aliases.
+     * Properly bind the methods to maintain the correct 'this' context.
+     */
+    // Cast: Function.prototype.bind collapses the create/use overloads to a
+    // single signature; re-assert the overloaded type. Runtime behaviour is
+    // unchanged — bind only rebinds `this`.
+    this.create = this.sessions.create.bind(this.sessions) as Composio<TProvider>['create'];
+    this.use = this.sessions.use.bind(this.sessions) as Composio<TProvider>['use'];
 
     /**
      * Initialize the client telemetry.

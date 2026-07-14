@@ -13,7 +13,7 @@ declare const composio: Composio;
 
 async function createGating(): Promise<void> {
   // Default: no `{ mcp: true }` → `session.mcp` is NOT in the type.
-  const session = await composio.sessions.create('user_123');
+  const session = await composio.create('user_123');
   // @ts-expect-error mcp is hidden from the type unless `{ mcp: true }` is passed
   void session.mcp;
 
@@ -21,17 +21,17 @@ async function createGating(): Promise<void> {
   await session.tools();
 
   // Opt-in: `{ mcp: true }` → `session.mcp` is surfaced.
-  const mcpSession = await composio.sessions.create('user_123', { mcp: true });
+  const mcpSession = await composio.create('user_123', { mcp: true });
   const _url: string = mcpSession.mcp.url;
   void _url;
 }
 
 async function useGating(): Promise<void> {
-  const session = await composio.sessions.use('session_123');
+  const session = await composio.use('session_123');
   // @ts-expect-error mcp is hidden from the type unless `{ mcp: true }` is passed
   void session.mcp;
 
-  const mcpSession = await composio.sessions.use('session_123', { mcp: true });
+  const mcpSession = await composio.use('session_123', { mcp: true });
   const _url: string = mcpSession.mcp.url;
   void _url;
 }
@@ -41,21 +41,13 @@ async function useGating(): Promise<void> {
 // The `{ mcp: true }` overload refactor previously dropped this from `create()`.
 async function requestOptionsArg(): Promise<void> {
   const ctrl = new AbortController();
-  await composio.sessions.create('user_123', { toolkits: ['gmail'] }, { signal: ctrl.signal });
-  await composio.sessions.create('user_123', { mcp: true }, { signal: ctrl.signal });
+  await composio.create('user_123', { toolkits: ['gmail'] }, { signal: ctrl.signal });
+  await composio.create('user_123', { mcp: true }, { signal: ctrl.signal });
   await composio.sessions.create('user_123', undefined, { signal: ctrl.signal });
-  await composio.sessions.use('session_123', { customTools: [] }, { signal: ctrl.signal });
-  await composio.sessions.use('session_123', { mcp: true }, { signal: ctrl.signal });
-}
-
-function bareSessionAliasesAreRemoved(): void {
-  // @ts-expect-error Session APIs are only available under `composio.sessions`.
-  void composio.create;
-  // @ts-expect-error Session APIs are only available under `composio.sessions`.
-  void composio.use;
+  await composio.use('session_123', { customTools: [] }, { signal: ctrl.signal });
+  await composio.use('session_123', { mcp: true }, { signal: ctrl.signal });
 }
 
 void createGating;
 void useGating;
 void requestOptionsArg;
-void bareSessionAliasesAreRemoved;

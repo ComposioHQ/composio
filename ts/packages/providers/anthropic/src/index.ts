@@ -17,6 +17,7 @@ import {
   McpUrlResponse,
   normalizeToolArguments,
   dereferenceJsonSchema,
+  deduplicateJsonSchemaRequiredArrays,
 } from '@composio/core';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicTool, InputSchema } from './types';
@@ -65,7 +66,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
   AnthropicMcpServerGetResponse
 > {
   readonly name = 'anthropic';
-  private chacheTools: boolean = false;
+  private cacheTools: boolean = false;
 
   /**
    * Per-tool reverse key mappings (`sanitized -> original`, shaped like the
@@ -117,8 +118,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
    */
   constructor(options?: { cacheTools?: boolean }) {
     super();
-    this.chacheTools = options?.cacheTools ?? false;
-    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.chacheTools}]`);
+    this.cacheTools = options?.cacheTools ?? false;
+    logger.debug(`AnthropicProvider initialized [cacheTools: ${this.cacheTools}]`);
   }
 
   /**
@@ -171,7 +172,8 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
     // Anthropic rejects the whole `tools` array if any property key falls outside
     // `^[a-zA-Z0-9_.-]{1,64}$` (e.g. OData params like `$top`, `@odata.type`, or
     // over-long flattened keys). Rewrite offending keys and remember how to undo it.
-    const { schema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
+    const { schema: sanitizedSchema, mapping } = sanitizeSchemaPropertyKeys(dereferenced);
+    const schema = deduplicateJsonSchemaRequiredArrays(sanitizedSchema) as InputSchema;
 
     if (mappingHasRenames(mapping)) {
       this.toolKeyMappings.set(tool.slug, mapping);
@@ -189,7 +191,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
       name: tool.slug,
       description: tool.description || '',
       input_schema: schema,
-      cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+      cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
     };
   }
 
@@ -377,7 +379,7 @@ export class AnthropicProvider extends BaseNonAgenticProvider<
         type: 'tool_result',
         tool_use_id: toolUse.id,
         content: toolResult,
-        cache_control: this.chacheTools ? { type: 'ephemeral' } : undefined,
+        cache_control: this.cacheTools ? { type: 'ephemeral' } : undefined,
       });
     }
 

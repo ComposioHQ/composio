@@ -22,7 +22,6 @@ const tsReleaseWorkflow = readFileSync(
   'utf8'
 );
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
-const pythonChangelog = readFileSync(new URL('../python/CHANGELOG.md', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
   'utf8'
@@ -66,8 +65,63 @@ function readPyprojectVersion(text, label) {
   return requireMatch(text, /^\s*version\s*=\s*"([^"]+)"\s*$/m, label);
 }
 
-function readChangelogVersions(text) {
-  return [...text.matchAll(/^## \[([^\]]+)\]/gm)].map(match => match[1]);
+function readPythonSdkVersions(rows) {
+  const versions = new Set();
+  const pythonVersionPattern =
+    /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
+
+  for (const row of rows) {
+    const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+    const releaseVersionCell = cells[cells.length - 1];
+    if (!releaseVersionCell) continue;
+
+    for (const version of releaseVersionCell.matchAll(pythonVersionPattern)) {
+      versions.add(version[1]);
+    }
+  }
+
+  return versions;
+}
+
+function readDocumentedPythonSdkVersions() {
+  const changelogDir = new URL('../docs/content/changelog/', import.meta.url);
+  const rows = [];
+
+  for (const entry of readdirSync(changelogDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.mdx')) continue;
+
+    const source = readFileSync(new URL(`../docs/content/changelog/${entry.name}`, import.meta.url), 'utf8');
+    rows.push(...(source.match(/^\|\s*Python `composio`\s*\|.*$/gm) ?? []));
+  }
+
+  return readPythonSdkVersions(rows);
+}
+
+{
+  const directVersion = readPythonSdkVersions(['| Python `composio` | `9.9.9` |']);
+  const versionWithPrevious = readPythonSdkVersions([
+    '| Python `composio` | v9.9.8 | **v9.9.9** |',
+  ]);
+  const previousVersionOnly = readPythonSdkVersions([
+    '| Python `composio` | v9.9.9 | **v9.9.10** |',
+  ]);
+  const pep440Versions = readPythonSdkVersions([
+    '| Python `composio` | `9.9.9rc1` |',
+    '| Python `composio` | `9.9.9.post1` |',
+    '| Python `composio` | `9.9.9.dev1` |',
+  ]);
+
+  if (!directVersion.has('9.9.9') || !versionWithPrevious.has('9.9.9')) {
+    throw new Error('Python SDK changelog version rows must recognize the released version');
+  }
+  if (previousVersionOnly.has('9.9.9')) {
+    throw new Error('Python SDK changelog version rows must not treat the previous version as released');
+  }
+  for (const version of ['9.9.9rc1', '9.9.9.post1', '9.9.9.dev1']) {
+    if (!pep440Versions.has(version)) {
+      throw new Error(`Python SDK changelog version rows must recognize PEP 440 version ${version}`);
+    }
+  }
 }
 
 if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
@@ -91,7 +145,7 @@ if (
   );
 }
 
-// --- Python release metadata: package version, runtime version, and changelog must agree ---
+// --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
 {
   const pythonVersion = readPyprojectVersion(pythonPyproject, 'python/pyproject.toml version');
@@ -107,10 +161,10 @@ if (
     );
   }
 
-  const changelogVersions = readChangelogVersions(pythonChangelog);
-  if (changelogVersions[0] !== pythonVersion) {
+  const documentedPythonVersions = readDocumentedPythonSdkVersions();
+  if (!documentedPythonVersions.has(pythonVersion)) {
     throw new Error(
-      `python/CHANGELOG.md must start with the current Python package version (${changelogVersions[0] ?? 'none'} !== ${pythonVersion})`
+      `docs/content/changelog must document the current Python package version (${pythonVersion})`
     );
   }
 

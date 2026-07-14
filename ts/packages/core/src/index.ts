@@ -6,6 +6,7 @@ export { BaseNonAgenticProvider, BaseAgenticProvider } from './provider/BaseProv
 export type { BaseComposioProvider } from './provider/BaseProvider';
 export {
   dereferenceJsonSchema,
+  deduplicateJsonSchemaRequiredArrays,
   jsonSchemaToZodSchema,
   removeNonRequiredProperties,
 } from './utils/jsonSchema';
