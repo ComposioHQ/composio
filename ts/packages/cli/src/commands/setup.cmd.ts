@@ -71,6 +71,13 @@ const setupBaseCmd = Command.make(
         );
       }
       if (detected.length === 0) {
+        if (target === 'claude' || target === 'codex') {
+          return yield* Effect.fail(
+            new Error(
+              `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`
+            )
+          );
+        }
         if (!ifPresent || target !== 'auto') {
           return yield* Effect.fail(
             new Error(

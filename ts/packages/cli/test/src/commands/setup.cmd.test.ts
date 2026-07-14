@@ -669,6 +669,11 @@ describe('CLI: composio setup', () => {
           cli(['setup', '--target', 'claude', '--yes', '--if-present'])
         );
         expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          expect(Cause.pretty(exit.cause)).toContain(
+            'claude is not installed or not available on PATH'
+          );
+        }
       })
     );
   });
