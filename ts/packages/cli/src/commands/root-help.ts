@@ -874,7 +874,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description: 'Display your account information.',
   },
   setup: {
-    usage: 'composio setup [--target auto|claude|codex|all] [--yes]',
+    usage: 'composio setup [--target auto|claude|codex|all] [--yes] [--if-present]',
     description: 'Install plugins for supported agent hosts.',
     examples: [
       'composio setup',
@@ -884,6 +884,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     options: [
       { name: '--target <target>', description: 'auto, claude, codex, or all' },
       { name: '-y, --yes', description: 'Accept setup changes without prompting' },
+      {
+        name: '--if-present',
+        description: 'Exit successfully when automatic detection finds no supported host',
+      },
     ],
   },
   version: {

@@ -20,47 +20,59 @@ const yes = Options.boolean('yes').pipe(
   Options.withDescription('Accept setup changes without prompting')
 );
 
-const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
-  Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    yield* ui.intro('composio setup');
+const ifPresent = Options.boolean('if-present').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Exit successfully when automatic detection finds no supported host')
+);
 
-    if (!yes && !isInteractiveTerminal()) {
-      return yield* Effect.fail(
-        new Error('Non-interactive setup requires `--yes` to approve local changes.')
-      );
-    }
+const setupBaseCmd = Command.make(
+  'setup',
+  { target, yes, ifPresent },
+  ({ target, yes, ifPresent }) =>
+    Effect.gen(function* () {
+      const ui = yield* TerminalUI;
+      yield* ui.intro('composio setup');
 
-    const targets = yield* resolveSetupTargets(target);
-    if (!yes) {
-      const confirmed = yield* ui.confirm(`Install Composio for ${targets.join(' and ')}?`, {
-        defaultValue: true,
-      });
-      if (!confirmed) {
-        yield* ui.outro('Setup cancelled.');
+      if (!yes && !isInteractiveTerminal()) {
+        return yield* Effect.fail(
+          new Error('Non-interactive setup requires `--yes` to approve local changes.')
+        );
+      }
+
+      const targets = yield* resolveSetupTargets(target, { allowEmpty: ifPresent });
+      if (targets.length === 0) {
+        yield* ui.outro('No supported agent host detected; plugin setup skipped.');
         return;
       }
-    }
-
-    const results = yield* installSetupTargets(targets);
-    for (const result of results) {
-      let pluginMessage = `The Composio plugin for ${result.target} is already installed and enabled.`;
-      if (result.plugin_changed) {
-        pluginMessage = `Configured and enabled the Composio plugin for ${result.target}.`;
+      if (!yes) {
+        const confirmed = yield* ui.confirm(`Install Composio for ${targets.join(' and ')}?`, {
+          defaultValue: true,
+        });
+        if (!confirmed) {
+          yield* ui.outro('Setup cancelled.');
+          return;
+        }
       }
-      yield* ui.log.success(pluginMessage);
 
-      if (result.target === 'codex') {
-        yield* ui.log.success('The Codex plugin includes the composio-cli skill.');
-        continue;
-      }
-      if (!result.skill_changed) {
-        yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
-      }
-    }
+      const results = yield* installSetupTargets(targets);
+      for (const result of results) {
+        let pluginMessage = `The Composio plugin for ${result.target} is already installed and enabled.`;
+        if (result.plugin_changed) {
+          pluginMessage = `Configured and enabled the Composio plugin for ${result.target}.`;
+        }
+        yield* ui.log.success(pluginMessage);
 
-    yield* ui.outro('Composio setup complete.');
-  })
+        if (result.target === 'codex') {
+          yield* ui.log.success('The Codex plugin includes the composio-cli skill.');
+          continue;
+        }
+        if (!result.skill_changed) {
+          yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
+        }
+      }
+
+      yield* ui.outro('Composio setup complete.');
+    })
 );
 
 export const setupCmd = setupBaseCmd.pipe(

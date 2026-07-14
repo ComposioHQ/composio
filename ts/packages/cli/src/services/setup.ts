@@ -420,7 +420,10 @@ const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHos
   all: ['claude', 'codex'],
 };
 
-export const resolveSetupTargets = (target: SetupTarget) =>
+export const resolveSetupTargets = (
+  target: SetupTarget,
+  options: { readonly allowEmpty?: boolean } = {}
+) =>
   Effect.gen(function* () {
     const fixedTargets = FIXED_TARGETS[target];
     if (fixedTargets) return fixedTargets;
@@ -434,6 +437,7 @@ export const resolveSetupTargets = (target: SetupTarget) =>
     );
     const detected = statuses.filter(status => status.available).map(status => status.target);
     if (detected.length === 0) {
+      if (options.allowEmpty) return detected;
       return yield* Effect.fail(
         new Error(
           'No supported agent host was detected. Install Claude Code or Codex, or pass `--target claude|codex` after installing it.'

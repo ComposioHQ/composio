@@ -48,6 +48,7 @@ e2e(import.meta.url, {
     let claude: E2ETestResultWithFiles<'first-run.log' | 'second-run.log'>;
     let codex: E2ETestResultWithFiles<'first-run.log' | 'second-run.log'>;
     let unavailable: E2ETestResult;
+    let skippedUnavailable: E2ETestResult;
 
     beforeAll(async () => {
       // The shared E2E runner derives container names from Date.now(), so keep
@@ -61,6 +62,7 @@ e2e(import.meta.url, {
         files: ['first-run.log', 'second-run.log'],
       });
       unavailable = await runCmd('composio setup --target auto --yes');
+      skippedUnavailable = await runCmd('composio setup --target auto --yes --if-present');
     }, TIMEOUTS.FIXTURE);
 
     describe.each([
@@ -115,6 +117,12 @@ e2e(import.meta.url, {
         expect(unavailable.exitCode).not.toBe(0);
         expect(unavailable.stdout).toBe('');
         expect(unavailable.stderr).toContain('No supported agent host was detected');
+      });
+
+      it('can skip cleanly when invoked by an installer', () => {
+        expect(skippedUnavailable.exitCode).toBe(0);
+        expect(skippedUnavailable.stdout).toBe('');
+        expect(skippedUnavailable.stderr).toBe('');
       });
     });
   },

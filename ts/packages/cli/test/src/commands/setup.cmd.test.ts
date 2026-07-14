@@ -422,6 +422,15 @@ describe('CLI: composio setup', () => {
         expect(Exit.isFailure(exit)).toBe(true);
       })
     );
+
+    it.scoped('can skip automatic setup for installer integration', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--target', 'auto', '--yes', '--if-present'])
+        );
+        expect(Exit.isSuccess(exit)).toBe(true);
+      })
+    );
   });
 
   const conflict = makeFakeHosts({
