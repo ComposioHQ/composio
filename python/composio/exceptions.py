@@ -187,6 +187,10 @@ class ErrorUploadingFile(FileError):
     pass
 
 
+class BlockedInternalUrlError(FileError):
+    """Raised when a URL file input resolves to a non-public network address."""
+
+
 class SensitiveFilePathBlockedError(FileError):
     """Raised when a local file path is refused before upload (sensitive directory or credential-like name)."""
 
