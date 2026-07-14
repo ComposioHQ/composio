@@ -80,6 +80,16 @@ describe('install-skill', () => {
     ).toBe('/tmp/test-home/.openclaw/skills/composio-cli');
   });
 
+  it('prefers an explicit running release tag over channel discovery', async () => {
+    const releaseTag = '@composio/cli@0.3.0-beta.123';
+    const tag = await makeResolveEffect([], {
+      channel: 'stable',
+      releaseTag,
+    }).pipe(Effect.runPromise);
+
+    expect(tag).toBe(releaseTag);
+  });
+
   it('resolves the latest stable release when the stable channel is requested', async () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 

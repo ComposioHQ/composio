@@ -1,7 +1,7 @@
 import { FileSystem } from '@effect/platform';
 import { Effect } from 'effect';
 import path from 'node:path';
-import { inferSkillReleaseChannel, installSkill } from 'src/effects/install-skill';
+import { installSkill } from 'src/effects/install-skill';
 import { APP_VERSION } from 'src/constants';
 import { NodeOs } from './node-os';
 
@@ -22,7 +22,7 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
 
         yield* installSkill({
           target: 'claude',
-          channel: inferSkillReleaseChannel(APP_VERSION),
+          releaseTag: `@composio/cli@${APP_VERSION}`,
         });
         return true;
       }),
