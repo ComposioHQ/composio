@@ -17,7 +17,9 @@ cp fixtures/fake-agent-host.sh /tmp/bin/${host}
 chmod +x /tmp/bin/${host}
 ${
   host === 'claude'
-    ? `mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
+    ? `# Keep this suite focused on packaged plugin orchestration. The standalone
+# skill asset download and extraction path has deterministic HTTP/ZIP coverage.
+mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
 printf '%s\n' '# composio-cli' > /tmp/.agents/skills/composio-cli/SKILL.md
 printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
 ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli`
@@ -26,6 +28,8 @@ ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli`
 export HOST_STATE_DIR=/tmp/host-state
 export PATH=/tmp/bin:$PATH
 composio setup --target ${host} --yes
+cp /tmp/host-state/commands.log first-run.log
+: > /tmp/host-state/commands.log
 composio setup --target ${host} --yes
 ${
   host === 'claude'
@@ -33,7 +37,7 @@ ${
 test -r /tmp/.claude/skills/composio-cli/SKILL.md`
     : ''
 }
-cp /tmp/host-state/commands.log commands.log
+cp /tmp/host-state/commands.log second-run.log
 `;
 
 e2e(import.meta.url, {
@@ -41,8 +45,8 @@ e2e(import.meta.url, {
     cli: ['current'],
   },
   defineTests: ({ runCmd }) => {
-    let claude: E2ETestResultWithFiles<'commands.log'>;
-    let codex: E2ETestResultWithFiles<'commands.log'>;
+    let claude: E2ETestResultWithFiles<'first-run.log' | 'second-run.log'>;
+    let codex: E2ETestResultWithFiles<'first-run.log' | 'second-run.log'>;
     let unavailable: E2ETestResult;
 
     beforeAll(async () => {
@@ -50,11 +54,11 @@ e2e(import.meta.url, {
       // these fresh-container cases sequential to avoid same-millisecond names.
       claude = await runCmd({
         command: setupFixture('claude'),
-        files: ['commands.log'],
+        files: ['first-run.log', 'second-run.log'],
       });
       codex = await runCmd({
         command: setupFixture('codex'),
-        files: ['commands.log'],
+        files: ['first-run.log', 'second-run.log'],
       });
       unavailable = await runCmd('composio setup --target auto --yes');
     }, TIMEOUTS.FIXTURE);
@@ -66,6 +70,7 @@ e2e(import.meta.url, {
         marketplaceCommand:
           'claude plugin marketplace add https://github.com/ComposioHQ/composio-plugin-cc.git --scope user',
         installCommand: 'claude plugin install composio@composio --scope user',
+        additionalMutationCommands: ['claude plugin enable composio@composio --scope user'],
       },
       {
         host: 'codex' as const,
@@ -73,19 +78,37 @@ e2e(import.meta.url, {
         marketplaceCommand:
           'codex plugin marketplace add https://github.com/ComposioHQ/composio-plugin-openai.git --json',
         installCommand: 'codex plugin add composio@composio --json',
+        additionalMutationCommands: [],
       },
-    ])('$host setup', ({ result, marketplaceCommand, installCommand }) => {
-      it('installs once and is idempotent', () => {
-        const execution = result();
-        expect(execution.exitCode).toBe(0);
-        expect(execution.stdout).toBe('');
-        expect(execution.stderr).toBe('');
+    ])(
+      '$host setup',
+      ({ result, marketplaceCommand, installCommand, additionalMutationCommands }) => {
+        it('configures the plugin on the first run and is idempotent', () => {
+          const execution = result();
+          expect(execution.exitCode).toBe(0);
+          expect(execution.stdout).toBe('');
+          expect(execution.stderr).toBe('');
 
-        const commands = execution.files['commands.log'].trim().split('\n');
-        expect(commands.filter(command => command === marketplaceCommand)).toHaveLength(1);
-        expect(commands.filter(command => command === installCommand)).toHaveLength(1);
-      });
-    });
+          const firstRunCommands = execution.files['first-run.log'].trim().split('\n');
+          expect(firstRunCommands.filter(command => command === marketplaceCommand)).toHaveLength(
+            1
+          );
+          expect(firstRunCommands.filter(command => command === installCommand)).toHaveLength(1);
+
+          const secondRunCommands = execution.files['second-run.log'].trim().split('\n');
+          const mutationCommands = [
+            marketplaceCommand,
+            installCommand,
+            ...additionalMutationCommands,
+          ];
+          expect(
+            secondRunCommands.filter(command =>
+              mutationCommands.some(mutation => mutation === command)
+            )
+          ).toEqual([]);
+        });
+      }
+    );
 
     describe('automatic host detection', () => {
       it('fails clearly when neither supported host is installed', () => {
