@@ -35,6 +35,9 @@ case "$host:$command" in
   "claude:plugin enable composio@composio --scope user")
     touch "$state_dir/claude-plugin"
     ;;
+  "claude:plugin uninstall composio@composio --scope user --yes")
+    rm -f "$state_dir/claude-plugin"
+    ;;
   "codex:--version")
     printf '%s\n' 'codex-cli 0.144.1'
     ;;
@@ -57,6 +60,9 @@ case "$host:$command" in
     ;;
   "codex:plugin add composio@composio --json")
     touch "$state_dir/codex-plugin"
+    ;;
+  "codex:plugin remove composio@composio --json")
+    rm -f "$state_dir/codex-plugin"
     ;;
   *)
     printf 'Unexpected fake host command: %s %s\n' "$host" "$command" >&2

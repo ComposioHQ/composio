@@ -100,6 +100,11 @@ const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
   return new SetupSkillInstaller({
     isClaudeSkillReady: Effect.sync(() => ready),
     ensureClaudeSkill: ensureClaudeSkill(),
+    removeClaudeSkill: Effect.sync(() => {
+      const changed = ready;
+      ready = false;
+      return changed;
+    }),
   });
 };
 
@@ -165,6 +170,14 @@ const makeFakeHosts = (
     }
     if (!options.noOp && command.includes('plugin marketplace add')) {
       state[host].marketplace = 'canonical';
+    }
+    if (
+      !options.noOp &&
+      (command === 'claude plugin uninstall composio@composio --scope user --yes' ||
+        command === 'codex plugin remove composio@composio --json')
+    ) {
+      state[host].plugin = 'missing';
+      return {};
     }
     if (
       !options.noOp &&
@@ -255,6 +268,11 @@ describe('CLI: composio setup', () => {
       staleSkillRepaired = true;
       staleSkillReady = true;
       return true;
+    }),
+    removeClaudeSkill: Effect.sync(() => {
+      const changed = staleSkillReady;
+      staleSkillReady = false;
+      return changed;
     }),
   });
   layer(
@@ -405,6 +423,142 @@ describe('CLI: composio setup', () => {
           marketplace: 'canonical',
           plugin: 'enabled',
         });
+      })
+    );
+  });
+
+  const uninstallBoth = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+    codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: uninstallBoth.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('uninstall from both hosts', it => {
+    it.scoped('uses native removal commands and is idempotent', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
+        yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
+
+        expect(uninstallBoth.commands).toContainEqual([
+          'claude',
+          'plugin',
+          'uninstall',
+          'composio@composio',
+          '--scope',
+          'user',
+          '--yes',
+        ]);
+        expect(uninstallBoth.commands).toContainEqual([
+          'codex',
+          'plugin',
+          'remove',
+          'composio@composio',
+          '--json',
+        ]);
+        expect(
+          uninstallBoth.commands.filter(
+            parts =>
+              parts.join(' ') === 'claude plugin uninstall composio@composio --scope user --yes'
+          )
+        ).toHaveLength(1);
+        expect(
+          uninstallBoth.commands.filter(
+            parts => parts.join(' ') === 'codex plugin remove composio@composio --json'
+          )
+        ).toHaveLength(1);
+        expect(uninstallBoth.state.claude.plugin).toBe('missing');
+        expect(uninstallBoth.state.codex.plugin).toBe('missing');
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Claude Code.');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Codex.');
+        expect(output).not.toContain('skill');
+      })
+    );
+  });
+
+  const uninstallMissing = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'missing' },
+    codex: { available: true, marketplace: 'canonical', plugin: 'missing' },
+  });
+  layer(TestLive({ commandRunner: uninstallMissing.runner }))(
+    'uninstall when plugins are absent',
+    it => {
+      it.scoped('reports the idempotent state without requiring approval', () =>
+        Effect.gen(function* () {
+          yield* cli(['setup', '--uninstall', '--target', 'all']);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('The Composio plugin for Claude Code is not installed.');
+          expect(output).toContain('The Composio plugin for Codex is not installed.');
+        })
+      );
+    }
+  );
+
+  const nonInteractiveUninstall = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: nonInteractiveUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('non-interactive uninstall approval', it => {
+    it.scoped('requires --yes before removing an installed plugin', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['setup', '--uninstall', '--target', 'claude']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(nonInteractiveUninstall.commands.some(parts => parts.includes('uninstall'))).toBe(
+          false
+        );
+      })
+    );
+  });
+
+  const conflictingUninstall = makeFakeHosts({
+    claude: { available: true, marketplace: 'conflict', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: conflictingUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('uninstall with a conflicting marketplace', it => {
+    it.scoped('removes the installed plugin without replacing the marketplace', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+
+        expect(conflictingUninstall.state.claude.plugin).toBe('missing');
+        expect(conflictingUninstall.state.claude.marketplace).toBe('conflict');
+      })
+    );
+  });
+
+  const failedUninstall = makeFakeHosts(
+    { claude: { available: true, marketplace: 'canonical', plugin: 'enabled' } },
+    { failOn: 'plugin uninstall' }
+  );
+  layer(
+    TestLive({
+      commandRunner: failedUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('native uninstall failure', it => {
+    it.scoped('fails without reporting the plugin as removed', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--uninstall', '--target', 'claude', '--yes'])
+        );
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failedUninstall.state.claude.plugin).toBe('enabled');
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).not.toContain('Successfully uninstalled');
       })
     );
   });

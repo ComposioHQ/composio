@@ -31,10 +31,12 @@ composio setup --target ${host} --yes
 cp /tmp/host-state/commands.log first-run.log
 : > /tmp/host-state/commands.log
 composio setup --target ${host} --yes
+composio setup --uninstall --target ${host} --yes
+composio setup --uninstall --target ${host} --yes
 ${
   host === 'claude'
-    ? `test -L /tmp/.claude/skills/composio-cli
-test -r /tmp/.claude/skills/composio-cli/SKILL.md`
+    ? `test ! -L /tmp/.claude/skills/composio-cli
+test ! -e /tmp/.agents/skills/composio-cli`
     : ''
 }
 cp /tmp/host-state/commands.log second-run.log
@@ -49,6 +51,7 @@ e2e(import.meta.url, {
     let codex: E2ETestResultWithFiles<'first-run.log' | 'second-run.log'>;
     let unavailable: E2ETestResult;
     let skippedUnavailable: E2ETestResult;
+    let skippedUnavailableUninstall: E2ETestResult;
 
     beforeAll(async () => {
       // The shared E2E runner derives container names from Date.now(), so keep
@@ -63,6 +66,9 @@ e2e(import.meta.url, {
       });
       unavailable = await runCmd('composio setup --target auto --yes');
       skippedUnavailable = await runCmd('composio setup --target auto --yes --if-present');
+      skippedUnavailableUninstall = await runCmd(
+        'composio setup --uninstall --target auto --yes --if-present'
+      );
     }, TIMEOUTS.FIXTURE);
 
     describe.each([
@@ -73,6 +79,7 @@ e2e(import.meta.url, {
           'claude plugin marketplace add https://github.com/ComposioHQ/composio-plugin-cc.git --scope user',
         installCommand: 'claude plugin install composio@composio --scope user',
         additionalMutationCommands: ['claude plugin enable composio@composio --scope user'],
+        uninstallCommand: 'claude plugin uninstall composio@composio --scope user --yes',
       },
       {
         host: 'codex' as const,
@@ -81,11 +88,18 @@ e2e(import.meta.url, {
           'codex plugin marketplace add https://github.com/ComposioHQ/composio-plugin-openai.git --json',
         installCommand: 'codex plugin add composio@composio --json',
         additionalMutationCommands: [],
+        uninstallCommand: 'codex plugin remove composio@composio --json',
       },
     ])(
       '$host setup',
-      ({ result, marketplaceCommand, installCommand, additionalMutationCommands }) => {
-        it('configures the plugin on the first run and is idempotent', () => {
+      ({
+        result,
+        marketplaceCommand,
+        installCommand,
+        additionalMutationCommands,
+        uninstallCommand,
+      }) => {
+        it('installs once and uninstalls once with idempotent reruns', () => {
           const execution = result();
           expect(execution.exitCode).toBe(0);
           expect(execution.stdout).toBe('');
@@ -108,6 +122,7 @@ e2e(import.meta.url, {
               mutationCommands.some(mutation => mutation === command)
             )
           ).toEqual([]);
+          expect(secondRunCommands.filter(command => command === uninstallCommand)).toHaveLength(1);
         });
       }
     );
@@ -123,6 +138,12 @@ e2e(import.meta.url, {
         expect(skippedUnavailable.exitCode).toBe(0);
         expect(skippedUnavailable.stdout).toBe('');
         expect(skippedUnavailable.stderr).toBe('');
+      });
+
+      it('can skip uninstall cleanly when no host is present', () => {
+        expect(skippedUnavailableUninstall.exitCode).toBe(0);
+        expect(skippedUnavailableUninstall.stdout).toBe('');
+        expect(skippedUnavailableUninstall.stderr).toBe('');
       });
     });
   },

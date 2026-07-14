@@ -7,6 +7,7 @@ import {
   isSetupPluginReady,
   isSetupReady,
   SETUP_TARGETS,
+  uninstallSetupTargets,
   type AgentHost,
   type SetupTarget,
 } from 'src/services/setup';
@@ -29,6 +30,11 @@ const ifPresent = Options.boolean('if-present').pipe(
   Options.withDescription('Exit successfully when automatic detection finds no supported host')
 );
 
+const uninstall = Options.boolean('uninstall').pipe(
+  Options.withDefault(false),
+  Options.withDescription('Uninstall Composio plugins instead of installing them')
+);
+
 const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
   claude: 'Claude Code',
   codex: 'Codex',
@@ -39,11 +45,11 @@ const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
 
 const setupBaseCmd = Command.make(
   'setup',
-  { target, yes, ifPresent },
-  ({ target, yes, ifPresent }) =>
+  { target, yes, ifPresent, uninstall },
+  ({ target, yes, ifPresent, uninstall }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
-      yield* ui.intro('composio setup');
+      yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
       const detections = yield* detectSetupTargets(target);
       const detected = detections.filter(result => result.available).map(result => result.target);
@@ -61,15 +67,61 @@ const setupBaseCmd = Command.make(
         if (!ifPresent || target !== 'auto') {
           return yield* Effect.fail(
             new Error(
-              'No supported agent host was detected. Install Claude Code or Codex, then rerun `composio setup`.'
+              `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`
             )
           );
         }
-        yield* ui.outro('No supported agent host detected; plugin setup skipped.');
+        yield* ui.outro(
+          `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
+        );
         return;
       }
 
-      const inspected = yield* inspectSetupTargets(detections);
+      const inspected = yield* inspectSetupTargets(detections, {
+        allowMarketplaceConflict: uninstall,
+      });
+      if (uninstall) {
+        const installed = inspected.filter(status => status.plugin_installed);
+        const notInstalled = inspected.filter(status => !status.plugin_installed);
+
+        for (const status of installed) {
+          yield* ui.log.success(
+            `The Composio plugin for ${TARGET_LABELS[status.target]} is installed.`
+          );
+        }
+        for (const status of notInstalled) {
+          yield* ui.log.info(
+            `The Composio plugin for ${TARGET_LABELS[status.target]} is not installed.`
+          );
+        }
+
+        if (!yes && installed.length > 0) {
+          if (!isInteractiveTerminal()) {
+            return yield* Effect.fail(
+              new Error('Non-interactive uninstall requires `--yes` to approve local changes.')
+            );
+          }
+          const confirmed = yield* ui.confirm(
+            `Uninstall the Composio plugin for ${formatTargets(installed.map(status => status.target))}?`,
+            { defaultValue: false }
+          );
+          if (!confirmed) {
+            yield* ui.outro('Uninstall cancelled.');
+            return;
+          }
+        }
+
+        const results = yield* uninstallSetupTargets(inspected);
+        for (const result of results) {
+          if (!result.plugin_changed) continue;
+          yield* ui.log.success(
+            `Successfully uninstalled the Composio plugin for ${TARGET_LABELS[result.target]}.`
+          );
+        }
+        yield* ui.outro('Composio plugin uninstall complete.');
+        return;
+      }
+
       for (const status of inspected.filter(isSetupPluginReady)) {
         yield* ui.log.success(
           `The Composio plugin for ${TARGET_LABELS[status.target]} is already installed and enabled.`
@@ -116,5 +168,5 @@ const setupBaseCmd = Command.make(
 );
 
 export const setupCmd = setupBaseCmd.pipe(
-  Command.withDescription('Install Composio plugins for supported agent hosts.')
+  Command.withDescription('Install or uninstall Composio plugins for supported agent hosts.')
 );
