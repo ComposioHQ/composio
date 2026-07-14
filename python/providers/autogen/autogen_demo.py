@@ -1,7 +1,7 @@
 import os
 
 import dotenv
-from autogen import AssistantAgent, UserProxyAgent
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
 from composio_autogen import AutogenProvider
 
 from composio import Composio
@@ -20,11 +20,13 @@ def main():
     chatbot = AssistantAgent(
         "chatbot",
         system_message="Reply TERMINATE when the task is done or when user's content is empty",
-        llm_config={
-            "config_list": [
-                {"model": "gpt-5", "api_key": os.environ["OPENAI_API_KEY"]},
-            ]
-        },
+        llm_config=LLMConfig(
+            {
+                "api_type": "openai",
+                "model": "gpt-5",
+                "api_key": os.environ["OPENAI_API_KEY"],
+            }
+        ),
     )
 
     # Create a user proxy agent
