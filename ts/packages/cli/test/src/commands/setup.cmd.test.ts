@@ -283,9 +283,13 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: staleSkillInstaller,
     })
   )('existing Claude plugin with stale skill', it => {
-    it.scoped('repairs the skill silently without requiring plugin approval', () =>
+    it.scoped('requires approval, then repairs the skill without extra output', () =>
       Effect.gen(function* () {
-        yield* cli(['setup', '--target', 'claude']);
+        const withoutApproval = yield* Effect.exit(cli(['setup', '--target', 'claude']));
+        expect(Exit.isFailure(withoutApproval)).toBe(true);
+        expect(staleSkillRepaired).toBe(false);
+
+        yield* cli(['setup', '--target', 'claude', '--yes']);
 
         expect(staleSkillRepaired).toBe(true);
         const output = (yield* MockConsole.getLines()).join('\n');

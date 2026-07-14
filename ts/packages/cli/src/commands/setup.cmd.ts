@@ -157,14 +157,17 @@ const setupBaseCmd = Command.make(
       }
 
       const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
-      if (!yes && pendingPlugins.length > 0) {
+      if (!yes) {
         if (!isInteractiveTerminal()) {
           return yield* Effect.fail(
             new Error('Non-interactive setup requires `--yes` to approve local changes.')
           );
         }
 
-        const prompt = `Install the Composio plugin for ${formatTargets(pendingPlugins.map(status => status.target))}?`;
+        const prompt =
+          pendingPlugins.length === pending.length
+            ? `Install the Composio plugin for ${formatTargets(pendingPlugins.map(status => status.target))}?`
+            : `Finish Composio setup for ${formatTargets(pending.map(status => status.target))}?`;
         const confirmed = yield* ui.confirm(prompt, { defaultValue: true });
         if (!confirmed) {
           yield* ui.outro('Setup cancelled.');
