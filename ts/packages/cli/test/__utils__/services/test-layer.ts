@@ -1,7 +1,6 @@
-import path from 'node:path';
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem } from '@effect/platform';
+import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -1317,14 +1316,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     }
 
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
-    const realFixturePath = path.resolve(
-      new URL('.', import.meta.url).pathname,
-      '..',
-      '..',
-      '__fixtures__',
-      fixture
-    );
+    const fixtureRoot = yield* path.fromFileUrl(new URL('.', import.meta.url));
+    const realFixturePath = path.resolve(fixtureRoot, '..', '..', '__fixtures__', fixture);
     const tmpFixturesPath = path.join(tempDir, 'test', '__fixtures__', fixture);
 
     yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
@@ -1360,10 +1355,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
 
     // Break symlinks in node_modules to isolate test from real packages
     const nodeModulesPath = path.join(tmpFixturesPath, 'node_modules');
-    yield* breakSymlinksInNodeModules(fs, nodeModulesPath);
+    yield* breakSymlinksInNodeModules(fs, path, nodeModulesPath);
 
     return tmpFixturesPath;
-  }).pipe(Effect.provide(BunFileSystem.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 }
 
 /**
@@ -1373,6 +1368,7 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
  */
 function breakSymlinksInNodeModules(
   fs: FileSystem.FileSystem,
+  path: Path.Path,
   nodeModulesPath: string
 ): Effect.Effect<void, never, never> {
   // Helper: break a symlink by replacing it with a copy of its target

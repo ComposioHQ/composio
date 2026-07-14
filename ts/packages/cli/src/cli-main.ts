@@ -3,7 +3,7 @@ import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'ef
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
-import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
+import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { buildRootCommand, runWithConfig } from 'src/commands';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
@@ -97,7 +97,7 @@ export const ProjectContextLive = Layer.provide(
 
 export const SetupSkillInstallerLive = Layer.provide(
   SetupSkillInstaller.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 const layers = Layer.mergeAll(

@@ -1,5 +1,4 @@
-import path from 'node:path';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect } from 'effect';
 import {
   installSkill,
@@ -16,10 +15,15 @@ export const resolveSetupSkillReleaseTag = (
   fallbackVersion = APP_VERSION
 ): string => readInstalledReleaseTag(execPath) ?? `@composio/cli@${fallbackVersion}`;
 
-const checkClaudeSkillCurrent = (fs: FileSystem.FileSystem, home: string, releaseTag: string) =>
+const checkClaudeSkillCurrent = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  home: string,
+  releaseTag: string
+) =>
   Effect.gen(function* () {
     const skillName = resolveInstalledSkillName();
-    const target = resolveTargetSkillPath({ home, skillName, target: 'claude' });
+    const target = resolveTargetSkillPath({ home, path, skillName, target: 'claude' });
     const installedReleaseTag = yield* fs
       .readFileString(path.join(target, SKILL_RELEASE_TAG_FILENAME), 'utf8')
       .pipe(
@@ -34,15 +38,21 @@ const checkClaudeSkillCurrent = (fs: FileSystem.FileSystem, home: string, releas
   });
 
 export const isClaudeSkillCurrent = (home: string, releaseTag: string) =>
-  Effect.flatMap(FileSystem.FileSystem, fs => checkClaudeSkillCurrent(fs, home, releaseTag));
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    return yield* checkClaudeSkillCurrent(fs, path, home, releaseTag);
+  });
 
 export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
   'services/SetupSkillInstaller',
   {
     effect: Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const os = yield* NodeOs;
-      const isCurrent = (releaseTag: string) => checkClaudeSkillCurrent(fs, os.homedir, releaseTag);
+      const isCurrent = (releaseTag: string) =>
+        checkClaudeSkillCurrent(fs, path, os.homedir, releaseTag);
 
       return {
         isClaudeSkillReady: isCurrent(resolveSetupSkillReleaseTag()),
