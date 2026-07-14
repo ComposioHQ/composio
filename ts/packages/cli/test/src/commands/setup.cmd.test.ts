@@ -4,7 +4,7 @@ import { Cause, Effect, Exit, Fiber, TestClock } from 'effect';
 import { afterEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { cli, TestLive } from 'test/__utils__';
+import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 type AgentHost = 'claude' | 'codex';
 type MarketplaceState = 'missing' | 'canonical' | 'conflict';
@@ -322,12 +322,21 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('automatic setup with both hosts', it => {
-    it.scoped('selects both detected hosts', () =>
+    it.scoped('selects both detected hosts and reports only plugin status', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto', '--yes']);
 
         expect(autoBoth.commands.some(parts => parts[0] === 'claude')).toBe(true);
         expect(autoBoth.commands.some(parts => parts[0] === 'codex')).toBe(true);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain(
+          'The Composio plugin for claude is already installed and enabled.'
+        );
+        expect(output).toContain(
+          'The Composio plugin for codex is already installed and enabled.'
+        );
+        expect(output).not.toContain('composio-cli skill');
       })
     );
   });

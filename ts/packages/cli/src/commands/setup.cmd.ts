@@ -61,14 +61,6 @@ const setupBaseCmd = Command.make(
           pluginMessage = `Configured and enabled the Composio plugin for ${result.target}.`;
         }
         yield* ui.log.success(pluginMessage);
-
-        if (result.target === 'codex') {
-          yield* ui.log.success('The Codex plugin includes the composio-cli skill.');
-          continue;
-        }
-        if (!result.skill_changed) {
-          yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
-        }
       }
 
       yield* ui.outro('Composio setup complete.');
