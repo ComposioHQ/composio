@@ -21,7 +21,7 @@ case "$host:$command" in
     ;;
   "claude:plugin list --json")
     if [ -f "$state_dir/claude-plugin" ]; then
-      printf '%s\n' '[{"id":"composio@composio","installed":true,"enabled":true}]'
+      printf '%s\n' '[{"id":"composio@composio","scope":"user","enabled":true}]'
     else
       printf '%s\n' '[]'
     fi
@@ -32,7 +32,7 @@ case "$host:$command" in
   "claude:plugin install composio@composio --scope user")
     touch "$state_dir/claude-plugin"
     ;;
-  "claude:plugin enable composio@composio")
+  "claude:plugin enable composio@composio --scope user")
     touch "$state_dir/claude-plugin"
     ;;
   "codex:--version")

@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
@@ -29,12 +29,14 @@ describe('SetupSkillInstaller', () => {
     const home = tempy.temporaryDirectory();
     const target = path.join(home, '.claude', 'skills', 'composio-cli');
     const skillDir = path.join(home, '.agents', 'skills', 'composio-cli');
-    mkdirSync(target, { recursive: true });
     mkdirSync(skillDir, { recursive: true });
+    mkdirSync(path.dirname(target), { recursive: true });
+    symlinkSync(path.relative(path.dirname(target), skillDir), target);
     writeFileSync(
       path.join(skillDir, SKILL_RELEASE_TAG_FILENAME),
       '@composio/cli@0.2.20-beta.42\n'
     );
+    writeFileSync(path.join(skillDir, 'SKILL.md'), '# composio-cli\n');
 
     expect(isClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.42')).toBe(true);
     expect(isClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.43')).toBe(false);
@@ -43,6 +45,15 @@ describe('SetupSkillInstaller', () => {
   it('treats an unversioned existing Claude skill as stale', () => {
     const home = tempy.temporaryDirectory();
     mkdirSync(path.join(home, '.claude', 'skills', 'composio-cli'), { recursive: true });
+
+    expect(isClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
+  });
+
+  it('treats a release marker without a readable skill as stale', () => {
+    const home = tempy.temporaryDirectory();
+    const target = path.join(home, '.claude', 'skills', 'composio-cli');
+    mkdirSync(target, { recursive: true });
+    writeFileSync(path.join(target, SKILL_RELEASE_TAG_FILENAME), '@composio/cli@0.3.0\n');
 
     expect(isClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
   });

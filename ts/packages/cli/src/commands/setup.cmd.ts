@@ -7,6 +7,7 @@ import {
   type SetupTarget,
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { isInteractiveTerminal } from 'src/utils/stdio';
 
 const target = Options.choice('target', SETUP_TARGETS).pipe(
   Options.withDefault('auto' as SetupTarget),
@@ -24,6 +25,12 @@ const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
     const ui = yield* TerminalUI;
     yield* ui.intro('composio setup');
 
+    if (!yes && !isInteractiveTerminal()) {
+      return yield* Effect.fail(
+        new Error('Non-interactive setup requires `--yes` to approve local changes.')
+      );
+    }
+
     const targets = yield* resolveSetupTargets(target);
     if (!yes) {
       const confirmed = yield* ui.confirm(`Install Composio for ${targets.join(' and ')}?`, {
@@ -37,26 +44,21 @@ const setupBaseCmd = Command.make('setup', { target, yes }, ({ target, yes }) =>
 
     const results = yield* installSetupTargets(targets);
     for (const result of results) {
-      yield* ui.log.success(
-        result.plugin_changed
-          ? `Configured and enabled the Composio plugin for ${result.target}.`
-          : `The Composio plugin for ${result.target} is already installed and enabled.`
-      );
-      if (result.target === 'claude') {
-        if (!result.skill_changed) {
-          yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
-        }
-      } else {
+      let pluginMessage = `The Composio plugin for ${result.target} is already installed and enabled.`;
+      if (result.plugin_changed) {
+        pluginMessage = `Configured and enabled the Composio plugin for ${result.target}.`;
+      }
+      yield* ui.log.success(pluginMessage);
+
+      if (result.target === 'codex') {
         yield* ui.log.success('The Codex plugin includes the composio-cli skill.');
+        continue;
+      }
+      if (!result.skill_changed) {
+        yield* ui.log.success('The composio-cli skill for Claude Code is already installed.');
       }
     }
 
-    yield* ui.output(
-      JSON.stringify({
-        success: true,
-        targets: results,
-      })
-    );
     yield* ui.outro('Composio setup complete.');
   })
 );

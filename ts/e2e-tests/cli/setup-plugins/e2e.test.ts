@@ -17,14 +17,22 @@ cp fixtures/fake-agent-host.sh /tmp/bin/${host}
 chmod +x /tmp/bin/${host}
 ${
   host === 'claude'
-    ? `mkdir -p /tmp/.claude/skills/composio-cli /tmp/.agents/skills/composio-cli
-printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag`
+    ? `mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
+printf '%s\n' '# composio-cli' > /tmp/.agents/skills/composio-cli/SKILL.md
+printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
+ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli`
     : ''
 }
 export HOST_STATE_DIR=/tmp/host-state
 export PATH=/tmp/bin:$PATH
-composio setup --target ${host} --yes > first.json
-composio setup --target ${host} --yes > second.json
+composio setup --target ${host} --yes
+composio setup --target ${host} --yes
+${
+  host === 'claude'
+    ? `test -L /tmp/.claude/skills/composio-cli
+test -r /tmp/.claude/skills/composio-cli/SKILL.md`
+    : ''
+}
 cp /tmp/host-state/commands.log commands.log
 `;
 
@@ -33,8 +41,8 @@ e2e(import.meta.url, {
     cli: ['current'],
   },
   defineTests: ({ runCmd }) => {
-    let claude: E2ETestResultWithFiles<'first.json' | 'second.json' | 'commands.log'>;
-    let codex: E2ETestResultWithFiles<'first.json' | 'second.json' | 'commands.log'>;
+    let claude: E2ETestResultWithFiles<'commands.log'>;
+    let codex: E2ETestResultWithFiles<'commands.log'>;
     let unavailable: E2ETestResult;
 
     beforeAll(async () => {
@@ -42,11 +50,11 @@ e2e(import.meta.url, {
       // these fresh-container cases sequential to avoid same-millisecond names.
       claude = await runCmd({
         command: setupFixture('claude'),
-        files: ['first.json', 'second.json', 'commands.log'],
+        files: ['commands.log'],
       });
       codex = await runCmd({
         command: setupFixture('codex'),
-        files: ['first.json', 'second.json', 'commands.log'],
+        files: ['commands.log'],
       });
       unavailable = await runCmd('composio setup --target auto --yes');
     }, TIMEOUTS.FIXTURE);
@@ -66,25 +74,13 @@ e2e(import.meta.url, {
           'codex plugin marketplace add https://github.com/ComposioHQ/composio-plugin-openai.git --json',
         installCommand: 'codex plugin add composio@composio --json',
       },
-    ])('$host setup', ({ host, result, marketplaceCommand, installCommand }) => {
-      it('installs once, is idempotent, and reports ready status', () => {
+    ])('$host setup', ({ result, marketplaceCommand, installCommand }) => {
+      it('installs once and is idempotent', () => {
         const execution = result();
         expect(execution.exitCode).toBe(0);
         expect(execution.stdout).toBe('');
         expect(execution.stderr).toBe('');
 
-        const first = JSON.parse(execution.files['first.json']) as {
-          success: boolean;
-          targets: Array<{ target: string; changed: boolean; cli_skill_ready: boolean }>;
-        };
-        const second = JSON.parse(execution.files['second.json']) as typeof first;
-        expect(first.success).toBe(true);
-        expect(first.targets).toContainEqual(
-          expect.objectContaining({ target: host, changed: true, cli_skill_ready: true })
-        );
-        expect(second.targets).toContainEqual(
-          expect.objectContaining({ target: host, changed: false, cli_skill_ready: true })
-        );
         const commands = execution.files['commands.log'].trim().split('\n');
         expect(commands.filter(command => command === marketplaceCommand)).toHaveLength(1);
         expect(commands.filter(command => command === installCommand)).toHaveLength(1);

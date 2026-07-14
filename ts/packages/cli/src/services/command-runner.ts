@@ -1,5 +1,5 @@
 import { Command } from '@effect/platform';
-import { Effect, Stream } from 'effect';
+import { Effect, Stream, String } from 'effect';
 
 export interface CommandResult {
   readonly exitCode: number;
@@ -8,7 +8,7 @@ export interface CommandResult {
 }
 
 const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
-  Stream.runFold(stream, '', (output, chunk) => output + new TextDecoder().decode(chunk));
+  stream.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat));
 
 export class CommandRunner extends Effect.Service<CommandRunner>()('services/CommandRunner', {
   sync: () => ({
