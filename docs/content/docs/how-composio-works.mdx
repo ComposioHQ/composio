@@ -16,8 +16,7 @@ Create a session for a user, then read its tools formatted for your framework. T
 session = composio.create(user_id="user_123")
 
 tools = session.tools()
-
-````
+```
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -27,8 +26,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.sessions.create("user_123");
 
 const tools = await session.tools();
-````
-
+```
 </Tab>
 </Tabs>
 
@@ -53,9 +51,10 @@ A user is an identifier from your app. Composio stores connections under that ID
 
 <Accordions>
   <Accordion title="userID best practices">
-    - **Recommended:** database UUID or primary key (`user.id`) - **Acceptable:** unique username
-    (`user.username`) - **Avoid:** email addresses (they can change) - **Never:** `default` in
-    production (it exposes other users' data)
+    - **Recommended:** database UUID or primary key (`user.id`)
+    - **Acceptable:** unique username (`user.username`)
+    - **Avoid:** email addresses (they can change)
+    - **Never:** `default` in production (it exposes other users' data)
   </Accordion>
 </Accordions>
 
