@@ -1,5 +1,7 @@
 import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { BunFileSystem } from '@effect/platform-bun';
+import { Effect } from 'effect';
 import { describe, expect, it } from 'vitest';
 import * as tempy from 'tempy';
 import { SKILL_RELEASE_TAG_FILENAME } from 'src/effects/install-skill';
@@ -7,6 +9,12 @@ import {
   isClaudeSkillCurrent,
   resolveSetupSkillReleaseTag,
 } from 'src/services/setup-skill-installer';
+
+const runIsClaudeSkillCurrent = (home: string, releaseTag: string) =>
+  isClaudeSkillCurrent(home, releaseTag).pipe(
+    Effect.provide(BunFileSystem.layer),
+    Effect.runPromise
+  );
 
 describe('SetupSkillInstaller', () => {
   it('uses the packaged CLI release tag', () => {
@@ -25,7 +33,7 @@ describe('SetupSkillInstaller', () => {
     );
   });
 
-  it('only accepts a Claude skill installed from the running CLI release', () => {
+  it('only accepts a Claude skill installed from the running CLI release', async () => {
     const home = tempy.temporaryDirectory();
     const target = path.join(home, '.claude', 'skills', 'composio-cli');
     const skillDir = path.join(home, '.agents', 'skills', 'composio-cli');
@@ -38,23 +46,23 @@ describe('SetupSkillInstaller', () => {
     );
     writeFileSync(path.join(skillDir, 'SKILL.md'), '# composio-cli\n');
 
-    expect(isClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.42')).toBe(true);
-    expect(isClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.43')).toBe(false);
+    expect(await runIsClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.42')).toBe(true);
+    expect(await runIsClaudeSkillCurrent(home, '@composio/cli@0.2.20-beta.43')).toBe(false);
   });
 
-  it('treats an unversioned existing Claude skill as stale', () => {
+  it('treats an unversioned existing Claude skill as stale', async () => {
     const home = tempy.temporaryDirectory();
     mkdirSync(path.join(home, '.claude', 'skills', 'composio-cli'), { recursive: true });
 
-    expect(isClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
+    expect(await runIsClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
   });
 
-  it('treats a release marker without a readable skill as stale', () => {
+  it('treats a release marker without a readable skill as stale', async () => {
     const home = tempy.temporaryDirectory();
     const target = path.join(home, '.claude', 'skills', 'composio-cli');
     mkdirSync(target, { recursive: true });
     writeFileSync(path.join(target, SKILL_RELEASE_TAG_FILENAME), '@composio/cli@0.3.0\n');
 
-    expect(isClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
+    expect(await runIsClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
   });
 });

@@ -95,6 +95,11 @@ export const ProjectContextLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
 ) satisfies RequiredLayer;
 
+export const SetupSkillInstallerLive = Layer.provide(
+  SetupSkillInstaller.Default,
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -109,7 +114,7 @@ const layers = Layer.mergeAll(
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,
   CommandRunner.Default,
-  SetupSkillInstaller.Default,
+  SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
   BunContext.layer,
