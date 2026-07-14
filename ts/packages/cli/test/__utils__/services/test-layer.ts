@@ -1257,6 +1257,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       input?.setupSkillInstaller ??
         new SetupSkillInstaller({
           isClaudeSkillReady: Effect.succeed(false),
+          hasManagedClaudeSkill: Effect.succeed(false),
           ensureClaudeSkill: Effect.succeed(false),
           removeClaudeSkill: Effect.succeed(false),
         })

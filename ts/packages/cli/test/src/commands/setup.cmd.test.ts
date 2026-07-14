@@ -99,6 +99,7 @@ const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
   };
   return new SetupSkillInstaller({
     isClaudeSkillReady: Effect.sync(() => ready),
+    hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: ensureClaudeSkill(),
     removeClaudeSkill: Effect.sync(() => {
       const changed = ready;
@@ -264,6 +265,7 @@ describe('CLI: composio setup', () => {
   let staleSkillReady = false;
   const staleSkillInstaller = new SetupSkillInstaller({
     isClaudeSkillReady: Effect.sync(() => staleSkillReady),
+    hasManagedClaudeSkill: Effect.succeed(true),
     ensureClaudeSkill: Effect.sync(() => {
       staleSkillRepaired = true;
       staleSkillReady = true;
@@ -521,6 +523,39 @@ describe('CLI: composio setup', () => {
       );
     }
   );
+
+  const orphanedClaudeSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'missing' },
+  });
+  let managedClaudeSkill = true;
+  layer(
+    TestLive({
+      commandRunner: orphanedClaudeSkill.runner,
+      setupSkillInstaller: new SetupSkillInstaller({
+        isClaudeSkillReady: Effect.sync(() => managedClaudeSkill),
+        hasManagedClaudeSkill: Effect.sync(() => managedClaudeSkill),
+        ensureClaudeSkill: Effect.succeed(false),
+        removeClaudeSkill: Effect.sync(() => {
+          const changed = managedClaudeSkill;
+          managedClaudeSkill = false;
+          return changed;
+        }),
+      }),
+    })
+  )('uninstall with an orphaned managed Claude skill', it => {
+    it.scoped('requires approval before removing the managed skill', () =>
+      Effect.gen(function* () {
+        const withoutApproval = yield* Effect.exit(
+          cli(['setup', '--uninstall', '--target', 'claude'])
+        );
+        expect(Exit.isFailure(withoutApproval)).toBe(true);
+        expect(managedClaudeSkill).toBe(true);
+
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+        expect(managedClaudeSkill).toBe(false);
+      })
+    );
+  });
 
   const nonInteractiveUninstall = makeFakeHosts({
     claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },

@@ -50,6 +50,27 @@ const isLinkedTo = (fs: FileSystem.FileSystem, path: Path.Path, source: string, 
     Effect.catchAll(() => Effect.succeed(false))
   );
 
+export const hasManagedClaudeSkill = (home: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const skillName = resolveInstalledSkillName();
+    const canonicalSkill = path.join(home, '.agents', 'skills', skillName);
+    const claudeSkill = resolveTargetSkillPath({ home, path, skillName, target: 'claude' });
+
+    if (yield* isLinkedTo(fs, path, claudeSkill, canonicalSkill)) return true;
+    const isManaged = yield* fs.exists(path.join(canonicalSkill, SKILL_RELEASE_TAG_FILENAME));
+    if (!isManaged) return false;
+
+    const otherTargets = (['codex', 'openclaw'] as const).map(target =>
+      resolveTargetSkillPath({ home, path, skillName, target })
+    );
+    const references = yield* Effect.all(
+      otherTargets.map(target => isLinkedTo(fs, path, target, canonicalSkill))
+    );
+    return !references.some(Boolean);
+  });
+
 export const removeManagedClaudeSkill = (home: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -93,6 +114,7 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
 
       return {
         isClaudeSkillReady: isCurrent(resolveSetupSkillReleaseTag()),
+        hasManagedClaudeSkill: hasManagedClaudeSkill(os.homedir),
         ensureClaudeSkill: Effect.gen(function* () {
           const releaseTag = resolveSetupSkillReleaseTag();
           if (yield* isCurrent(releaseTag)) return false;

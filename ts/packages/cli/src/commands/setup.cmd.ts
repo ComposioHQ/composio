@@ -12,6 +12,7 @@ import {
   type SetupTarget,
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { isInteractiveTerminal } from 'src/utils/stdio';
 
 const target = Options.choice('target', SETUP_TARGETS).pipe(
@@ -97,6 +98,13 @@ const setupBaseCmd = Command.make(
       if (uninstall) {
         const installed = inspected.filter(status => status.plugin_installed);
         const notInstalled = inspected.filter(status => !status.plugin_installed);
+        const skillInstaller = yield* SetupSkillInstaller;
+        const hasManagedClaudeSkill = inspected.some(status => status.target === 'claude')
+          ? yield* skillInstaller.hasManagedClaudeSkill
+          : false;
+        const removable = inspected.filter(
+          status => status.plugin_installed || (status.target === 'claude' && hasManagedClaudeSkill)
+        );
 
         for (const status of installed) {
           yield* ui.log.success(
@@ -109,14 +117,14 @@ const setupBaseCmd = Command.make(
           );
         }
 
-        if (!yes && installed.length > 0) {
+        if (!yes && removable.length > 0) {
           if (!isInteractiveTerminal()) {
             return yield* Effect.fail(
               new Error('Non-interactive uninstall requires `--yes` to approve local changes.')
             );
           }
           const confirmed = yield* ui.confirm(
-            `Uninstall the Composio plugin for ${formatTargets(installed.map(status => status.target))}?`,
+            `Remove Composio from ${formatTargets(removable.map(status => status.target))}?`,
             { defaultValue: false }
           );
           if (!confirmed) {

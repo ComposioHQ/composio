@@ -5,6 +5,7 @@ import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { SKILL_RELEASE_TAG_FILENAME } from 'src/effects/install-skill';
 import {
+  hasManagedClaudeSkill,
   isClaudeSkillCurrent,
   removeManagedClaudeSkill,
   resolveSetupSkillReleaseTag,
@@ -105,7 +106,9 @@ describe('SetupSkillInstaller', () => {
         yield* fs.makeDirectory(path.dirname(claude), { recursive: true });
         yield* fs.symlink(path.relative(path.dirname(claude), canonical), claude);
 
+        expect(yield* hasManagedClaudeSkill(home)).toBe(true);
         expect(yield* removeManagedClaudeSkill(home)).toBe(true);
+        expect(yield* hasManagedClaudeSkill(home)).toBe(false);
         expect(yield* fs.exists(claude)).toBe(false);
         expect(yield* fs.exists(canonical)).toBe(false);
       })
@@ -129,7 +132,9 @@ describe('SetupSkillInstaller', () => {
         yield* fs.symlink(path.relative(path.dirname(claude), canonical), claude);
         yield* fs.symlink(path.relative(path.dirname(openclaw), canonical), openclaw);
 
+        expect(yield* hasManagedClaudeSkill(home)).toBe(true);
         expect(yield* removeManagedClaudeSkill(home)).toBe(true);
+        expect(yield* hasManagedClaudeSkill(home)).toBe(false);
         expect(yield* fs.exists(claude)).toBe(false);
         expect(yield* fs.exists(canonical)).toBe(true);
         expect(yield* fs.exists(openclaw)).toBe(true);
