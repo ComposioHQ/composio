@@ -482,10 +482,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(supports-color@10.2.2)(zod@3.25.76)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(supports-color@10.2.2)(zod@3.25.76)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@3.25.76)
@@ -510,10 +510,10 @@ importers:
         version: link:../../../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@4.4.3)
@@ -600,10 +600,10 @@ importers:
         version: link:../../packages/core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@4.4.3)
@@ -806,6 +806,28 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
+  ts/examples/local-sandbox-tenki:
+    dependencies:
+      '@composio/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@composio/experimental':
+        specifier: workspace:*
+        version: link:../../packages/experimental
+      '@tenkicloud/sandbox':
+        specifier: ^0.3.6
+        version: 0.3.7
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.4.2
+    devDependencies:
+      '@types/bun':
+        specifier: 'catalog:'
+        version: 1.3.14
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   ts/examples/mastra:
     dependencies:
       '@ai-sdk/openai':
@@ -819,7 +841,7 @@ importers:
         version: link:../../packages/providers/mastra
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@4.4.3)
@@ -1501,10 +1523,10 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@mastra/mcp':
         specifier: ^1.15.0
-        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@4.4.3)
@@ -1623,7 +1645,7 @@ importers:
         version: link:../../core
       '@mastra/core':
         specifier: 'catalog:'
-        version: 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+        version: 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       ai:
         specifier: ^6.0.241
         version: 6.0.241(zod@4.4.3)
@@ -2080,6 +2102,9 @@ packages:
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
 
+  '@bufbuild/protobuf@2.12.1':
+    resolution: {integrity: sha512-BvAMfS6LrgZiryOAZ4pBYucu4wG/Ei/9o9DZ9akbREnMLbPJiom2i8b9C8IsKErQoiKqVhrerzt3kOT/RrzLHg==}
+
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
@@ -2235,6 +2260,18 @@ packages:
 
   '@composio/client@0.1.0-alpha.76':
     resolution: {integrity: sha512-MXC5JGRVdiQ4EgLricy9o/mqBa1+1T7wHFZ6Q4ZJkrjzZqOMvxTgy21Zlb5J/1oGkB2bg9UDzpH8PkXCp/D4zA==}
+
+  '@connectrpc/connect-node@2.1.2':
+    resolution: {integrity: sha512-+i/aAOpsI8sIx1mbYp6d99zvxaUSF6t/jP9Ux9maAmjsZPgmIQ3JuIeYi0zJIP9zlCnBlJjkpPosshCgdRuThQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
+      '@connectrpc/connect': 2.1.2
+
+  '@connectrpc/connect@2.1.2':
+    resolution: {integrity: sha512-MXkBijtcX09R10Eb6sFeIetc6w6746eio6xtfuyVOH7oQAacT1X0GzMIQFux6Qy8cq3W/T5qX5Bei8YbFtmRGA==}
+    peerDependencies:
+      '@bufbuild/protobuf': ^2.7.0
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -4016,6 +4053,10 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@tenkicloud/sandbox@0.3.7':
+    resolution: {integrity: sha512-gvRLKRpHOANjaPJW6T0CyXBDAjarxsSJvasdY3Uo/5+CHXh3YwGbc4n5ap8F8n7RT68MrXK2sr6B/gF7zKOnZg==}
+    engines: {node: '>=18'}
 
   '@ts-morph/common@0.29.0':
     resolution: {integrity: sha512-35oUmphHbJvQ/+UTwFNme/t2p3FoKiGJ5auTjjpNTop2dyREspirjMy82PLSC1pnDJ8ah1GU98hwpVt64YXQsg==}
@@ -7126,10 +7167,11 @@ packages:
 
 snapshots:
 
-  '@a2a-js/sdk@0.3.14(express@5.2.1)':
+  '@a2a-js/sdk@0.3.14(@bufbuild/protobuf@2.12.1)(express@5.2.1)':
     dependencies:
       uuid: 11.1.1
     optionalDependencies:
+      '@bufbuild/protobuf': 2.12.1
       express: 5.2.1
 
   '@agentclientprotocol/sdk@0.14.1(zod@4.4.3)':
@@ -7633,6 +7675,8 @@ snapshots:
 
   '@braidai/lang@1.1.2': {}
 
+  '@bufbuild/protobuf@2.12.1': {}
+
   '@cfworker/json-schema@4.1.1': {}
 
   '@changesets/apply-release-plan@7.1.1':
@@ -7849,6 +7893,15 @@ snapshots:
     optional: true
 
   '@composio/client@0.1.0-alpha.76': {}
+
+  '@connectrpc/connect-node@2.1.2(@bufbuild/protobuf@2.12.1)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.12.1))':
+    dependencies:
+      '@bufbuild/protobuf': 2.12.1
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.12.1)
+
+  '@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.12.1)':
+    dependencies:
+      '@bufbuild/protobuf': 2.12.1
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -8586,9 +8639,9 @@ snapshots:
       '@mariozechner/clipboard-win32-x64-msvc': 0.3.9
     optional: true
 
-  '@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
+  '@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14(express@5.2.1)
+      '@a2a-js/sdk': 0.3.14(@bufbuild/protobuf@2.12.1)(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@3.25.76)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@3.25.76)'
       '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.11(zod@3.25.76)'
@@ -8632,9 +8685,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
+  '@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)':
     dependencies:
-      '@a2a-js/sdk': 0.3.14(express@5.2.1)
+      '@a2a-js/sdk': 0.3.14(@bufbuild/protobuf@2.12.1)(express@5.2.1)
       '@ai-sdk/provider-utils-v5': '@ai-sdk/provider-utils@3.0.30(zod@4.4.3)'
       '@ai-sdk/provider-utils-v6': '@ai-sdk/provider-utils@4.0.40(zod@4.4.3)'
       '@ai-sdk/provider-utils-v7': '@ai-sdk/provider-utils@5.0.11(zod@4.4.3)'
@@ -8678,9 +8731,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(supports-color@10.2.2)(zod@3.25.76)':
+  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76))(supports-color@10.2.2)(zod@3.25.76)':
     dependencies:
-      '@mastra/core': 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
+      '@mastra/core': 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@3.25.76))(express@5.2.1)(zod@3.25.76)
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@3.25.76))(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(supports-color@10.2.2)(zod@3.25.76)
       exit-hook: 5.1.0
@@ -8692,9 +8745,9 @@ snapshots:
       - supports-color
       - zod
 
-  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)':
+  '@mastra/mcp@1.15.0(@cfworker/json-schema@4.1.1)(@mastra/core@1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@mastra/core': 1.52.1(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
+      '@mastra/core': 1.52.1(@bufbuild/protobuf@2.12.1)(@cfworker/json-schema@4.1.1)(ai@6.0.241(zod@4.4.3))(express@5.2.1)(zod@4.4.3)
       '@modelcontextprotocol/ext-apps': 1.7.5(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3))(zod@4.4.3)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
       exit-hook: 5.1.0
@@ -9490,6 +9543,16 @@ snapshots:
   '@stablelib/base64@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@tenkicloud/sandbox@0.3.7':
+    dependencies:
+      '@bufbuild/protobuf': 2.12.1
+      '@connectrpc/connect': 2.1.2(@bufbuild/protobuf@2.12.1)
+      '@connectrpc/connect-node': 2.1.2(@bufbuild/protobuf@2.12.1)(@connectrpc/connect@2.1.2(@bufbuild/protobuf@2.12.1))
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@ts-morph/common@0.29.0':
     dependencies:
