@@ -71,7 +71,7 @@ export default [
     },
   },
   {
-    files: ['ts/packages/cli/src/**/*.ts'],
+    files: ['ts/packages/cli/src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
