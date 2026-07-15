@@ -35,7 +35,7 @@ import { experimental_createLocalWorkbenchSession } from '@composio/experimental
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
 // Create the session with the remote sandbox disabled, so code runs in your box.
-const session = await composio.sessions.create('user_123', {
+const session = await composio.create('user_123', {
   toolkits: ['github'],
   workbench: { enable: false },
 });

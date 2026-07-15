@@ -46,7 +46,7 @@ print(response.data)
 ```typescript
 import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.sessions.create('user_123', { toolkits: ['github'] });
+const session = await composio.create('user_123', { toolkits: ['github'] });
 // ---cut---
 const { status, data } = await session.proxyExecute({
   toolkit: 'github',

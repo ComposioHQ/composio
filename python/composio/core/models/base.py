@@ -11,6 +11,7 @@ import typing as t
 
 from composio.__version__ import __version__
 from composio.client import HttpClient
+from composio.utils.redaction import redact_sensitive_text
 from composio.utils.logging import WithLogger
 
 from ._telemetry import Event, create_event, push_event, redact_sensitive_text

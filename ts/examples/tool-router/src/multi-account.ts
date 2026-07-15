@@ -9,7 +9,7 @@ const composio = new Composio({
 
 // Enable multi-account mode so the user can connect multiple accounts
 // per toolkit (e.g. two Gmail accounts).
-const session = await composio.sessions.create('user_123', {
+const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   multiAccount: {
     enable: true,

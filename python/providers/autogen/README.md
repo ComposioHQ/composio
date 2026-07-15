@@ -5,7 +5,7 @@ Adapts Composio tools to AutoGen `FunctionTool` objects and registers them with 
 ## Installation
 
 ```bash
-pip install composio composio-autogen autogen-agentchat
+pip install composio composio-autogen 'ag2[openai]'
 ```
 
 Set `COMPOSIO_API_KEY` (from the [dashboard](https://dashboard.composio.dev/settings)) and `OPENAI_API_KEY` in your environment.
@@ -13,7 +13,9 @@ Set `COMPOSIO_API_KEY` (from the [dashboard](https://dashboard.composio.dev/sett
 ## Quickstart
 
 ```python
-from autogen import AssistantAgent, UserProxyAgent
+import os
+
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
 from composio import Composio
 from composio_autogen import AutogenProvider
 
@@ -26,7 +28,11 @@ tools = session.tools()
 chatbot = AssistantAgent(
     "chatbot",
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
-    llm_config={"config_list": [{"model": "gpt-5.2"}]},
+    llm_config=LLMConfig({
+        "api_type": "openai",
+        "model": "gpt-5.2",
+        "api_key": os.environ["OPENAI_API_KEY"],
+    }),
 )
 
 user_proxy = UserProxyAgent(

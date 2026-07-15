@@ -6,7 +6,7 @@ here to expose more answers to search without changing the docs themselves.
 
 ## Installing and getting started (/docs/quickstart)
 
-Install the SDK with `npm install @composio/core` (TypeScript) or `pip install composio` (Python), set `COMPOSIO_API_KEY`, then create a session with `composio.sessions.create("user_123")` in TypeScript or `composio.create(user_id="user_123")` in Python. The quickstart walks through creating a session, fetching tools for your framework via a provider, and running an agent.
+Install the SDK with `npm install @composio/core` (TypeScript) or `pip install composio` (Python), set `COMPOSIO_API_KEY`, then create a session with `composio.create("user_123")`. The quickstart walks through creating a session, fetching tools for your framework via a provider, and running an agent.
 
 ## Choosing a provider (/docs/providers)
 
@@ -26,4 +26,4 @@ The sandbox has a persistent file mount at `/mnt/files/` that survives sandbox r
 
 ## Reusing and updating sessions (/docs/how-composio-works)
 
-Sessions persist on the server and do not expire. For a multi-turn conversation, store the session ID and reuse it with `composio.sessions.use(sessionId)` in TypeScript or `composio.use(session_id)` in Python instead of creating another session. You can also change a live session in place with `session.update({ toolkits, authConfigs, connectedAccounts })`.
+Sessions persist on the server and do not expire. For a multi-turn conversation, store the session ID and reuse it with `composio.use(sessionId)` instead of calling `create()` again. You can also change a live session in place with `session.update({ toolkits, authConfigs, connectedAccounts })`.

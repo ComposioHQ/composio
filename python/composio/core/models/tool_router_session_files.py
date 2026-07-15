@@ -24,6 +24,7 @@ from composio_client.types.tool_router.session.file_list_response import (
 from composio.client import HttpClient
 from composio.exceptions import RemoteFileDownloadError, ValidationError
 from composio.utils.mimetypes import get_extension_from_mime_type
+from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.uuid import generate_short_id
 
 DEFAULT_TOOL_ROUTER_SESSION_FILES_MOUNT_ID = "files"
@@ -46,6 +47,7 @@ def _is_url(value: str) -> bool:
 
 def _fetch_from_url(url: str) -> t.Tuple[bytes, str]:
     """Fetch file content from URL. Returns (content, mimetype)."""
+    assert_safe_fetch_target(url)
     try:
         response = requests.get(
             url,

@@ -1,0 +1,15 @@
+---
+title: "Python SDK 0.15.0 supports trigger 2FA ownership checks"
+description: "Python SDK 0.15.0 forwards user_id when creating triggers so 2FA-enabled projects can verify connected-account ownership."
+date: "2026-06-18"
+---
+
+Python SDK `composio` `0.15.0` forwards `user_id` from `triggers.create()` to the trigger upsert request. This lets projects with trigger 2FA verify that the connected account belongs to the caller.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.15.0` |
+
+No call-site migration is required. Pass `user_id` to `triggers.create()` when the trigger should be associated with a specific user.
