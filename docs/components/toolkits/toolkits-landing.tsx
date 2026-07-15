@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useMemo, useDeferredValue } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Fuse from 'fuse.js';
+import { usePostHog } from 'posthog-js/react';
 import { Search, Sparkles, Wrench, Zap, Copy, Check, ExternalLink, Grip, ShieldCheck } from 'lucide-react';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
 import { PageActions } from '@/components/page-actions';
+import {
+  CATEGORY_GROUPS,
+  TOOLKIT_FUSE_OPTIONS,
+  groupForCategory,
+  type CategoryGroup,
+  type GroupFilter,
+} from '@/lib/toolkit-search';
 
 const toolkits = toolkitsData as ToolkitSummary[];
 
@@ -22,6 +31,14 @@ const POPULAR_SLUGS = [
   'supabase',
   'hubspot',
 ];
+
+// PostHog event names (dot-namespaced, matching the docs convention).
+const TOOLKIT_SEARCH_EVENT = 'toolkits.search';
+const TOOLKIT_CATEGORY_FILTER_EVENT = 'toolkits.category_filter';
+
+// Fire the search event this long after the user stops typing, so a single
+// search intent produces one event instead of one per keystroke.
+const SEARCH_EVENT_DEBOUNCE_MS = 500;
 
 function ToolkitIcon({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: boolean }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -67,6 +84,35 @@ function CopySlugButton({ slug }: { slug: string }) {
   );
 }
 
+function CategoryPill({
+  label,
+  count,
+  selected,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+        selected
+          ? 'bg-fd-foreground text-fd-background'
+          : 'bg-fd-muted text-fd-muted-foreground hover:text-fd-foreground'
+      }`}
+    >
+      {label}
+      {count !== undefined && <span className="ml-1.5 opacity-60">{count}</span>}
+    </button>
+  );
+}
+
 function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: boolean }) {
   return (
     <Link
@@ -97,8 +143,11 @@ function ToolkitRow({ toolkit, lazy = true }: { toolkit: ToolkitSummary; lazy?: 
 }
 
 export function ToolkitsLanding() {
+  const posthog = usePostHog();
   const [search, setSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<GroupFilter>('All');
   const deferredSearch = useDeferredValue(search);
+  const trimmedSearch = deferredSearch.trim();
 
   // Get popular toolkits
   const popularToolkits = useMemo(() => {
@@ -107,16 +156,33 @@ export function ToolkitsLanding() {
       .filter((t): t is ToolkitSummary => t !== undefined);
   }, []);
 
-  const filteredToolkits = useMemo(() => {
-    if (!deferredSearch) return toolkits;
+  // Groups that actually have toolkits, in display order, with counts.
+  const groupsWithCounts = useMemo(() => {
+    const counts = new Map<CategoryGroup, number>();
+    toolkits.forEach((t) => {
+      const group = groupForCategory(t.category);
+      counts.set(group, (counts.get(group) || 0) + 1);
+    });
+    return CATEGORY_GROUPS.filter((group) => counts.has(group)).map((group) => ({
+      group,
+      count: counts.get(group) ?? 0,
+    }));
+  }, []);
 
-    const searchLower = deferredSearch.toLowerCase();
-    return toolkits.filter(
-      (toolkit) =>
-        toolkit.name.toLowerCase().includes(searchLower) ||
-        toolkit.slug.toLowerCase().includes(searchLower)
-    );
-  }, [deferredSearch]);
+  // Filter by the selected category super-group.
+  const categoryFiltered = useMemo(() => {
+    if (selectedGroup === 'All') return toolkits;
+    return toolkits.filter((t) => groupForCategory(t.category) === selectedGroup);
+  }, [selectedGroup]);
+
+  // Fuse instance scoped to the category-filtered list; rebuilt only when the
+  // group changes (not on every keystroke).
+  const fuse = useMemo(() => new Fuse(categoryFiltered, TOOLKIT_FUSE_OPTIONS), [categoryFiltered]);
+
+  const filteredToolkits = useMemo(() => {
+    if (!trimmedSearch) return categoryFiltered;
+    return fuse.search(trimmedSearch).map((result) => result.item);
+  }, [trimmedSearch, categoryFiltered, fuse]);
 
   // Group by first letter (numbers at end)
   const groupedToolkits = useMemo(() => {
@@ -145,6 +211,58 @@ export function ToolkitsLanding() {
     });
   }, [filteredToolkits]);
 
+  const hasFilters = trimmedSearch !== '' || selectedGroup !== 'All';
+
+  const clearAll = () => {
+    setSearch('');
+    setSelectedGroup('All');
+  };
+
+  // Analytics — search. Debounced + deduped so one settled search = one event.
+  const lastSearchKey = useRef<string | null>(null);
+  useEffect(() => {
+    const query = trimmedSearch.toLowerCase();
+    if (!query) {
+      lastSearchKey.current = null;
+      return;
+    }
+    const key = `${query}|${selectedGroup}`;
+    const timer = setTimeout(() => {
+      if (lastSearchKey.current === key) return;
+      lastSearchKey.current = key;
+      posthog?.capture(TOOLKIT_SEARCH_EVENT, {
+        query,
+        query_length: query.length,
+        result_count: filteredToolkits.length,
+        has_results: filteredToolkits.length > 0,
+        category_group: selectedGroup,
+      });
+    }, SEARCH_EVENT_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [trimmedSearch, selectedGroup, filteredToolkits.length, posthog]);
+
+  // Analytics — category filter. Fires on group change only (skips mount), so
+  // the read-through of the latest result count/query stays accurate without
+  // re-firing when search results change within the same group.
+  const isInitialMount = useRef(true);
+  const resultCountRef = useRef(filteredToolkits.length);
+  resultCountRef.current = filteredToolkits.length;
+  const queryActiveRef = useRef(trimmedSearch !== '');
+  queryActiveRef.current = trimmedSearch !== '';
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    posthog?.capture(TOOLKIT_CATEGORY_FILTER_EVENT, {
+      group: selectedGroup,
+      result_count: resultCountRef.current,
+      query_active: queryActiveRef.current,
+    });
+    // Intentionally keyed on selectedGroup only; other values are read via refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroup]);
+
   return (
     <div className="space-y-5 sm:space-y-8">
       {/* Header */}
@@ -164,7 +282,7 @@ export function ToolkitsLanding() {
             className="inline-flex items-center gap-1.5 rounded-md border border-fd-border bg-fd-background px-3 py-1.5 text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent"
           >
             Playground
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
           <a
             href="https://request.composio.dev/boards/tool-requests"
@@ -172,9 +290,9 @@ export function ToolkitsLanding() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
           >
-            <Grip className="h-3.5 w-3.5" />
+            <Grip className="h-3.5 w-3.5" aria-hidden="true" />
             Request Tools
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -197,18 +315,47 @@ export function ToolkitsLanding() {
           autoComplete="off"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+          className="h-10 w-full rounded-lg border border-fd-border bg-fd-background pl-10 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/60 focus-visible:ring-2 focus-visible:ring-blue-500/40"
         />
       </div>
 
-      {/* Results count */}
-      <p className="text-sm text-fd-muted-foreground">
-        {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
-        {deferredSearch && ` matching "${deferredSearch}"`}
-      </p>
+      {/* Category filter */}
+      <div
+        className="flex gap-1.5 overflow-x-auto pb-1"
+        role="radiogroup"
+        aria-label="Filter toolkits by category group"
+      >
+        <CategoryPill label="All" selected={selectedGroup === 'All'} onClick={() => setSelectedGroup('All')} />
+        {groupsWithCounts.map(({ group, count }) => (
+          <CategoryPill
+            key={group}
+            label={group}
+            count={count}
+            selected={selectedGroup === group}
+            onClick={() => setSelectedGroup(group)}
+          />
+        ))}
+      </div>
 
-      {/* Popular Toolkits - only show when no search */}
-      {!deferredSearch && popularToolkits.length > 0 && (
+      {/* Results count + clear */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm text-fd-muted-foreground">
+          {filteredToolkits.length} toolkit{filteredToolkits.length !== 1 ? 's' : ''}
+          {trimmedSearch && ` matching "${trimmedSearch}"`}
+          {selectedGroup !== 'All' && ` in ${selectedGroup}`}
+        </p>
+        {hasFilters && (
+          <button
+            onClick={clearAll}
+            className="shrink-0 text-sm text-fd-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* Popular Toolkits - only show when no filters are active */}
+      {!hasFilters && popularToolkits.length > 0 && (
         <div>
           <h2 className="mb-2 text-sm font-semibold text-fd-muted-foreground">Popular</h2>
           <div className="divide-y divide-fd-border">
@@ -237,10 +384,10 @@ export function ToolkitsLanding() {
         <div className="py-12 text-center">
           <p className="text-fd-muted-foreground">No toolkits found.</p>
           <button
-            onClick={() => setSearch('')}
-            className="mt-2 text-sm text-fd-primary hover:underline"
+            onClick={clearAll}
+            className="mt-2 text-sm text-fd-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
-            Clear search
+            Clear filters
           </button>
         </div>
       )}
