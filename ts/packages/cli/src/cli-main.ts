@@ -3,7 +3,7 @@ import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'ef
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
-import { BunContext, BunRuntime, BunFileSystem } from '@effect/platform-bun';
+import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { buildRootCommand, runWithConfig } from 'src/commands';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
@@ -38,6 +38,7 @@ import {
 } from 'src/analytics/events';
 import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RequiredLayer = Layer.Layer<any, any, never>;
@@ -94,6 +95,11 @@ export const ProjectContextLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
 ) satisfies RequiredLayer;
 
+export const SetupSkillInstallerLive = Layer.provide(
+  SetupSkillInstaller.Default,
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
+) satisfies RequiredLayer;
+
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
   NodeOs.Default,
@@ -108,6 +114,7 @@ const layers = Layer.mergeAll(
   JsPackageManagerDetector.Default,
   ProjectEnvironmentDetector.Default,
   CommandRunner.Default,
+  SetupSkillInstallerLive,
   TriggersRealtimeLive,
   ProjectContextLive,
   BunContext.layer,
