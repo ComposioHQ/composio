@@ -14,6 +14,9 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+const tsCorePackageJson = JSON.parse(
+  readFileSync(new URL('../ts/packages/core/package.json', import.meta.url), 'utf8')
+);
 const changesetConfig = JSON.parse(
   readFileSync(new URL('../.changeset/config.json', import.meta.url), 'utf8')
 );
@@ -24,6 +27,10 @@ const tsReleaseWorkflow = readFileSync(
 const pythonPyproject = readFileSync(new URL('../python/pyproject.toml', import.meta.url), 'utf8');
 const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
+  'utf8'
+);
+const pythonReleaseWorkflow = readFileSync(
+  new URL('../.github/workflows/py.release.yml', import.meta.url),
   'utf8'
 );
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
@@ -66,7 +73,7 @@ function readPyprojectVersion(text, label) {
   return requireMatch(text, /^\s*version\s*=\s*"([^"]+)"\s*$/m, label);
 }
 
-function readPythonSdkVersions(rows) {
+function readSdkVersions(rows) {
   const versions = new Set();
   const pythonVersionPattern =
     /\bv?(\d+(?:\.\d+)+(?:[._-]?(?:a|b|c|rc|alpha|beta|pre|preview)\d*)?(?:[._-]?(?:post|rev|r)\d*)?(?:[._-]?dev\d*)?(?:\+[a-z0-9]+(?:[._-][a-z0-9]+)*)?)\b/gi;
@@ -84,18 +91,26 @@ function readPythonSdkVersions(rows) {
   return versions;
 }
 
-function readDocumentedPythonSdkVersions() {
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function readDocumentedSdkVersions(sdkLabel) {
   const changelogDir = new URL('../docs/content/changelog/', import.meta.url);
+  const rowPattern = new RegExp(`^\\|\\s*${escapeRegExp(sdkLabel)}\\s*\\|.*$`, 'gm');
   const rows = [];
 
   for (const entry of readdirSync(changelogDir, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.mdx')) continue;
 
-    const source = readFileSync(new URL(`../docs/content/changelog/${entry.name}`, import.meta.url), 'utf8');
-    rows.push(...(source.match(/^\|\s*Python `composio`\s*\|.*$/gm) ?? []));
+    const source = readFileSync(
+      new URL(`../docs/content/changelog/${entry.name}`, import.meta.url),
+      'utf8'
+    );
+    rows.push(...(source.match(rowPattern) ?? []));
   }
 
-  return readPythonSdkVersions(rows);
+  return readSdkVersions(rows);
 }
 
 function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
@@ -197,14 +212,14 @@ touch "$target/dist/provider.whl"
 }
 
 {
-  const directVersion = readPythonSdkVersions(['| Python `composio` | `9.9.9` |']);
-  const versionWithPrevious = readPythonSdkVersions([
+  const directVersion = readSdkVersions(['| Python `composio` | `9.9.9` |']);
+  const versionWithPrevious = readSdkVersions([
     '| Python `composio` | v9.9.8 | **v9.9.9** |',
   ]);
-  const previousVersionOnly = readPythonSdkVersions([
+  const previousVersionOnly = readSdkVersions([
     '| Python `composio` | v9.9.9 | **v9.9.10** |',
   ]);
-  const pep440Versions = readPythonSdkVersions([
+  const pep440Versions = readSdkVersions([
     '| Python `composio` | `9.9.9rc1` |',
     '| Python `composio` | `9.9.9.post1` |',
     '| Python `composio` | `9.9.9.dev1` |',
@@ -246,6 +261,10 @@ if (
 
 // --- Python release metadata: package version, runtime version, and docs changelog must agree ---
 
+if (!pythonReleaseWorkflow.includes('run: pnpm test:release-workflow')) {
+  throw new Error('py.release.yml must validate release metadata before publishing');
+}
+
 {
   const pythonVersion = readPyprojectVersion(pythonPyproject, 'python/pyproject.toml version');
   const runtimeVersion = requireMatch(
@@ -260,7 +279,7 @@ if (
     );
   }
 
-  const documentedPythonVersions = readDocumentedPythonSdkVersions();
+  const documentedPythonVersions = readDocumentedSdkVersions('Python `composio`');
   if (!documentedPythonVersions.has(pythonVersion)) {
     throw new Error(
       `docs/content/changelog must document the current Python package version (${pythonVersion})`
@@ -276,28 +295,39 @@ if (
       import.meta.url
     );
     const setupPath = new URL(`../python/providers/${entry.name}/setup.py`, import.meta.url);
-    if (!existsSync(pyprojectPath) || !existsSync(setupPath)) continue;
+    if (!existsSync(pyprojectPath)) continue;
 
     const providerPyprojectVersion = readPyprojectVersion(
       readFileSync(pyprojectPath, 'utf8'),
       `python/providers/${entry.name}/pyproject.toml version`
     );
-    const providerSetupVersion = requireMatch(
-      readFileSync(setupPath, 'utf8'),
-      /version\s*=\s*"([^"]+)"/,
-      `python/providers/${entry.name}/setup.py version`
-    );
-
     if (providerPyprojectVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/pyproject.toml must match python/pyproject.toml (${providerPyprojectVersion} !== ${pythonVersion})`
       );
     }
+
+    if (!existsSync(setupPath)) continue;
+
+    const providerSetupVersion = requireMatch(
+      readFileSync(setupPath, 'utf8'),
+      /version\s*=\s*"([^"]+)"/,
+      `python/providers/${entry.name}/setup.py version`
+    );
     if (providerSetupVersion !== pythonVersion) {
       throw new Error(
         `python/providers/${entry.name}/setup.py must match python/pyproject.toml (${providerSetupVersion} !== ${pythonVersion})`
       );
     }
+  }
+}
+
+{
+  const documentedTsCoreVersions = readDocumentedSdkVersions('TypeScript `@composio/core`');
+  if (!documentedTsCoreVersions.has(tsCorePackageJson.version)) {
+    throw new Error(
+      `docs/content/changelog must document the current TypeScript core package version (${tsCorePackageJson.version})`
+    );
   }
 }
 
