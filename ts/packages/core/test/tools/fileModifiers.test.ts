@@ -16,6 +16,14 @@ import { mockClient } from '../utils/mocks/client.mock';
 vi.mock('../../src/utils/fileUtils.node', () => ({
   downloadFileFromS3: vi.fn(),
   getFileDataAfterUploadingToS3: vi.fn(),
+  isHttpUrl: (value: string): boolean => {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  },
 }));
 
 describe('FileToolModifier', () => {

@@ -127,6 +127,28 @@ pnpm check:peer-deps
 pnpm update:peer-deps
 ```
 
+### Dead code detection
+
+The `Dead Code` CI workflow reports likely-orphaned code on every PR (findings
+land in the run's Step Summary; it never fails the build). Run the same checks
+locally:
+
+```bash
+# TypeScript — unused files, exports, types and dependencies
+pnpm dlx knip@5            # config in knip.json
+
+# Python — unused functions, classes and variables
+cd python && make dead-code   # vulture; allowlist in python/config/vulture_allowlist.py
+
+# GitHub Actions — orphaned reusable workflows and composite actions
+bash .github/scripts/check-orphan-ci.sh
+```
+
+These tools carry false positives (public API surface, dynamic imports,
+import-map targets), so treat their output as advisory: verify a finding is
+truly unreferenced before deleting, and suppress confirmed false positives via
+`knip.json` / `vulture_allowlist.py`.
+
 ## Coding Standards
 
 ### TypeScript

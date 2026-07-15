@@ -44,6 +44,7 @@ e2e(import.meta.url, {
         async () => {
           const session = await composio.create('default', {
             toolkits: ['hackernews'],
+            mcp: true,
             manageConnections: true,
             tools: {
               hackernews: {

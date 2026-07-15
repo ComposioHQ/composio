@@ -39,3 +39,6 @@ export * from './RemoteFileErrors';
 
 // File modifier / auto upload
 export * from './FileModifierErrors';
+
+// SSRF guard (URL file inputs)
+export * from './SsrfErrors';

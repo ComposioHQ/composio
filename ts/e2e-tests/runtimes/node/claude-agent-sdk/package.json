@@ -9,10 +9,10 @@
     "test:e2e:node": "bun test e2e.test.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.199",
     "@composio/claude-agent-sdk": "workspace:*",
     "@composio/core": "workspace:*",
-    "zod": "3.25.76"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*",

@@ -9,6 +9,10 @@ on:
     - "docs/components/**/*.tsx"
     - "docs/app/**/*.tsx"
     - "docs/app/**/*.css"
+
+permissions:
+  contents: read
+
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -32,7 +36,7 @@ jobs:
 
     - name: Run Claude Code Review
       id: claude-review
-      uses: anthropics/claude-code-action@a92e7c70a4da9793dc164451d829089dc057a464 # v1.0.159
+      uses: anthropics/claude-code-action@536f2c32a39763739000b0e1ac69ca2647d97ce9 # v1.0.170
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         track_progress: true # Forces tag mode with tracking comments

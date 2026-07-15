@@ -5,7 +5,8 @@ import { mkdtempSync, writeFileSync, symlinkSync, rmSync, mkdirSync } from 'node
 import {
   assertSafeFileUploadPath,
   isBlockedSensitiveFileUploadPath,
-} from '../../src/utils/sensitiveFileUploadPaths.node';
+} from '../../src/utils/sensitiveFileUploadPaths';
+import * as publicApi from '../../src';
 
 describe('sensitiveFileUploadPaths', () => {
   it('allows normal project files', () => {
@@ -46,6 +47,15 @@ describe('sensitiveFileUploadPaths', () => {
     expect(isBlockedSensitiveFileUploadPath(path.join('/data', 'ok', 'x.txt'), ['secrets'])).toBe(
       false
     );
+  });
+
+  it('is re-exported from the package root for downstream consumers (e.g. @composio/cli)', () => {
+    // The CLI imports the guard from `@composio/core` to share this one denylist
+    // (issue #3746). Lock the public surface so a refactor cannot silently drop it.
+    expect(typeof publicApi.assertSafeFileUploadPath).toBe('function');
+    expect(typeof publicApi.isBlockedSensitiveFileUploadPath).toBe('function');
+    expect(Array.isArray(publicApi.BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS)).toBe(true);
+    expect(publicApi.BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS).toContain('.ssh');
   });
 
   it('blocks after realpath resolves a symlink into a sensitive directory', () => {

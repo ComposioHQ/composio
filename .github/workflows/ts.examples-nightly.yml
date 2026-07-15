@@ -1,0 +1,70 @@
+name: Examples Nightly (staging)
+
+# Executes the provider examples against the STAGING backend with real
+# credentials. Non-blocking by design: it runs on a schedule (and on demand),
+# never as a required PR check, so staging/LLM flakiness cannot gate merges.
+on:
+  schedule:
+    - cron: '0 6 * * *' # 06:00 UTC nightly
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Staging is not a secret; the API keys are.
+  COMPOSIO_BASE_URL: https://staging-backend.composio.dev
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  examples-staging:
+    name: ${{ matrix.provider }} examples against staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [mastra, openai]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SDK packages
+        run: pnpm run build:packages
+
+      # Both secrets must be present for scheduled and manually dispatched
+      # validation. Otherwise smoke can self-skip and the LLM steps can no-op,
+      # leaving the whole regression net green while testing nothing.
+      - name: Require staging credentials
+        if: ${{ env.COMPOSIO_API_KEY == '' || env.OPENAI_API_KEY == '' }}
+        run: |
+          echo "::error::COMPOSIO_API_KEY and OPENAI_API_KEY are required for examples validation."
+          exit 1
+
+      # Deterministic regression net — needs only COMPOSIO_API_KEY, no LLM.
+      # Self-skips when the secret is absent (e.g. fork-triggered dispatch).
+      - name: ${{ matrix.provider }} smoke (wrapping + tool-router)
+        run: pnpm --filter ${{ matrix.provider }}-example --fail-if-no-match run smoke
+
+      # Full agent run — only when an LLM key is configured.
+      - name: ${{ matrix.provider }} direct-tools example
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: bun ts/examples/${{ matrix.provider }}/src/index.ts
+
+      - name: ${{ matrix.provider }} tool-router example
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: bun ts/examples/${{ matrix.provider }}/src/tool-router.ts

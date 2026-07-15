@@ -23,6 +23,11 @@ const docsSchema = frontmatterSchema.extend({
   isNew: z.boolean().optional(),
   /** When true, the page shows a "Legacy" badge at the top of the page. */
   legacy: z.boolean().optional(),
+  /** Human-readable date the page/guide was written (e.g. "December 2025").
+   *  Renders a "Written <date>" stamp at the top of the page, independent of the
+   *  `legacy` flag, so time-sensitive guides carry their own date whether or not
+   *  they're legacy. */
+  written: z.string().optional(),
   /** Controls which LLM guardrail set is appended to the .md output.
    *  - undefined / omitted → default session-based guardrails
    *  - "direct-execution" → softer guardrails acknowledging this is the low-level API

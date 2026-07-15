@@ -1,305 +1,89 @@
-# Composio SDK v3
+# Composio TypeScript workspace
 
-The Composio SDK is a powerful toolkit that enables you to integrate third-party tools and services into your applications. It helps you connect to various services (toolkits), execute tools, and manage user connections seamlessly.
+This directory contains the TypeScript half of the Composio SDK monorepo: the core SDK, provider adapters, the CLI, examples, and end-to-end tests. For an overview of Composio itself, start at the [root README](../README.md) and [docs.composio.dev](https://docs.composio.dev).
 
-## Features
-
-- Execute tools from various services (GitHub, Gmail, Slack, etc.)
-- Manage user connections to external services
-- Create session-scoped custom tools with your own logic
-- Integrate with AI providers like OpenAI
-- Powerful middleware and modifier support
-- Extensive error handling
-
-## Documentation
-
-The SDK is thoroughly documented in the [docs](./docs) directory:
-
-- [Overview](./docs/overview.md) - Introduction and key concepts
-- [Getting Started](./docs/getting-started.md) - Quick start guide
-- [Core Concepts](./docs/core-concepts.md) - Fundamental SDK concepts
-- [Configuration](./docs/internal/configuration.md) - Environment variables and SDK configuration
-
-### API Reference
-
-- [Composio Class](./docs/api/composio.md) - Main SDK class
-- [Tools](./docs/api/tools.md) - Listing, fetching, and executing tools
-- [Tool Router](./docs/api/tool-router.md) - Sessions, search, and custom tools
-- [Toolkits](./docs/api/toolkits.md) - Working with tool collections
-- [Connected Accounts](./docs/api/connected-accounts.md) - User authentication
-- [Auth Configs](./docs/api/auth-configs.md) - Authentication configuration
-- [Providers](./docs/api/providers.md) - AI integration options
-
-### Provider Documentation
-
-- [OpenAI Provider](./docs/providers/openai.md) - Using OpenAI with Composio
-- [Google Provider](./docs/providers/google.md) - Using Google GenAI with Composio
-- [Custom Providers](./docs/providers/custom.md) - Creating new providers
-
-### Advanced Topics
-
-- [Error Handling](./docs/advanced/error-handling.md) - Managing errors
-- [Middleware and Modifiers](./docs/advanced/modifiers.md) - Customizing tools
-- [Telemetry](./docs/advanced/telemetry.md) - SDK usage tracking
-- [Custom Providers](./docs/advanced/custom-providers.md) - Detailed provider guide
-
-### Internal Documentation
-
-For SDK maintainers and contributors:
-
-- [Configuration and Environment Variables](./docs/internal/configuration.md) - Detailed guide on SDK configuration
-- [Triggers Implementation](./docs/internal/triggers.md) - Internal workings of the trigger system
-
-## Installation
+If you just want to use the SDK:
 
 ```bash
-# Using npm
 npm install @composio/core
-
-# Using yarn
-yarn add @composio/core
-
-# Using pnpm
-pnpm add @composio/core
 ```
-
-## Quick Start
 
 ```typescript
 import { Composio } from '@composio/core';
-
-// Initialize the SDK
-const composio = new Composio({
-  apiKey: 'your-api-key',
-});
-
-// Get tools from a specific toolkit
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-});
-
-// Get a specific tool
-const specificTool = await composio.tools.get('default', 'GITHUB_GET_REPOS');
-
-// Execute a tool
-const result = await composio.tools.execute('GITHUB_GET_REPO', {
-  userId: 'default',
-  arguments: {
-    owner: 'composio',
-    repo: 'sdk',
-  },
-});
-
-console.log(result.data);
-```
-
-## OpenAI Integration
-
-```typescript
-import { Composio } from '@composio/core';
-import OpenAI from 'openai';
-
-// Initialize Composio and OpenAI
-const composio = new Composio({
-  apiKey: 'your-composio-api-key',
-});
-
-const openai = new OpenAI({
-  apiKey: 'your-openai-api-key',
-});
-
-// Get GitHub tools
-const tools = await composio.tools.get('default', {
-  toolkits: ['github'],
-});
-
-
-// Create a chat completion with the tools
-const completion = await openai.chat.completions.create({
-  model: 'gpt-4',
-  messages: [
-    { role: 'system', content: 'You are a helpful assistant with access to GitHub tools.' },
-    { role: 'user', content: 'Find information about the Composio SDK repository' },
-  ],
-  tools, // Pass the tools to OpenAI
-});
-
-// If the model wants to use a tool
-if (completion.choices[0].message.tool_calls) {
-  const toolCall = completion.choices[0].message.tool_calls[0];
-  const args = JSON.parse(toolCall.function.arguments);
-
-  // Execute the tool
-  const result = await composio.tools.execute(toolCall.function.name, {
-    userId: 'default',
-    arguments: args,
-  });
-
-  console.log(result.data);
-}
-```
-
-## Creating Custom Tools
-
-```typescript
-import { Composio, experimental_createTool } from '@composio/core';
-import { z } from 'zod';
 
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-const weatherForecast = experimental_createTool('WEATHER_FORECAST', {
-  name: 'Weather Forecast',
-  description: 'Get the weather forecast for a location',
-  inputParams: z.object({
-    location: z.string().describe('The location to get the forecast for'),
-    days: z.number().optional().default(3).describe('Number of days for the forecast'),
-  }),
-  execute: async (input) => {
-    const { location, days = 3 } = input;
-    const forecast = await getWeatherForecast(location, days);
-    return { forecast };
-  },
-});
-
-const session = await composio.create('default', {
-  experimental: { customTools: [weatherForecast] },
-});
-
-const result = await session.execute('WEATHER_FORECAST', {
-  location: 'San Francisco, CA',
-});
+const session = await composio.create('user_123');
+const tools = await session.tools();
 ```
 
-## Project Structure
+See the [`@composio/core` README](packages/core/README.md) and the [quickstart](https://docs.composio.dev/docs/quickstart) for the full flow, including provider setup for your agent framework.
 
+## Packages
+
+Published packages:
+
+| Package | Description |
+|---------|-------------|
+| [`@composio/core`](packages/core) | The Composio SDK. Ships its TypeScript source and SDK docs so installed copies are inspectable by coding agents. |
+| [`@composio/slim`](packages/slim) | Same API as `@composio/core` without the packaged source and docs; smaller install. |
+| [`composio` CLI](packages/cli) | Standalone CLI binary: search, execute, and script tools from your shell. |
+| [`@composio/*` providers](packages/providers) | Adapters that format Composio tools for agent frameworks (OpenAI, Anthropic, Vercel AI SDK, LangChain, and more). See the [provider table](../README.md#providers). |
+| [`@composio/experimental`](packages/experimental) | Experimental integrations, currently the Pi provider. |
+| [`@composio/json-schema-to-zod`](packages/json-schema-to-zod) | JSON Schema to Zod conversion. |
+
+Internal (unpublished) packages: `cli-keyring` and `cli-local-tools` support the CLI; `ts-builders` generates TypeScript source.
+
+## Layout
+
+```text
+ts/
+  packages/        Published and internal packages (see above)
+  examples/        Runnable examples per feature and framework
+  e2e-tests/       Runtime E2E tests (Node, Deno, Cloudflare Workers, CLI)
+  docs/            Workspace SDK docs: API notes and internal guides
+  scripts/         Build, validation, and scaffolding scripts
+  vendor/          Read-only reference submodules; do not edit
 ```
-composio/
-├── packages/                  # Main packages directory
-│   ├── core/                  # Core SDK package
-│   └── providers/             # Provider implementations
-├── examples/                  # Example implementations
-│   ├── connected-accounts/    # Connected accounts examples
-│   ├── langchain/            # LangChain integration examples
-│   ├── openai/               # OpenAI integration examples
-│   ├── modifiers/            # Modifiers examples
-│   ├── toolkits/             # Toolkits examples
-│   └── vercel/               # Vercel AI examples
-├── docs/                      # Documentation
-├── scripts/                   # Development and build scripts
-└── .github/                   # GitHub configuration
+
+## Development
+
+Commands run from the repository root. Install the pinned toolchain first:
+
+```bash
+mise install
+pnpm install
 ```
 
-## Development Setup
+Build and verify:
 
-1. **Prerequisites**
+```bash
+pnpm build:packages   # build all TS packages
+pnpm typecheck        # typecheck all TS packages
+pnpm lint:packages    # eslint over ts/packages
+pnpm test             # package unit tests plus example validation
+```
 
-   - Node.js (Latest LTS version recommended)
-   - [pnpm](https://pnpm.io/) (v10.8.0 or later)
-   - [bun](https://bun.sh) for productivity (optional)
+Runtime E2E suites (require credentials):
 
-2. **Clone and Install**
+```bash
+pnpm test:e2e:node
+pnpm test:e2e:deno
+pnpm test:e2e:cloudflare
+pnpm test:e2e:cli
+```
 
-   ```bash
-   git clone https://github.com/ComposioHQ/sdk-v3-ts.git
-   cd composio
-   pnpm install
-   ```
+Scaffolding:
 
-3. **Build**
+```bash
+pnpm create:provider <name> [--agentic]   # new provider package
+pnpm create:example <name>                # new example under ts/examples
+```
 
-   ```bash
-   pnpm build
-   ```
-
-4. **Development Commands**
-
-   ```bash
-   # Lint code
-   pnpm lint
-
-   # Fix linting issues
-   pnpm lint:fix
-
-   # Format code
-   pnpm format
-
-   # Create a new provider
-   pnpm create:provider <provider-name> [--agentic]
-
-   # Create a new example
-   pnpm create:example <example-name>
-
-   # Check peer dependencies
-   pnpm check:peer-deps
-
-   # Update peer dependencies
-   pnpm update:peer-deps
-   ```
-
-## Creating a New Example
-
-1. Use the create:example script:
-
-   ```bash
-   pnpm create:example my-example
-   ```
-
-2. The script will create a new example in `examples/my-example` with:
-
-   - `package.json` with minimal dependencies (`@composio/core` and `dotenv`)
-   - `tsconfig.json` for TypeScript configuration
-   - `.env.example` and `.env` files for environment variables
-   - `src/index.ts` with basic Composio SDK setup
-   - `README.md` with setup and usage instructions
-   - Dependencies automatically installed
-
-3. Next steps after creation:
-   - Edit `.env` and add your `COMPOSIO_API_KEY`
-   - Customize `src/index.ts` with your example logic
-   - Add any additional dependencies as needed
-   - Run with `pnpm start` or `pnpm dev` (with file watching)
-
-## Creating a New Provider
-
-1. Use the create:provider script:
-
-   ```bash
-   pnpm create:provider my-provider [--agentic]
-   ```
-
-2. The script will create a new provider in `packages/providers/my-provider` with:
-
-   - Basic provider implementation
-   - TypeScript configuration
-   - Package configuration
-   - README template
-
-3. Implement the required methods in `src/index.ts`:
-   - For non-agentic providers: `wrapTool` and `wrapTools`
-   - For agentic providers: `wrapTool`, `wrapTools`, and execution handlers
-
-## Release Process
-
-For detailed information about both automated and manual release processes, please refer to our [Release Process Documentation](./docs/internal/release.md).
-
-## Environment Variables
-
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `COMPOSIO_BASE_URL`: Custom API base URL (optional)
-- `COMPOSIO_LOG_LEVEL`: Logging level (silent, error, warn, info, debug)
-- `COMPOSIO_DISABLE_TELEMETRY`: Disable telemetry when set to "true"
-- `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT_NAME>`: Specific version for a toolkit (e.g., `COMPOSIO_TOOLKIT_VERSION_GITHUB=20250902_00`)
-- `DEVELOPMENT`: Development mode flag
-- `CI`: CI environment flag
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more details.
-
-## License
-
-ISC License
+Changesets are required for changes to published packages; see the [contribution guidelines](../CONTRIBUTING.md).
 
 ## Support
 
-For support, please visit our [Documentation](./docs) or join our [Discord Community](https://discord.gg/composio).
+- [Documentation](https://docs.composio.dev)
+- [Discord community](https://discord.gg/composio)
+- [Open an issue](https://github.com/ComposioHQ/composio/issues)

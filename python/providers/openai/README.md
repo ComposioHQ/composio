@@ -1,73 +1,70 @@
-## 🚀🔗 Leveraging OpenAI with Composio
+# composio-openai
 
-Facilitate the integration of OpenAI with Composio to empower OpenAI models to directly interact with external applications, broadening their capabilities and application scope.
+Adapts Composio tools to OpenAI function calling, for both the Responses API and the Chat Completions API.
 
-### Objective
-
-- **Automate starring a GitHub repository** using conversational instructions via OpenAI Function Calls.
-
-### Installation and Setup
-
-Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
+## Installation
 
 ```bash
-# Install Composio LangChain package
-pip install composio-openai
-
-# Connect your GitHub account
-composio-cli add github
-
-# View available applications you can connect with
-composio-cli show-apps
+pip install composio composio-openai openai
 ```
 
-### Usage Steps
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `OPENAI_API_KEY` in your environment.
 
-#### 1. Import Base Packages
+## Quickstart
 
-Prepare your environment by initializing necessary imports from OpenAI and setting up your client.
+This package exports two providers: `OpenAIResponsesProvider` for the [Responses API](https://platform.openai.com/docs/api-reference/responses) and `OpenAIProvider` for Chat Completions. Both are non-agentic: the model returns tool calls, you execute them with `handle_tool_calls`, and you feed the results back.
 
 ```python
+import json
 from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider
 
-# Initialize OpenAI client
-openai_client = OpenAI()
-```
+composio = Composio(provider=OpenAIResponsesProvider())
+client = OpenAI()
 
-### Step 2: Integrating GitHub Tools with Composio
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
-```python
-from composio_openai import App, ComposioToolSet
+response = client.responses.create(
+    model="gpt-5.2",
+    tools=tools,
+    input=[
+        {
+            "role": "user",
+            "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        }
+    ]
+)
 
-toolset = ComposioToolSet()
-actions = toolset.get_tools(apps=[App.GITHUB])
-```
-
-### Step 3: Agent Execution
-
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
-
-```python
-my_task = "Star a repo composiohq/composio on GitHub"
-
-# Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(model="gpt-5",
-    tools=actions, # Passing actions we fetched earlier.
-    messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": my_task}
+# Agentic loop: keep executing tool calls until the model responds with text
+while True:
+    tool_calls = [o for o in response.output if o.type == "function_call"]
+    if not tool_calls:
+        break
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    response = client.responses.create(
+        model="gpt-5.2",
+        tools=tools,
+        previous_response_id=response.id,
+        input=[
+            {"type": "function_call_output", "call_id": tool_calls[i].call_id, "output": json.dumps(result)}
+            for i, result in enumerate(results)
         ]
     )
 
-pprint(response)
+# Print final response
+for item in response.output:
+    if item.type == "message":
+        print(item.content[0].text)
 ```
 
-### Step 4: Validate Execution Response
+## Chat Completions
 
-Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
+`OpenAIProvider` targets `client.chat.completions.create` and is the Composio SDK default, so `Composio()` with no provider uses it. The loop is the same shape: call `handle_tool_calls` on each response, append the results as `tool` messages, and call the API again. See the [docs page](https://docs.composio.dev/docs/providers/openai) for the full example.
 
-```python
-result = toolset.handle_tool_calls(response)
-pprint(result)
-```
+## Links
+
+- OpenAI provider docs: https://docs.composio.dev/docs/providers/openai
+- Composio docs: https://docs.composio.dev

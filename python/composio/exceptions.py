@@ -187,6 +187,10 @@ class ErrorUploadingFile(FileError):
     pass
 
 
+class BlockedInternalUrlError(FileError):
+    """Raised when a URL file input resolves to a non-public network address."""
+
+
 class SensitiveFilePathBlockedError(FileError):
     """Raised when a local file path is refused before upload (sensitive directory or credential-like name)."""
 
@@ -253,6 +257,15 @@ class WebhookSignatureVerificationError(TriggerError):
 
 class WebhookPayloadError(TriggerError):
     """Raised when webhook payload is invalid."""
+
+    pass
+
+
+class TriggerTypeNotFound(TriggerError, NotFoundError):
+    """Raised when a trigger type cannot be found for the given slug.
+
+    Mirrors the TypeScript SDK's ``ComposioTriggerTypeNotFoundError``.
+    """
 
     pass
 

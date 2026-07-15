@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/json-schema-to-zod#readme",
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/json-schema-to-zod#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -47,7 +47,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^24.0.1",
+    "@types/node": "^26.1.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

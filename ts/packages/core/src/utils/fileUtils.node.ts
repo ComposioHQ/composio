@@ -7,8 +7,9 @@ import logger from './logger';
 import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
-import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths.node';
+import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
+import { ssrfSafeFetch } from './ssrfGuard.node';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -37,6 +38,25 @@ export type GetFileDataAfterUploadingToS3Options = {
    */
   fileUploadAllowlist?: string[];
   signal?: AbortSignal;
+};
+
+/**
+ * Checks whether `value` is an absolute http(s) URL rather than a local path.
+ *
+ * A bare `startsWith('http')` check also matches local paths like
+ * `http_export/report.csv` or `httpdocs/.env`, which routes them into the URL
+ * fetch branch and skips the allowlist/denylist checks in
+ * {@link getFileDataAfterUploadingToS3}. `new URL()` requires a real scheme
+ * (`http:` or `https:`) followed by `//`, so relative-looking paths correctly
+ * fail to parse and are treated as local.
+ */
+export const isHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
 };
 
 // Helper function to get file extension from MIME type
@@ -150,7 +170,10 @@ const readFileContentFromURL = async (
   path: string,
   signal?: AbortSignal
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
-  const response = await fetch(path, { signal });
+  // SSRF guard: `path` is user-supplied (and can come from an LLM-produced tool
+  // argument), so it must not be allowed to reach internal/private addresses or
+  // redirect into them. See ssrfGuard.node.ts.
+  const response = await ssrfSafeFetch(path, { signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
@@ -248,7 +271,7 @@ const readFile = async (
       mimeType: file.type,
     };
   } else if (typeof file === 'string') {
-    if (file.startsWith('http')) {
+    if (isHttpUrl(file)) {
       return await readFileContentFromURL(file, signal);
     } else {
       return await readFileContent(file);
@@ -273,7 +296,7 @@ export const getFileDataAfterUploadingToS3 = async (
     throw new Error('Either path or blob must be provided');
   }
 
-  const isLocalPath = typeof file === 'string' && !file.startsWith('http');
+  const isLocalPath = typeof file === 'string' && !isHttpUrl(file);
 
   if (isLocalPath && fileUploadAllowlist !== undefined) {
     assertPathInsideUploadDirs(file as string, fileUploadAllowlist);

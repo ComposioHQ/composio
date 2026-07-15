@@ -21,8 +21,8 @@ Brief intro paragraph.
 
 | SDK | Version |
 |-----|---------|
-| Python | v0.10.2 |
-| TypeScript | v0.3.1 |
+| Python `composio` | `0.10.2` |
+| TypeScript `@composio/core` | `0.3.1` |
 
 ### Breaking Changes (if applicable)
 
@@ -47,6 +47,8 @@ new_code()
 - Change 1
 - Change 2
 ```
+
+Use the released version in the final table column. The Python release guard reads that column from rows labelled `Python \`composio\``.
 
 ## Rules
 

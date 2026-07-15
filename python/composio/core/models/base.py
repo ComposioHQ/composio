@@ -11,6 +11,7 @@ import typing as t
 
 from composio.__version__ import __version__
 from composio.client import HttpClient
+from composio.utils.redaction import redact_sensitive_text
 from composio.utils.logging import WithLogger
 
 from ._telemetry import Event, create_event, push_event
@@ -56,8 +57,8 @@ def trace_method(method: t.Callable, name: str) -> t.Callable:
             _, payload = event
             payload["error"] = {
                 "name": e.__class__.__name__,
-                "message": str(e),
-                "stack": traceback.format_exc(),
+                "message": redact_sensitive_text(str(e)),
+                "stack": redact_sensitive_text(traceback.format_exc()),
             }
             event = ("error", payload)
             raise e

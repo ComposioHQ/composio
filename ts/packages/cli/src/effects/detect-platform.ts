@@ -21,7 +21,7 @@ export const detectPlatform: Effect.Effect<PlatformArch, UnsupportedPlatformErro
   Effect.gen(function* () {
     const nodeOs = yield* NodeOs;
     const rawPlatform = nodeOs.platform;
-    const rawArch = nodeOs.arch;
+    const rawArch: string = nodeOs.arch;
 
     const platform: NodeJS.Platform = yield* Match.value(rawPlatform).pipe(
       Match.when('darwin', () => Effect.succeed('darwin' as const)),

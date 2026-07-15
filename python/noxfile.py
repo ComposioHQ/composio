@@ -78,6 +78,7 @@ def tst(session: Session):
     """Run the Python unit test suite."""
     session.install(".", "--group", "dev")
     session.install("./providers/langchain")
+    session.install("./providers/autogen")
     test_paths = session.posargs or ["tests/"]
     session.run("pytest", *test_paths, "-v", "--tb=short")
 
@@ -137,4 +138,37 @@ def type_inference(session: Session):
         "tests/test_type_inference_langgraph.py",
         "tests/test_type_inference_llamaindex.py",
         "tests/test_type_inference_openai_agents.py",
+    )
+
+
+# Modules scanned for dead code (source only, no tests/examples/scripts)
+modules_for_vulture = [
+    "composio/",
+    "providers/",
+]
+
+
+@nox.session(name="dead_code")
+def dead_code(session: Session):
+    """Report likely-dead code (unused functions, classes, variables).
+
+    Report-only: vulture exits 1 when it finds candidates, but we do not fail
+    the session on that so it never blocks CI on false positives. Vet the
+    output by hand; suppress confirmed false positives by adding the symbol to
+    ``config/vulture_allowlist.py``. Ruff already covers unused imports (F401)
+    and unused locals (F841) in the `chk` session; vulture adds cross-module
+    unused functions/classes that ruff cannot see.
+    """
+    session.install("vulture>=2.14")
+    session.run(
+        "vulture",
+        *modules_for_vulture,
+        "config/vulture_allowlist.py",
+        "--min-confidence",
+        "80",
+        "--exclude",
+        "*/build/*,*/dist/*,*/.venv/*,*/.nox/*,*/__pycache__/*",
+        # vulture exit codes: 0 = clean, 3 = candidates found. Report-only, so
+        # neither should fail the session. (1/2 are real usage/parse errors.)
+        success_codes=[0, 3],
     )

@@ -42,6 +42,13 @@ vi.mock('path', async importOriginal => {
   };
 });
 
+// Mock DNS resolution so the SSRF guard treats test hosts as public without
+// hitting the network. (URL uploads route through ssrfSafeFetch, which resolves
+// the host and rejects private/internal addresses.)
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
+}));
+
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -107,7 +114,10 @@ describe('fileUtils', () => {
       });
 
       expect(result.name).toBe('document.pdf');
-      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, { signal: undefined });
+      expect(mockFetch).toHaveBeenCalledWith(urlWithQuery, {
+        signal: undefined,
+        redirect: 'manual',
+      });
     });
 
     it('should generate filename when URL has no filename', async () => {
@@ -429,6 +439,21 @@ describe('fileUtils', () => {
           client: mockClient,
         })
       ).rejects.toThrow(ComposioSensitiveFilePathBlockedError);
+    });
+
+    it('treats a local path that merely starts with "http" as a path, not a URL', async () => {
+      // Regression test: a naive `.startsWith('http')` check would misclassify
+      // this as a URL and skip the local-path denylist entirely.
+      await expect(
+        getFileDataAfterUploadingToS3(path.join('http_export', '.aws', 'creds'), {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          client: mockClient,
+        })
+      ).rejects.toThrow(ComposioSensitiveFilePathBlockedError);
+
+      // It must not have been routed through the URL-fetch branch.
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('should handle fetch errors for URLs', async () => {

@@ -82,10 +82,14 @@ class OpenAIProvider(
         :return: A list of output objects from the function calls.
         """
         outputs = []
-        for choice in response.choices:
-            if choice.message.tool_calls is None:
-                continue
-
+        # Only the first choice is actionable: its tool results feed back into a
+        # single assistant turn. With n > 1, iterating every choice would run each
+        # tool call once per choice and orphan the tool_call_ids belonging to the
+        # alternative completions.
+        choice = response.choices[0] if response.choices else None
+        # A single assistant message can carry several tool calls (parallel tool
+        # calls, on by default); each one needs its own tool result.
+        if choice is not None and choice.message.tool_calls is not None:
             for tool_call in choice.message.tool_calls:
                 outputs.append(
                     self.execute_tool_call(

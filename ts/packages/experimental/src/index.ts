@@ -1,8 +1,8 @@
 /**
  * Experimental Composio integrations and helpers.
  *
- * Currently includes the experimental Pi provider for
- * @earendil-works/pi-coding-agent.
+ * The root export remains the Pi provider for backwards compatibility.
+ * Framework-specific integrations are also available through subpath exports.
  *
  * @packageDocumentation
  * @module experimental
