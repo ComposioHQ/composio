@@ -4,7 +4,7 @@ import { Cause, Effect, Exit, Fiber, TestClock } from 'effect';
 import { afterEach, vi } from 'vitest';
 import { CommandRunner } from 'src/services/command-runner';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { cli, TestLive } from 'test/__utils__';
+import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 type AgentHost = 'claude' | 'codex';
 type MarketplaceState = 'missing' | 'canonical' | 'conflict';
@@ -99,7 +99,13 @@ const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
   };
   return new SetupSkillInstaller({
     isClaudeSkillReady: Effect.sync(() => ready),
+    hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: ensureClaudeSkill(),
+    removeClaudeSkill: Effect.sync(() => {
+      const changed = ready;
+      ready = false;
+      return changed;
+    }),
   });
 };
 
@@ -168,6 +174,14 @@ const makeFakeHosts = (
     }
     if (
       !options.noOp &&
+      (command === 'claude plugin uninstall composio@composio --scope user --yes' ||
+        command === 'codex plugin remove composio@composio --json')
+    ) {
+      state[host].plugin = 'missing';
+      return {};
+    }
+    if (
+      !options.noOp &&
       (command.includes('plugin install') ||
         command.includes('plugin enable') ||
         command === 'codex plugin add composio@composio --json')
@@ -221,6 +235,12 @@ describe('CLI: composio setup', () => {
           marketplace: 'canonical',
           plugin: 'enabled',
         });
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code detected.');
+        expect(output).toContain(
+          'Successfully installed and enabled the Composio plugin for Claude Code.'
+        );
       })
     );
   });
@@ -234,6 +254,49 @@ describe('CLI: composio setup', () => {
         yield* cli(['setup', '--target', 'codex', '--yes']);
 
         expect(existingCodex.commands.some(parts => parts.includes('add'))).toBe(false);
+      })
+    );
+  });
+
+  const existingClaudeWithStaleSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  let staleSkillRepaired = false;
+  let staleSkillReady = false;
+  const staleSkillInstaller = new SetupSkillInstaller({
+    isClaudeSkillReady: Effect.sync(() => staleSkillReady),
+    hasManagedClaudeSkill: Effect.succeed(true),
+    ensureClaudeSkill: Effect.sync(() => {
+      staleSkillRepaired = true;
+      staleSkillReady = true;
+      return true;
+    }),
+    removeClaudeSkill: Effect.sync(() => {
+      const changed = staleSkillReady;
+      staleSkillReady = false;
+      return changed;
+    }),
+  });
+  layer(
+    TestLive({
+      commandRunner: existingClaudeWithStaleSkill.runner,
+      setupSkillInstaller: staleSkillInstaller,
+    })
+  )('existing Claude plugin with stale skill', it => {
+    it.scoped('requires approval, then repairs the skill without extra output', () =>
+      Effect.gen(function* () {
+        const withoutApproval = yield* Effect.exit(cli(['setup', '--target', 'claude']));
+        expect(Exit.isFailure(withoutApproval)).toBe(true);
+        expect(staleSkillRepaired).toBe(false);
+
+        yield* cli(['setup', '--target', 'claude', '--yes']);
+
+        expect(staleSkillRepaired).toBe(true);
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain(
+          'The Composio plugin for Claude Code is already installed and enabled.'
+        );
+        expect(output).not.toContain('skill');
       })
     );
   });
@@ -308,6 +371,10 @@ describe('CLI: composio setup', () => {
         expect(
           autoClaude.commands.some(parts => parts[0] === 'codex' && parts[1] !== '--version')
         ).toBe(false);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code detected.');
+        expect(output).toContain('Codex not detected.');
       })
     );
   });
@@ -322,12 +389,20 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('automatic setup with both hosts', it => {
-    it.scoped('selects both detected hosts', () =>
+    it.scoped('selects both detected hosts and reports only plugin status', () =>
       Effect.gen(function* () {
-        yield* cli(['setup', '--target', 'auto', '--yes']);
+        yield* cli(['setup', '--target', 'auto']);
 
         expect(autoBoth.commands.some(parts => parts[0] === 'claude')).toBe(true);
         expect(autoBoth.commands.some(parts => parts[0] === 'codex')).toBe(true);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code and Codex detected.');
+        expect(output).toContain(
+          'The Composio plugin for Claude Code is already installed and enabled.'
+        );
+        expect(output).toContain('The Composio plugin for Codex is already installed and enabled.');
+        expect(output).not.toContain('composio-cli skill');
       })
     );
   });
@@ -354,6 +429,223 @@ describe('CLI: composio setup', () => {
           marketplace: 'canonical',
           plugin: 'enabled',
         });
+      })
+    );
+  });
+
+  const partialAllTargets = makeFakeHosts({ claude: { available: true } });
+  layer(TestLive({ commandRunner: partialAllTargets.runner }))(
+    'explicit all-host setup with a missing host',
+    it => {
+      it.scoped('fails before mutating the detected host', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          expect(partialAllTargets.state.claude).toMatchObject({
+            marketplace: 'missing',
+            plugin: 'missing',
+          });
+          expect(
+            partialAllTargets.commands.some(parts =>
+              ['marketplace', 'install', 'enable'].some(operation => parts.includes(operation))
+            )
+          ).toBe(false);
+        })
+      );
+    }
+  );
+
+  const uninstallBoth = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+    codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: uninstallBoth.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('uninstall from both hosts', it => {
+    it.scoped('uses native removal commands and is idempotent', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
+        yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
+
+        expect(uninstallBoth.commands).toContainEqual([
+          'claude',
+          'plugin',
+          'uninstall',
+          'composio@composio',
+          '--scope',
+          'user',
+          '--yes',
+        ]);
+        expect(uninstallBoth.commands).toContainEqual([
+          'codex',
+          'plugin',
+          'remove',
+          'composio@composio',
+          '--json',
+        ]);
+        expect(
+          uninstallBoth.commands.filter(
+            parts =>
+              parts.join(' ') === 'claude plugin uninstall composio@composio --scope user --yes'
+          )
+        ).toHaveLength(1);
+        expect(
+          uninstallBoth.commands.filter(
+            parts => parts.join(' ') === 'codex plugin remove composio@composio --json'
+          )
+        ).toHaveLength(1);
+        expect(uninstallBoth.state.claude.plugin).toBe('missing');
+        expect(uninstallBoth.state.codex.plugin).toBe('missing');
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Claude Code.');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Codex.');
+        expect(output).not.toContain('skill');
+      })
+    );
+  });
+
+  const uninstallMissing = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'missing' },
+    codex: { available: true, marketplace: 'canonical', plugin: 'missing' },
+  });
+  layer(TestLive({ commandRunner: uninstallMissing.runner }))(
+    'uninstall when plugins are absent',
+    it => {
+      it.scoped('reports the idempotent state without requiring approval', () =>
+        Effect.gen(function* () {
+          yield* cli(['setup', '--uninstall', '--target', 'all']);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('The Composio plugin for Claude Code is not installed.');
+          expect(output).toContain('The Composio plugin for Codex is not installed.');
+        })
+      );
+    }
+  );
+
+  const orphanedClaudeSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'missing' },
+  });
+  let managedClaudeSkill = true;
+  layer(
+    TestLive({
+      commandRunner: orphanedClaudeSkill.runner,
+      setupSkillInstaller: new SetupSkillInstaller({
+        isClaudeSkillReady: Effect.sync(() => managedClaudeSkill),
+        hasManagedClaudeSkill: Effect.sync(() => managedClaudeSkill),
+        ensureClaudeSkill: Effect.succeed(false),
+        removeClaudeSkill: Effect.sync(() => {
+          const changed = managedClaudeSkill;
+          managedClaudeSkill = false;
+          return changed;
+        }),
+      }),
+    })
+  )('uninstall with an orphaned managed Claude skill', it => {
+    it.scoped('requires approval before removing the managed skill', () =>
+      Effect.gen(function* () {
+        const withoutApproval = yield* Effect.exit(
+          cli(['setup', '--uninstall', '--target', 'claude'])
+        );
+        expect(Exit.isFailure(withoutApproval)).toBe(true);
+        expect(managedClaudeSkill).toBe(true);
+
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+        expect(managedClaudeSkill).toBe(false);
+      })
+    );
+  });
+
+  const uninstallWithUnmanagedClaudeSkill = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: uninstallWithUnmanagedClaudeSkill.runner,
+      setupSkillInstaller: new SetupSkillInstaller({
+        isClaudeSkillReady: Effect.succeed(true),
+        hasManagedClaudeSkill: Effect.succeed(false),
+        ensureClaudeSkill: Effect.succeed(false),
+        removeClaudeSkill: Effect.succeed(false),
+      }),
+    })
+  )('uninstall with an unmanaged Claude skill', it => {
+    it.scoped('preserves the skill without treating plugin removal as a failure', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+
+        expect(uninstallWithUnmanagedClaudeSkill.state.claude.plugin).toBe('missing');
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Successfully uninstalled the Composio plugin for Claude Code.');
+      })
+    );
+  });
+
+  const nonInteractiveUninstall = makeFakeHosts({
+    claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: nonInteractiveUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('non-interactive uninstall approval', it => {
+    it.scoped('requires --yes before removing an installed plugin', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['setup', '--uninstall', '--target', 'claude']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(nonInteractiveUninstall.commands.some(parts => parts.includes('uninstall'))).toBe(
+          false
+        );
+      })
+    );
+  });
+
+  const conflictingUninstall = makeFakeHosts({
+    claude: { available: true, marketplace: 'conflict', plugin: 'enabled' },
+  });
+  layer(
+    TestLive({
+      commandRunner: conflictingUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('uninstall with a conflicting marketplace', it => {
+    it.scoped('removes the installed plugin without replacing the marketplace', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
+
+        expect(conflictingUninstall.state.claude.plugin).toBe('missing');
+        expect(conflictingUninstall.state.claude.marketplace).toBe('conflict');
+      })
+    );
+  });
+
+  const failedUninstall = makeFakeHosts(
+    { claude: { available: true, marketplace: 'canonical', plugin: 'enabled' } },
+    { failOn: 'plugin uninstall' }
+  );
+  layer(
+    TestLive({
+      commandRunner: failedUninstall.runner,
+      setupSkillInstaller: makeSkillInstaller(true),
+    })
+  )('native uninstall failure', it => {
+    it.scoped('fails without reporting the plugin as removed', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--uninstall', '--target', 'claude', '--yes'])
+        );
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(failedUninstall.state.claude.plugin).toBe('enabled');
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).not.toContain('Successfully uninstalled');
       })
     );
   });
@@ -420,6 +712,32 @@ describe('CLI: composio setup', () => {
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
+      })
+    );
+
+    it.scoped('can skip automatic setup for installer integration', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--target', 'auto', '--yes', '--if-present'])
+        );
+        expect(Exit.isSuccess(exit)).toBe(true);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code and Codex not detected.');
+      })
+    );
+
+    it.scoped('does not skip an explicitly requested missing host', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(
+          cli(['setup', '--target', 'claude', '--yes', '--if-present'])
+        );
+        expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          expect(Cause.pretty(exit.cause)).toContain(
+            'claude is not installed or not available on PATH'
+          );
+        }
       })
     );
   });
@@ -558,12 +876,18 @@ describe('CLI: composio setup', () => {
 
   const nonInteractive = makeFakeHosts({ claude: { available: true } });
   layer(TestLive({ commandRunner: nonInteractive.runner }))('non-interactive approval', it => {
-    it.scoped('requires --yes before inspecting or mutating hosts', () =>
+    it.scoped('inspects first but requires --yes before mutating hosts', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude']));
 
         expect(Exit.isFailure(exit)).toBe(true);
-        expect(nonInteractive.commands).toHaveLength(0);
+        expect(nonInteractive.commands).toContainEqual(['claude', '--version']);
+        expect(nonInteractive.commands).toContainEqual(['claude', 'plugin', 'list', '--json']);
+        expect(
+          nonInteractive.commands.some(parts =>
+            ['add', 'install', 'enable'].some(operation => parts.includes(operation))
+          )
+        ).toBe(false);
       })
     );
   });

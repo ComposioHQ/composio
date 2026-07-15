@@ -44,6 +44,64 @@ export const isClaudeSkillCurrent = (home: string, releaseTag: string) =>
     return yield* checkClaudeSkillCurrent(fs, path, home, releaseTag);
   });
 
+const isLinkedTo = (fs: FileSystem.FileSystem, path: Path.Path, source: string, target: string) =>
+  fs.readLink(source).pipe(
+    Effect.map(link => path.resolve(path.dirname(source), link) === target),
+    Effect.catchAll(() => Effect.succeed(false))
+  );
+
+export const hasManagedClaudeSkill = (home: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const skillName = resolveInstalledSkillName();
+    const canonicalSkill = path.join(home, '.agents', 'skills', skillName);
+    const claudeSkill = resolveTargetSkillPath({ home, path, skillName, target: 'claude' });
+
+    if (yield* isLinkedTo(fs, path, claudeSkill, canonicalSkill)) return true;
+    const isManaged = yield* fs.exists(path.join(canonicalSkill, SKILL_RELEASE_TAG_FILENAME));
+    if (!isManaged) return false;
+
+    const otherTargets = (['codex', 'openclaw'] as const).map(target =>
+      resolveTargetSkillPath({ home, path, skillName, target })
+    );
+    const references = yield* Effect.all(
+      otherTargets.map(target => isLinkedTo(fs, path, target, canonicalSkill))
+    );
+    return !references.some(Boolean);
+  });
+
+export const removeManagedClaudeSkill = (home: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const skillName = resolveInstalledSkillName();
+    const canonicalSkill = path.join(home, '.agents', 'skills', skillName);
+    const claudeSkill = resolveTargetSkillPath({ home, path, skillName, target: 'claude' });
+
+    let changed = false;
+    if (yield* isLinkedTo(fs, path, claudeSkill, canonicalSkill)) {
+      yield* fs.remove(claudeSkill, { recursive: true, force: true });
+      changed = true;
+    }
+
+    const isManaged = yield* fs.exists(path.join(canonicalSkill, SKILL_RELEASE_TAG_FILENAME));
+    if (!isManaged) return changed;
+
+    const otherTargets = (['codex', 'openclaw'] as const).map(target =>
+      resolveTargetSkillPath({ home, path, skillName, target })
+    );
+    const references = yield* Effect.all(
+      otherTargets.map(target => isLinkedTo(fs, path, target, canonicalSkill))
+    );
+    const stillReferenced = references.some(Boolean);
+    if (!stillReferenced) {
+      yield* fs.remove(canonicalSkill, { recursive: true, force: true });
+      changed = true;
+    }
+    return changed;
+  }).pipe(Effect.uninterruptible);
+
 export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
   'services/SetupSkillInstaller',
   {
@@ -56,6 +114,7 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
 
       return {
         isClaudeSkillReady: isCurrent(resolveSetupSkillReleaseTag()),
+        hasManagedClaudeSkill: hasManagedClaudeSkill(os.homedir),
         ensureClaudeSkill: Effect.gen(function* () {
           const releaseTag = resolveSetupSkillReleaseTag();
           if (yield* isCurrent(releaseTag)) return false;
@@ -63,9 +122,11 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
           yield* installSkill({
             target: 'claude',
             releaseTag,
+            silent: true,
           });
           return true;
         }),
+        removeClaudeSkill: removeManagedClaudeSkill(os.homedir),
       };
     }),
     dependencies: [],

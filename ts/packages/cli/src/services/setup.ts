@@ -19,7 +19,7 @@ const CODEX_PLUGIN_MARKETPLACE = {
   plugin: 'composio@composio',
 } as const;
 
-interface SetupTargetStatus {
+export interface SetupTargetStatus {
   readonly target: AgentHost;
   readonly available: boolean;
   readonly marketplace_configured: boolean;
@@ -29,7 +29,7 @@ interface SetupTargetStatus {
   readonly cli_skill_ready: boolean;
 }
 
-interface SetupTargetResult extends SetupTargetStatus {
+export interface SetupTargetResult extends SetupTargetStatus {
   readonly changed: boolean;
   readonly plugin_changed: boolean;
   readonly skill_changed: boolean;
@@ -44,6 +44,7 @@ interface SetupTargetAdapter {
   readonly marketplaceAddArgs: ReadonlyArray<string>;
   readonly pluginInstallArgs: ReadonlyArray<string>;
   readonly pluginEnableArgs: ReadonlyArray<string>;
+  readonly pluginUninstallArgs: ReadonlyArray<string>;
   readonly marketplaceRecordsKey?: string;
   readonly pluginRecordsKey?: string;
   readonly pluginScope?: string;
@@ -51,7 +52,7 @@ interface SetupTargetAdapter {
   readonly skillSource: 'bundled' | 'standalone';
 }
 
-interface InspectedSetupTarget extends SetupTargetStatus {
+export interface InspectedSetupTarget extends SetupTargetStatus {
   readonly marketplace_conflict: boolean;
 }
 
@@ -72,6 +73,14 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
     ],
     pluginInstallArgs: ['plugin', 'install', CLAUDE_PLUGIN_MARKETPLACE.plugin, '--scope', 'user'],
     pluginEnableArgs: ['plugin', 'enable', CLAUDE_PLUGIN_MARKETPLACE.plugin, '--scope', 'user'],
+    pluginUninstallArgs: [
+      'plugin',
+      'uninstall',
+      CLAUDE_PLUGIN_MARKETPLACE.plugin,
+      '--scope',
+      'user',
+      '--yes',
+    ],
     pluginScope: 'user',
     marketplaceRemoveCommand: 'claude plugin marketplace remove composio --scope user',
     skillSource: 'standalone',
@@ -86,6 +95,7 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
     pluginInstallArgs: ['plugin', 'add', CODEX_PLUGIN_MARKETPLACE.plugin, '--json'],
     // Codex has no separate enable command. Re-adding is its native install/repair path.
     pluginEnableArgs: ['plugin', 'add', CODEX_PLUGIN_MARKETPLACE.plugin, '--json'],
+    pluginUninstallArgs: ['plugin', 'remove', CODEX_PLUGIN_MARKETPLACE.plugin, '--json'],
     marketplaceRecordsKey: 'marketplaces',
     pluginRecordsKey: 'installed',
     marketplaceRemoveCommand: 'codex plugin marketplace remove composio --json',
@@ -265,10 +275,10 @@ const requireInspection = <T>(
   return Effect.succeed(inspected);
 };
 
-const inspectAdapter = (adapter: SetupTargetAdapter) =>
+const inspectAdapter = (adapter: SetupTargetAdapter, knownAvailable?: boolean) =>
   Effect.gen(function* () {
     const skillInstaller = yield* SetupSkillInstaller;
-    const available = yield* isAdapterAvailable(adapter);
+    const available = knownAvailable ?? (yield* isAdapterAvailable(adapter));
     if (!available) {
       return {
         target: adapter.target,
@@ -331,12 +341,14 @@ const pluginRepairStep = (
   return undefined;
 };
 
-const isSetupReady = (status: SetupTargetStatus): boolean =>
+export const isSetupPluginReady = (status: SetupTargetStatus): boolean =>
   status.available &&
   status.marketplace_configured &&
   status.plugin_installed &&
-  status.plugin_enabled &&
-  status.cli_skill_ready;
+  status.plugin_enabled;
+
+export const isSetupReady = (status: SetupTargetStatus): boolean =>
+  isSetupPluginReady(status) && status.cli_skill_ready;
 
 const runRequired = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>, operation: string) =>
   Effect.gen(function* () {
@@ -414,41 +426,88 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
     } satisfies SetupTargetResult;
   });
 
+const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) =>
+  Effect.gen(function* () {
+    let pluginChanged = false;
+    if (initial.plugin_installed) {
+      yield* runRequired(
+        adapter,
+        adapter.pluginUninstallArgs,
+        `Uninstalling the ${adapter.target} plugin`
+      );
+      pluginChanged = true;
+    }
+
+    const skillInstaller = yield* SetupSkillInstaller;
+    let skillChanged = false;
+    if (adapter.skillSource === 'standalone') {
+      skillChanged = yield* skillInstaller.removeClaudeSkill;
+    }
+
+    const final = yield* inspectAdapter(adapter);
+    if (final.plugin_installed) {
+      return yield* Effect.fail(
+        new Error(
+          `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
+        )
+      );
+    }
+
+    return {
+      target: adapter.target,
+      available: final.available,
+      marketplace_configured: final.marketplace_configured,
+      plugin_installed: final.plugin_installed,
+      plugin_enabled: final.plugin_enabled,
+      cli_skill_ready: final.cli_skill_ready,
+      changed: pluginChanged || skillChanged,
+      plugin_changed: pluginChanged,
+      skill_changed: skillChanged,
+    } satisfies SetupTargetResult;
+  });
+
 const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHost>>>> = {
   claude: ['claude'],
   codex: ['codex'],
   all: ['claude', 'codex'],
 };
 
-export const resolveSetupTargets = (target: SetupTarget) =>
-  Effect.gen(function* () {
-    const fixedTargets = FIXED_TARGETS[target];
-    if (fixedTargets) return fixedTargets;
+export interface SetupTargetDetection {
+  readonly target: AgentHost;
+  readonly available: boolean;
+}
 
-    const statuses = yield* Effect.all(
-      ADAPTER_LIST.map(adapter =>
-        isAdapterAvailable(adapter).pipe(
-          Effect.map(available => ({ target: adapter.target, available }))
+export const detectSetupTargets = (target: SetupTarget) =>
+  Effect.gen(function* () {
+    const targets = FIXED_TARGETS[target] ?? ADAPTER_LIST.map(adapter => adapter.target);
+    return yield* Effect.all(
+      targets.map(target =>
+        isAdapterAvailable(ADAPTERS[target]).pipe(
+          Effect.map(available => ({ target, available }) satisfies SetupTargetDetection)
         )
       )
     );
-    const detected = statuses.filter(status => status.available).map(status => status.target);
-    if (detected.length === 0) {
-      return yield* Effect.fail(
-        new Error(
-          'No supported agent host was detected. Install Claude Code or Codex, or pass `--target claude|codex` after installing it.'
-        )
-      );
-    }
-    return detected;
   });
 
-export const installSetupTargets = (targets: ReadonlyArray<AgentHost>) =>
+export const inspectSetupTargets = (
+  detections: ReadonlyArray<SetupTargetDetection>,
+  options: { readonly allowMarketplaceConflict?: boolean } = {}
+) =>
   Effect.gen(function* () {
-    const inspected = yield* Effect.forEach(targets, target => inspectAdapter(ADAPTERS[target]));
-    yield* Effect.forEach(inspected, status =>
-      validateInitialState(ADAPTERS[status.target], status)
+    const inspected = yield* Effect.forEach(
+      detections.filter(detection => detection.available),
+      detection => inspectAdapter(ADAPTERS[detection.target], true)
     );
+    if (!options.allowMarketplaceConflict) {
+      yield* Effect.forEach(inspected, status =>
+        validateInitialState(ADAPTERS[status.target], status)
+      );
+    }
+    return inspected;
+  });
+
+export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+  Effect.gen(function* () {
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
       const result = yield* installAdapter(ADAPTERS[status.target], status).pipe(
@@ -457,6 +516,24 @@ export const installSetupTargets = (targets: ReadonlyArray<AgentHost>) =>
           const targets = completed.map(item => item.target).join(', ');
           return new Error(
             `Setup completed for ${targets} before a later target failed: ${errorMessage(error)}`
+          );
+        })
+      );
+      completed.push(result);
+    }
+    return completed;
+  });
+
+export const uninstallSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+  Effect.gen(function* () {
+    const completed: SetupTargetResult[] = [];
+    for (const status of inspected) {
+      const result = yield* uninstallAdapter(ADAPTERS[status.target], status).pipe(
+        Effect.mapError(error => {
+          if (completed.length === 0) return error;
+          const targets = completed.map(item => item.target).join(', ');
+          return new Error(
+            `Uninstall completed for ${targets} before a later target failed: ${errorMessage(error)}`
           );
         })
       );

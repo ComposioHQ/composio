@@ -5,7 +5,9 @@ import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { SKILL_RELEASE_TAG_FILENAME } from 'src/effects/install-skill';
 import {
+  hasManagedClaudeSkill,
   isClaudeSkillCurrent,
+  removeManagedClaudeSkill,
   resolveSetupSkillReleaseTag,
 } from 'src/services/setup-skill-installer';
 
@@ -86,6 +88,56 @@ describe('SetupSkillInstaller', () => {
         );
 
         expect(yield* isClaudeSkillCurrent(home, '@composio/cli@0.3.0')).toBe(false);
+      })
+    );
+
+    it.effect('removes the CLI-managed Claude skill and canonical copy', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const home = tempy.temporaryDirectory();
+        const canonical = path.join(home, '.agents', 'skills', 'composio-cli');
+        const claude = path.join(home, '.claude', 'skills', 'composio-cli');
+        yield* fs.makeDirectory(canonical, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(canonical, SKILL_RELEASE_TAG_FILENAME),
+          '@composio/cli@0.3.0\n'
+        );
+        yield* fs.makeDirectory(path.dirname(claude), { recursive: true });
+        yield* fs.symlink(path.relative(path.dirname(claude), canonical), claude);
+
+        expect(yield* hasManagedClaudeSkill(home)).toBe(true);
+        expect(yield* removeManagedClaudeSkill(home)).toBe(true);
+        expect(yield* hasManagedClaudeSkill(home)).toBe(false);
+        expect(yield* fs.exists(claude)).toBe(false);
+        expect(yield* fs.exists(canonical)).toBe(false);
+      })
+    );
+
+    it.effect('keeps the canonical skill while another agent references it', () =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const home = tempy.temporaryDirectory();
+        const canonical = path.join(home, '.agents', 'skills', 'composio-cli');
+        const claude = path.join(home, '.claude', 'skills', 'composio-cli');
+        const openclaw = path.join(home, '.openclaw', 'skills', 'composio-cli');
+        yield* fs.makeDirectory(canonical, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(canonical, SKILL_RELEASE_TAG_FILENAME),
+          '@composio/cli@0.3.0\n'
+        );
+        yield* fs.makeDirectory(path.dirname(claude), { recursive: true });
+        yield* fs.makeDirectory(path.dirname(openclaw), { recursive: true });
+        yield* fs.symlink(path.relative(path.dirname(claude), canonical), claude);
+        yield* fs.symlink(path.relative(path.dirname(openclaw), canonical), openclaw);
+
+        expect(yield* hasManagedClaudeSkill(home)).toBe(true);
+        expect(yield* removeManagedClaudeSkill(home)).toBe(true);
+        expect(yield* hasManagedClaudeSkill(home)).toBe(false);
+        expect(yield* fs.exists(claude)).toBe(false);
+        expect(yield* fs.exists(canonical)).toBe(true);
+        expect(yield* fs.exists(openclaw)).toBe(true);
       })
     );
   });

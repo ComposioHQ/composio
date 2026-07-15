@@ -119,6 +119,7 @@ export const installSkill = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
@@ -216,7 +217,9 @@ export const installSkill = (options?: {
       Effect.ensuring(fs.remove(tmpDir, { recursive: true, force: true }).pipe(Effect.orDie))
     );
 
-    yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    if (!options?.silent) {
+      yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    }
   });
 
 /**
@@ -227,6 +230,7 @@ export const installSkillSafe = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   installSkill(options).pipe(
     Effect.sandbox,

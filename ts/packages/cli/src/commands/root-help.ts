@@ -162,7 +162,7 @@ const GENERATE_COMMAND: TaggedValue<CompactCommand> = tagged({
 // ── Account commands ───────────────────────────────────────────────────
 
 const ACCOUNT_COMMANDS: ReadonlyArray<TaggedValue<CompactCommand>> = [
-  tagged({ name: 'setup', description: 'Install agent plugins' }),
+  tagged({ name: 'setup', description: 'Install or uninstall agent plugins' }),
   tagged({ name: 'login', description: 'Log in to Composio' }),
   tagged({ name: 'logout', description: 'Log out from Composio' }),
   tagged({ name: 'whoami', description: 'Show current account info' }),
@@ -874,16 +874,25 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     description: 'Display your account information.',
   },
   setup: {
-    usage: 'composio setup [--target auto|claude|codex|all] [--yes]',
-    description: 'Install plugins for supported agent hosts.',
+    usage: 'composio setup [--target auto|claude|codex|all] [--uninstall] [--yes] [--if-present]',
+    description: 'Install or uninstall plugins for supported agent hosts.',
     examples: [
       'composio setup',
       'composio setup --target auto --yes',
+      'composio setup --uninstall --target auto --yes',
       'composio setup --target all',
     ],
     options: [
       { name: '--target <target>', description: 'auto, claude, codex, or all' },
       { name: '-y, --yes', description: 'Accept setup changes without prompting' },
+      {
+        name: '--uninstall',
+        description: 'Uninstall Composio plugins instead of installing them',
+      },
+      {
+        name: '--if-present',
+        description: 'Exit successfully when automatic detection finds no supported host',
+      },
     ],
   },
   version: {
