@@ -24,6 +24,7 @@ Use the smallest relevant skill:
 - `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
 - `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
 - `eve`: durable backend AI agents built with the eve framework.
+- `effect-v4`: Effect v3-to-v4 beta migration work for the CLI, including package consolidation, `effect/unstable/cli`, and v4 test APIs.
 - `typescript-sdk`, `typescript-testing`, `typescript-providers`: TypeScript SDK/core/provider work.
 - `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.
 - `python-sdk`, `python-testing`, `python-providers`, `python-release`: Python SDK/provider/testing/release work.

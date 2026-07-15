@@ -16,6 +16,7 @@ const expectedSkills = [
   'cli-e2e',
   'cross-sdk-parity',
   'docs-decisions',
+  'effect-v4',
   'eve',
   'python-providers',
   'python-release',

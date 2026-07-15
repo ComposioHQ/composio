@@ -8,7 +8,7 @@ When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typec
 
 ## Architecture
 
-The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.
+The CLI currently runs on **Effect v3** and **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling. For the Effect v4 beta port, read the repo-local `effect-v4` skill before changing dependencies, imports, services, commands, or tests.
 
 ### Entry Point — `src/bin.ts`
 
@@ -27,34 +27,34 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Group / Command      | Purpose                                                                                                              |
+| Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `version`            | Display CLI version                                                                                                  |
-| `whoami`             | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)                          |
-| `login`              | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
-| `logout`             | Clear stored API key                                                                                                 |
-| `signup`             | Create a Composio account                                                                                            |
-| `upgrade`            | Self-update binary from GitHub releases                                                                              |
-| `init`               | Bootstrap a Composio project in the current directory                                                                |
-| `install`            | Install local-tool integrations                                                                                      |
-| `generate {ts        | py}`                                                                                                                 | Generate type stubs (auto-detects project language if no subcommand) |
-| `agent`              | Manage AI agent presets                                                                                              |
-| `toolkits`           | List / inspect / version toolkits                                                                                    |
-| `tools`              | List / inspect / `execute` tools                                                                                     |
-| `triggers`           | List / manage trigger types                                                                                          |
-| `auth-configs`       | Manage auth-config resources (`ac_*`)                                                                                |
-| `connected-accounts` | Manage connected accounts (`ca_*`)                                                                                   |
-| `connections`        | Alias / helper for connected-account flows                                                                           |
-| `orgs`               | Manage organizations                                                                                                 |
-| `projects`           | Manage projects                                                                                                      |
-| `local-tools`        | Manage local toolkits (via `@composio/cli-local-tools`)                                                              |
-| `logs`               | View tool-execution logs (`logs-cmd/`)                                                                               |
-| `config`             | Read/write CLI config                                                                                                |
-| `listen`             | Listen for events                                                                                                    |
-| `proxy`              | Proxy authenticated API requests                                                                                     |
-| `run`                | Run a saved script / preset                                                                                          |
-| `dev`                | Developer-only utilities                                                                                             |
-| `artifacts`          | Manage generated artifacts                                                                                           |
+| `version` | Display CLI version |
+| `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
+| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout` | Clear stored API key |
+| `signup` | Create a Composio account |
+| `upgrade` | Self-update binary from GitHub releases |
+| `init` | Bootstrap a Composio project in the current directory |
+| `install` | Install local-tool integrations |
+| `generate {ts        | py}` | Generate type stubs (auto-detects project language if no subcommand) |
+| `agent` | Manage AI agent presets |
+| `toolkits` | List / inspect / version toolkits |
+| `tools` | List / inspect / `execute` tools |
+| `triggers` | List / manage trigger types |
+| `auth-configs` | Manage auth-config resources (`ac_*`) |
+| `connected-accounts` | Manage connected accounts (`ca_*`) |
+| `connections` | Alias / helper for connected-account flows |
+| `orgs` | Manage organizations |
+| `projects` | Manage projects |
+| `local-tools` | Manage local toolkits (via `@composio/cli-local-tools`) |
+| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `config` | Read/write CLI config |
+| `listen` | Listen for events |
+| `proxy` | Proxy authenticated API requests |
+| `run` | Run a saved script / preset |
+| `dev` | Developer-only utilities |
+| `artifacts` | Manage generated artifacts |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
@@ -138,13 +138,16 @@ Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel wor
 
 ## Vendor Reference Sources
 
-Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):
+Read-only submodules under `ts/vendor/` (do NOT edit or import from them — actual deps come from npm):
 
-- `ts/vendor/effect/packages/effect/src/` — core Effect runtime
-- `ts/vendor/effect/packages/cli/src/` — `@effect/cli` (Command, Options, Args)
-- `ts/vendor/effect/packages/platform/src/` — `@effect/platform`
+- `ts/vendor/effect/packages/effect/src/` — Effect v4 core source
+- `ts/vendor/effect/packages/effect/src/unstable/cli/` — v4 `Command`, `Flag`, `Argument`, help, and parsing
+- `ts/vendor/effect/packages/vitest/src/` — v4 `@effect/vitest`
+- `ts/vendor/effect/migration/` — v3-to-v4 import, API, service, Schema, runtime, and behavior guides
 - `ts/vendor/clack/packages/prompts/src/` — `@clack/prompts` (text, select, confirm, spinner, note, task, etc.)
 - `ts/vendor/clack/packages/core/src/` — `@clack/core` primitives
+
+The vendor gitlink may be ahead of the beta installed by the CLI. Record source and package versions separately, exact-pin beta packages, and let the installed compiler decide compatibility.
 
 ## CLI Design Guidelines
 

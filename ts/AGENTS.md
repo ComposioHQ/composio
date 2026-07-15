@@ -11,6 +11,7 @@ TypeScript workspace guidance for AI agents.
 - Use `typescript-sdk` for `@composio/core`, shared TypeScript package behavior, generated SDK surfaces, and modifiers.
 - Use `typescript-providers` for packages under `ts/packages/providers/`.
 - Use `typescript-testing` for Vitest, typecheck, package builds, examples, or runtime E2E test selection.
+- Use `effect-v4` for CLI migration work involving Effect v4 beta, `effect/unstable/cli`, package consolidation, or v4 test APIs.
 - Use `cli-command` or `cli-e2e` for `ts/packages/cli/` and `ts/e2e-tests/cli/`.
 
 ## Commands
