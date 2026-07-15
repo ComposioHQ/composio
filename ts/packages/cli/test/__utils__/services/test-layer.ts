@@ -833,7 +833,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerModeEnabled: rawCliUserConfig.developer.enabled,
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
-            artifactDirectory: undefined,
+            artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };

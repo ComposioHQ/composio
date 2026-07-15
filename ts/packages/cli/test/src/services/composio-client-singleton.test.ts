@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { execSync } from 'node:child_process';
@@ -22,6 +23,35 @@ const okResponse = () =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+const cwdHash = (cwd: string): string => {
+  let hash = 5381;
+  for (let index = 0; index < cwd.length; index += 1) {
+    hash = (hash * 33) ^ cwd.charCodeAt(index);
+  }
+  return Math.abs(hash >>> 0).toString(36);
+};
+
+const writeCliSessionCache = (
+  homedir: string,
+  session: { readonly id: string; readonly expiresAt: string }
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const cacheDir = path.join(homedir, '.composio');
+    yield* fs.makeDirectory(cacheDir, { recursive: true });
+    yield* fs.writeFileString(
+      path.join(cacheDir, 'consumer-short-term-cache.json'),
+      JSON.stringify({
+        test: {
+          probablyMyCliSessionsByCwdHash: {
+            [cwdHash(process.cwd())]: session,
+          },
+        },
+      })
+    );
+  });
+
 describe('ComposioClientSingleton headers', () => {
   // Delete any real keychain entry so the subprocess keyring read
   // inside ComposioUserContextLive (baked into
@@ -41,6 +71,7 @@ describe('ComposioClientSingleton headers', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('uses x-user-api-key and never x-api-key', async () => {
@@ -78,6 +109,73 @@ describe('ComposioClientSingleton headers', () => {
     expect(headers.get('x-source')).toBe('CLI');
     expect(headers.get('x-runtime')).toBe('NODEJS');
     expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
+    expect(headers.get('x-cli-session-id')).toBeNull();
+  });
+
+  it('includes the current cwd CLI session ID', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+    ]);
+
+    const program = Effect.gen(function* () {
+      yield* writeCliSessionCache(homedir, {
+        id: 'cli_s_current',
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      });
+      const client = yield* ComposioClientSingleton.get();
+      yield* Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+    }).pipe(
+      Effect.provide(
+        Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+
+    await Effect.runPromise(program);
+
+    const [, init] = fetchSpy.mock.calls[0]!;
+    const headers = new Headers((init as RequestInit).headers);
+    expect(headers.get('x-cli-session-id')).toBe('cli_s_current');
+  });
+
+  it('omits an expired cwd CLI session ID', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    const homedir = tempy.temporaryDirectory();
+    const configMap = new Map([
+      ['COMPOSIO_USER_API_KEY', 'uak_from_user_env'],
+      ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+    ]);
+
+    const program = Effect.gen(function* () {
+      yield* writeCliSessionCache(homedir, {
+        id: 'cli_s_expired',
+        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+      });
+      const client = yield* ComposioClientSingleton.get();
+      yield* Effect.promise(() =>
+        client.tools
+          .list({ limit: 1, toolkit_versions: 'latest' })
+          .then(() => undefined)
+          .catch(() => undefined)
+      );
+    }).pipe(
+      Effect.provide(
+        Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+      )
+    );
+
+    await Effect.runPromise(program);
+
+    const [, init] = fetchSpy.mock.calls[0]!;
+    const headers = new Headers((init as RequestInit).headers);
+    expect(headers.get('x-cli-session-id')).toBeNull();
   });
 
   it('does not read COMPOSIO_API_KEY for user auth', async () => {
