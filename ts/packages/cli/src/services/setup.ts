@@ -1,6 +1,9 @@
 import { Command } from '@effect/platform';
 import { Data, Effect } from 'effect';
 import semver from 'semver';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
+import { getPluginLifecycleSucceededEvent } from 'src/analytics/events';
+import { APP_VERSION } from 'src/constants';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
 
@@ -746,6 +749,21 @@ export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarge
           );
         })
       );
+      if (result.plugin_changed) {
+        const action = !status.plugin_installed
+          ? 'installed'
+          : !status.plugin_enabled
+            ? 'enabled'
+            : 'configured';
+        yield* trackCliEventEffect(
+          getPluginLifecycleSucceededEvent({
+            operation: 'setup',
+            target: result.target,
+            action,
+            cliVersion: APP_VERSION,
+          })
+        );
+      }
       completed.push(result);
     }
     return completed;
@@ -764,6 +782,16 @@ export const uninstallSetupTargets = (inspected: ReadonlyArray<InspectedSetupTar
           );
         })
       );
+      if (result.plugin_changed) {
+        yield* trackCliEventEffect(
+          getPluginLifecycleSucceededEvent({
+            operation: 'uninstall',
+            target: result.target,
+            action: 'uninstalled',
+            cliVersion: APP_VERSION,
+          })
+        );
+      }
       completed.push(result);
     }
     return completed;

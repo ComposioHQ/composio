@@ -27,6 +27,14 @@ export const CLI_ANALYTICS_EVENTS = {
   CLI_RUN_INVOKED: 'CLI_RUN_INVOKED',
   CLI_RUN_SUCCEEDED: 'CLI_RUN_SUCCEEDED',
   CLI_RUN_FAILED: 'CLI_RUN_FAILED',
+  CLI_INSTALL_INVOKED: 'CLI_INSTALL_INVOKED',
+  CLI_INSTALL_SUCCEEDED: 'CLI_INSTALL_SUCCEEDED',
+  CLI_INSTALL_FAILED: 'CLI_INSTALL_FAILED',
+  CLI_SETUP_INVOKED: 'CLI_SETUP_INVOKED',
+  CLI_SETUP_SUCCEEDED: 'CLI_SETUP_SUCCEEDED',
+  CLI_SETUP_FAILED: 'CLI_SETUP_FAILED',
+  CLI_PLUGIN_SETUP_SUCCEEDED: 'CLI_PLUGIN_SETUP_SUCCEEDED',
+  CLI_PLUGIN_UNINSTALL_SUCCEEDED: 'CLI_PLUGIN_UNINSTALL_SUCCEEDED',
   CLI_TOOL_INVOCATION_VALIDATION_FAILED: 'CLI_TOOL_INVOCATION_VALIDATION_FAILED',
   CLI_TOOL_INVOCATION_TOOL_NOT_FOUND: 'CLI_TOOL_INVOCATION_TOOL_NOT_FOUND',
   CLI_TOOL_INVOCATION_FAILED: 'CLI_TOOL_INVOCATION_FAILED',
@@ -40,6 +48,7 @@ const KNOWN_COMMAND_TOKENS = new Set([
   'logout',
   'run',
   'install',
+  'setup',
   'dev',
   'generate',
   'tools',
@@ -281,6 +290,28 @@ const getRunCommandProperties = (context: CliCommandTelemetryContext) => ({
   arg_count: Math.max(0, context.argv.length - 3),
 });
 
+const getInstallCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  completions: isFlagPresent(context.argv, '--completions'),
+  no_completions: isFlagPresent(context.argv, '--no-completions'),
+});
+
+const getSetupCommandProperties = (context: CliCommandTelemetryContext) => ({
+  source: 'cli',
+  invocation_origin: getInvocationOrigin(),
+  cli_version: context.cliVersion,
+  command_path: context.commandPath,
+  duration_ms: Date.now() - context.startedAt,
+  operation: isFlagPresent(context.argv, '--uninstall') ? 'uninstall' : 'setup',
+  target: getFlagValue(context.argv, '--target') ?? 'auto',
+  yes: isFlagPresent(context.argv, '--yes', '-y'),
+  if_present: isFlagPresent(context.argv, '--if-present'),
+});
+
 const getLoginCommandProperties = (context: CliCommandTelemetryContext) => ({
   source: 'cli',
   invocation_origin: getInvocationOrigin(),
@@ -332,6 +363,10 @@ const isLogoutCommand = (commandPath: string): boolean => commandPath === 'logou
 const isProxyCommand = (commandPath: string): boolean => commandPath === 'proxy';
 
 const isRunCommand = (commandPath: string): boolean => commandPath === 'run';
+
+const isInstallCommand = (commandPath: string): boolean => commandPath === 'install';
+
+const isSetupCommand = (commandPath: string): boolean => commandPath === 'setup';
 
 const isGenericOnlyCommand = (commandPath: string): boolean =>
   commandPath === 'composio' || commandPath.startsWith('dev');
@@ -452,6 +487,20 @@ const SPECIAL_LIFECYCLE_FAMILIES: ReadonlyArray<SpecialLifecycleFamily> = [
     failedEventName: CLI_ANALYTICS_EVENTS.CLI_RUN_FAILED,
     getProperties: getRunCommandProperties,
   },
+  {
+    match: isInstallCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_INSTALL_FAILED,
+    getProperties: getInstallCommandProperties,
+  },
+  {
+    match: isSetupCommand,
+    invokedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED,
+    succeededEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED,
+    failedEventName: CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED,
+    getProperties: getSetupCommandProperties,
+  },
 ];
 
 const getSpecialLifecycleFamily = (commandPath: string): SpecialLifecycleFamily | undefined =>
@@ -500,6 +549,27 @@ export const getPrimaryLifecycleFailedEvent = (
     },
   };
 };
+
+export const getPluginLifecycleSucceededEvent = (params: {
+  readonly operation: 'setup' | 'uninstall';
+  readonly target: 'claude' | 'codex';
+  readonly action: 'installed' | 'enabled' | 'configured' | 'uninstalled';
+  readonly cliVersion: string;
+}): TrackEvent => ({
+  name:
+    params.operation === 'uninstall'
+      ? CLI_ANALYTICS_EVENTS.CLI_PLUGIN_UNINSTALL_SUCCEEDED
+      : CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_SUCCEEDED,
+  properties: {
+    source: 'cli',
+    invocation_origin: getInvocationOrigin(),
+    cli_version: params.cliVersion,
+    command_path: 'setup',
+    operation: params.operation,
+    agent_host: params.target,
+    action: params.action,
+  },
+});
 
 export const getToolExecuteValidationFailedEvent = (params: {
   readonly toolSlug: string;

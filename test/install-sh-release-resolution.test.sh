@@ -154,6 +154,10 @@ install)
     exit 0
     ;;
 setup)
+    if [[ "${COMPOSIO_CLI_INVOCATION_ORIGIN:-}" != 'installer' ]]; then
+        echo 'Expected automatic plugin setup telemetry origin to be installer.' >&2
+        exit 97
+    fi
     exit "${TEST_SETUP_EXIT:-0}"
     ;;
 --version|version)
