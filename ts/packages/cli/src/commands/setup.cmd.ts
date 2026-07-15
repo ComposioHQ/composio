@@ -7,6 +7,7 @@ import {
   isSetupPluginReady,
   isSetupReady,
   SETUP_TARGETS,
+  SetupCommandError,
   uninstallSetupTargets,
   type AgentHost,
   type SetupTarget,
@@ -44,6 +45,9 @@ const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
 const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
   targets.map(target => TARGET_LABELS[target]).join(' and ');
 
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 const setupBaseCmd = Command.make(
   'setup',
   { target, yes, ifPresent, uninstall },
@@ -54,6 +58,8 @@ const setupBaseCmd = Command.make(
 
       const detections = yield* detectSetupTargets(target);
       const detected = detections.filter(result => result.available).map(result => result.target);
+      const supported = detections.filter(result => result.available && result.supported);
+      const unsupported = detections.filter(result => result.available && !result.supported);
       const notDetected = detections
         .filter(result => !result.available)
         .map(result => result.target);
@@ -70,6 +76,27 @@ const setupBaseCmd = Command.make(
             `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`
           )
         );
+      }
+      if (unsupported.length > 0) {
+        const reason = unsupported
+          .map(result => result.unsupportedReason)
+          .filter((message): message is string => Boolean(message))
+          .join(' ');
+        if (target !== 'auto') {
+          return yield* Effect.fail(new Error(reason));
+        }
+        yield* ui.log.warn(
+          `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
+        );
+        if (supported.length === 0) {
+          if (ifPresent) {
+            yield* ui.outro(
+              `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
+            );
+            return;
+          }
+          return yield* Effect.fail(new Error(reason));
+        }
       }
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {
@@ -94,6 +121,7 @@ const setupBaseCmd = Command.make(
 
       const inspected = yield* inspectSetupTargets(detections, {
         allowMarketplaceConflict: uninstall,
+        operation: uninstall ? 'uninstall' : 'setup',
       });
       if (uninstall) {
         const installed = inspected.filter(status => status.plugin_installed);
@@ -189,7 +217,15 @@ const setupBaseCmd = Command.make(
       }
 
       yield* ui.outro('Composio setup complete.');
-    })
+    }).pipe(
+      Effect.mapError(
+        error =>
+          new SetupCommandError({
+            message: errorMessage(error),
+            operation: uninstall ? 'uninstall' : 'setup',
+          })
+      )
+    )
 );
 
 export const setupCmd = setupBaseCmd.pipe(
