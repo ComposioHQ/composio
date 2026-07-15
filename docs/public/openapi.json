@@ -14264,8 +14264,9 @@
     },
     "/api/v3.1/connected_accounts/{nanoid}/refresh": {
       "post": {
-        "summary": "Refresh authentication for a connected account",
-        "description": "Initiates a new authentication flow for a connected account when credentials have expired or become invalid. This may generate a new authentication URL for OAuth flows or refresh tokens for other auth schemes.",
+        "summary": "Refresh authentication for a connected account (DEPRECATED)",
+        "description": "DEPRECATED: Manual refresh of a connected account is deprecated. Composio automatically refreshes credentials in the background as they approach expiry, so this endpoint is no longer required and may be removed in a future release. Initiates a new authentication flow for a connected account when credentials have expired or become invalid. This may generate a new authentication URL for OAuth flows or refresh tokens for other auth schemes.",
+        "deprecated": true,
         "tags": [
           "Connected Accounts"
         ],
