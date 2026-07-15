@@ -53,7 +53,7 @@ import { Agent, run } from "@openai/agents";
 const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.sessions.create("user_123");
+const session = await composio.create("user_123");
 const tools = await session.tools();
 
 const agent = new Agent({
@@ -93,9 +93,9 @@ result = Runner.run_sync(starting_agent=agent, input="Summarize my emails from t
 print(result.final_output)
 ```
 
-By default a session gets meta tools that discover, authenticate, and execute app tools at runtime, so you don't load hundreds of tool definitions into context. Store `session.sessionId` and reuse it with `composio.sessions.use()` in TypeScript; Python uses `session.session_id` and `composio.use()`. See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
+By default a session gets meta tools that discover, authenticate, and execute app tools at runtime, so you don't load hundreds of tool definitions into context. Store `session.session_id` and reuse it with `composio.use()` across turns. See [what a session is](https://docs.composio.dev/docs/how-composio-works) and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting toolkits, auth configs, and connected accounts.
 
-**Prefer MCP?** Every session also exposes a hosted MCP endpoint. Pass `mcp: true` to TypeScript's `composio.sessions.create()` or `mcp=True` to Python's `composio.create()`, then point Claude, Cursor, or any MCP client at `session.mcp.url`. See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
+**Prefer MCP?** Every session also exposes a hosted MCP endpoint. Pass `mcp: true` to `composio.create()` and point Claude, Cursor, or any MCP client at `session.mcp.url`. See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
 
 ## CLI
 

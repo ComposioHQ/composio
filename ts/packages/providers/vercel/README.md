@@ -28,7 +28,7 @@ import { generateText, stepCountIs } from 'ai';
 const composio = new Composio({ provider: new VercelProvider() });
 
 // Each session is scoped to one of your users
-const session = await composio.sessions.create('user_123');
+const session = await composio.create('user_123');
 const tools = await session.tools();
 
 const { text } = await generateText({
@@ -41,7 +41,7 @@ const { text } = await generateText({
 console.log(text);
 ```
 
-For multi-turn conversations, store `session.sessionId` and reuse it with `composio.sessions.use(sessionId)` instead of creating a new session each turn.
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
 
 ## Strict mode
 

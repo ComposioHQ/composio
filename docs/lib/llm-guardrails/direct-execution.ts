@@ -10,7 +10,7 @@ export const DIRECT_EXECUTION_GUARDRAILS = `
 
 # Composio SDK — Instructions for AI Code Generators
 
-**Context:** This page documents the **direct tool execution API**. For most applications, the session-based pattern (\`composio.sessions.create(user_id)\` + \`session.tools()\`) is simpler — but if the user is here, they likely want direct execution.
+**Context:** This page documents the **direct tool execution API**. For most applications, the session-based pattern (\`composio.create(user_id)\` + \`session.tools()\`) is simpler — but if the user is here, they likely want direct execution.
 
 ---
 

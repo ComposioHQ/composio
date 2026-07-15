@@ -12,7 +12,7 @@ const llm = new ChatOpenAI({
 });
 
 async function main() {
-  const session = await composio.sessions.create('user_123', { toolkits: ['gmail'], mcp: true });
+  const session = await composio.create('user_123', { toolkits: ['gmail'], mcp: true });
 
   const client = new MultiServerMCPClient({
     math: {

@@ -13,16 +13,16 @@
  *
  * Environment variables:
  * - COMPOSIO_API_KEY (required)
- * - COMPOSIO_API_BASE (optional, defaults to https://backend.composio.dev/api/v3)
+ * - COMPOSIO_API_BASE (optional, must resolve to https://backend.composio.dev/api/v3)
  */
 
 import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
-import { PRODUCTION_API_V3_URL, stripStagingHosts } from './production-api.mjs';
+import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 
-const API_BASE = process.env.COMPOSIO_API_BASE || PRODUCTION_API_V3_URL;
+const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 if (!API_KEY) {

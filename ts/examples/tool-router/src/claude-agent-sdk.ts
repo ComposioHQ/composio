@@ -4,7 +4,7 @@ import 'dotenv/config';
 
 const composio = new Composio();
 
-const session = await composio.sessions.create('user_123', { toolkits: ['gmail'], mcp: true });
+const session = await composio.create('user_123', { toolkits: ['gmail'], mcp: true });
 
 const stream = await query({
   prompt: 'Use composio tools to fetch my last email from gmail',

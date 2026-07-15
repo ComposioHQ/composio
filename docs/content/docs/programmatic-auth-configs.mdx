@@ -151,7 +151,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 const authConfig = { id: 'ac_your_notion_config' };
 // ---cut---
-const session = await composio.sessions.create('user_123', {
+const session = await composio.create('user_123', {
   authConfigs: { notion: authConfig.id },
 });
 ```

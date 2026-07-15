@@ -30,7 +30,7 @@ mcp_headers = session.mcp.headers
 import { Composio } from "@composio/core";
 
 const composio = new Composio();
-const session = await composio.sessions.create("user_123", { mcp: true });
+const session = await composio.create("user_123", { mcp: true });
 
 const mcpUrl = session.mcp.url;
 const mcpHeaders = session.mcp.headers;
@@ -41,7 +41,7 @@ const mcpHeaders = session.mcp.headers;
 You don't need a provider package to use the MCP endpoint, so you can drop it from your `Composio()` setup if MCP is all you need.
 
 <Callout type="info">
-Resuming a stored session? Pass the same flag, `composio.sessions.use(sessionId, { mcp: true })` (TypeScript) or `composio.use(session_id, mcp=True)` (Python), to surface `session.mcp` on the reused session.
+Resuming a stored session? Pass the same flag, `composio.use(sessionId, { mcp: true })` (TypeScript) or `composio.use(session_id, mcp=True)` (Python), to surface `session.mcp` on the reused session.
 </Callout>
 
 <Callout type="info">
@@ -78,7 +78,7 @@ import { Composio, SessionPreset } from "@composio/core";
 
 const composio = new Composio();
 
-const session = await composio.sessions.create("user_123", {
+const session = await composio.create("user_123", {
   toolkits: ["gmail"],
   tools: { gmail: { enable: ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"] } },
   sessionPreset: SessionPreset.DIRECT_TOOLS,
@@ -140,7 +140,7 @@ import { Composio } from "@composio/core";
 import { createMCPClient } from "@ai-sdk/mcp";
 
 const composio = new Composio();
-const { mcp } = await composio.sessions.create("user_123", { mcp: true });
+const { mcp } = await composio.create("user_123", { mcp: true });
 
 const client = await createMCPClient({
   transport: {

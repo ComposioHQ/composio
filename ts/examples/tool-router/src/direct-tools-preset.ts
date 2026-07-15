@@ -59,7 +59,7 @@ const hnResearch = experimental_createToolkit('HN_RESEARCH', {
   tools: [getUserNote],
 });
 
-const session = await composio.sessions.create('direct-tools-example-user', {
+const session = await composio.create('direct-tools-example-user', {
   sessionPreset: SessionPreset.DIRECT_TOOLS,
   toolkits: ['hackernews'],
   tools: {
