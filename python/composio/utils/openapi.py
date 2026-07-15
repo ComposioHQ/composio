@@ -42,12 +42,14 @@ def _type_to_parameter(schema: t.Dict[str, t.Any]) -> t.Any:
     if isinstance(p_type, list):
         # JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a
         # list of types, e.g. {"type": ["string", "null"]}, rather than an anyOf.
-        # A list is unhashable, so the membership test below would raise
-        # TypeError. Map each member to a Python type (falling back to t.Any for
-        # unrecognized types) and build a Union, mirroring the anyOf/oneOf path.
         if not p_type:
             return t.Any
-        return t.Union[tuple(OPENAPI_TO_PYTHON.get(member, t.Any) for member in p_type)]
+        return t.Union[
+            tuple(
+                _type_to_parameter(schema={**schema, "type": member})
+                for member in p_type
+            )
+        ]
 
     if p_type in OPENAPI_TO_PYTHON:
         return OPENAPI_TO_PYTHON[p_type]

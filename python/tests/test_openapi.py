@@ -10,6 +10,7 @@ import typing as t
 
 import pytest
 
+from composio.exceptions import InvalidSchemaError
 from composio.utils.openapi import function_signature_from_jsonschema
 
 
@@ -134,11 +135,18 @@ class TestListValuedType:
 
     @pytest.mark.unit
     @pytest.mark.schema
-    def test_unrecognized_member_falls_back_to_any(self):
-        annotation = _annotation({"type": ["file", "null"]})
-        args = t.get_args(annotation)
-        assert t.Any in args
-        assert type(None) in args
+    def test_nullable_array_preserves_items_schema(self):
+        assert (
+            _annotation({"type": ["array", "null"], "items": {"type": "string"}})
+            == t.Optional[t.List[str]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("property_type", ["file", ["file", "null"]])
+    def test_unrecognized_member_raises_invalid_schema(self, property_type: t.Any):
+        with pytest.raises(InvalidSchemaError, match="Invalid property type file"):
+            _annotation({"type": property_type})
 
     @pytest.mark.unit
     @pytest.mark.schema
