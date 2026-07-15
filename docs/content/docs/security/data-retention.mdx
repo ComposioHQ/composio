@@ -8,7 +8,9 @@ Composio stores audit logs for tool executions so you can observe and debug your
 
 ## Customer data vs. your end users' data
 
-Throughout this guide, *you* are the Composio customer. *Your end users* are the people your agent acts on behalf of, each identified by the opaque `user_id` you supply. When a tool runs, its request and response often contain **your end users' data**. Composio never stores your end users' identities (only the `user_id` you provide), so their data lives entirely in the **tool-call payloads**, which is exactly what the **Log storage** setting below governs.
+Throughout this guide, *you* are the Composio customer. *Your end users* are the people your agent acts on behalf of. Each end user is identified by the `user_id` you provide. Composio stores this value as supplied and uses it to associate connected accounts, sessions, and execution logs.
+
+Tool requests and responses may contain additional end-user data. The **Log storage** setting controls whether these payloads are retained; it does not remove the `user_id` or other audit metadata.
 
 ## What Composio stores
 
