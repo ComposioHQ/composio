@@ -78,6 +78,10 @@ console.log(`Trigger created: ${trigger.triggerId}`);
 
 You only pass a `user_id`. Composio resolves that user's connected account for the toolkit automatically.
 
+<Callout type="warn">
+In the TypeScript SDK, a missing or invalid connection surfaces the backend trigger-upsert error. Self-hosted deployments must use a backend version that can resolve trigger connections from `user_id`.
+</Callout>
+
 ### Targeting a specific connected account
 
 If a user has more than one connected account for the toolkit, Composio uses the first active connection for the user and the trigger's toolkit. Pass a connected account ID to pick exactly which account the trigger watches.
