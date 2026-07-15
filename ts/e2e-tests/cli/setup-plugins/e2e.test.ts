@@ -50,7 +50,25 @@ chmod +x /tmp/bin/codex
 touch /tmp/host-state/codex-without-json
 export HOST_STATE_DIR=/tmp/host-state
 export PATH=/tmp/bin:$PATH
-composio setup --target codex --yes
+composio setup --target auto --yes
+`;
+
+const claudeWithLegacyCodexFixture = `
+set -eu
+mkdir -p /tmp/bin /tmp/host-state
+cp fixtures/fake-agent-host.sh /tmp/bin/claude
+cp fixtures/fake-agent-host.sh /tmp/bin/codex
+chmod +x /tmp/bin/claude /tmp/bin/codex
+touch /tmp/host-state/codex-without-json
+mkdir -p /tmp/.claude/skills /tmp/.agents/skills/composio-cli
+printf '%s\n' '# composio-cli' > /tmp/.agents/skills/composio-cli/SKILL.md
+printf '@composio/cli@%s\n' "$(composio --version)" > /tmp/.agents/skills/composio-cli/.composio-release-tag
+ln -s ../../.agents/skills/composio-cli /tmp/.claude/skills/composio-cli
+export HOST_STATE_DIR=/tmp/host-state
+export PATH=/tmp/bin:$PATH
+composio setup --target auto --yes
+test -f /tmp/host-state/claude-plugin
+test ! -f /tmp/host-state/codex-plugin
 `;
 
 e2e(import.meta.url, {
@@ -64,6 +82,7 @@ e2e(import.meta.url, {
     let skippedUnavailable: E2ETestResult;
     let skippedUnavailableUninstall: E2ETestResult;
     let legacyCodex: E2ETestResult;
+    let claudeWithLegacyCodex: E2ETestResult;
 
     beforeAll(async () => {
       // The shared E2E runner derives container names from Date.now(), so keep
@@ -82,6 +101,7 @@ e2e(import.meta.url, {
         'composio setup --uninstall --target auto --yes --if-present'
       );
       legacyCodex = await runCmd(legacyCodexFixture);
+      claudeWithLegacyCodex = await runCmd(claudeWithLegacyCodexFixture);
     }, TIMEOUTS.FIXTURE);
 
     describe.each([
@@ -161,12 +181,18 @@ e2e(import.meta.url, {
     });
 
     describe('Codex compatibility', () => {
-      it('explains how to upgrade when JSON plugin inspection is unavailable', () => {
+      it('exits with upgrade instructions when no supported host remains', () => {
         expect(legacyCodex.exitCode).not.toBe(0);
         expect(legacyCodex.stdout).toBe('');
         expect(legacyCodex.stderr).toContain('requires Codex 0.139.0 or newer');
         expect(legacyCodex.stderr).toContain('codex update');
         expect(legacyCodex.stderr).not.toContain("unexpected argument '--json'");
+      });
+
+      it('continues with Claude when Codex is unsupported', () => {
+        expect(claudeWithLegacyCodex.exitCode).toBe(0);
+        expect(claudeWithLegacyCodex.stdout).toBe('');
+        expect(claudeWithLegacyCodex.stderr).toBe('');
       });
     });
   },

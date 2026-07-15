@@ -54,6 +54,8 @@ const setupBaseCmd = Command.make(
 
       const detections = yield* detectSetupTargets(target);
       const detected = detections.filter(result => result.available).map(result => result.target);
+      const supported = detections.filter(result => result.available && result.supported);
+      const unsupported = detections.filter(result => result.available && !result.supported);
       const notDetected = detections
         .filter(result => !result.available)
         .map(result => result.target);
@@ -69,6 +71,18 @@ const setupBaseCmd = Command.make(
           new Error(
             `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`
           )
+        );
+      }
+      if (unsupported.length > 0) {
+        const reason = unsupported
+          .map(result => result.unsupportedReason)
+          .filter((message): message is string => Boolean(message))
+          .join(' ');
+        if (target !== 'auto' || supported.length === 0) {
+          return yield* Effect.fail(new Error(reason));
+        }
+        yield* ui.log.warn(
+          `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
         );
       }
       if (detected.length === 0) {

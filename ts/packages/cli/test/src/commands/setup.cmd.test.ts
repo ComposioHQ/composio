@@ -394,6 +394,26 @@ describe('CLI: composio setup', () => {
     );
   });
 
+  const autoCodex = makeFakeHosts({ codex: { available: true } });
+  layer(TestLive({ commandRunner: autoCodex.runner }))(
+    'automatic setup with only supported Codex',
+    it => {
+      it.scoped('installs Codex when Claude is not detected', () =>
+        Effect.gen(function* () {
+          yield* cli(['setup', '--target', 'auto', '--yes']);
+
+          expect(autoCodex.state.codex).toMatchObject({
+            marketplace: 'canonical',
+            plugin: 'enabled',
+          });
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Codex detected.');
+          expect(output).toContain('Claude Code not detected.');
+        })
+      );
+    }
+  );
+
   const autoBoth = makeFakeHosts({
     claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
     codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
@@ -418,6 +438,48 @@ describe('CLI: composio setup', () => {
         );
         expect(output).toContain('The Composio plugin for Codex is already installed and enabled.');
         expect(output).not.toContain('composio-cli skill');
+      })
+    );
+  });
+
+  const autoClaudeWithLegacyCodex = makeFakeHosts(
+    {
+      claude: { available: true },
+      codex: { available: true },
+    },
+    { codexJsonInspection: false, codexVersion: 'codex-cli 0.137.0' }
+  );
+  layer(
+    TestLive({
+      commandRunner: autoClaudeWithLegacyCodex.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('automatic setup with Claude and unsupported Codex', it => {
+    it.scoped('installs Claude and reports that Codex was skipped', () =>
+      Effect.gen(function* () {
+        yield* cli(['setup', '--target', 'auto', '--yes']);
+
+        expect(autoClaudeWithLegacyCodex.state.claude).toMatchObject({
+          marketplace: 'canonical',
+          plugin: 'enabled',
+        });
+        expect(autoClaudeWithLegacyCodex.state.codex).toMatchObject({
+          marketplace: 'missing',
+          plugin: 'missing',
+        });
+        expect(
+          autoClaudeWithLegacyCodex.commands.some(
+            parts => parts[0] === 'codex' && parts.includes('--json')
+          )
+        ).toBe(false);
+
+        const output = (yield* MockConsole.getLines()).join('\n');
+        expect(output).toContain('Claude Code and Codex detected.');
+        expect(output).toContain('Codex plugin setup skipped.');
+        expect(output).toContain('requires Codex 0.139.0 or newer');
+        expect(output).toContain(
+          'Successfully installed and enabled the Composio plugin for Claude Code.'
+        );
       })
     );
   });
@@ -470,6 +532,32 @@ describe('CLI: composio setup', () => {
       );
     }
   );
+
+  const allWithLegacyCodex = makeFakeHosts(
+    {
+      claude: { available: true },
+      codex: { available: true },
+    },
+    { codexJsonInspection: false, codexVersion: 'codex-cli 0.137.0' }
+  );
+  layer(
+    TestLive({
+      commandRunner: allWithLegacyCodex.runner,
+      setupSkillInstaller: makeSkillInstaller(),
+    })
+  )('explicit all-host setup with unsupported Codex', it => {
+    it.scoped('fails before mutating Claude', () =>
+      Effect.gen(function* () {
+        const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        expect(allWithLegacyCodex.state.claude).toMatchObject({
+          marketplace: 'missing',
+          plugin: 'missing',
+        });
+      })
+    );
+  });
 
   const uninstallBoth = makeFakeHosts({
     claude: { available: true, marketplace: 'canonical', plugin: 'enabled' },
@@ -829,6 +917,17 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: legacyCodex.runner }))(
     'Codex without JSON marketplace inspection',
     it => {
+      it.scoped('fails automatic setup when no supported host remains', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            expect(Cause.pretty(exit.cause)).toContain('requires Codex 0.139.0 or newer');
+          }
+        })
+      );
+
       it.scoped('fails with an actionable upgrade message before running setup mutations', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
