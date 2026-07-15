@@ -11,6 +11,7 @@ import { join, relative } from "path";
 const DOCS_DIR = join(import.meta.dir, "../../content/docs");
 const EXAMPLES_DIR = join(import.meta.dir, "../../content/examples");
 const CHANGELOG_DIR = join(import.meta.dir, "../../content/changelog");
+const GOOGLE_PROVIDER_DOC = join(DOCS_DIR, "providers/google.mdx");
 
 /** Recursively find all .mdx files */
 async function findMdxFiles(dir: string): Promise<string[]> {
@@ -97,6 +98,19 @@ describe("Content - no empty pages", () => {
     }
 
     expect(empty).toEqual([]);
+  });
+});
+
+describe("Content - provider compatibility", () => {
+  test("Gemini Python docs use the google-genai-compatible provider", async () => {
+    const content = await readFile(GOOGLE_PROVIDER_DOC, "utf-8");
+
+    expect(content).toContain(
+      '<PackageInstall ecosystem="python" packages="composio composio_gemini google-genai" />',
+    );
+    expect(content).toContain("from composio_gemini import GeminiProvider");
+    expect(content).toContain("Composio(provider=GeminiProvider())");
+    expect(content).not.toContain("composio_google google-genai");
   });
 });
 
