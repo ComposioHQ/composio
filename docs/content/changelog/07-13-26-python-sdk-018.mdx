@@ -1,0 +1,34 @@
+---
+title: 'Python SDK 0.18.0 aligns trigger connections and provider schemas'
+description: 'Python SDK 0.18.0 moves trigger connection resolution to the backend, hardens schema conversion, and updates the AutoGen provider dependency.'
+date: '2026-07-13'
+---
+
+Python SDK `composio` `0.18.0` aligns trigger creation with the current backend contract and improves provider compatibility with newer JSON Schema shapes.
+
+### SDK versions
+
+| SDK               | Version  |
+| ----------------- | -------- |
+| Python `composio` | `0.18.0` |
+
+### Trigger creation
+
+`triggers.create()` now sends `user_id` to the backend rather than listing connected accounts in the SDK. When no `connected_account_id` is supplied, the backend selects the first active connection for the user and toolkit. Self-hosted deployments need the backend version that supports this resolution.
+
+An invalid trigger slug still raises `TriggerTypeNotFound`, while a missing or invalid connection now surfaces the backend upsert error rather than a local `NoItemsFound` exception.
+
+### Provider and schema compatibility
+
+- OpenAI provider tool-call handling now executes every call from the first assistant choice, including multiple calls returned in one response.
+- Tool signature generation accepts list-valued JSON Schema types, unbounded `anyOf` and `oneOf` options, and title-less top-level schemas.
+- Toolkit version pins are case-insensitive in both environment variables and user-provided mappings.
+
+### AutoGen dependency
+
+<Callout type="warn">
+**Compatibility change**
+
+`composio-autogen` now depends on `ag2` instead of the abandoned `pyautogen` package. Update dependency constraints or lockfiles that explicitly require `pyautogen` before upgrading.
+
+</Callout>
