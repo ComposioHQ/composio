@@ -23,6 +23,10 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install mise CLI
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/../../scripts/install-mise.sh"
+
     - name: Resolve mise-locked versions
       id: tool-versions
       shell: bash
