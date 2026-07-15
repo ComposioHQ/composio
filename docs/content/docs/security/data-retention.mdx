@@ -25,7 +25,14 @@ Tool execution logs and trigger event logs are retained for up to **one year**, 
 
 ## How long files are available
 
-When a tool returns a file (an image, document, export, and so on), Composio shares it as a presigned URL with a time-to-live (TTL) rather than storing the file indefinitely. The default TTL is **1 hour**, and once it expires the URL stops resolving.
+When a tool uses or returns a file (an attachment, image, document, export, and so on), Composio stages it in temporary object storage and shares it through a presigned URL. The URL is valid for **1 hour by default**. You can configure this URL TTL per project in **Project Settings**, up to 24 hours.
+
+Presigned URL expiry and file deletion are separate. When the URL expires, the link stops resolving, but that does not delete the underlying object. Files staged for tool execution are automatically deleted from temporary object storage after **24 hours**.
+
+The remote sandbox has two related lifecycles:
+
+- Files written to `/mnt/files` are backed by temporary object storage and are automatically deleted after **24 hours**.
+- Sandbox-local filesystem, variables, and runtime state remain available while the sandbox is alive. An inactive sandbox may be reclaimed after approximately **12 hours**. The session record itself can persist longer than the sandbox.
 
 ## Choose what we store: the Log storage setting
 
@@ -57,9 +64,15 @@ Choosing **Don't store data** stops Composio from persisting your payloads, but 
 
 - the **destination provider** you integrate with, which the tool call is made to;
 - **Composio's execution path** while the call runs;
-- **object storage** for files returned by tool calls, held only for the file TTL (1 hour by default — see [How long files are available](#how-long-files-are-available)) and then expired;
+- **temporary object storage** for files used or returned by tool calls. Presigned URL expiry is configurable per project, while the underlying staged file is deleted after 24 hours — see [How long files are available](#how-long-files-are-available);
 - your configured **trigger destinations**, which receive trigger events in real time;
-- if you use the **workbench** or code execution, an isolated **code sandbox** and a **third-party model provider** that powers it.
+- if you use the **workbench** or remote code execution, an isolated third-party **code sandbox**. Ordinary Python or shell execution does not inherently send code or sandbox files to an LLM provider. Model-provider processing occurs only in the cases described below.
+
+### When Workbench uses an LLM
+
+When a task requires advanced processing, the agent or MCP client may use Workbench and call `invoke_llm` from the submitted code—for example, to summarize, analyze, extract, or generate content. Only the information passed to `invoke_llm` is sent to the model provider; sandbox files and previous results are not sent unless the submitted code includes them.
+
+There is one separate case: if submitted Python contains a syntax error and automatic repair is enabled, Composio may send the code and error details to the configured model provider to fix it before execution. Valid Python and ordinary shell commands do not trigger this repair.
 
 So "Don't store data" controls what Composio retains, not whether data is processed during execution. For the current list of our sub-processors and our data-handling terms, see the [Composio Trust Center](https://trust.composio.dev/subprocessors).
 
