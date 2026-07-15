@@ -787,11 +787,12 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
-    // Mock `node:os`
+    // Mock operating-system details
     const NodeOsTest = Layer.succeed(
       NodeOs,
       new NodeOs({
         homedir: cwd,
+        tmpdir: '/tmp',
         arch: 'arm64',
         platform: 'darwin',
       })

@@ -1,15 +1,53 @@
-import os from 'node:os';
 import { Effect } from 'effect';
 
-// Service to that wraps `node:os`, for testing purposes.
+const nonEmptyEnvironmentValue = (name: string): string | undefined => {
+  const value = process.env[name]?.trim();
+  return value === undefined || value.length === 0 ? undefined : value;
+};
+
+const resolveHomeDirectory = (): string => {
+  const home = nonEmptyEnvironmentValue('HOME');
+  const userProfile = nonEmptyEnvironmentValue('USERPROFILE');
+  const environmentHome =
+    process.platform === 'win32' ? (userProfile ?? home) : (home ?? userProfile);
+  if (environmentHome !== undefined) return environmentHome;
+
+  const homeDrive = nonEmptyEnvironmentValue('HOMEDRIVE');
+  const homePath = nonEmptyEnvironmentValue('HOMEPATH');
+  if (homeDrive !== undefined && homePath !== undefined) return `${homeDrive}${homePath}`;
+
+  return process.cwd();
+};
+
+const resolveTemporaryDirectory = (): string => {
+  const candidates = process.platform === 'win32' ? ['TEMP', 'TMP'] : ['TMPDIR', 'TMP', 'TEMP'];
+  for (const candidate of candidates) {
+    const value = nonEmptyEnvironmentValue(candidate);
+    if (value !== undefined) return value;
+  }
+
+  if (process.platform !== 'win32') return '/tmp';
+
+  const systemRoot =
+    nonEmptyEnvironmentValue('SYSTEMROOT') ?? nonEmptyEnvironmentValue('WINDIR') ?? 'C:\\Windows';
+  return `${systemRoot.replace(/[\\/]+$/, '')}\\temp`;
+};
+
+// Injectable operating-system details for testing purposes.
 export class NodeOs extends Effect.Service<NodeOs>()('services/NodeOs', {
   sync: () => ({
-    homedir: os.homedir(),
-    platform: os.platform(),
-    arch: os.arch(),
+    homedir: resolveHomeDirectory(),
+    tmpdir: resolveTemporaryDirectory(),
+    platform: process.platform,
+    arch: process.arch,
   }),
   dependencies: [],
 }) {}
 
-export const defaultNodeOs = ({ homedir }: { homedir: string }) =>
-  new NodeOs({ homedir, platform: os.platform(), arch: os.arch() });
+export const defaultNodeOs = ({
+  homedir,
+  tmpdir = resolveTemporaryDirectory(),
+}: {
+  homedir: string;
+  tmpdir?: string;
+}) => new NodeOs({ homedir, tmpdir, platform: process.platform, arch: process.arch });

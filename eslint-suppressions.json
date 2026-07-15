@@ -12,14 +12,6 @@
       "count": 1
     }
   },
-  "ts/packages/cli/src/commands/config/config.experimental.cmd.ts": {
-    "no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "ts/packages/cli/src/commands/connected-accounts/commands/connected-accounts.link.cmd.ts": {
     "no-restricted-syntax": {
       "count": 1
@@ -157,11 +149,6 @@
     },
     "no-restricted-syntax": {
       "count": 3
-    }
-  },
-  "ts/packages/cli/src/services/node-os.ts": {
-    "no-restricted-imports": {
-      "count": 1
     }
   },
   "ts/packages/cli/src/services/project-context.ts": {

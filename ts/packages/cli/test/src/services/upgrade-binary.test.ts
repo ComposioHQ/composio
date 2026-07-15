@@ -42,6 +42,7 @@ const NodeOsTest = Layer.succeed(
   NodeOs,
   new NodeOs({
     homedir: '/tmp',
+    tmpdir: '/tmp',
     platform: 'darwin',
     arch: 'arm64',
   })

@@ -1,6 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Command, Args } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -32,43 +31,44 @@ const SKILL_NAME = 'composio-cli';
  * We resolve symlinks so we don't rebuild the same physical directory twice,
  * but we also rebuild any real (non-symlink) copies so everything stays in sync.
  */
-const discoverSkillRoots = (home: string): string[] => {
-  const candidates = [path.join(home, '.agents', 'skills'), path.join(home, '.claude', 'skills')];
+const discoverSkillRoots = (home: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const candidates = [path.join(home, '.agents', 'skills'), path.join(home, '.claude', 'skills')];
+    const seen = new Set<string>();
+    const roots: string[] = [];
 
-  const seen = new Set<string>();
-  const roots: string[] = [];
+    for (const parent of candidates) {
+      const skillDir = path.join(parent, SKILL_NAME);
+      const link = yield* fs.readLink(skillDir).pipe(Effect.option);
+      if (Option.isSome(link)) {
+        const realDir = yield* fs.realPath(skillDir).pipe(Effect.option);
+        if (Option.isNone(realDir)) continue;
 
-  for (const parent of candidates) {
-    const skillDir = path.join(parent, SKILL_NAME);
-    try {
-      const stat = fs.lstatSync(skillDir);
-      if (stat.isSymbolicLink()) {
-        // Resolve the symlink target — we'll rebuild the real directory it points to
-        const realDir = fs.realpathSync(skillDir);
-        const realParent = path.dirname(realDir);
+        const realParent = path.dirname(realDir.value);
         if (!seen.has(realParent)) {
           seen.add(realParent);
           roots.push(realParent);
         }
-      } else if (stat.isDirectory()) {
-        if (!seen.has(parent)) {
-          seen.add(parent);
-          roots.push(parent);
-        }
+        continue;
       }
-    } catch {
-      // Directory doesn't exist — skip
+
+      const stat = yield* fs.stat(skillDir).pipe(Effect.option);
+      if (Option.isSome(stat) && stat.value.type === 'Directory' && !seen.has(parent)) {
+        seen.add(parent);
+        roots.push(parent);
+      }
     }
-  }
 
-  // Always include ~/.agents/skills as a fallback so there's at least one target
-  const agentSkillsRoot = path.join(home, '.agents', 'skills');
-  if (!seen.has(agentSkillsRoot)) {
-    roots.push(agentSkillsRoot);
-  }
+    // Always include ~/.agents/skills as a fallback so there's at least one target
+    const agentSkillsRoot = path.join(home, '.agents', 'skills');
+    if (!seen.has(agentSkillsRoot)) {
+      roots.push(agentSkillsRoot);
+    }
 
-  return roots;
-};
+    return roots;
+  });
 
 const rebuildSkill = Effect.gen(function* () {
   const ui = yield* TerminalUI;
@@ -82,13 +82,15 @@ const rebuildSkill = Effect.gen(function* () {
     featureOverrides[name as SkillFeatureFlag] = cliConfig.isExperimentalFeatureEnabled(name);
   }
 
-  const roots = discoverSkillRoots(home);
+  const roots = yield* discoverSkillRoots(home);
   for (const root of roots) {
-    buildComposioCliSkill({
-      channel: cliConfig.channel,
-      outputRoot: root,
-      featureOverrides,
-    });
+    yield* Effect.try(() =>
+      buildComposioCliSkill({
+        channel: cliConfig.channel,
+        outputRoot: root,
+        featureOverrides,
+      })
+    );
   }
 
   yield* ui.log.step(
