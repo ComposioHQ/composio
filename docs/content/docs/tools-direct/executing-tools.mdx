@@ -415,6 +415,10 @@ const result = await composio.tools.execute('GMAIL_SEND_EMAIL', {
   </Tab>
 </Tabs>
 
+<Callout type="info">
+In Python, URL uploads must use HTTP(S) and resolve to public IP addresses. Redirects are not followed. URLs that resolve to private, loopback, link-local, or otherwise non-public addresses raise `BlockedInternalUrlError`.
+</Callout>
+
 ### File Download
 
 When tools return files, Composio downloads them to the local directory and provides the file path in the response:

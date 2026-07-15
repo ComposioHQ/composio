@@ -80,7 +80,7 @@ You only pass a `user_id`. Composio resolves that user's connected account for t
 
 ### Targeting a specific connected account
 
-If a user has more than one connected account for the toolkit, Composio uses the first active connection for the user and the trigger's toolkit. Pass a connected account ID to pick exactly which account the trigger watches.
+If a user has more than one connected account for the toolkit, Composio uses the most recently created active connection for the user and the trigger's toolkit. Pass a connected account ID to pick exactly which account the trigger watches.
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
