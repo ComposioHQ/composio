@@ -6,6 +6,7 @@ Read these when a docs change touches an existing architecture, generated-data p
 
 - `examples.md` - cookbook/examples restructuring plan.
 - `feedback.md` - feedback collection system.
+- `for-agent-sections.md` - per-page agent instructions via inline `<ForAgent>` blocks.
 - `llm-guardrails.md` - LLM guardrail injection for markdown endpoints.
 - `toolkits.md` - toolkit page data and rendering decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.

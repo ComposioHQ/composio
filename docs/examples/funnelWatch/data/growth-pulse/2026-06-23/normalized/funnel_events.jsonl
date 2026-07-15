@@ -1,0 +1,739 @@
+{"ts": "2026-06-23T07:20:00.097323+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_dcc43d14f4", "account_id": "acct_c364909e192c"}
+{"ts": "2026-06-23T07:20:00.124980+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_05256d7f60", "account_id": "acct_cedc3c01407c"}
+{"ts": "2026-06-23T07:20:00.133888+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_05256d7f60", "account_id": "acct_cedc3c01407c", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:00.142406+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_05256d7f60", "account_id": "acct_cedc3c01407c", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:00.150496+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_baccdc8448", "account_id": "acct_b5ea941f4642"}
+{"ts": "2026-06-23T07:20:00.159892+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_26b8c27574", "account_id": "acct_4d092539d6e0"}
+{"ts": "2026-06-23T07:20:00.170392+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_26b8c27574", "account_id": "acct_4d092539d6e0", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:00.181344+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_42506fe0ca", "account_id": "acct_9c0d59de1eb9"}
+{"ts": "2026-06-23T07:20:00.192627+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e7ce0348e2", "account_id": "acct_fcbd1a4af092"}
+{"ts": "2026-06-23T07:20:00.205653+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e7ce0348e2", "account_id": "acct_fcbd1a4af092", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:00.217674+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_c16d37bdba", "account_id": "acct_8f1b4ae97338"}
+{"ts": "2026-06-23T07:20:00.240817+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_281ab6812c", "account_id": "acct_2b4043e430a7"}
+{"ts": "2026-06-23T07:20:00.252113+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_281ab6812c", "account_id": "acct_2b4043e430a7", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:00.263865+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_281ab6812c", "account_id": "acct_2b4043e430a7", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:00.287759+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_ebb0d311f2", "account_id": "acct_351060312000"}
+{"ts": "2026-06-23T07:20:00.299828+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_ebb0d311f2", "account_id": "acct_351060312000", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:00.324385+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_ee96274099", "account_id": "acct_6c30c4abbf2e"}
+{"ts": "2026-06-23T07:20:00.362077+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_ee96274099", "account_id": "acct_6c30c4abbf2e", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:00.386037+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4ae6d7e3d2", "account_id": "acct_57ca69cc4ca0"}
+{"ts": "2026-06-23T07:20:00.397787+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_989e614508", "account_id": "acct_f0fa95f44bd9"}
+{"ts": "2026-06-23T07:20:00.409663+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_989e614508", "account_id": "acct_f0fa95f44bd9", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:00.434690+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bdf75b8fcf", "account_id": "acct_0329c02e44ab"}
+{"ts": "2026-06-23T07:20:00.449344+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bdf75b8fcf", "account_id": "acct_0329c02e44ab", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:00.462133+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bdf75b8fcf", "account_id": "acct_0329c02e44ab"}
+{"ts": "2026-06-23T07:20:00.474387+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bdf75b8fcf", "account_id": "acct_0329c02e44ab"}
+{"ts": "2026-06-23T07:20:00.498108+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_5aa7995b87", "account_id": "acct_db26e92a5156"}
+{"ts": "2026-06-23T07:20:00.525401+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c151956bed", "account_id": "acct_77806b4496f4"}
+{"ts": "2026-06-23T07:20:00.539394+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c151956bed", "account_id": "acct_77806b4496f4", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:00.553303+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c151956bed", "account_id": "acct_77806b4496f4", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:00.580681+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6d5bcf3202", "account_id": "acct_d2b3f8ac543e"}
+{"ts": "2026-06-23T07:20:00.594070+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6d5bcf3202", "account_id": "acct_d2b3f8ac543e", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:00.607491+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e8e3070aba", "account_id": "acct_47b142dd0ab5"}
+{"ts": "2026-06-23T07:20:00.634112+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_4bb7f7d606", "account_id": "acct_2bf6a7b6d9f9"}
+{"ts": "2026-06-23T07:20:00.647446+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_4bb7f7d606", "account_id": "acct_2bf6a7b6d9f9"}
+{"ts": "2026-06-23T07:20:00.660947+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_4bb7f7d606", "account_id": "acct_2bf6a7b6d9f9"}
+{"ts": "2026-06-23T07:20:00.701186+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_3dd5227f5c", "account_id": "acct_0a0473a366a4"}
+{"ts": "2026-06-23T07:20:00.714852+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_3dd5227f5c", "account_id": "acct_0a0473a366a4"}
+{"ts": "2026-06-23T07:20:00.728213+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_3dd5227f5c", "account_id": "acct_0a0473a366a4"}
+{"ts": "2026-06-23T07:20:00.742126+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_badd241a08", "account_id": "acct_fd3ba92845ab"}
+{"ts": "2026-06-23T07:20:00.756621+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_badd241a08", "account_id": "acct_fd3ba92845ab", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:00.771396+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_ef1d0b45a2", "account_id": "acct_53050fd726e1"}
+{"ts": "2026-06-23T07:20:00.785763+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_fa97bd2198", "account_id": "acct_86bdb279fed9"}
+{"ts": "2026-06-23T07:20:00.800088+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_da65dc25d6", "account_id": "acct_0884d91a0f6b"}
+{"ts": "2026-06-23T07:20:00.814350+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_da65dc25d6", "account_id": "acct_0884d91a0f6b", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:00.828653+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0ead172f04", "account_id": "acct_0f3f04bd4228"}
+{"ts": "2026-06-23T07:20:00.843085+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0ead172f04", "account_id": "acct_0f3f04bd4228", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:00.872169+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_91d6630fb0", "account_id": "acct_5404b58bb45f"}
+{"ts": "2026-06-23T07:20:00.886926+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_56d5e155c2", "account_id": "acct_02cdb78521f5"}
+{"ts": "2026-06-23T07:20:00.901818+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_56d5e155c2", "account_id": "acct_02cdb78521f5", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:00.931444+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_a5b99f5de9", "account_id": "acct_0287befd1e28"}
+{"ts": "2026-06-23T07:20:00.961492+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_f46ed6d2a6", "account_id": "acct_9bc43a1d3180"}
+{"ts": "2026-06-23T07:20:00.976167+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_8041f743d1", "account_id": "acct_8df1d24ccb39"}
+{"ts": "2026-06-23T07:20:01.021216+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_05218de592", "account_id": "acct_8337dd45d28d"}
+{"ts": "2026-06-23T07:20:01.036104+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_05218de592", "account_id": "acct_8337dd45d28d", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:01.051053+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_05218de592", "account_id": "acct_8337dd45d28d"}
+{"ts": "2026-06-23T07:20:01.065693+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_2d1fb1b672", "account_id": "acct_b8544fe8d8b1"}
+{"ts": "2026-06-23T07:20:01.080292+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_2d1fb1b672", "account_id": "acct_b8544fe8d8b1", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:01.094925+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_2d1fb1b672", "account_id": "acct_b8544fe8d8b1", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:01.109511+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8ea501c42e", "account_id": "acct_163eaea6b7bc"}
+{"ts": "2026-06-23T07:20:01.124416+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8ea501c42e", "account_id": "acct_163eaea6b7bc", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:01.139048+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8ea501c42e", "account_id": "acct_163eaea6b7bc", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:01.153622+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bab363dafa", "account_id": "acct_3ae8ac63eb5c"}
+{"ts": "2026-06-23T07:20:01.167969+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bab363dafa", "account_id": "acct_3ae8ac63eb5c", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:01.182457+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bab363dafa", "account_id": "acct_3ae8ac63eb5c", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:01.197224+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7187afb5b4", "account_id": "acct_0e9350b25adc"}
+{"ts": "2026-06-23T07:20:01.211917+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7187afb5b4", "account_id": "acct_0e9350b25adc", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:01.226510+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7187afb5b4", "account_id": "acct_0e9350b25adc"}
+{"ts": "2026-06-23T07:20:01.241354+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_171456309a", "account_id": "acct_8d5726c8d803"}
+{"ts": "2026-06-23T07:20:01.256127+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_171456309a", "account_id": "acct_8d5726c8d803", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:01.271088+00:00", "type": "signup", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_171456309a", "account_id": "acct_8d5726c8d803"}
+{"ts": "2026-06-23T07:20:01.300511+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_30d476153b", "account_id": "acct_5b599ea13a16"}
+{"ts": "2026-06-23T07:20:01.315476+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_30d476153b", "account_id": "acct_5b599ea13a16", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:01.345057+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_c24bc8f454", "account_id": "acct_487e99cf5018"}
+{"ts": "2026-06-23T07:20:01.359567+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_c24bc8f454", "account_id": "acct_487e99cf5018", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:01.388782+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_53af56d866", "account_id": "acct_efa0b6383e11"}
+{"ts": "2026-06-23T07:20:01.403305+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_53af56d866", "account_id": "acct_efa0b6383e11", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:01.432408+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_5e34725be5", "account_id": "acct_7f3eaf9d79ef"}
+{"ts": "2026-06-23T07:20:01.446934+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_5e34725be5", "account_id": "acct_7f3eaf9d79ef", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:01.477155+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_4196e19949", "account_id": "acct_77482d7c97f5"}
+{"ts": "2026-06-23T07:20:01.506720+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_deeef27a0b", "account_id": "acct_f891673e9a83"}
+{"ts": "2026-06-23T07:20:01.521998+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_75944df244", "account_id": "acct_6dad92811980"}
+{"ts": "2026-06-23T07:20:01.536894+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_234f24c838", "account_id": "acct_3774dd367e73"}
+{"ts": "2026-06-23T07:20:01.551639+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_234f24c838", "account_id": "acct_3774dd367e73", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:01.566564+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6796207234", "account_id": "acct_198697bebe27"}
+{"ts": "2026-06-23T07:20:01.581277+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6796207234", "account_id": "acct_198697bebe27", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:01.610958+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8d26cd1b9e", "account_id": "acct_98d646c73c6f"}
+{"ts": "2026-06-23T07:20:01.640715+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_f5b480816e", "account_id": "acct_60a4a31c5c71"}
+{"ts": "2026-06-23T07:20:01.685076+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ac55233457", "account_id": "acct_9687916cbdfb"}
+{"ts": "2026-06-23T07:20:01.729859+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_c863032691", "account_id": "acct_147b4a10c452"}
+{"ts": "2026-06-23T07:20:01.744794+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_c863032691", "account_id": "acct_147b4a10c452", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:01.774976+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e5d3b3591a", "account_id": "acct_6cb38784af27"}
+{"ts": "2026-06-23T07:20:01.790331+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e5d3b3591a", "account_id": "acct_6cb38784af27", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:01.805411+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_21c9b9563b", "account_id": "acct_7a46a9c657fb"}
+{"ts": "2026-06-23T07:20:01.820449+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_526d2cf552", "account_id": "acct_35277af1534c"}
+{"ts": "2026-06-23T07:20:01.838597+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_526d2cf552", "account_id": "acct_35277af1534c"}
+{"ts": "2026-06-23T07:20:01.854880+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_526d2cf552", "account_id": "acct_35277af1534c"}
+{"ts": "2026-06-23T07:20:01.870675+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7d64a2bf25", "account_id": "acct_e0718a67a87c"}
+{"ts": "2026-06-23T07:20:01.886575+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7d64a2bf25", "account_id": "acct_e0718a67a87c", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:01.902060+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7d64a2bf25", "account_id": "acct_e0718a67a87c"}
+{"ts": "2026-06-23T07:20:01.917627+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7d64a2bf25", "account_id": "acct_e0718a67a87c"}
+{"ts": "2026-06-23T07:20:01.933106+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d6fdb8918f", "account_id": "acct_3956f0c74690"}
+{"ts": "2026-06-23T07:20:01.949320+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_205bc8030f", "account_id": "acct_5660d3885c8d"}
+{"ts": "2026-06-23T07:20:01.980401+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_55c7f04002", "account_id": "acct_435cf82a1f4d"}
+{"ts": "2026-06-23T07:20:02.011381+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_d7fed2fe1f", "account_id": "acct_a0f369453fc3"}
+{"ts": "2026-06-23T07:20:02.042066+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ee0da003c2", "account_id": "acct_940d349f5e80"}
+{"ts": "2026-06-23T07:20:02.057662+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ee0da003c2", "account_id": "acct_940d349f5e80", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.073115+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fea08b7437", "account_id": "acct_4bde02f42fc4"}
+{"ts": "2026-06-23T07:20:02.088460+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fea08b7437", "account_id": "acct_4bde02f42fc4", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:02.103796+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fea08b7437", "account_id": "acct_4bde02f42fc4", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:02.118879+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fea08b7437", "account_id": "acct_4bde02f42fc4"}
+{"ts": "2026-06-23T07:20:02.134061+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fea08b7437", "account_id": "acct_4bde02f42fc4"}
+{"ts": "2026-06-23T07:20:02.164513+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_c1219d3bcd", "account_id": "acct_3a4f7043104d"}
+{"ts": "2026-06-23T07:20:02.195061+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_393b04e616", "account_id": "acct_85130a4a4139"}
+{"ts": "2026-06-23T07:20:02.210451+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_393b04e616", "account_id": "acct_85130a4a4139", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:02.241081+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d8c4a66d5a", "account_id": "acct_35e9ef7a4a9f"}
+{"ts": "2026-06-23T07:20:02.256242+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d8c4a66d5a", "account_id": "acct_35e9ef7a4a9f", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:02.287142+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_982fdb926d", "account_id": "acct_e5a4e943b71c"}
+{"ts": "2026-06-23T07:20:02.302455+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_982fdb926d", "account_id": "acct_e5a4e943b71c", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.317798+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_982fdb926d", "account_id": "acct_e5a4e943b71c", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:02.333123+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_117cee5dcf", "account_id": "acct_5ec49870fd9d"}
+{"ts": "2026-06-23T07:20:02.363816+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6d37f1abb9", "account_id": "acct_4b2bc7087229"}
+{"ts": "2026-06-23T07:20:02.394455+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_3b30f77fb9", "account_id": "acct_9299b38f4349"}
+{"ts": "2026-06-23T07:20:02.409520+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_3b30f77fb9", "account_id": "acct_9299b38f4349", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:02.439772+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_fb6e9d1d88", "account_id": "acct_6187ec7abc52"}
+{"ts": "2026-06-23T07:20:02.455191+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_51349bf176", "account_id": "acct_179d99073dd7"}
+{"ts": "2026-06-23T07:20:02.470855+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_55a5d28768", "account_id": "acct_d417731ddf51"}
+{"ts": "2026-06-23T07:20:02.501662+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_fdc5dfac84", "account_id": "acct_8ced62121a1c"}
+{"ts": "2026-06-23T07:20:02.516994+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_fdc5dfac84", "account_id": "acct_8ced62121a1c", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.547599+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_420fd2ed5a", "account_id": "acct_48dad46862fa"}
+{"ts": "2026-06-23T07:20:02.562817+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_420fd2ed5a", "account_id": "acct_48dad46862fa", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:02.578114+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_30c86d81e7", "account_id": "acct_2df1b58aef0b"}
+{"ts": "2026-06-23T07:20:02.593484+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_30c86d81e7", "account_id": "acct_2df1b58aef0b", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:02.608751+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_2448b53edc", "account_id": "acct_4b3cc9c3a957"}
+{"ts": "2026-06-23T07:20:02.624033+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_2448b53edc", "account_id": "acct_4b3cc9c3a957", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:02.655223+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_51c0a025f3", "account_id": "acct_65ebea54ab21"}
+{"ts": "2026-06-23T07:20:02.671502+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_51c0a025f3", "account_id": "acct_65ebea54ab21", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:02.688439+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_51c0a025f3", "account_id": "acct_65ebea54ab21"}
+{"ts": "2026-06-23T07:20:02.704234+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_74ac603976", "account_id": "acct_bef0deb099af"}
+{"ts": "2026-06-23T07:20:02.720027+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_74ac603976", "account_id": "acct_bef0deb099af", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.735433+00:00", "type": "signup", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_74ac603976", "account_id": "acct_bef0deb099af"}
+{"ts": "2026-06-23T07:20:02.750861+00:00", "type": "activation", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_74ac603976", "account_id": "acct_bef0deb099af"}
+{"ts": "2026-06-23T07:20:02.797356+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_cc779d9f10", "account_id": "acct_60e12f81347a"}
+{"ts": "2026-06-23T07:20:02.812850+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_cc779d9f10", "account_id": "acct_60e12f81347a", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:02.844352+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_7804b1b495", "account_id": "acct_1ad431d5904e"}
+{"ts": "2026-06-23T07:20:02.859846+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_7804b1b495", "account_id": "acct_1ad431d5904e", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:02.875186+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_7804b1b495", "account_id": "acct_1ad431d5904e", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.905932+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_367145f4bc", "account_id": "acct_c510484c01e3"}
+{"ts": "2026-06-23T07:20:02.921267+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_367145f4bc", "account_id": "acct_c510484c01e3", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:02.953378+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_79b68a48e2", "account_id": "acct_c53ba276b574"}
+{"ts": "2026-06-23T07:20:02.969249+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_79b68a48e2", "account_id": "acct_c53ba276b574", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.000964+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_322dc36131", "account_id": "acct_02f1104ab835"}
+{"ts": "2026-06-23T07:20:03.016460+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_322dc36131", "account_id": "acct_02f1104ab835"}
+{"ts": "2026-06-23T07:20:03.031809+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_d13e2ea932", "account_id": "acct_f83110fd75f8"}
+{"ts": "2026-06-23T07:20:03.078670+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1c1c25c4bc", "account_id": "acct_c9237d3c3ac6"}
+{"ts": "2026-06-23T07:20:03.094077+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1c1c25c4bc", "account_id": "acct_c9237d3c3ac6", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:03.124900+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fac5c63afc", "account_id": "acct_9c6ba35983d9"}
+{"ts": "2026-06-23T07:20:03.140322+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fac5c63afc", "account_id": "acct_9c6ba35983d9", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.171220+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_2469a67656", "account_id": "acct_ac2ecdfeefce"}
+{"ts": "2026-06-23T07:20:03.202151+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_be09a97902", "account_id": "acct_7201469acf23"}
+{"ts": "2026-06-23T07:20:03.217800+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_15019d89fe", "account_id": "acct_f95a214b74de"}
+{"ts": "2026-06-23T07:20:03.248824+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9f500e5a30", "account_id": "acct_8694f3133d6a"}
+{"ts": "2026-06-23T07:20:03.280247+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_11bd955044", "account_id": "acct_f589111cc3a4"}
+{"ts": "2026-06-23T07:20:03.295732+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_11bd955044", "account_id": "acct_f589111cc3a4", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.326703+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_844fe00e89", "account_id": "acct_02c40908b97c"}
+{"ts": "2026-06-23T07:20:03.342206+00:00", "type": "signup", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_844fe00e89", "account_id": "acct_02c40908b97c"}
+{"ts": "2026-06-23T07:20:03.357674+00:00", "type": "activation", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_844fe00e89", "account_id": "acct_02c40908b97c"}
+{"ts": "2026-06-23T07:20:03.373102+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_bbcaa166ab", "account_id": "acct_e278cd1d043c"}
+{"ts": "2026-06-23T07:20:03.388800+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_bbcaa166ab", "account_id": "acct_e278cd1d043c", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:03.422714+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_2f9757a684", "account_id": "acct_1ad282592d69"}
+{"ts": "2026-06-23T07:20:03.438242+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_2f9757a684", "account_id": "acct_1ad282592d69", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:03.453905+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bec9f57c23", "account_id": "acct_4175156bdf64"}
+{"ts": "2026-06-23T07:20:03.469792+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bec9f57c23", "account_id": "acct_4175156bdf64"}
+{"ts": "2026-06-23T07:20:03.485307+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bec9f57c23", "account_id": "acct_4175156bdf64"}
+{"ts": "2026-06-23T07:20:03.532114+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_2f3cec9ea7", "account_id": "acct_301c94d01a97"}
+{"ts": "2026-06-23T07:20:03.548129+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_2f3cec9ea7", "account_id": "acct_301c94d01a97", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:03.563898+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_18125fe3ed", "account_id": "acct_b68628461c0d"}
+{"ts": "2026-06-23T07:20:03.579694+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_54f8b30515", "account_id": "acct_9915e0b6881d"}
+{"ts": "2026-06-23T07:20:03.595245+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_54f8b30515", "account_id": "acct_9915e0b6881d", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.610622+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d41f38678d", "account_id": "acct_79beefd50b95"}
+{"ts": "2026-06-23T07:20:03.644325+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_64e8f31921", "account_id": "acct_18ee8269bd24"}
+{"ts": "2026-06-23T07:20:03.677206+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_925456a57e", "account_id": "acct_39fa724b4453"}
+{"ts": "2026-06-23T07:20:03.693436+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_925456a57e", "account_id": "acct_39fa724b4453", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.709263+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_925456a57e", "account_id": "acct_39fa724b4453", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:03.740714+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_3d48cb696f", "account_id": "acct_94a84491eb0d"}
+{"ts": "2026-06-23T07:20:03.756150+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_53f7eeaf59", "account_id": "acct_daee8759bc55"}
+{"ts": "2026-06-23T07:20:03.771630+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_53f7eeaf59", "account_id": "acct_daee8759bc55", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:03.787301+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_53f7eeaf59", "account_id": "acct_daee8759bc55", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:03.818701+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_dccf5fee0f", "account_id": "acct_c24437d15499"}
+{"ts": "2026-06-23T07:20:03.834306+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_dccf5fee0f", "account_id": "acct_c24437d15499", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:03.849975+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2bf77baa6b", "account_id": "acct_61f0988e4502"}
+{"ts": "2026-06-23T07:20:03.867019+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2bf77baa6b", "account_id": "acct_61f0988e4502", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:03.899461+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c3e3d5ad4", "account_id": "acct_62479e02676b"}
+{"ts": "2026-06-23T07:20:03.915588+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c3e3d5ad4", "account_id": "acct_62479e02676b", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:03.949360+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4d171761af", "account_id": "acct_e8bdf7eaddbf"}
+{"ts": "2026-06-23T07:20:03.966026+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_23f9d6c736", "account_id": "acct_10beb5a4b46e"}
+{"ts": "2026-06-23T07:20:03.982067+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_53fd6acba7", "account_id": "acct_61d6790daffe"}
+{"ts": "2026-06-23T07:20:03.997831+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_53fd6acba7", "account_id": "acct_61d6790daffe", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:04.029973+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_66dd98e65b", "account_id": "acct_6a931989eca5"}
+{"ts": "2026-06-23T07:20:04.045924+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_05b3db0d64", "account_id": "acct_9142d554c6a5"}
+{"ts": "2026-06-23T07:20:04.062313+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_05b3db0d64", "account_id": "acct_9142d554c6a5", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:04.078199+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_05b3db0d64", "account_id": "acct_9142d554c6a5", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:04.094224+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_bd062acea8", "account_id": "acct_84045ab2b6a1"}
+{"ts": "2026-06-23T07:20:04.125639+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_e52feee4b3", "account_id": "acct_70bc0c7a7a48"}
+{"ts": "2026-06-23T07:20:04.156897+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1fc6b32aac", "account_id": "acct_301aeacfcbd0"}
+{"ts": "2026-06-23T07:20:04.172739+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1fc6b32aac", "account_id": "acct_301aeacfcbd0", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:04.188415+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1fc6b32aac", "account_id": "acct_301aeacfcbd0"}
+{"ts": "2026-06-23T07:20:04.204335+00:00", "type": "activation", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1fc6b32aac", "account_id": "acct_301aeacfcbd0"}
+{"ts": "2026-06-23T07:20:04.236253+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_99ca33cfbb", "account_id": "acct_660abed660f8"}
+{"ts": "2026-06-23T07:20:04.252146+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_99ca33cfbb", "account_id": "acct_660abed660f8", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:04.283824+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_4c9cbafb21", "account_id": "acct_12143c459d6a"}
+{"ts": "2026-06-23T07:20:04.299760+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_4c9cbafb21", "account_id": "acct_12143c459d6a", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:04.331560+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7730009803", "account_id": "acct_9672bed6947b"}
+{"ts": "2026-06-23T07:20:04.347548+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7730009803", "account_id": "acct_9672bed6947b", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:04.363570+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01c1559a7d", "account_id": "acct_76200de66749"}
+{"ts": "2026-06-23T07:20:04.379383+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01c1559a7d", "account_id": "acct_76200de66749"}
+{"ts": "2026-06-23T07:20:04.395120+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01c1559a7d", "account_id": "acct_76200de66749"}
+{"ts": "2026-06-23T07:20:04.411197+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_85f9d9dd3d", "account_id": "acct_4dfc3ed2acdd"}
+{"ts": "2026-06-23T07:20:04.443041+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_1b81e04daf", "account_id": "acct_d44882baafd3"}
+{"ts": "2026-06-23T07:20:04.458981+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_1b81e04daf", "account_id": "acct_d44882baafd3", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:04.475017+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_7ae5eac67c", "account_id": "acct_0f74d360826e"}
+{"ts": "2026-06-23T07:20:04.490828+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_7ae5eac67c", "account_id": "acct_0f74d360826e", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:04.525102+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_56cdaf2d17", "account_id": "acct_3cbff51c8738"}
+{"ts": "2026-06-23T07:20:04.541326+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_56cdaf2d17", "account_id": "acct_3cbff51c8738", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:04.579482+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_83480a0692", "account_id": "acct_8845387c1dc5"}
+{"ts": "2026-06-23T07:20:04.599183+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_83480a0692", "account_id": "acct_8845387c1dc5", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:04.615200+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_ab5c6101f6", "account_id": "acct_640782654d52"}
+{"ts": "2026-06-23T07:20:04.631383+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_ab5c6101f6", "account_id": "acct_640782654d52"}
+{"ts": "2026-06-23T07:20:04.647458+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_ab5c6101f6", "account_id": "acct_640782654d52"}
+{"ts": "2026-06-23T07:20:04.703890+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_a40795d97f", "account_id": "acct_a94480e8e73a"}
+{"ts": "2026-06-23T07:20:04.740681+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ff1e3b0f19", "account_id": "acct_73c74c7299ed"}
+{"ts": "2026-06-23T07:20:04.776852+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_870295700f", "account_id": "acct_ac132fd6dae3"}
+{"ts": "2026-06-23T07:20:04.795928+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_3a24fbbace", "account_id": "acct_a8ac7a612a31"}
+{"ts": "2026-06-23T07:20:04.813744+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_3a24fbbace", "account_id": "acct_a8ac7a612a31", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:04.846518+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_64ddbddef5", "account_id": "acct_450e8ee9da5b"}
+{"ts": "2026-06-23T07:20:04.862695+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_87f5eff31d", "account_id": "acct_38c3e2b513e8"}
+{"ts": "2026-06-23T07:20:04.878835+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_865a9067aa", "account_id": "acct_d807680b1324"}
+{"ts": "2026-06-23T07:20:04.894954+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_865a9067aa", "account_id": "acct_d807680b1324", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:04.927177+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_a32b2e94d0", "account_id": "acct_c0188c4654e8"}
+{"ts": "2026-06-23T07:20:04.943497+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_644e38f667", "account_id": "acct_e8d350981e10"}
+{"ts": "2026-06-23T07:20:04.976911+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_d61e34c25d", "account_id": "acct_f7bd4cd8ddc3"}
+{"ts": "2026-06-23T07:20:04.994659+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_b24fdd6d0c", "account_id": "acct_167dd5a19967"}
+{"ts": "2026-06-23T07:20:05.010617+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_b24fdd6d0c", "account_id": "acct_167dd5a19967", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:05.026468+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_b24fdd6d0c", "account_id": "acct_167dd5a19967", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:05.059118+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_a46ba6a42b", "account_id": "acct_acc9dd520eeb"}
+{"ts": "2026-06-23T07:20:05.075355+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_43ac8dd3f9", "account_id": "acct_22405c05db8c"}
+{"ts": "2026-06-23T07:20:05.123719+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2ea31073f2", "account_id": "acct_06e9c22d0341"}
+{"ts": "2026-06-23T07:20:05.139420+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2ea31073f2", "account_id": "acct_06e9c22d0341", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:05.155361+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_9d573e7c67", "account_id": "acct_de0fde510af0"}
+{"ts": "2026-06-23T07:20:05.171934+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_14bbb86adf", "account_id": "acct_60efeac2a0ab"}
+{"ts": "2026-06-23T07:20:05.188016+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_14bbb86adf", "account_id": "acct_60efeac2a0ab", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:05.204119+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d197e89c63", "account_id": "acct_414ac0eb001e"}
+{"ts": "2026-06-23T07:20:05.236376+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_18200861df", "account_id": "acct_3ebb748d4077"}
+{"ts": "2026-06-23T07:20:05.252605+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_18200861df", "account_id": "acct_3ebb748d4077", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:05.268879+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_18200861df", "account_id": "acct_3ebb748d4077"}
+{"ts": "2026-06-23T07:20:05.284825+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_18200861df", "account_id": "acct_3ebb748d4077"}
+{"ts": "2026-06-23T07:20:05.332881+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e9ecca0fbf", "account_id": "acct_b96bb421dab6"}
+{"ts": "2026-06-23T07:20:05.348809+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e9ecca0fbf", "account_id": "acct_b96bb421dab6", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:05.365005+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e9ecca0fbf", "account_id": "acct_b96bb421dab6", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:05.397146+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_134ec30573", "account_id": "acct_9fa1d9d63448"}
+{"ts": "2026-06-23T07:20:05.429347+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_4f2cc58240", "account_id": "acct_84fd9d003f52"}
+{"ts": "2026-06-23T07:20:05.461904+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c964a5fc0", "account_id": "acct_75ab1e2e7995"}
+{"ts": "2026-06-23T07:20:05.478399+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c964a5fc0", "account_id": "acct_75ab1e2e7995", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:05.494810+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c964a5fc0", "account_id": "acct_75ab1e2e7995", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:05.511121+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c964a5fc0", "account_id": "acct_75ab1e2e7995"}
+{"ts": "2026-06-23T07:20:05.527222+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c964a5fc0", "account_id": "acct_75ab1e2e7995"}
+{"ts": "2026-06-23T07:20:05.543314+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_87e850f995", "account_id": "acct_a11024f38bcc"}
+{"ts": "2026-06-23T07:20:05.559440+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_87e850f995", "account_id": "acct_a11024f38bcc", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:05.575674+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8a230d996e", "account_id": "acct_8bf7bf624a1a"}
+{"ts": "2026-06-23T07:20:05.591323+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8a230d996e", "account_id": "acct_8bf7bf624a1a", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:05.623632+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_e5f5f0af06", "account_id": "acct_0eee9acffb9f"}
+{"ts": "2026-06-23T07:20:05.639427+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_e5f5f0af06", "account_id": "acct_0eee9acffb9f", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:05.655833+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_d8c584962a", "account_id": "acct_bd35f9ce0cd2"}
+{"ts": "2026-06-23T07:20:05.671997+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_d8c584962a", "account_id": "acct_bd35f9ce0cd2", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:05.704406+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8aa2ad8ad4", "account_id": "acct_ec6db60189b3"}
+{"ts": "2026-06-23T07:20:05.720569+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8aa2ad8ad4", "account_id": "acct_ec6db60189b3", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:05.753136+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_0e47f9fc5c", "account_id": "acct_13f9b03a4949"}
+{"ts": "2026-06-23T07:20:05.769292+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_19c9cb6f5e", "account_id": "acct_5cf455b0c5ba"}
+{"ts": "2026-06-23T07:20:05.785320+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_19c9cb6f5e", "account_id": "acct_5cf455b0c5ba", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:05.801303+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_eba966dd8e", "account_id": "acct_f0e49fe481fe"}
+{"ts": "2026-06-23T07:20:05.833492+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_05c35e20b7", "account_id": "acct_c6803ff7ab78"}
+{"ts": "2026-06-23T07:20:05.850584+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_05c35e20b7", "account_id": "acct_c6803ff7ab78", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:05.884031+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_7aeaebf04d", "account_id": "acct_2e9a3cf88ed5"}
+{"ts": "2026-06-23T07:20:05.900359+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_7aeaebf04d", "account_id": "acct_2e9a3cf88ed5", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:05.949477+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_af63aab48d", "account_id": "acct_f00cd4f4f99e"}
+{"ts": "2026-06-23T07:20:05.982287+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_14ff0844f8", "account_id": "acct_03f2ec1da537"}
+{"ts": "2026-06-23T07:20:05.998581+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_14ff0844f8", "account_id": "acct_03f2ec1da537", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:06.015138+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_1601e588ab", "account_id": "acct_bea96e48865a"}
+{"ts": "2026-06-23T07:20:06.031533+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_1601e588ab", "account_id": "acct_bea96e48865a", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:06.048114+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_1601e588ab", "account_id": "acct_bea96e48865a", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:06.082721+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5702b21482", "account_id": "acct_7059d8dc4a39"}
+{"ts": "2026-06-23T07:20:06.099025+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5702b21482", "account_id": "acct_7059d8dc4a39", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:06.131764+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_d733dbb9b7", "account_id": "acct_fd8b7bd50216"}
+{"ts": "2026-06-23T07:20:06.164106+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_aad683dfe5", "account_id": "acct_643ab639892e"}
+{"ts": "2026-06-23T07:20:06.180568+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_aad683dfe5", "account_id": "acct_643ab639892e", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:06.196842+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_aad683dfe5", "account_id": "acct_643ab639892e"}
+{"ts": "2026-06-23T07:20:06.213315+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_aad683dfe5", "account_id": "acct_643ab639892e"}
+{"ts": "2026-06-23T07:20:06.262187+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_24de444d2d", "account_id": "acct_952b94d88626"}
+{"ts": "2026-06-23T07:20:06.294929+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d7ac748e0e", "account_id": "acct_1a1015c9cc30"}
+{"ts": "2026-06-23T07:20:06.311000+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d7ac748e0e", "account_id": "acct_1a1015c9cc30", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:06.343388+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_d65d33edb1", "account_id": "acct_7edadc156a55"}
+{"ts": "2026-06-23T07:20:06.359519+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_d65d33edb1", "account_id": "acct_7edadc156a55", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:06.391733+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_a0cb75ecc3", "account_id": "acct_ed3c21ada40e"}
+{"ts": "2026-06-23T07:20:06.407805+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_a0cb75ecc3", "account_id": "acct_ed3c21ada40e", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:06.440264+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_932550a22a", "account_id": "acct_aeaea62c913b"}
+{"ts": "2026-06-23T07:20:06.456613+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_932550a22a", "account_id": "acct_aeaea62c913b", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:06.489188+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6ce8b0bae1", "account_id": "acct_ea258d4ec3cc"}
+{"ts": "2026-06-23T07:20:06.521754+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_36cb9f99bd", "account_id": "acct_cac3970eef5b"}
+{"ts": "2026-06-23T07:20:06.538157+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_36cb9f99bd", "account_id": "acct_cac3970eef5b"}
+{"ts": "2026-06-23T07:20:06.570639+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_2a2b4a59bd", "account_id": "acct_cc3d444c3f2d"}
+{"ts": "2026-06-23T07:20:06.586741+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c858bf2009", "account_id": "acct_03ba9e433e41"}
+{"ts": "2026-06-23T07:20:06.603157+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c858bf2009", "account_id": "acct_03ba9e433e41", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:06.619479+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c858bf2009", "account_id": "acct_03ba9e433e41", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:06.652031+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_58d1ef91d2", "account_id": "acct_53794ee63a9a"}
+{"ts": "2026-06-23T07:20:06.684750+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_97c2c1ab39", "account_id": "acct_283aa7e88690"}
+{"ts": "2026-06-23T07:20:06.700939+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_97c2c1ab39", "account_id": "acct_283aa7e88690", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:06.717217+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_97c2c1ab39", "account_id": "acct_283aa7e88690"}
+{"ts": "2026-06-23T07:20:06.733583+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_97c2c1ab39", "account_id": "acct_283aa7e88690"}
+{"ts": "2026-06-23T07:20:06.749864+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_a83fc2f5f3", "account_id": "acct_3bb49dbc6a7a"}
+{"ts": "2026-06-23T07:20:06.799089+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_532676f0f3", "account_id": "acct_0993336e9ca4"}
+{"ts": "2026-06-23T07:20:06.815412+00:00", "type": "signup", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_532676f0f3", "account_id": "acct_0993336e9ca4"}
+{"ts": "2026-06-23T07:20:06.831822+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_6e43323d77", "account_id": "acct_060b429a8ec8"}
+{"ts": "2026-06-23T07:20:06.848248+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_f312fba09d", "account_id": "acct_ddef22f3dbac"}
+{"ts": "2026-06-23T07:20:06.864755+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_f312fba09d", "account_id": "acct_ddef22f3dbac", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:06.881115+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_900a01c4ac", "account_id": "acct_a2dbee848ec0"}
+{"ts": "2026-06-23T07:20:06.897532+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_900a01c4ac", "account_id": "acct_a2dbee848ec0", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:06.930139+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_64e86cfcc3", "account_id": "acct_71c4797d5040"}
+{"ts": "2026-06-23T07:20:06.963200+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_8717b6841e", "account_id": "acct_eb6534b12fef"}
+{"ts": "2026-06-23T07:20:06.979422+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_8717b6841e", "account_id": "acct_eb6534b12fef", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:07.012526+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9bc0bb1631", "account_id": "acct_25318b3c688e"}
+{"ts": "2026-06-23T07:20:07.028787+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9bc0bb1631", "account_id": "acct_25318b3c688e", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.062390+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b1c2b269e3", "account_id": "acct_b6c4d89946e4"}
+{"ts": "2026-06-23T07:20:07.078545+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1f64fa5e8a", "account_id": "acct_49a83951249b"}
+{"ts": "2026-06-23T07:20:07.094915+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_1f64fa5e8a", "account_id": "acct_49a83951249b", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.144484+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_b4c02f0545", "account_id": "acct_9193f577aba1"}
+{"ts": "2026-06-23T07:20:07.161092+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_b4c02f0545", "account_id": "acct_9193f577aba1", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:07.177273+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_b4c02f0545", "account_id": "acct_9193f577aba1", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.209992+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_cd4558c133", "account_id": "acct_2c1810a9e5a9"}
+{"ts": "2026-06-23T07:20:07.226373+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_f90a3eb6f4", "account_id": "acct_ac1d68028238"}
+{"ts": "2026-06-23T07:20:07.259695+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_299cfeeefa", "account_id": "acct_9ed6e4391539"}
+{"ts": "2026-06-23T07:20:07.276296+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_299cfeeefa", "account_id": "acct_9ed6e4391539", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.292795+00:00", "type": "signup", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_299cfeeefa", "account_id": "acct_9ed6e4391539"}
+{"ts": "2026-06-23T07:20:07.325634+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_7f158ef81e", "account_id": "acct_3448a5b1f978"}
+{"ts": "2026-06-23T07:20:07.341871+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_7f158ef81e", "account_id": "acct_3448a5b1f978", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.358273+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_12f08c6fe8", "account_id": "acct_1216594bd03f"}
+{"ts": "2026-06-23T07:20:07.391107+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8b8dc49539", "account_id": "acct_c85ce9276b62"}
+{"ts": "2026-06-23T07:20:07.407616+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8b8dc49539", "account_id": "acct_c85ce9276b62", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:07.440227+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_4f5aedf158", "account_id": "acct_7d27202e14fa"}
+{"ts": "2026-06-23T07:20:07.456739+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_4f5aedf158", "account_id": "acct_7d27202e14fa", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.473091+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_4f5aedf158", "account_id": "acct_7d27202e14fa", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:07.522870+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_37f35a8aa6", "account_id": "acct_370b14639eb3"}
+{"ts": "2026-06-23T07:20:07.539366+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_94da8387e4", "account_id": "acct_2483d50383c2"}
+{"ts": "2026-06-23T07:20:07.555911+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_94da8387e4", "account_id": "acct_2483d50383c2", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:07.572550+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7e3f92a289", "account_id": "acct_9f7bf722a891"}
+{"ts": "2026-06-23T07:20:07.590710+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7e3f92a289", "account_id": "acct_9f7bf722a891", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:07.607273+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_19a9c4f9e9", "account_id": "acct_07e9cc21c182"}
+{"ts": "2026-06-23T07:20:07.623808+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_19a9c4f9e9", "account_id": "acct_07e9cc21c182", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:07.640315+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_19a9c4f9e9", "account_id": "acct_07e9cc21c182", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:07.656817+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_107b2a593f", "account_id": "acct_0d947d139765"}
+{"ts": "2026-06-23T07:20:07.674218+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_107b2a593f", "account_id": "acct_0d947d139765", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:07.692083+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_76859c6844", "account_id": "acct_2f5e525c88f8"}
+{"ts": "2026-06-23T07:20:07.708911+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_76859c6844", "account_id": "acct_2f5e525c88f8", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:07.725506+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_76859c6844", "account_id": "acct_2f5e525c88f8"}
+{"ts": "2026-06-23T07:20:07.741896+00:00", "type": "activation", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_76859c6844", "account_id": "acct_2f5e525c88f8"}
+{"ts": "2026-06-23T07:20:07.775761+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e79a799980", "account_id": "acct_ef1c87631230"}
+{"ts": "2026-06-23T07:20:07.809015+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6789557c51", "account_id": "acct_fc451b8f1061"}
+{"ts": "2026-06-23T07:20:07.825504+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6789557c51", "account_id": "acct_fc451b8f1061", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:07.841987+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6789557c51", "account_id": "acct_fc451b8f1061", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:07.875027+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_55fcec0162", "account_id": "acct_d59f672229bc"}
+{"ts": "2026-06-23T07:20:07.891550+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c793c087a6", "account_id": "acct_418a31aba9fd"}
+{"ts": "2026-06-23T07:20:07.908191+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c793c087a6", "account_id": "acct_418a31aba9fd", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:07.941390+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_720dca201c", "account_id": "acct_f12d6b69d99a"}
+{"ts": "2026-06-23T07:20:07.975320+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d7a3bf6513", "account_id": "acct_6a5512ef018f"}
+{"ts": "2026-06-23T07:20:07.991896+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d602c849b8", "account_id": "acct_4dc83aa0f104"}
+{"ts": "2026-06-23T07:20:08.008823+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d602c849b8", "account_id": "acct_4dc83aa0f104", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:08.025776+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d602c849b8", "account_id": "acct_4dc83aa0f104", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:08.042211+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_71d0230bf8", "account_id": "acct_91d27c4187d2"}
+{"ts": "2026-06-23T07:20:08.077466+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fb8230437a", "account_id": "acct_5325c98b11cd"}
+{"ts": "2026-06-23T07:20:08.094434+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_fb8230437a", "account_id": "acct_5325c98b11cd", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:08.111243+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9467344521", "account_id": "acct_1f648761f71e"}
+{"ts": "2026-06-23T07:20:08.144365+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_f75e6b5b17", "account_id": "acct_579699bc0eea"}
+{"ts": "2026-06-23T07:20:08.160948+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_f75e6b5b17", "account_id": "acct_579699bc0eea", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:08.178346+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c347cc9f64", "account_id": "acct_00447223f369"}
+{"ts": "2026-06-23T07:20:08.196471+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c347cc9f64", "account_id": "acct_00447223f369", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:08.213534+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_c347cc9f64", "account_id": "acct_00447223f369", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:08.247969+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_fccc99db4a", "account_id": "acct_34b75fb09dfa"}
+{"ts": "2026-06-23T07:20:08.264911+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_fccc99db4a", "account_id": "acct_34b75fb09dfa", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:08.281709+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d7f4928221", "account_id": "acct_ef6c3ad71648"}
+{"ts": "2026-06-23T07:20:08.298747+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d7f4928221", "account_id": "acct_ef6c3ad71648", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:08.315444+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7ed1689796", "account_id": "acct_223ff361359b"}
+{"ts": "2026-06-23T07:20:08.348810+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e7ba1702d2", "account_id": "acct_c5409a264cf8"}
+{"ts": "2026-06-23T07:20:08.365765+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e8b326beed", "account_id": "acct_3ede5eefb7fa"}
+{"ts": "2026-06-23T07:20:08.382521+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_92b7728471", "account_id": "acct_5e593de3c5b3"}
+{"ts": "2026-06-23T07:20:08.399145+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_92b7728471", "account_id": "acct_5e593de3c5b3", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:08.416083+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_92b7728471", "account_id": "acct_5e593de3c5b3", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:08.449682+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_464fad5251", "account_id": "acct_8ba58344f395"}
+{"ts": "2026-06-23T07:20:08.466465+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5d70669659", "account_id": "acct_e8f08d4f8f61"}
+{"ts": "2026-06-23T07:20:08.500143+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9d2ab5944b", "account_id": "acct_83a60e15a9c8"}
+{"ts": "2026-06-23T07:20:08.517511+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_493e30f0ec", "account_id": "acct_751dcb9a922a"}
+{"ts": "2026-06-23T07:20:08.534895+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_493e30f0ec", "account_id": "acct_751dcb9a922a", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:08.569912+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_fb936b70d6", "account_id": "acct_29b243879173"}
+{"ts": "2026-06-23T07:20:08.604141+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_3b967789ae", "account_id": "acct_60f096a5d4e3"}
+{"ts": "2026-06-23T07:20:08.621311+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_3b967789ae", "account_id": "acct_60f096a5d4e3", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:08.638278+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_971ecc3e56", "account_id": "acct_a947905cff1d"}
+{"ts": "2026-06-23T07:20:08.671840+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2a6ffc7342", "account_id": "acct_f8962d7bbed6"}
+{"ts": "2026-06-23T07:20:08.688676+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2a6ffc7342", "account_id": "acct_f8962d7bbed6", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:08.705634+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2a6ffc7342", "account_id": "acct_f8962d7bbed6"}
+{"ts": "2026-06-23T07:20:08.738967+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_03e16576db", "account_id": "acct_8bc5901277d9"}
+{"ts": "2026-06-23T07:20:08.755974+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_03e16576db", "account_id": "acct_8bc5901277d9", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:08.789310+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_22663a1902", "account_id": "acct_0b9b5f615b59"}
+{"ts": "2026-06-23T07:20:08.806040+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_22663a1902", "account_id": "acct_0b9b5f615b59", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:08.839137+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9390637042", "account_id": "acct_504a56275103"}
+{"ts": "2026-06-23T07:20:08.855851+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9390637042", "account_id": "acct_504a56275103", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:08.872439+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9390637042", "account_id": "acct_504a56275103", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:08.905590+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_50a3e2d0c1", "account_id": "acct_bdf49144a7e6"}
+{"ts": "2026-06-23T07:20:08.922578+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_50a3e2d0c1", "account_id": "acct_bdf49144a7e6", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:08.955765+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_9ad750ac9f", "account_id": "acct_797835f6582f"}
+{"ts": "2026-06-23T07:20:08.989365+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_174747f759", "account_id": "acct_317abd8c3451"}
+{"ts": "2026-06-23T07:20:09.022868+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6a37cb78b6", "account_id": "acct_fbf5dd9465a3"}
+{"ts": "2026-06-23T07:20:09.057083+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f6c326e839", "account_id": "acct_4da8485f9918"}
+{"ts": "2026-06-23T07:20:09.074192+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f6c326e839", "account_id": "acct_4da8485f9918", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:09.091145+00:00", "type": "signup", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f6c326e839", "account_id": "acct_4da8485f9918"}
+{"ts": "2026-06-23T07:20:09.108103+00:00", "type": "activation", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f6c326e839", "account_id": "acct_4da8485f9918"}
+{"ts": "2026-06-23T07:20:09.141832+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bbe074d2d7", "account_id": "acct_939f22ea4027"}
+{"ts": "2026-06-23T07:20:09.158621+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_bbe074d2d7", "account_id": "acct_939f22ea4027", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:09.175300+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6614840095", "account_id": "acct_3a95eda31ce9"}
+{"ts": "2026-06-23T07:20:09.209023+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5577c5a105", "account_id": "acct_761fa5dbdbe9"}
+{"ts": "2026-06-23T07:20:09.242321+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_044917c67f", "account_id": "acct_883f2f4e7f5f"}
+{"ts": "2026-06-23T07:20:09.259064+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_044917c67f", "account_id": "acct_883f2f4e7f5f", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:09.292954+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_049702f362", "account_id": "acct_ce6b226fa380"}
+{"ts": "2026-06-23T07:20:09.326419+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_167f7f2c3c", "account_id": "acct_a2d30db346a3"}
+{"ts": "2026-06-23T07:20:09.343126+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_167f7f2c3c", "account_id": "acct_a2d30db346a3", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:09.377139+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_93eff1aac1", "account_id": "acct_4080720b634a"}
+{"ts": "2026-06-23T07:20:09.394187+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c7dec4c7b0", "account_id": "acct_c0f510d19e4e"}
+{"ts": "2026-06-23T07:20:09.411064+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c7dec4c7b0", "account_id": "acct_c0f510d19e4e", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:09.445103+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_8584118a0c", "account_id": "acct_76f6c715208b"}
+{"ts": "2026-06-23T07:20:09.462029+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_8584118a0c", "account_id": "acct_76f6c715208b", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:09.514331+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7adb391d15", "account_id": "acct_e0fb7cdce314"}
+{"ts": "2026-06-23T07:20:09.557984+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7adb391d15", "account_id": "acct_e0fb7cdce314", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:09.618802+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_aa69834e78", "account_id": "acct_4f1f035f6f0c"}
+{"ts": "2026-06-23T07:20:09.653713+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0416c1681e", "account_id": "acct_bda192124114"}
+{"ts": "2026-06-23T07:20:09.671268+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_fe277c678c", "account_id": "acct_5a73db823a25"}
+{"ts": "2026-06-23T07:20:09.688711+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_fe277c678c", "account_id": "acct_5a73db823a25", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:09.705726+00:00", "type": "signup", "source": "Referral", "campaign": "partner", "visitor_id": "vis_fe277c678c", "account_id": "acct_5a73db823a25"}
+{"ts": "2026-06-23T07:20:09.722669+00:00", "type": "activation", "source": "Referral", "campaign": "partner", "visitor_id": "vis_fe277c678c", "account_id": "acct_5a73db823a25"}
+{"ts": "2026-06-23T07:20:09.791416+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_eeef0702a3", "account_id": "acct_4073fd37457b"}
+{"ts": "2026-06-23T07:20:09.808544+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_eeef0702a3", "account_id": "acct_4073fd37457b", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:09.842375+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_b0a7633725", "account_id": "acct_2e5ba44e8ee3"}
+{"ts": "2026-06-23T07:20:09.859403+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_aeaab80fbd", "account_id": "acct_61ad2ff1d348"}
+{"ts": "2026-06-23T07:20:09.876361+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_aeaab80fbd", "account_id": "acct_61ad2ff1d348", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:09.893331+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_f935d36fef", "account_id": "acct_485fbdbd0d24"}
+{"ts": "2026-06-23T07:20:09.910089+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_9d88d4cbcf", "account_id": "acct_b233c594cb92"}
+{"ts": "2026-06-23T07:20:09.927275+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_9d88d4cbcf", "account_id": "acct_b233c594cb92", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:09.944419+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_3b34bd605d", "account_id": "acct_8a8203f5687a"}
+{"ts": "2026-06-23T07:20:09.961602+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_3b34bd605d", "account_id": "acct_8a8203f5687a", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:09.978668+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ff5ed46a34", "account_id": "acct_c0b2e31dbf97"}
+{"ts": "2026-06-23T07:20:09.995597+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ff5ed46a34", "account_id": "acct_c0b2e31dbf97", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:10.030343+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_b5ed952aec", "account_id": "acct_78b8af4d0fbf"}
+{"ts": "2026-06-23T07:20:10.047785+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_b5ed952aec", "account_id": "acct_78b8af4d0fbf", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:10.065089+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a3da21f0", "account_id": "acct_61107ee32fd7"}
+{"ts": "2026-06-23T07:20:10.082369+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a3da21f0", "account_id": "acct_61107ee32fd7", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:10.099531+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a3da21f0", "account_id": "acct_61107ee32fd7"}
+{"ts": "2026-06-23T07:20:10.116704+00:00", "type": "activation", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a3da21f0", "account_id": "acct_61107ee32fd7"}
+{"ts": "2026-06-23T07:20:10.167987+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_410a0b35ad", "account_id": "acct_0003a72e0d60"}
+{"ts": "2026-06-23T07:20:10.185071+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_410a0b35ad", "account_id": "acct_0003a72e0d60", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:10.219440+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_cb94b28d50", "account_id": "acct_8f3de9472d5b"}
+{"ts": "2026-06-23T07:20:10.255971+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6615f6de93", "account_id": "acct_b18c8df00e96"}
+{"ts": "2026-06-23T07:20:10.273351+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6615f6de93", "account_id": "acct_b18c8df00e96", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:10.290770+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6615f6de93", "account_id": "acct_b18c8df00e96", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:10.327256+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6463df19a1", "account_id": "acct_b495bcbae55d"}
+{"ts": "2026-06-23T07:20:10.361746+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b294244d74", "account_id": "acct_2fda16c064f3"}
+{"ts": "2026-06-23T07:20:10.378912+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b294244d74", "account_id": "acct_2fda16c064f3", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:10.396425+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6d7e552051", "account_id": "acct_b0e4d2666a59"}
+{"ts": "2026-06-23T07:20:10.413779+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_6d7e552051", "account_id": "acct_b0e4d2666a59", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:10.430977+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a0f7a10d", "account_id": "acct_684be1869640"}
+{"ts": "2026-06-23T07:20:10.448293+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_55a0f7a10d", "account_id": "acct_684be1869640", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:10.465553+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_5cf970c2d7", "account_id": "acct_4a9a9102bea8"}
+{"ts": "2026-06-23T07:20:10.499967+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1be104710d", "account_id": "acct_03d07d0f2547"}
+{"ts": "2026-06-23T07:20:10.534482+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d08b2f4d9e", "account_id": "acct_4d7566b14985"}
+{"ts": "2026-06-23T07:20:10.551531+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d08b2f4d9e", "account_id": "acct_4d7566b14985", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:10.569278+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_d08b2f4d9e", "account_id": "acct_4d7566b14985", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:10.586423+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_00247bb566", "account_id": "acct_9669ff4d13ee"}
+{"ts": "2026-06-23T07:20:10.604202+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_00247bb566", "account_id": "acct_9669ff4d13ee", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:10.621269+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_0130460411", "account_id": "acct_ac11c11a7b73"}
+{"ts": "2026-06-23T07:20:10.655515+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2c70709145", "account_id": "acct_9631acee5ee9"}
+{"ts": "2026-06-23T07:20:10.689447+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_a7a02fd19d", "account_id": "acct_89ea72262574"}
+{"ts": "2026-06-23T07:20:10.723064+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_306a952c6e", "account_id": "acct_484523f1e70f"}
+{"ts": "2026-06-23T07:20:10.740199+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_306a952c6e", "account_id": "acct_484523f1e70f", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:10.774190+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_ae23aee361", "account_id": "acct_388f3cadd158"}
+{"ts": "2026-06-23T07:20:10.791344+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_ae23aee361", "account_id": "acct_388f3cadd158", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:10.808338+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_ae23aee361", "account_id": "acct_388f3cadd158", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:10.842640+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_236b750234", "account_id": "acct_fe9c7b6edf21"}
+{"ts": "2026-06-23T07:20:10.876149+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_7f53140740", "account_id": "acct_0b01335235a4"}
+{"ts": "2026-06-23T07:20:10.892890+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_7f53140740", "account_id": "acct_0b01335235a4", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:10.926884+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_b2d79e7cb4", "account_id": "acct_fa049f648c1f"}
+{"ts": "2026-06-23T07:20:10.943799+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_b2d79e7cb4", "account_id": "acct_fa049f648c1f", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:10.977536+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_858f673228", "account_id": "acct_fefcb0271ac5"}
+{"ts": "2026-06-23T07:20:10.994343+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_858f673228", "account_id": "acct_fefcb0271ac5", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:11.012051+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_eec8734d64", "account_id": "acct_ca6e6a38ac85"}
+{"ts": "2026-06-23T07:20:11.029295+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_eec8734d64", "account_id": "acct_ca6e6a38ac85", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:11.046738+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9766351348", "account_id": "acct_757437ac4f0e"}
+{"ts": "2026-06-23T07:20:11.063903+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9766351348", "account_id": "acct_757437ac4f0e"}
+{"ts": "2026-06-23T07:20:11.097767+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_9a8f8f72f6", "account_id": "acct_f4ab1e6aa25d"}
+{"ts": "2026-06-23T07:20:11.114823+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_f71bf389f1", "account_id": "acct_7de7e62c38cb"}
+{"ts": "2026-06-23T07:20:11.148765+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4289a4fac1", "account_id": "acct_6ca9f936988a"}
+{"ts": "2026-06-23T07:20:11.182862+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_87c1529f2a", "account_id": "acct_cd5699eef1cd"}
+{"ts": "2026-06-23T07:20:11.199986+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6abc2f56a0", "account_id": "acct_e479a9316a16"}
+{"ts": "2026-06-23T07:20:11.217180+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6abc2f56a0", "account_id": "acct_e479a9316a16", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:11.234363+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6abc2f56a0", "account_id": "acct_e479a9316a16", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:11.268399+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8ac2dd6f32", "account_id": "acct_4694fef00ba4"}
+{"ts": "2026-06-23T07:20:11.285575+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8ac2dd6f32", "account_id": "acct_4694fef00ba4", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:11.302569+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8ac2dd6f32", "account_id": "acct_4694fef00ba4", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:11.319614+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_28644b1428", "account_id": "acct_64d44e280cb1"}
+{"ts": "2026-06-23T07:20:11.336640+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_28644b1428", "account_id": "acct_64d44e280cb1", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:11.353804+00:00", "type": "signup", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_28644b1428", "account_id": "acct_64d44e280cb1"}
+{"ts": "2026-06-23T07:20:11.387689+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_1d9c43d3ba", "account_id": "acct_f282b984853b"}
+{"ts": "2026-06-23T07:20:11.421629+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6ec3e75c81", "account_id": "acct_3770aab43e1d"}
+{"ts": "2026-06-23T07:20:11.438697+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6ec3e75c81", "account_id": "acct_3770aab43e1d", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:11.455831+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6ec3e75c81", "account_id": "acct_3770aab43e1d", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:11.472777+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ab737f26a6", "account_id": "acct_f7cae9a6c4ea"}
+{"ts": "2026-06-23T07:20:11.489828+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ab737f26a6", "account_id": "acct_f7cae9a6c4ea", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:11.524063+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_ba245b745b", "account_id": "acct_dc81f5cda570"}
+{"ts": "2026-06-23T07:20:11.558204+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_76d21efcdb", "account_id": "acct_b1e69dd7a122"}
+{"ts": "2026-06-23T07:20:11.575266+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_76d21efcdb", "account_id": "acct_b1e69dd7a122", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:11.609721+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0c1dbc0253", "account_id": "acct_e7145f558747"}
+{"ts": "2026-06-23T07:20:11.627092+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_4dfd86dd9d", "account_id": "acct_b8618856265b"}
+{"ts": "2026-06-23T07:20:11.661284+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_753f80237c", "account_id": "acct_dcd9e0578bbd"}
+{"ts": "2026-06-23T07:20:11.678364+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_753f80237c", "account_id": "acct_dcd9e0578bbd", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:11.712577+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_c3e802f899", "account_id": "acct_ea5937d70291"}
+{"ts": "2026-06-23T07:20:11.764528+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_ec89e5cd84", "account_id": "acct_8b6b2b7d7c02"}
+{"ts": "2026-06-23T07:20:11.781461+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_9f9b63feb6", "account_id": "acct_57f0dfd6a30f"}
+{"ts": "2026-06-23T07:20:11.815685+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_1c06debc75", "account_id": "acct_d7f89f2dac65"}
+{"ts": "2026-06-23T07:20:11.850390+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4adde56498", "account_id": "acct_0ea7f2a1e419"}
+{"ts": "2026-06-23T07:20:11.867681+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4adde56498", "account_id": "acct_0ea7f2a1e419", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:11.884932+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4adde56498", "account_id": "acct_0ea7f2a1e419", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:11.919395+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_81895dcef5", "account_id": "acct_d910fece5b57"}
+{"ts": "2026-06-23T07:20:11.936703+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_81895dcef5", "account_id": "acct_d910fece5b57", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:11.953979+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_af94cea7b3", "account_id": "acct_b0dc45492204"}
+{"ts": "2026-06-23T07:20:11.971112+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_af94cea7b3", "account_id": "acct_b0dc45492204", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:11.988157+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_af94cea7b3", "account_id": "acct_b0dc45492204"}
+{"ts": "2026-06-23T07:20:12.021951+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_58d09dddea", "account_id": "acct_3af7a1efdd40"}
+{"ts": "2026-06-23T07:20:12.038908+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_58d09dddea", "account_id": "acct_3af7a1efdd40", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:12.074215+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8c1695a8c7", "account_id": "acct_6f7f844eab94"}
+{"ts": "2026-06-23T07:20:12.091655+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_8c1695a8c7", "account_id": "acct_6f7f844eab94", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:12.143265+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_251344dd82", "account_id": "acct_0ee29095c623"}
+{"ts": "2026-06-23T07:20:12.160493+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_251344dd82", "account_id": "acct_0ee29095c623", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:12.195360+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_ff3e783cf4", "account_id": "acct_daf5202d78ea"}
+{"ts": "2026-06-23T07:20:12.212547+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_ff3e783cf4", "account_id": "acct_daf5202d78ea", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:12.229811+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_806a5b90f4", "account_id": "acct_b8f22764c999"}
+{"ts": "2026-06-23T07:20:12.247022+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_806a5b90f4", "account_id": "acct_b8f22764c999", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:12.264299+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_9b382cec1a", "account_id": "acct_720c311d9a9e"}
+{"ts": "2026-06-23T07:20:12.281438+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_9b382cec1a", "account_id": "acct_720c311d9a9e", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:12.298595+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6cebd436fe", "account_id": "acct_c5c50ebf70e8"}
+{"ts": "2026-06-23T07:20:12.316276+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6cebd436fe", "account_id": "acct_c5c50ebf70e8", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:12.350657+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_1d46e28e52", "account_id": "acct_c8f40e9d4e7a"}
+{"ts": "2026-06-23T07:20:12.413730+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_856992fd4a", "account_id": "acct_11bc9e1825fc"}
+{"ts": "2026-06-23T07:20:12.450173+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_3ff67ebb06", "account_id": "acct_102270f2fbf9"}
+{"ts": "2026-06-23T07:20:12.485195+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_842d036833", "account_id": "acct_85603fea2d39"}
+{"ts": "2026-06-23T07:20:12.520193+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_1332b5f897", "account_id": "acct_ffd7fb749112"}
+{"ts": "2026-06-23T07:20:12.537780+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_1332b5f897", "account_id": "acct_ffd7fb749112", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:12.555510+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_dcdc424e22", "account_id": "acct_9b6368f28ba8"}
+{"ts": "2026-06-23T07:20:12.573024+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_dcdc424e22", "account_id": "acct_9b6368f28ba8", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:12.625461+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_af168fae91", "account_id": "acct_e33ecff3e4bd"}
+{"ts": "2026-06-23T07:20:12.642913+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_af168fae91", "account_id": "acct_e33ecff3e4bd", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:12.660793+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_be1910d120", "account_id": "acct_cbd726139776"}
+{"ts": "2026-06-23T07:20:12.679067+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_be1910d120", "account_id": "acct_cbd726139776", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:12.698072+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e05c4d5c5e", "account_id": "acct_d3e8fa7191c9"}
+{"ts": "2026-06-23T07:20:12.715905+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e05c4d5c5e", "account_id": "acct_d3e8fa7191c9", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:12.733655+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_12e5faa5f0", "account_id": "acct_66203751f752"}
+{"ts": "2026-06-23T07:20:12.751444+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_cedbbaad9a", "account_id": "acct_58d6a74c7405"}
+{"ts": "2026-06-23T07:20:12.769048+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_cc453a3b80", "account_id": "acct_9fcb4f61dc73"}
+{"ts": "2026-06-23T07:20:12.803774+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_c2fd5f015d", "account_id": "acct_3e66e7039d3c"}
+{"ts": "2026-06-23T07:20:12.821136+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_c2fd5f015d", "account_id": "acct_3e66e7039d3c", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:12.838958+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_8ec5bd5d04", "account_id": "acct_d7ba8b0b0cbb"}
+{"ts": "2026-06-23T07:20:12.873965+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_8f70e527fe", "account_id": "acct_2127c1b3facc"}
+{"ts": "2026-06-23T07:20:12.891391+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_8f70e527fe", "account_id": "acct_2127c1b3facc", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:12.908708+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_bd22a59c7d", "account_id": "acct_24375fb25cd4"}
+{"ts": "2026-06-23T07:20:12.925967+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_14557f4b66", "account_id": "acct_ead64917050c"}
+{"ts": "2026-06-23T07:20:12.943213+00:00", "type": "signup", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_14557f4b66", "account_id": "acct_ead64917050c"}
+{"ts": "2026-06-23T07:20:12.960622+00:00", "type": "activation", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_14557f4b66", "account_id": "acct_ead64917050c"}
+{"ts": "2026-06-23T07:20:13.012784+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_084b14de0d", "account_id": "acct_b028ec1ee14a"}
+{"ts": "2026-06-23T07:20:13.030437+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_0dd46f0dd4", "account_id": "acct_4b55dc018f01"}
+{"ts": "2026-06-23T07:20:13.047986+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_0dd46f0dd4", "account_id": "acct_4b55dc018f01"}
+{"ts": "2026-06-23T07:20:13.083394+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_20cad6fd2e", "account_id": "acct_23db75c4e18b"}
+{"ts": "2026-06-23T07:20:13.101143+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_20cad6fd2e", "account_id": "acct_23db75c4e18b", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:13.118484+00:00", "type": "signup", "source": "Organic", "campaign": "direct", "visitor_id": "vis_20cad6fd2e", "account_id": "acct_23db75c4e18b"}
+{"ts": "2026-06-23T07:20:13.153307+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_7b9c5692a8", "account_id": "acct_096afcb643c3"}
+{"ts": "2026-06-23T07:20:13.170871+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_bf35f571d8", "account_id": "acct_ef4017ac2f04"}
+{"ts": "2026-06-23T07:20:13.223223+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e864b5b0cf", "account_id": "acct_225623e5826b"}
+{"ts": "2026-06-23T07:20:13.258507+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_52cd091c69", "account_id": "acct_cfa954e3c0bc"}
+{"ts": "2026-06-23T07:20:13.275933+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_52cd091c69", "account_id": "acct_cfa954e3c0bc", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:13.310959+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_da8eccf241", "account_id": "acct_4c0b7da7c856"}
+{"ts": "2026-06-23T07:20:13.328727+00:00", "type": "signup", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_da8eccf241", "account_id": "acct_4c0b7da7c856"}
+{"ts": "2026-06-23T07:20:13.364066+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_ea3e7688b5", "account_id": "acct_8a497c3e0b61"}
+{"ts": "2026-06-23T07:20:13.399405+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2e91841b38", "account_id": "acct_f630a185a652"}
+{"ts": "2026-06-23T07:20:13.417225+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2e91841b38", "account_id": "acct_f630a185a652", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:13.434799+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2e91841b38", "account_id": "acct_f630a185a652", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:13.470388+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_5aa3a34ea8", "account_id": "acct_25fee1094ad8"}
+{"ts": "2026-06-23T07:20:13.488231+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_5aa3a34ea8", "account_id": "acct_25fee1094ad8", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:13.523025+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_5e6c9981d8", "account_id": "acct_a379a8222472"}
+{"ts": "2026-06-23T07:20:13.557984+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_be53e08e3e", "account_id": "acct_223575e2d670"}
+{"ts": "2026-06-23T07:20:13.575525+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_be53e08e3e", "account_id": "acct_223575e2d670", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:13.592957+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b0b01c01ef", "account_id": "acct_cbf7b8e31667"}
+{"ts": "2026-06-23T07:20:13.610436+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b0b01c01ef", "account_id": "acct_cbf7b8e31667", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:13.628188+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_9672a91b75", "account_id": "acct_919b2016c294"}
+{"ts": "2026-06-23T07:20:13.663742+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_b28e12c985", "account_id": "acct_70a22617cbab"}
+{"ts": "2026-06-23T07:20:13.681702+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_8c4e682b99", "account_id": "acct_519a2416e929"}
+{"ts": "2026-06-23T07:20:13.699065+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_8c4e682b99", "account_id": "acct_519a2416e929", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:13.734440+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_29449c5b16", "account_id": "acct_41720c44adcb"}
+{"ts": "2026-06-23T07:20:13.752087+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_e3b95e4ec1", "account_id": "acct_a3d3f06005f2"}
+{"ts": "2026-06-23T07:20:13.769850+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_e3b95e4ec1", "account_id": "acct_a3d3f06005f2", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:13.787426+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_52b8afa3ba", "account_id": "acct_9468bc574039"}
+{"ts": "2026-06-23T07:20:13.805111+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_52b8afa3ba", "account_id": "acct_9468bc574039", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:13.823161+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ff389dd962", "account_id": "acct_0a6634f64e81"}
+{"ts": "2026-06-23T07:20:13.840937+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_ff389dd962", "account_id": "acct_0a6634f64e81", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:13.876237+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f47c7c67d7", "account_id": "acct_92ed03a04b56"}
+{"ts": "2026-06-23T07:20:13.893535+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_f47c7c67d7", "account_id": "acct_92ed03a04b56", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:13.928600+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_1052c143d2", "account_id": "acct_2c6c6725d14e"}
+{"ts": "2026-06-23T07:20:13.964021+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_6b7f247c9d", "account_id": "acct_9c4efdce14b4"}
+{"ts": "2026-06-23T07:20:13.999890+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_1cee997fef", "account_id": "acct_530afa3712d8"}
+{"ts": "2026-06-23T07:20:14.017496+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_1cee997fef", "account_id": "acct_530afa3712d8", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:14.053171+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_c6cdd052b4", "account_id": "acct_fda3963785e5"}
+{"ts": "2026-06-23T07:20:14.071156+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_c6cdd052b4", "account_id": "acct_fda3963785e5", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:14.106506+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_acf5c4854c", "account_id": "acct_70466530e3ef"}
+{"ts": "2026-06-23T07:20:14.124014+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_acf5c4854c", "account_id": "acct_70466530e3ef", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:14.159170+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_10fa1de1ca", "account_id": "acct_80781f759f50"}
+{"ts": "2026-06-23T07:20:14.176624+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_10fa1de1ca", "account_id": "acct_80781f759f50", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:14.211322+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_5b3983afd0", "account_id": "acct_980a6c4a8a4f"}
+{"ts": "2026-06-23T07:20:14.264584+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_d7e9f8c7ad", "account_id": "acct_de9bf2818730"}
+{"ts": "2026-06-23T07:20:14.300739+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_2baeb5ef81", "account_id": "acct_8af48a1f03a1"}
+{"ts": "2026-06-23T07:20:14.336393+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7096c6253b", "account_id": "acct_e166b7ea1574"}
+{"ts": "2026-06-23T07:20:14.354141+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_7096c6253b", "account_id": "acct_e166b7ea1574", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:14.371850+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_72fe7ff9bd", "account_id": "acct_f81605ffb014"}
+{"ts": "2026-06-23T07:20:14.389426+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_a73f7056f9", "account_id": "acct_df10da6aff02"}
+{"ts": "2026-06-23T07:20:14.426365+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_14ae336cb3", "account_id": "acct_d88822ee46bc"}
+{"ts": "2026-06-23T07:20:14.444542+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_14ae336cb3", "account_id": "acct_d88822ee46bc", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:14.480604+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_a5735bf075", "account_id": "acct_86db3acd860a"}
+{"ts": "2026-06-23T07:20:14.498452+00:00", "type": "click", "source": "Organic", "campaign": "direct", "visitor_id": "vis_a5735bf075", "account_id": "acct_86db3acd860a", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:14.518124+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01af6954b1", "account_id": "acct_fb59081d71ea"}
+{"ts": "2026-06-23T07:20:14.538270+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01af6954b1", "account_id": "acct_fb59081d71ea", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:14.556635+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_01af6954b1", "account_id": "acct_fb59081d71ea", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:14.574675+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_12205291dd", "account_id": "acct_faa632833b6c"}
+{"ts": "2026-06-23T07:20:14.592734+00:00", "type": "click", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_12205291dd", "account_id": "acct_faa632833b6c", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:14.628478+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_98ba0981f8", "account_id": "acct_1ded9821ddcc"}
+{"ts": "2026-06-23T07:20:14.646878+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d3b43de03d", "account_id": "acct_9b6a1252b510"}
+{"ts": "2026-06-23T07:20:14.664581+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d3b43de03d", "account_id": "acct_9b6a1252b510", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:14.682265+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_d3b43de03d", "account_id": "acct_9b6a1252b510", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:14.717890+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_30e72ed0a0", "account_id": "acct_859486070d44"}
+{"ts": "2026-06-23T07:20:14.753896+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_6681975b5b", "account_id": "acct_c407aab244c0"}
+{"ts": "2026-06-23T07:20:14.771745+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b7c4760e75", "account_id": "acct_7e899c0e9a42"}
+{"ts": "2026-06-23T07:20:14.789561+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_b7c4760e75", "account_id": "acct_7e899c0e9a42", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:14.846338+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_e96e2d6dca", "account_id": "acct_4dc38bba0f38"}
+{"ts": "2026-06-23T07:20:14.886473+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_dc50deed96", "account_id": "acct_a27cad89d9c6"}
+{"ts": "2026-06-23T07:20:14.928107+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_4a4db4171b", "account_id": "acct_d427620f23f5"}
+{"ts": "2026-06-23T07:20:14.948766+00:00", "type": "signup", "source": "Organic", "campaign": "direct", "visitor_id": "vis_4a4db4171b", "account_id": "acct_d427620f23f5"}
+{"ts": "2026-06-23T07:20:14.969320+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_1689fd9430", "account_id": "acct_623f552957e0"}
+{"ts": "2026-06-23T07:20:15.007115+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_befb4a31ca", "account_id": "acct_89e340ea94b9"}
+{"ts": "2026-06-23T07:20:15.025385+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_befb4a31ca", "account_id": "acct_89e340ea94b9", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:15.043898+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_870343c0b4", "account_id": "acct_93c52de3f866"}
+{"ts": "2026-06-23T07:20:15.097716+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_0fbd082513", "account_id": "acct_54cbd4145e1d"}
+{"ts": "2026-06-23T07:20:15.115666+00:00", "type": "signup", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_0fbd082513", "account_id": "acct_54cbd4145e1d"}
+{"ts": "2026-06-23T07:20:15.133517+00:00", "type": "activation", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_0fbd082513", "account_id": "acct_54cbd4145e1d"}
+{"ts": "2026-06-23T07:20:15.151355+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c40b63ad81", "account_id": "acct_91bfbbb8c404"}
+{"ts": "2026-06-23T07:20:15.187382+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5898812958", "account_id": "acct_37e40c9d2511"}
+{"ts": "2026-06-23T07:20:15.205302+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_aeba2c24a7", "account_id": "acct_9f77613cf4e4"}
+{"ts": "2026-06-23T07:20:15.223523+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_5e3cb6d05b", "account_id": "acct_da1f0b66a174"}
+{"ts": "2026-06-23T07:20:15.241518+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0efd82c239", "account_id": "acct_1fb74ba888c1"}
+{"ts": "2026-06-23T07:20:15.259670+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0efd82c239", "account_id": "acct_1fb74ba888c1", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:15.277457+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_0efd82c239", "account_id": "acct_1fb74ba888c1", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:15.313263+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_bfb8219449", "account_id": "acct_cca93befa969"}
+{"ts": "2026-06-23T07:20:15.331348+00:00", "type": "signup", "source": "Organic", "campaign": "direct", "visitor_id": "vis_bfb8219449", "account_id": "acct_cca93befa969"}
+{"ts": "2026-06-23T07:20:15.349519+00:00", "type": "activation", "source": "Organic", "campaign": "direct", "visitor_id": "vis_bfb8219449", "account_id": "acct_cca93befa969"}
+{"ts": "2026-06-23T07:20:15.421927+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_72317ed546", "account_id": "acct_8a57b4003882"}
+{"ts": "2026-06-23T07:20:15.440057+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_a901999cba", "account_id": "acct_5c7734c08086"}
+{"ts": "2026-06-23T07:20:15.476147+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_2b3e2807be", "account_id": "acct_da6b6ed574c0"}
+{"ts": "2026-06-23T07:20:15.494191+00:00", "type": "signup", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_2b3e2807be", "account_id": "acct_da6b6ed574c0"}
+{"ts": "2026-06-23T07:20:15.512192+00:00", "type": "activation", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_2b3e2807be", "account_id": "acct_da6b6ed574c0"}
+{"ts": "2026-06-23T07:20:15.566292+00:00", "type": "visit", "source": "Organic", "campaign": "direct", "visitor_id": "vis_6a63c0c532", "account_id": "acct_ba9b5417979a"}
+{"ts": "2026-06-23T07:20:15.602363+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_a5f8c64244", "account_id": "acct_36c41ff9d6c9"}
+{"ts": "2026-06-23T07:20:15.620640+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_5c187c2c72", "account_id": "acct_ab939e20c2fb"}
+{"ts": "2026-06-23T07:20:15.657517+00:00", "type": "visit", "source": "Organic", "campaign": "brand-search", "visitor_id": "vis_af6f63b8f5", "account_id": "acct_9b5da1da70ee"}
+{"ts": "2026-06-23T07:20:15.693314+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_66103cb5ca", "account_id": "acct_2f3d977bb45c"}
+{"ts": "2026-06-23T07:20:15.711417+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_66103cb5ca", "account_id": "acct_2f3d977bb45c", "element": "Book a Demo"}
+{"ts": "2026-06-23T07:20:15.747704+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_da0d74d756", "account_id": "acct_2eb38f7f7fc3"}
+{"ts": "2026-06-23T07:20:15.766341+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_9dab93ddd2", "account_id": "acct_ebc66d409501"}
+{"ts": "2026-06-23T07:20:15.784791+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ee2a132b0c", "account_id": "acct_4beb2a9a8a8e"}
+{"ts": "2026-06-23T07:20:15.803314+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ee2a132b0c", "account_id": "acct_4beb2a9a8a8e", "element": "Get Started"}
+{"ts": "2026-06-23T07:20:15.839684+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4511d6f944", "account_id": "acct_0eb8835e627c"}
+{"ts": "2026-06-23T07:20:15.857930+00:00", "type": "signup", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_4511d6f944", "account_id": "acct_0eb8835e627c"}
+{"ts": "2026-06-23T07:20:15.894312+00:00", "type": "visit", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_e8e8c7b184", "account_id": "acct_5ab017795a9c"}
+{"ts": "2026-06-23T07:20:15.912249+00:00", "type": "click", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_e8e8c7b184", "account_id": "acct_5ab017795a9c", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:15.930490+00:00", "type": "signup", "source": "Google Ads", "campaign": "competitor", "visitor_id": "vis_e8e8c7b184", "account_id": "acct_5ab017795a9c"}
+{"ts": "2026-06-23T07:20:15.966478+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_dfebd10fa5", "account_id": "acct_01330ba9e18b"}
+{"ts": "2026-06-23T07:20:16.020390+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_136295f0f1", "account_id": "acct_1fde7ec99e24"}
+{"ts": "2026-06-23T07:20:16.056419+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_273a7cd571", "account_id": "acct_2c0b788566d9"}
+{"ts": "2026-06-23T07:20:16.092594+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_c27519b361", "account_id": "acct_3e146a8c9fa0"}
+{"ts": "2026-06-23T07:20:16.110262+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_c27519b361", "account_id": "acct_3e146a8c9fa0", "element": "Get Paid"}
+{"ts": "2026-06-23T07:20:16.146709+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c5ed2c0208", "account_id": "acct_c648c011cdf7"}
+{"ts": "2026-06-23T07:20:16.164845+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_c5ed2c0208", "account_id": "acct_c648c011cdf7", "element": "Pricing"}
+{"ts": "2026-06-23T07:20:16.200878+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_cbc1c81c7c", "account_id": "acct_6ab44da9bc30"}
+{"ts": "2026-06-23T07:20:16.218963+00:00", "type": "click", "source": "Referral", "campaign": "partner", "visitor_id": "vis_cbc1c81c7c", "account_id": "acct_6ab44da9bc30", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:16.254956+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ad61f0dc53", "account_id": "acct_0c5be96291c8"}
+{"ts": "2026-06-23T07:20:16.273044+00:00", "type": "visit", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e2861e98c6", "account_id": "acct_634f3d74bff9"}
+{"ts": "2026-06-23T07:20:16.291234+00:00", "type": "click", "source": "Docs", "campaign": "developer-docs", "visitor_id": "vis_e2861e98c6", "account_id": "acct_634f3d74bff9", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:16.327249+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_6909a0290e", "account_id": "acct_b6a400cdc5e1"}
+{"ts": "2026-06-23T07:20:16.345429+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_2f6032655c", "account_id": "acct_0f34a110a418"}
+{"ts": "2026-06-23T07:20:16.363749+00:00", "type": "click", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_2f6032655c", "account_id": "acct_0f34a110a418", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:16.381717+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_dc28eb479c", "account_id": "acct_43a643d5806d"}
+{"ts": "2026-06-23T07:20:16.419188+00:00", "type": "visit", "source": "GitHub", "campaign": "repo-readme", "visitor_id": "vis_e8f2694e35", "account_id": "acct_b651df2ae2e6"}
+{"ts": "2026-06-23T07:20:16.437713+00:00", "type": "visit", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_5bcfa0e981", "account_id": "acct_51b047627f4f"}
+{"ts": "2026-06-23T07:20:16.455887+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_5bcfa0e981", "account_id": "acct_51b047627f4f", "element": "Start Building"}
+{"ts": "2026-06-23T07:20:16.474164+00:00", "type": "click", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_5bcfa0e981", "account_id": "acct_51b047627f4f", "element": "View Docs"}
+{"ts": "2026-06-23T07:20:16.492338+00:00", "type": "signup", "source": "Google Ads", "campaign": "search-intent", "visitor_id": "vis_5bcfa0e981", "account_id": "acct_51b047627f4f"}
+{"ts": "2026-06-23T07:20:16.528768+00:00", "type": "visit", "source": "Referral", "campaign": "partner", "visitor_id": "vis_ac59bd9f9b", "account_id": "acct_d8d2b10b894f"}
+{"ts": "2026-06-23T07:20:18.109949+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_9e5f6872f5", "account_id": "acct_meta_paid_000"}
+{"ts": "2026-06-23T07:20:18.131945+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_2843a1bd99", "account_id": "acct_meta_paid_000"}
+{"ts": "2026-06-23T07:20:18.154188+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_6153372370", "account_id": "acct_meta_paid_000"}
+{"ts": "2026-06-23T07:20:18.221148+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_8b26af4a83", "account_id": "acct_meta_paid_001"}
+{"ts": "2026-06-23T07:20:18.243158+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_3a11535585", "account_id": "acct_meta_paid_001"}
+{"ts": "2026-06-23T07:20:18.265020+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_209508a287", "account_id": "acct_meta_paid_001"}
+{"ts": "2026-06-23T07:20:18.330787+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_9ded786b5b", "account_id": "acct_meta_paid_002"}
+{"ts": "2026-06-23T07:20:18.352852+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_4e62f198c8", "account_id": "acct_meta_paid_002"}
+{"ts": "2026-06-23T07:20:18.375384+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_735505cb91", "account_id": "acct_meta_paid_002"}
+{"ts": "2026-06-23T07:20:18.442872+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_2f717c3080", "account_id": "acct_meta_paid_003"}
+{"ts": "2026-06-23T07:20:18.465225+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_997b937443", "account_id": "acct_meta_paid_003"}
+{"ts": "2026-06-23T07:20:18.487724+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_935451d75e", "account_id": "acct_meta_paid_003"}
+{"ts": "2026-06-23T07:20:18.554742+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_74fc249778", "account_id": "acct_meta_paid_004"}
+{"ts": "2026-06-23T07:20:18.577146+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_6d6e438e53", "account_id": "acct_meta_paid_004"}
+{"ts": "2026-06-23T07:20:18.599625+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_7a7c8099e5", "account_id": "acct_meta_paid_004"}
+{"ts": "2026-06-23T07:20:18.668117+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_94fe4bc62b", "account_id": "acct_meta_paid_005"}
+{"ts": "2026-06-23T07:20:18.690823+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_9b1bcc2ec6", "account_id": "acct_meta_paid_005"}
+{"ts": "2026-06-23T07:20:18.713280+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_3181499428", "account_id": "acct_meta_paid_005"}
+{"ts": "2026-06-23T07:20:18.782131+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_25b8f30d67", "account_id": "acct_meta_paid_006"}
+{"ts": "2026-06-23T07:20:18.804888+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_246bd5203c", "account_id": "acct_meta_paid_006"}
+{"ts": "2026-06-23T07:20:18.827936+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_808428e8db", "account_id": "acct_meta_paid_006"}
+{"ts": "2026-06-23T07:20:18.896071+00:00", "type": "visit", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_8f6cdb4f16", "account_id": "acct_meta_paid_007"}
+{"ts": "2026-06-23T07:20:18.918718+00:00", "type": "signup", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_8eb1d96d1b", "account_id": "acct_meta_paid_007"}
+{"ts": "2026-06-23T07:20:18.941503+00:00", "type": "activation", "source": "Meta Ads", "campaign": "summer-demo", "visitor_id": "vis_b80091b1ac", "account_id": "acct_meta_paid_007"}
+{"type": "visit", "source": "google", "campaign": "brand"}
+{"type": "signup", "source": "google", "campaign": "brand"}

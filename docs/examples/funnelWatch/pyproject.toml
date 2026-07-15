@@ -1,0 +1,23 @@
+[project]
+name = "growth-pulse"
+version = "0.1.0"
+description = "Read-only revenue & marketing intelligence agent (Composio + FastAPI)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "jinja2>=3.1",
+    "python-dotenv>=1.0",
+    "pandas>=2.1",
+    "apscheduler>=3.10",
+    "requests>=2.31",
+    # Optional at runtime — the app falls back to template insights / a local Slack
+    # outbox without API keys, but these are needed for live agent + Slack delivery.
+    "openai>=1.40",
+    "composio>=0.7",
+    "composio-openai>=0.7",
+]
+
+[tool.uv]
+package = false

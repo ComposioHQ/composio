@@ -13,7 +13,7 @@
     "dev": "next dev",
     "start": "next start",
     "types:check": "bun scripts/build-agent-index.ts && fumadocs-mdx && next typegen && tsc --noEmit",
-    "postinstall": "fumadocs-mdx",
+    "postinstall": "fumadocs-mdx && bun scripts/patch-eve-snapshot-skip.ts",
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",
     "sync:search": "bun scripts/sync-algolia-search.ts",
