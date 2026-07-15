@@ -39,7 +39,9 @@ export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
                 <a href={ep.href}>{ep.summary}</a>
                 {ep.legacy && (
                   <span className="ml-2 inline-flex align-middle">
-                    <LegacyBadge />
+                    <LegacyBadge
+                      title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"
+                    />
                   </span>
                 )}
               </td>
