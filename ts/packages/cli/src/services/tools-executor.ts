@@ -1,4 +1,4 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Context, Effect, Layer } from 'effect';
 import type { Composio } from '@composio/client';
 import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
@@ -57,6 +57,7 @@ export interface ToolsExecutor {
     ToolExecuteResponse,
     unknown,
     | FileSystem.FileSystem
+    | Path.Path
     | NodeOs
     | NodeProcess
     | ComposioUserContext

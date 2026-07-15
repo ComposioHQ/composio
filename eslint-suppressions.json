@@ -120,14 +120,6 @@
       "count": 1
     }
   },
-  "ts/packages/cli/src/services/cli-session-artifacts.ts": {
-    "no-restricted-imports": {
-      "count": 3
-    },
-    "no-restricted-syntax": {
-      "count": 4
-    }
-  },
   "ts/packages/cli/src/services/cli-user-config.ts": {
     "no-restricted-imports": {
       "count": 2

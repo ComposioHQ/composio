@@ -792,7 +792,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       NodeOs,
       new NodeOs({
         homedir: cwd,
-        tmpdir: '/tmp',
+        tmpdir: tempy.rootTemporaryDirectory,
         arch: 'arm64',
         platform: 'darwin',
       })

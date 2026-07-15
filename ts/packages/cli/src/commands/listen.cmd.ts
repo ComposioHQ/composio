@@ -188,8 +188,6 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
   return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 };
 
-const resolveFallbackArtifactsDir = () => resolveArtifactsRoot();
-
 const parseStreamPath = (expression: string): ReadonlyArray<string | number> => {
   const trimmed = expression.trim();
   if (!trimmed.startsWith('.')) {
@@ -427,10 +425,9 @@ export const listenCmd = Command.make(
         orgId: resolvedProject.orgId,
         consumerUserId,
       });
-      const artifactsRoot = Option.match(artifactsOption, {
-        onNone: () => resolveFallbackArtifactsDir(),
-        onSome: value => value.directoryPath,
-      });
+      const artifactsRoot = Option.isSome(artifactsOption)
+        ? artifactsOption.value.directoryPath
+        : yield* resolveArtifactsRoot;
       const triggerDir = path.join(
         artifactsRoot,
         listeningToProjectEvent ? 'events' : 'triggers',
