@@ -70,7 +70,7 @@ Choosing **Don't store data** stops Composio from persisting your payloads, but 
 
 ### When Workbench uses an LLM
 
-Workbench does not decide on its own that a task is complex. `invoke_llm` is used only when the agent or MCP client submits code that explicitly calls it, usually to summarize, analyze, extract, or generate content. Only the information passed to `invoke_llm` is sent to the model provider; sandbox files and previous results are not sent unless the submitted code includes them.
+When a task requires advanced processing, the agent or MCP client may use Workbench and call `invoke_llm` from the submitted code—for example, to summarize, analyze, extract, or generate content. Only the information passed to `invoke_llm` is sent to the model provider; sandbox files and previous results are not sent unless the submitted code includes them.
 
 There is one separate case: if submitted Python contains a syntax error and automatic repair is enabled, Composio may send the code and error details to the configured model provider to fix it before execution. Valid Python and ordinary shell commands do not trigger this repair.
 
