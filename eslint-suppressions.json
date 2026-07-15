@@ -1,12 +1,4 @@
 {
-  "ts/packages/cli/src/analytics/dispatch.ts": {
-    "no-restricted-imports": {
-      "count": 3
-    },
-    "no-restricted-syntax": {
-      "count": 10
-    }
-  },
   "ts/packages/cli/src/commands/auth-configs/commands/auth-configs.create.cmd.ts": {
     "no-restricted-syntax": {
       "count": 1

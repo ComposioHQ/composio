@@ -1,5 +1,8 @@
 import process from 'node:process';
+import { Effect, Layer } from 'effect';
+import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
+import { NodeOs } from 'src/services/node-os';
 
 const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
@@ -17,9 +20,14 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
 };
 
 if (isBackgroundWorkerInvocation(process.argv)) {
-  void runBackgroundWorkerFromArgv(process.argv).finally(() => {
-    process.exit(0);
-  });
+  runBackgroundWorkerFromArgv(process.argv).pipe(
+    Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)),
+    effect =>
+      BunRuntime.runMain(effect, {
+        disableErrorReporting: true,
+        teardown: (_exit, onExit) => onExit(0),
+      })
+  );
 } else {
   process.argv = stripTelemetryDebugFlag(process.argv);
   void import('./cli-main');

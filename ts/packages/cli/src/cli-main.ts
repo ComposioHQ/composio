@@ -36,7 +36,7 @@ import {
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
-import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
@@ -59,12 +59,12 @@ export const ComposioCliUserConfigLayer = Layer.provide(
 
 export const ComposioSessionRepositoryLive = Layer.provide(
   ComposioSessionRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -79,12 +79,12 @@ export const UpgradeBinaryLive = Layer.provide(
 
 export const TriggersRealtimeLive = Layer.provide(
   TriggersRealtime.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ToolsExecutorLive = Layer.provide(
@@ -121,6 +121,7 @@ const layers = Layer.mergeAll(
   ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
@@ -196,9 +197,9 @@ const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand
 
 showUpdateNotice();
 checkForUpdateInBackground();
-trackCliEvent(getPrimaryLifecycleInvokedEvent(commandTelemetryContext));
 
-runWithArgs.pipe(
+trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
+  Effect.andThen(runWithArgs),
   Effect.scoped,
   Effect.mapError(error =>
     ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })

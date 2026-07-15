@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
@@ -11,6 +11,7 @@ import { extendConfigProvider } from 'src/services/config';
 const withConfigLayer = (map: Map<string, string>, homedir: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
+    BunPath.layer,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir })),
     Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)))
   );

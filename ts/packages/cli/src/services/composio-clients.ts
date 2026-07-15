@@ -13,6 +13,7 @@ import {
   SynchronizedRef,
 } from 'effect';
 import { Composio as _RawComposioClient, APIPromise } from '@composio/client';
+import { FileSystem, Path } from '@effect/platform';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import {
@@ -39,6 +40,7 @@ import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { ProjectContext } from './project-context';
 import type { NoSuchElementException } from 'effect/Cause';
 import { renderPrettyError } from './utils/pretty-error';
+import { NodeOs } from './node-os';
 
 /**
  * Error types
@@ -1331,8 +1333,8 @@ const buildDefaultHeaders = (params: {
   userApiKey?: string;
   orgId?: string;
   projectId?: string;
+  cliSessionId?: string;
 }): Record<string, string> | undefined => {
-  const cliSessionId = getCurrentCwdSessionId();
   const defaultHeaders = {
     'x-framework': 'cli',
     'x-source': 'CLI',
@@ -1347,8 +1349,8 @@ const buildDefaultHeaders = (params: {
           'x-project-id': params.projectId,
         } satisfies Record<string, string>)
       : {}),
-    ...(cliSessionId
-      ? ({ 'x-cli-session-id': cliSessionId } satisfies Record<string, string>)
+    ...(params.cliSessionId
+      ? ({ 'x-cli-session-id': params.cliSessionId } satisfies Record<string, string>)
       : {}),
   };
 
@@ -1513,6 +1515,9 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
     effect: Effect.gen(function* () {
       const ctx = yield* ComposioUserContext;
       const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const os = yield* NodeOs;
       const cache = new Map<string, _RawComposioClient>();
 
       const getFor = (params?: { userApiKey?: string; orgId?: string; projectId?: string }) =>
@@ -1530,6 +1535,12 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
             return cached;
           }
 
+          const cliSessionId = yield* getCurrentCwdSessionId().pipe(
+            Effect.provideService(FileSystem.FileSystem, fs),
+            Effect.provideService(Path.Path, path),
+            Effect.provideService(NodeOs, os)
+          );
+
           const client = new _RawComposioClient({
             apiKey: null,
             baseURL: ctx.data.baseURL,
@@ -1537,6 +1548,7 @@ export class ComposioClientSingleton extends Effect.Service<ComposioClientSingle
               userApiKey: apiKey,
               orgId: params?.orgId,
               projectId: params?.projectId,
+              cliSessionId,
             }),
           });
 
