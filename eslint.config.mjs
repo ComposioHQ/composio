@@ -1,6 +1,25 @@
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const portableRestrictedImportPaths = [
+  {
+    name: 'crypto',
+    message: 'Use Web Crypto API instead.',
+  },
+  {
+    name: 'node:crypto',
+    message: 'Use Web Crypto API instead.',
+  },
+  {
+    name: 'buffer',
+    message: 'Use Uint8Array instead.',
+  },
+  {
+    name: 'node:buffer',
+    message: 'Use Uint8Array instead.',
+  },
+];
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
@@ -23,26 +42,7 @@ export default [
     rules: {
       // "@typescript-eslint/no-var-requires": "off",
       'no-restricted-globals': ['error', 'Buffer'],
-      "no-restricted-imports": ["error", {
-        "paths": [
-          {
-            "name": "crypto",
-            "message": "Use Web Crypto API instead.",
-          },
-          {
-            "name": "node:crypto",
-            "message": "Use Web Crypto API instead.",
-          },
-          {
-            "name": "buffer",
-            "message": "Use Uint8Array instead.",
-          },
-          {
-            "name": "node:buffer",
-            "message": "Use Uint8Array instead.",
-          },
-        ],
-      }],
+      'no-restricted-imports': ['error', { paths: portableRestrictedImportPaths }],
       '@typescript-eslint/no-require-imports': 'warn',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       'no-prototype-builtins': 'off',
@@ -66,6 +66,45 @@ export default [
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
+    files: ['ts/packages/cli/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...portableRestrictedImportPaths,
+            {
+              name: 'node:fs',
+              message: 'Use FileSystem from @effect/platform instead.',
+            },
+            {
+              name: 'node:os',
+              message: 'Use an Effect service instead of importing node:os directly.',
+            },
+            {
+              name: 'node:path',
+              message: 'Use Path from @effect/platform instead.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['node:fs/*'],
+              message: 'Use FileSystem from @effect/platform instead.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TryStatement',
+          message:
+            'Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch.',
         },
       ],
     },
