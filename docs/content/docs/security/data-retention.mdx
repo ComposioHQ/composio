@@ -25,7 +25,14 @@ Tool execution logs and trigger event logs are retained for up to **one year**, 
 
 ## How long files are available
 
-When a tool returns a file (an image, document, export, and so on), Composio shares it as a presigned URL with a time-to-live (TTL) rather than storing the file indefinitely. The default TTL is **1 hour**, and once it expires the URL stops resolving.
+When a tool uses or returns a file (an attachment, image, document, export, and so on), Composio stages it in temporary object storage and shares it through a presigned URL. The URL is valid for **1 hour by default**. You can configure this URL TTL per project in **Project Settings**, up to 24 hours.
+
+Presigned URL expiry and file deletion are separate. When the URL expires, the link stops resolving, but that does not delete the underlying object. Files staged for tool execution are automatically deleted from temporary object storage after **24 hours**.
+
+The remote sandbox has two related lifecycles:
+
+- Files written to `/mnt/files` are backed by temporary object storage and are automatically deleted after **24 hours**.
+- Sandbox-local filesystem, variables, and runtime state remain available while the sandbox is alive. An inactive sandbox may be reclaimed after approximately **12 hours**. The session record itself can persist longer than the sandbox.
 
 ## Choose what we store: the Log storage setting
 
@@ -57,9 +64,48 @@ Choosing **Don't store data** stops Composio from persisting your payloads, but 
 
 - the **destination provider** you integrate with, which the tool call is made to;
 - **Composio's execution path** while the call runs;
-- **object storage** for files returned by tool calls, held only for the file TTL (1 hour by default — see [How long files are available](#how-long-files-are-available)) and then expired;
+- **temporary object storage** for files used or returned by tool calls. Presigned URL expiry is configurable per project, while the underlying staged file is deleted after 24 hours — see [How long files are available](#how-long-files-are-available);
 - your configured **trigger destinations**, which receive trigger events in real time;
-- if you use the **workbench** or code execution, an isolated **code sandbox** and a **third-party model provider** that powers it.
+- if you use the **workbench** or remote code execution, an isolated third-party **code sandbox**. Ordinary Python or shell execution does not inherently send code or sandbox files to an LLM provider. Model-provider processing occurs only in the cases described below.
+
+### When the remote sandbox calls an LLM
+
+The remote sandbox does not inspect a task's complexity and independently decide to call an LLM. The upstream agent or user submits Python code to the workbench, and the sandbox executes that code after validation.
+
+#### Explicit `invoke_llm` calls
+
+`invoke_llm` is a preloaded helper for semantic analysis, summarization, classification, structured extraction, and content generation. It runs only when the submitted Python code explicitly calls it. For example:
+
+```python
+summary, error = invoke_llm(
+    f"Summarize this tool output and return JSON:\n{tool_output}"
+)
+
+if error:
+    print(error)
+else:
+    print(summary)
+```
+
+The helper's signature is:
+
+```python
+def invoke_llm(
+    query: str,
+    reasoning_effort: str = None,
+) -> tuple[str, str]:
+    ...
+```
+
+The helper sends a fixed system instruction and the exact `query` supplied by the submitted code to Composio's configured model provider. It does not automatically read or send the rest of the sandbox, `/mnt/files`, or prior tool results; those are sent only if the caller includes them in `query`. The current implementation routes the request through `COMPOSIO_SEARCH_GROQ_CHAT`, uses the server-configured model with a temperature of `0.5`, and returns `(response, "")` on success or `("", error)` on failure. `reasoning_effort` is accepted for backward compatibility but is currently ignored.
+
+The workbench instructions recommend `invoke_llm` for semantic operations such as summarization, analysis, field extraction, and content generation. This recommendation helps the upstream agent decide what code to submit; it is not an automatic model call made by the workbench service.
+
+#### Automatic Python syntax repair
+
+Syntax repair is separate from `invoke_llm`. Before submitted Python runs, Composio parses it for syntax errors. If syntax repair is enabled for the project and the code is invalid, Composio sends the full submitted code and formatted parser errors to the configured model provider. The model proposes targeted replacements, and Composio parses the repaired code again before execution. The provider and model are configurable; the current fallback configuration uses the AI Gateway with `anthropic/claude-haiku-4.5`.
+
+Valid Python and ordinary shell execution do not trigger syntax repair. User-authored sandbox code can also explicitly call a model-provider toolkit or external model API; in that case, the data supplied by that code is sent to the selected provider just like any other explicit API call.
 
 So "Don't store data" controls what Composio retains, not whether data is processed during execution. For the current list of our sub-processors and our data-handling terms, see the [Composio Trust Center](https://trust.composio.dev/subprocessors).
 
