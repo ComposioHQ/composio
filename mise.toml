@@ -1,7 +1,8 @@
 # Single source of truth for Node, Bun, Deno, Python, uv, and pnpm versions.
 #
 # Local dev:  `mise install` (after `brew install mise` / `winget install jdx.mise` / `curl https://mise.run | sh`)
-# CI:         driven by `jdx/mise-action` in the composite actions under `.github/actions/`
+# CI:         exact versions are read from `mise.lock` by the composite actions
+#             under `.github/actions/` and installed with allowlisted setup actions
 #
 # pnpm is pinned through mise's npm backend so mise owns the full local and CI
 # toolchain. We do not rely on Corepack because Node.js no longer distributes it

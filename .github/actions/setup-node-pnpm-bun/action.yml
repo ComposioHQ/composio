@@ -1,13 +1,13 @@
-name: 'Setup Node.js, pnpm, Bun via mise'
-description: 'Sets up Node.js, pnpm, and Bun from mise.toml unless explicit matrix overrides are provided'
+name: 'Setup Node.js, pnpm, Bun from mise.lock'
+description: 'Sets up the mise-locked toolchain with enterprise-allowlisted actions'
 
 inputs:
   node-version:
-    description: 'Node.js version to use. Defaults to mise.toml'
+    description: 'Node.js version to use. Defaults to mise.lock'
     required: false
     default: ''
   bun-version:
-    description: 'Bun version to use. Defaults to mise.toml'
+    description: 'Bun version to use. Defaults to mise.lock'
     required: false
     default: ''
   enable-caching:
@@ -33,52 +33,43 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup mise
-      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
-      with:
-        version: 2026.5.18
-        install: false
-        cache: ${{ inputs.enable-caching }}
-
-    - name: Install mise-managed Node.js and Bun
+    - name: Resolve mise-locked versions
+      id: tool-versions
       shell: bash
       env:
         NODE_VERSION: ${{ inputs.node-version }}
         BUN_VERSION: ${{ inputs.bun-version }}
       run: |
-        tools=()
-        if [ -z "$NODE_VERSION" ]; then
-          tools+=(node)
+        resolver="$GITHUB_ACTION_PATH/../../scripts/read-mise-lock-version.sh"
+        node_version="$NODE_VERSION"
+        bun_version="$BUN_VERSION"
+
+        if [[ -z "$node_version" ]]; then
+          node_version=$(bash "$resolver" node)
         fi
-        if [ -z "$BUN_VERSION" ]; then
-          tools+=(bun)
-        fi
-        if [ "${#tools[@]}" -gt 0 ]; then
-          mise install "${tools[@]}"
+        if [[ -z "$bun_version" ]]; then
+          bun_version=$(bash "$resolver" bun)
         fi
 
-    - name: Setup Node.js override
-      if: inputs.node-version != ''
+        echo "node=$node_version" >> "$GITHUB_OUTPUT"
+        echo "bun=$bun_version" >> "$GITHUB_OUTPUT"
+        echo "pnpm=$(bash "$resolver" pnpm)" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Node.js
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version: ${{ steps.tool-versions.outputs.node }}
 
-    - name: Setup Bun override
-      if: inputs.bun-version != ''
+    - name: Setup Bun
       uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       with:
-        bun-version: ${{ inputs.bun-version }}
+        bun-version: ${{ steps.tool-versions.outputs.bun }}
 
-    - name: Install mise-managed pnpm
-      shell: bash
-      run: mise install npm:pnpm
-
-    - name: Prefer mise-managed pnpm
-      shell: bash
-      run: |
-        # Node.js distributions can expose their own pnpm. Keep mise.toml's
-        # npm:pnpm pin ahead of the Node install, especially for Node overrides.
-        echo "$(mise where npm:pnpm)/bin" >> "$GITHUB_PATH"
+    - name: Setup pnpm
+      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      with:
+        version: ${{ steps.tool-versions.outputs.pnpm }}
+        run_install: false
 
     - name: Resolve pnpm store path and Node version
       if: inputs.enable-caching == 'true'

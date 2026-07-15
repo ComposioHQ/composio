@@ -1,13 +1,13 @@
-name: 'Setup Python with uv via mise'
-description: 'Sets up Python and uv from mise.toml unless explicit matrix overrides are provided'
+name: 'Setup Python and uv from mise.lock'
+description: 'Sets up the mise-locked Python toolchain with enterprise-allowlisted actions'
 
 inputs:
   python-version:
-    description: 'Python version to use. Defaults to mise.toml'
+    description: 'Python version to use. Defaults to mise.lock'
     required: false
     default: ''
   uv-version:
-    description: 'uv version to install. Defaults to mise.toml'
+    description: 'uv version to install. Defaults to mise.lock'
     required: false
     default: ''
   enable-caching:
@@ -23,41 +23,36 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup mise
-      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
-      with:
-        version: 2026.5.18
-        install: false
-        cache: ${{ inputs.enable-caching }}
-
-    - name: Install mise-managed Python and uv
+    - name: Resolve mise-locked versions
+      id: tool-versions
       shell: bash
       env:
         PYTHON_VERSION: ${{ inputs.python-version }}
         UV_VERSION: ${{ inputs.uv-version }}
       run: |
-        tools=()
-        if [ -z "$PYTHON_VERSION" ]; then
-          tools+=(python)
+        resolver="$GITHUB_ACTION_PATH/../../scripts/read-mise-lock-version.sh"
+        python_version="$PYTHON_VERSION"
+        uv_version="$UV_VERSION"
+
+        if [[ -z "$python_version" ]]; then
+          python_version=$(bash "$resolver" python)
         fi
-        if [ -z "$UV_VERSION" ]; then
-          tools+=(uv)
-        fi
-        if [ "${#tools[@]}" -gt 0 ]; then
-          mise install "${tools[@]}"
+        if [[ -z "$uv_version" ]]; then
+          uv_version=$(bash "$resolver" uv)
         fi
 
-    - name: Setup Python override
-      if: inputs.python-version != ''
+        echo "python=$python_version" >> "$GITHUB_OUTPUT"
+        echo "uv=$uv_version" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Python
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
-        python-version: ${{ inputs.python-version }}
+        python-version: ${{ steps.tool-versions.outputs.python }}
 
-    - name: Setup uv override
-      if: inputs.uv-version != ''
+    - name: Setup uv
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
-        version: ${{ inputs.uv-version }}
+        version: ${{ steps.tool-versions.outputs.uv }}
         enable-cache: ${{ inputs.enable-caching }}
 
     - name: Report versions
