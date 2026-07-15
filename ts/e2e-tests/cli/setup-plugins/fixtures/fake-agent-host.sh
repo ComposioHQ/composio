@@ -12,6 +12,12 @@ case "$host:$command" in
   "claude:--version")
     printf '%s\n' '2.1.207 (Claude Code)'
     ;;
+  "claude:plugin marketplace list --help"|"claude:plugin list --help")
+    printf '%s\n' "Usage: claude $command [OPTIONS]"
+    if [ ! -f "$state_dir/claude-without-json" ]; then
+      printf '%s\n' '      --json'
+    fi
+    ;;
   "claude:plugin marketplace list --json")
     if [ -f "$state_dir/claude-marketplace" ]; then
       printf '%s\n' '[{"name":"composio","source":"git","url":"https://github.com/ComposioHQ/composio-plugin-cc.git"}]'
@@ -20,6 +26,10 @@ case "$host:$command" in
     fi
     ;;
   "claude:plugin list --json")
+    if [ -f "$state_dir/claude-inspection-fails" ]; then
+      printf '%s\n' 'native inspection failed' 'Usage: claude plugin list [options]' >&2
+      exit 2
+    fi
     if [ -f "$state_dir/claude-plugin" ]; then
       printf '%s\n' '[{"id":"composio@composio","scope":"user","enabled":true}]'
     else
@@ -47,6 +57,12 @@ case "$host:$command" in
     ;;
   "codex:plugin marketplace list --help")
     printf '%s\n' 'Usage: codex plugin marketplace list [OPTIONS]'
+    if [ ! -f "$state_dir/codex-without-json" ]; then
+      printf '%s\n' '      --json'
+    fi
+    ;;
+  "codex:plugin list --help")
+    printf '%s\n' 'Usage: codex plugin list [OPTIONS]'
     if [ ! -f "$state_dir/codex-without-json" ]; then
       printf '%s\n' '      --json'
     fi

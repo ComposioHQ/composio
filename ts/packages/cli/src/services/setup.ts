@@ -1,5 +1,5 @@
 import { Command } from '@effect/platform';
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import semver from 'semver';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
@@ -46,6 +46,7 @@ interface SetupTargetAdapter {
   readonly pluginInstallArgs: ReadonlyArray<string>;
   readonly pluginEnableArgs: ReadonlyArray<string>;
   readonly pluginUninstallArgs: ReadonlyArray<string>;
+  readonly inspectionHelpArgs: ReadonlyArray<ReadonlyArray<string>>;
   readonly marketplaceRecordsKey?: string;
   readonly pluginRecordsKey?: string;
   readonly pluginScope?: string;
@@ -82,6 +83,10 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
       'user',
       '--yes',
     ],
+    inspectionHelpArgs: [
+      ['plugin', 'marketplace', 'list', '--help'],
+      ['plugin', 'list', '--help'],
+    ],
     pluginScope: 'user',
     marketplaceRemoveCommand: 'claude plugin marketplace remove composio --scope user',
     skillSource: 'standalone',
@@ -97,6 +102,10 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
     // Codex has no separate enable command. Re-adding is its native install/repair path.
     pluginEnableArgs: ['plugin', 'add', CODEX_PLUGIN_MARKETPLACE.plugin, '--json'],
     pluginUninstallArgs: ['plugin', 'remove', CODEX_PLUGIN_MARKETPLACE.plugin, '--json'],
+    inspectionHelpArgs: [
+      ['plugin', 'marketplace', 'list', '--help'],
+      ['plugin', 'list', '--help'],
+    ],
     marketplaceRecordsKey: 'marketplaces',
     pluginRecordsKey: 'installed',
     marketplaceRemoveCommand: 'codex plugin marketplace remove composio --json',
@@ -107,6 +116,11 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
 const ADAPTER_LIST = Object.values(ADAPTERS);
 const SETUP_COMMAND_TIMEOUT = '2 minutes';
 const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
+
+export class SetupCommandError extends Data.TaggedError('services/SetupCommandError')<{
+  readonly message: string;
+  readonly operation: 'setup' | 'uninstall';
+}> {}
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -228,61 +242,154 @@ const pluginState = (
   return { installed: true, enabled: plugin.enabled !== false };
 };
 
+const commandText = (executable: string, args: ReadonlyArray<string>) =>
+  [executable, ...args].join(' ');
+
 const capture = (executable: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
     return yield* runner.capture(Command.make(executable, ...args)).pipe(
-      Effect.catchAll(() => Effect.succeed<CommandResult | undefined>(undefined)),
       Effect.timeoutFail({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () => new Error(`${executable} command timed out.`),
+        onTimeout: () =>
+          new Error(
+            `The \`${commandText(executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`
+          ),
       })
     );
   });
 
-const unsupportedCodexInspectionMessage = () =>
-  `This Codex installation does not support safe automatic plugin inspection. Composio setup requires Codex ${MINIMUM_CODEX_SETUP_VERSION} or newer with JSON plugin inspection. Run \`codex update\`, then rerun this command.`;
+const isCommandNotFound = (error: unknown): boolean => {
+  if (error === null || typeof error !== 'object') return false;
+  const record = error as Record<string, unknown>;
+  return record._tag === 'SystemError' && record.reason === 'NotFound';
+};
+
+const captureOptional = (executable: string, args: ReadonlyArray<string>) =>
+  capture(executable, args).pipe(
+    Effect.catchIf(isCommandNotFound, () => Effect.succeed<CommandResult | undefined>(undefined))
+  );
+
+const targetLabel = (target: AgentHost): string => (target === 'claude' ? 'Claude Code' : 'Codex');
+
+const hostUpdateCommand = (adapter: SetupTargetAdapter): string => `${adapter.executable} update`;
+
+const unsupportedInspectionMessage = (adapter: SetupTargetAdapter) => {
+  if (adapter.target === 'codex') {
+    return `This Codex installation does not support safe automatic plugin inspection. Composio setup requires Codex ${MINIMUM_CODEX_SETUP_VERSION} or newer with JSON plugin inspection. Run \`codex update\`, then rerun this command.`;
+  }
+  return 'This Claude Code installation does not support safe automatic plugin inspection. Composio setup requires JSON plugin inspection. Run `claude update`, then rerun this command.';
+};
+
+const compactCommandDetail = (value: string): string | undefined => {
+  const firstLine = value
+    .split(/\r?\n/u)
+    .map(line => line.trim())
+    .find(Boolean);
+  if (!firstLine) return undefined;
+  return firstLine.length > 300 ? `${firstLine.slice(0, 297)}...` : firstLine;
+};
+
+const commandResultDetail = (result: CommandResult): string => {
+  const detail = compactCommandDetail(result.stderr) ?? compactCommandDetail(result.stdout);
+  return detail ?? `exit ${result.exitCode}`;
+};
+
+const capabilityCheckFailureMessage = (
+  adapter: SetupTargetAdapter,
+  command: string,
+  detail: string
+) => {
+  const normalizedDetail = detail.trim().replace(/[.]+$/u, '');
+  return `Composio could not verify plugin support for ${targetLabel(adapter.target)} because \`${command}\` failed: ${normalizedDetail}. Run \`${hostUpdateCommand(adapter)}\`, then rerun this command.`;
+};
 
 const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string) =>
   Effect.gen(function* () {
-    if (adapter.target !== 'codex') return true;
-
-    const version = versionOutput?.match(/\b\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\b/)?.[0];
-    if (!version || !semver.valid(version) || semver.lt(version, MINIMUM_CODEX_SETUP_VERSION)) {
-      return false;
+    if (adapter.target === 'codex') {
+      const version = versionOutput?.match(/\b\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\b/)?.[0];
+      if (!version || !semver.valid(version) || semver.lt(version, MINIMUM_CODEX_SETUP_VERSION)) {
+        return { supported: false, reason: unsupportedInspectionMessage(adapter) };
+      }
     }
 
-    const result = yield* capture(adapter.executable, ['plugin', 'marketplace', 'list', '--help']);
-    const help = result ? `${result.stdout}\n${result.stderr}` : '';
-    return result?.exitCode === 0 && /^\s*--json\b/m.test(help);
+    for (const args of adapter.inspectionHelpArgs) {
+      const command = commandText(adapter.executable, args);
+      const result = yield* capture(adapter.executable, args).pipe(
+        Effect.mapError(
+          error => new Error(capabilityCheckFailureMessage(adapter, command, errorMessage(error)))
+        )
+      );
+      if (result.exitCode !== 0) {
+        return {
+          supported: false,
+          reason: capabilityCheckFailureMessage(adapter, command, commandResultDetail(result)),
+        };
+      }
+      const help = `${result.stdout}\n${result.stderr}`;
+      if (!/^\s*--json\b/m.test(help)) {
+        return { supported: false, reason: unsupportedInspectionMessage(adapter) };
+      }
+    }
+    return { supported: true };
   });
 
 const detectAdapter = (adapter: SetupTargetAdapter) =>
   Effect.gen(function* () {
-    const result = yield* capture(adapter.executable, ['--version']);
-    const available = result !== undefined && result.exitCode === 0;
-    if (!available) return { available, supported: false };
+    const versionArgs = ['--version'] as const;
+    const versionCommand = commandText(adapter.executable, versionArgs);
+    const captureResult = yield* captureOptional(adapter.executable, versionArgs).pipe(
+      Effect.map(result => ({ result }) as const),
+      Effect.catchAll(error => Effect.succeed({ error } as const))
+    );
+    if ('error' in captureResult) {
+      return {
+        available: true,
+        supported: false,
+        unsupportedReason: capabilityCheckFailureMessage(
+          adapter,
+          versionCommand,
+          errorMessage(captureResult.error)
+        ),
+      };
+    }
+    const { result } = captureResult;
+    if (!result) return { available: false, supported: false };
+    if (result.exitCode === 127) return { available: false, supported: false };
+    if (result.exitCode !== 0) {
+      return {
+        available: true,
+        supported: false,
+        unsupportedReason: capabilityCheckFailureMessage(
+          adapter,
+          versionCommand,
+          commandResultDetail(result)
+        ),
+      };
+    }
 
     const version = result.stdout.trim() || result.stderr.trim();
-    const supported = yield* supportsInspection(adapter, version);
+    const support = yield* supportsInspection(adapter, version).pipe(
+      Effect.catchAll(error =>
+        Effect.succeed({ supported: false, reason: errorMessage(error) } as const)
+      )
+    );
     return version
       ? {
-          available,
-          supported,
+          available: true,
+          supported: support.supported,
           version,
-          ...(supported ? {} : { unsupportedReason: unsupportedCodexInspectionMessage() }),
+          ...(support.supported ? {} : { unsupportedReason: support.reason }),
         }
       : {
-          available,
-          supported,
-          ...(supported ? {} : { unsupportedReason: unsupportedCodexInspectionMessage() }),
+          available: true,
+          supported: support.supported,
+          ...(support.supported ? {} : { unsupportedReason: support.reason }),
         };
   });
 
 const commandFailureSuffix = (result: CommandResult): string => {
-  const detail = result.stderr.trim() || result.stdout.trim();
-  if (detail) return `: ${detail}`;
-  return ` (exit ${result.exitCode})`;
+  return `: ${commandResultDetail(result)}`;
 };
 
 const errorMessage = (error: unknown): string => {
@@ -290,23 +397,50 @@ const errorMessage = (error: unknown): string => {
   return String(error);
 };
 
+type SetupOperation = 'setup' | 'uninstall';
+
+const setupCommand = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
+  `composio setup${operation === 'uninstall' ? ' --uninstall' : ''} --target ${adapter.target}`;
+
+const recoveryHint = (adapter: SetupTargetAdapter, operation: SetupOperation): string =>
+  `Run \`${setupCommand(adapter, operation)}\` again. If the problem persists, run \`${hostUpdateCommand(adapter)}\` and retry.`;
+
+const captureInspection = (
+  adapter: SetupTargetAdapter,
+  args: ReadonlyArray<string>,
+  operation: string,
+  setupOperation: SetupOperation
+) =>
+  capture(adapter.executable, args).pipe(
+    Effect.mapError(
+      error =>
+        new Error(
+          `Failed to inspect ${targetLabel(adapter.target)} ${operation}: ${errorMessage(error)}. ${recoveryHint(adapter, setupOperation)}`
+        )
+    )
+  );
+
 const requireInspection = <T>(
   adapter: SetupTargetAdapter,
   operation: string,
-  result: CommandResult | undefined,
-  parse: (output: string) => T | undefined
+  result: CommandResult,
+  parse: (output: string) => T | undefined,
+  setupOperation: SetupOperation
 ) => {
-  if (!result) {
-    return Effect.fail(new Error(`Failed to inspect ${adapter.target} ${operation}.`));
-  }
   if (result.exitCode !== 0) {
     return Effect.fail(
-      new Error(`Failed to inspect ${adapter.target} ${operation}${commandFailureSuffix(result)}.`)
+      new Error(
+        `Failed to inspect ${targetLabel(adapter.target)} ${operation}${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`
+      )
     );
   }
   const inspected = parse(result.stdout);
   if (!inspected) {
-    return Effect.fail(new Error(`${adapter.target} returned invalid JSON for ${operation}.`));
+    return Effect.fail(
+      new Error(
+        `${targetLabel(adapter.target)} returned invalid JSON while inspecting ${operation}. ${recoveryHint(adapter, setupOperation)}`
+      )
+    );
   }
   return Effect.succeed(inspected);
 };
@@ -317,7 +451,8 @@ const inspectAdapter = (
     readonly available: boolean;
     readonly supported: boolean;
     readonly version?: string;
-  }
+  },
+  setupOperation: SetupOperation = 'setup'
 ) =>
   Effect.gen(function* () {
     const skillInstaller = yield* SetupSkillInstaller;
@@ -335,19 +470,27 @@ const inspectAdapter = (
     }
 
     if (!detection.supported) {
-      return yield* Effect.fail(new Error(unsupportedCodexInspectionMessage()));
+      return yield* Effect.fail(new Error(unsupportedInspectionMessage(adapter)));
     }
 
     const [marketplaces, plugins] = yield* Effect.all([
-      capture(adapter.executable, adapter.marketplaceListArgs),
-      capture(adapter.executable, adapter.pluginListArgs),
+      captureInspection(adapter, adapter.marketplaceListArgs, 'marketplaces', setupOperation),
+      captureInspection(adapter, adapter.pluginListArgs, 'plugins', setupOperation),
     ]);
-    const plugin = yield* requireInspection(adapter, 'plugins', plugins, output =>
-      pluginState(adapter, output)
+    const plugin = yield* requireInspection(
+      adapter,
+      'plugins',
+      plugins,
+      output => pluginState(adapter, output),
+      setupOperation
     );
     const pluginReady = plugin.installed && plugin.enabled;
-    const marketplace = yield* requireInspection(adapter, 'marketplaces', marketplaces, output =>
-      marketplaceState(adapter, output)
+    const marketplace = yield* requireInspection(
+      adapter,
+      'marketplaces',
+      marketplaces,
+      output => marketplaceState(adapter, output),
+      setupOperation
     );
     let cliSkillReady = pluginReady;
     if (adapter.skillSource === 'standalone') {
@@ -397,17 +540,32 @@ export const isSetupPluginReady = (status: SetupTargetStatus): boolean =>
 export const isSetupReady = (status: SetupTargetStatus): boolean =>
   isSetupPluginReady(status) && status.cli_skill_ready;
 
-const runRequired = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>, operation: string) =>
+const runRequired = (
+  adapter: SetupTargetAdapter,
+  args: ReadonlyArray<string>,
+  operation: string,
+  setupOperation: SetupOperation
+) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
     const result = yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
       Effect.timeoutFail({
         duration: SETUP_COMMAND_TIMEOUT,
         onTimeout: () => new Error(`${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`),
-      })
+      }),
+      Effect.mapError(
+        error =>
+          new Error(
+            `${operation} failed: ${errorMessage(error)}. ${recoveryHint(adapter, setupOperation)}`
+          )
+      )
     );
     if (result.exitCode !== 0) {
-      return yield* Effect.fail(new Error(`${operation} failed${commandFailureSuffix(result)}`));
+      return yield* Effect.fail(
+        new Error(
+          `${operation} failed${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`
+        )
+      );
     }
   });
 
@@ -441,14 +599,21 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
     const repairStep = pluginRepairStep(adapter, initial);
     if (repairStep) steps.push(repairStep);
     for (const step of steps) {
-      yield* runRequired(adapter, step.args, step.operation);
+      yield* runRequired(adapter, step.args, step.operation, 'setup');
     }
     const pluginChanged = steps.length > 0;
 
     const skillInstaller = yield* SetupSkillInstaller;
     let skillChanged = false;
     if (adapter.skillSource === 'standalone' && !initial.cli_skill_ready) {
-      skillChanged = yield* skillInstaller.ensureClaudeSkill;
+      skillChanged = yield* skillInstaller.ensureClaudeSkill.pipe(
+        Effect.mapError(
+          error =>
+            new Error(
+              `Installing the Claude Code CLI skill failed: ${errorMessage(error)}. ${recoveryHint(adapter, 'setup')}`
+            )
+        )
+      );
     }
 
     const final = yield* inspectAdapter(adapter);
@@ -480,7 +645,8 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
       yield* runRequired(
         adapter,
         adapter.pluginUninstallArgs,
-        `Uninstalling the ${adapter.target} plugin`
+        `Uninstalling the ${adapter.target} plugin`,
+        'uninstall'
       );
       pluginChanged = true;
     }
@@ -488,10 +654,17 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
     const skillInstaller = yield* SetupSkillInstaller;
     let skillChanged = false;
     if (adapter.skillSource === 'standalone') {
-      skillChanged = yield* skillInstaller.removeClaudeSkill;
+      skillChanged = yield* skillInstaller.removeClaudeSkill.pipe(
+        Effect.mapError(
+          error =>
+            new Error(
+              `Removing the Claude Code CLI skill failed: ${errorMessage(error)}. ${recoveryHint(adapter, 'uninstall')}`
+            )
+        )
+      );
     }
 
-    const final = yield* inspectAdapter(adapter);
+    const final = yield* inspectAdapter(adapter, undefined, 'uninstall');
     if (final.plugin_installed) {
       return yield* Effect.fail(
         new Error(
@@ -541,12 +714,16 @@ export const detectSetupTargets = (target: SetupTarget) =>
 
 export const inspectSetupTargets = (
   detections: ReadonlyArray<SetupTargetDetection>,
-  options: { readonly allowMarketplaceConflict?: boolean } = {}
+  options: {
+    readonly allowMarketplaceConflict?: boolean;
+    readonly operation?: SetupOperation;
+  } = {}
 ) =>
   Effect.gen(function* () {
     const inspected = yield* Effect.forEach(
       detections.filter(detection => detection.available && detection.supported),
-      detection => inspectAdapter(ADAPTERS[detection.target], detection)
+      detection =>
+        inspectAdapter(ADAPTERS[detection.target], detection, options.operation ?? 'setup')
     );
     if (!options.allowMarketplaceConflict) {
       yield* Effect.forEach(inspected, status =>

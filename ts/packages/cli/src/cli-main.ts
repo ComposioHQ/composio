@@ -22,7 +22,7 @@ import { JsPackageManagerDetector } from 'src/services/js-package-manager-detect
 import { ComposioCliUserConfigLive, ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContextLive as _ComposioUserContextLive } from 'src/services/user-context';
 import { UpgradeBinary } from 'src/services/upgrade-binary';
-import { TerminalUILive } from 'src/services/terminal-ui';
+import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { ToolsExecutorLive as _ToolsExecutorLive } from 'src/services/tools-executor';
 import { ProjectContext } from 'src/services/project-context';
@@ -39,6 +39,8 @@ import {
 import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
+import { SetupCommandError } from 'src/services/setup';
+import { canRenderTerminalDecoration } from 'src/utils/stdio';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RequiredLayer = Layer.Layer<any, any, never>;
@@ -235,6 +237,24 @@ runWithArgs.pipe(
       );
     });
   }),
+  Effect.catchIf(
+    (error): error is SetupCommandError => error instanceof SetupCommandError,
+    error =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        const summary =
+          error.operation === 'uninstall'
+            ? 'Composio plugin uninstall was unsuccessful.'
+            : 'Composio setup was unsuccessful.';
+        if (canRenderTerminalDecoration()) {
+          yield* ui.log.error(error.message);
+          yield* ui.outro(summary);
+        } else {
+          yield* Console.error(`${summary} ${error.message}`);
+        }
+        process.exitCode = 1;
+      })
+  ),
   Effect.withSpan('composio-cli', {
     attributes: {
       name: constants.APP_NAME,

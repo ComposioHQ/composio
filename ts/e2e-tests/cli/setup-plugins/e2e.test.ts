@@ -53,6 +53,17 @@ export PATH=/tmp/bin:$PATH
 composio setup --target auto --yes
 `;
 
+const legacyClaudeFixture = `
+set -eu
+mkdir -p /tmp/bin /tmp/host-state
+cp fixtures/fake-agent-host.sh /tmp/bin/claude
+chmod +x /tmp/bin/claude
+touch /tmp/host-state/claude-without-json
+export HOST_STATE_DIR=/tmp/host-state
+export PATH=/tmp/bin:$PATH
+composio setup --target auto --yes
+`;
+
 const claudeWithLegacyCodexFixture = `
 set -eu
 mkdir -p /tmp/bin /tmp/host-state
@@ -71,6 +82,31 @@ test -f /tmp/host-state/claude-plugin
 test ! -f /tmp/host-state/codex-plugin
 `;
 
+const codexWithLegacyClaudeFixture = `
+set -eu
+mkdir -p /tmp/bin /tmp/host-state
+cp fixtures/fake-agent-host.sh /tmp/bin/claude
+cp fixtures/fake-agent-host.sh /tmp/bin/codex
+chmod +x /tmp/bin/claude /tmp/bin/codex
+touch /tmp/host-state/claude-without-json
+export HOST_STATE_DIR=/tmp/host-state
+export PATH=/tmp/bin:$PATH
+composio setup --target auto --yes
+test ! -f /tmp/host-state/claude-plugin
+test -f /tmp/host-state/codex-plugin
+`;
+
+const failedClaudeInspectionFixture = `
+set -eu
+mkdir -p /tmp/bin /tmp/host-state
+cp fixtures/fake-agent-host.sh /tmp/bin/claude
+chmod +x /tmp/bin/claude
+touch /tmp/host-state/claude-inspection-fails
+export HOST_STATE_DIR=/tmp/host-state
+export PATH=/tmp/bin:$PATH
+composio setup --target auto --yes
+`;
+
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
@@ -81,8 +117,11 @@ e2e(import.meta.url, {
     let unavailable: E2ETestResult;
     let skippedUnavailable: E2ETestResult;
     let skippedUnavailableUninstall: E2ETestResult;
+    let legacyClaude: E2ETestResult;
     let legacyCodex: E2ETestResult;
     let claudeWithLegacyCodex: E2ETestResult;
+    let codexWithLegacyClaude: E2ETestResult;
+    let failedClaudeInspection: E2ETestResult;
 
     beforeAll(async () => {
       // The shared E2E runner derives container names from Date.now(), so keep
@@ -100,8 +139,11 @@ e2e(import.meta.url, {
       skippedUnavailableUninstall = await runCmd(
         'composio setup --uninstall --target auto --yes --if-present'
       );
+      legacyClaude = await runCmd(legacyClaudeFixture);
       legacyCodex = await runCmd(legacyCodexFixture);
       claudeWithLegacyCodex = await runCmd(claudeWithLegacyCodexFixture);
+      codexWithLegacyClaude = await runCmd(codexWithLegacyClaudeFixture);
+      failedClaudeInspection = await runCmd(failedClaudeInspectionFixture);
     }, TIMEOUTS.FIXTURE);
 
     describe.each([
@@ -180,7 +222,14 @@ e2e(import.meta.url, {
       });
     });
 
-    describe('Codex compatibility', () => {
+    describe('agent compatibility', () => {
+      it('exits with Claude update instructions when no supported host remains', () => {
+        expect(legacyClaude.exitCode).not.toBe(0);
+        expect(legacyClaude.stdout).toBe('');
+        expect(legacyClaude.stderr).toContain('requires JSON plugin inspection');
+        expect(legacyClaude.stderr).toContain('claude update');
+      });
+
       it('exits with upgrade instructions when no supported host remains', () => {
         expect(legacyCodex.exitCode).not.toBe(0);
         expect(legacyCodex.stdout).toBe('');
@@ -193,6 +242,26 @@ e2e(import.meta.url, {
         expect(claudeWithLegacyCodex.exitCode).toBe(0);
         expect(claudeWithLegacyCodex.stdout).toBe('');
         expect(claudeWithLegacyCodex.stderr).toBe('');
+      });
+
+      it('continues with Codex when Claude is unsupported', () => {
+        expect(codexWithLegacyClaude.exitCode).toBe(0);
+        expect(codexWithLegacyClaude.stdout).toBe('');
+        expect(codexWithLegacyClaude.stderr).toBe('');
+      });
+    });
+
+    describe('graceful failures', () => {
+      it('reports the failed host, recovery command, and no generic usage dump', () => {
+        expect(failedClaudeInspection.exitCode).not.toBe(0);
+        expect(failedClaudeInspection.stdout).toBe('');
+        expect(failedClaudeInspection.stderr).toContain('Composio setup was unsuccessful.');
+        expect(failedClaudeInspection.stderr).toContain(
+          'Failed to inspect Claude Code plugins: native inspection failed.'
+        );
+        expect(failedClaudeInspection.stderr).toContain('composio setup --target claude');
+        expect(failedClaudeInspection.stderr).not.toContain('USAGE');
+        expect(failedClaudeInspection.stderr).not.toContain('effect-errors');
       });
     });
   },

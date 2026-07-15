@@ -7,6 +7,7 @@ import {
   isSetupPluginReady,
   isSetupReady,
   SETUP_TARGETS,
+  SetupCommandError,
   uninstallSetupTargets,
   type AgentHost,
   type SetupTarget,
@@ -43,6 +44,9 @@ const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
 
 const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
   targets.map(target => TARGET_LABELS[target]).join(' and ');
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 const setupBaseCmd = Command.make(
   'setup',
@@ -108,6 +112,7 @@ const setupBaseCmd = Command.make(
 
       const inspected = yield* inspectSetupTargets(detections, {
         allowMarketplaceConflict: uninstall,
+        operation: uninstall ? 'uninstall' : 'setup',
       });
       if (uninstall) {
         const installed = inspected.filter(status => status.plugin_installed);
@@ -203,7 +208,15 @@ const setupBaseCmd = Command.make(
       }
 
       yield* ui.outro('Composio setup complete.');
-    })
+    }).pipe(
+      Effect.mapError(
+        error =>
+          new SetupCommandError({
+            message: errorMessage(error),
+            operation: uninstall ? 'uninstall' : 'setup',
+          })
+      )
+    )
 );
 
 export const setupCmd = setupBaseCmd.pipe(

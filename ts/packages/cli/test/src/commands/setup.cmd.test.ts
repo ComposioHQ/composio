@@ -122,6 +122,7 @@ const makeFakeHosts = (
     readonly noOp?: boolean;
     readonly failOn?: string;
     readonly malformedOn?: string;
+    readonly claudeJsonInspection?: boolean;
     readonly codexJsonInspection?: boolean;
     readonly codexVersion?: string;
     readonly marketplaceSource?: Partial<Record<AgentHost, string>>;
@@ -164,12 +165,18 @@ const makeFakeHosts = (
             : HOST_OUTPUT_FORMATTERS[host].version,
       };
     }
-    if (command === 'codex plugin marketplace list --help') {
+    if (
+      command === `${host} plugin marketplace list --help` ||
+      command === `${host} plugin list --help`
+    ) {
+      const supportsJson =
+        host === 'claude'
+          ? options.claudeJsonInspection !== false
+          : options.codexJsonInspection !== false;
       return {
-        stdout:
-          options.codexJsonInspection === false
-            ? 'Usage: codex plugin marketplace list [OPTIONS]'
-            : 'Usage: codex plugin marketplace list [OPTIONS]\n\n      --json',
+        stdout: supportsJson
+          ? `Usage: ${command.replace(' --help', ' [OPTIONS]')}\n\n      --json`
+          : `Usage: ${command.replace(' --help', ' [OPTIONS]')}`,
       };
     }
     if (options.failOn && command.includes(options.failOn)) {
@@ -484,6 +491,46 @@ describe('CLI: composio setup', () => {
     );
   });
 
+  const autoCodexWithLegacyClaude = makeFakeHosts(
+    {
+      claude: { available: true },
+      codex: { available: true },
+    },
+    { claudeJsonInspection: false }
+  );
+  layer(TestLive({ commandRunner: autoCodexWithLegacyClaude.runner }))(
+    'automatic setup with unsupported Claude and Codex',
+    it => {
+      it.scoped('installs Codex and reports that Claude was skipped', () =>
+        Effect.gen(function* () {
+          yield* cli(['setup', '--target', 'auto', '--yes']);
+
+          expect(autoCodexWithLegacyClaude.state.claude).toMatchObject({
+            marketplace: 'missing',
+            plugin: 'missing',
+          });
+          expect(autoCodexWithLegacyClaude.state.codex).toMatchObject({
+            marketplace: 'canonical',
+            plugin: 'enabled',
+          });
+          expect(
+            autoCodexWithLegacyClaude.commands.some(
+              parts => parts[0] === 'claude' && parts.includes('--json')
+            )
+          ).toBe(false);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Claude Code and Codex detected.');
+          expect(output).toContain('Claude Code plugin setup skipped.');
+          expect(output).toContain('Run `claude update`');
+          expect(output).toContain(
+            'Successfully installed and enabled the Composio plugin for Codex.'
+          );
+        })
+      );
+    }
+  );
+
   const allTargets = makeFakeHosts({
     claude: { available: true },
     codex: { available: true },
@@ -525,7 +572,7 @@ describe('CLI: composio setup', () => {
           });
           expect(
             partialAllTargets.commands.some(parts =>
-              ['marketplace', 'install', 'enable'].some(operation => parts.includes(operation))
+              ['add', 'install', 'enable'].some(operation => parts.includes(operation))
             )
           ).toBe(false);
         })
@@ -914,6 +961,34 @@ describe('CLI: composio setup', () => {
     { codex: { available: true } },
     { codexJsonInspection: false, codexVersion: 'codex-cli 0.137.0' }
   );
+
+  const legacyClaude = makeFakeHosts(
+    { claude: { available: true } },
+    { claudeJsonInspection: false }
+  );
+  layer(TestLive({ commandRunner: legacyClaude.runner }))(
+    'Claude without JSON plugin inspection',
+    it => {
+      it.scoped('fails automatic setup with actionable update instructions', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            const renderedCause = Cause.pretty(exit.cause);
+            expect(renderedCause).toContain('requires JSON plugin inspection');
+            expect(renderedCause).toContain('claude update');
+          }
+          expect(legacyClaude.commands.some(parts => parts.includes('--json'))).toBe(false);
+          expect(
+            legacyClaude.commands.some(parts =>
+              ['add', 'install', 'enable', 'uninstall'].some(operation => parts.includes(operation))
+            )
+          ).toBe(false);
+        })
+      );
+    }
+  );
   layer(TestLive({ commandRunner: legacyCodex.runner }))(
     'Codex without JSON marketplace inspection',
     it => {
@@ -1053,7 +1128,9 @@ describe('CLI: composio setup', () => {
         expect(Exit.isFailure(exit)).toBe(true);
         if (Exit.isFailure(exit)) {
           const renderedCause = Cause.pretty(exit.cause);
-          expect(renderedCause).toContain('claude command timed out');
+          expect(renderedCause).toContain(
+            'The `claude --version` command timed out after 2 minutes'
+          );
           expect(renderedCause).not.toContain('not installed or not available on PATH');
         }
       })
