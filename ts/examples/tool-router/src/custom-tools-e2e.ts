@@ -154,9 +154,9 @@ async function main() {
   console.log(`Base URL: ${baseURL ?? "(default)"}\n`);
 
   // ── Session creation with all 3 tool types ──
-  let session: Awaited<ReturnType<typeof composio.sessions.create>>;
+  let session: Awaited<ReturnType<typeof composio.create>>;
   try {
-    session = await composio.sessions.create(userId, {
+    session = await composio.create(userId, {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
@@ -173,7 +173,7 @@ async function main() {
 
   // ── Existing session reuse with local custom definitions ──
   try {
-    const reusedSession = await composio.sessions.use(session.sessionId, { customTools, customToolkits });
+    const reusedSession = await composio.use(session.sessionId, { customTools, customToolkits });
     const result = await reusedSession.execute("GET_USER_DETAILS", { user_id: "user-1" });
     if (result.data?.name !== "Alice Johnson") throw new Error(`Unexpected: ${JSON.stringify(result.data)}`);
     ok("Use: existing session binds custom tools for local execution");

@@ -115,12 +115,12 @@ const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
 // Create a session for your user
 const userId = "user_123";
-const session = await composio.sessions.create(userId);
+const session = await composio.create(userId);
 const tools = await session.tools();
 
 // For multi-turn, store the session ID in your db and reuse instead of calling create() again:
 // const sessionId = session.sessionId;
-// const session = await composio.sessions.use(sessionId);
+// const session = await composio.use(sessionId);
 
 const agent = new Agent({
   name: "Personal Assistant",
@@ -269,12 +269,12 @@ const composio = new Composio({ provider: new ClaudeAgentSDKProvider() });
 
 // Create a session for your user
 const userId = "user_123";
-const session = await composio.sessions.create(userId);
+const session = await composio.create(userId);
 const tools = await session.tools();
 
 // For multi-turn, store the session ID in your db and reuse instead of calling create() again:
 // const sessionId = session.sessionId;
-// const session = await composio.sessions.use(sessionId);
+// const session = await composio.use(sessionId);
 
 const customServer = createSdkMcpServer({
   name: "composio",
@@ -373,12 +373,12 @@ const composio = new Composio({ provider: new VercelProvider() });
 
 // Create a session for your user
 const userId = "user_123";
-const session = await composio.sessions.create(userId);
+const session = await composio.create(userId);
 const tools = await session.tools();
 
 // For multi-turn, store the session ID in your db and reuse instead of calling create() again:
 // const sessionId = session.sessionId;
-// const session = await composio.sessions.use(sessionId);
+// const session = await composio.use(sessionId);
 
 const readline = createInterface({ input: process.stdin, output: process.stdout });
 

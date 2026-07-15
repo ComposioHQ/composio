@@ -8,6 +8,7 @@ import { upgradeCmd } from './upgrade.cmd';
 import { whoamiCmd } from './whoami.cmd';
 import { loginCmd } from './login.cmd';
 import { signupCmd } from './signup.cmd';
+import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
 import { runCmd } from './run.cmd';
@@ -63,6 +64,7 @@ const ROOT_COMMANDS: ReadonlyArray<TaggedValue<Command.Command<any, any, any, an
   tagged(whoamiCmd),
   tagged(loginCmd),
   tagged(signupCmd),
+  tagged(setupCmd),
   tagged(agentCmd),
   experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, listenCmd),
   tagged(logoutCmd),

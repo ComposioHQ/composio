@@ -91,7 +91,7 @@ const composio = new Composio({ apiKey });
 async function main() {
   const userId = `e2e-custom-tools-${Date.now()}`;
 
-  const session = await composio.sessions.create(userId, {
+  const session = await composio.create(userId, {
     toolkits: ['weathermap'],
     manageConnections: false,
     experimental: {

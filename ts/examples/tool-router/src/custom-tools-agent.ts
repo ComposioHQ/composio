@@ -175,8 +175,8 @@ const composio = new Composio({
 
 const existingSessionId = process.env.COMPOSIO_SESSION_ID;
 const session = existingSessionId
-  ? await composio.sessions.use(existingSessionId, { customTools, customToolkits })
-  : await composio.sessions.create("custom-tools-agent-user", {
+  ? await composio.use(existingSessionId, { customTools, customToolkits })
+  : await composio.create("custom-tools-agent-user", {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
