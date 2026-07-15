@@ -42,6 +42,17 @@ test ! -e /tmp/.agents/skills/composio-cli`
 cp /tmp/host-state/commands.log second-run.log
 `;
 
+const legacyCodexFixture = `
+set -eu
+mkdir -p /tmp/bin /tmp/host-state
+cp fixtures/fake-agent-host.sh /tmp/bin/codex
+chmod +x /tmp/bin/codex
+touch /tmp/host-state/codex-without-json
+export HOST_STATE_DIR=/tmp/host-state
+export PATH=/tmp/bin:$PATH
+composio setup --target codex --yes
+`;
+
 e2e(import.meta.url, {
   versions: {
     cli: ['current'],
@@ -52,6 +63,7 @@ e2e(import.meta.url, {
     let unavailable: E2ETestResult;
     let skippedUnavailable: E2ETestResult;
     let skippedUnavailableUninstall: E2ETestResult;
+    let legacyCodex: E2ETestResult;
 
     beforeAll(async () => {
       // The shared E2E runner derives container names from Date.now(), so keep
@@ -69,6 +81,7 @@ e2e(import.meta.url, {
       skippedUnavailableUninstall = await runCmd(
         'composio setup --uninstall --target auto --yes --if-present'
       );
+      legacyCodex = await runCmd(legacyCodexFixture);
     }, TIMEOUTS.FIXTURE);
 
     describe.each([
@@ -144,6 +157,16 @@ e2e(import.meta.url, {
         expect(skippedUnavailableUninstall.exitCode).toBe(0);
         expect(skippedUnavailableUninstall.stdout).toBe('');
         expect(skippedUnavailableUninstall.stderr).toBe('');
+      });
+    });
+
+    describe('Codex compatibility', () => {
+      it('explains how to upgrade when JSON plugin inspection is unavailable', () => {
+        expect(legacyCodex.exitCode).not.toBe(0);
+        expect(legacyCodex.stdout).toBe('');
+        expect(legacyCodex.stderr).toContain('requires Codex 0.139.0 or newer');
+        expect(legacyCodex.stderr).toContain('codex update');
+        expect(legacyCodex.stderr).not.toContain("unexpected argument '--json'");
       });
     });
   },

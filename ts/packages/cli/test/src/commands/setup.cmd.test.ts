@@ -122,6 +122,8 @@ const makeFakeHosts = (
     readonly noOp?: boolean;
     readonly failOn?: string;
     readonly malformedOn?: string;
+    readonly codexJsonInspection?: boolean;
+    readonly codexVersion?: string;
     readonly marketplaceSource?: Partial<Record<AgentHost, string>>;
   } = {}
 ) => {
@@ -155,7 +157,20 @@ const makeFakeHosts = (
     const command = parts.join(' ');
     if (parts[1] === '--version') {
       if (!state[host].available) return { exitCode: 127, stderr: 'not found' };
-      return { stdout: HOST_OUTPUT_FORMATTERS[host].version };
+      return {
+        stdout:
+          host === 'codex' && options.codexVersion
+            ? options.codexVersion
+            : HOST_OUTPUT_FORMATTERS[host].version,
+      };
+    }
+    if (command === 'codex plugin marketplace list --help') {
+      return {
+        stdout:
+          options.codexJsonInspection === false
+            ? 'Usage: codex plugin marketplace list [OPTIONS]'
+            : 'Usage: codex plugin marketplace list [OPTIONS]\n\n      --json',
+      };
     }
     if (options.failOn && command.includes(options.failOn)) {
       return { exitCode: 2, stderr: 'native operation failed' };
@@ -805,6 +820,35 @@ describe('CLI: composio setup', () => {
   const malformedInspection = makeFakeHosts(
     { codex: { available: true } },
     { malformedOn: 'plugin marketplace list --json' }
+  );
+
+  const legacyCodex = makeFakeHosts(
+    { codex: { available: true } },
+    { codexJsonInspection: false, codexVersion: 'codex-cli 0.137.0' }
+  );
+  layer(TestLive({ commandRunner: legacyCodex.runner }))(
+    'Codex without JSON marketplace inspection',
+    it => {
+      it.scoped('fails with an actionable upgrade message before running setup mutations', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
+
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            const renderedCause = Cause.pretty(exit.cause);
+            expect(renderedCause).toContain('requires Codex 0.139.0 or newer');
+            expect(renderedCause).toContain('codex update');
+            expect(renderedCause).not.toContain("unexpected argument '--json'");
+          }
+          expect(legacyCodex.commands.some(parts => parts.includes('--json'))).toBe(false);
+          expect(
+            legacyCodex.commands.some(parts =>
+              ['add', 'install', 'enable', 'remove'].some(operation => parts.includes(operation))
+            )
+          ).toBe(false);
+        })
+      );
+    }
   );
   layer(TestLive({ commandRunner: malformedInspection.runner }))(
     'malformed native inspection',

@@ -39,7 +39,17 @@ case "$host:$command" in
     rm -f "$state_dir/claude-plugin"
     ;;
   "codex:--version")
-    printf '%s\n' 'codex-cli 0.144.1'
+    if [ -f "$state_dir/codex-without-json" ]; then
+      printf '%s\n' 'codex-cli 0.137.0'
+    else
+      printf '%s\n' 'codex-cli 0.144.1'
+    fi
+    ;;
+  "codex:plugin marketplace list --help")
+    printf '%s\n' 'Usage: codex plugin marketplace list [OPTIONS]'
+    if [ ! -f "$state_dir/codex-without-json" ]; then
+      printf '%s\n' '      --json'
+    fi
     ;;
   "codex:plugin marketplace list --json")
     if [ -f "$state_dir/codex-marketplace" ]; then

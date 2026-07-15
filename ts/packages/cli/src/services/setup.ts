@@ -1,5 +1,6 @@
 import { Command } from '@effect/platform';
 import { Effect } from 'effect';
+import semver from 'semver';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
 
@@ -105,6 +106,7 @@ const ADAPTERS: Readonly<Record<AgentHost, SetupTargetAdapter>> = {
 
 const ADAPTER_LIST = Object.values(ADAPTERS);
 const SETUP_COMMAND_TIMEOUT = '2 minutes';
+const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -238,10 +240,34 @@ const capture = (executable: string, args: ReadonlyArray<string>) =>
     );
   });
 
-const isAdapterAvailable = (adapter: SetupTargetAdapter) =>
-  capture(adapter.executable, ['--version']).pipe(
-    Effect.map(result => result !== undefined && result.exitCode === 0)
+const detectAdapter = (adapter: SetupTargetAdapter) =>
+  Effect.gen(function* () {
+    const result = yield* capture(adapter.executable, ['--version']);
+    const available = result !== undefined && result.exitCode === 0;
+    const version = available ? result.stdout.trim() || result.stderr.trim() : '';
+    return version ? { available, version } : { available };
+  });
+
+const unsupportedCodexInspectionError = () =>
+  new Error(
+    `This Codex installation does not support safe automatic plugin inspection. Composio setup requires Codex ${MINIMUM_CODEX_SETUP_VERSION} or newer with JSON plugin inspection. Run \`codex update\`, then rerun this command.`
   );
+
+const requireInspectionSupport = (adapter: SetupTargetAdapter, versionOutput?: string) =>
+  Effect.gen(function* () {
+    if (adapter.target !== 'codex') return;
+
+    const version = versionOutput?.match(/\b\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\b/)?.[0];
+    if (!version || !semver.valid(version) || semver.lt(version, MINIMUM_CODEX_SETUP_VERSION)) {
+      return yield* Effect.fail(unsupportedCodexInspectionError());
+    }
+
+    const result = yield* capture(adapter.executable, ['plugin', 'marketplace', 'list', '--help']);
+    const help = result ? `${result.stdout}\n${result.stderr}` : '';
+    if (result?.exitCode === 0 && /^\s*--json\b/m.test(help)) return;
+
+    return yield* Effect.fail(unsupportedCodexInspectionError());
+  });
 
 const commandFailureSuffix = (result: CommandResult): string => {
   const detail = result.stderr.trim() || result.stdout.trim();
@@ -275,11 +301,14 @@ const requireInspection = <T>(
   return Effect.succeed(inspected);
 };
 
-const inspectAdapter = (adapter: SetupTargetAdapter, knownAvailable?: boolean) =>
+const inspectAdapter = (
+  adapter: SetupTargetAdapter,
+  knownDetection?: { readonly available: boolean; readonly version?: string }
+) =>
   Effect.gen(function* () {
     const skillInstaller = yield* SetupSkillInstaller;
-    const available = knownAvailable ?? (yield* isAdapterAvailable(adapter));
-    if (!available) {
+    const detection = knownDetection ?? (yield* detectAdapter(adapter));
+    if (!detection.available) {
       return {
         target: adapter.target,
         available: false,
@@ -290,6 +319,8 @@ const inspectAdapter = (adapter: SetupTargetAdapter, knownAvailable?: boolean) =
         marketplace_conflict: false,
       } satisfies InspectedSetupTarget;
     }
+
+    yield* requireInspectionSupport(adapter, detection.version);
 
     const [marketplaces, plugins] = yield* Effect.all([
       capture(adapter.executable, adapter.marketplaceListArgs),
@@ -475,6 +506,7 @@ const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHos
 export interface SetupTargetDetection {
   readonly target: AgentHost;
   readonly available: boolean;
+  readonly version?: string;
 }
 
 export const detectSetupTargets = (target: SetupTarget) =>
@@ -482,8 +514,8 @@ export const detectSetupTargets = (target: SetupTarget) =>
     const targets = FIXED_TARGETS[target] ?? ADAPTER_LIST.map(adapter => adapter.target);
     return yield* Effect.all(
       targets.map(target =>
-        isAdapterAvailable(ADAPTERS[target]).pipe(
-          Effect.map(available => ({ target, available }) satisfies SetupTargetDetection)
+        detectAdapter(ADAPTERS[target]).pipe(
+          Effect.map(detection => ({ target, ...detection }) satisfies SetupTargetDetection)
         )
       )
     );
@@ -496,7 +528,7 @@ export const inspectSetupTargets = (
   Effect.gen(function* () {
     const inspected = yield* Effect.forEach(
       detections.filter(detection => detection.available),
-      detection => inspectAdapter(ADAPTERS[detection.target], true)
+      detection => inspectAdapter(ADAPTERS[detection.target], detection)
     );
     if (!options.allowMarketplaceConflict) {
       yield* Effect.forEach(inspected, status =>
