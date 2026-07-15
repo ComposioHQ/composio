@@ -1,5 +1,43 @@
 # @composio/core
 
+## 0.14.0
+
+### Minor Changes
+
+- fc17c37: Export the sensitive-file-upload denylist guard from the package root so downstream packages share one implementation: `assertSafeFileUploadPath`, `isBlockedSensitiveFileUploadPath`, and `BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS`. The guard now routes its filesystem access through the internal `#platform` abstraction (adding a `realpathSync` platform method), so it is edge/workerd-safe and the module carries no static `node:*` imports. Behavior on Node/Bun is unchanged.
+- 20a4711: `triggers.create` now resolves the connection from `user_id` on the backend instead of client-side.
+
+  - The SDK no longer makes an extra `connectedAccounts.list()` call. When `connectedAccountId` is omitted, the backend resolves the first active connection for the user and the trigger's toolkit (ordered by most recently created), matching tool execution.
+  - **Behavior change:** `create` no longer throws `ComposioConnectedAccountNotFoundError` for a missing or invalid connection. That case now surfaces as the backend error from the upsert call. `ComposioTriggerTypeNotFoundError` (invalid slug) and `ValidationError` (including empty `userId`) are still thrown client-side.
+  - **Requires a backend that resolves the trigger connection from `user_id` on upsert** ([ComposioHQ/platform#10932](https://github.com/ComposioHQ/platform/pull/10932)). Self-hosted deployments must be on a version that includes it.
+
+### Patch Changes
+
+- 7125576: Normalize duplicate JSON Schema `required` entries before provider tool schemas are emitted.
+- 58bc93b: Refresh dependency ranges and lockfiles across the workspace.
+- 4c3a321: Disable client retries on `tools.execute` and `tools.proxyExecute`. These are non-idempotent writes, so a silent retry after a read timeout could duplicate the side effect (e.g. send the same email more than once). Both now route through a sibling client built with `maxRetries: 0`; reads keep the default retry behaviour.
+- b07fcad: Add an eve provider: `EveProvider` makes `session.tools()` return eve-native `defineTool`s, `defineComposioTools` is the replay-safe `step.started` resolver, and `(ctx, next)` hooks can rewrite, deny, or transform Tool Router meta-tool calls.
+
+  Preserve successful local-tool results when the remote half of a mixed `COMPOSIO_MULTI_EXECUTE_TOOL` batch fails at the transport layer, so callers can see which side effects already completed before retrying.
+
+- fa933a6: Fix the `homepage` links in these packages' `package.json`. They pointed at `github.com/ComposioHQ/composio/tree/main/...`, but the default branch is `next` and no `main` branch exists, so every link 404'd on npm and in editor tooltips. They now point at `tree/next/...`.
+- 2ef40ce: Treat local file paths that begin with `http` as paths instead of URLs, ensuring that upload allowlist and sensitive-file denylist checks still run.
+- e78ed31: Execute every parallel tool call in `OpenAIProvider.handleToolCalls`. It previously only ran the first tool call in each assistant message, so parallel tool calls (on by default) dropped the rest and left their `tool_call_id`s unanswered, failing the next request.
+
+  The calls are run sequentially, in the order the model returned them — here "parallel" means the model issued several calls in one turn, not that they execute concurrently — so each `tool_call_id` is answered exactly once and the tool messages come back in a deterministic order.
+
+  Only the first choice is handled. Tool results are fed back into a single assistant turn, so with `n > 1` iterating over every choice would run each tool call once per choice and orphan the `tool_call_id`s from the alternative completions.
+
+- a0f37a7: Close two secret/SSRF exposure surfaces in the TypeScript SDK:
+
+  - **SSRF guard on URL file inputs.** `composio.files.upload(url)` and automatic file upload during tool execution previously did a raw `fetch()` on user-supplied URLs with no guard. They now resolve the host and refuse private, loopback, link-local (incl. the `169.254.169.254` cloud-metadata endpoint), CGNAT, and reserved addresses, reject non-`http(s)` schemes, and follow redirects manually so each hop is re-validated (blocking a public URL that redirects into internal space). Blocked requests throw `ComposioBlockedInternalUrlError`. Node-only; behaviour for public URLs is unchanged.
+  - **Telemetry redaction.** Error telemetry previously shipped `error.message` / `error.stack` verbatim. They are now passed through a redactor that strips URL query strings, `Authorization` bearer/basic credentials, and secret-like `key=value` pairs (API keys, tokens, client secrets, passwords) before transport.
+
+- 820abb9: Resolve toolkit version pins case-insensitively. Version maps are keyed by normalized (lowercase) slugs, but `getToolkitVersion` previously looked them up with the raw slug, so a pin configured under a different casing (e.g. `{ GitHub: '20250101_00' }` or `COMPOSIO_TOOLKIT_VERSION_GITHUB`) could silently fall back to `'latest'`. Normalization is now centralized in a single `normalizeToolkitSlug` helper used symmetrically on both the write (map-building) and read (lookup) paths, so the two sides can no longer drift. This mirrors the equivalent fix in the Python SDK.
+- Updated dependencies [58bc93b]
+- Updated dependencies [fa933a6]
+  - @composio/json-schema-to-zod@0.2.1
+
 ## 0.13.1
 
 ### Patch Changes
