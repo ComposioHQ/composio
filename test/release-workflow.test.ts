@@ -26,6 +26,7 @@ const pythonRuntimeVersionModule = readFileSync(
   new URL('../python/composio/__version__.py', import.meta.url),
   'utf8'
 );
+const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
 const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
@@ -95,6 +96,104 @@ function readDocumentedPythonSdkVersions() {
   }
 
   return readPythonSdkVersions(rows);
+}
+
+function runPythonBuildFixture({ providers, providerFiles = [], failingProvider = '' }) {
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-python-build-'));
+  const buildLogPath = join(fixtureDir, 'build.log');
+
+  try {
+    mkdirSync(join(fixtureDir, '.venv/bin'), { recursive: true });
+    mkdirSync(join(fixtureDir, 'providers'), { recursive: true });
+    writeFileSync(buildLogPath, '');
+
+    const fakePythonPath = join(fixtureDir, '.venv/bin/python');
+    writeFileSync(
+      fakePythonPath,
+      `#!/usr/bin/env bash
+set -euo pipefail
+target="\${3:-}"
+printf '%s\n' "\${target:-<root>}" >> "$BUILD_LOG"
+
+if [[ -z "$target" ]]; then
+  mkdir -p dist
+  touch dist/root.whl
+  exit 0
+fi
+
+target="\${target%/}"
+if [[ "$target" == "$FAILING_PROVIDER" ]]; then
+  exit 23
+fi
+
+mkdir -p "$target/dist"
+touch "$target/dist/provider.whl"
+`
+    );
+    chmodSync(fakePythonPath, 0o755);
+
+    for (const provider of providers) {
+      const providerDir = join(fixtureDir, 'providers', provider);
+      mkdirSync(providerDir, { recursive: true });
+      writeFileSync(join(providerDir, 'pyproject.toml'), '[build-system]\n');
+    }
+    for (const providerFile of providerFiles) {
+      writeFileSync(join(fixtureDir, 'providers', providerFile), 'not a provider package\n');
+    }
+
+    const result = spawnSync('make', ['-f', pythonMakefilePath, 'build'], {
+      cwd: fixtureDir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        BUILD_LOG: buildLogPath,
+        FAILING_PROVIDER: failingProvider ? `providers/${failingProvider}` : '',
+      },
+    });
+
+    return {
+      ...result,
+      invocations: readFileSync(buildLogPath, 'utf8').trim().split('\n'),
+    };
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+{
+  const result = runPythonBuildFixture({
+    providers: ['valid'],
+    providerFiles: ['AGENTS.md'],
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `Python package build fixture failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+  if (result.invocations.includes('providers/AGENTS.md')) {
+    throw new Error('Python package build must skip non-provider files under python/providers');
+  }
+  if (!result.invocations.includes('providers/valid')) {
+    throw new Error('Python package build must include provider directories with pyproject.toml');
+  }
+}
+
+{
+  const result = runPythonBuildFixture({
+    providers: ['a-failing', 'z-valid'],
+    failingProvider: 'a-failing',
+  });
+
+  if (result.status === 0) {
+    throw new Error('Python package build must fail when a provider build fails');
+  }
+  if (!result.invocations.includes('providers/a-failing')) {
+    throw new Error('Python package build fixture did not exercise the failing provider');
+  }
+  if (result.invocations.includes('providers/z-valid')) {
+    throw new Error('Python package build must stop after the first provider failure');
+  }
 }
 
 {
