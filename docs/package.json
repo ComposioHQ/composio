@@ -21,6 +21,7 @@
     "eval:agent": "eve eval docs-agent --skip-report",
     "eval:agent:flows": "bun scripts/eval-agent-flows.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
+    "generate:toolkit-versions": "bun scripts/refresh-toolkit-versions.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
     "test": "bun test tests/static/",
