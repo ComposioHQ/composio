@@ -11,9 +11,10 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
-import { PRODUCTION_API_V3_URL, stripStagingHosts } from './production-api.mjs';
+import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
+import { applyToolkitVersions, fetchProductionToolkitVersions } from './toolkit-versions';
 
-const API_BASE = process.env.COMPOSIO_API_BASE || PRODUCTION_API_V3_URL;
+const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 if (!API_KEY) {
@@ -126,38 +127,6 @@ async function fetchToolkits(): Promise<any[]> {
   throw new Error(
     `Toolkit catalog exceeds ${TOOLKITS_MAX_PAGES} pages of ${TOOLKITS_PAGE_LIMIT}; raise TOOLKITS_MAX_PAGES`
   );
-}
-
-async function fetchToolkitChangelog(): Promise<Map<string, string>> {
-  console.log('Fetching toolkit changelog...');
-
-  const response = await fetchWithRetry(`${API_BASE}/toolkits/changelog`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
-
-  if (!response.ok) {
-    console.warn(`Failed to fetch changelog: ${response.status}`);
-    return new Map();
-  }
-
-  const data = await response.json();
-  const versionMap = new Map<string, string>();
-
-  // Response format: { items: [{ slug, name, display_name, versions: [{ version, changelog }] }] }
-  const items = data.items || [];
-  for (const entry of items) {
-    const slug = entry.slug?.toLowerCase();
-    const latestVersion = entry.versions?.[0]?.version;
-    if (slug && latestVersion) {
-      versionMap.set(slug, latestVersion);
-    }
-  }
-
-  console.log(`Found versions for ${versionMap.size} toolkits`);
-  return versionMap;
 }
 
 async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
@@ -288,7 +257,7 @@ async function main() {
   // Fetch all toolkits and changelog in parallel
   const [rawToolkits, versionMap] = await Promise.all([
     fetchToolkits(),
-    fetchToolkitChangelog(),
+    fetchProductionToolkitVersions(API_KEY!),
   ]);
   console.log(`Found ${rawToolkits.length} toolkits\n`);
 
@@ -296,14 +265,12 @@ async function main() {
   const toolkits: Toolkit[] = rawToolkits.map(transformToolkit);
 
   // Add versions from changelog
-  for (const toolkit of toolkits) {
-    toolkit.version = versionMap.get(toolkit.slug) || null;
-  }
+  applyToolkitVersions(toolkits, versionMap);
 
   // Fetch tools, triggers, and auth config details for each toolkit in batches.
   // Each toolkit fires 3 requests in parallel, so batchSize N = ~3N concurrent
-  // requests. Kept low to soften burst pressure on the staging rate limit
-  // (2000 req/min); fetchWithRetry handles the remaining 429s with backoff.
+  // requests. Kept low to soften burst pressure on the backend rate limit;
+  // fetchWithRetry handles the remaining 429s with backoff.
   console.log('Fetching tools, triggers, and auth config details...');
   const batchSize = 5;
   let completed = 0;
@@ -334,9 +301,9 @@ async function main() {
   console.log('\n');
 
   // Write full file (for detail pages - read from filesystem).
-  // Rewrite any staging host to production: this data is fetched from staging in
-  // the docs-update workflow, and auth-config `default` URLs would otherwise
-  // publish staging endpoints. The light file below carries no URLs.
+  // Defense in depth: rewrite any staging host embedded in production data so
+  // auth-config `default` URLs cannot publish staging endpoints. The light file
+  // below carries no URLs.
   await writeFile(
     join(OUTPUT_DIR, 'toolkits.json'),
     stripStagingHosts(JSON.stringify(toolkits, null, 2))

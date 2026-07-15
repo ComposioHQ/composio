@@ -1496,10 +1496,14 @@ class TestGetSignatureFormatFromSchemaParams:
     """Test cases for get_signature_format_from_schema_params union handling."""
 
     @staticmethod
-    def _annotation(schema):
+    def _parameter(schema):
         params = get_signature_format_from_schema_params(schema)
         assert len(params) == 1
-        return params[0].annotation
+        return params[0]
+
+    @classmethod
+    def _annotation(cls, schema):
+        return cls._parameter(schema).annotation
 
     @pytest.mark.unit
     @pytest.mark.schema
@@ -1630,6 +1634,81 @@ class TestGetSignatureFormatFromSchemaParams:
         args = t.get_args(annotation)
         assert str in args
         assert type(None) in args
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize(
+        ("schema_type", "expected_members"),
+        [
+            (["string", "null"], {str, type(None)}),
+            (["integer"], {int}),
+            (["string", "integer"], {str, int}),
+            (["file", "null"], {t.Any, type(None)}),
+        ],
+    )
+    def test_type_list_resolves(self, schema_type, expected_members):
+        """List-valued JSON Schema types produce an annotation without raising."""
+        annotation = self._annotation({"properties": {"value": {"type": schema_type}}})
+        actual = set(t.get_args(annotation)) if t.get_args(annotation) else {annotation}
+        assert expected_members <= actual
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize(
+        ("schema_type", "expected_annotation", "expected_default"),
+        [
+            (["integer"], int, 0),
+            (["boolean"], bool, False),
+            (["array"], t.List, []),
+        ],
+    )
+    def test_single_type_list_uses_scalar_fallback(
+        self, schema_type, expected_annotation, expected_default
+    ):
+        """A one-item type list keeps its scalar type's implicit default."""
+        parameter = self._parameter({"properties": {"value": {"type": schema_type}}})
+
+        assert parameter.annotation is expected_annotation
+        assert parameter.default == expected_default
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_single_type_list_preserves_explicit_default(self):
+        """An explicit default overrides the fallback for a one-item type list."""
+        parameter = self._parameter(
+            {"properties": {"value": {"type": ["integer"], "default": 42}}}
+        )
+
+        assert parameter.default == 42
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_multi_type_list_keeps_union_fallback(self):
+        """A multi-type list remains a union with the existing empty-string fallback."""
+        parameter = self._parameter(
+            {"properties": {"value": {"type": ["integer", "null"]}}}
+        )
+
+        assert {int, type(None)} <= set(t.get_args(parameter.annotation))
+        assert parameter.default == ""
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_combiner_option_with_type_list_resolves(self):
+        """List-valued types inside combiners do not reach a scalar dict lookup."""
+        schema = {
+            "properties": {
+                "value": {
+                    "anyOf": [
+                        {"type": ["string", "null"]},
+                        {"type": "integer"},
+                    ]
+                }
+            }
+        }
+
+        annotation = self._annotation(schema)
+        assert {str, int, type(None)} <= set(t.get_args(annotation))
 
 
 if __name__ == "__main__":

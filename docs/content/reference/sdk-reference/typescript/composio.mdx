@@ -53,6 +53,9 @@ const composio = new Composio({
 |------|------|-------------|
 | `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
 | `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
+| `create` | `(userId: string, config: \{ authConfigs?: Record<string, string>; connectedAccounts?: Record<string, string \| ...[]>; experimental?: \{ assistivePrompt?: \{ userTimezone?: string \}; customToolkits?: CustomToolkit[]; customTools?: CustomTool[] \}; manageConnections?: boolean \| \{ callbackUrl?: string; enable?: boolean; waitForConnections?: boolean \}; mcp?: boolean; multiAccount?: \{ enable: boolean; maxAccountsPerToolkit?: number; requireExplicitSelection?: boolean \}; preload?: \{ tools?: ...[] \| 'all' \}; sandbox?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \}; sessionPreset?: 'direct_tools'; tags?: ... \| ... \| ... \| ...[] \| \{ disable?: ...[]; enable?: ...[] \}; toolkits?: string[] \| \{ disable: ...[] \} \| \{ enable: ...[] \}; tools?: Record<string, ...[] \| \{ enable: ... \} \| \{ disable: ... \} \| \{ tags: ... \}>; workbench?: \{ autoOffloadThreshold?: number; enable: boolean; enableProxyExecution?: boolean; sandboxSize?: 'standard' \| 'medium' \| 'large' \| 'xlarge' \} \} & \{ mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Creates a new tool router session for a user.
+Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools
+should be exposed directly; see `ToolRouterCreateSessionConfig`. |
 | `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases.
 Prefer domain-specific mounts (for example
 `composio.connectedAccounts.updateAcl(...)`) when available; this
@@ -64,12 +67,13 @@ at the top level. |
 | `provider` | `TProvider` | The tool provider instance used for wrapping tools in framework-specific formats |
 | `sessions` | `Sessions` | Create and reuse Composio sessions.
 
-Use `composio.sessions.create(...)` to create a session and
-`composio.sessions.use(...)` to reuse one. |
+Prefer `composio.sessions.create(...)` for new code. The top-level
+`composio.create(...)` method is kept as an alias. |
 | `toolkits` | `Toolkits` | Retrieve toolkit metadata and authorize user connections |
 | `toolRouter` | `ToolRouter` | Legacy alias for `composio.sessions`. |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
+| `use` | `(id: string, options: \{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Use an existing tool router session |
 
 ## Methods
 

@@ -110,7 +110,7 @@ describe('Composio Session Management', () => {
     });
   });
 
-  it('should expose sessions.create without bare root aliases', async () => {
+  it('should expose sessions.create and keep composio.create as a bound alias', async () => {
     const composio = new Composio(baseConfig);
     const client = composio.getClient() as any;
     client.toolRouter.session.create = vi.fn().mockResolvedValue({
@@ -127,16 +127,21 @@ describe('Composio Session Management', () => {
 
     expect(composio.toolRouter).toBe(composio.sessions);
 
-    const session = await composio.sessions.create('user_123');
+    const sessionFromCanonicalApi = await composio.sessions.create('user_123');
+    const sessionFromAlias = await composio.create('user_456');
 
     expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ user_id: 'user_123' }),
       undefined
     );
-    expect(session.sessionId).toBe('session_123');
-    expect(composio).not.toHaveProperty('create');
-    expect(composio).not.toHaveProperty('use');
+    expect(client.toolRouter.session.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ user_id: 'user_456' }),
+      undefined
+    );
+    expect(sessionFromCanonicalApi.sessionId).toBe('session_123');
+    expect(sessionFromAlias.sessionId).toBe('session_123');
   });
 });
 

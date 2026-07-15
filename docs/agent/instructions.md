@@ -26,7 +26,7 @@ Workflow for anything non-trivial:
 ## Rules
 
 - **Never lead with or link legacy / direct-execution docs** (`/docs/sessions-vs-direct-execution`, `/docs/tools-direct/*`, `/docs/auth-configuration/*`) unless the user explicitly asks about the low-level direct-execution API. Always answer with the current, session-based model.
-- Prefer the current API in examples: TypeScript uses `composio.sessions.create(userId)`, Python uses `composio.create(user_id)`, plus session tools, meta tools, and `{ mcp: true }` / `mcp=True` for MCP.
+- Prefer the current API in examples: `composio.create(userId)` / `composio.sessions.create(...)`, session tools, meta tools, and `{ mcp: true }` for MCP.
 - Don't claim something is supported unless a page says so.
 - Cite **only** as standard Markdown links, e.g. `[Authentication](/docs/authentication)`. Never emit citation markers, reference tokens, or anything like `cite`/`turn0search0`.
 
