@@ -1,19 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
-  CLI_ANALYTICS_EVENTS,
-  createCliCommandTelemetryContext,
-  getPluginLifecycleSucceededEvent,
-  getPrimaryLifecycleFailedEvent,
-  getPrimaryLifecycleInvokedEvent,
-  getPrimaryLifecycleSucceededEvent,
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
   getToolExecuteValidationFailedEvent,
   isMaybeToolNotFoundError,
   isMaybeToolValidationError,
 } from 'src/analytics/events';
-import { APP_VERSION } from 'src/constants';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 
 describe('CLI analytics execute failure events', () => {
@@ -131,65 +124,6 @@ describe('CLI analytics execute failure events', () => {
         cli_version: expect.any(String),
       },
       request_id: 'req_123',
-    });
-  });
-});
-
-describe('CLI analytics setup and install lifecycle events', () => {
-  it('tracks setup as a dedicated lifecycle with safe option properties', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'setup', '--target', 'codex', '--uninstall', '--yes'],
-      APP_VERSION
-    );
-
-    const invoked = getPrimaryLifecycleInvokedEvent(context);
-    const succeeded = getPrimaryLifecycleSucceededEvent(context);
-    const failed = getPrimaryLifecycleFailedEvent(context, new Error('native failure'));
-
-    expect(invoked?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_INVOKED);
-    expect(succeeded?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED);
-    expect(failed?.name).toBe(CLI_ANALYTICS_EVENTS.CLI_SETUP_FAILED);
-    expect(invoked?.properties).toMatchObject({
-      command_path: 'setup',
-      operation: 'uninstall',
-      target: 'codex',
-      yes: true,
-      if_present: false,
-    });
-  });
-
-  it('tracks shell installation separately from plugin setup', () => {
-    const context = createCliCommandTelemetryContext(
-      ['bun', 'composio', 'install', '--completions'],
-      APP_VERSION
-    );
-
-    expect(getPrimaryLifecycleInvokedEvent(context)).toMatchObject({
-      name: CLI_ANALYTICS_EVENTS.CLI_INSTALL_INVOKED,
-      properties: {
-        command_path: 'install',
-        completions: true,
-        no_completions: false,
-      },
-    });
-  });
-
-  it('tracks a verified per-host plugin change', () => {
-    expect(
-      getPluginLifecycleSucceededEvent({
-        operation: 'setup',
-        target: 'claude',
-        action: 'installed',
-        cliVersion: APP_VERSION,
-      })
-    ).toMatchObject({
-      name: CLI_ANALYTICS_EVENTS.CLI_PLUGIN_SETUP_SUCCEEDED,
-      properties: {
-        command_path: 'setup',
-        operation: 'setup',
-        agent_host: 'claude',
-        action: 'installed',
-      },
     });
   });
 });

@@ -407,7 +407,7 @@ rm -f "$install_err"
 if [[ $install_plugins = true ]]; then
     echo
     info "Checking for supported agent hosts..."
-    if ! COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present; then
+    if ! "$exe" setup --target auto --yes --if-present; then
         error 'Composio CLI was installed, but agent plugin setup failed. Retry with `composio setup --target auto --yes`.'
     fi
 fi
