@@ -82,12 +82,21 @@ const setupBaseCmd = Command.make(
           .map(result => result.unsupportedReason)
           .filter((message): message is string => Boolean(message))
           .join(' ');
-        if (target !== 'auto' || supported.length === 0) {
+        if (target !== 'auto') {
           return yield* Effect.fail(new Error(reason));
         }
         yield* ui.log.warn(
           `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
         );
+        if (supported.length === 0) {
+          if (ifPresent) {
+            yield* ui.outro(
+              `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
+            );
+            return;
+          }
+          return yield* Effect.fail(new Error(reason));
+        }
       }
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {

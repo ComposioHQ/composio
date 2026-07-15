@@ -1003,6 +1003,20 @@ describe('CLI: composio setup', () => {
         })
       );
 
+      it.scoped('skips cleanly for installer integration when no supported host remains', () =>
+        Effect.gen(function* () {
+          const exit = yield* Effect.exit(
+            cli(['setup', '--target', 'auto', '--yes', '--if-present'])
+          );
+
+          expect(Exit.isSuccess(exit)).toBe(true);
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Codex plugin setup skipped.');
+          expect(output).toContain('No supported agent host detected; plugin setup skipped.');
+          expect(legacyCodex.commands.some(parts => parts.includes('--json'))).toBe(false);
+        })
+      );
+
       it.scoped('fails with an actionable upgrade message before running setup mutations', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));

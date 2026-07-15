@@ -53,6 +53,11 @@ export PATH=/tmp/bin:$PATH
 composio setup --target auto --yes
 `;
 
+const legacyCodexIfPresentFixture = legacyCodexFixture.replace(
+  'composio setup --target auto --yes',
+  'composio setup --target auto --yes --if-present'
+);
+
 const legacyClaudeFixture = `
 set -eu
 mkdir -p /tmp/bin /tmp/host-state
@@ -119,6 +124,7 @@ e2e(import.meta.url, {
     let skippedUnavailableUninstall: E2ETestResult;
     let legacyClaude: E2ETestResult;
     let legacyCodex: E2ETestResult;
+    let legacyCodexIfPresent: E2ETestResult;
     let claudeWithLegacyCodex: E2ETestResult;
     let codexWithLegacyClaude: E2ETestResult;
     let failedClaudeInspection: E2ETestResult;
@@ -141,6 +147,7 @@ e2e(import.meta.url, {
       );
       legacyClaude = await runCmd(legacyClaudeFixture);
       legacyCodex = await runCmd(legacyCodexFixture);
+      legacyCodexIfPresent = await runCmd(legacyCodexIfPresentFixture);
       claudeWithLegacyCodex = await runCmd(claudeWithLegacyCodexFixture);
       codexWithLegacyClaude = await runCmd(codexWithLegacyClaudeFixture);
       failedClaudeInspection = await runCmd(failedClaudeInspectionFixture);
@@ -236,6 +243,12 @@ e2e(import.meta.url, {
         expect(legacyCodex.stderr).toContain('requires Codex 0.139.0 or newer');
         expect(legacyCodex.stderr).toContain('codex update');
         expect(legacyCodex.stderr).not.toContain("unexpected argument '--json'");
+      });
+
+      it('skips an unsupported-only host when invoked by an installer', () => {
+        expect(legacyCodexIfPresent.exitCode).toBe(0);
+        expect(legacyCodexIfPresent.stdout).toBe('');
+        expect(legacyCodexIfPresent.stderr).toBe('');
       });
 
       it('continues with Claude when Codex is unsupported', () => {
