@@ -102,6 +102,11 @@ class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
   readonly cause?: unknown;
 }> {}
 
+class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganizationError')<{
   readonly message: string;
   readonly requestedOrg: string;
@@ -657,8 +662,12 @@ export const browserLogin = (params: {
     yield* ui.output(url);
 
     if (!effectiveNoBrowser) {
-      yield* Effect.tryPromise(() => open(url, { wait: false })).pipe(
-        Effect.catchAll(error =>
+      yield* Effect.tryPromise({
+        try: () => open(url, { wait: false }),
+        catch: cause =>
+          new LoginBrowserOpenError({ message: 'Failed to open the browser.', cause }),
+      }).pipe(
+        Effect.catchTag('commands/LoginBrowserOpenError', error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Failed to open browser:', error);
             yield* ui.log.warn('Could not open the browser automatically.');

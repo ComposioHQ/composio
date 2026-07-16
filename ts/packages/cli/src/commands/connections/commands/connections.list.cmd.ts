@@ -20,6 +20,11 @@ class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+class ConnectionsListRequestError extends Data.TaggedError('commands/ConnectionsListRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 const toolkit = Options.text('toolkit').pipe(
   Options.withDescription('Filter by toolkit slug (e.g. "gmail")'),
   Options.optional
@@ -78,13 +83,19 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const rawResult = yield* Effect.tryPromise(() =>
-      client.connectedAccounts.list({
-        toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
-        user_ids: [consumerUserId],
-        limit: 1000,
-      })
-    );
+    const rawResult = yield* Effect.tryPromise({
+      try: () =>
+        client.connectedAccounts.list({
+          toolkit_slugs: toolkitSlug ? [toolkitSlug] : undefined,
+          user_ids: [consumerUserId],
+          limit: 1000,
+        }),
+      catch: cause =>
+        new ConnectionsListRequestError({
+          message: 'Failed to list connections.',
+          cause,
+        }),
+    });
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const permissionSnapshot = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,

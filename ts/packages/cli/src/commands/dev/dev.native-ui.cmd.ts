@@ -1,9 +1,14 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option, Predicate } from 'effect';
+import { Data, Effect, Option, Predicate } from 'effect';
 import { spawn } from 'node:child_process';
 import { ensureBundledBinaryExecutable } from '@composio/cli-local-tools';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { resolveNativeUiBinary } from 'src/services/native-ui-sidecar';
+
+class NativeUiSetupError extends Data.TaggedError('commands/NativeUiSetupError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const title = Options.text('title').pipe(
   Options.withDefault('Composio'),
@@ -47,7 +52,14 @@ export const devNativeUiCmd = Command.make('native-ui', { title, message, detail
         return;
       }
 
-      yield* Effect.tryPromise(() => ensureBundledBinaryExecutable(resolved.binaryPath));
+      yield* Effect.tryPromise({
+        try: () => ensureBundledBinaryExecutable(resolved.binaryPath),
+        catch: cause =>
+          new NativeUiSetupError({
+            message: `Failed to make the native UI sidecar binary executable: ${resolved.binaryPath}`,
+            cause,
+          }),
+      });
 
       const args = ['--title', title, '--message', message, '--detail', detail];
       const timeoutValue = Option.getOrUndefined(timeout)?.trim();

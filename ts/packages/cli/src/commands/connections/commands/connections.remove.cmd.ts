@@ -18,6 +18,13 @@ class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+class ConnectionsRemovalRequestError extends Data.TaggedError(
+  'commands/ConnectionsRemovalRequestError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 const account = Args.text({ name: 'account' }).pipe(
   Args.withDescription('Connection selector: toolkit slug, alias, word_id, or connected account ID')
 );
@@ -108,12 +115,18 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
     });
     const rawResult = yield* ui.withSpinner(
       'Fetching connections...',
-      Effect.tryPromise(() =>
-        client.connectedAccounts.list({
-          user_ids: [consumerUserId],
-          limit: 1000,
-        })
-      )
+      Effect.tryPromise({
+        try: () =>
+          client.connectedAccounts.list({
+            user_ids: [consumerUserId],
+            limit: 1000,
+          }),
+        catch: cause =>
+          new ConnectionsRemovalRequestError({
+            message: 'Failed to list connections.',
+            cause,
+          }),
+      })
     );
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
     const resolved = resolveAccount({ accounts: result.items, selector: account });
@@ -138,7 +151,14 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     yield* ui.withSpinner(
       `Removing ${resolved.toolkit.slug} connection...`,
-      Effect.tryPromise(() => client.connectedAccounts.delete(resolved.id)),
+      Effect.tryPromise({
+        try: () => client.connectedAccounts.delete(resolved.id),
+        catch: cause =>
+          new ConnectionsRemovalRequestError({
+            message: `Failed to remove connected account "${resolved.id}".`,
+            cause,
+          }),
+      }),
       {
         successMessage: `Removed ${resolved.toolkit.slug} connection.`,
         errorMessage: `Failed to remove ${resolved.toolkit.slug} connection.`,

@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -8,6 +8,11 @@ import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
+
+class TriggerLogsRequestError extends Data.TaggedError('commands/TriggerLogsRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const cursor = Options.text('cursor').pipe(
   Options.withDescription('Cursor for pagination'),
@@ -149,7 +154,14 @@ export const logsCmd$Triggers = Command.make(
       if (triggerLogId) {
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
-          Effect.tryPromise(() => client.logs.triggers.retrieve(triggerLogId))
+          Effect.tryPromise({
+            try: () => client.logs.triggers.retrieve(triggerLogId),
+            catch: cause =>
+              new TriggerLogsRequestError({
+                message: `Failed to fetch trigger log "${triggerLogId}".`,
+                cause,
+              }),
+          })
         );
         const triggerLogData = triggerLog as unknown as Record<string, unknown>;
         const normalizedLogData = getTriggerLogRecord(triggerLogData);
@@ -165,18 +177,24 @@ export const logsCmd$Triggers = Command.make(
 
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
-        Effect.tryPromise(() =>
-          client.logs.triggers.list({
-            cursor: Option.getOrUndefined(cursor),
-            from: Option.getOrUndefined(from),
-            to: Option.getOrUndefined(to),
-            limit: clampedLimit,
-            time: Option.getOrUndefined(time),
-            search: Option.getOrUndefined(search),
-            include_payload: includePayload,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
-        )
+        Effect.tryPromise({
+          try: () =>
+            client.logs.triggers.list({
+              cursor: Option.getOrUndefined(cursor),
+              from: Option.getOrUndefined(from),
+              to: Option.getOrUndefined(to),
+              limit: clampedLimit,
+              time: Option.getOrUndefined(time),
+              search: Option.getOrUndefined(search),
+              include_payload: includePayload,
+              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+            }),
+          catch: cause =>
+            new TriggerLogsRequestError({
+              message: 'Failed to fetch trigger logs.',
+              cause,
+            }),
+        })
       );
 
       const logs = response.data ?? [];

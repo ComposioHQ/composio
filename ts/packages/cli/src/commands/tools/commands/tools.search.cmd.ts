@@ -72,6 +72,11 @@ export class ToolsSearchInputError extends Data.TaggedError('commands/ToolsSearc
   readonly message: string;
 }> {}
 
+class ToolsSearchRequestError extends Data.TaggedError('commands/ToolsSearchRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 const stripSearchResultMetadata = <
   T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
 >(
@@ -362,9 +367,14 @@ const runToolsSearch = (params: {
         queries: queries.map(query => ({ use_case: query })),
         ...(localExperimentalPayload ? { experimental: localExperimentalPayload } : {}),
       };
-      const searchResponse = yield* Effect.tryPromise(() =>
-        client.toolRouter.session.search(sessionId, searchPayload)
-      );
+      const searchResponse = yield* Effect.tryPromise({
+        try: () => client.toolRouter.session.search(sessionId, searchPayload),
+        catch: cause =>
+          new ToolsSearchRequestError({
+            message: 'Failed to search tools.',
+            cause,
+          }),
+      });
       return {
         searchResponse,
         projectScope: {

@@ -1,6 +1,6 @@
 import process from 'node:process';
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
@@ -10,6 +10,11 @@ import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import { mergeToolkitData, formatToolkitsJson, formatToolkitsTable } from '../format';
+
+class ToolkitsListRequestError extends Data.TaggedError('commands/ToolkitsListRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const query = Options.text('query').pipe(
   Options.withDescription('Text search by name, slug, or description'),
@@ -126,15 +131,21 @@ export const toolkitsCmd$List = Command.make(
       let sessionFailed = false;
       if (sessionContext) {
         const { client, sessionId } = sessionContext;
-        sessionItems = yield* Effect.tryPromise(() =>
-          client.toolRouter.session.toolkits(sessionId, {
-            search: Option.getOrUndefined(query),
-            limit: clampedLimit,
-            is_connected: Option.getOrUndefined(connected),
-          })
-        ).pipe(
+        sessionItems = yield* Effect.tryPromise({
+          try: () =>
+            client.toolRouter.session.toolkits(sessionId, {
+              search: Option.getOrUndefined(query),
+              limit: clampedLimit,
+              is_connected: Option.getOrUndefined(connected),
+            }),
+          catch: cause =>
+            new ToolkitsListRequestError({
+              message: 'Failed to fetch session toolkits.',
+              cause,
+            }),
+        }).pipe(
           Effect.map(r => r.items),
-          Effect.catchAll(error =>
+          Effect.catchTag('commands/ToolkitsListRequestError', error =>
             Effect.logDebug('Failed to fetch session toolkits:', error).pipe(
               Effect.as(
                 [] as ReadonlyArray<

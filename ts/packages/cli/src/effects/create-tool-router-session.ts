@@ -64,6 +64,13 @@ export class LocalToolRouterDisabledError extends Data.TaggedError(
   readonly requestedToolkits: ReadonlyArray<string>;
 }> {}
 
+export class ToolRouterSessionCreateError extends Data.TaggedError(
+  'effects/ToolRouterSessionCreateError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 /**
  * Create an ephemeral Tool Router session for the given user ID.
  * Returns the session id plus any local-tool custom payload bound to the session.
@@ -212,23 +219,30 @@ export const createToolRouterSessionContext = (
         : {}),
     };
 
-    return yield* Effect.tryPromise(() =>
-      client.toolRouter.session.create({
-        user_id: userId,
-        auth_configs: connectionContext.authConfigs,
-        connected_accounts: connectionContext.connectedAccounts,
-        manage_connections: { enable: options?.manageConnections ?? false },
-        multi_account: options?.multiAccount
-          ? {
-              enable: options.multiAccount.enable,
-              max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
-              require_explicit_selection: options.multiAccount.requireExplicitSelection,
-            }
-          : undefined,
-        toolkits: remoteToolkits.length > 0 ? { enable: [...remoteToolkits] } : undefined,
-        experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
-      })
-    ).pipe(
+    return yield* Effect.tryPromise({
+      try: () =>
+        client.toolRouter.session.create({
+          user_id: userId,
+          auth_configs: connectionContext.authConfigs,
+          connected_accounts: connectionContext.connectedAccounts,
+          manage_connections: { enable: options?.manageConnections ?? false },
+          multi_account: options?.multiAccount
+            ? {
+                enable: options.multiAccount.enable,
+                max_accounts_per_toolkit: options.multiAccount.maxAccountsPerToolkit,
+                require_explicit_selection: options.multiAccount.requireExplicitSelection,
+              }
+            : undefined,
+          toolkits: remoteToolkits.length > 0 ? { enable: [...remoteToolkits] } : undefined,
+          experimental:
+            Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
+        }),
+      catch: cause =>
+        new ToolRouterSessionCreateError({
+          message: 'Failed to create a Tool Router session.',
+          cause,
+        }),
+    }).pipe(
       Effect.map((session): CreatedToolRouterSession => ({
         sessionId: session.session_id,
         localExperimentalPayload,

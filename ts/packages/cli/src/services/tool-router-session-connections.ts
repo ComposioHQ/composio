@@ -1,10 +1,17 @@
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import type { Composio } from '@composio/client';
 import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
   type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
+
+export class ToolRouterSessionConnectionsError extends Data.TaggedError(
+  'services/ToolRouterSessionConnectionsError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -83,15 +90,21 @@ export const resolveToolRouterSessionConnections = (
     readonly toolkits?: ReadonlyArray<string>;
   }
 ) =>
-  Effect.tryPromise(() =>
-    client.connectedAccounts.list({
-      user_ids: [userId],
-      statuses: ['ACTIVE'],
-      toolkit_slugs:
-        options?.toolkits && options.toolkits.length > 0 ? [...options.toolkits] : undefined,
-      limit: 1000,
-    })
-  ).pipe(
+  Effect.tryPromise({
+    try: () =>
+      client.connectedAccounts.list({
+        user_ids: [userId],
+        statuses: ['ACTIVE'],
+        toolkit_slugs:
+          options?.toolkits && options.toolkits.length > 0 ? [...options.toolkits] : undefined,
+        limit: 1000,
+      }),
+    catch: cause =>
+      new ToolRouterSessionConnectionsError({
+        message: `Failed to list connected accounts for user "${userId}".`,
+        cause,
+      }),
+  }).pipe(
     Effect.map(response => {
       const items = (response.items ?? []) as ReadonlyArray<RawConnectedAccount>;
       const unknownStatuses = new Set<string>();

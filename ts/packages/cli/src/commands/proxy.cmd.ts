@@ -77,6 +77,11 @@ export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandEr
   readonly endpoint?: string;
 }> {}
 
+class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
   const supported = SUPPORTED_PROXY_METHODS.find(method => method === normalized);
@@ -329,15 +334,21 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          return yield* Effect.tryPromise(() =>
-            client.toolRouter.session.proxyExecute(sessionId, {
-              toolkit_slug: normalizedToolkit,
-              endpoint,
-              method: normalizedMethod,
-              ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-              ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
-            })
-          ).pipe(
+          return yield* Effect.tryPromise({
+            try: () =>
+              client.toolRouter.session.proxyExecute(sessionId, {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              }),
+            catch: cause =>
+              new ProxyRequestError({
+                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+                cause,
+              }),
+          }).pipe(
             Effect.matchEffect({
               onFailure: error =>
                 handleProxyExecutionError({
