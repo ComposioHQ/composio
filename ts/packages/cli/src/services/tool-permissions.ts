@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import {
   detectNativeUiCallerAgent,
@@ -57,6 +57,73 @@ interface CacheFile {
   readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>>;
 }
 
+const PermissionDefaultModeSchema = Schema.Literal(
+  'allow_all',
+  'ask_every_call',
+  'ask_once_per_session'
+);
+const PermissionOverrideStateSchema = Schema.Literal(
+  'always_allow',
+  'always_deny',
+  'ask_once',
+  'ask_always'
+);
+const ToolRouterPermissionsConfigSchema = Schema.Struct({
+  default: PermissionDefaultModeSchema,
+  overrides: Schema.optional(
+    Schema.Record({ key: Schema.String, value: PermissionOverrideStateSchema })
+  ),
+});
+const ConsumerPermissionSnapshotSchema = Schema.Struct({
+  orgId: Schema.String,
+  projectId: Schema.String,
+  consumerUserId: Schema.String,
+  enhancedControlsEnabled: Schema.Boolean,
+  permissions: Schema.optional(ToolRouterPermissionsConfigSchema),
+  connectedAccountIds: Schema.Array(Schema.String),
+  fetchedAt: Schema.Number,
+});
+const CachedAllowDecisionSchema = Schema.Struct({
+  expiresAt: Schema.Number,
+});
+
+const UnknownRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(
+    Schema.Struct({
+      entries: Schema.optional(UnknownRecordSchema),
+      allowEntries: Schema.optional(UnknownRecordSchema),
+    })
+  )
+);
+const decodeSnapshotEntry = Schema.decodeUnknownOption(ConsumerPermissionSnapshotSchema);
+const decodeAllowEntry = Schema.decodeUnknownOption(CachedAllowDecisionSchema);
+
+const collectDecodedEntries = <A>(
+  entries: Readonly<Record<string, unknown>> | undefined,
+  decode: (value: unknown) => Option.Option<A>
+): Record<string, A> =>
+  Object.fromEntries(
+    Object.entries(entries ?? {}).flatMap(([key, value]) =>
+      Option.match(decode(value), {
+        onNone: () => [],
+        onSome: entry => [[key, entry] as const],
+      })
+    )
+  );
+
+// Per-entry decode: one stale or version-skewed entry drops only itself.
+// Discarding the whole file would also wipe all cached allow decisions and
+// be persisted back on the next write.
+export const decodeCacheFileTolerant = (raw: string): CacheFile =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheFile => ({ entries: {} }),
+    onSome: shell => ({
+      entries: collectDecodedEntries(shell.entries, decodeSnapshotEntry),
+      allowEntries: collectDecodedEntries(shell.allowEntries, decodeAllowEntry),
+    }),
+  });
+
 interface PermissionResolveResponse {
   readonly experimental?: {
     readonly permissions?: ToolRouterPermissionsConfig;
@@ -106,10 +173,11 @@ const pruneAllowEntries = (
 const readCacheFile = async (): Promise<CacheFile> => {
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
-    const parsed = JSON.parse(raw) as CacheFile;
-    return parsed && typeof parsed === 'object' && parsed.entries
-      ? { entries: parsed.entries, allowEntries: pruneAllowEntries(parsed.allowEntries) }
-      : { entries: {} };
+    const parsed = decodeCacheFileTolerant(raw);
+    return {
+      entries: parsed.entries,
+      allowEntries: pruneAllowEntries(parsed.allowEntries),
+    };
   } catch {
     return { entries: {} };
   }
