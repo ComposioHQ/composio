@@ -1,11 +1,12 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, HashMap, Layer, Logger, Match, Option } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
+import { CliConfig, HelpDoc, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { buildRootCommand, runWithConfig } from 'src/commands';
+import { collectValueOptionNames } from 'src/commands/command-introspection';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
@@ -167,52 +168,6 @@ const runWithTelemetry = Effect.gen(function* () {
     )
   );
 });
-
-const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>): void =>
-  Match.valueTags(usage, {
-    Named: usage => {
-      if (Option.isSome(usage.acceptedValues)) {
-        for (const name of usage.names) {
-          if (name.startsWith('-')) {
-            acc.add(name);
-          }
-        }
-      }
-    },
-    Optional: usage => {
-      collectValueOptionNamesFromUsage(usage.usage, acc);
-    },
-    Repeated: usage => {
-      collectValueOptionNamesFromUsage(usage.usage, acc);
-    },
-    Alternation: usage => {
-      collectValueOptionNamesFromUsage(usage.left, acc);
-      collectValueOptionNamesFromUsage(usage.right, acc);
-    },
-    Concat: usage => {
-      collectValueOptionNamesFromUsage(usage.left, acc);
-      collectValueOptionNamesFromUsage(usage.right, acc);
-    },
-    Mixed: () => undefined,
-    Empty: () => undefined,
-  });
-
-const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand>) => {
-  const names = new Set<string>();
-  const visited = new Set<CommandDescriptor.Command<unknown>>();
-  const visit = (command: CommandDescriptor.Command<unknown>) => {
-    if (visited.has(command)) {
-      return;
-    }
-    visited.add(command);
-    collectValueOptionNamesFromUsage(CommandDescriptor.getUsage(command), names);
-    for (const [, subcommand] of HashMap.toEntries(CommandDescriptor.getSubcommands(command))) {
-      visit(subcommand);
-    }
-  };
-  visit(rootCommand.descriptor);
-  return names;
-};
 
 checkForUpdateInBackground();
 

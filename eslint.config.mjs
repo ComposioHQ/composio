@@ -66,6 +66,24 @@ const cliRestrictedImportPatterns = [
   },
 ];
 
+const cliDescriptorSeamMessage =
+  'CommandDescriptor/Usage introspection is the @effect/cli v4 seam. Use the helpers in ts/packages/cli/src/commands/command-introspection.ts instead.';
+
+const cliDescriptorSeamRestrictedImportPaths = [
+  {
+    name: '@effect/cli',
+    importNames: ['CommandDescriptor', 'Usage'],
+    message: cliDescriptorSeamMessage,
+  },
+];
+
+const cliDescriptorSeamRestrictedImportPatterns = [
+  {
+    group: ['@effect/cli/CommandDescriptor', '@effect/cli/Usage'],
+    message: cliDescriptorSeamMessage,
+  },
+];
+
 const effectSchemaRestrictedImportPaths = [
   {
     name: 'zod',
@@ -144,11 +162,25 @@ export default [
       'no-restricted-imports': [
         'error',
         {
+          paths: [...cliRestrictedImportPaths, ...cliDescriptorSeamRestrictedImportPaths],
+          patterns: [...cliRestrictedImportPatterns, ...cliDescriptorSeamRestrictedImportPatterns],
+        },
+      ],
+      'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
+    },
+  },
+  {
+    // The one file allowed to touch @effect/cli's CommandDescriptor/Usage
+    // modules (the Effect CLI v4 redesign seam).
+    files: ['ts/packages/cli/src/commands/command-introspection.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
           paths: cliRestrictedImportPaths,
           patterns: cliRestrictedImportPatterns,
         },
       ],
-      'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
     },
   },
   {

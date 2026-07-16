@@ -1,6 +1,12 @@
 import process from 'node:process';
-import { Array as Arr, Data, Effect, HashMap, HashSet, Option } from 'effect';
-import { CliConfig, Command, CommandDescriptor, HelpDoc, ValidationError } from '@effect/cli';
+import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
+import { Command, HelpDoc, ValidationError } from '@effect/cli';
+import {
+  hasCommandName,
+  listSubcommandNames,
+  preflightParse,
+  type AnyCommandDescriptor,
+} from './command-introspection';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -48,7 +54,6 @@ import {
   formatResolveCommandProjectError,
   resolveCommandProject,
 } from 'src/services/command-project';
-import { ComposioCliConfig } from 'src/cli-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { installSkill, type SkillInstallTarget } from 'src/effects/install-skill';
 import { experimental, type CommandVisibility, tagged, visibleValues } from './feature-tags';
@@ -160,16 +165,13 @@ export const parseRootInstallSkillRequest = (
 
 const scopeCommandMismatch = (
   commandPath: string,
-  descriptor: CommandDescriptor.Command<unknown>,
+  descriptor: AnyCommandDescriptor,
   error: unknown
 ) => {
   if (!ValidationError.isValidationError(error) || !ValidationError.isCommandMismatch(error)) {
     return error;
   }
-  const ownNames = CommandDescriptor.getNames(descriptor);
-  const childNames = Array.from(HashMap.keys(CommandDescriptor.getSubcommands(descriptor)))
-    .filter(name => !HashSet.has(ownNames, name))
-    .map(name => `'${name}'`);
+  const childNames = listSubcommandNames(descriptor).map(name => `'${name}'`);
   if (childNames.length === 0) return error;
 
   const oneOf = childNames.length === 1 ? '' : ' one of';
@@ -190,10 +192,6 @@ const refineRootCommandMismatch = (
     return Effect.fail(originalError);
   }
 
-  const hasCommandName = (
-    command: { readonly descriptor: CommandDescriptor.Command<unknown> },
-    name: string
-  ) => HashSet.has(CommandDescriptor.getNames(command.descriptor), name);
   const rootCommand = Arr.findFirst(getVisibleRootCommands(visibility), command =>
     hasCommandName(command, rootCommandName)
   );
@@ -505,11 +503,7 @@ export const runWithConfig = Effect.gen(function* () {
         return yield* run(normalizedArgv);
       });
     }
-    return CommandDescriptor.parse(
-      rootCommand.descriptor,
-      Arr.prepend(Arr.drop(normalizedArgv, 2), 'composio'),
-      CliConfig.make(ComposioCliConfig)
-    ).pipe(
+    return preflightParse(rootCommand, normalizedArgv).pipe(
       Effect.matchEffect({
         onFailure: error =>
           ValidationError.isCommandMismatch(error)
