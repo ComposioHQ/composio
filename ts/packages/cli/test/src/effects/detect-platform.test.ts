@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { Effect, Layer } from 'effect';
+import { Effect, Layer, Predicate } from 'effect';
 import {
   detectPlatform,
   UnsupportedPlatformError,
@@ -348,7 +348,7 @@ describe('detect-platform.ts', () => {
       const error = new UnsupportedPlatformError({ platform: 'test', arch: 'test' });
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(UnsupportedPlatformError);
-      expect(error._tag).toBe('UnsupportedPlatformError');
+      expect(Predicate.isTagged(error, 'UnsupportedPlatformError')).toBe(true);
     });
 
     it('should contain platform and arch information', () => {

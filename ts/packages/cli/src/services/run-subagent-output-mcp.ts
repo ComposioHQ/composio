@@ -7,6 +7,7 @@ import { Effect } from 'effect';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   buildStructuredOutputToolSchema,
+  decodeStructuredSchemaJson,
 } from 'src/services/run-subagent-shared';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 
@@ -23,7 +24,7 @@ const main = async (): Promise<void> => {
   const schemaFilePath = readFlag('--schema-file');
   const resultFilePath = readFlag('--result-file');
   const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
-  const structuredSchema = JSON.parse(schemaText) as Record<string, unknown>;
+  const structuredSchema = decodeStructuredSchemaJson(schemaText);
   const toolInputSchema = jsonSchemaToZod(buildStructuredOutputToolSchema(structuredSchema));
 
   const server = new McpServer({

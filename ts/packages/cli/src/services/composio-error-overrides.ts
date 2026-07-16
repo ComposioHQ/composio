@@ -1,3 +1,4 @@
+import { Predicate } from 'effect';
 import {
   extractApiErrorDetails,
   extractMessage,
@@ -14,22 +15,22 @@ const extractNestedDetails = (value: unknown): unknown => {
   let current: unknown = value;
   const seen = new Set<unknown>();
 
-  while (current && typeof current === 'object' && !seen.has(current)) {
+  while (Predicate.isObject(current) && !seen.has(current)) {
     seen.add(current);
 
-    if ('details' in current) {
-      const details = (current as { details?: unknown }).details;
+    if (Predicate.hasProperty(current, 'details')) {
+      const details = current.details;
       if (details !== undefined) {
         return details;
       }
     }
 
-    if ('error' in current) {
-      current = (current as { error?: unknown }).error;
+    if (Predicate.hasProperty(current, 'error')) {
+      current = current.error;
       continue;
     }
-    if ('cause' in current) {
-      current = (current as { cause?: unknown }).cause;
+    if (Predicate.hasProperty(current, 'cause')) {
+      current = current.cause;
       continue;
     }
     break;
@@ -42,19 +43,19 @@ export const normalizeCliError = (error: unknown): unknown => {
   let current: unknown = error;
   const seen = new Set<unknown>();
 
-  while (current && typeof current === 'object' && !seen.has(current)) {
+  while (Predicate.isObject(current) && !seen.has(current)) {
     seen.add(current);
 
     if (current instanceof Error) {
       return current;
     }
 
-    if ('error' in current) {
-      current = (current as { error?: unknown }).error;
+    if (Predicate.hasProperty(current, 'error')) {
+      current = current.error;
       continue;
     }
-    if ('cause' in current) {
-      current = (current as { cause?: unknown }).cause;
+    if (Predicate.hasProperty(current, 'cause')) {
+      current = current.cause;
       continue;
     }
     break;

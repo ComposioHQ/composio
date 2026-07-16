@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect } from 'effect';
+import { Effect, Predicate } from 'effect';
 import {
   detectSetupTargets,
   inspectSetupTargets,
@@ -10,13 +10,12 @@ import {
   SetupCommandError,
   uninstallSetupTargets,
   type AgentHost,
-  type SetupTarget,
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 const target = Options.choice('target', SETUP_TARGETS).pipe(
-  Options.withDefault('auto' as SetupTarget),
+  Options.withDefault('auto'),
   Options.withDescription('Agent host to configure: auto, claude, codex, or all')
 );
 
@@ -45,7 +44,14 @@ const formatTargets = (targets: ReadonlyArray<AgentHost>): string =>
   targets.map(target => TARGET_LABELS[target]).join(' and ');
 
 const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+  Predicate.isError(error) ? error.message : String(error);
+
+const setupCommandError = (message: string, operation: 'setup' | 'uninstall', cause?: unknown) =>
+  new SetupCommandError({
+    message,
+    operation,
+    ...(cause === undefined ? {} : { cause }),
+  });
 
 const setupBaseCmd = Command.make(
   'setup',
@@ -54,6 +60,7 @@ const setupBaseCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const terminal = yield* ui.capabilities;
+      const operation = uninstall ? 'uninstall' : 'setup';
       yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
       const detections = yield* detectSetupTargets(target);
@@ -71,10 +78,9 @@ const setupBaseCmd = Command.make(
         yield* ui.log.info(`${formatTargets(notDetected)} not detected.`);
       }
       if (target === 'all' && notDetected.length > 0) {
-        return yield* Effect.fail(
-          new Error(
-            `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`
-          )
+        return yield* setupCommandError(
+          `\`--target all\` requires Claude Code and Codex. Missing: ${formatTargets(notDetected)}. Install the missing agent host, or use \`--target auto\` to operate on detected hosts only.`,
+          operation
         );
       }
       if (unsupported.length > 0) {
@@ -83,7 +89,7 @@ const setupBaseCmd = Command.make(
           .filter((message): message is string => Boolean(message))
           .join(' ');
         if (target !== 'auto') {
-          return yield* Effect.fail(new Error(reason));
+          return yield* setupCommandError(reason, operation);
         }
         yield* ui.log.warn(
           `${formatTargets(unsupported.map(result => result.target))} plugin setup skipped. ${reason}`
@@ -95,22 +101,20 @@ const setupBaseCmd = Command.make(
             );
             return;
           }
-          return yield* Effect.fail(new Error(reason));
+          return yield* setupCommandError(reason, operation);
         }
       }
       if (detected.length === 0) {
         if (target === 'claude' || target === 'codex') {
-          return yield* Effect.fail(
-            new Error(
-              `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`
-            )
+          return yield* setupCommandError(
+            `${target} is not installed or not available on PATH. Install it and rerun \`composio setup${uninstall ? ' --uninstall' : ''} --target ${target}\`.`,
+            operation
           );
         }
         if (!ifPresent || target !== 'auto') {
-          return yield* Effect.fail(
-            new Error(
-              `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`
-            )
+          return yield* setupCommandError(
+            `No supported agent host was detected. Install Claude Code or Codex, then rerun \`composio setup${uninstall ? ' --uninstall' : ''}\`.`,
+            operation
           );
         }
         yield* ui.outro(
@@ -147,8 +151,9 @@ const setupBaseCmd = Command.make(
 
         if (!yes && removable.length > 0) {
           if (!terminal.isInteractive) {
-            return yield* Effect.fail(
-              new Error('Non-interactive uninstall requires `--yes` to approve local changes.')
+            return yield* setupCommandError(
+              'Non-interactive uninstall requires `--yes` to approve local changes.',
+              operation
             );
           }
           const confirmed = yield* ui.confirm(
@@ -187,8 +192,9 @@ const setupBaseCmd = Command.make(
       const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
       if (!yes) {
         if (!terminal.isInteractive) {
-          return yield* Effect.fail(
-            new Error('Non-interactive setup requires `--yes` to approve local changes.')
+          return yield* setupCommandError(
+            'Non-interactive setup requires `--yes` to approve local changes.',
+            operation
           );
         }
 
@@ -207,7 +213,12 @@ const setupBaseCmd = Command.make(
       for (const result of results) {
         if (!result.plugin_changed) continue;
 
-        const initial = pending.find(status => status.target === result.target)!;
+        const initial = pending.find(status => status.target === result.target);
+        if (!initial) {
+          return yield* Effect.dieMessage(
+            `Setup invariant violated: missing initial state for ${result.target}`
+          );
+        }
         let action = 'configured and enabled';
         if (!initial.plugin_installed) action = 'installed and enabled';
         else if (!initial.plugin_enabled) action = 'enabled';
@@ -218,12 +229,10 @@ const setupBaseCmd = Command.make(
 
       yield* ui.outro('Composio setup complete.');
     }).pipe(
-      Effect.mapError(
-        error =>
-          new SetupCommandError({
-            message: errorMessage(error),
-            operation: uninstall ? 'uninstall' : 'setup',
-          })
+      Effect.mapError(error =>
+        error instanceof SetupCommandError
+          ? error
+          : setupCommandError(errorMessage(error), uninstall ? 'uninstall' : 'setup', error)
       )
     )
 );

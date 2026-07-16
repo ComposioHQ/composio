@@ -1,6 +1,6 @@
 import { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Context, Effect, Layer, Option } from 'effect';
+import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,6 +33,9 @@ export type CliUserConfigResolved = {
 
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
   /-[0-9A-Za-z.-]+$/.test(version) ? 'beta' : 'stable';
+
+const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonObject));
 
 export const resolveCliConfigDirectorySync = (): string =>
   process.env.COMPOSIO_CACHE_DIR?.trim() || path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
@@ -89,15 +92,12 @@ export const ComposioCliUserConfigLive = Layer.effect(
     });
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      if (!Predicate.isRecord(value)) {
         return value;
       }
 
-      const record = { ...(value as Record<string, unknown>) };
-      const existingDeveloper =
-        record.developer && typeof record.developer === 'object' && !Array.isArray(record.developer)
-          ? { ...(record.developer as Record<string, unknown>) }
-          : {};
+      const record = { ...value };
+      const existingDeveloper = Predicate.isRecord(record.developer) ? { ...record.developer } : {};
 
       if (!('enabled' in existingDeveloper) && 'developer_mode_enabled' in record) {
         existingDeveloper.enabled = record.developer_mode_enabled;
@@ -135,9 +135,8 @@ export const ComposioCliUserConfigLive = Layer.effect(
 
     const load = Effect.gen(function* () {
       const configJson = yield* fs.readFileString(jsonConfigPath, 'utf8');
-      rawConfig = yield* cliUserConfigFromJSON(
-        JSON.stringify(normalizeRawConfigJson(JSON.parse(configJson)))
-      );
+      const parsed = yield* decodeConfigJson(configJson);
+      rawConfig = yield* cliUserConfigFromJSON(JSON.stringify(normalizeRawConfigJson(parsed)));
       return rawConfig;
     });
 

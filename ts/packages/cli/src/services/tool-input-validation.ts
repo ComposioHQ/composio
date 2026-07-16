@@ -201,7 +201,7 @@ const fetchAndCacheToolInputDefinition = (
       slug,
       tool,
     });
-    const schema = (tool.input_parameters ?? {}) as Record<string, unknown>;
+    const schema = tool.input_parameters;
     const version =
       (yield* fetchResolvedLatestToolVersion(slug, params).pipe(
         Effect.catchAll(() => Effect.succeed(null))

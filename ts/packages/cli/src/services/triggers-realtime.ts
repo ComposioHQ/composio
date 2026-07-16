@@ -1,4 +1,4 @@
-import { Data, Effect, Runtime } from 'effect';
+import { Data, Effect, Option, Runtime, Schema } from 'effect';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -6,58 +6,17 @@ import {
   type CliRealtimeCredentialsResponse,
 } from 'src/services/composio-clients';
 
-type RawRealtimeEvent = Record<string, unknown>;
+const RawRealtimeEvent = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+type RawRealtimeEvent = typeof RawRealtimeEvent.Type;
+const decodeRawRealtimeEvent = Schema.decodeUnknownOption(RawRealtimeEvent);
 
-type PusherAuthOptions = {
-  params?: {
-    channel_name?: string;
-    socket_id?: string;
-    channelName?: string;
-    socketId?: string;
-  };
-  channel_name?: string;
-  socket_id?: string;
-  channelName?: string;
-  socketId?: string;
-};
-
-type PusherAuthCallback = (error: unknown, data?: unknown) => void;
-
-type PusherChannel = {
-  bind: (event: string, callback: (data: unknown) => void) => void;
-  bind_global?: (callback: (eventName: string, data: unknown) => void) => void;
-  unbind?: (event?: string, callback?: (data: unknown) => void) => void;
-  unbind_all?: () => void;
-};
-
-type PusherClient = {
-  subscribe: (channelName: string) => PusherChannel;
-  unsubscribe: (channelName: string) => void;
-  disconnect: () => void;
-  connection?: {
-    bind?: (event: string, callback: (data: unknown) => void) => void;
-  };
-};
-
-type PusherCtor = new (
-  key: string,
-  options: {
-    cluster: string;
-    channelAuthorization: {
-      customHandler: (
-        authOptions: PusherAuthOptions,
-        callback?: PusherAuthCallback
-      ) => Promise<unknown> | void;
-    };
-  }
-) => PusherClient;
-
-type ChunkedRealtimeEvent = {
-  id: string;
-  index: number;
-  chunk: string;
-  final: boolean;
-};
+const ChunkedRealtimeEvent = Schema.Struct({
+  id: Schema.String,
+  index: Schema.Int,
+  chunk: Schema.String,
+  final: Schema.Boolean,
+});
+const decodeChunkedRealtimeEvent = Schema.decodeUnknownOption(ChunkedRealtimeEvent);
 
 export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   'services/TriggerRealtimeSubscriptionError'
@@ -97,21 +56,16 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
             });
 
-            const Pusher = pusherModule.default as unknown as PusherCtor;
+            const Pusher = pusherModule.default;
 
             const pusher = new Pusher(creds.pusher_key, {
               cluster: creds.pusher_cluster,
               channelAuthorization: {
-                customHandler: (authOptions: PusherAuthOptions, callback?: PusherAuthCallback) => {
-                  const authParams = authOptions.params ?? authOptions;
-                  const channel_name = authParams.channel_name ?? authParams.channelName;
-                  const socket_id = authParams.socket_id ?? authParams.socketId;
+                customHandler: (authOptions, callback) => {
+                  const channel_name = authOptions.channelName;
+                  const socket_id = authOptions.socketId;
 
                   const doAuth = async () => {
-                    if (!channel_name || !socket_id) {
-                      throw new Error('Missing channel_name or socket_id for realtime auth');
-                    }
-
                     const response = await Runtime.runPromise(runtime)(
                       params.authRealtimeChannel({
                         channel_name,
@@ -127,14 +81,11 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                     return normalizedResponse;
                   };
 
-                  if (callback) {
-                    void doAuth()
-                      .then(data => callback(null, data))
-                      .catch(error => callback(error));
-                    return;
-                  }
-
-                  return doAuth();
+                  void doAuth()
+                    .then(data => callback(null, data))
+                    .catch(cause =>
+                      callback(cause instanceof Error ? cause : new Error(String(cause)), null)
+                    );
                 },
               },
             });
@@ -179,15 +130,16 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               }
             }, CHUNK_TTL_MS);
 
-            channel.bind('trigger_to_client', eventData => {
-              params.onEvent((eventData ?? {}) as RawRealtimeEvent);
+            channel.bind('trigger_to_client', (eventData: unknown) => {
+              params.onEvent(Option.getOrElse(decodeRawRealtimeEvent(eventData), () => ({})));
             });
 
-            channel.bind('chunked-trigger_to_client', data => {
-              const typed = data as ChunkedRealtimeEvent;
-              if (!typed || typeof typed.id !== 'string' || typeof typed.index !== 'number') {
+            channel.bind('chunked-trigger_to_client', (data: unknown) => {
+              const decoded = decodeChunkedRealtimeEvent(data);
+              if (Option.isNone(decoded)) {
                 return;
               }
+              const typed = decoded.value;
 
               // Reject non-integer or out-of-range indices to prevent a single
               // malformed event from creating a massive sparse array.
@@ -214,7 +166,10 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 });
               }
 
-              const current = chunkedEvents.get(typed.id)!;
+              const current = chunkedEvents.get(typed.id);
+              if (!current) {
+                return;
+              }
               current.chunks[typed.index] = typed.chunk;
               if (typed.final) {
                 current.receivedFinal = true;
@@ -229,8 +184,10 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 current.chunks.length === Object.keys(current.chunks).length
               ) {
                 try {
-                  const parsed = JSON.parse(current.chunks.join('')) as RawRealtimeEvent;
-                  params.onEvent(parsed);
+                  const parsed = decodeRawRealtimeEvent(JSON.parse(current.chunks.join('')));
+                  if (Option.isSome(parsed)) {
+                    params.onEvent(parsed.value);
+                  }
                 } catch {
                   // Silently discard events that fail to parse after chunk reassembly
                 } finally {

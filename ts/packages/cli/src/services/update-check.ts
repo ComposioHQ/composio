@@ -2,7 +2,7 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { arch as getArch, homedir, platform as getPlatform } from 'node:os';
 import { dirname, join } from 'node:path';
-import { Effect } from 'effect';
+import { Effect, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
@@ -29,17 +29,17 @@ const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 /** Matches `@composio/cli@<semver>` — excludes prereleases. */
 const CLI_RELEASE_TAG_RE = /^@composio\/cli@(\d+\.\d+\.\d+)$/;
 
-export interface UpdateCheckRelease {
-  tag_name?: unknown;
-  prerelease?: unknown;
-  draft?: unknown;
-  assets?: unknown;
-}
-
 export interface UpdateCheckState {
   lastChecked: string; // ISO-8601
   latestVersion: string; // e.g. "0.3.0"
 }
+
+const UpdateCheckStateSchema = Schema.parseJson(
+  Schema.Struct({
+    lastChecked: Schema.String,
+    latestVersion: Schema.String,
+  })
+);
 
 // ── Injectable configuration ────────────────────────────────────────────
 
@@ -88,19 +88,15 @@ export function parseLatestVersionFromReleases(
 
   let latest: string | undefined;
   for (const release of releases) {
-    if (typeof release !== 'object' || release === null) continue;
+    if (!Predicate.isRecord(release)) continue;
 
-    const candidate = release as UpdateCheckRelease;
+    const candidate = release;
     if (typeof candidate.tag_name !== 'string') continue;
     if (candidate.prerelease === true || candidate.draft === true) continue;
     if (!Array.isArray(candidate.assets)) continue;
 
     const hasRequiredBinary = candidate.assets.some(
-      asset =>
-        typeof asset === 'object' &&
-        asset !== null &&
-        'name' in asset &&
-        asset.name === binaryAssetName
+      asset => Predicate.hasProperty(asset, 'name') && asset.name === binaryAssetName
     );
     if (!hasRequiredBinary) continue;
 
@@ -128,9 +124,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       const capabilities = yield* terminal.capabilities;
       if (!capabilities.isInteractive) return;
 
-      const state = yield* Effect.try(
-        () => JSON.parse(readFileSync(config.stateFile, 'utf-8')) as UpdateCheckState
-      );
+      const rawState = yield* Effect.try(() => readFileSync(config.stateFile, 'utf-8'));
+      const state = yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
       if (!state.latestVersion || !semver.valid(state.latestVersion)) return;
       if (state.latestVersion === config.currentVersion) return;
 
@@ -157,7 +152,9 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       // Throttle: skip if checked recently.
       let previousLatestVersion: string | undefined;
       try {
-        const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+        const state = Schema.decodeUnknownSync(UpdateCheckStateSchema)(
+          readFileSync(config.stateFile, 'utf-8')
+        );
         if (Date.now() - new Date(state.lastChecked).getTime() < config.checkIntervalMs) {
           return undefined;
         }

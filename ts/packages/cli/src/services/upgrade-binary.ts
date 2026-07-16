@@ -1,5 +1,5 @@
-import { Data, Effect, Config, Option } from 'effect';
-import { HttpClient, FileSystem } from '@effect/platform';
+import { Data, Effect, Config, Match, Option, Predicate, Record as EffectRecord } from 'effect';
+import { HttpClient, HttpClientResponse, FileSystem } from '@effect/platform';
 import * as path from 'node:path';
 import { cp as copyPath, rm as removePath } from 'node:fs/promises';
 import { APP_VERSION } from '../constants';
@@ -7,11 +7,10 @@ import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
-import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
+import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
 
 // Note: `node:zlib` does not support Github's zip files
 import extractZip from 'extract-zip';
-import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
 import {
@@ -49,32 +48,30 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     /**
      * Fetch latest release from GitHub
      */
-    const fetchGitHubJson = <T>({
-      url,
-      fetchErrorMessage,
-      parseErrorMessage,
-    }: {
-      url: string;
-      fetchErrorMessage: string;
-      parseErrorMessage: string;
-    }): Effect.Effect<T, UpgradeBinaryError, never> =>
+    const fetchGitHubRelease = (
+      tag: string
+    ): Effect.Effect<GitHubRelease, UpgradeBinaryError, never> =>
       Effect.gen(function* () {
+        const encodedTag = encodeURIComponent(tag);
+        const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
+        const fetchErrorMessage = `Failed to fetch tags/${tag} release from GitHub`;
         yield* Effect.logDebug(`GET ${url}`);
 
         const response = yield* httpClient.get(url).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error,
+                cause,
                 message: fetchErrorMessage,
               })
-            )
           )
         );
 
         if (response.status < 200 || response.status >= 300) {
           const pretty = yield* response.json.pipe(
-            Effect.map(json => renderPrettyError(Object.entries(json as object))),
+            Effect.map(json =>
+              Predicate.isRecord(json) ? renderPrettyError(EffectRecord.toEntries(json)) : ''
+            ),
             Effect.catchAll(() => Effect.succeed(''))
           );
 
@@ -87,16 +84,15 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           );
         }
 
-        return (yield* response.json.pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+        return yield* HttpClientResponse.schemaBodyJson(GitHubRelease)(response).pipe(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error,
-                message: parseErrorMessage,
+                cause,
+                message: 'Failed to parse GitHub release JSON response',
               })
-            )
           )
-        )) as T;
+        );
       });
 
     const fetchLatestRelease = (
@@ -126,11 +122,22 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
                   error =>
                     new UpgradeBinaryError({
                       cause: error,
-                      message: error.message.startsWith('Failed to fetch ')
-                        ? 'Failed to fetch releases from GitHub'
-                        : error.message === 'Failed to parse GitHub releases JSON'
-                          ? 'Failed to parse GitHub releases JSON response'
-                          : `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`,
+                      message: Match.value(error.reason).pipe(
+                        Match.when('request', () => 'Failed to fetch releases from GitHub'),
+                        Match.when('http-status', () => 'Failed to fetch releases from GitHub'),
+                        Match.when('decode', () => 'Failed to parse GitHub releases JSON response'),
+                        Match.when(
+                          'not-found',
+                          () =>
+                            `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`
+                        ),
+                        Match.when(
+                          'compare',
+                          () =>
+                            `Failed to determine latest CLI ${prerelease ? 'beta' : 'stable'} release from @composio/cli tags on GitHub`
+                        ),
+                        Match.exhaustive
+                      ),
                     })
                 )
               );
@@ -140,15 +147,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             }),
             onSome: Effect.fn(function* (tag) {
               yield* Effect.logDebug(`Using tag: ${tag}`);
-              const encodedTag = encodeURIComponent(tag);
-              const url = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodedTag}`;
-              const release = yield* fetchGitHubJson<GitHubRelease>({
-                url,
-                fetchErrorMessage: `Failed to fetch tags/${tag} release from GitHub`,
-                parseErrorMessage: 'Failed to parse GitHub release JSON response',
-              });
+              const release = yield* fetchGitHubRelease(tag);
 
-              return release as GitHubRelease;
+              return release;
             }),
           })
         );
@@ -167,7 +168,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
     ): Effect.Effect<boolean, CompareSemverError | UpgradeBinaryError, never> =>
       Effect.gen(function* () {
         // Current version is older than latest
-        const isVersionOutdated: Predicate<number> = comparison => comparison < 0;
+        const isVersionOutdated = (comparison: number) => comparison < 0;
         const comparison = yield* semverComparator(currentReleaseIdentifier, release.tag_name);
         return isVersionOutdated(comparison);
       });
@@ -190,7 +191,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         if (!asset) {
           return yield* Effect.fail(
             new UpgradeBinaryError({
-              cause: new Error(`Binary not found: ${binaryName}`),
+              cause: `Binary not found: ${binaryName}`,
               message: `No binary available for ${platformArch.platform}-${platformArch.arch}`,
             })
           );
@@ -199,37 +200,35 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         yield* Effect.logDebug(`Downloading ${asset.name}...`);
 
         const response = yield* Effect.gen(function* () {
-          const resp = yield* httpClient.get(asset.browser_download_url);
+          const resp = yield* httpClient.get(asset.browser_download_url).pipe(
+            Effect.mapError(
+              cause =>
+                new UpgradeBinaryError({
+                  cause,
+                  message: `Failed to download binary: ${asset.name}`,
+                })
+            )
+          );
           if (resp.status < 200 || resp.status >= 300) {
             return yield* Effect.fail(
               new UpgradeBinaryError({
-                cause: new Error(`HTTP ${resp.status}`),
+                cause: `HTTP ${resp.status}`,
                 message: `Failed to download binary: ${asset.name}`,
               })
             );
           }
           return resp;
-        }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
-              new UpgradeBinaryError({
-                cause: new Error(String(error)),
-                message: `Failed to download binary: ${asset.name}`,
-              })
-            )
-          )
-        );
+        });
 
         const arrayBuffer = yield* Effect.gen(function* () {
           return yield* response.arrayBuffer;
         }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause,
                 message: 'Failed to read downloaded binary',
               })
-            )
           )
         );
 
@@ -299,7 +298,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           },
           catch: error =>
             new UpgradeBinaryError({
-              cause: error as Error,
+              cause: error,
               message: 'Failed to compute SHA-256 checksum',
             }),
         });
@@ -336,25 +335,23 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         // Write zip file
         yield* fs.writeFile(zipPath, data).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause,
                 message: 'Failed to write zip file',
               })
-            )
           )
         );
 
         // Create extract directory
         yield* fs.makeDirectory(extractDir, { recursive: true }).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause,
                 message: 'Failed to create extract directory',
               })
-            )
           )
         );
 
@@ -364,7 +361,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           },
           catch: error =>
             new UpgradeBinaryError({
-              cause: error as Error,
+              cause: error,
               message: 'Failed to extract zip archive',
             }),
         });
@@ -377,7 +374,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         if (!exists) {
           return yield* Effect.fail(
             new UpgradeBinaryError({
-              cause: new Error(`Binary not found in archive: ${binaryPath}`),
+              cause: `Binary not found in archive: ${binaryPath}`,
               message: 'Extracted archive does not contain expected binary',
             })
           );
@@ -385,13 +382,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         // Make executable
         yield* fs.chmod(binaryPath, 0o755).pipe(
-          Effect.catchAll(error =>
-            Effect.fail(
+          Effect.mapError(
+            cause =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause,
                 message: 'Failed to make binary executable',
               })
-            )
           )
         );
 
@@ -408,12 +404,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       // E.g., ~/.composio/composio
       const currentPath = process.execPath;
 
-      const runtimesPaths = [Bun.which('bun'), Bun.which('node')] as Array<string | null>;
+      const runtimesPaths: Array<string | null> = [Bun.which('bun'), Bun.which('node')];
 
       if (runtimesPaths.includes(currentPath)) {
         return yield* Effect.fail(
           new UpgradeBinaryError({
-            cause: new Error(`Currently using Composio CLI via Bun or Node.js runtime`),
+            cause: 'Currently using Composio CLI via Bun or Node.js runtime',
             message:
               'Cannot upgrade runtime binary. Please run the upgrade command from a self-contained Composio CLI binary.',
           })
@@ -441,13 +437,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             overwrite: true,
           })
           .pipe(
-            Effect.catchAll(error =>
-              Effect.fail(
+            Effect.mapError(
+              cause =>
                 new UpgradeBinaryError({
-                  cause: error as Error,
+                  cause,
                   message: 'Failed to replace binary',
                 })
-              )
             )
           );
 
@@ -464,7 +459,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           if (!sourceExists) {
             return yield* Effect.fail(
               new UpgradeBinaryError({
-                cause: new Error(`Missing companion module: ${sourceCompanion}`),
+                cause: `Missing companion module: ${sourceCompanion}`,
                 message: 'Downloaded binary package is incomplete',
               })
             );
@@ -472,13 +467,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
           const targetCompanion = path.join(targetDirectory, relativePath);
           yield* fs.makeDirectory(path.dirname(targetCompanion), { recursive: true }).pipe(
-            Effect.catchAll(error =>
-              Effect.fail(
+            Effect.mapError(
+              cause =>
                 new UpgradeBinaryError({
-                  cause: error as Error,
+                  cause,
                   message: `Failed to create companion module directory: ${relativePath}`,
                 })
-              )
             )
           );
 
@@ -487,13 +481,12 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
               overwrite: true,
             })
             .pipe(
-              Effect.catchAll(error =>
-                Effect.fail(
+              Effect.mapError(
+                cause =>
                   new UpgradeBinaryError({
-                    cause: error as Error,
+                    cause,
                     message: `Failed to replace companion module: ${relativePath}`,
                   })
-                )
               )
             );
         }
@@ -514,18 +507,19 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
             },
             catch: error =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause: error,
                 message: 'Failed to replace local-tool binary assets',
               }),
           });
         }
 
-        if (options.releaseTag) {
+        const releaseTag = options.releaseTag;
+        if (releaseTag) {
           yield* Effect.try({
-            try: () => writeInstalledReleaseTag(targetDirectory, options.releaseTag!),
+            try: () => writeInstalledReleaseTag(targetDirectory, releaseTag),
             catch: error =>
               new UpgradeBinaryError({
-                cause: error as Error,
+                cause: error,
                 message: 'Failed to update installed release metadata',
               }),
           });
@@ -606,15 +600,14 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
             // The temporary directory is automatically cleaned up
             const tmpDir = yield* fs
-              .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade}` })
+              .makeTempDirectoryScoped({ prefix: `${CLI_BINARY_NAME}-upgrade` })
               .pipe(
-                Effect.catchAll(error =>
-                  Effect.fail(
+                Effect.mapError(
+                  cause =>
                     new UpgradeBinaryError({
-                      cause: error as Error,
+                      cause,
                       message: 'Failed to create temporary directory',
                     })
-                  )
                 )
               );
 

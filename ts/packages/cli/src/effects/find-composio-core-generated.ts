@@ -12,6 +12,8 @@ export class ComposioCorePkgNotFound extends Data.TaggedError('error/ComposioCor
   readonly fix?: string;
 }> {}
 
+const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm';
+
 export function pyFindComposioCoreGenerated(cwd: string) {
   return Effect.gen(function* () {
     /**
@@ -25,7 +27,7 @@ export function pyFindComposioCoreGenerated(cwd: string) {
         const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
           Effect.andThen(pkgManager => pkgManager),
           Effect.tapError(e => Effect.logError(e)),
-          Effect.catchAll(() => Effect.succeed('npm' as PackageManager))
+          Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
         );
 
         yield* Effect.logDebug({ pkgManager });
@@ -106,7 +108,7 @@ export function jsFindComposioCoreGenerated(cwd: string) {
     const pkgManagerDetector = yield* JsPackageManagerDetector;
     const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
       Effect.tapError(e => Effect.logError(e)),
-      Effect.catchAll(() => Effect.succeed('npm' as PackageManager))
+      Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
     );
     yield* Effect.logDebug({ pkgManager });
 

@@ -2,22 +2,32 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Schema } from 'effect';
 import extractZip from 'extract-zip';
+import { GitHubRelease } from 'src/effects/resolve-cli-release';
 
-export const RUN_COMPANION_MODULE_BASENAMES = [
+export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
   'run-subagent-shared',
   'run-subagent-acp',
   'run-subagent-legacy',
   'run-subagent-output-mcp',
-] as const;
+];
 
 export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map(
   name => `${name}.mjs`
 );
 
 export const RUN_COMPANION_RELEASE_TAG_FILENAME = 'release-tag.txt';
-export const RUN_CODEX_ACP_BINARY_TARGETS = [
+type RunCodexAcpBinaryTarget = {
+  readonly platform: NodeJS.Platform;
+  readonly arch: string;
+  readonly packageName: string;
+  readonly binaryFileName: string;
+  readonly relativePath: string;
+};
+
+export const RUN_CODEX_ACP_BINARY_TARGETS: ReadonlyArray<RunCodexAcpBinaryTarget> = [
   {
     platform: 'darwin',
     arch: 'arm64',
@@ -46,14 +56,14 @@ export const RUN_CODEX_ACP_BINARY_TARGETS = [
     binaryFileName: 'codex-acp',
     relativePath: 'acp-adapters/codex/linux-x64/codex-acp',
   },
-] as const;
-export const RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS = [
+];
+export const RUN_COMPANION_STATIC_ASSET_RELATIVE_PATHS: ReadonlyArray<string> = [
   'acp-adapters/claude-code-acp.mjs',
   // cli.js from @anthropic-ai/claude-agent-sdk must live next to claude-code-acp.mjs.
   // The bundled adapter uses import.meta.url to locate it at runtime.
   'acp-adapters/cli.js',
   ...RUN_CODEX_ACP_BINARY_TARGETS.map(target => target.relativePath),
-] as const;
+];
 
 const relativeImportPattern =
   /(?:import\s+(?:[^'"]+?\s+from\s+)?|export\s+(?:\*\s+from\s+|\{[^}]+\}\s+from\s+)|import\s*\()\s*["'](\.{1,2}\/[^"']+?\.mjs)["']/g;
@@ -197,21 +207,11 @@ export const collectExpectedRunCompanionAssetRelativePaths = (
   return [...collected].sort();
 };
 
-type GitHubReleaseAsset = {
-  name: string;
-  browser_download_url: string;
-};
-
-type GitHubRelease = {
-  tag_name: string;
-  assets: GitHubReleaseAsset[];
-};
-
 const DEFAULT_GITHUB_CONFIG = {
   apiBaseUrl: 'https://api.github.com',
   owner: 'ComposioHQ',
   repo: 'composio',
-} as const;
+};
 
 const resolveCompanionInstallDirectory = (execPath: string) => path.dirname(execPath);
 
@@ -279,15 +279,18 @@ export const listMissingInstalledRunCompanionModules = (execPath: string) => {
   );
 };
 
-const fetchGitHubJson = async <T>({
-  url,
-  accessToken,
-  fetchErrorMessage,
-}: {
-  url: string;
-  accessToken?: string;
-  fetchErrorMessage: string;
-}): Promise<T> => {
+const fetchGitHubJson = async <A, I>(
+  schema: Schema.Schema<A, I>,
+  {
+    url,
+    accessToken,
+    fetchErrorMessage,
+  }: {
+    url: string;
+    accessToken?: string;
+    fetchErrorMessage: string;
+  }
+): Promise<A> => {
   const response = await fetch(url, {
     headers: {
       Accept: 'application/vnd.github+json',
@@ -301,7 +304,7 @@ const fetchGitHubJson = async <T>({
     throw new Error(`${fetchErrorMessage} (HTTP ${response.status}${body ? `: ${body}` : ''})`);
   }
 
-  return (await response.json()) as T;
+  return Schema.decodeUnknownPromise(schema)(await response.json());
 };
 
 const fetchChecksums = async ({
@@ -381,15 +384,17 @@ export const repairMissingInstalledRunCompanionModules = async ({
   callerImportMetaUrl: string;
   execPath: string;
   appVersion: string;
-}) => {
+}): Promise<
+  { readonly repaired: false } | { readonly repaired: true; readonly releaseTag: string }
+> => {
   const currentFilePath = fileURLToPath(callerImportMetaUrl);
   if (!currentFilePath.startsWith('/$bunfs/')) {
-    return { repaired: false as const };
+    return { repaired: false };
   }
 
   const missingModules = listMissingInstalledRunCompanionModules(execPath);
   if (missingModules.length === 0) {
-    return { repaired: false as const };
+    return { repaired: false };
   }
 
   const releaseTag = resolveRepairReleaseTag({ execPath, appVersion });
@@ -401,7 +406,7 @@ export const repairMissingInstalledRunCompanionModules = async ({
   };
 
   const encodedTag = encodeURIComponent(releaseTag);
-  const release = await fetchGitHubJson<GitHubRelease>({
+  const release = await fetchGitHubJson(GitHubRelease, {
     url: `${githubConfig.apiBaseUrl}/repos/${githubConfig.owner}/${githubConfig.repo}/releases/tags/${encodedTag}`,
     accessToken: githubConfig.accessToken,
     fetchErrorMessage: `Failed to fetch release metadata for ${releaseTag} while repairing run companion modules`,
@@ -475,7 +480,7 @@ export const repairMissingInstalledRunCompanionModules = async ({
 
     writeInstalledReleaseTag(installDirectory, release.tag_name);
     return {
-      repaired: true as const,
+      repaired: true,
       releaseTag: release.tag_name,
     };
   } finally {

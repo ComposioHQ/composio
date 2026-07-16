@@ -2,7 +2,11 @@ import { Effect, pipe } from 'effect';
 
 import { removeNodeModulesEntriesFromStack } from 'effect-errors/logic/spans';
 
-import { maybeMapSourcemaps } from './maybe-map-sourcemaps';
+import {
+  isErrorRelatedSources,
+  isRawErrorLocation,
+  maybeMapSourcemaps,
+} from './maybe-map-sourcemaps';
 
 export const getSourcesFromStack = (maybeStack: string | undefined) =>
   pipe(
@@ -18,8 +22,8 @@ export const getSourcesFromStack = (maybeStack: string | undefined) =>
       const sourcesOrLocation = yield* maybeMapSourcemaps('', relevantStackEntries);
 
       return {
-        sources: sourcesOrLocation.filter(el => el._tag === 'sources'),
-        location: sourcesOrLocation.filter(el => el._tag === 'location'),
+        sources: sourcesOrLocation.filter(isErrorRelatedSources),
+        location: sourcesOrLocation.filter(isRawErrorLocation),
       };
     }),
     Effect.withSpan('get-sources-from-stack')

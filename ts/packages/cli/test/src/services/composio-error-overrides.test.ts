@@ -52,6 +52,44 @@ describe('composio-error-overrides', () => {
     expect(result.message).toBe('Something else broke');
   });
 
+  it('does not trust malformed API error fields', () => {
+    const error = {
+      details: {
+        code: '4302',
+        slug: 4302,
+        message: 'Malformed API error',
+      },
+    };
+
+    const result = mapComposioError({ error });
+
+    expect(result.normalized).toBe(error);
+    expect(result.apiDetails).toBeUndefined();
+    expect(result.override).toBeNull();
+    expect(result.message).toBe('Malformed API error');
+  });
+
+  it('skips UnknownException wrappers while decoding their causes', () => {
+    const result = mapComposioError({
+      toolkit: 'gmail',
+      error: {
+        _tag: 'UnknownException',
+        cause: {
+          code: 4302,
+          slug: 'ToolRouterV2_NoActiveConnection',
+          message: 'No active connection',
+        },
+      },
+    });
+
+    expect(result.normalized).toBeInstanceOf(ComposioNoActiveConnectionError);
+    expect(result.apiDetails).toEqual({
+      code: 4302,
+      slug: 'ToolRouterV2_NoActiveConnection',
+      message: 'No active connection',
+    });
+  });
+
   it('preserves original generic errors for top-level CLI handling', () => {
     const error = {
       _tag: 'ToolExecutionError',

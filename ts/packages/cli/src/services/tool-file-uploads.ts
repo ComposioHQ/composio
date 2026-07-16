@@ -2,22 +2,30 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
+import { Data, Predicate } from 'effect';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUploadError')<{
+  readonly cause?: unknown;
+  readonly message: string;
+  readonly reason: 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
+  readonly status?: number;
+}> {}
 
 const isFileLike = (value: unknown): value is File =>
   typeof File !== 'undefined' && value instanceof File;
 
-const isSchemaRecord = (value: unknown): value is JsonSchema => isRecord(value);
+const isSchemaRecord = (value: unknown): value is JsonSchema => Predicate.isRecord(value);
+
+const getSchemaVariant = (value: unknown): ReadonlyArray<JsonSchema> =>
+  Array.isArray(value) ? value.filter(isSchemaRecord) : [];
 
 const getSchemaVariants = (schema: JsonSchema | undefined): ReadonlyArray<JsonSchema> => [
-  ...((Array.isArray(schema?.anyOf) ? schema.anyOf : []) as JsonSchema[]),
-  ...((Array.isArray(schema?.oneOf) ? schema.oneOf : []) as JsonSchema[]),
-  ...((Array.isArray(schema?.allOf) ? schema.allOf : []) as JsonSchema[]),
+  ...getSchemaVariant(schema?.anyOf),
+  ...getSchemaVariant(schema?.oneOf),
+  ...getSchemaVariant(schema?.allOf),
 ];
 
 const transformSchema = (schema: JsonSchema): JsonSchema => {
@@ -133,7 +141,11 @@ export const findFileUploadablePaths = (
 const readFileFromUrl = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to fetch file: ${response.statusText}`);
+    throw new ToolFileUploadError({
+      message: `Failed to fetch file: ${response.statusText}`,
+      reason: 'source-fetch',
+      status: response.status,
+    });
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer());
@@ -190,7 +202,10 @@ const readUploadSource = async (file: string | File) => {
     return readFileFromDisk(file);
   }
 
-  throw new Error('Unsupported upload source');
+  throw new ToolFileUploadError({
+    message: 'Unsupported upload source',
+    reason: 'unsupported-source',
+  });
 };
 
 const uploadFile = async (params: {
@@ -220,7 +235,11 @@ const uploadFile = async (params: {
   });
 
   if (!uploadResponse.ok) {
-    throw new Error(`Failed to upload file to S3: ${uploadResponse.statusText}`);
+    throw new ToolFileUploadError({
+      message: `Failed to upload file to S3: ${uploadResponse.statusText}`,
+      reason: 'upload',
+      status: uploadResponse.status,
+    });
   }
 
   return {
@@ -261,15 +280,14 @@ const hydrateFileUploads = async (
     return nextValue;
   }
 
-  if (isSchemaRecord(schema?.properties) && isRecord(value)) {
+  if (isSchemaRecord(schema?.properties) && Predicate.isRecord(value)) {
+    const properties = schema.properties;
     const entries = await Promise.all(
       Object.entries(value).map(async ([key, entryValue]) => [
         key,
         await hydrateFileUploads(
           entryValue,
-          isSchemaRecord((schema.properties as Record<string, unknown>)[key])
-            ? ((schema.properties as Record<string, unknown>)[key] as JsonSchema)
-            : undefined,
+          isSchemaRecord(properties[key]) ? properties[key] : undefined,
           ctx
         ),
       ])
@@ -307,5 +325,5 @@ export const uploadToolInputFiles = async (params: {
     client: params.client,
   });
 
-  return isRecord(hydrated) ? hydrated : params.arguments_;
+  return Predicate.isRecord(hydrated) ? hydrated : params.arguments_;
 };

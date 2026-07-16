@@ -1,6 +1,6 @@
 import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
-import { Effect, pipe } from 'effect';
+import { Effect, Predicate, pipe } from 'effect';
 
 import type { JsonParsingError } from 'effect-errors/dependencies/fs';
 import { stackAtRegex } from 'effect-errors/logic/stack';
@@ -14,6 +14,12 @@ export type StackEntry = {
 };
 
 export type MaybeMappedSources = ErrorRelatedSources | RawErrorLocation | StackEntry;
+
+export const isErrorRelatedSources = (value: MaybeMappedSources): value is ErrorRelatedSources =>
+  Predicate.isTagged(value, 'sources');
+
+export const isRawErrorLocation = (value: MaybeMappedSources): value is RawErrorLocation =>
+  Predicate.isTagged(value, 'location');
 
 export const maybeMapSourcemaps = (
   name: string,
@@ -33,7 +39,7 @@ export const maybeMapSourcemaps = (
             runPath: stackLine.replaceAll(stackAtRegex, 'at '),
           };
         }
-        if (details._tag === 'location') {
+        if (isRawErrorLocation(details)) {
           return details;
         }
 

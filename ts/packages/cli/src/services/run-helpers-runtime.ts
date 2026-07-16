@@ -2,11 +2,15 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
-import { Effect } from 'effect';
+import { Effect, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import type { MasterKind } from 'src/services/master-detector';
-import { isAcpInvokeError } from 'src/services/run-subagent-shared';
+import {
+  isAcpInvokeError,
+  parseJson,
+  type InvokeAgentNormalizedOptions,
+} from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
@@ -40,59 +44,25 @@ type RunHelpersInstallParams = {
   readonly helperContext?: RunHelperContext;
 };
 
-type RunCliResult =
-  | undefined
-  | string
-  | number
-  | boolean
-  | {
-      readonly successful?: boolean;
-      readonly storedInFile?: boolean;
-      readonly outputFilePath?: string | null;
-      readonly tokenCount?: number | null;
-      readonly error?: string | null;
-      readonly data?: unknown;
-      readonly [key: string]: unknown;
-    };
+type RunCliResult = unknown;
 
-type PromptableResult = {
-  readonly prompt?: () => string;
-  readonly data?: unknown;
-  readonly [key: string]: unknown;
-};
-
-type StructuredSchemaInput =
-  | {
-      readonly safeParse?: (value: unknown) => unknown;
-      readonly _def?: unknown;
-    }
-  | Record<string, unknown>;
-
-type NormalizedInvokeAgentOptions = {
-  readonly target?: string;
-  readonly model?: string;
-  readonly schema?: StructuredSchemaInput;
-  readonly jsonSchema?: Record<string, unknown>;
-  readonly structuredSchema?: Record<string, unknown>;
-  readonly zodSchema?: StructuredSchemaInput;
-};
-
-type RunGlobalScope = typeof globalThis & {
-  z: typeof z;
-  zod: typeof z;
-  search: (query: string, options?: Record<string, unknown>) => Promise<RunCliResult>;
-  execute: (slug: string, data?: unknown, options?: { account?: string }) => Promise<RunCliResult>;
-  experimental_subAgent: (prompt: string, options?: Record<string, unknown>) => Promise<unknown>;
-  invokeAgent: (prompt: string, options?: Record<string, unknown>) => Promise<unknown>;
-  proxy: (
-    toolkit: string
-  ) => Promise<(input: string | URL, init?: RequestInit) => Promise<Response>>;
-  __composioRunContext: {
-    readonly outputDir: string | null;
-    readonly logFilePath: string | null;
-  };
-  __composioConsumerContext: RunHelperContext;
-};
+const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const ExperimentalSubagentConfig = Schema.Struct({
+  experimental_subagent: Schema.optional(
+    Schema.Struct({ target: Schema.optional(Schema.Unknown) })
+  ),
+});
+const decodeExperimentalSubagentConfig = Schema.decodeUnknownSync(
+  Schema.parseJson(ExperimentalSubagentConfig)
+);
+const ProxySessionResponse = Schema.Struct({ session_id: Schema.NonEmptyString });
+const ProxyExecuteResponse = Schema.Struct({
+  headers: Schema.optional(Schema.Record({ key: Schema.String, value: Schema.String })),
+  binary_data: Schema.optional(Schema.Struct({ url: Schema.optional(Schema.String) })),
+  data: Schema.optional(Schema.Unknown),
+  status: Schema.optional(Schema.Number),
+});
+type ProxyExecuteResponse = Schema.Schema.Type<typeof ProxyExecuteResponse>;
 
 const experimentalSubAgentSchema = {
   type: 'function',
@@ -134,7 +104,7 @@ const experimentalSubAgentSchema = {
       logFilePath: { description: 'Path to the local run log file for helper execution details.' },
     },
   },
-} as const;
+};
 
 const proxySchema = {
   type: 'function',
@@ -164,9 +134,7 @@ const proxySchema = {
       },
     },
   },
-} as const;
-
-const runGlobals = globalThis as RunGlobalScope;
+};
 
 const encodeBase64 = (bytes: Uint8Array): string => {
   let binary = '';
@@ -186,8 +154,8 @@ export const installRunHelpers = async ({
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 
-  runGlobals.z = z;
-  runGlobals.zod = z;
+  Reflect.set(globalThis, 'z', z);
+  Reflect.set(globalThis, 'zod', z);
 
   const perfDebugEnabled =
     helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
@@ -232,15 +200,15 @@ export const installRunHelpers = async ({
     if (typeof value === 'string') return truncateDebugText(value.replace(/\s+/g, ' ').trim());
     if (typeof value === 'number' || typeof value === 'boolean') return String(value);
     if (Array.isArray(value)) return `array(${value.length})`;
-    if (typeof value === 'object') {
-      const record = value as Record<string, unknown>;
+    if (Predicate.isRecord(value)) {
       const preferred = ['message', 'error', 'title', 'summary', 'brief', 'status'];
       for (const key of preferred) {
-        if (typeof record[key] === 'string' && record[key].trim().length > 0) {
-          return truncateDebugText(record[key].trim());
+        const candidate = value[key];
+        if (typeof candidate === 'string' && candidate.trim().length > 0) {
+          return truncateDebugText(candidate.trim());
         }
       }
-      return `object{${Object.keys(record).slice(0, 4).join(', ')}}`;
+      return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
     }
     return truncateDebugText(String(value));
   };
@@ -284,12 +252,16 @@ export const installRunHelpers = async ({
       }
       case 'subAgent.acp.plan': {
         const entries = Array.isArray(details.entries)
-          ? (details.entries as Array<{ status?: string; content?: string }>)
+          ? details.entries.filter(Predicate.isRecord)
           : [];
         if (entries.length === 0) return '[experimental_subAgent:plan] updated';
         const summary = entries
           .slice(0, 3)
-          .map(entry => `${entry.status}:${truncateDebugText(entry.content || '', 48)}`)
+          .map(entry => {
+            const status = typeof entry.status === 'string' ? entry.status : 'pending';
+            const content = typeof entry.content === 'string' ? entry.content : '';
+            return `${status}:${truncateDebugText(content, 48)}`;
+          })
           .join(' | ');
         return `[experimental_subAgent:plan] ${summary}`;
       }
@@ -333,16 +305,6 @@ export const installRunHelpers = async ({
     }
   };
 
-  const parseJson = (text: string): unknown => {
-    const value = text.trim();
-    if (!value) return undefined;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value;
-    }
-  };
-
   const stringifyForPrompt = (value: unknown): string => {
     if (value === undefined) return 'undefined';
     if (value === null) return 'null';
@@ -358,18 +320,16 @@ export const installRunHelpers = async ({
   };
 
   const attachPromptMethod = <T>(value: T): T => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-    const promptable = value as PromptableResult;
-    if (typeof promptable.prompt === 'function') return value;
-    Object.defineProperty(promptable, 'prompt', {
-      value: () => stringifyForPrompt('data' in promptable ? promptable.data : promptable),
+    if (!Predicate.isRecord(value)) return value;
+    if (typeof value.prompt === 'function') return value;
+    Object.defineProperty(value, 'prompt', {
+      value: () => stringifyForPrompt('data' in value ? value.data : value),
       enumerable: false,
     });
     return value;
   };
 
-  const isPlainObjectForExecute = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value);
+  const isPlainObjectForExecute = Predicate.isRecord;
 
   const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
     if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
@@ -430,7 +390,7 @@ export const installRunHelpers = async ({
   };
 
   const maybeLoadStoredCliResult = (result: RunCliResult): RunCliResult => {
-    if (!result || typeof result !== 'object' || result.storedInFile !== true) {
+    if (!Predicate.isRecord(result) || result.storedInFile !== true) {
       return attachPromptMethod(result);
     }
     helperDebugLog('cli.result.stored_in_file', {
@@ -449,8 +409,8 @@ export const installRunHelpers = async ({
 
   const describeDebugValue = (value: unknown) => {
     if (Array.isArray(value)) return { type: 'array', length: value.length };
-    if (value && typeof value === 'object') {
-      return { type: 'object', keys: Object.keys(value as Record<string, unknown>).slice(0, 20) };
+    if (Predicate.isRecord(value)) {
+      return { type: 'object', keys: Object.keys(value).slice(0, 20) };
     }
     return {
       type: typeof value,
@@ -459,7 +419,7 @@ export const installRunHelpers = async ({
   };
 
   const summarizeCliResultPreview = (result: RunCliResult): unknown => {
-    if (result == null || typeof result !== 'object') return result;
+    if (!Predicate.isRecord(result)) return result;
     if ('data' in result && result.data !== undefined) return result.data;
     if (typeof result.error === 'string' && result.error.trim().length > 0)
       return result.error.trim();
@@ -471,7 +431,7 @@ export const installRunHelpers = async ({
     command: string | undefined,
     result: RunCliResult
   ) => {
-    if (!result || typeof result !== 'object') {
+    if (!Predicate.isRecord(result)) {
       helperDebugLog('cli.result', {
         requestId,
         command,
@@ -510,9 +470,7 @@ export const installRunHelpers = async ({
   const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
     try {
       const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-      const parsed = JSON.parse(raw) as {
-        experimental_subagent?: { target?: unknown };
-      };
+      const parsed = decodeExperimentalSubagentConfig(raw);
       const target = parsed.experimental_subagent?.target;
       return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
     } catch {
@@ -535,7 +493,7 @@ export const installRunHelpers = async ({
 
   const normalizeInvokeAgentOptions = (
     options: Record<string, unknown> = {}
-  ): NormalizedInvokeAgentOptions => {
+  ): InvokeAgentNormalizedOptions => {
     if (options == null || typeof options !== 'object' || Array.isArray(options)) {
       throw new Error('experimental_subAgent() options must be an object when provided.');
     }
@@ -544,29 +502,31 @@ export const installRunHelpers = async ({
         'experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.'
       );
     }
-    const inputSchema = (options.schema ?? options.jsonSchema) as StructuredSchemaInput | undefined;
+    const requestedTarget = options.target;
+    if (
+      requestedTarget !== undefined &&
+      requestedTarget !== 'claude' &&
+      requestedTarget !== 'codex' &&
+      requestedTarget !== 'user'
+    ) {
+      throw new Error(
+        'experimental_subAgent() target must be "claude", "codex", or "user" when provided.'
+      );
+    }
+    const inputSchema = options.schema ?? options.jsonSchema;
     let structuredSchema: Record<string, unknown> | undefined;
-    let zodSchema: StructuredSchemaInput | undefined;
+    let zodSchema: z.ZodType | undefined;
     if (inputSchema !== undefined) {
-      if (
-        typeof inputSchema === 'object' &&
-        inputSchema !== null &&
-        'safeParse' in inputSchema &&
-        typeof inputSchema.safeParse === 'function' &&
-        '_def' in inputSchema
-      ) {
+      if (inputSchema instanceof z.ZodType) {
         if (typeof z.toJSONSchema !== 'function') {
           throw new Error(
             'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
           );
         }
         zodSchema = inputSchema;
-        structuredSchema = z.toJSONSchema(inputSchema as never) as Record<string, unknown>;
-      } else if (
-        typeof inputSchema === 'object' &&
-        inputSchema !== null &&
-        !Array.isArray(inputSchema)
-      ) {
+        const generatedSchema = z.toJSONSchema(inputSchema);
+        structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
+      } else if (Predicate.isRecord(inputSchema)) {
         structuredSchema = inputSchema;
       } else {
         throw new Error(
@@ -574,7 +534,14 @@ export const installRunHelpers = async ({
         );
       }
     }
-    return { ...options, structuredSchema, zodSchema };
+    return {
+      ...(requestedTarget === undefined ? {} : { target: requestedTarget }),
+      ...(typeof options.model === 'string' ? { model: options.model } : {}),
+      ...(options.schema === undefined ? {} : { schema: options.schema }),
+      ...(options.jsonSchema === undefined ? {} : { jsonSchema: options.jsonSchema }),
+      ...(structuredSchema === undefined ? {} : { structuredSchema }),
+      ...(zodSchema === undefined ? {} : { zodSchema }),
+    };
   };
 
   const requireConsumerProxyContext = () => {
@@ -603,13 +570,11 @@ export const installRunHelpers = async ({
 
   const normalizeFetchHeaders = (headers: HeadersInit | undefined) => {
     if (!headers) return [];
-    return [...(new Headers(headers) as unknown as Iterable<[string, string]>)].map(
-      ([name, value]) => ({
-        name,
-        type: 'header',
-        value,
-      })
-    );
+    const normalized: Array<{ name: string; type: string; value: string }> = [];
+    new Headers(headers).forEach((value, name) => {
+      normalized.push({ name, type: 'header', value });
+    });
+    return normalized;
   };
 
   const normalizeFetchBody = async (body: unknown) => {
@@ -661,13 +626,16 @@ export const installRunHelpers = async ({
     const raw = await response.text();
     const parsed = parseJson(raw);
     if (!response.ok) {
+      const responseMessage = Predicate.isRecord(parsed) ? parsed.message : undefined;
+      const responseError = Predicate.isRecord(parsed) ? parsed.error : undefined;
       const detail =
         typeof parsed === 'string'
           ? parsed
-          : (((parsed as { message?: string; error?: string } | undefined)?.message ||
-              (parsed as { message?: string; error?: string } | undefined)?.error ||
-              raw.trim()) ??
-            undefined);
+          : typeof responseMessage === 'string'
+            ? responseMessage
+            : typeof responseError === 'string'
+              ? responseError
+              : raw.trim() || undefined;
       const error = new Error(
         `Composio proxy request failed with status ${response.status}${detail ? `: ${detail}` : ''}`
       );
@@ -681,15 +649,14 @@ export const installRunHelpers = async ({
     const cached = proxySessionCache.get(toolkit);
     if (cached) return cached;
     const auth = requireConsumerProxyContext();
-    const created = (await fetchComposioJson('/api/v3/tool_router/session', {
-      user_id: auth.userId,
-      manage_connections: { enable: false },
-      toolkits: { enable: [toolkit] },
-    })) as { session_id?: string };
-    const sessionId = created?.session_id;
-    if (typeof sessionId !== 'string' || sessionId.length === 0) {
-      throw new Error('Composio proxy session creation returned no session_id.');
-    }
+    const created = await Schema.decodeUnknownPromise(ProxySessionResponse)(
+      await fetchComposioJson('/api/v3/tool_router/session', {
+        user_id: auth.userId,
+        manage_connections: { enable: false },
+        toolkits: { enable: [toolkit] },
+      })
+    );
+    const sessionId = created.session_id;
     proxySessionCache.set(toolkit, sessionId);
     return sessionId;
   };
@@ -697,7 +664,7 @@ export const installRunHelpers = async ({
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
-    const env = {
+    const env: Record<string, string | undefined> = {
       ...process.env,
       ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
       ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
@@ -708,7 +675,7 @@ export const installRunHelpers = async ({
       ...(perfDebugEnabled ? { COMPOSIO_PERF_DEBUG: '1' } : {}),
       ...(toolDebugEnabled ? { COMPOSIO_TOOL_DEBUG: '1' } : {}),
     };
-    delete (env as Record<string, string | undefined>).BUN_BE_BUN;
+    delete env.BUN_BE_BUN;
     perfDebugLog('start', requestId, { cmd: args });
     const child = Bun.spawn({
       cmd: [...cliPrefix, ...args],
@@ -717,7 +684,7 @@ export const installRunHelpers = async ({
     });
     const stdout = child.stdout ? await new Response(child.stdout).text() : '';
     const stderr = child.stderr ? await new Response(child.stderr).text() : '';
-    const result = maybeLoadStoredCliResult(parseJson(stdout) as RunCliResult);
+    const result = maybeLoadStoredCliResult(parseJson(stdout));
     const exitCode = await child.exited;
     if (exitCode !== 0) {
       perfDebugLog('error', requestId, { exitCode, stderr: stderr.trim() || undefined });
@@ -756,7 +723,10 @@ export const installRunHelpers = async ({
     return result;
   };
 
-  runGlobals.search = async (query, options = {}) => {
+  const search = async (
+    query: string,
+    options: Record<string, unknown> = {}
+  ): Promise<RunCliResult> => {
     helperDebugLog('search.prepare', { query, options });
     const args = ['search', query];
     if (Array.isArray(options.toolkits) && options.toolkits.length > 0) {
@@ -770,7 +740,11 @@ export const installRunHelpers = async ({
     return runCliJson(args);
   };
 
-  runGlobals.execute = async (slug, data = {}, options = {}) => {
+  const execute = async (
+    slug: string,
+    data: unknown = {},
+    options: { account?: string } = {}
+  ): Promise<RunCliResult> => {
     helperDebugLog('execute.prepare', {
       slug,
       hasData: data !== undefined,
@@ -797,7 +771,7 @@ export const installRunHelpers = async ({
       }
     }
     const result = await runCliJson(args);
-    if (result && typeof result === 'object' && result.successful === false) {
+    if (Predicate.isRecord(result) && result.successful === false) {
       const message =
         typeof result.error === 'string' && result.error.trim().length > 0
           ? result.error.trim()
@@ -831,8 +805,7 @@ export const installRunHelpers = async ({
     try {
       const response = await invokeAcpSubAgent({
         prompt: prompt.trim(),
-        options:
-          normalizedOptions as import('src/services/run-subagent-shared').InvokeAgentNormalizedOptions,
+        options: normalizedOptions,
         master,
         target,
         allowedReadRoots: Array.isArray(helperContext.readAccessRoots)
@@ -851,8 +824,7 @@ export const installRunHelpers = async ({
       });
       const response = await invokeLegacySubAgent({
         prompt: prompt.trim(),
-        options:
-          normalizedOptions as import('src/services/run-subagent-shared').InvokeAgentNormalizedOptions,
+        options: normalizedOptions,
         master,
         target,
         helperDebugLog,
@@ -861,19 +833,11 @@ export const installRunHelpers = async ({
     }
   };
 
-  runGlobals.experimental_subAgent = experimentalSubAgentImpl;
-  Object.defineProperty(runGlobals.experimental_subAgent, 'schema', {
-    value: experimentalSubAgentSchema,
-  });
-  runGlobals.invokeAgent = experimentalSubAgentImpl;
-  Object.defineProperty(runGlobals.invokeAgent, 'schema', { value: experimentalSubAgentSchema });
+  Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
+  Reflect.set(globalThis, 'experimental_subAgent', experimentalSubAgentImpl);
+  Reflect.set(globalThis, 'invokeAgent', experimentalSubAgentImpl);
 
-  const toProxyResponse = async (result: {
-    readonly headers?: Record<string, string>;
-    readonly binary_data?: { readonly url?: string };
-    readonly data?: unknown;
-    readonly status?: number;
-  }) => {
+  const toProxyResponse = async (result: ProxyExecuteResponse) => {
     const headers = new Headers(result?.headers || {});
     if (result?.binary_data?.url) {
       const binaryResponse = await fetch(result.binary_data.url);
@@ -897,7 +861,7 @@ export const installRunHelpers = async ({
     return new Response(JSON.stringify(result.data), { status: result.status ?? 200, headers });
   };
 
-  runGlobals.proxy = async (toolkit: string) => {
+  const proxy = async (toolkit: string) => {
     const normalizedToolkit = normalizeProxyToolkit(toolkit);
     helperDebugLog('proxy.session', {
       toolkit: normalizedToolkit,
@@ -911,39 +875,35 @@ export const installRunHelpers = async ({
         method: request.method,
         endpoint: request.endpoint,
       });
-      const result = (await fetchComposioJson(
-        `/api/v3/tool_router/session/${sessionId}/proxy_execute`,
-        {
+      const result = await Schema.decodeUnknownPromise(ProxyExecuteResponse)(
+        await fetchComposioJson(`/api/v3/tool_router/session/${sessionId}/proxy_execute`, {
           toolkit_slug: normalizedToolkit,
           endpoint: request.endpoint,
           method: request.method,
           ...(request.body !== undefined ? { body: request.body } : {}),
           ...(request.parameters.length > 0
             ? {
-                parameters: request.parameters.map(
-                  (parameter: { name: string; type: string; value: string }) => ({
-                    name: parameter.name,
-                    type: parameter.type,
-                    value: String(parameter.value),
-                  })
-                ),
+                parameters: request.parameters.map(parameter => ({
+                  name: parameter.name,
+                  type: parameter.type,
+                  value: String(parameter.value),
+                })),
               }
             : {}),
-        }
-      )) as {
-        readonly headers?: Record<string, string>;
-        readonly binary_data?: { readonly url?: string };
-        readonly data?: unknown;
-        readonly status?: number;
-      };
+        })
+      );
       return toProxyResponse(result);
     };
     Object.defineProperty(proxyFetch, 'toolkit', { value: normalizedToolkit });
     return proxyFetch;
   };
-  Object.defineProperty(runGlobals.proxy, 'schema', { value: proxySchema });
+  Object.defineProperty(proxy, 'schema', { value: proxySchema });
 
-  Object.defineProperty(runGlobals, '__composioRunContext', {
+  Reflect.set(globalThis, 'search', search);
+  Reflect.set(globalThis, 'execute', execute);
+  Reflect.set(globalThis, 'proxy', proxy);
+
+  Object.defineProperty(globalThis, '__composioRunContext', {
     value: Object.freeze({
       outputDir: sharedRunOutputDir,
       logFilePath: sharedRunLogFilePath,
@@ -951,7 +911,7 @@ export const installRunHelpers = async ({
     configurable: true,
   });
 
-  Object.defineProperty(runGlobals, '__composioConsumerContext', {
+  Object.defineProperty(globalThis, '__composioConsumerContext', {
     value: helperContext,
     configurable: true,
   });

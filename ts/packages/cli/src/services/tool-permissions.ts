@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option, Schema } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import {
   detectNativeUiCallerAgent,
@@ -25,52 +25,97 @@ const ALLOW_FOR_DURATION_LABEL = '1 hr';
 const ALLOW_FOR_DURATION_MS = 60 * 60 * 1000;
 const NO_CONNECTED_ACCOUNT = '__none__';
 
-export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_per_session';
-export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
 export type PermissionApprovalStatus =
-  | 'always_approved'
-  | 'cached_approved'
-  | 'approved_once'
-  | 'approved_for_session';
+  'always_approved' | 'cached_approved' | 'approved_once' | 'approved_for_session';
 export type PermissionGateResult =
-  | { readonly approvalStatus: PermissionApprovalStatus }
-  | undefined;
+  { readonly approvalStatus: PermissionApprovalStatus } | undefined;
 
-export interface ToolRouterPermissionsConfig {
-  readonly default: PermissionDefaultMode;
-  readonly overrides?: Readonly<Record<string, PermissionOverrideState>>;
-}
+const PermissionDefaultModeLiteralSchema = Schema.Literal(
+  'allow_all',
+  'ask_every_call',
+  'ask_once_per_session'
+);
+const PermissionOverrideStateLiteralSchema = Schema.Literal(
+  'always_allow',
+  'always_deny',
+  'ask_once',
+  'ask_always'
+);
+const isPermissionDefaultMode = Schema.is(PermissionDefaultModeLiteralSchema);
+const isPermissionOverrideState = Schema.is(PermissionOverrideStateLiteralSchema);
 
-export interface ConsumerPermissionSnapshot {
-  readonly orgId: string;
-  readonly projectId: string;
-  readonly consumerUserId: string;
-  readonly enhancedControlsEnabled: boolean;
-  readonly permissions?: ToolRouterPermissionsConfig;
-  readonly connectedAccountIds: ReadonlyArray<string>;
-  readonly fetchedAt: number;
-}
+// The permissions API can add modes before every installed CLI has upgraded.
+// Preserve validation without failing open during that version-skew window:
+// unknown defaults and overrides decode to their interactive safe equivalents.
+const PermissionDefaultModeSchema = Schema.String.pipe(
+  Schema.transform(PermissionDefaultModeLiteralSchema, {
+    decode: value => (isPermissionDefaultMode(value) ? value : 'ask_every_call'),
+    encode: value => value,
+    strict: true,
+  })
+);
+const PermissionOverrideStateSchema = Schema.String.pipe(
+  Schema.transform(PermissionOverrideStateLiteralSchema, {
+    decode: value => (isPermissionOverrideState(value) ? value : 'ask_always'),
+    encode: value => value,
+    strict: true,
+  })
+);
+const ToolRouterPermissionsConfigSchema = Schema.Struct({
+  default: PermissionDefaultModeSchema,
+  overrides: Schema.optional(
+    Schema.Record({ key: Schema.String, value: PermissionOverrideStateSchema })
+  ),
+});
+export const decodeToolRouterPermissionsConfig = Schema.decodeUnknownOption(
+  ToolRouterPermissionsConfigSchema
+);
+const ConsumerPermissionSnapshotSchema = Schema.Struct({
+  orgId: Schema.String,
+  projectId: Schema.String,
+  consumerUserId: Schema.String,
+  enhancedControlsEnabled: Schema.Boolean,
+  permissions: Schema.optional(ToolRouterPermissionsConfigSchema),
+  connectedAccountIds: Schema.Array(Schema.String),
+  fetchedAt: Schema.Number,
+});
+const CachedAllowDecisionSchema = Schema.Struct({ expiresAt: Schema.Number });
+const CacheFileSchema = Schema.Struct({
+  entries: Schema.Record({ key: Schema.String, value: ConsumerPermissionSnapshotSchema }),
+  allowEntries: Schema.optional(
+    Schema.Record({
+      key: Schema.String,
+      value: CachedAllowDecisionSchema,
+    })
+  ),
+});
+const PermissionResolveResponseSchema = Schema.Struct({
+  experimental: Schema.optional(
+    Schema.Struct({ permissions: Schema.optional(ToolRouterPermissionsConfigSchema) })
+  ),
+});
+const ConsumerConfigResponseSchema = Schema.Struct({
+  enhanced_controls: Schema.optional(Schema.Boolean),
+  enhancedControls: Schema.optional(Schema.Boolean),
+});
 
-interface CachedAllowDecision {
-  readonly expiresAt: number;
-}
+export type PermissionDefaultMode = typeof PermissionDefaultModeSchema.Type;
+export type PermissionOverrideState = typeof PermissionOverrideStateSchema.Type;
+export type ToolRouterPermissionsConfig = typeof ToolRouterPermissionsConfigSchema.Type;
+export type ConsumerPermissionSnapshot = typeof ConsumerPermissionSnapshotSchema.Type;
+type CachedAllowDecision = typeof CachedAllowDecisionSchema.Type;
+type CacheFile = typeof CacheFileSchema.Type;
+type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
+const decodeCacheFile = Schema.decodeUnknownOption(Schema.parseJson(CacheFileSchema));
 
-interface CacheFile {
-  readonly entries: Readonly<Record<string, ConsumerPermissionSnapshot>>;
-  readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>>;
-}
-
-interface PermissionResolveResponse {
-  readonly experimental?: {
-    readonly permissions?: ToolRouterPermissionsConfig;
-  };
-}
-
-interface ConsumerConfigResponse {
-  readonly enhanced_controls?: boolean;
-  readonly enhancedControls?: boolean;
-}
+export class ToolPermissionDeniedError extends Data.TaggedError(
+  'services/ToolPermissionDeniedError'
+)<{
+  readonly toolSlug: string;
+  readonly deniedBy: 'permissions' | 'user';
+  readonly message: string;
+}> {}
 
 interface GateParams {
   readonly toolSlug: string;
@@ -106,9 +151,12 @@ const pruneAllowEntries = (
 const readCacheFile = async (): Promise<CacheFile> => {
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
-    const parsed = JSON.parse(raw) as CacheFile;
-    return parsed && typeof parsed === 'object' && parsed.entries
-      ? { entries: parsed.entries, allowEntries: pruneAllowEntries(parsed.allowEntries) }
+    const parsed = decodeCacheFile(raw);
+    return Option.isSome(parsed)
+      ? {
+          entries: parsed.value.entries,
+          allowEntries: pruneAllowEntries(parsed.value.allowEntries),
+        }
       : { entries: {} };
   } catch {
     return { entries: {} };
@@ -186,23 +234,26 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
-const fetchJson = async <T>({
-  baseURL,
-  apiKey,
-  orgId,
-  projectId,
-  path,
-  method = 'GET',
-  body,
-}: {
-  readonly baseURL: string;
-  readonly apiKey: string;
-  readonly orgId: string;
-  readonly projectId: string;
-  readonly path: string;
-  readonly method?: 'GET' | 'POST';
-  readonly body?: unknown;
-}): Promise<T> => {
+const fetchJson = async <A, I>(
+  responseSchema: Schema.Schema<A, I, never>,
+  {
+    baseURL,
+    apiKey,
+    orgId,
+    projectId,
+    path,
+    method = 'GET',
+    body,
+  }: {
+    readonly baseURL: string;
+    readonly apiKey: string;
+    readonly orgId: string;
+    readonly projectId: string;
+    readonly path: string;
+    readonly method?: 'GET' | 'POST';
+    readonly body?: unknown;
+  }
+): Promise<A> => {
   const response = await fetch(`${normalizeBaseUrl(baseURL)}${path}`, {
     method,
     redirect: 'error',
@@ -219,7 +270,8 @@ const fetchJson = async <T>({
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`);
   }
-  return (await response.json()) as T;
+  const responseBody: unknown = await response.json();
+  return Schema.decodeUnknownPromise(responseSchema)(responseBody);
 };
 
 export const refreshConsumerPermissionSnapshot = (params: {
@@ -235,7 +287,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
 
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
     const config = yield* Effect.tryPromise(() =>
-      fetchJson<ConsumerConfigResponse>({
+      fetchJson(ConsumerConfigResponseSchema, {
         baseURL: userContext.data.baseURL,
         apiKey,
         orgId: params.orgId,
@@ -255,7 +307,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     const permissions =
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise(() =>
-            fetchJson<PermissionResolveResponse>({
+            fetchJson(PermissionResolveResponseSchema, {
               baseURL: userContext.data.baseURL,
               apiKey,
               orgId: params.orgId,
@@ -329,7 +381,7 @@ export const getOrgEnhancedControlsStatus = (params: {
     if (!apiKey) return undefined;
 
     const config = yield* Effect.tryPromise(() =>
-      fetchJson<ConsumerConfigResponse>({
+      fetchJson(ConsumerConfigResponseSchema, {
         baseURL: userContext.data.baseURL,
         apiKey,
         orgId: params.orgId,
@@ -861,9 +913,11 @@ export const gateToolExecution = (params: GateParams) =>
       return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
     }
     if (state === 'always_deny') {
-      return yield* Effect.fail(
-        new Error(`Tool execution denied by permissions: ${params.toolSlug}`)
-      );
+      return yield* new ToolPermissionDeniedError({
+        toolSlug: params.toolSlug,
+        deniedBy: 'permissions',
+        message: `Tool execution denied by permissions: ${params.toolSlug}`,
+      });
     }
 
     const cacheKey = allowCacheKey(params);
@@ -882,7 +936,11 @@ export const gateToolExecution = (params: GateParams) =>
     );
 
     if (decision === 'deny') {
-      return yield* Effect.fail(new Error(`Tool execution denied by user: ${params.toolSlug}`));
+      return yield* new ToolPermissionDeniedError({
+        toolSlug: params.toolSlug,
+        deniedBy: 'user',
+        message: `Tool execution denied by user: ${params.toolSlug}`,
+      });
     }
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {

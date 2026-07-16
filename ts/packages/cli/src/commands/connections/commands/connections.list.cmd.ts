@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -13,6 +13,12 @@ import {
   getConnectedAccountPermissionGroup,
   getConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+
+class MissingConnectionsConsumerUserIdError extends Data.TaggedError(
+  'commands/MissingConnectionsConsumerUserIdError'
+)<{
+  readonly message: string;
+}> {}
 
 const toolkit = Options.text('toolkit').pipe(
   Options.withDescription('Filter by toolkit slug (e.g. "gmail")'),
@@ -32,7 +38,7 @@ const formatConnectionsJson = (
     Record<string, Array<{ status: string; alias?: string | null; word_id?: string | null }>>
   >((acc, item) => {
     const toolkit = item.toolkit.slug;
-    const includeAlias = toolkitCounts.get(toolkit)! > 1;
+    const includeAlias = (toolkitCounts.get(toolkit) ?? 0) > 1;
     const entry = {
       status: item.status,
       ...(includeAlias ? { alias: item.alias ?? null } : {}),
@@ -63,9 +69,9 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {
-      return yield* Effect.fail(
-        new Error('Missing consumer user id. Run `composio login` and try again.')
-      );
+      return yield* new MissingConnectionsConsumerUserIdError({
+        message: 'Missing consumer user id. Run `composio login` and try again.',
+      });
     }
 
     const client = yield* clientSingleton.getFor({

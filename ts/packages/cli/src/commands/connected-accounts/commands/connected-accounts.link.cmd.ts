@@ -1,5 +1,5 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option, Schedule } from 'effect';
+import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Data, Effect, Option, Schedule, Schema } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -25,6 +25,38 @@ import {
 } from 'src/services/connected-account-selection';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { ConnectedAccountItems } from 'src/models/connected-accounts';
+
+class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
+  readonly message: string;
+  readonly connectedAccountId: string;
+  readonly status: string;
+}> {}
+
+class MissingLinkUserIdError extends Data.TaggedError('commands/MissingLinkUserIdError')<{
+  readonly message: string;
+  readonly flow: 'list' | 'legacy' | 'tool-router';
+}> {}
+
+class ConnectedAccountsDecodeError extends Data.TaggedError(
+  'commands/ConnectedAccountsDecodeError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+
+const decodeConnectedAccountItems = (items: unknown) =>
+  Schema.decodeUnknown(ConnectedAccountItems)(items).pipe(
+    Effect.mapError(
+      cause =>
+        new ConnectedAccountsDecodeError({
+          message: 'The API returned invalid connected account data.',
+          cause,
+        })
+    )
+  );
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -53,9 +85,7 @@ const noWait = Options.boolean('no-wait').pipe(
 
 const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
-  Options.withDescription(
-    'Do not open the browser automatically; print the URL to open manually'
-  )
+  Options.withDescription('Do not open the browser automatically; print the URL to open manually')
 );
 
 const alias = Options.text('alias').pipe(
@@ -99,13 +129,11 @@ const waitForActiveConnection = (
   Effect.gen(function* () {
     yield* showRedirectUrl(ui, redirectUrl, { manual: noBrowser });
 
-    let urlSchemeValid = false;
-    try {
-      const parsed = new URL(redirectUrl);
-      urlSchemeValid = parsed.protocol === 'https:' || parsed.protocol === 'http:';
-    } catch {
-      // ignore
-    }
+    const parsedUrl = Option.liftThrowable((value: string) => new URL(value))(redirectUrl);
+    const urlSchemeValid = Option.exists(
+      parsedUrl,
+      parsed => parsed.protocol === 'https:' || parsed.protocol === 'http:'
+    );
 
     if (!urlSchemeValid) {
       yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
@@ -131,9 +159,11 @@ const waitForActiveConnection = (
           if (account.status === 'ACTIVE') {
             return account;
           }
-          return yield* Effect.fail(
-            new Error(`Connection status is still '${account.status}', waiting for 'ACTIVE'`)
-          );
+          return yield* new ConnectionPollingError({
+            message: `Connection status is still '${account.status}', waiting for 'ACTIVE'`,
+            connectedAccountId,
+            status: account.status,
+          });
         }),
         Schedule.exponential('0.3 seconds').pipe(
           Schedule.intersect(Schedule.recurs(15)),
@@ -251,7 +281,7 @@ const resolveNormalizedAliasOption = (alias: Option.Option<string>) =>
 
     const normalizedAlias = normalizeAlias(alias.value);
     if (normalizedAlias.length === 0) {
-      return yield* Effect.fail(new Error('`--alias` cannot be empty.'));
+      return yield* Effect.fail(invalidOptionValue('`--alias` cannot be empty.'));
     }
 
     return Option.some(normalizedAlias);
@@ -304,12 +334,12 @@ const ensureAliasForAdditionalAccount = (params: {
 }) =>
   Effect.gen(function* () {
     if (Option.isSome(params.alias)) {
-      return true as const;
+      return true;
     }
 
     const existingIds = new Set(params.existingAccounts.items.map(item => item.id));
     if (params.existingAccounts.items.length === 0 || existingIds.has(params.connectedAccountId)) {
-      return true as const;
+      return true;
     }
 
     yield* params.ui.log.error(
@@ -319,7 +349,7 @@ const ensureAliasForAdditionalAccount = (params: {
       formatExistingAccountLabels(params.existingAccounts.items),
       'Existing accounts'
     );
-    return false as const;
+    return false;
   });
 
 const resolveLinkUserId = (params: {
@@ -342,7 +372,8 @@ const resolveLinkUserId = (params: {
 }) =>
   Effect.gen(function* () {
     const resolvedProjectContext = yield* params.projectContext.resolve.pipe(
-      Effect.catchAll(() => Effect.succeed(Option.none()))
+      Effect.option,
+      Effect.map(Option.flatten)
     );
     const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
 
@@ -415,9 +446,10 @@ const handleListConnectedAccounts = (params: {
     });
 
     if (Option.isNone(resolvedUserId)) {
-      return yield* Effect.fail(
-        new Error('Missing user id. Provide --user-id or run composio dev init/login first.')
-      );
+      return yield* new MissingLinkUserIdError({
+        message: 'Missing user id. Provide --user-id or run composio dev init/login first.',
+        flow: 'list',
+      });
     }
 
     const accounts = yield* params.ui.withSpinner(
@@ -431,6 +463,7 @@ const handleListConnectedAccounts = (params: {
         })
       )
     );
+    const connectedAccounts = yield* decodeConnectedAccountItems(accounts.items);
 
     if (resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId) {
       yield* writeConsumerConnectedToolkitsCache({
@@ -438,17 +471,13 @@ const handleListConnectedAccounts = (params: {
         consumerUserId: resolvedProject.consumerUserId,
         toolkits: [toolkitSlug],
         toolRouterConnectedAccounts: {
-          connectedAccounts: resolveDefaultConnectedAccountsByToolkit(
-            accounts.items as Parameters<typeof resolveDefaultConnectedAccountsByToolkit>[0]
-          ),
-          availableConnectedAccounts: groupCachedConnectedAccountsByToolkit(
-            accounts.items as Parameters<typeof groupCachedConnectedAccountsByToolkit>[0]
-          ),
+          connectedAccounts: resolveDefaultConnectedAccountsByToolkit(connectedAccounts),
+          availableConnectedAccounts: groupCachedConnectedAccountsByToolkit(connectedAccounts),
         },
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.ignore);
     }
 
-    if (accounts.items.length === 0) {
+    if (connectedAccounts.length === 0) {
       yield* params.ui.log.warn(`No active connected accounts found for "${toolkitSlug}".`);
       yield* params.ui.output(
         JSON.stringify({ toolkit: toolkitSlug, items: [], total: 0 }, null, 2),
@@ -458,17 +487,15 @@ const handleListConnectedAccounts = (params: {
     }
 
     yield* params.ui.note(
-      formatConnectedAccountsTable(
-        accounts.items as Parameters<typeof formatConnectedAccountsTable>[0]
-      ),
+      formatConnectedAccountsTable(connectedAccounts),
       `${toolkitSlug}: connected accounts`
     );
     yield* params.ui.output(
       JSON.stringify(
         {
           toolkit: toolkitSlug,
-          total: accounts.items.length,
-          items: accounts.items,
+          total: connectedAccounts.length,
+          items: connectedAccounts,
         },
         null,
         2
@@ -505,7 +532,8 @@ const handleLegacyAuthConfigLink = (params: {
 }) =>
   Effect.gen(function* () {
     const resolvedProjectContext = yield* params.projectContext.resolve.pipe(
-      Effect.catchAll(() => Effect.succeed(Option.none()))
+      Effect.option,
+      Effect.map(Option.flatten)
     );
     const localTestUserId = Option.flatMap(resolvedProjectContext, keys => keys.testUserId);
     const globalTestUserId = params.userContext.data.testUserId;
@@ -515,11 +543,10 @@ const handleLegacyAuthConfigLink = (params: {
     });
 
     if (Option.isNone(resolvedUserId)) {
-      return yield* Effect.fail(
-        new Error(
-          'Missing user id. Provide --user-id or run composio dev init to set test_user_id.'
-        )
-      );
+      return yield* new MissingLinkUserIdError({
+        message: 'Missing user id. Provide --user-id or run composio dev init to set test_user_id.',
+        flow: 'legacy',
+      });
     }
     if (Option.isNone(params.projectName) && Option.isNone(resolvedProjectContext)) {
       yield* params.ui.log.error(
@@ -546,7 +573,7 @@ const handleLegacyAuthConfigLink = (params: {
       client,
       userId: resolvedUserId.value,
       authConfigId: params.authConfigId,
-    }).pipe(Effect.catchAll(() => Effect.succeed({ items: [] })));
+    });
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
@@ -647,7 +674,7 @@ const runConnectedAccountsLink = (params: {
     if (params.rootOnly) {
       if (Option.isSome(params.authConfig)) {
         return yield* Effect.fail(
-          new Error(
+          invalidOptionValue(
             'Top-level `composio link` is consumer-only and does not accept `--auth-config`. Use `composio dev connected-accounts link --auth-config ...` for developer-scoped usage.'
           )
         );
@@ -705,7 +732,8 @@ const runConnectedAccountsLink = (params: {
       return;
     }
 
-    const toolkitSlug = Option.getOrThrow(params.toolkit);
+    if (Option.isNone(params.toolkit)) return;
+    const toolkitSlug = params.toolkit.value;
     const resolvedProject = yield* resolveCommandProject({
       mode: 'consumer',
       projectName: params.rootOnly ? undefined : Option.getOrUndefined(params.projectName),
@@ -718,11 +746,11 @@ const runConnectedAccountsLink = (params: {
             onNone: () => userContext.data.testUserId,
           });
     if (Option.isNone(resolvedUserId)) {
-      return yield* Effect.fail(
-        new Error(
-          'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-        )
-      );
+      return yield* new MissingLinkUserIdError({
+        message:
+          'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+        flow: 'tool-router',
+      });
     }
     const client = yield* clientSingleton.getFor({
       orgId: resolvedProject.orgId,
@@ -732,7 +760,7 @@ const runConnectedAccountsLink = (params: {
       client,
       userId: resolvedUserId.value,
       toolkitSlug,
-    }).pipe(Effect.catchAll(() => Effect.succeed({ items: [] })));
+    });
 
     const linkOpt = yield* ui
       .withSpinner(
@@ -775,9 +803,7 @@ const runConnectedAccountsLink = (params: {
             return Option.none();
           })
         ),
-        Effect.tap(() =>
-          invalidateConsumerConnectedToolkitsCache().pipe(Effect.catchAll(() => Effect.void))
-        )
+        Effect.tap(() => invalidateConsumerConnectedToolkitsCache().pipe(Effect.ignore))
       );
 
     if (Option.isNone(linkOpt)) return;
@@ -823,7 +849,7 @@ const runConnectedAccountsLink = (params: {
           connectedAccountId: connAccountId,
           redirectUrl,
         },
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.ignore);
     } else {
       yield* waitForActiveConnection(ui, client, connAccountId, redirectUrl, params.noBrowser);
       yield* appendCliSessionHistory({
@@ -837,7 +863,7 @@ const runConnectedAccountsLink = (params: {
           connectedAccountId: connAccountId,
           redirectUrl,
         },
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.ignore);
     }
   });
 

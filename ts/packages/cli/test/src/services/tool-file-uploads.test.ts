@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
-import { uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
 // GMAIL_SEND_EMAIL whose attachment is uploaded from a local path.
@@ -22,6 +22,15 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it('ignores malformed composition branches without hiding valid schemas', () => {
+    expect(
+      schemaHasFileUploadable({
+        anyOf: ['not-a-schema', null, { file_uploadable: true }],
+      })
+    ).toBe(true);
+    expect(schemaHasFileUploadable({ anyOf: ['not-a-schema', null] })).toBe(false);
   });
 
   it('refuses to read/upload a path under a sensitive directory (~/.ssh/id_rsa)', async () => {

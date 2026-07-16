@@ -1,6 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
 import { isLocalToolkitSlug } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
+import { Data, Effect, Option } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -59,35 +60,17 @@ const human = Options.boolean('human').pipe(
   Options.withDescription('Show formatted human-readable search output')
 );
 
-type SearchToolSchema = {
-  tool_slug: string;
-  toolkit: string;
-  description?: string;
-  input_schema?: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
-};
+type SearchToolSchema = SessionSearchResponse.ToolSchemas;
+type SearchResultRecord = SessionSearchResponse.Result;
+type SearchResponseRecord = Pick<
+  SessionSearchResponse,
+  'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'
+>;
 
-type SearchResultRecord = {
-  use_case: string;
-  primary_tool_slugs: string[];
-  related_tool_slugs: string[];
-  recommended_plan_steps?: string[];
-  reference_workbench_snippets?: unknown;
-  plan_id?: string;
-};
-
-type ToolkitConnectionStatusRecord = {
-  toolkit: string;
-  has_active_connection: boolean;
-};
-
-type SearchResponseRecord = {
-  results: SearchResultRecord[];
-  toolkit_connection_statuses: ToolkitConnectionStatusRecord[];
-  tool_schemas: Record<string, SearchToolSchema>;
-  next_steps_guidance: string[];
-  error: string | null;
-};
+export class ToolsSearchInputError extends Data.TaggedError('commands/ToolsSearchInputError')<{
+  readonly reason: 'missing_query' | 'missing_user_id';
+  readonly message: string;
+}> {}
 
 const stripSearchResultMetadata = <
   T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
@@ -137,9 +120,9 @@ const collectToolsForResult = (params: {
       description: schema.description ?? '',
       tags: [],
       available_versions: [],
-      input_parameters: (schema.input_schema ?? {}) as Record<string, unknown>,
-      output_parameters: (schema.output_schema ?? {}) as Record<string, unknown>,
-    } as Tool);
+      input_parameters: schema.input_schema ?? {},
+      output_parameters: schema.output_schema ?? {},
+    });
 
     if (toolsList.length >= params.limit) break;
   }
@@ -195,7 +178,10 @@ const buildSearchJsonPayload = (params: {
       yield* Effect.forEach(primaryToolSlugs, slug =>
         Effect.gen(function* () {
           const definition = yield* getOrFetchToolInputDefinition(slug, params.projectScope);
-          return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] as const;
+          return [slug, toHomeRelativePath(cacheDir, definition.schemaPath)] satisfies readonly [
+            string,
+            string,
+          ];
         })
       )
     );
@@ -228,7 +214,7 @@ const buildSearchJsonPayload = (params: {
           'You can directly proceed with these steps without waiting for the user to ask. Link accounts first if needed, then execute tools.',
         steps: params.nextSteps,
       },
-    } as const;
+    };
   });
 
 const emitHumanSearchOutput = (params: {
@@ -313,7 +299,10 @@ const runToolsSearch = (params: {
     const emitJson = params.json || !emitHuman;
     const queries = params.query.map(q => q.trim()).filter(Boolean);
     if (queries.length === 0) {
-      return yield* Effect.fail(new Error('At least one query is required.'));
+      return yield* new ToolsSearchInputError({
+        reason: 'missing_query',
+        message: 'At least one query is required.',
+      });
     }
     const toolkitFilter = Option.getOrUndefined(params.toolkits);
     const toolkitList =
@@ -337,11 +326,11 @@ const runToolsSearch = (params: {
               onNone: () => userContext.data.testUserId,
             });
       if (Option.isNone(resolvedUserId)) {
-        return yield* Effect.fail(
-          new Error(
-            'Missing user id. Provide --user-id or run composio login to set global test_user_id.'
-          )
-        );
+        return yield* new ToolsSearchInputError({
+          reason: 'missing_user_id',
+          message:
+            'Missing user id. Provide --user-id or run composio login to set global test_user_id.',
+        });
       }
       const clientSingleton = yield* ComposioClientSingleton;
       const client = yield* clientSingleton.getFor({
@@ -435,9 +424,7 @@ const runToolsSearch = (params: {
         ? searchResponse.tool_schemas[firstSlug]
         : undefined;
     const firstToolkit = firstSchema?.toolkit;
-    const firstPayload = buildMinimalPayloadFromSchema(
-      (firstSchema?.input_schema ?? {}) as Record<string, unknown>
-    );
+    const firstPayload = buildMinimalPayloadFromSchema(firstSchema?.input_schema ?? {});
     const firstPayloadJson = JSON.stringify(firstPayload);
     const firstDataArg =
       Object.keys(firstPayload).length === 0 ? '-d "{}"' : `-d '${firstPayloadJson}'`;

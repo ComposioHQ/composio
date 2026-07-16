@@ -6,15 +6,11 @@ import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
 
-type CommandMismatchResult = {
-  _tag: string;
-  error: {
-    _tag: string;
-    value: {
-      _tag: string;
-      value: string;
-    };
-  };
+const getCommandMismatch = (value: unknown): ValidationError.CommandMismatch => {
+  if (!ValidationError.isValidationError(value) || !ValidationError.isCommandMismatch(value)) {
+    throw new Error('Expected a command mismatch');
+  }
+  return value;
 };
 
 describe('CLI: composio', () => {
@@ -28,15 +24,12 @@ describe('CLI: composio', () => {
         const args = ['--bar'];
 
         const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
-        const commandMismatch = result as CommandMismatchResult;
+        const commandMismatch = getCommandMismatch(result);
+        const message = HelpDoc.toAnsiText(commandMismatch.error);
 
-        expect(result).toEqual(expect.any(Object));
-        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
-        expect(commandMismatch.error._tag).toBe('Paragraph');
-        expect(commandMismatch.error.value._tag).toBe('Text');
-        expect(commandMismatch.error.value.value).toContain('Invalid subcommand for composio');
-        expect(commandMismatch.error.value.value).toContain("'generate'");
-        expect(commandMismatch.error.value.value).toContain("'orgs'");
+        expect(message).toContain('Invalid subcommand for composio');
+        expect(message).toContain("'generate'");
+        expect(message).toContain("'orgs'");
       })
     );
   });
@@ -47,18 +40,13 @@ describe('CLI: composio', () => {
         const args = ['tools', 'search', 'metabase', 'put'];
 
         const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
-        const commandMismatch = result as CommandMismatchResult;
+        const commandMismatch = getCommandMismatch(result);
+        const message = HelpDoc.toAnsiText(commandMismatch.error);
 
-        expect(result).toEqual(expect.any(Object));
-        expect(commandMismatch._tag).toBe(ValidationError.commandMismatch(HelpDoc.p(''))._tag);
-        expect(commandMismatch.error._tag).toBe('Paragraph');
-        expect(commandMismatch.error.value._tag).toBe('Text');
-        expect(commandMismatch.error.value.value).toContain(
-          'Invalid subcommand for composio tools'
-        );
-        expect(commandMismatch.error.value.value).toContain("'info'");
-        expect(commandMismatch.error.value.value).toContain("'list'");
-        expect(commandMismatch.error.value.value).not.toContain("'version'");
+        expect(message).toContain('Invalid subcommand for composio tools');
+        expect(message).toContain("'info'");
+        expect(message).toContain("'list'");
+        expect(message).not.toContain("'version'");
       })
     );
   });

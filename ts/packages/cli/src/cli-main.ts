@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, HashMap, Layer, Logger, Match, Option } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
@@ -168,9 +168,9 @@ const runWithTelemetry = Effect.gen(function* () {
   );
 });
 
-const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
-  switch (usage._tag) {
-    case 'Named': {
+const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>): void =>
+  Match.valueTags(usage, {
+    Named: usage => {
       if (Option.isSome(usage.acceptedValues)) {
         for (const name of usage.names) {
           if (name.startsWith('-')) {
@@ -178,25 +178,24 @@ const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) 
           }
         }
       }
-      return;
-    }
-    case 'Optional':
-    case 'Repeated': {
+    },
+    Optional: usage => {
       collectValueOptionNamesFromUsage(usage.usage, acc);
-      return;
-    }
-    case 'Alternation':
-    case 'Concat': {
+    },
+    Repeated: usage => {
+      collectValueOptionNamesFromUsage(usage.usage, acc);
+    },
+    Alternation: usage => {
       collectValueOptionNamesFromUsage(usage.left, acc);
       collectValueOptionNamesFromUsage(usage.right, acc);
-      return;
-    }
-    case 'Mixed':
-    case 'Empty': {
-      return;
-    }
-  }
-};
+    },
+    Concat: usage => {
+      collectValueOptionNamesFromUsage(usage.left, acc);
+      collectValueOptionNamesFromUsage(usage.right, acc);
+    },
+    Mixed: () => undefined,
+    Empty: () => undefined,
+  });
 
 const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand>) => {
   const names = new Set<string>();
@@ -279,7 +278,7 @@ showUpdateNotice.pipe(
         stripCwd: true,
       });
       const filteredErrors = captured.errors.filter(
-        error => error.errorType !== 'ToolExecutionError'
+        error => error.errorType !== 'ReportedToolExecutionError'
       );
       if (captured.interrupted || filteredErrors.length > 0) {
         const message = prettyPrintFromCapturedErrors(
@@ -311,6 +310,5 @@ showUpdateNotice.pipe(
   ),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  effect =>
-    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
+  BunRuntime.runMain({ teardown })
 );

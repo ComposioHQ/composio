@@ -3,6 +3,7 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { Option, Predicate, Schema } from 'effect';
 import {
   detectCliPlatform,
   ensureBundledBinaryExecutable,
@@ -28,10 +29,6 @@ export type NativeUiBinaryResolution =
       readonly _tag: 'unsupported';
       readonly platform: string;
     };
-
-interface NativeUiDecisionPayload {
-  readonly decision?: NativeUiPermissionDecision;
-}
 
 const hasEnvPrefix = (env: NodeJS.ProcessEnv, prefix: string): boolean =>
   Object.keys(env).some(key => key.startsWith(prefix));
@@ -112,9 +109,12 @@ export const resolveNativeUiBinary = (): NativeUiBinaryResolution => {
       };
 };
 
+const NativeUiDecisionPayloadSchema = Schema.parseJson(Schema.Struct({ decision: Schema.String }));
+
 const parseDecisionPayload = (raw: string): NativeUiPermissionDecision | undefined => {
-  const payload = JSON.parse(raw) as NativeUiDecisionPayload;
-  const decision = payload.decision;
+  const decision = Option.getOrUndefined(
+    Schema.decodeUnknownOption(NativeUiDecisionPayloadSchema)(raw)
+  )?.decision;
   return decision === 'allow_once' ||
     decision === 'allow_session' ||
     decision === 'deny' ||
@@ -129,7 +129,7 @@ export const requestNativeUiPermissionDecision = async (params: {
   readonly timeoutSeconds?: number;
 }): Promise<NativeUiPermissionDecision | undefined> => {
   const resolved = resolveNativeUiBinary();
-  if (resolved._tag !== 'found') return undefined;
+  if (!Predicate.isTagged(resolved, 'found')) return undefined;
 
   await ensureBundledBinaryExecutable(resolved.binaryPath);
 

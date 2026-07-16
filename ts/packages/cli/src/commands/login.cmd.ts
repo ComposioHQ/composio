@@ -1,7 +1,7 @@
 import path from 'node:path';
-import { Command, Options } from '@effect/cli';
+import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
-import { DateTime, Effect, Option, Schedule } from 'effect';
+import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {
   ComposioSessionRepository,
@@ -81,39 +81,38 @@ const LOGIN_POLL_INTERVAL_SECONDS = 5;
 const LOGIN_POLL_TIMEOUT_SECONDS = 10 * 60;
 const LOGIN_POLL_RETRIES = Math.ceil(LOGIN_POLL_TIMEOUT_SECONDS / LOGIN_POLL_INTERVAL_SECONDS);
 
-type PendingLoginSession = {
-  readonly key: string;
-  readonly loginUrl: string;
-  readonly expiresAt: string;
-  readonly cachedAt: string;
-};
+const PendingLoginSession = Schema.Struct({
+  key: Schema.String,
+  loginUrl: Schema.String,
+  expiresAt: Schema.String,
+  cachedAt: Schema.String,
+});
+type PendingLoginSession = Schema.Schema.Type<typeof PendingLoginSession>;
+
+class PendingLoginError extends Data.TaggedError('commands/PendingLoginError')<{
+  readonly message: string;
+  readonly reason: 'invalid' | 'missing' | 'expired';
+  readonly cause?: unknown;
+}> {}
+
+class LoginSessionError extends Data.TaggedError('commands/LoginSessionError')<{
+  readonly message: string;
+  readonly operation: 'load' | 'poll';
+  readonly status?: string;
+  readonly cause?: unknown;
+}> {}
+
+class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganizationError')<{
+  readonly message: string;
+  readonly requestedOrg: string;
+}> {}
+
+const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const pendingLoginPath = Effect.gen(function* () {
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, PENDING_LOGIN_FILE_NAME);
 });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const parsePendingLoginSession = (raw: string): PendingLoginSession => {
-  const parsed: unknown = JSON.parse(raw);
-  if (
-    !isRecord(parsed) ||
-    typeof parsed.key !== 'string' ||
-    typeof parsed.loginUrl !== 'string' ||
-    typeof parsed.expiresAt !== 'string' ||
-    typeof parsed.cachedAt !== 'string'
-  ) {
-    throw new Error('Pending login cache is invalid');
-  }
-  return {
-    key: parsed.key,
-    loginUrl: parsed.loginUrl,
-    expiresAt: parsed.expiresAt,
-    cachedAt: parsed.cachedAt,
-  };
-};
 
 const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>) =>
   Effect.gen(function* () {
@@ -129,7 +128,7 @@ const writePendingLoginSession = (session: Omit<PendingLoginSession, 'cachedAt'>
 const clearPendingLoginSession = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const filePath = yield* pendingLoginPath;
-  yield* fs.remove(filePath).pipe(Effect.catchAll(() => Effect.void));
+  yield* fs.remove(filePath).pipe(Effect.ignore);
 });
 
 const readPendingLoginSession = Effect.gen(function* () {
@@ -137,20 +136,30 @@ const readPendingLoginSession = Effect.gen(function* () {
   const filePath = yield* pendingLoginPath;
   const exists = yield* fs.exists(filePath);
   if (!exists) {
-    return yield* Effect.fail(
-      new Error('No pending login found. Run `composio login < /dev/null` first.')
-    );
+    return yield* new PendingLoginError({
+      message: 'No pending login found. Run `composio login < /dev/null` first.',
+      reason: 'missing',
+    });
   }
 
-  const session = yield* fs
-    .readFileString(filePath, 'utf8')
-    .pipe(Effect.map(parsePendingLoginSession));
+  const session = yield* fs.readFileString(filePath, 'utf8').pipe(
+    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(PendingLoginSession))),
+    Effect.mapError(
+      cause =>
+        new PendingLoginError({
+          message: 'Pending login cache is invalid',
+          reason: 'invalid',
+          cause,
+        })
+    )
+  );
   const cachedAt = Date.parse(session.cachedAt);
   if (!Number.isFinite(cachedAt) || Date.now() - cachedAt > PENDING_LOGIN_TTL_MS) {
     yield* clearPendingLoginSession;
-    return yield* Effect.fail(
-      new Error('Pending login expired. Run `composio login < /dev/null` again.')
-    );
+    return yield* new PendingLoginError({
+      message: 'Pending login expired. Run `composio login < /dev/null` again.',
+      reason: 'expired',
+    });
   }
 
   return session;
@@ -292,9 +301,10 @@ const resolveDirectLoginOrganization = (params: {
 
     if (!match) {
       yield* ui.log.error(`Organization "${requestedOrg}" was not found for this API key.`);
-      return yield* Effect.fail(
-        new Error('Invalid organization. Run `composio orgs list` to inspect available orgs.')
-      );
+      return yield* new InvalidOrganizationError({
+        message: 'Invalid organization. Run `composio orgs list` to inspect available orgs.',
+        requestedOrg,
+      });
     }
 
     return match;
@@ -435,17 +445,17 @@ const loginWithKey = (params: {
     const ctx = yield* ComposioUserContext;
     const client = yield* ComposioSessionRepository;
 
-    const getSessionEffect = client
-      .getSession({ id: params.key })
-      .pipe(
-        Effect.catchAll(() =>
-          Effect.fail(
-            new Error(
-              'Session not found or expired. Run `composio login --no-wait` to get a new session.'
-            )
-          )
-        )
-      );
+    const getSessionEffect = client.getSession({ id: params.key }).pipe(
+      Effect.mapError(
+        cause =>
+          new LoginSessionError({
+            message:
+              'Session not found or expired. Run `composio login --no-wait` to get a new session.',
+            operation: 'load',
+            cause,
+          })
+      )
+    );
 
     let linkedSession;
     if (params.noWait) {
@@ -453,7 +463,11 @@ const loginWithKey = (params: {
       if (session.status !== 'linked') {
         yield* ui.log.error('Login not complete. Open the URL and finish authentication.');
         yield* ui.log.info('Then run `composio login --key <key>` again.');
-        return yield* Effect.fail(new Error('Session not yet linked'));
+        return yield* new LoginSessionError({
+          message: 'Session not yet linked',
+          operation: 'poll',
+          status: session.status,
+        });
       }
       linkedSession = session;
     } else {
@@ -464,9 +478,11 @@ const loginWithKey = (params: {
             if (currentSession.status === 'linked') {
               return currentSession;
             }
-            return yield* Effect.fail(
-              new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-            );
+            return yield* new LoginSessionError({
+              message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+              operation: 'poll',
+              status: currentSession.status,
+            });
           }),
           Schedule.exponential('0.3 seconds').pipe(
             Schedule.intersect(Schedule.recurs(params.pollRetries ?? 15)),
@@ -494,7 +510,7 @@ const loginWithKey = (params: {
           Effect.catchAll(error =>
             Effect.gen(function* () {
               yield* Effect.logDebug('Failed to list organizations after login:', error);
-              return [] as ReadonlyArray<OrganizationSummary>;
+              return [];
             })
           )
         )
@@ -661,9 +677,11 @@ export const browserLogin = (params: {
           if (currentSession.status === 'linked') {
             return currentSession;
           }
-          return yield* Effect.fail(
-            new Error(`Session status is still '${currentSession.status}', waiting for 'linked'`)
-          );
+          return yield* new LoginSessionError({
+            message: `Session status is still '${currentSession.status}', waiting for 'linked'`,
+            operation: 'poll',
+            status: currentSession.status,
+          });
         }),
         Schedule.exponential('0.3 seconds').pipe(
           Schedule.intersect(Schedule.recurs(15)),
@@ -787,7 +805,9 @@ export const loginCmd = Command.make(
       }
 
       if (Option.isSome(key) && Option.isSome(userApiKey)) {
-        return yield* Effect.fail(new Error('Use either `--key` or `--user-api-key`, not both.'));
+        return yield* Effect.fail(
+          invalidOptionValue('Use either `--key` or `--user-api-key`, not both.')
+        );
       }
 
       if (
@@ -795,7 +815,7 @@ export const loginCmd = Command.make(
         (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey) || agent)
       ) {
         return yield* Effect.fail(
-          new Error(
+          invalidOptionValue(
             '`--poll` cannot be combined with browser, session, direct-login, or agent flags.'
           )
         );
@@ -803,17 +823,19 @@ export const loginCmd = Command.make(
 
       if (agent && (noBrowser || noWait || Option.isSome(key) || Option.isSome(userApiKey))) {
         return yield* Effect.fail(
-          new Error('`--agent` cannot be combined with browser, session, or direct-login flags.')
+          invalidOptionValue(
+            '`--agent` cannot be combined with browser, session, or direct-login flags.'
+          )
         );
       }
 
       if (Option.isSome(org) && Option.isNone(userApiKey)) {
-        return yield* Effect.fail(new Error('`--org` requires `--user-api-key`.'));
+        return yield* Effect.fail(invalidOptionValue('`--org` requires `--user-api-key`.'));
       }
 
       if (Option.isSome(userApiKey) && (noBrowser || noWait || Option.isSome(key))) {
         return yield* Effect.fail(
-          new Error(
+          invalidOptionValue(
             '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.'
           )
         );

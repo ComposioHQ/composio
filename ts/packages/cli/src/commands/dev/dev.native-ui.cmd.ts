@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Predicate } from 'effect';
 import { spawn } from 'node:child_process';
 import { ensureBundledBinaryExecutable } from '@composio/cli-local-tools';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -31,14 +31,14 @@ export const devNativeUiCmd = Command.make('native-ui', { title, message, detail
       const ui = yield* TerminalUI;
       const resolved = resolveNativeUiBinary();
 
-      if (resolved._tag === 'unsupported') {
+      if (Predicate.isTagged(resolved, 'unsupported')) {
         yield* ui.log.error(
           `The native UI sidecar is currently only available on macOS (detected ${resolved.platform}).`
         );
         return;
       }
 
-      if (resolved._tag === 'missing') {
+      if (Predicate.isTagged(resolved, 'missing')) {
         yield* ui.log.error('The native UI sidecar binary was not found.');
         yield* ui.log.step(
           `Build it with: pnpm --filter @composio/cli-local-tools build:composio-native-ui -- --target ${resolved.platform}`

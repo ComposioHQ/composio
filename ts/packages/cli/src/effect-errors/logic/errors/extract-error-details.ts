@@ -20,8 +20,8 @@ export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (isTaggedErrorWithCause) {
     return {
       isPlainString: false,
-      type: error._tag,
-      message: error.cause,
+      type: error.name,
+      message: error.message,
     };
   }
 
@@ -39,18 +39,22 @@ export const extractErrorDetails = (error: unknown): ErrorDetails => {
   if (isPlainObjectsWithTagAttribute) {
     return {
       isPlainString: false,
-      type: error._tag,
+      type: error['_tag'],
       message: error.message,
     };
   }
 
-  const isPlainObjectsWithToStringImpl =
-    hasProperty(error, 'toString') &&
-    isFunction(error.toString) &&
-    error.toString !== Object.prototype.toString &&
-    error.toString !== Array.prototype.toString;
-  if (isPlainObjectsWithToStringImpl) {
-    const message = (error as { toString: () => string }).toString();
+  if (hasProperty(error, 'toString')) {
+    const toString = error.toString;
+    const isPlainObjectsWithToStringImpl =
+      isFunction(toString) &&
+      toString !== Object.prototype.toString &&
+      toString !== Array.prototype.toString;
+    if (!isPlainObjectsWithToStringImpl) {
+      return { message: `Error: ${JSON.stringify(error)}`, isPlainString: false };
+    }
+
+    const message = String(toString.call(error));
     const maybeWithUnderlyingType = message.split(': ');
 
     if (maybeWithUnderlyingType.length > 1) {

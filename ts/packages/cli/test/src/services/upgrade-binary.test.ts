@@ -150,6 +150,36 @@ describe('UpgradeBinary', () => {
     }
   });
 
+  it('rejects structurally invalid tagged release JSON', async () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    try {
+      await withHttpServer(
+        (_req, res) => {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ tag_name: 42, assets: 'not-an-array' }));
+        },
+        async apiBaseUrl => {
+          const error = await runUpgrade([
+            ['GITHUB_API_BASE_URL', apiBaseUrl],
+            ['GITHUB_OWNER', 'test-owner'],
+            ['GITHUB_REPO', 'test-repo'],
+            ['GITHUB_TAG', 'v9.9.9'],
+          ]);
+
+          expect(error).toBeInstanceOf(UpgradeBinaryError);
+          if (!(error instanceof UpgradeBinaryError)) {
+            throw error;
+          }
+          expect(error.message).toBe('Failed to parse GitHub release JSON response');
+        }
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    }
+  });
+
   it('URL-encodes slash-containing tags in tagged release request path', async () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
     let receivedPath = '';

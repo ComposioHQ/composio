@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
+import { Predicate } from 'effect';
 import type { MasterKind } from 'src/services/master-detector';
 import {
   resolveRunCompanionAssetPath,
@@ -33,6 +34,94 @@ type LegacySetSessionModelConnection = {
     readonly modelId: string;
   }) => Promise<unknown>;
 };
+
+type AcpAdapterCommand = {
+  readonly cmd: readonly [string, ...ReadonlyArray<string>];
+  readonly env?: Readonly<Record<string, string>>;
+  readonly source: 'shipped' | 'bundled' | 'which' | 'npx';
+};
+
+const getLegacySetSessionModel = (
+  connection: unknown
+): LegacySetSessionModelConnection['unstable_setSessionModel'] => {
+  if (!Predicate.hasProperty(connection, 'unstable_setSessionModel')) {
+    return undefined;
+  }
+  const method = connection.unstable_setSessionModel;
+  return Predicate.isFunction(method) ? async params => method.call(connection, params) : undefined;
+};
+
+const writableStreamFromNode = (output: Writable): WritableStream<Uint8Array> =>
+  new WritableStream<Uint8Array>({
+    write: chunk =>
+      new Promise<void>((resolve, reject) => {
+        output.write(chunk, error => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      }),
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        const onError = (error: Error) => {
+          output.off('error', onError);
+          reject(error);
+        };
+        output.once('error', onError);
+        output.end(() => {
+          output.off('error', onError);
+          resolve();
+        });
+      }),
+    abort: reason => {
+      output.destroy(reason instanceof Error ? reason : undefined);
+    },
+  });
+
+export const readableStreamFromNode = (input: Readable): ReadableStream<Uint8Array> => {
+  let cleanup = () => undefined;
+
+  return new ReadableStream<Uint8Array>({
+    start: controller => {
+      const onData = (chunk: Buffer | string) => {
+        controller.enqueue(
+          typeof chunk === 'string' ? new TextEncoder().encode(chunk) : Uint8Array.from(chunk)
+        );
+        if ((controller.desiredSize ?? 1) <= 0) {
+          input.pause();
+        }
+      };
+      const onEnd = () => {
+        cleanup();
+        controller.close();
+      };
+      const onError = (error: Error) => {
+        cleanup();
+        controller.error(error);
+      };
+      cleanup = () => {
+        input.off('data', onData);
+        input.off('end', onEnd);
+        input.off('error', onError);
+      };
+      input.on('data', onData);
+      input.once('end', onEnd);
+      input.once('error', onError);
+    },
+    pull: () => {
+      input.resume();
+    },
+    cancel: reason => {
+      cleanup();
+      input.destroy(reason instanceof Error ? reason : undefined);
+    },
+  });
+};
+
+const ndJsonStreamFromNode = (output: Writable, input: Readable): acp.Stream =>
+  acp.ndJsonStream(writableStreamFromNode(output), readableStreamFromNode(input));
 
 const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null => {
   if (target === 'claude') {
@@ -70,13 +159,7 @@ const resolveInstalledAdapter = (target: InvokeAgentTarget): string | null => {
   }
 };
 
-export const resolveAcpAdapterCommand = (
-  target: InvokeAgentTarget
-): {
-  readonly cmd: ReadonlyArray<string>;
-  readonly env?: Readonly<Record<string, string>>;
-  readonly source: 'shipped' | 'bundled' | 'which' | 'npx';
-} => {
+export const resolveAcpAdapterCommand = (target: InvokeAgentTarget): AcpAdapterCommand => {
   const binary = target === 'claude' ? 'claude-code-acp' : 'codex-acp';
   const packageName =
     target === 'claude' ? '@zed-industries/claude-code-acp' : '@zed-industries/codex-acp';
@@ -494,7 +577,7 @@ const maybeReadStructuredOutputFromTool = ({
   }
 
   try {
-    const rawPayload = JSON.parse(fs.readFileSync(context.resultFilePath, 'utf8')) as unknown;
+    const rawPayload: unknown = JSON.parse(fs.readFileSync(context.resultFilePath, 'utf8'));
     const parsed = unwrapStructuredOutputToolPayload(rawPayload, options.structuredSchema);
     helperDebugLog('subAgent.acp.structured_output_tool_result', {
       resultFilePath: context.resultFilePath,
@@ -537,7 +620,7 @@ export const invokeAcpSubAgent = async ({
   });
 
   const { CLAUDECODE: _, ...childEnv } = process.env;
-  const child = spawn(resolved.cmd[0]!, resolved.cmd.slice(1), {
+  const child = spawn(resolved.cmd[0], resolved.cmd.slice(1), {
     cwd: process.cwd(),
     env: resolved.env
       ? {
@@ -569,10 +652,7 @@ export const invokeAcpSubAgent = async ({
   const client = new RunSubAgentClient(helperDebugLog, [
     ...new Set(allowedReadRoots.map(root => path.resolve(root))),
   ]);
-  const stream = acp.ndJsonStream(
-    Writable.toWeb(child.stdin) as unknown as WritableStream<Uint8Array>,
-    Readable.toWeb(child.stdout) as unknown as ReadableStream<Uint8Array>
-  );
+  const stream = ndJsonStreamFromNode(child.stdin, child.stdout);
   const connection = new acp.ClientSideConnection(() => client, stream);
 
   try {
@@ -613,8 +693,7 @@ export const invokeAcpSubAgent = async ({
     });
 
     if (typeof options.model === 'string' && options.model.trim().length > 0) {
-      const setSessionModel = (connection as LegacySetSessionModelConnection)
-        .unstable_setSessionModel;
+      const setSessionModel = getLegacySetSessionModel(connection);
       try {
         if (typeof setSessionModel !== 'function') {
           throw new Error('ACP session model selection is not supported by this connection');

@@ -1,7 +1,9 @@
+import { Readable } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BufferedChunkLogger,
   createStructuredOutputMcpContext,
+  readableStreamFromNode,
   resolveAcpAdapterCommand,
   selectPermissionOutcome,
 } from 'src/services/run-subagent-acp';
@@ -10,6 +12,27 @@ import { AcpInvokeError, isAcpInvokeError } from 'src/services/run-subagent-shar
 describe('run-subagent-acp', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('pauses a Node producer while the Web Stream queue is full', async () => {
+    const input = new Readable({ read: () => undefined });
+    const stream = readableStreamFromNode(input);
+
+    input.push(Buffer.from('first'));
+    input.push(Buffer.from('second'));
+    await new Promise<void>(resolve => setImmediate(resolve));
+
+    expect(input.isPaused()).toBe(true);
+
+    const reader = stream.getReader();
+    const first = await reader.read();
+    const second = await reader.read();
+
+    expect(new TextDecoder().decode(first.value)).toBe('first');
+    expect(new TextDecoder().decode(second.value)).toBe('second');
+
+    await reader.cancel();
+    expect(input.destroyed).toBe(true);
   });
 
   it('[Given] bundled adapter packages [Then] it resolves to the bundled path without npx', () => {
@@ -40,6 +63,16 @@ describe('run-subagent-acp', () => {
     };
 
     expect(isAcpInvokeError(error)).toBe(true);
+  });
+
+  it('[Given] an unknown ACP error code [Then] it is not admitted into the fallback union', () => {
+    const error = {
+      name: 'AcpInvokeError',
+      code: 'unexpected_failure',
+      message: 'boom',
+    };
+
+    expect(isAcpInvokeError(error)).toBe(false);
   });
 
   it('[Given] a cancelled ACP prompt [Then] it remains fallback-eligible', () => {

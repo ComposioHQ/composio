@@ -1,6 +1,9 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
+import { FileSystem } from '@effect/platform';
 import { ConfigProvider, Effect, Option } from 'effect';
+import path from 'node:path';
+import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { extendConfigProvider } from 'src/services/config';
 import * as composioClients from 'src/services/composio-clients';
 import {
@@ -177,6 +180,34 @@ describe('consumer short-term cache', () => {
       })
     );
   });
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] a malformed persisted cache [Then] cache reads fail closed',
+    it => {
+      it.scoped('ignores cache entries that do not match the persisted schema', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'consumer-short-term-cache.json'),
+            JSON.stringify({
+              'org_test:consumer-user-test': {
+                toolkits: 'github',
+                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+              },
+            })
+          );
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
 
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a full auth-config cache hit [Then] cache reads are toolkit-complete',

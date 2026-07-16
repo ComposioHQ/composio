@@ -20,7 +20,7 @@ const devMode = Options.choice('mode', ['on', 'off'] as const).pipe(
   Options.optional
 );
 
-const devSubcommands = [
+export const devSubcommands = [
   initCmd,
   devToolsCmd$Execute,
   triggersCmd$Listen,

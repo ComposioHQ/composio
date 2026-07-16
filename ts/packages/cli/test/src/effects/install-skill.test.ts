@@ -13,9 +13,11 @@ import {
   resolveSkillReleaseTag,
   resolveTargetSkillPath,
   SKILL_RELEASE_TAG_FILENAME,
+  SkillInstallError,
   type SkillReleaseChannel,
 } from 'src/effects/install-skill';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
+import { CliReleaseResolutionError } from 'src/effects/resolve-cli-release';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 
 const path = Effect.runSync(Effect.provide(Path.Path, Path.layer));
@@ -189,6 +191,53 @@ describe('install-skill', () => {
     }).pipe(Effect.runPromise);
 
     expect(tag).toBe(releaseTag);
+  });
+
+  it('fails with a typed decode error for malformed GitHub release lists', async () => {
+    await withHttpServer(
+      (_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ tag_name: '@composio/cli@0.3.0' }));
+      },
+      async apiBaseUrl => {
+        const error = await makeResolveEffect(
+          [
+            ['GITHUB_API_BASE_URL', apiBaseUrl],
+            ['GITHUB_OWNER', 'test-owner'],
+            ['GITHUB_REPO', 'test-repo'],
+          ],
+          { channel: 'stable' }
+        ).pipe(Effect.flip, Effect.runPromise);
+
+        expect(error).toBeInstanceOf(CliReleaseResolutionError);
+        if (error instanceof CliReleaseResolutionError) {
+          expect(error.reason).toBe('decode');
+          expect(error.cause).toBeDefined();
+        }
+      }
+    );
+  });
+
+  it('fails with a typed decode error for malformed skill release metadata', async () => {
+    await withHttpServer(
+      (_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ assets: [{ name: 'composio-skill.zip' }] }));
+      },
+      async apiBaseUrl => {
+        const home = tempy.temporaryDirectory();
+        const error = await makeInstallEffect(home, apiBaseUrl).pipe(
+          Effect.flip,
+          Effect.runPromise
+        );
+
+        expect(error).toBeInstanceOf(SkillInstallError);
+        if (error instanceof SkillInstallError) {
+          expect(error.phase).toBe('release');
+          expect(error.cause).toBeDefined();
+        }
+      }
+    );
   });
 
   it.each(TARGET_SCENARIOS)('installs over %s target', async (_description, prepareTarget) => {

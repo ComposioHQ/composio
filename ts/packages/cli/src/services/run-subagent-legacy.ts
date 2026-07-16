@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawn } from 'node:child_process';
+import { Predicate } from 'effect';
 import type { MasterKind } from 'src/services/master-detector';
 import {
   parseJson,
@@ -83,7 +84,7 @@ const invokeClaudeLegacy = async (
 
   const result = await runExternalCommandText(args, helperDebugLog);
   const parsed = parseJson(result.stdout.trim());
-  if (!parsed || typeof parsed !== 'object') {
+  if (!Predicate.isRecord(parsed)) {
     throw new Error('claude returned non-JSON output in experimental_subAgent().');
   }
 
@@ -91,13 +92,10 @@ const invokeClaudeLegacy = async (
     options.structuredSchema !== undefined
       ? {
           result: null,
-          structuredOutput: (parsed as { structured_output?: unknown }).structured_output ?? null,
+          structuredOutput: parsed.structured_output ?? null,
         }
       : {
-          result:
-            typeof (parsed as { result?: unknown }).result === 'string'
-              ? (parsed as { result: string }).result
-              : null,
+          result: typeof parsed.result === 'string' ? parsed.result : null,
           structuredOutput: null,
         };
 

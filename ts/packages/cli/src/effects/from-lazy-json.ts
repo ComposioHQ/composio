@@ -11,6 +11,7 @@ import {
   ConfigProvider,
   ConfigProviderPathPatch,
   HashSet,
+  Predicate,
 } from 'effect';
 import { JSONParse, JSONParseError } from 'src/effects/json';
 
@@ -106,7 +107,7 @@ export const configProviderFromLazyJson = (filePath: string) =>
 
     const pathNotFoundError = ConfigError.MissingData([], `Path ${filePath} not found`);
     const handlePlatformError = (error: PlatformError.PlatformError) =>
-      error._tag === 'SystemError' && error.reason === 'NotFound'
+      Predicate.isTagged(error, 'SystemError') && error.reason === 'NotFound'
         ? Effect.fail(pathNotFoundError)
         : Effect.fail(sourceError(error));
 

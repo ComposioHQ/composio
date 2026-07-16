@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Effect, Exit } from 'effect';
 import { afterEach, it, vi } from 'vitest';
 import {
   buildRunHelpersSource,
@@ -207,7 +207,7 @@ describe('CLI: composio run', () => {
     it.scoped('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
       Effect.gen(function* () {
         const exit = yield* cli(['run']).pipe(Effect.exit);
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
   });

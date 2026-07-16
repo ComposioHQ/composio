@@ -1,5 +1,5 @@
 import { Args, Command } from '@effect/cli';
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import { decodeConnectedAccountListWithFallback } from 'src/effects/decode-connected-account-list';
 import { requireAuth } from 'src/effects/require-auth';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -11,6 +11,12 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
+
+class MissingConnectionRemovalConsumerUserIdError extends Data.TaggedError(
+  'commands/MissingConnectionRemovalConsumerUserIdError'
+)<{
+  readonly message: string;
+}> {}
 
 const account = Args.text({ name: 'account' }).pipe(
   Args.withDescription('Connection selector: toolkit slug, alias, word_id, or connected account ID')
@@ -60,12 +66,14 @@ const resolveAccount = (params: {
   const idMatches = matches.filter(
     item => normalizeSelector(item.id) === normalizeSelector(params.selector)
   );
-  if (idMatches.length === 1) {
-    return idMatches[0]!;
+  const idMatch = idMatches[0];
+  if (idMatch && idMatches.length === 1) {
+    return idMatch;
   }
 
-  if (matches.length === 1) {
-    return matches[0]!;
+  const match = matches[0];
+  if (match && matches.length === 1) {
+    return match;
   }
 
   return {
@@ -89,9 +97,9 @@ export const connectionsCmd$Remove = Command.make('remove', { account }, ({ acco
 
     const consumerUserId = resolvedProject.consumerUserId;
     if (!consumerUserId) {
-      return yield* Effect.fail(
-        new Error('Missing consumer user id. Run `composio login` and try again.')
-      );
+      return yield* new MissingConnectionRemovalConsumerUserIdError({
+        message: 'Missing consumer user id. Run `composio login` and try again.',
+      });
     }
 
     const client = yield* clientSingleton.getFor({

@@ -205,6 +205,30 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(parsed.developer_dangerous_commands_enabled, undefined);
     }).pipe(Effect.provide(CliUserConfigTest));
   });
+
+  it.scoped('replaces malformed persisted config with safe defaults', () => {
+    const cwd = tempy.temporaryDirectory();
+    const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
+    fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
+    fs.writeFileSync(path.join(cwd, '.composio', 'config.json'), JSON.stringify(['not-an-object']));
+
+    const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
+    const CliUserConfigTest = Layer.provideMerge(
+      ComposioCliUserConfigLive,
+      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+    );
+
+    return Effect.gen(function* () {
+      const config = yield* ComposioCliUserConfig;
+      assertEquals(config.data.developerModeEnabled, true);
+      assertEquals(config.data.developerDangerousCommandsEnabled, false);
+      assertEquals(config.data.security, 'auto');
+
+      const persisted = fs.readFileSync(path.join(cwd, '.composio', 'config.json'), 'utf8');
+      assertEquals(Array.isArray(JSON.parse(persisted)), false);
+    }).pipe(Effect.provide(CliUserConfigTest));
+  });
+
   it.effect('resolves sync config path from COMPOSIO_CACHE_DIR when provided', () => {
     const cacheDir = tempy.temporaryDirectory();
     process.env.COMPOSIO_CACHE_DIR = cacheDir;

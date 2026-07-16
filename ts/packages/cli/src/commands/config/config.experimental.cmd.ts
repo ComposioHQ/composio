@@ -1,4 +1,4 @@
-import { Command, Args } from '@effect/cli';
+import { Args, Command, HelpDoc, ValidationError } from '@effect/cli';
 import { Effect, Option } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -8,7 +8,7 @@ import { discoverSkillRoots } from 'src/effects/discover-skill-roots';
 import { buildComposioCliSkill } from '../../../skills-src/composio-cli/index';
 import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/reference-schema';
 
-const knownFeatures: readonly string[] = Object.values(CLI_EXPERIMENTAL_FEATURES);
+const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
 
 const featureArg = Args.text({ name: 'feature' }).pipe(
   Args.withDescription(`Experimental feature name. Known features: ${knownFeatures.join(', ')}`),
@@ -29,7 +29,7 @@ const rebuildSkill = Effect.gen(function* () {
   // Build the feature overrides from the current config
   const featureOverrides: Partial<Record<SkillFeatureFlag, boolean>> = {};
   for (const name of knownFeatures) {
-    featureOverrides[name as SkillFeatureFlag] = cliConfig.isExperimentalFeatureEnabled(name);
+    featureOverrides[name] = cliConfig.isExperimentalFeatureEnabled(name);
   }
 
   const roots = yield* discoverSkillRoots(home);
@@ -71,7 +71,7 @@ export const configExperimentalCmd = Command.make(
 
         // Show any custom features not in the known list
         for (const [name, value] of Object.entries(features)) {
-          if (!knownFeatures.includes(name)) {
+          if (!knownFeatures.some(feature => feature === name)) {
             lines.push(`  ${name}: ${value ? 'on' : 'off'}`);
           }
         }
@@ -98,7 +98,9 @@ export const configExperimentalCmd = Command.make(
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
         yield* ui.log.error(`Invalid state "${state.value}". Use "on" or "off".`);
-        return yield* Effect.fail(new Error(`Invalid state: ${state.value}`));
+        return yield* Effect.fail(
+          ValidationError.invalidValue(HelpDoc.p(`Invalid state: ${state.value}`))
+        );
       }
 
       const enabled = stateValue === 'on';
@@ -113,12 +115,13 @@ export const configExperimentalCmd = Command.make(
 
       // Rebuild the skill so Claude Code picks up the new feature flags
       yield* rebuildSkill.pipe(
-        Effect.catchAll(error =>
-          Effect.gen(function* () {
-            yield* Effect.logDebug('Skill rebuild failed:', error);
-            yield* ui.log.warn('Could not rebuild skill (non-fatal)');
-          })
-        )
+        Effect.tapError(error =>
+          Effect.all([
+            Effect.logDebug('Skill rebuild failed:', error),
+            ui.log.warn('Could not rebuild skill (non-fatal)'),
+          ])
+        ),
+        Effect.ignore
       );
 
       yield* ui.output(stateValue);

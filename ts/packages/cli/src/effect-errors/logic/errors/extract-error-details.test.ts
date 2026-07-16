@@ -11,7 +11,7 @@ describe('extractErrorDetails function', () => {
     expect(result).toStrictEqual({ isPlainString: true, message: error });
   });
 
-  it('should handle errors with cause', () => {
+  it('should preserve the actionable message for tagged errors with a cause', () => {
     const _tag = 'MyError';
     const message = 'Oh no!';
     const cause = 'Some cause';
@@ -29,8 +29,8 @@ describe('extractErrorDetails function', () => {
 
     expect(result).toStrictEqual({
       isPlainString: false,
-      message: cause,
-      type: _tag,
+      message,
+      type: 'Error',
     });
   });
 
@@ -65,7 +65,7 @@ describe('extractErrorDetails function', () => {
     expect(result).toStrictEqual({
       isPlainString: false,
       message: error.message,
-      type: error._tag,
+      type: error['_tag'],
     });
   });
 
