@@ -47,11 +47,6 @@
       "count": 1
     }
   },
-  "ts/packages/cli/src/commands/logs-cmd/commands/logs.triggers.cmd.ts": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "ts/packages/cli/src/commands/proxy.cmd.ts": {
     "no-restricted-syntax": {
       "count": 1
