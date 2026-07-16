@@ -1,4 +1,4 @@
-import { Data, Effect, Schema } from 'effect';
+import { Data, Effect, Option, Schema } from 'effect';
 import { HttpClient, HttpClientResponse } from '@effect/platform';
 import { semverComparator } from 'src/effects/compare-semver';
 import type { CliReleaseChannel } from 'src/constants';
@@ -18,7 +18,11 @@ export const GitHubRelease = Schema.Struct({
 });
 export type GitHubRelease = typeof GitHubRelease.Type;
 
-const GitHubReleases = Schema.Array(GitHubRelease);
+// Decoded per element: the endpoint returns up to 100 releases spanning the
+// whole repo, and one deviant entry (a draft mid-upload with a null asset
+// URL) must not fail resolution for the well-formed CLI releases.
+const RawGitHubReleases = Schema.Array(Schema.Unknown);
+const decodeGitHubRelease = Schema.decodeUnknownOption(GitHubRelease);
 
 export class CliReleaseResolutionError extends Data.TaggedError(
   'effects/CliReleaseResolutionError'
@@ -117,7 +121,9 @@ export const fetchLatestCliRelease = ({
       );
     }
 
-    const releases = yield* HttpClientResponse.schemaBodyJson(GitHubReleases)(releaseResponse).pipe(
+    const rawReleases = yield* HttpClientResponse.schemaBodyJson(RawGitHubReleases)(
+      releaseResponse
+    ).pipe(
       Effect.mapError(
         cause =>
           new CliReleaseResolutionError({
@@ -127,6 +133,17 @@ export const fetchLatestCliRelease = ({
           })
       )
     );
+    const releases = rawReleases.flatMap(entry =>
+      Option.match(decodeGitHubRelease(entry), {
+        onNone: () => [],
+        onSome: release => [release],
+      })
+    );
+    if (releases.length < rawReleases.length) {
+      yield* Effect.logDebug(
+        `Skipped ${rawReleases.length - releases.length} malformed GitHub release entries.`
+      );
+    }
 
     const prerelease = channel === 'beta';
     const matchingReleases = releases.filter(
