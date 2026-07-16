@@ -1,5 +1,5 @@
 import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { Data, Effect, Option, Schedule, Schema } from 'effect';
+import { Data, Effect, Option, Schedule } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -25,7 +25,7 @@ import {
 } from 'src/services/connected-account-selection';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { ConnectedAccountItems } from 'src/models/connected-accounts';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
   readonly message: string;
@@ -46,17 +46,6 @@ class ConnectedAccountsDecodeError extends Data.TaggedError(
 }> {}
 
 const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
-
-const decodeConnectedAccountItems = (items: unknown) =>
-  Schema.decodeUnknown(ConnectedAccountItems)(items).pipe(
-    Effect.mapError(
-      cause =>
-        new ConnectedAccountsDecodeError({
-          message: 'The API returned invalid connected account data.',
-          cause,
-        })
-    )
-  );
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -463,7 +452,15 @@ const handleListConnectedAccounts = (params: {
         })
       )
     );
-    const connectedAccounts = yield* decodeConnectedAccountItems(accounts.items);
+    const connectedAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectedAccountsDecodeError({
+            message: 'The API returned invalid connected account data.',
+            cause,
+          })
+      )
+    );
 
     if (resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId) {
       yield* writeConsumerConnectedToolkitsCache({
@@ -573,7 +570,11 @@ const handleLegacyAuthConfigLink = (params: {
       client,
       userId: resolvedUserId.value,
       authConfigId: params.authConfigId,
-    });
+    }).pipe(
+      // Auxiliary fetch powering the --alias hint only: a transient list
+      // failure must not abort the link flow.
+      Effect.catchAll(() => Effect.succeed({ items: [] }))
+    );
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
@@ -760,7 +761,11 @@ const runConnectedAccountsLink = (params: {
       client,
       userId: resolvedUserId.value,
       toolkitSlug,
-    });
+    }).pipe(
+      // Auxiliary fetch powering the --alias hint only: a transient list
+      // failure must not abort the link flow.
+      Effect.catchAll(() => Effect.succeed({ items: [] }))
+    );
 
     const linkOpt = yield* ui
       .withSpinner(

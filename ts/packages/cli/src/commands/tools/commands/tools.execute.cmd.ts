@@ -67,7 +67,7 @@ import {
 import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { ConnectedAccountItems } from 'src/models/connected-accounts';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -996,9 +996,7 @@ const resolveExplicitConnectedAccount = (params: {
           cause,
         }),
     });
-    const selectableAccounts = yield* Schema.decodeUnknown(ConnectedAccountItems)(
-      accounts.items
-    ).pipe(
+    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
       Effect.mapError(
         cause =>
           new ToolExecutionError({

@@ -26,7 +26,7 @@ import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
-import { ConnectedAccountItems } from 'src/models/connected-accounts';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
 
@@ -169,7 +169,7 @@ const resolveConnectedAccountIdForTrigger = (params: {
           cause,
         }),
     });
-    const selectableAccounts = yield* Schema.decodeUnknown(ConnectedAccountItems)(
+    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(
       connectedAccounts.items
     ).pipe(
       Effect.mapError(
