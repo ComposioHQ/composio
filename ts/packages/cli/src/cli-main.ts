@@ -139,13 +139,34 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
-const commandTelemetryContext = createCliCommandTelemetryContext(
-  process.argv,
-  constants.APP_VERSION
-);
-if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
-  process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
-}
+const runWithTelemetry = Effect.gen(function* () {
+  const ui = yield* TerminalUI;
+  const terminal = yield* ui.capabilities;
+  const commandTelemetryContext = createCliCommandTelemetryContext(
+    process.argv,
+    constants.APP_VERSION,
+    terminal
+  );
+  if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
+    process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
+  }
+
+  return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
+    Effect.andThen(runWithArgs),
+    Effect.scoped,
+    Effect.mapError(error =>
+      ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
+    ),
+    Effect.tap(() =>
+      trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
+    ),
+    Effect.tapErrorCause(cause =>
+      trackCliEventEffect(
+        getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+      )
+    )
+  );
+});
 
 const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
   switch (usage._tag) {
@@ -197,18 +218,7 @@ const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand
 checkForUpdateInBackground();
 
 showUpdateNotice.pipe(
-  Effect.andThen(trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext))),
-  Effect.andThen(runWithArgs),
-  Effect.scoped,
-  Effect.mapError(error =>
-    ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
-  ),
-  Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
-  Effect.tapErrorCause(cause =>
-    trackCliEventEffect(
-      getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
-    )
-  ),
+  Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {
       const ui = yield* TerminalUI;

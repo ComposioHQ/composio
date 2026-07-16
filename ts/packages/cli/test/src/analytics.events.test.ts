@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createCliCodactFailureBody } from 'src/analytics/dispatch';
 import {
+  createCliCommandTelemetryContext,
+  getPrimaryLifecycleInvokedEvent,
   getToolExecuteFailedEvent,
   getToolExecuteToolNotFoundEvent,
   getToolExecuteValidationFailedEvent,
@@ -10,6 +12,20 @@ import {
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 
 describe('CLI analytics execute failure events', () => {
+  it('records terminal capabilities supplied by the terminal service', () => {
+    const context = createCliCommandTelemetryContext(['bun', 'composio'], '0.3.0', {
+      stdoutIsTTY: true,
+      stderrIsTTY: false,
+    });
+
+    const event = getPrimaryLifecycleInvokedEvent(context);
+
+    expect(event?.properties).toMatchObject({
+      stdout_is_tty: true,
+      stderr_is_tty: false,
+    });
+  });
+
   it('marks cached-schema validation failures as fast_fail', () => {
     const error = new ToolInputValidationError('GMAIL_SEND_EMAIL', '/tmp/schema.json', [
       'Unknown key "recipient"',
