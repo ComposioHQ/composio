@@ -99,6 +99,27 @@ const debug = Options.boolean('debug').pipe(
 const sanitizePathPart = (value: string): string =>
   value.replace(/[^A-Z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'unknown';
 
+const disableTemporaryTrigger = (params: {
+  client: RawComposioClient;
+  ui: TerminalUI;
+  slug: string;
+  triggerId: string;
+}) =>
+  Effect.tryPromise({
+    try: () =>
+      params.client.triggerInstances.manage.update(params.triggerId, { status: 'disable' }),
+    catch: cause =>
+      new ListenCommandError({
+        reason: 'disable_trigger',
+        message: `Failed to disable temporary trigger "${params.triggerId}": ${String(cause)}`,
+        slug: params.slug,
+        cause,
+      }),
+  }).pipe(
+    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.ignore
+  );
+
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
 
 const resolveParamsInput = (input: Option.Option<string>) =>
@@ -656,20 +677,16 @@ export const listenCmd = Command.make(
         created =>
           created === null
             ? Effect.void
-            : Effect.tryPromise({
-                try: () =>
-                  client.triggerInstances.manage.update(created.trigger_id, { status: 'disable' }),
-                catch: cause =>
-                  new ListenCommandError({
-                    reason: 'disable_trigger',
-                    message: `Failed to disable temporary trigger "${created.trigger_id}": ${String(cause)}`,
-                    slug,
-                    cause,
-                  }),
-              }).pipe(
-                Effect.tapError(error => ui.log.warn(error.message)),
-                Effect.ignore
-              )
+            : disableTemporaryTrigger({ client, ui, slug, triggerId: created.trigger_id })
+      ).pipe(
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+            );
+            process.exitCode = 1;
+          })
+        )
       );
     })
 ).pipe(
