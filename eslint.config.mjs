@@ -127,6 +127,12 @@ export default [
       'ts/examples/**/dist-worker/**',
       'scripts/**',
       '**/test/**',
+      // The CLI test sources are linted (unlike other packages' tests) so the
+      // @effect/vitest guardrail below is actually enforced. Fixtures and the
+      // test/__utils__ harness glue stay unlinted.
+      '!ts/packages/cli/test/**',
+      'ts/packages/cli/test/__fixtures__/**',
+      'ts/packages/cli/test/__utils__/**',
     ],
   },
   { files: ['ts/packages/**/*.ts', 'ts/examples/**/*.ts'] },
@@ -175,6 +181,33 @@ export default [
         },
       ],
       'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
+    },
+  },
+  {
+    // Tests exercise Effects through @effect/vitest (it.effect, it.scoped,
+    // it.live) so failures surface as typed Exits instead of thrown
+    // FiberFailures. The test/__utils__ harness glue (vitest setup files,
+    // TestLayer runner) is intentionally outside this glob: it is the one
+    // boundary allowed to run Effects directly.
+    files: ['ts/packages/cli/test/src/**/*.{ts,tsx}'],
+    rules: {
+      // Vitest suites are one long describe() block by design, and mock
+      // plumbing casts freely; the SUT's own types carry the safety.
+      'max-lines-per-function': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='Effect'][property.name=/^run/]",
+          message:
+            'Run Effects through @effect/vitest (it.effect, it.scoped, it.live) instead of Effect.run* in tests.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message:
+            'Tests must be deterministic: pin time with vi.setSystemTime / TestClock-relative fixtures, use crypto.randomUUID() for unique names.',
+        },
+      ],
     },
   },
   {

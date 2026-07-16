@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@effect/vitest';
 import { Cause, Data, Effect, Option } from 'effect';
 import { extractSpanAnnotation } from 'src/effect-errors/logic/errors/span-annotation';
 
@@ -10,33 +10,37 @@ const failureOf = <E>(cause: Cause.Cause<E>): E =>
   Option.getOrThrowWith(Cause.failureOption(cause), () => new Error('expected a failure cause'));
 
 describe('extractSpanAnnotation', () => {
-  it('recovers the ambient span from a runtime failure (canary for the effect/SpanAnnotation internal)', async () => {
-    const cause = await Effect.fail(new CanaryError({ message: 'boom' })).pipe(
-      Effect.withSpan('canary-span'),
-      Effect.sandbox,
-      Effect.flip,
-      Effect.runPromise
-    );
+  it.effect(
+    'recovers the ambient span from a runtime failure (canary for the effect/SpanAnnotation internal)',
+    () =>
+      Effect.gen(function* () {
+        const cause = yield* Effect.fail(new CanaryError({ message: 'boom' })).pipe(
+          Effect.withSpan('canary-span'),
+          Effect.sandbox,
+          Effect.flip
+        );
 
-    const span = extractSpanAnnotation(failureOf(cause));
+        const span = extractSpanAnnotation(failureOf(cause));
 
-    expect(span).toBeDefined();
-    expect(span?.name).toBe('canary-span');
-  });
+        expect(span).toBeDefined();
+        expect(span?.name).toBe('canary-span');
+      })
+  );
 
-  it('recovers the ambient span from a runtime defect', async () => {
-    const cause = await Effect.die(new Error('defect boom')).pipe(
-      Effect.withSpan('defect-span'),
-      Effect.sandbox,
-      Effect.flip,
-      Effect.runPromise
-    );
+  it.effect('recovers the ambient span from a runtime defect', () =>
+    Effect.gen(function* () {
+      const cause = yield* Effect.die(new Error('defect boom')).pipe(
+        Effect.withSpan('defect-span'),
+        Effect.sandbox,
+        Effect.flip
+      );
 
-    const defects = Cause.defects(cause);
-    const span = extractSpanAnnotation([...defects][0]);
+      const defects = Cause.defects(cause);
+      const span = extractSpanAnnotation([...defects][0]);
 
-    expect(span?.name).toBe('defect-span');
-  });
+      expect(span?.name).toBe('defect-span');
+    })
+  );
 
   it('returns undefined when the error carries no span annotation', () => {
     expect(extractSpanAnnotation(new CanaryError({ message: 'boom' }))).toBeUndefined();

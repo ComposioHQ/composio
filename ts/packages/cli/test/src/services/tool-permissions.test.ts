@@ -1,6 +1,6 @@
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
 import { Config, ConfigProvider, Effect, Layer, Option } from 'effect';
 import {
   decodeCacheFileTolerant,
@@ -11,6 +11,12 @@ import {
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 
+// Pinned wall clock for deterministic fixtures. The SUT reads the real
+// `Date.now()` (snapshot TTL, allow-decision expiry), so every timestamp
+// below is expressed relative to this instant.
+const PINNED_TIME = new Date('2026-01-01T00:00:00.000Z');
+const PINNED_NOW = PINNED_TIME.getTime();
+
 const snapshotFixture = (
   overrides: Partial<ConsumerPermissionSnapshot> = {}
 ): ConsumerPermissionSnapshot => ({
@@ -20,11 +26,22 @@ const snapshotFixture = (
   enhancedControlsEnabled: true,
   permissions: { default: 'allow_all', overrides: {} },
   connectedAccountIds: [],
-  fetchedAt: Date.now(),
+  fetchedAt: PINNED_NOW,
   ...overrides,
 });
 
 describe('tool permissions', () => {
+  beforeEach(() => {
+    // Fake ONLY `Date`: the SUT serializes cache writes on a promise queue,
+    // so real timers and microtasks must keep running.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(PINNED_TIME);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('maps forward-version permission modes to interactive safe defaults', () => {
     const decoded = decodeToolRouterPermissionsConfig({
       default: 'future_default_mode',
@@ -52,7 +69,7 @@ describe('tool permissions', () => {
         skewed: { ...good, fetchedAt: 'not-a-number' },
       },
       allowEntries: {
-        kept: { expiresAt: Date.now() + 60_000 },
+        kept: { expiresAt: PINNED_NOW + 60_000 },
         broken: { expiresAt: 'soon' },
       },
     });
@@ -135,7 +152,7 @@ describe('tool permissions', () => {
             },
           },
           connectedAccountIds: [],
-          fetchedAt: Date.now(),
+          fetchedAt: PINNED_NOW,
         },
       }).pipe(Effect.flip);
 
@@ -178,7 +195,8 @@ describe('tool permissions', () => {
         path.join(cacheDir, 'tool-permissions-cache.json'),
         JSON.stringify({
           entries: {},
-          allowEntries: { [allowKey]: { expiresAt: Date.now() + 60_000 } },
+          // Unexpired relative to the pinned clock the SUT's expiry check reads.
+          allowEntries: { [allowKey]: { expiresAt: PINNED_NOW + 60_000 } },
         })
       );
 

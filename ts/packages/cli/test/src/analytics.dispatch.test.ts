@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from '@effect/vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
@@ -79,15 +80,16 @@ describe('CLI analytics dispatch', () => {
     process.argv = [...originalArgv];
   });
 
-  it('reads configuration and the freshest current-directory session via platform services', () => {
-    const home = tempy.temporaryDirectory();
-    const cacheDir = tempy.temporaryDirectory();
-    const cwd = '/workspace/project';
-    vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
-    vi.stubEnv('COMPOSIO_BASE_URL', '');
+  it.effect(
+    'reads configuration and the freshest current-directory session via platform services',
+    () => {
+      const home = tempy.temporaryDirectory();
+      const cacheDir = tempy.temporaryDirectory();
+      const cwd = '/workspace/project';
+      vi.stubEnv('COMPOSIO_CACHE_DIR', cacheDir);
+      vi.stubEnv('COMPOSIO_BASE_URL', '');
 
-    return Effect.runPromise(
-      Effect.gen(function* () {
+      return Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const composioDir = path.join(home, '.composio');
@@ -103,7 +105,9 @@ describe('CLI analytics dispatch', () => {
               probablyMyCliSessionsByCwdHash: {
                 [cwdHash(cwd)]: {
                   id: 'cli_s_older',
-                  expiresAt: new Date(Date.now() + 30_000).toISOString(),
+                  // The TestClock sits at epoch 0, so these fixed instants are
+                  // deterministically 30s and 60s in the future.
+                  expiresAt: '1970-01-01T00:00:30.000Z',
                 },
               },
             },
@@ -111,7 +115,7 @@ describe('CLI analytics dispatch', () => {
               probablyMyCliSessionsByCwdHash: {
                 [cwdHash(cwd)]: {
                   id: 'cli_s_newer',
-                  expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                  expiresAt: '1970-01-01T00:01:00.000Z',
                 },
               },
             },
@@ -120,24 +124,22 @@ describe('CLI analytics dispatch', () => {
 
         expect(yield* readApiBaseUrl).toBe('https://backend.example.test');
         expect(yield* getCurrentCwdSessionId(cwd)).toBe('cli_s_newer');
-      }).pipe(Effect.provide(makePlatformLayer(home)))
-    );
-  });
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    }
+  );
 
-  it('ignores malformed worker payloads', () => {
+  it.effect('ignores malformed worker payloads', () => {
     const home = tempy.temporaryDirectory();
 
-    return Effect.runPromise(
-      runBackgroundWorkerFromArgv([
-        process.execPath,
-        'composio',
-        '__analytics-worker',
-        'not-base64',
-      ]).pipe(Effect.provide(makePlatformLayer(home)))
-    );
+    return runBackgroundWorkerFromArgv([
+      process.execPath,
+      'composio',
+      '__analytics-worker',
+      'not-base64',
+    ]).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it('delivers analytics worker payloads to the configured endpoint', () => {
+  it.effect('delivers analytics worker payloads to the configured endpoint', () => {
     const home = tempy.temporaryDirectory();
     const envelope = {
       event: 'cli_command_invoked',
@@ -161,14 +163,14 @@ describe('CLI analytics dispatch', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 204 }));
 
-    return Effect.runPromise(
-      runBackgroundWorkerFromArgv([
+    return Effect.gen(function* () {
+      yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__analytics-worker',
         encodedPayload,
-      ]).pipe(Effect.provide(makePlatformLayer(home)))
-    ).then(() => {
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
       expect(String(endpoint)).toBe('https://backend.example.test/api/v3/cli/analytics');
@@ -184,47 +186,45 @@ describe('CLI analytics dispatch', () => {
     });
   });
 
-  it('spawns a detached analytics worker with a decodable envelope', () => {
+  it.effect('spawns a detached analytics worker with a decodable envelope', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
     process.argv[1] = scriptPath;
 
-    return Effect.runPromise(
-      Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        yield* fs.writeFileString(scriptPath, '');
-        yield* trackCliEventEffect({
-          name: 'producer_event',
-          properties: { sample: 'value' },
-        });
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({
+        name: 'producer_event',
+        properties: { sample: 'value' },
+      });
 
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
-        const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
-          string,
-          string[],
-          { detached: boolean; stdio: unknown },
-        ];
-        expect(command).toBe(process.execPath);
-        expect(args.slice(0, 2)).toEqual([scriptPath, '__analytics-worker']);
-        expect(args).toHaveLength(3);
-        expect(decodeWorkerPayload(args[2]!)).toMatchObject({
-          event: 'producer_event',
-          properties: { cli_version: APP_VERSION, sample: 'value' },
-          source: 'cli',
-        });
-        expect(options).toMatchObject({
-          detached: true,
-          stdio: 'ignore',
-        });
-        expect(options).not.toHaveProperty('env');
-        expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
-        expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
-      }).pipe(Effect.provide(makePlatformLayer(home)))
-    );
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
+        string,
+        string[],
+        { detached: boolean; stdio: unknown },
+      ];
+      expect(command).toBe(process.execPath);
+      expect(args.slice(0, 2)).toEqual([scriptPath, '__analytics-worker']);
+      expect(args).toHaveLength(3);
+      expect(decodeWorkerPayload(args[2]!)).toMatchObject({
+        event: 'producer_event',
+        properties: { cli_version: APP_VERSION, sample: 'value' },
+        source: 'cli',
+      });
+      expect(options).toMatchObject({
+        detached: true,
+        stdio: 'ignore',
+      });
+      expect(options).not.toHaveProperty('env');
+      expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it('spawns a detached codact worker with a decodable failure body', () => {
+  it.effect('spawns a detached codact worker with a decodable failure body', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
@@ -232,95 +232,89 @@ describe('CLI analytics dispatch', () => {
     vi.stubEnv('COMPOSIO_CLI_PARENT_RUN_ID', 'run_parent');
     process.argv[1] = scriptPath;
 
-    return Effect.runPromise(
-      Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        yield* fs.writeFileString(scriptPath, '');
-        yield* trackCliCodactFailureEffect({
-          failureType: 'wrong_tool_input_param',
-          toolInfo: {
-            toolkit: 'github',
-            tool: { slug: 'GITHUB_CREATE_ISSUE', version: 'latest' },
-          },
-          ctx: { invalidKey: 'repo' },
-          requestId: 'req_producer',
-        });
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_input_param',
+        toolInfo: {
+          toolkit: 'github',
+          tool: { slug: 'GITHUB_CREATE_ISSUE', version: 'latest' },
+        },
+        ctx: { invalidKey: 'repo' },
+        requestId: 'req_producer',
+      });
 
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
-        const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
-          string,
-          string[],
-          { detached: boolean; stdio: unknown },
-        ];
-        expect(command).toBe(process.execPath);
-        expect(args.slice(0, 2)).toEqual([scriptPath, '__codact-failure-worker']);
-        expect(args).toHaveLength(3);
-        expect(decodeWorkerPayload(args[2]!)).toMatchObject({
-          failure_type: 'wrong_tool_input_param',
-          tool_info: {
-            toolkit: 'github',
-            tool: { slug: 'GITHUB_CREATE_ISSUE', version: 'latest' },
-          },
-          ctx: { invalidKey: 'repo' },
-          request_id: 'req_producer',
-          session: {
-            cli_version: APP_VERSION,
-            invocation_origin: 'agent',
-            parent_run_id: 'run_parent',
-            source: 'cli',
-          },
-        });
-        expect(options).toMatchObject({
-          detached: true,
-          stdio: 'ignore',
-        });
-        expect(options).not.toHaveProperty('env');
-        expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
-        expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
-      }).pipe(Effect.provide(makePlatformLayer(home)))
-    );
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
+        string,
+        string[],
+        { detached: boolean; stdio: unknown },
+      ];
+      expect(command).toBe(process.execPath);
+      expect(args.slice(0, 2)).toEqual([scriptPath, '__codact-failure-worker']);
+      expect(args).toHaveLength(3);
+      expect(decodeWorkerPayload(args[2]!)).toMatchObject({
+        failure_type: 'wrong_tool_input_param',
+        tool_info: {
+          toolkit: 'github',
+          tool: { slug: 'GITHUB_CREATE_ISSUE', version: 'latest' },
+        },
+        ctx: { invalidKey: 'repo' },
+        request_id: 'req_producer',
+        session: {
+          cli_version: APP_VERSION,
+          invocation_origin: 'agent',
+          parent_run_id: 'run_parent',
+          source: 'cli',
+        },
+      });
+      expect(options).toMatchObject({
+        detached: true,
+        stdio: 'ignore',
+      });
+      expect(options).not.toHaveProperty('env');
+      expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it('keeps both producer effects non-fatal when spawn throws', () => {
+  it.effect('keeps both producer effects non-fatal when spawn throws', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry();
     childProcessMocks.spawn.mockImplementation(() => {
       throw new Error('spawn failed');
     });
 
-    return Effect.runPromise(
-      Effect.gen(function* () {
-        yield* trackCliEventEffect({ name: 'producer_event' });
-        yield* trackCliCodactFailureEffect({
-          failureType: 'wrong_tool_slug',
-          ctx: { slug: 'MISSING_TOOL' },
-        });
+    return Effect.gen(function* () {
+      yield* trackCliEventEffect({ name: 'producer_event' });
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_slug',
+        ctx: { slug: 'MISSING_TOOL' },
+      });
 
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
-        expect(childProcessMocks.unref).not.toHaveBeenCalled();
-      }).pipe(Effect.provide(makePlatformLayer(home)))
-    );
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
+      expect(childProcessMocks.unref).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it('honors Effect boolean config when telemetry is disabled', () => {
+  it.effect('honors Effect boolean config when telemetry is disabled', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry();
     vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'yes');
 
-    return Effect.runPromise(
-      Effect.gen(function* () {
-        yield* trackCliEventEffect({ name: 'producer_event' });
-        yield* trackCliCodactFailureEffect({
-          failureType: 'wrong_tool_slug',
-          ctx: { slug: 'MISSING_TOOL' },
-        });
+    return Effect.gen(function* () {
+      yield* trackCliEventEffect({ name: 'producer_event' });
+      yield* trackCliCodactFailureEffect({
+        failureType: 'wrong_tool_slug',
+        ctx: { slug: 'MISSING_TOOL' },
+      });
 
-        expect(childProcessMocks.spawn).not.toHaveBeenCalled();
-      }).pipe(Effect.provide(makePlatformLayer(home)))
-    );
+      expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it('delivers codact worker failures with the user key and session body', () => {
+  it.effect('delivers codact worker failures with the user key and session body', () => {
     const home = tempy.temporaryDirectory();
     const failureBody = {
       failure_type: 'wrong_tool_input_param',
@@ -343,14 +337,14 @@ describe('CLI analytics dispatch', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 204 }));
 
-    return Effect.runPromise(
-      runBackgroundWorkerFromArgv([
+    return Effect.gen(function* () {
+      yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)))
-    ).then(() => {
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
       expect(String(endpoint)).toBe('https://backend.example.test/api/v3/cli/codact_failures');
@@ -367,26 +361,26 @@ describe('CLI analytics dispatch', () => {
     });
   });
 
-  it('ignores malformed codact worker payloads', () => {
+  it.effect('ignores malformed codact worker payloads', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry();
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 204 }));
 
-    return Effect.runPromise(
-      runBackgroundWorkerFromArgv([
+    return Effect.gen(function* () {
+      yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__codact-failure-worker',
         'not-base64',
-      ]).pipe(Effect.provide(makePlatformLayer(home)))
-    ).then(() => {
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
       expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 
-  it('skips codact worker delivery without a user key', () => {
+  it.effect('skips codact worker delivery without a user key', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry('');
     const fetchSpy = vi
@@ -398,14 +392,14 @@ describe('CLI analytics dispatch', () => {
       session: { source: 'cli' },
     };
 
-    return Effect.runPromise(
-      runBackgroundWorkerFromArgv([
+    return Effect.gen(function* () {
+      yield* runBackgroundWorkerFromArgv([
         process.execPath,
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)))
-    ).then(() => {
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
       expect(fetchSpy).not.toHaveBeenCalled();
     });
   });

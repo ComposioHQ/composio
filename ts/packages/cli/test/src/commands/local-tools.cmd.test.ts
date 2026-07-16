@@ -13,7 +13,7 @@ const withLocalToolsPath = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
       const previous = process.env.COMPOSIO_LOCAL_TOOLS_PATH;
       process.env.COMPOSIO_LOCAL_TOOLS_PATH = path.join(
         os.tmpdir(),
-        `composio-local-tools-${Date.now()}.json`
+        `composio-local-tools-${crypto.randomUUID()}.json`
       );
       return previous;
     }),

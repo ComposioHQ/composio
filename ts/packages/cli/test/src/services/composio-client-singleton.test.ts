@@ -1,7 +1,7 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer, Option } from 'effect';
+import { ConfigProvider, Effect, Layer } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -74,7 +74,7 @@ describe('ComposioClientSingleton headers', () => {
     vi.unstubAllEnvs();
   });
 
-  it('uses x-user-api-key and never x-api-key', async () => {
+  it.effect('uses x-user-api-key and never x-api-key', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
     const configMap = new Map([
@@ -83,7 +83,7 @@ describe('ComposioClientSingleton headers', () => {
       ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
     ]);
 
-    const program = Effect.gen(function* () {
+    return Effect.gen(function* () {
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
@@ -91,28 +91,29 @@ describe('ComposioClientSingleton headers', () => {
           .then(() => undefined)
           .catch(() => undefined)
       );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+
+      expect(headers.get('x-user-api-key')).toBe('uak_from_user_env');
+      expect(headers.has('x-api-key')).toBe(false);
+      expect(headers.get('x-framework')).toBe('cli');
+      expect(headers.get('x-source')).toBe('CLI');
+      expect(headers.get('x-runtime')).toBe('NODEJS');
+      expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
+      expect(headers.get('x-cli-session-id')).toBeNull();
     }).pipe(
       Effect.provide(
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
-
-    await Effect.runPromise(program);
-
-    expect(fetchSpy).toHaveBeenCalledOnce();
-    const [, init] = fetchSpy.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
-
-    expect(headers.get('x-user-api-key')).toBe('uak_from_user_env');
-    expect(headers.has('x-api-key')).toBe(false);
-    expect(headers.get('x-framework')).toBe('cli');
-    expect(headers.get('x-source')).toBe('CLI');
-    expect(headers.get('x-runtime')).toBe('NODEJS');
-    expect(headers.get('x-sdk-version')).toBe(APP_VERSION);
-    expect(headers.get('x-cli-session-id')).toBeNull();
   });
 
-  it('includes the current cwd CLI session ID', async () => {
+  // The session-id reader compares expiresAt against Clock.currentTimeMillis;
+  // the TestClock sits at epoch 0, so fixed instants around it are
+  // deterministically in the future or the past.
+  it.effect('includes the current cwd CLI session ID', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
     const configMap = new Map([
@@ -120,7 +121,7 @@ describe('ComposioClientSingleton headers', () => {
       ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
     ]);
 
-    const program = Effect.gen(function* () {
+    return Effect.gen(function* () {
       const path = yield* Path.Path;
       // The session-id reader resolves its cache dir from COMPOSIO_CACHE_DIR
       // (stubbed by the shared vitest setup) before falling back to homedir,
@@ -128,7 +129,7 @@ describe('ComposioClientSingleton headers', () => {
       vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_current',
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        expiresAt: '1970-01-01T00:01:00.000Z',
       });
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>
@@ -137,20 +138,18 @@ describe('ComposioClientSingleton headers', () => {
           .then(() => undefined)
           .catch(() => undefined)
       );
+
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.get('x-cli-session-id')).toBe('cli_s_current');
     }).pipe(
       Effect.provide(
         Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
-
-    await Effect.runPromise(program);
-
-    const [, init] = fetchSpy.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
-    expect(headers.get('x-cli-session-id')).toBe('cli_s_current');
   });
 
-  it('omits an expired cwd CLI session ID', async () => {
+  it.effect('omits an expired cwd CLI session ID', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
     const configMap = new Map([
@@ -158,12 +157,12 @@ describe('ComposioClientSingleton headers', () => {
       ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
     ]);
 
-    const program = Effect.gen(function* () {
+    return Effect.gen(function* () {
       const path = yield* Path.Path;
       vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_expired',
-        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+        expiresAt: '1969-12-31T23:59:00.000Z',
       });
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>
@@ -172,20 +171,18 @@ describe('ComposioClientSingleton headers', () => {
           .then(() => undefined)
           .catch(() => undefined)
       );
+
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+      expect(headers.get('x-cli-session-id')).toBeNull();
     }).pipe(
       Effect.provide(
         Layer.provideMerge(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
-
-    await Effect.runPromise(program);
-
-    const [, init] = fetchSpy.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
-    expect(headers.get('x-cli-session-id')).toBeNull();
   });
 
-  it('does not read COMPOSIO_API_KEY for user auth', async () => {
+  it.effect('does not read COMPOSIO_API_KEY for user auth', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
     const configMap = new Map([
@@ -193,7 +190,7 @@ describe('ComposioClientSingleton headers', () => {
       ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
     ]);
 
-    const program = Effect.gen(function* () {
+    return Effect.gen(function* () {
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
@@ -201,20 +198,18 @@ describe('ComposioClientSingleton headers', () => {
           .then(() => undefined)
           .catch(() => undefined)
       );
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [, init] = fetchSpy.mock.calls[0]!;
+      const headers = new Headers((init as RequestInit).headers);
+
+      expect(headers.get('x-user-api-key')).toBeNull();
+      expect(headers.has('x-api-key')).toBe(false);
+      expect(headers.get('x-source')).toBe('CLI');
     }).pipe(
       Effect.provide(
         Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
       )
     );
-
-    await Effect.runPromise(program);
-
-    expect(fetchSpy).toHaveBeenCalledOnce();
-    const [, init] = fetchSpy.mock.calls[0]!;
-    const headers = new Headers((init as RequestInit).headers);
-
-    expect(headers.get('x-user-api-key')).toBeNull();
-    expect(headers.has('x-api-key')).toBe(false);
-    expect(headers.get('x-source')).toBe('CLI');
   });
 });

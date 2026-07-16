@@ -1,10 +1,10 @@
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { describe, expect, it, vi } from '@effect/vitest';
 import { Config, ConfigProvider, Effect, Exit, Layer } from 'effect';
 import { FetchHttpClient, FileSystem, HttpClient, Path } from '@effect/platform';
 import type * as PlatformError from '@effect/platform/Error';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import * as tempy from 'tempy';
-import { withHttpServer } from 'test/__utils__/http-server';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 import {
   inferSkillReleaseChannel,
@@ -20,7 +20,6 @@ import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { CliReleaseResolutionError } from 'src/effects/resolve-cli-release';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 
-const path = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 const TEST_RELEASE_TAG = '@composio/cli@0.3.0-test';
 const TEST_SKILL_ZIP = Uint8Array.from(
   atob(
@@ -53,8 +52,43 @@ const makeInstallEffect = (home: string, apiBaseUrl: string) =>
     Effect.scoped
   );
 
-const withSkillRelease = (skillZip: Uint8Array, run: (apiBaseUrl: string) => Promise<void>) =>
-  withHttpServer((req, res) => {
+/**
+ * Spin up a local HTTP server on an ephemeral port as a scoped resource and
+ * return its base URL. Scope closure tears the server down.
+ */
+const startTestHttpServer = (handler: (req: IncomingMessage, res: ServerResponse) => void) =>
+  Effect.map(
+    Effect.acquireRelease(
+      Effect.promise(
+        () =>
+          new Promise<Server>((resolve, reject) => {
+            const server = createServer(handler);
+            server.once('error', reject);
+            server.listen({ port: 0, host: '127.0.0.1' }, () => {
+              server.off('error', reject);
+              resolve(server);
+            });
+          })
+      ),
+      server =>
+        Effect.promise(
+          () =>
+            new Promise<void>((resolve, reject) => {
+              server.close(error => (error ? reject(error) : resolve()));
+            })
+        )
+    ),
+    server => {
+      const address = server.address();
+      if (address === null || typeof address === 'string') {
+        throw new Error('Failed to bind test server to an ephemeral port');
+      }
+      return `http://127.0.0.1:${address.port}`;
+    }
+  );
+
+const startSkillReleaseServer = (skillZip: Uint8Array) =>
+  startTestHttpServer((req, res) => {
     if (req.url === '/skill.zip') {
       res.writeHead(200, { 'content-type': 'application/zip' });
       res.end(skillZip);
@@ -72,7 +106,17 @@ const withSkillRelease = (skillZip: Uint8Array, run: (apiBaseUrl: string) => Pro
         ],
       })
     );
-  }, run);
+  });
+
+/** Scoped stub of Bun.which that misses, so release resolution takes the HTTP path. */
+const stubBunWhichMiss = Effect.acquireRelease(
+  Effect.sync(() => vi.stubGlobal('Bun', { which: vi.fn(() => null) })),
+  () =>
+    Effect.sync(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    })
+);
 
 type TargetSetup = (
   fs: FileSystem.FileSystem,
@@ -156,264 +200,239 @@ describe('install-skill', () => {
     expect(() => resolveInstalledSkillName('..')).toThrow(/Invalid skill name/);
   });
 
-  it('resolves the agent-specific skill path', () => {
-    expect(
-      resolveTargetSkillPath({
-        home: '/tmp/test-home',
-        path,
-        skillName: 'composio-cli',
-        target: 'claude',
-      })
-    ).toBe('/tmp/test-home/.claude/skills/composio-cli');
-    expect(
-      resolveTargetSkillPath({
-        home: '/tmp/test-home',
-        path,
-        skillName: 'composio-cli',
-        target: 'codex',
-      })
-    ).toBe('/tmp/test-home/.codex/skills/composio-cli');
-    expect(
-      resolveTargetSkillPath({
-        home: '/tmp/test-home',
-        path,
-        skillName: 'composio-cli',
-        target: 'openclaw',
-      })
-    ).toBe('/tmp/test-home/.openclaw/skills/composio-cli');
-  });
+  it.effect('resolves the agent-specific skill path', () =>
+    Effect.gen(function* () {
+      const path = yield* Path.Path;
+      expect(
+        resolveTargetSkillPath({
+          home: '/tmp/test-home',
+          path,
+          skillName: 'composio-cli',
+          target: 'claude',
+        })
+      ).toBe('/tmp/test-home/.claude/skills/composio-cli');
+      expect(
+        resolveTargetSkillPath({
+          home: '/tmp/test-home',
+          path,
+          skillName: 'composio-cli',
+          target: 'codex',
+        })
+      ).toBe('/tmp/test-home/.codex/skills/composio-cli');
+      expect(
+        resolveTargetSkillPath({
+          home: '/tmp/test-home',
+          path,
+          skillName: 'composio-cli',
+          target: 'openclaw',
+        })
+      ).toBe('/tmp/test-home/.openclaw/skills/composio-cli');
+    }).pipe(Effect.provide(Path.layer))
+  );
 
-  it('prefers an explicit running release tag over channel discovery', async () => {
-    const releaseTag = '@composio/cli@0.3.0-beta.123';
-    const tag = await makeResolveEffect([], {
-      channel: 'stable',
-      releaseTag,
-    }).pipe(Effect.runPromise);
+  it.effect('prefers an explicit running release tag over channel discovery', () =>
+    Effect.gen(function* () {
+      const releaseTag = '@composio/cli@0.3.0-beta.123';
+      const tag = yield* makeResolveEffect([], {
+        channel: 'stable',
+        releaseTag,
+      });
 
-    expect(tag).toBe(releaseTag);
-  });
+      expect(tag).toBe(releaseTag);
+    })
+  );
 
-  it('fails with a typed decode error for malformed GitHub release lists', async () => {
-    await withHttpServer(
-      (_req, res) => {
+  it.scoped('fails with a typed decode error for malformed GitHub release lists', () =>
+    Effect.gen(function* () {
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ tag_name: '@composio/cli@0.3.0' }));
-      },
-      async apiBaseUrl => {
-        const error = await makeResolveEffect(
+      });
+
+      const error = yield* Effect.flip(
+        makeResolveEffect(
           [
             ['GITHUB_API_BASE_URL', apiBaseUrl],
             ['GITHUB_OWNER', 'test-owner'],
             ['GITHUB_REPO', 'test-repo'],
           ],
           { channel: 'stable' }
-        ).pipe(Effect.flip, Effect.runPromise);
+        )
+      );
 
-        expect(error).toBeInstanceOf(CliReleaseResolutionError);
-        if (error instanceof CliReleaseResolutionError) {
-          expect(error.reason).toBe('decode');
-          expect(error.cause).toBeDefined();
-        }
+      expect(error).toBeInstanceOf(CliReleaseResolutionError);
+      if (error instanceof CliReleaseResolutionError) {
+        expect(error.reason).toBe('decode');
+        expect(error.cause).toBeDefined();
       }
-    );
-  });
+    })
+  );
 
-  it('fails with a typed decode error for malformed skill release metadata', async () => {
-    await withHttpServer(
-      (_req, res) => {
+  it.scoped('fails with a typed decode error for malformed skill release metadata', () =>
+    Effect.gen(function* () {
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ assets: [{ name: 'composio-skill.zip' }] }));
-      },
-      async apiBaseUrl => {
-        const home = tempy.temporaryDirectory();
-        const error = await makeInstallEffect(home, apiBaseUrl).pipe(
-          Effect.flip,
-          Effect.runPromise
-        );
+      });
 
-        expect(error).toBeInstanceOf(SkillInstallError);
-        if (error instanceof SkillInstallError) {
-          expect(error.phase).toBe('release');
-          expect(error.cause).toBeDefined();
-        }
+      const home = tempy.temporaryDirectory();
+      const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
+
+      expect(error).toBeInstanceOf(SkillInstallError);
+      if (error instanceof SkillInstallError) {
+        expect(error.phase).toBe('release');
+        expect(error.cause).toBeDefined();
       }
-    );
-  });
+    })
+  );
 
-  it.each(TARGET_SCENARIOS)('installs over %s target', async (_description, prepareTarget) => {
-    await withSkillRelease(TEST_SKILL_ZIP, async apiBaseUrl => {
+  it.scoped.each(TARGET_SCENARIOS)('installs over %s target', ([, prepareTarget]) =>
+    Effect.gen(function* () {
+      const apiBaseUrl = yield* startSkillReleaseServer(TEST_SKILL_ZIP);
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const home = tempy.temporaryDirectory();
       const target = path.join(home, '.claude', 'skills', 'composio-cli');
       const canonicalSkill = path.join(home, '.agents', 'skills', 'composio-cli');
 
-      await Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        const platformPath = yield* Path.Path;
-        yield* prepareTarget(fs, platformPath, home, target);
-      }).pipe(Effect.provide(TestPlatform), Effect.runPromise);
+      yield* prepareTarget(fs, path, home, target);
 
-      await makeInstallEffect(home, apiBaseUrl).pipe(Effect.runPromise);
+      yield* makeInstallEffect(home, apiBaseUrl);
 
-      await Effect.gen(function* () {
-        const fs = yield* FileSystem.FileSystem;
-        const platformPath = yield* Path.Path;
-        expect(yield* fs.readFileString(platformPath.join(target, 'SKILL.md'))).toBe(
-          '# composio-cli\n'
-        );
-        expect(
-          yield* fs.readFileString(platformPath.join(canonicalSkill, SKILL_RELEASE_TAG_FILENAME))
-        ).toBe(`${TEST_RELEASE_TAG}\n`);
-        expect(yield* fs.readLink(target)).toBe(
-          platformPath.relative(platformPath.dirname(target), canonicalSkill)
-        );
-        expect(yield* fs.exists(platformPath.join(home, '.agents', '.tmp-skill-install'))).toBe(
-          false
-        );
-      }).pipe(Effect.provide(TestPlatform), Effect.runPromise);
-    });
-  });
+      expect(yield* fs.readFileString(path.join(target, 'SKILL.md'))).toBe('# composio-cli\n');
+      expect(yield* fs.readFileString(path.join(canonicalSkill, SKILL_RELEASE_TAG_FILENAME))).toBe(
+        `${TEST_RELEASE_TAG}\n`
+      );
+      expect(yield* fs.readLink(target)).toBe(path.relative(path.dirname(target), canonicalSkill));
+      expect(yield* fs.exists(path.join(home, '.agents', '.tmp-skill-install'))).toBe(false);
+    }).pipe(Effect.provide(TestPlatform))
+  );
 
-  it('removes the temporary install directory after extraction fails', async () => {
-    await withSkillRelease(new TextEncoder().encode('not a zip'), async apiBaseUrl => {
+  it.scoped('removes the temporary install directory after extraction fails', () =>
+    Effect.gen(function* () {
+      const apiBaseUrl = yield* startSkillReleaseServer(new TextEncoder().encode('not a zip'));
       const home = tempy.temporaryDirectory();
-      const exit = await makeInstallEffect(home, apiBaseUrl).pipe(Effect.exit, Effect.runPromise);
+      const exit = yield* Effect.exit(makeInstallEffect(home, apiBaseUrl));
 
       expect(Exit.isFailure(exit)).toBe(true);
-      expect(
-        await FileSystem.FileSystem.pipe(
-          Effect.flatMap(fs => fs.exists(path.join(home, '.agents', '.tmp-skill-install'))),
-          Effect.provide(TestPlatform),
-          Effect.runPromise
-        )
-      ).toBe(false);
-    });
-  });
 
-  it('resolves the latest stable release when the stable channel is requested', async () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      expect(yield* fs.exists(path.join(home, '.agents', '.tmp-skill-install'))).toBe(false);
+    }).pipe(Effect.provide(TestPlatform))
+  );
 
-    try {
-      await withHttpServer(
-        (_req, res) => {
-          res.writeHead(200, { 'content-type': 'application/json' });
-          res.end(
-            JSON.stringify([
-              {
-                tag_name: '@composio/cli@0.2.20-beta.2',
-                draft: false,
-                prerelease: true,
-                assets: [
-                  {
-                    name: 'composio-skill.zip',
-                    browser_download_url: 'http://127.0.0.1/beta-skill.zip',
-                  },
-                ],
-              },
-              {
-                tag_name: '@composio/cli@0.2.19',
-                draft: false,
-                prerelease: false,
-                assets: [
-                  {
-                    name: 'composio-skill.zip',
-                    browser_download_url: 'http://127.0.0.1/stable-skill.zip',
-                  },
-                ],
-              },
-              {
-                tag_name: '@composio/cli@0.2.20',
-                draft: false,
-                prerelease: false,
-                assets: [
-                  {
-                    name: 'composio-linux-x64.zip',
-                    browser_download_url: 'http://127.0.0.1/no-skill.zip',
-                  },
-                ],
-              },
-            ])
-          );
-        },
-        async apiBaseUrl => {
-          const tag = await makeResolveEffect(
-            [
-              ['GITHUB_API_BASE_URL', apiBaseUrl],
-              ['GITHUB_OWNER', 'test-owner'],
-              ['GITHUB_REPO', 'test-repo'],
-            ],
-            { channel: 'stable' }
-          ).pipe(Effect.runPromise);
+  it.scoped('resolves the latest stable release when the stable channel is requested', () =>
+    Effect.gen(function* () {
+      yield* stubBunWhichMiss;
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.20-beta.2',
+              draft: false,
+              prerelease: true,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/beta-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.19',
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/stable-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.20',
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-linux-x64.zip',
+                  browser_download_url: 'http://127.0.0.1/no-skill.zip',
+                },
+              ],
+            },
+          ])
+        );
+      });
 
-          expect(tag).toBe('@composio/cli@0.2.19');
-        }
+      const tag = yield* makeResolveEffect(
+        [
+          ['GITHUB_API_BASE_URL', apiBaseUrl],
+          ['GITHUB_OWNER', 'test-owner'],
+          ['GITHUB_REPO', 'test-repo'],
+        ],
+        { channel: 'stable' }
       );
-    } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
-    }
-  });
 
-  it('resolves the latest beta release when the beta channel is requested', async () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+      expect(tag).toBe('@composio/cli@0.2.19');
+    })
+  );
 
-    try {
-      await withHttpServer(
-        (_req, res) => {
-          res.writeHead(200, { 'content-type': 'application/json' });
-          res.end(
-            JSON.stringify([
-              {
-                tag_name: '@composio/cli@0.2.20-beta.1',
-                draft: false,
-                prerelease: true,
-                assets: [
-                  {
-                    name: 'composio-skill.zip',
-                    browser_download_url: 'http://127.0.0.1/beta-1-skill.zip',
-                  },
-                ],
-              },
-              {
-                tag_name: '@composio/cli@0.2.20-beta.3',
-                draft: false,
-                prerelease: true,
-                assets: [
-                  {
-                    name: 'composio-skill.zip',
-                    browser_download_url: 'http://127.0.0.1/beta-3-skill.zip',
-                  },
-                ],
-              },
-              {
-                tag_name: '@composio/cli@0.2.20',
-                draft: false,
-                prerelease: false,
-                assets: [
-                  {
-                    name: 'composio-skill.zip',
-                    browser_download_url: 'http://127.0.0.1/stable-skill.zip',
-                  },
-                ],
-              },
-            ])
-          );
-        },
-        async apiBaseUrl => {
-          const tag = await makeResolveEffect(
-            [
-              ['GITHUB_API_BASE_URL', apiBaseUrl],
-              ['GITHUB_OWNER', 'test-owner'],
-              ['GITHUB_REPO', 'test-repo'],
-            ],
-            { channel: 'beta' }
-          ).pipe(Effect.runPromise);
+  it.scoped('resolves the latest beta release when the beta channel is requested', () =>
+    Effect.gen(function* () {
+      yield* stubBunWhichMiss;
+      const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(
+          JSON.stringify([
+            {
+              tag_name: '@composio/cli@0.2.20-beta.1',
+              draft: false,
+              prerelease: true,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/beta-1-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.20-beta.3',
+              draft: false,
+              prerelease: true,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/beta-3-skill.zip',
+                },
+              ],
+            },
+            {
+              tag_name: '@composio/cli@0.2.20',
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'composio-skill.zip',
+                  browser_download_url: 'http://127.0.0.1/stable-skill.zip',
+                },
+              ],
+            },
+          ])
+        );
+      });
 
-          expect(tag).toBe('@composio/cli@0.2.20-beta.3');
-        }
+      const tag = yield* makeResolveEffect(
+        [
+          ['GITHUB_API_BASE_URL', apiBaseUrl],
+          ['GITHUB_OWNER', 'test-owner'],
+          ['GITHUB_REPO', 'test-repo'],
+        ],
+        { channel: 'beta' }
       );
-    } finally {
-      vi.unstubAllGlobals();
-      vi.restoreAllMocks();
-    }
-  });
+
+      expect(tag).toBe('@composio/cli@0.2.20-beta.3');
+    })
+  );
 });

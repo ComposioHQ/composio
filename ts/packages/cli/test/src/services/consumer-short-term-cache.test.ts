@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { vi, afterEach } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
 import { FileSystem } from '@effect/platform';
 import { ConfigProvider, Effect, Option } from 'effect';
 import path from 'node:path';
@@ -29,8 +29,20 @@ const cacheEnabledTestConfigProvider = makeTestConfigProvider([
   ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false'],
 ]);
 
+// Instant the wall clock is pinned to; fixture expiresAt values below are
+// written relative to it so freshness checks in the SUT stay deterministic.
+const PINNED_NOW = '2026-01-01T00:00:00.000Z';
+const ONE_MINUTE_FROM_PINNED_NOW = '2026-01-01T00:01:00.000Z';
+
 describe('consumer short-term cache', () => {
+  beforeEach(() => {
+    // Fake ONLY Date so real timers and promise scheduling keep working.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(PINNED_NOW));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -193,7 +205,7 @@ describe('consumer short-term cache', () => {
             JSON.stringify({
               'org_test:consumer-user-test': {
                 toolkits: 'github',
-                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
               },
             })
           );
@@ -222,7 +234,7 @@ describe('consumer short-term cache', () => {
               'org_bad:consumer-user-bad': { toolkits: 'not-an-array', expiresAt: 42 },
               'org_test:consumer-user-test': {
                 toolkits: ['github'],
-                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
               },
             })
           );

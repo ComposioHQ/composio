@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from '@effect/vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -153,82 +153,111 @@ describe('showUpdateNotice', () => {
     output = [];
   });
 
-  it('does nothing when no state file exists', () => {
-    const { showUpdateNotice } = createUpdateChecker(makeConfig());
+  it.effect('does nothing when no state file exists', () =>
+    Effect.gen(function* () {
+      const { showUpdateNotice } = createUpdateChecker(makeConfig());
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 
-  it('does nothing when cached version equals current version', () => {
-    const config = makeConfig({ currentVersion: '0.2.0' });
-    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('does nothing when cached version equals current version', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 
-  it('does nothing when cached version is older than current', () => {
-    const config = makeConfig({ currentVersion: '0.3.0' });
-    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('does nothing when cached version is older than current', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.3.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 
-  it('prints upgrade hint when cached version is newer', () => {
-    const config = makeConfig({ currentVersion: '0.2.0' });
-    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('prints upgrade hint when cached version is newer', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toHaveLength(1);
-    expect(output[0]).toContain('Update available');
-    expect(output[0]).toContain('0.3.0');
-    expect(output[0]).toContain('composio upgrade');
-  });
+      expect(output).toHaveLength(1);
+      expect(output[0]).toContain('Update available');
+      expect(output[0]).toContain('0.3.0');
+      expect(output[0]).toContain('composio upgrade');
+    })
+  );
 
-  it('does not print upgrade hint in non-interactive environments', () => {
-    const config = makeConfig({ currentVersion: '0.2.0' });
-    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('does not print upgrade hint in non-interactive environments', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output, false)));
+      yield* showUpdateNotice(makeTerminal(output, false));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 
-  it('silently ignores corrupt state file', () => {
-    const config = makeConfig();
-    mkdirSync(dirname(config.stateFile), { recursive: true });
-    writeFileSync(config.stateFile, 'not-json!!!');
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('silently ignores corrupt state file', () =>
+    Effect.gen(function* () {
+      const config = makeConfig();
+      mkdirSync(dirname(config.stateFile), { recursive: true });
+      writeFileSync(config.stateFile, 'not-json!!!');
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 
-  it('does nothing when cached version is not valid semver', () => {
-    const config = makeConfig({ currentVersion: '0.2.0' });
-    writeState(config, { lastChecked: new Date().toISOString(), latestVersion: 'not-semver' });
-    const { showUpdateNotice } = createUpdateChecker(config);
+  it.effect('does nothing when cached version is not valid semver', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: 'not-semver' });
+      const { showUpdateNotice } = createUpdateChecker(config);
 
-    Effect.runSync(showUpdateNotice(makeTerminal(output)));
+      yield* showUpdateNotice(makeTerminal(output));
 
-    expect(output).toEqual([]);
-  });
+      expect(output).toEqual([]);
+    })
+  );
 });
 
 // ── checkForUpdate ──────────────────────────────────────────────────────
 
 describe('checkForUpdate', () => {
+  // Pin the wall clock so the throttle math in checkForUpdate is deterministic.
+  // Only Date is faked: the SUT drives fire-and-forget promise chains, which
+  // need real timers/microtasks to settle.
+  const pinnedNow = new Date('2026-01-01T00:00:00.000Z');
+  const staleLastChecked = '2025-12-30T23:00:00.000Z'; // 25 hours before pinnedNow
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(pinnedNow);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('skips fetch when cache is fresh', () => {
     const fetchFn = vi.fn();
     const config = makeConfig({ fetchFn: fetchFn as unknown as typeof fetch });
@@ -245,7 +274,7 @@ describe('checkForUpdate', () => {
   });
 
   it('fetches when cache is stale', async () => {
-    const stale = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(); // 25 hours ago
+    const stale = staleLastChecked;
     const config = makeConfig({
       fetchFn: vi.fn().mockResolvedValue({
         ok: true,
@@ -326,7 +355,7 @@ describe('checkForUpdate', () => {
           ]),
       }) as unknown as typeof fetch,
     });
-    const stale = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    const stale = staleLastChecked;
     writeState(config, { lastChecked: stale, latestVersion: '0.3.0' });
     const { checkForUpdate } = createUpdateChecker(config);
 

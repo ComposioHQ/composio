@@ -1,8 +1,7 @@
 import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ValidationError } from '@effect/cli';
-import { layer } from '@effect/vitest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, layer } from '@effect/vitest';
 import { Cause, Effect, Exit, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { discoverSkillRoots } from 'src/effects/discover-skill-roots';
@@ -10,8 +9,8 @@ import { cli, MockConsole, TestLive } from 'test/__utils__';
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
-const runPlatform = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>) =>
-  Effect.runPromise(effect.pipe(Effect.provide(TestPlatform)));
+const providePlatform = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>) =>
+  effect.pipe(Effect.provide(TestPlatform));
 
 const expectRootsExactlyOnce = (actual: ReadonlyArray<string>, expected: ReadonlyArray<string>) => {
   expect(actual).toEqual(expected);
@@ -19,8 +18,8 @@ const expectRootsExactlyOnce = (actual: ReadonlyArray<string>, expected: Readonl
 };
 
 describe('config experimental skill discovery', () => {
-  it('discovers only the canonical skill root', () =>
-    runPlatform(
+  it.effect('discovers only the canonical skill root', () =>
+    providePlatform(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -30,10 +29,11 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [canonicalRoot]);
       })
-    ));
+    )
+  );
 
-  it('discovers canonical and real Claude skill copies', () =>
-    runPlatform(
+  it.effect('discovers canonical and real Claude skill copies', () =>
+    providePlatform(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -45,10 +45,11 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [canonicalRoot, claudeRoot]);
       })
-    ));
+    )
+  );
 
-  it('deduplicates a Claude symlink to the canonical skill', () =>
-    runPlatform(
+  it.effect('deduplicates a Claude symlink to the canonical skill', () =>
+    providePlatform(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -62,10 +63,11 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [canonicalRoot]);
       })
-    ));
+    )
+  );
 
-  it('ignores a broken Claude symlink and keeps the canonical fallback', () =>
-    runPlatform(
+  it.effect('ignores a broken Claude symlink and keeps the canonical fallback', () =>
+    providePlatform(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -77,10 +79,11 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [canonicalRoot]);
       })
-    ));
+    )
+  );
 
-  it('uses the canonical fallback when neither skill root exists', () =>
-    runPlatform(
+  it.effect('uses the canonical fallback when neither skill root exists', () =>
+    providePlatform(
       Effect.gen(function* () {
         const path = yield* Path.Path;
         const home = tempy.temporaryDirectory();
@@ -88,10 +91,11 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [canonicalRoot]);
       })
-    ));
+    )
+  );
 
-  it('keeps an external symlink target and the canonical fallback once each', () =>
-    runPlatform(
+  it.effect('keeps an external symlink target and the canonical fallback once each', () =>
+    providePlatform(
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
@@ -106,7 +110,8 @@ describe('config experimental skill discovery', () => {
 
         expectRootsExactlyOnce(yield* discoverSkillRoots(home), [externalRoot, canonicalRoot]);
       })
-    ));
+    )
+  );
 });
 
 layer(TestLive())('config experimental state validation', it => {

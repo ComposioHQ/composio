@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '@effect/vitest';
 import { BunFileSystem } from '@effect/platform-bun';
 import { Cause, Data, Effect, FiberId } from 'effect';
 
@@ -19,10 +19,9 @@ class HttpError extends Data.TaggedError('HttpError')<{
   readonly message: string;
 }> {}
 
-// eslint-disable-next-line no-control-regex
-const stripAnsi = (value: string): string => value.replace(/\[[0-9;]*m/g, '');
+const stripAnsi = (value: string): string => value.replace(/\x1b\[[0-9;]*m/g, '');
 
-const render = (captured: Awaited<ReturnType<typeof capture>>): string =>
+const render = (captured: Effect.Effect.Success<ReturnType<typeof capture>>): string =>
   stripAnsi(
     prettyPrintFromCapturedErrors(captured, {
       enabled: true,
@@ -32,7 +31,7 @@ const render = (captured: Awaited<ReturnType<typeof capture>>): string =>
   );
 
 const capture = <E>(cause: Cause.Cause<E>) =>
-  captureErrors(cause).pipe(Effect.provide(BunFileSystem.layer), Effect.runPromise);
+  captureErrors(cause).pipe(Effect.provide(BunFileSystem.layer));
 
 describe('captureErrorsFrom (structural Cause traversal)', () => {
   it('returns no errors for an empty cause', () => {
@@ -114,64 +113,74 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
     expect(errors.map(error => error.message)).toStrictEqual(['still there']);
   });
 
-  it('threads the ambient span from a runtime failure into the captured error', async () => {
-    const cause = await Effect.fail(new DbError({ message: 'no db' })).pipe(
-      Effect.withSpan('characterization-span'),
-      Effect.sandbox,
-      Effect.flip,
-      Effect.runPromise
-    );
+  it.effect('threads the ambient span from a runtime failure into the captured error', () =>
+    Effect.gen(function* () {
+      const cause = yield* Effect.fail(new DbError({ message: 'no db' })).pipe(
+        Effect.withSpan('characterization-span'),
+        Effect.sandbox,
+        Effect.flip
+      );
 
-    const [error] = captureErrorsFrom(cause);
+      const [error] = captureErrorsFrom(cause);
 
-    expect(error?.span?.name).toBe('characterization-span');
-  });
+      expect(error?.span?.name).toBe('characterization-span');
+    })
+  );
 });
 
 describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
-  it('reports interrupt-only causes as interrupted and renders the interruption message', async () => {
-    const captured = await capture(Cause.interrupt(FiberId.none));
+  it.effect(
+    'reports interrupt-only causes as interrupted and renders the interruption message',
+    () =>
+      Effect.gen(function* () {
+        const captured = yield* capture(Cause.interrupt(FiberId.none));
 
-    expect(captured).toStrictEqual({ interrupted: true, errors: [] });
-    expect(render(captured)).toBe('✅ All fibers interrupted without errors.');
-  });
+        expect(captured).toStrictEqual({ interrupted: true, errors: [] });
+        expect(render(captured)).toBe('✅ All fibers interrupted without errors.');
+      })
+  );
 
-  it('renders a single failure without the multi-error header', async () => {
-    const captured = await capture(Cause.fail(new DbError({ message: 'no db' })));
-    const output = render(captured);
+  it.effect('renders a single failure without the multi-error header', () =>
+    Effect.gen(function* () {
+      const captured = yield* capture(Cause.fail(new DbError({ message: 'no db' })));
+      const output = render(captured);
 
-    expect(captured.interrupted).toBe(false);
-    expect(output).toContain('💥  DbError  • no db');
-    expect(output).not.toContain('errors occurred');
-    expect(output).not.toContain('#1 -');
-  });
+      expect(captured.interrupted).toBe(false);
+      expect(output).toContain('💥  DbError  • no db');
+      expect(output).not.toContain('errors occurred');
+      expect(output).not.toContain('#1 -');
+    })
+  );
 
-  it('renders a runtime failure with its span timeline', async () => {
-    const cause = await Effect.fail(new HttpError({ message: 'request failed' })).pipe(
-      Effect.withSpan('characterization-span'),
-      Effect.sandbox,
-      Effect.flip,
-      Effect.runPromise
-    );
+  it.effect('renders a runtime failure with its span timeline', () =>
+    Effect.gen(function* () {
+      const cause = yield* Effect.fail(new HttpError({ message: 'request failed' })).pipe(
+        Effect.withSpan('characterization-span'),
+        Effect.sandbox,
+        Effect.flip
+      );
 
-    const output = render(await capture(cause));
+      const output = render(yield* capture(cause));
 
-    expect(output).toContain('💥  HttpError  • request failed');
-    expect(output).toContain('◯');
-    expect(output).toContain('characterization-span');
-  });
+      expect(output).toContain('💥  HttpError  • request failed');
+      expect(output).toContain('◯');
+      expect(output).toContain('characterization-span');
+    })
+  );
 
-  it('renders multiple failures with a count header and per-error indexes in order', async () => {
-    const cause = Cause.parallel(
-      Cause.fail(new DbError({ message: 'left' })),
-      Cause.fail(new HttpError({ message: 'right' }))
-    );
+  it.effect('renders multiple failures with a count header and per-error indexes in order', () =>
+    Effect.gen(function* () {
+      const cause = Cause.parallel(
+        Cause.fail(new DbError({ message: 'left' })),
+        Cause.fail(new HttpError({ message: 'right' }))
+      );
 
-    const output = render(await capture(cause));
+      const output = render(yield* capture(cause));
 
-    expect(output).toContain('2 errors occurred');
-    expect(output).toContain('💥  #1 - DbError  • left');
-    expect(output).toContain('💥  #2 - HttpError  • right');
-    expect(output.indexOf('DbError')).toBeLessThan(output.indexOf('HttpError'));
-  });
+      expect(output).toContain('2 errors occurred');
+      expect(output).toContain('💥  #1 - DbError  • left');
+      expect(output).toContain('💥  #2 - HttpError  • right');
+      expect(output.indexOf('DbError')).toBeLessThan(output.indexOf('HttpError'));
+    })
+  );
 });
