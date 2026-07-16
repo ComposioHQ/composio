@@ -84,10 +84,15 @@ describe('tool permissions', () => {
     ).toBe('skip');
   });
 
-  it('fails closed to the interactive default when the snapshot state is unknown', () => {
-    expect(resolveGateState({ toolSlug: 'GMAIL_SEND_EMAIL', snapshot: 'unknown' })).toBe(
-      'ask_every_call'
-    );
+  it('fails closed via the synthesized ask-every-call snapshot when policy resolution failed', () => {
+    // Shape produced by refreshConsumerPermissionSnapshot when the org
+    // reports enhanced controls enabled but the permissions resolve fails.
+    expect(
+      resolveGateState({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({ permissions: { default: 'ask_every_call' } }),
+      })
+    ).toBe('ask_every_call');
   });
 
   it('resolves overrides ahead of the default mode', () => {

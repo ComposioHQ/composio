@@ -176,15 +176,11 @@ export class ToolPermissionPromptError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-// 'unknown' marks a snapshot that could not be fetched or decoded and had no
-// cached fallback — the gate must not treat it like "controls disabled".
-export type ConsumerPermissionSnapshotState = ConsumerPermissionSnapshot | 'unknown';
-
 interface GateParams {
   readonly toolSlug: string;
   readonly connectedAccountId?: string;
   readonly connectedAccountWordId?: string;
-  readonly snapshot?: ConsumerPermissionSnapshotState;
+  readonly snapshot?: ConsumerPermissionSnapshot;
 }
 
 const allowDecisionMemoryCache = new Map<string, number>();
@@ -372,7 +368,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     }
     const enhancedControlsEnabled =
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
-    const permissions =
+    const resolved =
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise({
             try: () =>
@@ -394,40 +390,60 @@ export const refreshConsumerPermissionSnapshot = (params: {
                 message: 'Failed to resolve consumer permissions.',
                 cause,
               }),
-          }).pipe(Effect.map(response => response.experimental?.permissions))
-        : undefined;
+          }).pipe(
+            Effect.map(response => ({
+              permissions: response.experimental?.permissions,
+              resolveFailed: false,
+            })),
+            // The org said enhanced controls are ON but the policy could not
+            // be learned: fail closed to the interactive default instead of
+            // silently allowing tools the policy may explicitly deny.
+            Effect.catchTag('services/ToolPermissionsRequestError', error =>
+              Effect.logDebug(
+                'Failed to resolve consumer permissions; failing closed to ask_every_call',
+                error
+              ).pipe(
+                Effect.as({
+                  permissions: { default: 'ask_every_call' } as ToolRouterPermissionsConfig,
+                  resolveFailed: true,
+                })
+              )
+            )
+          )
+        : { permissions: undefined, resolveFailed: false };
 
     const snapshot: ConsumerPermissionSnapshot = {
       orgId: params.orgId,
       projectId: params.projectId,
       consumerUserId: params.consumerUserId,
       enhancedControlsEnabled,
-      permissions,
+      permissions: resolved.permissions,
       connectedAccountIds,
       fetchedAt: Date.now(),
     };
-    yield* Effect.tryPromise({
-      try: () => writeCacheEntry(snapshot),
-      catch: cause =>
-        new ToolPermissionsCacheError({
-          operation: 'write',
-          message: 'Failed to write the tool permissions cache.',
-          cause,
-        }),
-    }).pipe(
-      Effect.catchTag('services/ToolPermissionsCacheError', error =>
-        Effect.logDebug('Failed to write the tool permissions cache', error)
-      )
-    );
+    // A fail-closed snapshot is not persisted, so a healthy fetch replaces it
+    // on the next command instead of pinning ask_every_call for the TTL.
+    if (!resolved.resolveFailed) {
+      yield* Effect.tryPromise({
+        try: () => writeCacheEntry(snapshot),
+        catch: cause =>
+          new ToolPermissionsCacheError({
+            operation: 'write',
+            message: 'Failed to write the tool permissions cache.',
+            cause,
+          }),
+      }).pipe(
+        Effect.catchTag('services/ToolPermissionsCacheError', error =>
+          Effect.logDebug('Failed to write the tool permissions cache', error)
+        )
+      );
+    }
     return snapshot;
   }).pipe(
-    // 'unknown' (not undefined) so the gate can distinguish "could not learn
-    // the org's permission state" from "controls known disabled" and fail
-    // closed instead of silently allowing.
     Effect.catchAll(error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to refresh consumer permission cache', error);
-        return 'unknown' as const;
+        return undefined;
       })
     )
   );
@@ -459,9 +475,6 @@ export const getConsumerPermissionSnapshot = (params: {
     }
 
     const refreshed = yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds });
-    if (refreshed === 'unknown') {
-      return cached ?? ('unknown' as const);
-    }
     return refreshed ?? cached;
   });
 
@@ -534,21 +547,18 @@ const resolvePermissionState = (
 };
 
 // The gate's decision table: 'skip' means gating does not apply (developer
-// mode, or controls known disabled); an unknown snapshot state fails closed
-// to the interactive default instead of skipping.
+// mode, or controls known disabled). A snapshot synthesized from a failed
+// permission resolve carries default: 'ask_every_call' and therefore prompts.
 export const resolveGateState = (
   params: GateParams
 ): PermissionOverrideState | PermissionDefaultMode | 'skip' => {
   if (params.snapshot === undefined) return 'skip';
-  if (params.snapshot === 'unknown') return 'ask_every_call';
   if (!params.snapshot.enhancedControlsEnabled || !params.snapshot.permissions) return 'skip';
   return resolvePermissionState({ ...params, snapshot: params.snapshot });
 };
 
-const allowCacheKey = (params: GateParams) => {
-  const snapshot = typeof params.snapshot === 'object' ? params.snapshot : undefined;
-  return `${snapshot?.orgId ?? 'unknown'}:${snapshot?.projectId ?? 'unknown'}:${snapshot?.consumerUserId ?? 'unknown'}:${permissionField(params.toolSlug, params.connectedAccountId)}`;
-};
+const allowCacheKey = (params: GateParams) =>
+  `${params.snapshot?.orgId ?? 'unknown'}:${params.snapshot?.projectId ?? 'unknown'}:${params.snapshot?.consumerUserId ?? 'unknown'}:${permissionField(params.toolSlug, params.connectedAccountId)}`;
 
 const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
   const expiresAt = allowDecisionMemoryCache.get(cacheKey);
