@@ -117,6 +117,30 @@ export class ToolPermissionDeniedError extends Data.TaggedError(
   readonly message: string;
 }> {}
 
+export class ToolPermissionsRequestError extends Data.TaggedError(
+  'services/ToolPermissionsRequestError'
+)<{
+  readonly path: string;
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class ToolPermissionsCacheError extends Data.TaggedError(
+  'services/ToolPermissionsCacheError'
+)<{
+  readonly operation: 'read' | 'write';
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class ToolPermissionPromptError extends Data.TaggedError(
+  'services/ToolPermissionPromptError'
+)<{
+  readonly toolSlug: string;
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 interface GateParams {
   readonly toolSlug: string;
   readonly connectedAccountId?: string;
@@ -286,15 +310,22 @@ export const refreshConsumerPermissionSnapshot = (params: {
     if (!apiKey) return undefined;
 
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const config = yield* Effect.tryPromise(() =>
-      fetchJson(ConsumerConfigResponseSchema, {
-        baseURL: userContext.data.baseURL,
-        apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-        path: '/api/v3.1/org/consumer/config',
-      })
-    );
+    const config = yield* Effect.tryPromise({
+      try: () =>
+        fetchJson(ConsumerConfigResponseSchema, {
+          baseURL: userContext.data.baseURL,
+          apiKey,
+          orgId: params.orgId,
+          projectId: params.projectId,
+          path: '/api/v3.1/org/consumer/config',
+        }),
+      catch: cause =>
+        new ToolPermissionsRequestError({
+          path: '/api/v3.1/org/consumer/config',
+          message: 'Failed to fetch the org consumer config.',
+          cause,
+        }),
+    });
     const platformSupportsEnhancedControls = isEnhancedControlsPlatformSupported();
     const remoteEnhancedControlsEnabled = readEnhancedControlsFlag(config);
     if (remoteEnhancedControlsEnabled && !platformSupportsEnhancedControls) {
@@ -306,20 +337,27 @@ export const refreshConsumerPermissionSnapshot = (params: {
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
     const permissions =
       enhancedControlsEnabled && connectedAccountIds.length > 0
-        ? yield* Effect.tryPromise(() =>
-            fetchJson(PermissionResolveResponseSchema, {
-              baseURL: userContext.data.baseURL,
-              apiKey,
-              orgId: params.orgId,
-              projectId: params.projectId,
-              path: '/api/v3.1/consumer/permissions/resolve',
-              method: 'POST',
-              body: {
-                connected_account_ids: connectedAccountIds,
-                default: 'ask_every_call',
-              },
-            })
-          ).pipe(Effect.map(response => response.experimental?.permissions))
+        ? yield* Effect.tryPromise({
+            try: () =>
+              fetchJson(PermissionResolveResponseSchema, {
+                baseURL: userContext.data.baseURL,
+                apiKey,
+                orgId: params.orgId,
+                projectId: params.projectId,
+                path: '/api/v3.1/consumer/permissions/resolve',
+                method: 'POST',
+                body: {
+                  connected_account_ids: connectedAccountIds,
+                  default: 'ask_every_call',
+                },
+              }),
+            catch: cause =>
+              new ToolPermissionsRequestError({
+                path: '/api/v3.1/consumer/permissions/resolve',
+                message: 'Failed to resolve consumer permissions.',
+                cause,
+              }),
+          }).pipe(Effect.map(response => response.experimental?.permissions))
         : undefined;
 
     const snapshot: ConsumerPermissionSnapshot = {
@@ -331,7 +369,15 @@ export const refreshConsumerPermissionSnapshot = (params: {
       connectedAccountIds,
       fetchedAt: Date.now(),
     };
-    yield* Effect.tryPromise(() => writeCacheEntry(snapshot));
+    yield* Effect.tryPromise({
+      try: () => writeCacheEntry(snapshot),
+      catch: cause =>
+        new ToolPermissionsCacheError({
+          operation: 'write',
+          message: 'Failed to write the tool permissions cache.',
+          cause,
+        }),
+    });
     return snapshot;
   }).pipe(
     Effect.catchAll(error =>
@@ -350,9 +396,15 @@ export const getConsumerPermissionSnapshot = (params: {
 }) =>
   Effect.gen(function* () {
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const cached = yield* Effect.tryPromise(() => readCachedEntry(params)).pipe(
-      Effect.catchAll(() => Effect.succeed(undefined))
-    );
+    const cached = yield* Effect.tryPromise({
+      try: () => readCachedEntry(params),
+      catch: cause =>
+        new ToolPermissionsCacheError({
+          operation: 'read',
+          message: 'Failed to read the tool permissions cache.',
+          cause,
+        }),
+    }).pipe(Effect.catchTag('services/ToolPermissionsCacheError', () => Effect.succeed(undefined)));
 
     if (isFreshForAccounts(cached, connectedAccountIds)) {
       yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds }).pipe(
@@ -380,15 +432,22 @@ export const getOrgEnhancedControlsStatus = (params: {
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
 
-    const config = yield* Effect.tryPromise(() =>
-      fetchJson(ConsumerConfigResponseSchema, {
-        baseURL: userContext.data.baseURL,
-        apiKey,
-        orgId: params.orgId,
-        projectId: params.projectId,
-        path: '/api/v3.1/org/consumer/config',
-      })
-    );
+    const config = yield* Effect.tryPromise({
+      try: () =>
+        fetchJson(ConsumerConfigResponseSchema, {
+          baseURL: userContext.data.baseURL,
+          apiKey,
+          orgId: params.orgId,
+          projectId: params.projectId,
+          path: '/api/v3.1/org/consumer/config',
+        }),
+      catch: cause =>
+        new ToolPermissionsRequestError({
+          path: '/api/v3.1/org/consumer/config',
+          message: 'Failed to fetch the org consumer config.',
+          cause,
+        }),
+    });
     const remoteEnabled = readEnhancedControlsFlag(config);
     const platformSupported = isEnhancedControlsPlatformSupported();
     return {
@@ -921,19 +980,32 @@ export const gateToolExecution = (params: GateParams) =>
     }
 
     const cacheKey = allowCacheKey(params);
-    const hasCachedAllow = yield* Effect.tryPromise(() => isAllowCached(cacheKey)).pipe(
-      Effect.catchAll(() => Effect.succeed(false))
-    );
+    const hasCachedAllow = yield* Effect.tryPromise({
+      try: () => isAllowCached(cacheKey),
+      catch: cause =>
+        new ToolPermissionsCacheError({
+          operation: 'read',
+          message: 'Failed to read the tool permissions allow cache.',
+          cause,
+        }),
+    }).pipe(Effect.catchTag('services/ToolPermissionsCacheError', () => Effect.succeed(false)));
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
     }
 
-    const decision = yield* Effect.tryPromise(() =>
-      requestPermissionDecision({
-        toolSlug: params.toolSlug,
-        accountLabel: params.connectedAccountWordId,
-      })
-    );
+    const decision = yield* Effect.tryPromise({
+      try: () =>
+        requestPermissionDecision({
+          toolSlug: params.toolSlug,
+          accountLabel: params.connectedAccountWordId,
+        }),
+      catch: cause =>
+        new ToolPermissionPromptError({
+          toolSlug: params.toolSlug,
+          message: `Failed to collect a permission decision for: ${params.toolSlug}`,
+          cause,
+        }),
+    });
 
     if (decision === 'deny') {
       return yield* new ToolPermissionDeniedError({
@@ -944,8 +1016,16 @@ export const gateToolExecution = (params: GateParams) =>
     }
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
-      yield* Effect.tryPromise(() => cacheAllowDecision(cacheKey)).pipe(
-        Effect.catchAll(error =>
+      yield* Effect.tryPromise({
+        try: () => cacheAllowDecision(cacheKey),
+        catch: cause =>
+          new ToolPermissionsCacheError({
+            operation: 'write',
+            message: 'Failed to cache the tool permission allow decision.',
+            cause,
+          }),
+      }).pipe(
+        Effect.catchTag('services/ToolPermissionsCacheError', error =>
           Effect.logDebug('Failed to cache tool permission allow decision', error)
         )
       );
