@@ -52,7 +52,7 @@ describe('composio-error-overrides', () => {
     expect(result.message).toBe('Something else broke');
   });
 
-  it('does not trust malformed API error fields', () => {
+  it('does not trust malformed API error fields but keeps the valid ones', () => {
     const error = {
       details: {
         code: '4302',
@@ -64,7 +64,9 @@ describe('composio-error-overrides', () => {
     const result = mapComposioError({ error });
 
     expect(result.normalized).toBe(error);
-    expect(result.apiDetails).toBeUndefined();
+    expect(result.apiDetails?.message).toBe('Malformed API error');
+    expect(result.apiDetails?.code).toBeUndefined();
+    expect(result.apiDetails?.slug).toBeUndefined();
     expect(result.override).toBeNull();
     expect(result.message).toBe('Malformed API error');
   });
