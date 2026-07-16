@@ -3,7 +3,7 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { Option, Predicate, Schema } from 'effect';
+import { Config, ConfigProvider, Effect, Option, Predicate, Schema } from 'effect';
 import {
   detectCliPlatform,
   ensureBundledBinaryExecutable,
@@ -32,6 +32,58 @@ export type NativeUiBinaryResolution =
 
 const hasEnvPrefix = (env: NodeJS.ProcessEnv, prefix: string): boolean =>
   Object.keys(env).some(key => key.startsWith(prefix));
+
+const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
+
+// Any other non-empty value counts as set (`CI=woohoo` still disables the UI)
+// rather than failing config decoding the way `Config.boolean` would.
+const EnvFlagFromString = Schema.transform(
+  Schema.compose(Schema.Trim, Schema.Lowercase),
+  Schema.Boolean,
+  {
+    decode: value => !FALSY_ENV_FLAG_VALUES.includes(value),
+    encode: enabled => (enabled ? '1' : '0'),
+    strict: true,
+  }
+);
+const decodeEnvFlag = Schema.decodeOption(EnvFlagFromString);
+
+// None when the variable is unset or blank, so callers can distinguish
+// "not configured" from an explicit true/false.
+const envFlag = (name: string): Config.Config<Option.Option<boolean>> =>
+  Config.string(name).pipe(
+    Config.map(value => value.trim()),
+    Config.option,
+    Config.map(Option.filter(value => value.length > 0)),
+    Config.map(Option.flatMap(decodeEnvFlag))
+  );
+
+/**
+ * Interactive permission UI (the native sidecar dialog and the browser
+ * approval page) must never spawn from automated environments. The explicit
+ * COMPOSIO_DISABLE_PERMISSION_UI knob wins in both directions; without it,
+ * CI and Vitest runs disable the UI.
+ */
+export const interactivePermissionUiDisabledConfig: Config.Config<boolean> = Config.all({
+  explicit: envFlag('COMPOSIO_DISABLE_PERMISSION_UI'),
+  ci: envFlag('CI'),
+  vitest: envFlag('VITEST'),
+}).pipe(
+  Config.map(({ explicit, ci, vitest }) =>
+    Option.getOrElse(
+      explicit,
+      () => Option.getOrElse(ci, () => false) || Option.getOrElse(vitest, () => false)
+    )
+  )
+);
+
+// CI / VITEST / COMPOSIO_DISABLE_PERMISSION_UI are read verbatim, so load them
+// through a raw env provider rather than the CLI's COMPOSIO_-prefixed one.
+const environmentProvider = ConfigProvider.fromEnv();
+
+export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = environmentProvider
+  .load(interactivePermissionUiDisabledConfig)
+  .pipe(Effect.orDie);
 
 const normalizeCallerAgent = (value?: string): NativeUiCallerAgent | undefined => {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, '');
@@ -128,6 +180,8 @@ export const requestNativeUiPermissionDecision = async (params: {
   readonly accountLabel?: string;
   readonly timeoutSeconds?: number;
 }): Promise<NativeUiPermissionDecision | undefined> => {
+  if (await Effect.runPromise(isInteractivePermissionUiDisabled)) return undefined;
+
   const resolved = resolveNativeUiBinary();
   if (!Predicate.isTagged(resolved, 'found')) return undefined;
 
