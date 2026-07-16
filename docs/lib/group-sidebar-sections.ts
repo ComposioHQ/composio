@@ -1,15 +1,5 @@
 import type { Folder, Item, Node, Root, Separator } from 'fumadocs-core/page-tree';
 
-/**
- * Sections (top-level meta separators) whose children are always visible in
- * the sidebar. Everything else uses progressive disclosure: children appear
- * only while the section is active. Real folders opt in per-folder with
- * `"defaultOpen": true` in their meta.json — the flag is NOT recursive; a
- * revealed folder shows its children, but grandchildren follow their own
- * folder's flag.
- */
-const ALWAYS_OPEN_SECTIONS = new Set(['Get Started', 'Customizing sessions', 'Sandboxes']);
-
 function separatorName(node: Separator): string | undefined {
   return typeof node.name === 'string' ? node.name : undefined;
 }
@@ -56,7 +46,7 @@ function makeSectionFolder(section: Separator, children: Node[]): Folder | undef
       ...first,
       index,
       children: index === first.index ? first.children : remainingChildren,
-      defaultOpen: ALWAYS_OPEN_SECTIONS.has(name) || first.defaultOpen === true,
+      defaultOpen: false,
     };
   }
 
@@ -65,7 +55,7 @@ function makeSectionFolder(section: Separator, children: Node[]): Folder | undef
       type: 'folder',
       name,
       children,
-      defaultOpen: ALWAYS_OPEN_SECTIONS.has(name),
+      defaultOpen: false,
     };
   }
 
@@ -74,7 +64,7 @@ function makeSectionFolder(section: Separator, children: Node[]): Folder | undef
     name,
     index: first as Item,
     children: children.slice(1),
-    defaultOpen: ALWAYS_OPEN_SECTIONS.has(name),
+    defaultOpen: false,
   };
 }
 
@@ -110,13 +100,7 @@ export function groupSidebarSections(tree: Root): Root {
     const normalized = normalizeFolderIndex(child);
     if (isStandaloneIndexedFolder(normalized)) {
       flushSection();
-      grouped.push({
-        ...normalized,
-        // Standalone folders honor the same always-open config as sections.
-        defaultOpen:
-          normalized.defaultOpen === true ||
-          (typeof normalized.name === 'string' && ALWAYS_OPEN_SECTIONS.has(normalized.name)),
-      });
+      grouped.push(normalized);
       continue;
     }
 

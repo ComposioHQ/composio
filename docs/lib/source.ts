@@ -4,6 +4,7 @@ import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
+import { getAdjacentDocsPages } from './docs-next-page';
 import { HIDDEN_API_TAGS } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
 
@@ -465,6 +466,36 @@ ${page.data.description || ''}`;
     cleanContent += `\n\n\`\`\`mermaid\n${chart}\n\`\`\`\n\n${cleanSegments[i + 1]}`;
   }
 
+  // Cross-page discovery for agents: frontmatter `related:` entries plus the
+  // adjacent pages in sidebar reading order, all as .md URLs. Without this, an
+  // agent that lands on one page of a folder never learns its siblings exist.
+  const mdHref = (href: string) => {
+    const [path, hash] = href.split('#');
+    return `https://docs.composio.dev${path}.md${hash ? `#${hash}` : ''}`;
+  };
+  const relatedEntries = (page.data as {
+    related?: { title: string; href: string; description?: string }[];
+  }).related;
+  const relatedLines: string[] = [];
+  if (includeFooter) {
+    for (const r of relatedEntries ?? []) {
+      relatedLines.push(`- [${r.title}](${mdHref(r.href)})${r.description ? ` - ${r.description}` : ''}`);
+    }
+    if (page.url.startsWith('/docs')) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { previous, next } = getAdjacentDocsPages(source.pageTree as any, page.url);
+        if (next && !next.external) relatedLines.push(`- Up next: [${next.name}](${mdHref(next.url)})`);
+        if (previous && !previous.external) relatedLines.push(`- Previous: [${previous.name}](${mdHref(previous.url)})`);
+      } catch {
+        // page-tree shape drift - skip adjacency rather than fail the page
+      }
+    }
+  }
+  const relatedBlock = relatedLines.length
+    ? `\n\n---\n\n**Related pages:**\n\n${relatedLines.join('\n')}`
+    : '';
+
   const footer = includeFooter
     ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
@@ -486,7 +517,7 @@ ${page.data.description || ''}`;
 
   return `# ${page.data.title} (${page.url})
 ${topNote}
-${cleanContent}${footer}${guardrails}`;
+${cleanContent}${relatedBlock}${footer}${guardrails}`;
 }
 
 export function formatDate(dateStr: string): string {
