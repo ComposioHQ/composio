@@ -1,9 +1,9 @@
 import path from 'node:path';
+import { AutoCorrect, CliConfig } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Effect, Option, ParseResult, Schema } from 'effect';
 import { jsonSchemaToZodSchema } from '@composio/core';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
-import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
@@ -17,6 +17,19 @@ type CachedToolInputDefinition = {
   readonly inputSchema: Record<string, unknown>;
 };
 
+const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const CachedToolInputDefinitionEnvelope = Schema.Struct({
+  version: Schema.optional(Schema.Unknown),
+  inputSchema: JsonObject,
+});
+const ObjectSchemaWithProperties = Schema.Struct({ properties: JsonObject });
+
+const decodeJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonObject));
+const decodeCachedToolInputDefinitionEnvelope = Schema.decodeUnknownOption(
+  CachedToolInputDefinitionEnvelope
+);
+const decodeObjectSchemaWithProperties = Schema.decodeUnknownOption(ObjectSchemaWithProperties);
+
 const sanitizeToolSlug = (slug: string) => slug.replace(/[^A-Za-z0-9_.-]/g, '_');
 
 const toolDefinitionPath = (cacheDir: string, slug: string) =>
@@ -26,13 +39,11 @@ const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, cacheDir: string) =
   fs.makeDirectory(path.join(cacheDir, TOOL_DEFINITIONS_DIR), { recursive: true });
 
 const parseSchemaFile = (raw: string, schemaPath: string) =>
-  Effect.try({
-    try: () => JSON.parse(raw) as Record<string, unknown>,
-    catch: () => new Error(`Cached tool schema at ${schemaPath} is not valid JSON.`),
-  });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  decodeJsonObject(raw).pipe(
+    Effect.mapError(
+      cause => new Error(`Cached tool schema at ${schemaPath} is not valid JSON.`, { cause })
+    )
+  );
 
 const PLACEHOLDER_TOOL_VERSION = '00000000_00';
 
@@ -70,11 +81,11 @@ const resolveLatestAvailableVersion = (params: {
 };
 
 const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolInputDefinition => {
-  const inputSchema = parsed.inputSchema;
-  if (isRecord(inputSchema)) {
+  const envelope = decodeCachedToolInputDefinitionEnvelope(parsed);
+  if (Option.isSome(envelope)) {
     return {
-      version: typeof parsed.version === 'string' ? parsed.version : null,
-      inputSchema,
+      version: typeof envelope.value.version === 'string' ? envelope.value.version : null,
+      inputSchema: envelope.value.inputSchema,
     };
   }
 
@@ -292,36 +303,17 @@ export class ToolInputValidationError extends Error {
 }
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
-  const properties = schema.properties;
-  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
-    return [];
-  }
-
-  return Object.keys(properties as Record<string, unknown>);
+  const objectSchema = decodeObjectSchemaWithProperties(schema);
+  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const levenshteinDistance = (left: string, right: string): number => {
-  if (left === right) return 0;
-  if (left.length === 0) return right.length;
-  if (right.length === 0) return left.length;
+const schemaKeySuggestionConfig = CliConfig.defaultConfig;
 
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  const current = new Array<number>(right.length + 1);
-
-  for (let i = 0; i < left.length; i += 1) {
-    current[0] = i + 1;
-    for (let j = 0; j < right.length; j += 1) {
-      const cost = left[i] === right[j] ? 0 : 1;
-      current[j + 1] = Math.min(current[j]! + 1, previous[j + 1]! + 1, previous[j]! + cost);
-    }
-    for (let j = 0; j <= right.length; j += 1) {
-      previous[j] = current[j]!;
-    }
-  }
-
-  return previous[right.length]!;
+type SchemaKeyCandidate = {
+  readonly key: string;
+  readonly score: number;
 };
 
 const findClosestSchemaKey = (
@@ -329,32 +321,39 @@ const findClosestSchemaKey = (
   allowedKeys: ReadonlyArray<string>
 ): string | undefined => {
   const normalizedUnknownKey = normalizeKey(unknownKey);
-  const candidates = allowedKeys
-    .map(key => ({
-      key,
-      normalized: normalizeKey(key),
-    }))
-    .map(candidate => {
-      const distance = levenshteinDistance(normalizedUnknownKey, candidate.normalized);
-      const containsBonus =
-        candidate.normalized.includes(normalizedUnknownKey) ||
-        normalizedUnknownKey.includes(candidate.normalized)
-          ? -2
-          : 0;
-      return {
-        key: candidate.key,
-        score: distance + containsBonus,
-      };
-    })
-    .sort((left, right) => left.score - right.score);
-
-  const best = candidates[0];
-  if (!best) {
+  if (!normalizedUnknownKey) {
     return undefined;
   }
 
+  const closest = allowedKeys.reduce<SchemaKeyCandidate | undefined>((best, key) => {
+    const normalizedKey = normalizeKey(key);
+    const distance = AutoCorrect.levensteinDistance(
+      normalizedUnknownKey,
+      normalizedKey,
+      schemaKeySuggestionConfig
+    );
+    const containsBonus =
+      normalizedKey.includes(normalizedUnknownKey) || normalizedUnknownKey.includes(normalizedKey)
+        ? -2
+        : 0;
+    const candidate = {
+      key,
+      score: distance + containsBonus,
+    };
+
+    if (!best || candidate.score < best.score) {
+      return candidate;
+    }
+
+    return best;
+  }, undefined);
+
   const threshold = Math.max(3, Math.ceil(normalizedUnknownKey.length * 0.6));
-  return best.score <= threshold ? best.key : undefined;
+  if (!closest || closest.score > threshold) {
+    return undefined;
+  }
+
+  return closest.key;
 };
 
 const formatUnknownKeyIssue = (
@@ -375,6 +374,51 @@ const formatUnknownKeyIssue = (
   });
 };
 
+type ToolInputSchemaIssue = {
+  readonly code: string;
+  readonly keys?: ReadonlyArray<string>;
+  readonly message: string;
+  readonly path: ReadonlyArray<PropertyKey>;
+};
+
+const formatSchemaIssues = (
+  schemaIssues: ReadonlyArray<ToolInputSchemaIssue>,
+  allowedKeys: ReadonlyArray<string>
+): ReadonlyArray<string> =>
+  schemaIssues.flatMap(issue => {
+    if (issue.code === 'unrecognized_keys' && issue.keys) {
+      return formatUnknownKeyIssue(issue.keys, allowedKeys);
+    }
+
+    const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
+    return [`${location}: ${issue.message}`];
+  });
+
+const compileToolInputSchema = (
+  jsonSchema: Record<string, unknown>,
+  allowedKeys: ReadonlyArray<string>
+) => {
+  const validator = jsonSchemaToZodSchema(jsonSchema);
+
+  return Schema.declare([Schema.Unknown], {
+    decode: () => (input, _options, ast) => {
+      const parsed = validator.safeParse(input);
+      if (parsed.success) {
+        return ParseResult.succeed(parsed.data);
+      }
+
+      const messages = formatSchemaIssues(parsed.error.issues, allowedKeys);
+      const [first, ...rest] = messages.map(message => new ParseResult.Type(ast, input, message));
+      return ParseResult.fail(
+        first
+          ? new ParseResult.Composite(ast, input, [first, ...rest])
+          : new ParseResult.Type(ast, input, 'Input does not match the tool schema.')
+      );
+    },
+    encode: () => input => ParseResult.succeed(input),
+  });
+};
+
 export const validateToolInputArgumentsWithDefinition = (
   slug: string,
   args: Record<string, unknown>,
@@ -388,31 +432,27 @@ export const validateToolInputArgumentsWithDefinition = (
     const allowedKeys = getObjectSchemaProperties(schema);
     const normalizedSchema = normalizeFileUploadSchema(schema);
 
-    const zodSchema = yield* Effect.try({
-      try: () => jsonSchemaToZodSchema<z.ZodTypeAny>(normalizedSchema),
+    const inputSchema = yield* Effect.try({
+      try: () => compileToolInputSchema(normalizedSchema, allowedKeys),
       catch: error =>
         new ToolInputValidationError(
           slug,
           schemaPath,
-          ['Could not compile the cached JSON schema into a Zod validator.'],
+          ['Could not compile the cached JSON schema into a validator.'],
           { cause: error }
         ),
     });
 
-    const parsed = zodSchema.safeParse(args);
-    if (parsed.success) {
-      return { schemaPath, schema };
-    }
+    yield* Schema.decodeUnknown(inputSchema, { errors: 'all' })(args).pipe(
+      Effect.mapError(error => {
+        const issues = ParseResult.ArrayFormatter.formatErrorSync(error).map(
+          issue => issue.message
+        );
+        return new ToolInputValidationError(slug, schemaPath, issues, { cause: error });
+      })
+    );
 
-    const issues = parsed.error.issues.flatMap(issue => {
-      if (issue.code === 'unrecognized_keys') {
-        return formatUnknownKeyIssue(issue.keys, allowedKeys);
-      }
-      const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
-      return [`${location}: ${issue.message}`];
-    });
-
-    return yield* Effect.fail(new ToolInputValidationError(slug, schemaPath, issues));
+    return { schemaPath, schema };
   });
 
 export const validateToolInputArgumentsIfCached = (slug: string, args: Record<string, unknown>) =>

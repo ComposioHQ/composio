@@ -43,6 +43,43 @@ const cliProcessStreamRestrictions = [
   },
 ];
 
+const cliRestrictedImportPaths = [
+  ...portableRestrictedImportPaths,
+  {
+    name: 'node:fs',
+    message: 'Use FileSystem from @effect/platform instead.',
+  },
+  {
+    name: 'node:os',
+    message: 'Use an Effect service instead of importing node:os directly.',
+  },
+  {
+    name: 'node:path',
+    message: 'Use Path from @effect/platform instead.',
+  },
+];
+
+const cliRestrictedImportPatterns = [
+  {
+    group: ['node:fs/*'],
+    message: 'Use FileSystem from @effect/platform instead.',
+  },
+];
+
+const effectSchemaRestrictedImportPaths = [
+  {
+    name: 'zod',
+    message: 'Use Schema from effect for tool input validation.',
+  },
+];
+
+const effectSchemaRestrictedImportPatterns = [
+  {
+    group: ['zod/*'],
+    message: 'Use Schema from effect for tool input validation.',
+  },
+];
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
@@ -99,33 +136,22 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            ...portableRestrictedImportPaths,
-            {
-              name: 'node:fs',
-              message: 'Use FileSystem from @effect/platform instead.',
-            },
-            {
-              name: 'node:os',
-              message: 'Use an Effect service instead of importing node:os directly.',
-            },
-            {
-              name: 'node:path',
-              message: 'Use Path from @effect/platform instead.',
-            },
-          ],
-          patterns: [
-            {
-              group: ['node:fs/*'],
-              message: 'Use FileSystem from @effect/platform instead.',
-            },
-          ],
+          paths: cliRestrictedImportPaths,
+          patterns: cliRestrictedImportPatterns,
         },
       ],
-      'no-restricted-syntax': [
+      'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
+    },
+  },
+  {
+    files: ['ts/packages/cli/src/services/tool-input-validation.ts'],
+    rules: {
+      'no-restricted-imports': [
         'error',
-        ...cliRestrictedSyntax,
-        ...cliProcessStreamRestrictions,
+        {
+          paths: [...cliRestrictedImportPaths, ...effectSchemaRestrictedImportPaths],
+          patterns: [...cliRestrictedImportPatterns, ...effectSchemaRestrictedImportPatterns],
+        },
       ],
     },
   },
