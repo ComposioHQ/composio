@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import process from 'node:process';
 import { FileSystem, HttpClient, HttpClientRequest, Path } from '@effect/platform';
 import {
@@ -13,6 +12,7 @@ import {
   Schema,
 } from 'effect';
 import * as constants from 'src/constants';
+import { spawnDetached } from 'src/services/detached-process';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
@@ -293,20 +293,16 @@ const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
         };
   });
 
-// Effect's Command processes are scoped; telemetry workers intentionally outlive
-// the CLI process, so detached spawn/unref remains the platform boundary here.
+// Effect's Command processes are scoped and die with their scope; telemetry
+// workers intentionally outlive the CLI process, so they go through the
+// sanctioned detached-spawn boundary in src/services/detached-process.
+// Delivery is best effort: a failed spawn is swallowed, never surfaced.
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const debugEnabled = yield* telemetryDebugEnabled;
-    yield* Effect.try(() => {
-      const child = spawn(command, args, {
-        detached: true,
-        stdio: debugEnabled ? ['ignore', 'ignore', 'inherit'] : 'ignore',
-        // Leaving `env` unset makes Node inherit the complete parent environment.
-      });
-      child.on('error', () => undefined);
-      child.unref();
-    });
+    yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
+      Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.void)
+    );
   });
 
 const captureToComposioAnalytics = (envelope: AnalyticsEnvelope) =>

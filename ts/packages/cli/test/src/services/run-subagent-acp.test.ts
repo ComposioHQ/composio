@@ -1,5 +1,7 @@
 import { Readable } from 'node:stream';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { BunContext } from '@effect/platform-bun';
+import { Effect } from 'effect';
+import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import {
   BufferedChunkLogger,
   createStructuredOutputMcpContext,
@@ -18,8 +20,8 @@ describe('run-subagent-acp', () => {
     const input = new Readable({ read: () => undefined });
     const stream = readableStreamFromNode(input);
 
-    input.push(Buffer.from('first'));
-    input.push(Buffer.from('second'));
+    input.push(new TextEncoder().encode('first'));
+    input.push(new TextEncoder().encode('second'));
     await new Promise<void>(resolve => setImmediate(resolve));
 
     expect(input.isPaused()).toBe(true);
@@ -236,43 +238,47 @@ describe('run-subagent-acp', () => {
     });
   });
 
-  it('[Given] a structured schema [Then] it creates a stdio MCP server context for output capture', () => {
-    const helperDebugLog = vi.fn();
-    const context = createStructuredOutputMcpContext({
-      options: {
-        structuredSchema: {
-          type: 'object',
-          properties: {
-            summary: { type: 'string' },
+  it.effect(
+    '[Given] a structured schema [Then] it creates a stdio MCP server context for output capture',
+    () =>
+      Effect.gen(function* () {
+        const helperDebugLog = vi.fn();
+        const context = yield* createStructuredOutputMcpContext({
+          options: {
+            structuredSchema: {
+              type: 'object',
+              properties: {
+                summary: { type: 'string' },
+              },
+              required: ['summary'],
+            },
           },
-          required: ['summary'],
-        },
-      },
-      helperDebugLog,
-    });
+          helperDebugLog,
+        });
 
-    expect(context).not.toBeNull();
-    expect(context?.mcpServer.command).toBe(process.execPath);
-    expect(context?.mcpServer.args).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('run-subagent-output-mcp'),
-        '--schema-file',
-        expect.stringContaining('schema.json'),
-        '--result-file',
-        expect.stringContaining('result.json'),
-      ])
-    );
-    expect(context?.mcpServer.env).toEqual(
-      expect.arrayContaining([{ name: 'BUN_BE_BUN', value: '1' }])
-    );
-    expect(context?.resultFilePath).toContain('result.json');
-    expect(helperDebugLog).toHaveBeenCalledWith(
-      'subAgent.acp.structured_output_tool',
-      expect.objectContaining({
-        modulePath: expect.stringContaining('run-subagent-output-mcp'),
-      })
-    );
+        expect(context).not.toBeNull();
+        expect(context?.mcpServer.command).toBe(process.execPath);
+        expect(context?.mcpServer.args).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('run-subagent-output-mcp'),
+            '--schema-file',
+            expect.stringContaining('schema.json'),
+            '--result-file',
+            expect.stringContaining('result.json'),
+          ])
+        );
+        expect(context?.mcpServer.env).toEqual(
+          expect.arrayContaining([{ name: 'BUN_BE_BUN', value: '1' }])
+        );
+        expect(context?.resultFilePath).toContain('result.json');
+        expect(helperDebugLog).toHaveBeenCalledWith(
+          'subAgent.acp.structured_output_tool',
+          expect.objectContaining({
+            modulePath: expect.stringContaining('run-subagent-output-mcp'),
+          })
+        );
 
-    context?.cleanup();
-  });
+        yield* context!.cleanup;
+      }).pipe(Effect.provide(BunContext.layer))
+  );
 });

@@ -46,6 +46,14 @@ const cliProcessStreamRestrictions = [
 const cliRestrictedImportPaths = [
   ...portableRestrictedImportPaths,
   {
+    name: 'child_process',
+    message: 'Use Command from @effect/platform instead.',
+  },
+  {
+    name: 'node:child_process',
+    message: 'Use Command from @effect/platform instead.',
+  },
+  {
     name: 'node:fs',
     message: 'Use FileSystem from @effect/platform instead.',
   },

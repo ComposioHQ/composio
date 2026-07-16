@@ -1,7 +1,7 @@
 import { Command, Options } from '@effect/cli';
 import { Data, Effect, Option, Predicate } from 'effect';
-import { spawn } from 'node:child_process';
 import { ensureBundledBinaryExecutable } from '@composio/cli-local-tools';
+import { spawnDetached } from 'src/services/detached-process';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { resolveNativeUiBinary } from 'src/services/native-ui-sidecar';
 
@@ -34,7 +34,7 @@ export const devNativeUiCmd = Command.make('native-ui', { title, message, detail
   Command.withHandler(({ title, message, detail, timeout }) =>
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
-      const resolved = resolveNativeUiBinary();
+      const resolved = yield* resolveNativeUiBinary;
 
       if (Predicate.isTagged(resolved, 'unsupported')) {
         yield* ui.log.error(
@@ -67,13 +67,10 @@ export const devNativeUiCmd = Command.make('native-ui', { title, message, detail
         args.push('--timeout', timeoutValue);
       }
 
-      yield* Effect.sync(() => {
-        const child = spawn(resolved.binaryPath, args, {
-          detached: true,
-          stdio: 'ignore',
-        });
-        child.unref();
-      });
+      // The sidecar window must outlive the CLI process, so it goes through
+      // the sanctioned detached-spawn boundary instead of @effect/platform
+      // Command (whose processes are killed when their scope closes).
+      yield* spawnDetached(resolved.binaryPath, args);
 
       yield* ui.log.success('Opened native UI sidecar.');
     })
