@@ -13,21 +13,21 @@ export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 const UnknownFields = Schema.Record({ key: Schema.String, value: Schema.Unknown });
 
 const AgentComposioCredentials = Schema.Struct({
-  member_id: Schema.optional(Schema.String),
-  org_id: Schema.optional(Schema.String),
-  project_id: Schema.optional(Schema.String),
-  api_key: Schema.optional(Schema.String),
-  user_api_key: Schema.optional(Schema.String),
+  member_id: Schema.optional(Schema.NullOr(Schema.String)),
+  org_id: Schema.optional(Schema.NullOr(Schema.String)),
+  project_id: Schema.optional(Schema.NullOr(Schema.String)),
+  api_key: Schema.optional(Schema.NullOr(Schema.String)),
+  user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
 }).pipe(Schema.extend(UnknownFields));
 export type AgentComposioCredentials = Schema.Schema.Type<typeof AgentComposioCredentials>;
 
 const AgentIdentity = Schema.Struct({
-  status: Schema.optional(Schema.String),
-  request_id: Schema.optional(Schema.String),
-  slug: Schema.optional(Schema.String),
-  email: Schema.optional(Schema.String),
-  agent_key: Schema.optional(Schema.String),
-  composio_agent_key: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.NullOr(Schema.String)),
+  request_id: Schema.optional(Schema.NullOr(Schema.String)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  email: Schema.optional(Schema.NullOr(Schema.String)),
+  agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+  composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
   claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
   claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
   composio: Schema.optional(AgentComposioCredentials),
@@ -35,13 +35,13 @@ const AgentIdentity = Schema.Struct({
 export type AgentIdentity = Schema.Schema.Type<typeof AgentIdentity>;
 
 const AgentMailMessage = Schema.Struct({
-  id: Schema.optional(Schema.String),
-  thread_id: Schema.optional(Schema.String),
-  from: Schema.optional(Schema.String),
-  to: Schema.optional(Schema.String),
-  subject: Schema.optional(Schema.String),
-  preview: Schema.optional(Schema.String),
-  received_at: Schema.optional(Schema.String),
+  id: Schema.optional(Schema.NullOr(Schema.String)),
+  thread_id: Schema.optional(Schema.NullOr(Schema.String)),
+  from: Schema.optional(Schema.NullOr(Schema.String)),
+  to: Schema.optional(Schema.NullOr(Schema.String)),
+  subject: Schema.optional(Schema.NullOr(Schema.String)),
+  preview: Schema.optional(Schema.NullOr(Schema.String)),
+  received_at: Schema.optional(Schema.NullOr(Schema.String)),
 }).pipe(Schema.extend(UnknownFields));
 export type AgentMailMessage = Schema.Schema.Type<typeof AgentMailMessage>;
 
@@ -52,10 +52,10 @@ const AgentMailResponse = Schema.Struct({
 export type AgentMailResponse = Schema.Schema.Type<typeof AgentMailResponse>;
 
 const AgentClaimResponse = Schema.Struct({
-  status: Schema.optional(Schema.String),
-  email: Schema.optional(Schema.String),
-  org_id: Schema.optional(Schema.String),
-  invite_code: Schema.optional(Schema.String),
+  status: Schema.optional(Schema.NullOr(Schema.String)),
+  email: Schema.optional(Schema.NullOr(Schema.String)),
+  org_id: Schema.optional(Schema.NullOr(Schema.String)),
+  invite_code: Schema.optional(Schema.NullOr(Schema.String)),
 }).pipe(Schema.extend(UnknownFields));
 export type AgentClaimResponse = Schema.Schema.Type<typeof AgentClaimResponse>;
 
@@ -96,7 +96,7 @@ const decodeAgentResponse =
       )
     );
 
-export const normalizeAgentStatus = (status: string | undefined): AgentStatus => {
+export const normalizeAgentStatus = (status: string | null | undefined): AgentStatus => {
   const normalized = status?.trim().toUpperCase();
   if (normalized === 'READY') return 'READY';
   if (normalized === 'PENDING') return 'PENDING';
