@@ -1,0 +1,28 @@
+{
+  "updated_at": "2026-06-23T20:58:17.252449+00:00",
+  "plans": [
+    {
+      "plan": "Enterprise",
+      "new_subscriptions": 2,
+      "new_mrr": 998.0,
+      "new_mrr_cents": 99800,
+      "churned": 0
+    },
+    {
+      "plan": "Pro",
+      "new_subscriptions": 9,
+      "new_mrr": 891.0,
+      "new_mrr_cents": 89100,
+      "churned": 0
+    },
+    {
+      "plan": "Starter",
+      "new_subscriptions": 4,
+      "new_mrr": 116.0,
+      "new_mrr_cents": 11600,
+      "churned": 2
+    }
+  ],
+  "leader": "Enterprise",
+  "summary": "Enterprise is driving the most new MRR today: $998.0 across 2 new subscriptions vs Pro ($891.0)."
+}

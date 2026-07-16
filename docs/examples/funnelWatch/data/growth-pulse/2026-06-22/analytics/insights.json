@@ -1,0 +1,112 @@
+{
+  "updated_at": "2026-06-23T07:00:00.107317+00:00",
+  "insights": [
+    {
+      "type": "failed_payment_anomaly",
+      "severity": "high",
+      "score": 95.0,
+      "title": "Failed payments crossed threshold",
+      "source": "Stripe",
+      "summary": "Failed-payment rate is 5.0% across 1514 invoice attempts.",
+      "recommendation": "Check billing provider status, card decline reasons, and plan concentration.",
+      "evidence": {
+        "failed_rate_pct": 5.0,
+        "failed_payments": 76,
+        "invoice_attempts": 1514
+      },
+      "id": "1f37aa0650ca",
+      "created_at": "2026-06-23T07:00:00.107298+00:00",
+      "message": "Stripe alert (high, score 95): failed-payment rate hit 5.0% (76 failures / 1,505 invoice attempts), crossing the threshold. This matters because elevated payment failures can directly suppress realized revenue and distort retention metrics. Next to inspect: Stripe/billing provider status during the window, the specific card decline reasons driving the 76 failures, and whether failures are concentrated in particular plans (plan concentration)."
+    },
+    {
+      "type": "revenue_source_opportunity",
+      "severity": "medium",
+      "score": 90,
+      "title": "Revenue source outperforming baseline",
+      "source": "Meta Ads",
+      "summary": "Meta Ads new MRR is up 500.0% vs the recent baseline.",
+      "recommendation": "Inspect the winning campaign, segment, and landing path for repeatable patterns.",
+      "evidence": {
+        "today_new_mrr": 4752.0,
+        "baseline_new_mrr": 792.0,
+        "today_paid": 48,
+        "baseline_paid": 8.0
+      },
+      "id": "c0eeaa697337",
+      "created_at": "2026-06-23T07:00:00.107306+00:00",
+      "message": "Meta Ads is outperforming baseline: new MRR is $990 vs $792 (+25%), with 10 paid vs 8 baseline. This matters because the lift is tied to more paid conversions and could indicate a repeatable path. Next, inspect which Meta campaign/ad set/segment drove the paid increase and the landing path those users took to convert (creative, audience, placement, and page/flow)."
+    },
+    {
+      "type": "revenue_source_opportunity",
+      "severity": "medium",
+      "score": 90,
+      "title": "Revenue source outperforming baseline",
+      "source": "Docs",
+      "summary": "Docs new MRR is up 125.5% vs the recent baseline.",
+      "recommendation": "Inspect the winning campaign, segment, and landing path for repeatable patterns.",
+      "evidence": {
+        "today_new_mrr": 1556.0,
+        "baseline_new_mrr": 690.0,
+        "today_paid": 14,
+        "baseline_paid": 5.0
+      },
+      "id": "c4d3b531f9f9",
+      "created_at": "2026-06-23T07:00:00.107309+00:00",
+      "message": "Docs is outperforming its recent baseline: new MRR is $941 vs $690 (+36.4%), alongside more paid conversions (9 vs 5). This matters because the lift appears tied to higher conversion volume, indicating a potentially repeatable acquisition/activation pattern from the Docs source. Next, inspect which specific campaign(s), audience segment(s), and landing path(s) within Docs drove the incremental paid conversions and MRR, and whether the mix changed vs baseline."
+    },
+    {
+      "type": "revenue_source_opportunity",
+      "severity": "medium",
+      "score": 82.52,
+      "title": "Revenue source outperforming baseline",
+      "source": "Organic",
+      "summary": "Organic new MRR is up 62.6% vs the recent baseline.",
+      "recommendation": "Inspect the winning campaign, segment, and landing path for repeatable patterns.",
+      "evidence": {
+        "today_new_mrr": 1968.0,
+        "baseline_new_mrr": 1210.0,
+        "today_paid": 12,
+        "baseline_paid": 9.0
+      },
+      "id": "73d2040034ce",
+      "created_at": "2026-06-23T07:00:00.107312+00:00",
+      "message": "Organic is outperforming baseline: new MRR is $1,741 today vs $1,210 baseline (+43.9%), with paid conversions flat (9 today vs 9 baseline). This suggests the lift is coming from higher MRR per conversion or larger deals rather than more paid volume. Next, inspect what changed within Organic: the specific campaign/source detail, audience segment, and landing path driving the higher MRR, plus whether the uplift is concentrated in a few accounts or broad-based."
+    },
+    {
+      "type": "revenue_source_opportunity",
+      "severity": "medium",
+      "score": 78.12,
+      "title": "Revenue source outperforming baseline",
+      "source": "Referral",
+      "summary": "Referral new MRR is up 40.6% vs the recent baseline.",
+      "recommendation": "Inspect the winning campaign, segment, and landing path for repeatable patterns.",
+      "evidence": {
+        "today_new_mrr": 558.0,
+        "baseline_new_mrr": 397.0,
+        "today_paid": 12,
+        "baseline_paid": 3.0
+      },
+      "id": "033d229aca2f",
+      "created_at": "2026-06-23T07:00:00.107314+00:00",
+      "message": "Referral is outperforming baseline: new MRR is $529 today vs $397 baseline (+33.2%; score 76.64, medium). Paid conversions also increased (11 today vs 3 baseline), suggesting the lift is translating into more paying customers, not just higher ARPA. Next to inspect: which specific referral campaign/partner drove the gain, which segments converted, and the landing path users followed before paying (to find repeatable patterns)."
+    },
+    {
+      "type": "revenue_source_opportunity",
+      "severity": "medium",
+      "score": 75.5,
+      "title": "Revenue source outperforming baseline",
+      "source": "Google Ads",
+      "summary": "Google Ads new MRR is up 27.5% vs the recent baseline.",
+      "recommendation": "Inspect the winning campaign, segment, and landing path for repeatable patterns.",
+      "evidence": {
+        "today_new_mrr": 1811.0,
+        "baseline_new_mrr": 1420.0,
+        "today_paid": 9,
+        "baseline_paid": 10.0
+      },
+      "id": "2d192a2091a2",
+      "created_at": "2026-06-23T07:00:00.107316+00:00",
+      "message": "Google Ads is outperforming baseline on revenue: new MRR is $1,782 today vs $1,420 baseline (+25.5%, severity: medium). This matters because revenue rose despite fewer paid conversions (8 today vs 10 baseline), implying higher MRR per paid signup or a shift toward higher-value customers. Next to inspect: which specific campaign/ad group/keyword segment drove the lift, and the landing path tied to those signups to identify repeatable patterns."
+    }
+  ]
+}

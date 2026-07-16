@@ -1,0 +1,267 @@
+{"type": "subscription_started", "plan": "Pro", "mrr_cents": 4900, "source": "google"}
+{"type": "subscription_started", "plan": "Enterprise", "mrr_cents": 29900, "source": "google"}
+{"type": "subscription_started", "plan": "Starter", "mrr_cents": 1900, "source": "meta"}
+{"type": "subscription_started", "plan": "Pro", "mrr_cents": 4900, "source": "meta"}
+{"ts": "2026-06-27T06:07:29.841702+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_cf3595dfa15b", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:29.844094+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_8df25f6300cb", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:29.846390+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_be4d757b4ec4", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.848575+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_587394f4ad48", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:29.856671+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_5529bb53ede3", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.859582+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7585d5e141df", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.861789+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_695c1f5ed350", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:29.863607+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_964bc036a6c8", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.871279+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_59e5f570cc44", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:29.875081+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_078660e5a347", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:29.878332+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_9a38a3287e16", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.883019+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d3f3161a795a", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.883907+00:00", "type": "subscription_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d3f3161a795a", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.884819+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4a72742c44e8", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.887627+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_24ba0f442f47", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.895500+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0f18fae1ce3a", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.900321+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0eeb68fc3759", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.902605+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_2401fb294ef7", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.905143+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_6587c1b609eb", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.908282+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f621d14089aa", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:29.912606+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_0ec5c5b23858", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.917488+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_9aadeb818bea", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:29.924092+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_549af9616246", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.926867+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_a71ec233205f", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.929852+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_57e3e4bd84b7", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.931729+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_c632504563c8", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.933722+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2d8c6f0939e0", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:29.935568+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_331d7d141809", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.938482+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7e35517525b7", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:29.948508+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_4f6526dda889", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.956957+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_6eb5142eeb31", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:29.961085+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_642217079c13", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:29.964573+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_a5ba5b5315c3", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.970622+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4025ee0e71bc", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:29.972839+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_7467a534a814", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:29.979399+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_72ccab718c08", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:29.983377+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c8a61fb40ee5", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.987869+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_78fe13bd1fd7", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.995037+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_01cc730b59f5", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:29.997887+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_84f76afe3f37", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.004474+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_4c49f37019a2", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.008287+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b8d7e72fcc89", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.010120+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_fa8fadfaa3e7", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.013982+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b7a6238df1b2", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.019438+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2f028e7b3598", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.021310+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b5665a22a213", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.024005+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c58d2beb9504", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.029691+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_1f3f1fb3b3c3", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.033362+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_385a6cb3aa78", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.037075+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c564c3e6d3dd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.037961+00:00", "type": "subscription_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c564c3e6d3dd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.038859+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_ad7104d95e21", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.040813+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_2ef9c9febc80", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.058192+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_3aed4ea56797", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.060148+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_057b6c0cc6f4", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.064848+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_be2074b61192", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.071312+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_8ba292670d00", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.073097+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_c594db18d48a", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.077763+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_9d8e07609247", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.089610+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_e3726ca8b47b", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.093398+00:00", "type": "payment_failed", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4bc37318fc7b", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.095313+00:00", "type": "payment_failed", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_53937f99b73c", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.098140+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_37735404d117", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.104312+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_b00be59eb776", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.106321+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_6a4b762b1b9e", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.109275+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_2a55aa088641", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.117718+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d11871197b06", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.120407+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_637ed1a1eafa", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.123937+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_f9b4a3891232", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.126548+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_cddd031d864c", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.129326+00:00", "type": "payment_failed", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4168d523bd89", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.132907+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_0720ee53fff1", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.141147+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_164c13c7c378", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.144915+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_8f7fcd097c56", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.147509+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_afc8ebbc2795", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.151183+00:00", "type": "payment_failed", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_08229925ef4f", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.154734+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_591c70484507", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.158337+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_64f76bbfab74", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.161815+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_a6f772c30d60", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.163617+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_c41c66e6fae9", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.170253+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_dfe5abd11565", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.180668+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_c155452ae577", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.182646+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_87d41c032314", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.185421+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f4e7bc32f622", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.190971+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_d827cbf5672a", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.193715+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_665cd647cc65", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.197450+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ef00be751720", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.200121+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_4646971e5abf", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.201975+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_081838040f14", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.206493+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_5a55c39b57bf", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.207387+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0bcb76863d37", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.210191+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_410d032e4547", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.212914+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_31144c46e6e2", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.219595+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_5a175e8dbedd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.221584+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_253a996172d9", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.226436+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_1337fff765b8", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.230000+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c24b1a88267c", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.233525+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_250d46f6a665", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.234427+00:00", "type": "subscription_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_250d46f6a665", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.235372+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d53f479db458", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.237150+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_7d8bff921042", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.239847+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d79c46454379", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.242486+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c6a43bd10bf9", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.245199+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f148cbf0f5ff", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.249759+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4f10d32033fb", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.251577+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_9ad09e8c0e3d", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.256143+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_815283141b01", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.258827+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_6322ee1f9f26", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.265435+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_a1163745a9af", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.270301+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_3c56651894fc", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.273098+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_09c89266f14d", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.276866+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2ab6916eccfb", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.281553+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_c062310eff76", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.287238+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_eb491dd98e75", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.292821+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_a4655cbfe376", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.294694+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b346b4489b0c", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.296564+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0863c4e23c41", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.298359+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_316028de7094", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.307829+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_5f7736069e25", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.308750+00:00", "type": "subscription_churned", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_1aee7bcc117b", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.312140+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_180f39778fc7", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.313865+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_38f947541471", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.318461+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_e4ef4cf97167", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.322953+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_89e0593adb51", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.326104+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_393da36aa4a3", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.328171+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_7aa7608c0b78", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.333662+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_3a1f6e1fbcc6", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.338368+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_90174622d2cd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.344689+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d818be5bcff7", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.346645+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_700a205bffc7", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.350320+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_1f81e6e2243f", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.351172+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_1f81e6e2243f", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.352026+00:00", "type": "payment_failed", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_1067551e0407", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.355657+00:00", "type": "payment_failed", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_8111fd37ce3f", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.357621+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_0dc928c62626", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.362336+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_b5080fd5eaea", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.368626+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_e8efe27a77d5", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.372960+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7cf3a553605b", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.377448+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b282408991ce", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.380153+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_acd0cec629fa", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.383749+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ba4fbe677759", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.391635+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_8f5c42da9f6d", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.397890+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ae05a0c3e5ad", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.398760+00:00", "type": "subscription_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ae05a0c3e5ad", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.399718+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_adc040500ad8", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.401567+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_76e0e19d6cfd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.404308+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_382960d94ecb", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.409089+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_94b38b6542a9", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.411776+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_80eaafee9c67", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.413600+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_31fc737e2248", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.417229+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_45d0ca73250b", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.422711+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2e1b8b96e6ef", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.424486+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_5e3c9638a272", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.427193+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_cc738ca7e7d6", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.433897+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7dd2387b8840", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.437670+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_98446d8ccd33", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.440404+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_1de74a357891", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.449479+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_cdd08db0e08d", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.451351+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_6519b921800d", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.457609+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c557733c3efa", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.465663+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_5da160c97fa8", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.466817+00:00", "type": "subscription_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_5da160c97fa8", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.467931+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_9c767a265003", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.469796+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_7ae6b29925a0", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.471558+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_95a73d57de71", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.484294+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_e9ef1eb00379", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.487783+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_16b3fa11d4bf", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.491338+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f802fa1e6455", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.493224+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ef61991c512d", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.501231+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_238f1ccbddd6", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.505651+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_880d4a176476", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.506635+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_880d4a176476", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.510224+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_a1095669b22b", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.515622+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_55f76b5633f6", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.517416+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_012e4da8c194", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.520132+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_4d2a8a57bcfb", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.525688+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f993ed3b61d6", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.531065+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7c34f1c9f67f", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.532901+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_f03b966d5932", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.538254+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_ab694de43781", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.540979+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_a1a579af54f2", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.543652+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ee1e664b8bc7", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.548062+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_796caf9606fd", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.550737+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_485356de0365", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.553360+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_b4fc171babab", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.558641+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_3e7b30035a84", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.560443+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_ff002850452b", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.571162+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_7dc994634dc6", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.573052+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_8d38519d0c3d", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.575761+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_1abb885748c0", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.577493+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_3c166a73b27a", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.579447+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_08dd3de91b3d", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.582112+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_83de6c066e13", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.586420+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_fab60da63028", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.592564+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c20b05491c03", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.596014+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_027841545bab", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.598004+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_92299cbb4075", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.600821+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_3c8fd50e7168", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.605522+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_44468dbc56f7", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.612731+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d362caaf1622", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.621494+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_951a36bb8c69", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.624220+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_256dd5163e14", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.631572+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_e480c97f13c1", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.632604+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_5cdbebf30c31", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.640709+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0eca17ff434a", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.643442+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_bc872d3c44b8", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.645243+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_ba0120ced8ff", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.647966+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_552529173129", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.651459+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_7321042fc708", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.666161+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_76b9b478ffda", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.668793+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_457c8f9db73c", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.672734+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_60abc41e0543", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.674579+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_24a5fdfe4ec5", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.679271+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_0d6e281dbb8c", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.684672+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_e6a790fe1c27", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.687893+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_91cf824302f8", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.689806+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_089e230ded92", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.692721+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2c7836bbaad9", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.695474+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_801edf44e757", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.699060+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_c79bda23d533", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.700923+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_d5348fd40228", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.703642+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_c94298b778eb", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.706381+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_d09903e3efca", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.708172+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_36425e9627c6", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.709936+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_b77a9f306b5f", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.715486+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_ae8a8d1424e0", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.717241+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_1a28f3724776", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.719924+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_97755d06ed09", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.723547+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_f9ba70c8e285", "source": "Organic", "campaign": "brand-search"}
+{"ts": "2026-06-27T06:07:30.729031+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_09df0656b7b4", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.730723+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_b7ac5fcd19bf", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.731594+00:00", "type": "subscription_churned", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_821ccd8866d1", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.735155+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_e1aa2c952b51", "source": "Organic", "campaign": "direct"}
+{"ts": "2026-06-27T06:07:30.736964+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_59fa4efe7cb3", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.738735+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_f33e19b0d188", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.741293+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_eac8ba36948d", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.744621+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_da97ffecd253", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.747117+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_b8148cf081ef", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.757339+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_12c4bdecf314", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.759073+00:00", "type": "payment_succeeded", "plan": "Enterprise", "mrr_cents": 49900, "account_id": "acct_f9fa63ac2132", "source": "Referral", "campaign": "partner"}
+{"ts": "2026-06-27T06:07:30.762493+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_384872cc2ee3", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.766698+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_c805bdc0ab69", "source": "Docs", "campaign": "developer-docs"}
+{"ts": "2026-06-27T06:07:30.772680+00:00", "type": "trial_started", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_a1836d3559a2", "source": "Google Ads", "campaign": "search-intent"}
+{"ts": "2026-06-27T06:07:30.776953+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_0c6530621d00", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.778678+00:00", "type": "payment_succeeded", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_d979bb5eb521", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.785103+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_96150f1b5ba7", "source": "Google Ads", "campaign": "competitor"}
+{"ts": "2026-06-27T06:07:30.791273+00:00", "type": "payment_succeeded", "plan": "Starter", "mrr_cents": 2900, "account_id": "acct_2a708ea808c8", "source": "GitHub", "campaign": "repo-readme"}
+{"ts": "2026-06-27T06:07:30.857566+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_000", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.858606+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_000", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.861946+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_001", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.862788+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_001", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.866091+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_002", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.866947+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_002", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.870502+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_003", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.871369+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_003", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.874839+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_004", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.875780+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_004", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.879185+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_005", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.880026+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_005", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.883317+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_006", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.884164+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_006", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.887527+00:00", "type": "trial_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_007", "source": "Meta Ads", "campaign": "summer-demo"}
+{"ts": "2026-06-27T06:07:30.888330+00:00", "type": "subscription_started", "plan": "Pro", "mrr_cents": 9900, "account_id": "acct_meta_paid_007", "source": "Meta Ads", "campaign": "summer-demo"}

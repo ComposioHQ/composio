@@ -1,0 +1,2 @@
+{"received_at": "2026-06-25T02:06:33.730667+00:00", "trigger_slug": "GOOGLEADS_CAMPAIGN_SNAPSHOT", "data": {"type": "ad_snapshot", "source": "Google Ads", "campaign": "search-intent", "spend": 76000, "clicks": 360, "impressions": 22000, "timestamp": "2026-06-25T02:05:19.030231+00:00"}}
+{"received_at": "2026-06-25T02:06:49.538415+00:00", "trigger_slug": "METAADS_CAMPAIGN_SNAPSHOT", "data": {"type": "ad_snapshot", "source": "Meta Ads", "campaign": "summer-demo", "spend": 98000, "clicks": 410, "impressions": 43000, "timestamp": "2026-06-25T02:05:29.038355+00:00"}}
