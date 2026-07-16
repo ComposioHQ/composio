@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import path from 'node:path';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
@@ -366,10 +367,9 @@ describe('CLI: composio generate py', () => {
           const args = ['generate', 'py', '--toolkits', 'nonexistent', '--output-dir', outputDir];
           const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
 
-          expect(ValidationError.isValidationError(result)).toBe(true);
-          if (ValidationError.isValidationError(result) && ValidationError.isInvalidValue(result)) {
-            expect(HelpDoc.toAnsiText(result.error)).toContain('Invalid toolkit(s): nonexistent');
-          }
+          assert.ok(ValidationError.isValidationError(result));
+          assert.ok(ValidationError.isInvalidValue(result));
+          expect(HelpDoc.toAnsiText(result.error)).toContain('Invalid toolkit(s): nonexistent');
         })
       );
 
