@@ -29,13 +29,9 @@ export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_p
 export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
 export type PermissionApprovalStatus =
-  | 'always_approved'
-  | 'cached_approved'
-  | 'approved_once'
-  | 'approved_for_session';
+  'always_approved' | 'cached_approved' | 'approved_once' | 'approved_for_session';
 export type PermissionGateResult =
-  | { readonly approvalStatus: PermissionApprovalStatus }
-  | undefined;
+  { readonly approvalStatus: PermissionApprovalStatus } | undefined;
 
 export interface ToolRouterPermissionsConfig {
   readonly default: PermissionDefaultMode;
@@ -72,11 +68,15 @@ interface ConsumerConfigResponse {
   readonly enhancedControls?: boolean;
 }
 
+// 'unknown' marks a snapshot that could not be fetched or decoded and had no
+// cached fallback — the gate must not treat it like "controls disabled".
+export type ConsumerPermissionSnapshotState = ConsumerPermissionSnapshot | 'unknown';
+
 interface GateParams {
   readonly toolSlug: string;
   readonly connectedAccountId?: string;
   readonly connectedAccountWordId?: string;
-  readonly snapshot?: ConsumerPermissionSnapshot;
+  readonly snapshot?: ConsumerPermissionSnapshotState;
 }
 
 const allowDecisionMemoryCache = new Map<string, number>();
@@ -279,13 +279,18 @@ export const refreshConsumerPermissionSnapshot = (params: {
       connectedAccountIds,
       fetchedAt: Date.now(),
     };
-    yield* Effect.tryPromise(() => writeCacheEntry(snapshot));
+    yield* Effect.tryPromise(() => writeCacheEntry(snapshot)).pipe(
+      Effect.catchAll(error => Effect.logDebug('Failed to write the tool permissions cache', error))
+    );
     return snapshot;
   }).pipe(
+    // 'unknown' (not undefined) so the gate can distinguish "could not learn
+    // the org's permission state" from "controls known disabled" and fail
+    // closed instead of silently allowing.
     Effect.catchAll(error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to refresh consumer permission cache', error);
-        return undefined;
+        return 'unknown' as const;
       })
     )
   );
@@ -311,6 +316,9 @@ export const getConsumerPermissionSnapshot = (params: {
     }
 
     const refreshed = yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds });
+    if (refreshed === 'unknown') {
+      return cached ?? ('unknown' as const);
+    }
     return refreshed ?? cached;
   });
 
@@ -366,17 +374,31 @@ export const getConnectedAccountPermissionGroup = (params: {
 };
 
 const resolvePermissionState = (
-  params: GateParams
+  params: GateParams & { readonly snapshot: ConsumerPermissionSnapshot }
 ): PermissionOverrideState | PermissionDefaultMode => {
-  const permissions = params.snapshot?.permissions;
+  const permissions = params.snapshot.permissions;
   const override =
     permissions?.overrides?.[permissionField(params.toolSlug, params.connectedAccountId)] ??
     permissions?.overrides?.[accountPermissionField(params.connectedAccountId)];
   return override ?? permissions?.default ?? 'allow_all';
 };
 
-const allowCacheKey = (params: GateParams) =>
-  `${params.snapshot?.orgId ?? 'unknown'}:${params.snapshot?.projectId ?? 'unknown'}:${params.snapshot?.consumerUserId ?? 'unknown'}:${permissionField(params.toolSlug, params.connectedAccountId)}`;
+// The gate's decision table: 'skip' means gating does not apply (developer
+// mode, or controls known disabled); an unknown snapshot state fails closed
+// to the interactive default instead of skipping.
+export const resolveGateState = (
+  params: GateParams
+): PermissionOverrideState | PermissionDefaultMode | 'skip' => {
+  if (params.snapshot === undefined) return 'skip';
+  if (params.snapshot === 'unknown') return 'ask_every_call';
+  if (!params.snapshot.enhancedControlsEnabled || !params.snapshot.permissions) return 'skip';
+  return resolvePermissionState({ ...params, snapshot: params.snapshot });
+};
+
+const allowCacheKey = (params: GateParams) => {
+  const snapshot = typeof params.snapshot === 'object' ? params.snapshot : undefined;
+  return `${snapshot?.orgId ?? 'unknown'}:${snapshot?.projectId ?? 'unknown'}:${snapshot?.consumerUserId ?? 'unknown'}:${permissionField(params.toolSlug, params.connectedAccountId)}`;
+};
 
 const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
   const expiresAt = allowDecisionMemoryCache.get(cacheKey);
@@ -854,9 +876,9 @@ const requestPermissionDecision = async (params: {
 
 export const gateToolExecution = (params: GateParams) =>
   Effect.gen(function* () {
-    if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return;
+    const state = resolveGateState(params);
+    if (state === 'skip') return;
 
-    const state = resolvePermissionState(params);
     if (state === 'allow_all' || state === 'always_allow') {
       return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
     }
