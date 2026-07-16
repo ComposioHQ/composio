@@ -3,6 +3,7 @@
   "pages": [
     "schema-modifiers",
     "before-execution-modifiers",
-    "after-execution-modifiers"
+    "after-execution-modifiers",
+    "governance-with-tealtiger"
   ]
 }
