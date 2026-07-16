@@ -4,6 +4,7 @@ import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
+import { TerminalUILive } from 'src/services/terminal-ui';
 
 const TELEMETRY_DEBUG_FLAG = '--telemetry-debug';
 const CLI_TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
@@ -23,7 +24,13 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
 if (isBackgroundWorkerInvocation(process.argv)) {
   runBackgroundWorkerFromArgv(process.argv).pipe(
     Effect.provide(
-      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, FetchHttpClient.layer, NodeOs.Default)
+      Layer.mergeAll(
+        BunFileSystem.layer,
+        BunPath.layer,
+        FetchHttpClient.layer,
+        NodeOs.Default,
+        TerminalUILive
+      )
     ),
     effect =>
       BunRuntime.runMain(effect, {

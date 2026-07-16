@@ -12,6 +12,7 @@ import {
 } from 'src/analytics/dispatch';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
+import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
 const childProcessMocks = vi.hoisted(() => ({
   on: vi.fn(),
@@ -38,6 +39,7 @@ const makePlatformLayer = (home: string) =>
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
 

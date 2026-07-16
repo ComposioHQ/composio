@@ -2,12 +2,14 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import process from 'node:process';
+import { Effect } from 'effect';
 import { z } from 'zod';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
 import type { MasterKind } from 'src/services/master-detector';
 import { isAcpInvokeError } from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
 import { invokeLegacySubAgent } from 'src/services/run-subagent-legacy';
+import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 
 export type RunHelperContext = {
   readonly apiKey?: string;
@@ -179,6 +181,11 @@ export const installRunHelpers = async ({
   cliPrefix,
   helperContext = {},
 }: RunHelpersInstallParams): Promise<void> => {
+  // This preload runs in the user's child process, outside the CLI runtime.
+  // Resolve the live service once at that boundary and keep all writes centralized.
+  const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
+  const writeError = (line: string) => Effect.runSync(terminal.error(line));
+
   runGlobals.z = z;
   runGlobals.zod = z;
 
@@ -212,8 +219,7 @@ export const installRunHelpers = async ({
     if (!perfDebugEnabled) return;
     const elapsedMs = Date.now() - perfDebugStart;
     const payload = { phase, label, elapsedMs, ...details };
-    // eslint-disable-next-line no-console
-    console.error(`[perf] ${JSON.stringify(payload)}`);
+    writeError(`[perf] ${JSON.stringify(payload)}`);
   };
 
   const truncateDebugText = (value: unknown, max = 240) => {
@@ -323,7 +329,7 @@ export const installRunHelpers = async ({
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
     appendRunLogLine(line);
     if (shouldStreamHelperLog(step, formattedLine)) {
-      process.stderr.write(`${line}\n`);
+      writeError(line);
     }
   };
 

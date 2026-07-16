@@ -3,10 +3,12 @@ import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Effect } from 'effect';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   buildStructuredOutputToolSchema,
 } from 'src/services/run-subagent-shared';
+import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 
 const readFlag = (name: string): string => {
   const index = process.argv.indexOf(name);
@@ -56,6 +58,9 @@ const main = async (): Promise<void> => {
 
 void main().catch(error => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
-  process.stderr.write(`${message}\n`);
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* ui.error(message);
+  }).pipe(Effect.provide(TerminalUILive), Effect.runSync);
   process.exit(1);
 });

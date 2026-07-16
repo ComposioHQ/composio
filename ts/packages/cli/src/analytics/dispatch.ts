@@ -6,7 +6,6 @@ import {
   Clock,
   Config,
   ConfigProvider,
-  Console,
   DateTime,
   Effect,
   Encoding,
@@ -15,6 +14,7 @@ import {
 } from 'effect';
 import * as constants from 'src/constants';
 import { NodeOs } from 'src/services/node-os';
+import { TerminalUI } from 'src/services/terminal-ui';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
 
 const INTERNAL_ANALYTICS_WORKER_FLAG = '__analytics-worker';
@@ -110,7 +110,8 @@ const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
     }
 
     const body = yield* encodePrettyJson({ label, ...payload });
-    yield* Console.error(`[telemetry-debug] ${body}`);
+    const ui = yield* TerminalUI;
+    yield* ui.error(`[telemetry-debug] ${body}`);
   }).pipe(Effect.ignore);
 
 const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, string> => {
