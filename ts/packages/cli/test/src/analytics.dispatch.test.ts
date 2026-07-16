@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FileSystem, Path } from '@effect/platform';
+import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
@@ -37,6 +37,7 @@ const makePlatformLayer = (home: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
+    FetchHttpClient.layer,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
 
@@ -45,9 +46,9 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   vi.stubEnv('COMPOSIO_USER_API_KEY', apiKey);
   vi.stubEnv('NODE_ENV', 'development');
   vi.stubEnv('CI', 'false');
-  vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', '');
-  vi.stubEnv('TELEMETRY_DISABLED', '');
-  vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', '');
+  vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
+  vi.stubEnv('TELEMETRY_DISABLED', 'false');
+  vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
 };
 
 const decodeWorkerPayload = <A>(encodedPayload: string): A => {
@@ -151,9 +152,9 @@ describe('CLI analytics dispatch', () => {
     vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_test');
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('CI', 'false');
-    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', '');
-    vi.stubEnv('TELEMETRY_DISABLED', '');
-    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', '');
+    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('TELEMETRY_DISABLED', 'false');
+    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 204 }));
@@ -166,17 +167,18 @@ describe('CLI analytics dispatch', () => {
         encodedPayload,
       ]).pipe(Effect.provide(makePlatformLayer(home)))
     ).then(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://backend.example.test/api/v3/cli/analytics',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'x-composio-analytics-source': 'cli',
-            'x-user-api-key': 'uak_test',
-          }),
-          body: JSON.stringify(envelope),
-        })
-      );
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const [endpoint, request] = fetchSpy.mock.calls[0]!;
+      expect(String(endpoint)).toBe('https://backend.example.test/api/v3/cli/analytics');
+      expect(request).toMatchObject({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'content-type': 'application/json',
+          'x-composio-analytics-source': 'cli',
+          'x-user-api-key': 'uak_test',
+        }),
+      });
+      expect(JSON.parse(new TextDecoder().decode(request?.body as Uint8Array))).toEqual(envelope);
     });
   });
 
@@ -199,7 +201,7 @@ describe('CLI analytics dispatch', () => {
         const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
           string,
           string[],
-          { detached: boolean; env: Record<string, string | undefined>; stdio: unknown },
+          { detached: boolean; stdio: unknown },
         ];
         expect(command).toBe(process.execPath);
         expect(args.slice(0, 2)).toEqual([scriptPath, '__analytics-worker']);
@@ -211,9 +213,9 @@ describe('CLI analytics dispatch', () => {
         });
         expect(options).toMatchObject({
           detached: true,
-          env: { COMPOSIO_CLI_ANALYTICS_WORKER: '1' },
           stdio: 'ignore',
         });
+        expect(options).not.toHaveProperty('env');
         expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
         expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
       }).pipe(Effect.provide(makePlatformLayer(home)))
@@ -246,7 +248,7 @@ describe('CLI analytics dispatch', () => {
         const [command, args, options] = childProcessMocks.spawn.mock.calls[0] as unknown as [
           string,
           string[],
-          { detached: boolean; env: Record<string, string | undefined>; stdio: unknown },
+          { detached: boolean; stdio: unknown },
         ];
         expect(command).toBe(process.execPath);
         expect(args.slice(0, 2)).toEqual([scriptPath, '__codact-failure-worker']);
@@ -268,9 +270,9 @@ describe('CLI analytics dispatch', () => {
         });
         expect(options).toMatchObject({
           detached: true,
-          env: { COMPOSIO_CLI_ANALYTICS_WORKER: '1' },
           stdio: 'ignore',
         });
+        expect(options).not.toHaveProperty('env');
         expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
         expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
       }).pipe(Effect.provide(makePlatformLayer(home)))
@@ -294,6 +296,24 @@ describe('CLI analytics dispatch', () => {
 
         expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
         expect(childProcessMocks.unref).not.toHaveBeenCalled();
+      }).pipe(Effect.provide(makePlatformLayer(home)))
+    );
+  });
+
+  it('honors Effect boolean config when telemetry is disabled', () => {
+    const home = tempy.temporaryDirectory();
+    enableTelemetry();
+    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'yes');
+
+    return Effect.runPromise(
+      Effect.gen(function* () {
+        yield* trackCliEventEffect({ name: 'producer_event' });
+        yield* trackCliCodactFailureEffect({
+          failureType: 'wrong_tool_slug',
+          ctx: { slug: 'MISSING_TOOL' },
+        });
+
+        expect(childProcessMocks.spawn).not.toHaveBeenCalled();
       }).pipe(Effect.provide(makePlatformLayer(home)))
     );
   });
@@ -331,15 +351,17 @@ describe('CLI analytics dispatch', () => {
     ).then(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
-      expect(endpoint).toBe('https://backend.example.test/api/v3/cli/codact_failures');
+      expect(String(endpoint)).toBe('https://backend.example.test/api/v3/cli/codact_failures');
       expect(request).toMatchObject({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+        headers: expect.objectContaining({
+          'content-type': 'application/json',
           'x-user-api-key': 'uak_worker',
-        },
+        }),
       });
-      expect(JSON.parse(String(request?.body))).toEqual(failureBody);
+      expect(JSON.parse(new TextDecoder().decode(request?.body as Uint8Array))).toEqual(
+        failureBody
+      );
     });
   });
 

@@ -1,4 +1,19 @@
 {
+  "ts/packages/cli/src/analytics/events.ts": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "ts/packages/cli/src/bin.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "ts/packages/cli/src/cli-main.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "ts/packages/cli/src/commands/auth-configs/commands/auth-configs.create.cmd.ts": {
     "no-restricted-syntax": {
       "count": 1
@@ -9,6 +24,11 @@
       "count": 1
     }
   },
+  "ts/packages/cli/src/commands/index.ts": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
   "ts/packages/cli/src/commands/init.cmd.ts": {
     "no-restricted-imports": {
       "count": 1
@@ -17,6 +37,9 @@
   "ts/packages/cli/src/commands/install.cmd.ts": {
     "no-restricted-imports": {
       "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
     }
   },
   "ts/packages/cli/src/commands/listen.cmd.ts": {
@@ -49,12 +72,12 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 1
+      "count": 6
     }
   },
   "ts/packages/cli/src/commands/tools/commands/tools.execute.cmd.ts": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 6
     }
   },
   "ts/packages/cli/src/commands/triggers/commands/triggers.create.cmd.ts": {
@@ -65,6 +88,9 @@
   "ts/packages/cli/src/commands/triggers/commands/triggers.listen.cmd.ts": {
     "no-restricted-imports": {
       "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
     }
   },
   "ts/packages/cli/src/commands/ts/commands/ts.generate.cmd.ts": {
@@ -110,11 +136,22 @@
   "ts/packages/cli/src/services/agents.ts": {
     "no-restricted-imports": {
       "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "ts/packages/cli/src/services/cli-session-artifacts.ts": {
+    "no-restricted-syntax": {
+      "count": 2
     }
   },
   "ts/packages/cli/src/services/cli-user-config.ts": {
     "no-restricted-imports": {
       "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "ts/packages/cli/src/services/composio-clients-cached.ts": {
@@ -127,12 +164,17 @@
       "count": 1
     }
   },
+  "ts/packages/cli/src/services/master-detector.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
   "ts/packages/cli/src/services/native-ui-sidecar.ts": {
     "no-restricted-imports": {
       "count": 4
     },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 4
     }
   },
   "ts/packages/cli/src/services/project-context.ts": {
@@ -143,6 +185,9 @@
   "ts/packages/cli/src/services/project-environment-detector.ts": {
     "no-restricted-imports": {
       "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "ts/packages/cli/src/services/run-companion-modules.ts": {
@@ -150,7 +195,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 1
+      "count": 6
     }
   },
   "ts/packages/cli/src/services/run-helpers-runtime.ts": {
@@ -158,7 +203,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 4
+      "count": 8
     }
   },
   "ts/packages/cli/src/services/run-subagent-acp.ts": {
@@ -166,7 +211,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 6
+      "count": 7
     }
   },
   "ts/packages/cli/src/services/run-subagent-legacy.ts": {
@@ -174,7 +219,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 1
+      "count": 2
     }
   },
   "ts/packages/cli/src/services/run-subagent-output-mcp.ts": {
@@ -185,6 +230,11 @@
   "ts/packages/cli/src/services/run-subagent-shared.ts": {
     "no-restricted-syntax": {
       "count": 4
+    }
+  },
+  "ts/packages/cli/src/services/runtime-debug-flags.ts": {
+    "no-restricted-syntax": {
+      "count": 2
     }
   },
   "ts/packages/cli/src/services/setup.ts": {
@@ -220,12 +270,22 @@
       "count": 4
     },
     "no-restricted-syntax": {
-      "count": 4
+      "count": 5
     }
   },
   "ts/packages/cli/src/services/upgrade-binary.ts": {
     "no-restricted-imports": {
       "count": 2
+    }
+  },
+  "ts/packages/cli/src/ui/colors.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "ts/packages/cli/src/ui/redact.ts": {
+    "no-restricted-syntax": {
+      "count": 1
     }
   },
   "ts/packages/cli/src/utils/get-ancestors.ts": {

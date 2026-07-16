@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { Effect, Layer } from 'effect';
+import { FetchHttpClient } from '@effect/platform';
 import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
@@ -21,7 +22,9 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
 
 if (isBackgroundWorkerInvocation(process.argv)) {
   runBackgroundWorkerFromArgv(process.argv).pipe(
-    Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)),
+    Effect.provide(
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, FetchHttpClient.layer, NodeOs.Default)
+    ),
     effect =>
       BunRuntime.runMain(effect, {
         disableErrorReporting: true,

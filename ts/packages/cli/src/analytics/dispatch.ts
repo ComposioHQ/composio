@@ -1,7 +1,18 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
-import { FileSystem, Path } from '@effect/platform';
-import { Cause, Data, Effect } from 'effect';
+import { FileSystem, HttpClient, HttpClientRequest, Path } from '@effect/platform';
+import {
+  Cause,
+  Clock,
+  Config,
+  ConfigProvider,
+  Console,
+  DateTime,
+  Effect,
+  Encoding,
+  Option,
+  Schema,
+} from 'effect';
 import * as constants from 'src/constants';
 import { NodeOs } from 'src/services/node-os';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
@@ -13,7 +24,6 @@ const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_ANALYTICS_PATH = '/api/v3/cli/analytics';
 const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
-const TELEMETRY_DEBUG_ENV_VAR = 'COMPOSIO_CLI_TELEMETRY_DEBUG';
 
 export type CliCodactFailureType = 'wrong_tool_slug' | 'wrong_tool_input_param';
 
@@ -33,10 +43,6 @@ export type CliCodactFailure = {
   readonly requestId?: string;
 };
 
-class TelemetryError extends Data.TaggedError('TelemetryError')<{
-  readonly cause: unknown;
-}> {}
-
 type ConsumerShortTermCacheState = Record<
   string,
   {
@@ -50,46 +56,66 @@ type ConsumerShortTermCacheState = Record<
   }
 >;
 
-const truthy = (value: string | undefined): boolean =>
-  value === '1' || value === 'true' || value === 'yes' || value === 'on';
+// Workers start before the CLI's prefixed ConfigProvider is assembled, so this
+// module names and reads the actual environment variables from a raw provider.
+const environmentProvider = ConfigProvider.fromEnv();
+const optionalString = (name: string) => Config.option(Config.string(name));
+const booleanWithDefault = (name: string) => Config.boolean(name).pipe(Config.withDefault(false));
+const configuredString = (value: Option.Option<string>): string | undefined =>
+  value.pipe(
+    Option.map(value => value.trim()),
+    Option.filter(value => value.length > 0),
+    Option.getOrUndefined
+  );
 
-const isTelemetryDebugEnabled = (): boolean => truthy(process.env[TELEMETRY_DEBUG_ENV_VAR]);
+const telemetryDebugEnabled = environmentProvider.load(
+  booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DEBUG')
+);
 
-const attempt = <A>(evaluate: () => A) =>
-  Effect.try({
-    try: evaluate,
-    catch: cause => new TelemetryError({ cause }),
-  });
+const analyticsDisabled = environmentProvider.load(
+  Config.all({
+    cliTelemetryDisabled: booleanWithDefault('COMPOSIO_CLI_TELEMETRY_DISABLED'),
+    telemetryDisabled: booleanWithDefault('TELEMETRY_DISABLED'),
+    composioTelemetryDisabled: booleanWithDefault('COMPOSIO_DISABLE_TELEMETRY'),
+    nodeEnvironment: Config.string('NODE_ENV').pipe(Config.withDefault('')),
+    ci: booleanWithDefault('CI'),
+  }).pipe(
+    Config.map(
+      ({
+        cliTelemetryDisabled,
+        telemetryDisabled,
+        composioTelemetryDisabled,
+        nodeEnvironment,
+        ci,
+      }) =>
+        cliTelemetryDisabled ||
+        telemetryDisabled ||
+        composioTelemetryDisabled ||
+        nodeEnvironment === 'test' ||
+        ci
+    )
+  )
+);
 
-const attemptPromise = <A>(evaluate: () => Promise<A>) =>
-  Effect.tryPromise({
-    try: evaluate,
-    catch: cause => new TelemetryError({ cause }),
-  });
-
-const parseJson = <A>(value: string) => attempt(() => JSON.parse(value) as A);
-
-const stringifyJson = (value: unknown) => attempt(() => JSON.stringify(value));
+const jsonFromString = Schema.parseJson();
+const prettyJsonFromString = Schema.parseJson({ space: 2 });
+const decodeJson = Schema.decodeUnknown(jsonFromString);
+const encodeJson = Schema.encode(jsonFromString);
+const encodePrettyJson = Schema.encode(prettyJsonFromString);
 
 const telemetryDebugLog = (label: string, payload: Record<string, unknown>) =>
-  isTelemetryDebugEnabled()
-    ? attempt(() =>
-        process.stderr.write(
-          `[telemetry-debug] ${JSON.stringify(
-            {
-              label,
-              ...payload,
-            },
-            null,
-            2
-          )}\n`
-        )
-      ).pipe(Effect.ignore)
-    : Effect.void;
+  Effect.gen(function* () {
+    if (!(yield* telemetryDebugEnabled)) {
+      return;
+    }
+
+    const body = yield* encodePrettyJson({ label, ...payload });
+    yield* Console.error(`[telemetry-debug] ${body}`);
+  }).pipe(Effect.ignore);
 
 const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, string> => {
   const squashed = Cause.squash(cause);
-  const error = squashed instanceof TelemetryError ? squashed.cause : squashed;
+  const error = Cause.isUnknownException(squashed) ? squashed.error : squashed;
   return error instanceof Error
     ? { name: error.name, message: error.message }
     : { message: String(error) };
@@ -98,10 +124,16 @@ const telemetryErrorDetails = (cause: Cause.Cause<unknown>): Record<string, stri
 const getAnalyticsPaths = Effect.gen(function* () {
   const path = yield* Path.Path;
   const os = yield* NodeOs;
+  const cacheDirectories = yield* environmentProvider.load(
+    Config.all({
+      composio: optionalString('COMPOSIO_CACHE_DIR'),
+      legacy: optionalString('CACHE_DIR'),
+    })
+  );
   const analyticsDir = path.join(os.homedir, COMPOSIO_DIR);
   const cacheDir =
-    process.env.COMPOSIO_CACHE_DIR?.trim() ||
-    process.env.CACHE_DIR?.trim() ||
+    configuredString(cacheDirectories.composio) ??
+    configuredString(cacheDirectories.legacy) ??
     path.join(os.homedir, constants.USER_COMPOSIO_DIR);
 
   return {
@@ -116,25 +148,8 @@ const readOptionalJson = <A>(filePath: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const raw = yield* fs.readFileString(filePath, 'utf8');
-    return yield* parseJson<A>(raw);
+    return (yield* decodeJson(raw)) as A;
   }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
-
-const encodeBase64Url = (value: string): string => {
-  const bytes = new TextEncoder().encode(value);
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '');
-};
-
-const decodeBase64Url = (value: string): string => {
-  const normalized = value.replace(/-/gu, '+').replace(/_/gu, '/');
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-  const binary = atob(padded);
-  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-};
 
 const djb2Hash = (value: string): number => {
   let hash = 5381;
@@ -145,6 +160,8 @@ const djb2Hash = (value: string): number => {
 };
 
 const hashString = (value: string): string => djb2Hash(value).toString(16).padStart(8, '0');
+
+const makeInstallId = Effect.sync(() => crypto.randomUUID());
 
 const getOrCreateInstallId = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
@@ -159,14 +176,15 @@ const getOrCreateInstallId = Effect.gen(function* () {
     return state.install_id;
   }
 
-  const installId = yield* attempt(() => crypto.randomUUID());
-  const contents = yield* stringifyJson({
+  const installId = yield* makeInstallId;
+  const createdAt = DateTime.formatIso(yield* DateTime.now);
+  const contents = yield* encodeJson({
     install_id: installId,
-    created_at: new Date().toISOString(),
+    created_at: createdAt,
   });
   yield* fs.writeFileString(paths.analyticsStatePath, contents);
   return installId;
-}).pipe(Effect.catchAll(() => attempt(() => crypto.randomUUID())));
+}).pipe(Effect.catchAll(() => makeInstallId));
 
 const readUserConfig = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
@@ -174,7 +192,9 @@ const readUserConfig = Effect.gen(function* () {
 });
 
 const getUserApiKey = Effect.gen(function* () {
-  const envApiKey = process.env.COMPOSIO_USER_API_KEY?.trim();
+  const envApiKey = configuredString(
+    yield* environmentProvider.load(optionalString('COMPOSIO_USER_API_KEY'))
+  );
   if (envApiKey) {
     return envApiKey;
   }
@@ -203,7 +223,7 @@ export const getCurrentCwdSessionId = (cwd = process.cwd()) =>
     }
 
     const currentCwdHash = cwdHash(cwd);
-    const now = Date.now();
+    const now = yield* Clock.currentTimeMillis;
     let best: { id: string; expiresAtMs: number } | undefined;
 
     for (const entry of Object.values(state)) {
@@ -229,7 +249,9 @@ const withCliSessionId = (event: NonNullable<TrackEvent>, cliSessionId?: string)
 });
 
 export const readApiBaseUrl = Effect.gen(function* () {
-  const envBaseUrl = process.env.COMPOSIO_BASE_URL?.trim();
+  const envBaseUrl = configuredString(
+    yield* environmentProvider.load(optionalString('COMPOSIO_BASE_URL'))
+  );
   if (envBaseUrl) {
     return envBaseUrl.replace(/\/+$/u, '');
   }
@@ -247,13 +269,6 @@ const getAnalyticsEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
 const getCliCodactFailuresEndpoint = Effect.map(readApiBaseUrl, baseUrl =>
   baseUrl ? `${baseUrl}${CLI_CODACT_FAILURES_PATH}` : null
 );
-
-export const shouldDisableAnalytics = (): boolean =>
-  truthy(process.env.COMPOSIO_CLI_TELEMETRY_DISABLED) ||
-  truthy(process.env.TELEMETRY_DISABLED) ||
-  truthy(process.env.COMPOSIO_DISABLE_TELEMETRY) ||
-  process.env.NODE_ENV === 'test' ||
-  process.env.CI === 'true';
 
 const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
   Effect.gen(function* () {
@@ -277,69 +292,90 @@ const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
         };
   });
 
+// Effect's Command processes are scoped; telemetry workers intentionally outlive
+// the CLI process, so detached spawn/unref remains the platform boundary here.
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
-  attempt(() => {
-    const child = spawn(command, args, {
-      detached: true,
-      stdio: isTelemetryDebugEnabled() ? ['ignore', 'ignore', 'inherit'] : 'ignore',
-      env: {
-        ...process.env,
-        COMPOSIO_CLI_ANALYTICS_WORKER: '1',
-      },
+  Effect.gen(function* () {
+    const debugEnabled = yield* telemetryDebugEnabled;
+    yield* Effect.try(() => {
+      const child = spawn(command, args, {
+        detached: true,
+        stdio: debugEnabled ? ['ignore', 'ignore', 'inherit'] : 'ignore',
+        // Leaving `env` unset makes Node inherit the complete parent environment.
+      });
+      child.on('error', () => undefined);
+      child.unref();
     });
-    child.on('error', () => undefined);
-    child.unref();
   });
 
 const captureToComposioAnalytics = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
     const endpoint = yield* getAnalyticsEndpoint;
-    if (!endpoint || shouldDisableAnalytics()) {
+    const disabled = yield* analyticsDisabled;
+    if (!endpoint || disabled) {
       yield* telemetryDebugLog('delivery_skipped', {
-        reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+        reason: disabled ? 'disabled' : 'missing_endpoint',
         endpoint,
         eventName: envelope.event,
       });
       return;
     }
 
+    const httpClient = yield* HttpClient.HttpClient;
     const userApiKey = yield* getUserApiKey;
-    const body = yield* stringifyJson(envelope);
-    const response = yield* attemptPromise(() =>
-      fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-composio-analytics-source': 'cli',
-          ...(userApiKey ? { 'x-user-api-key': userApiKey } : {}),
-        },
-        body,
-      })
+    const request = yield* HttpClientRequest.post(endpoint).pipe(
+      HttpClientRequest.setHeaders({
+        'x-composio-analytics-source': 'cli',
+        ...(userApiKey ? { 'x-user-api-key': userApiKey } : {}),
+      }),
+      HttpClientRequest.bodyJson(envelope)
     );
-    const responseBody =
-      !response.ok && isTelemetryDebugEnabled()
-        ? yield* attemptPromise(() => response.text())
-        : undefined;
+    const response = yield* httpClient.execute(request);
+    const responseOk = response.status >= 200 && response.status < 300;
+    const debugEnabled = yield* telemetryDebugEnabled;
+    const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
-    yield* telemetryDebugLog(response.ok ? 'delivery_succeeded' : 'delivery_failed', {
+    yield* telemetryDebugLog(responseOk ? 'delivery_succeeded' : 'delivery_failed', {
       endpoint,
       eventName: envelope.event,
       status: response.status,
-      ok: response.ok,
+      ok: responseOk,
       responseBody: responseBody?.slice(0, 1000),
     });
   });
 
-export const createCliCodactFailureBody = (
-  failure: CliCodactFailure,
-  cliSessionId?: string
-): {
+type CliCodactFailureBody = {
   failure_type: CliCodactFailureType;
   tool_info?: CliCodactFailureToolInfo;
   ctx: Record<string, unknown>;
   session: Record<string, unknown>;
   request_id?: string;
-} => ({
+};
+
+type CliInvocationContext = {
+  readonly origin?: string;
+  readonly parentRunId?: string;
+};
+
+const getCliInvocationContext = environmentProvider
+  .load(
+    Config.all({
+      origin: optionalString('COMPOSIO_CLI_INVOCATION_ORIGIN'),
+      parentRunId: optionalString('COMPOSIO_CLI_PARENT_RUN_ID'),
+    })
+  )
+  .pipe(
+    Effect.map(({ origin, parentRunId }) => ({
+      origin: configuredString(origin),
+      parentRunId: configuredString(parentRunId),
+    }))
+  );
+
+export const createCliCodactFailureBody = (
+  failure: CliCodactFailure,
+  cliSessionId?: string,
+  invocation: CliInvocationContext = {}
+): CliCodactFailureBody => ({
   failure_type: failure.failureType,
   ...(failure.toolInfo ? { tool_info: failure.toolInfo } : {}),
   ctx: failure.ctx,
@@ -347,8 +383,8 @@ export const createCliCodactFailureBody = (
     source: 'cli',
     id: cliSessionId,
     cli_version: constants.APP_VERSION,
-    invocation_origin: process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli',
-    parent_run_id: process.env.COMPOSIO_CLI_PARENT_RUN_ID,
+    invocation_origin: invocation.origin ?? 'cli',
+    parent_run_id: invocation.parentRunId,
     ...(failure.session ?? {}),
   },
   ...(failure.requestId ? { request_id: failure.requestId } : {}),
@@ -357,9 +393,10 @@ export const createCliCodactFailureBody = (
 const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
-    if (!endpoint || shouldDisableAnalytics()) {
+    const disabled = yield* analyticsDisabled;
+    if (!endpoint || disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
-        reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+        reason: disabled ? 'disabled' : 'missing_endpoint',
         endpoint,
         failureType: failure.failureType,
       });
@@ -376,28 +413,24 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
       return;
     }
 
+    const httpClient = yield* HttpClient.HttpClient;
     const cliSessionId = yield* getCurrentCwdSessionId();
-    const body = yield* stringifyJson(createCliCodactFailureBody(failure, cliSessionId));
-    const response = yield* attemptPromise(() =>
-      fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-api-key': userApiKey,
-        },
-        body,
-      })
+    const invocation = yield* getCliInvocationContext;
+    const body = createCliCodactFailureBody(failure, cliSessionId, invocation);
+    const request = yield* HttpClientRequest.post(endpoint).pipe(
+      HttpClientRequest.setHeader('x-user-api-key', userApiKey),
+      HttpClientRequest.bodyJson(body)
     );
-    const responseBody =
-      !response.ok && isTelemetryDebugEnabled()
-        ? yield* attemptPromise(() => response.text())
-        : undefined;
+    const response = yield* httpClient.execute(request);
+    const responseOk = response.status >= 200 && response.status < 300;
+    const debugEnabled = yield* telemetryDebugEnabled;
+    const responseBody = !responseOk && debugEnabled ? yield* response.text : undefined;
 
-    yield* telemetryDebugLog(response.ok ? 'codact_delivery_succeeded' : 'codact_delivery_failed', {
+    yield* telemetryDebugLog(responseOk ? 'codact_delivery_succeeded' : 'codact_delivery_failed', {
       endpoint,
       failureType: failure.failureType,
       status: response.status,
-      ok: response.ok,
+      ok: responseOk,
       responseBody: responseBody?.slice(0, 1000),
     });
   });
@@ -409,9 +442,10 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     }
 
     const endpoint = yield* getAnalyticsEndpoint;
-    if (shouldDisableAnalytics() || !endpoint) {
+    const disabled = yield* analyticsDisabled;
+    if (disabled || !endpoint) {
       yield* telemetryDebugLog('skip', {
-        reason: shouldDisableAnalytics() ? 'disabled' : 'missing_endpoint',
+        reason: disabled ? 'disabled' : 'missing_endpoint',
         eventName: event.name,
         endpoint,
       });
@@ -426,17 +460,18 @@ export const trackCliEventEffect = (event: TrackEvent) =>
 
     const installId = yield* getOrCreateInstallId;
     const distinctId = yield* getDistinctId(installId);
+    const sentAt = DateTime.formatIso(yield* DateTime.now);
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
       ...(enrichedEvent.properties ? { properties: enrichedEvent.properties } : {}),
-      sentAt: new Date().toISOString(),
+      sentAt,
       source: 'cli',
       distinctId,
       installId,
     };
     yield* telemetryDebugLog('enqueue', { endpoint, envelope });
-    const serializedEnvelope = yield* stringifyJson(envelope);
-    const encodedPayload = yield* attempt(() => encodeBase64Url(serializedEnvelope));
+    const serializedEnvelope = yield* encodeJson(envelope);
+    const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);
     const { command, args } = yield* getWorkerSpawnArgs(
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
@@ -448,13 +483,10 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
-    if (shouldDisableAnalytics() || !endpoint || !userApiKey) {
+    const disabled = yield* analyticsDisabled;
+    if (disabled || !endpoint || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
-        reason: shouldDisableAnalytics()
-          ? 'disabled'
-          : !endpoint
-            ? 'missing_endpoint'
-            : 'missing_user_api_key',
+        reason: disabled ? 'disabled' : !endpoint ? 'missing_endpoint' : 'missing_user_api_key',
         failureType: failure.failureType,
         endpoint,
       });
@@ -462,8 +494,9 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
     }
 
     const cliSessionId = yield* getCurrentCwdSessionId();
-    const body = yield* stringifyJson(createCliCodactFailureBody(failure, cliSessionId));
-    const encodedPayload = yield* attempt(() => encodeBase64Url(body));
+    const invocation = yield* getCliInvocationContext;
+    const body = yield* encodeJson(createCliCodactFailureBody(failure, cliSessionId, invocation));
+    const encodedPayload = Encoding.encodeBase64Url(body);
     const { command, args } = yield* getWorkerSpawnArgs(
       INTERNAL_CODACT_FAILURE_WORKER_FLAG,
       encodedPayload
@@ -479,7 +512,10 @@ export const isBackgroundWorkerInvocation = (argv: ReadonlyArray<string>): boole
   getWorkerFlagIndex(argv, INTERNAL_CODACT_FAILURE_WORKER_FLAG) >= 0;
 
 const decodeWorkerPayload = <A>(encodedPayload: string) =>
-  attempt(() => decodeBase64Url(encodedPayload)).pipe(Effect.flatMap(parseJson<A>));
+  Effect.gen(function* () {
+    const serialized = yield* Encoding.decodeBase64UrlString(encodedPayload);
+    return (yield* decodeJson(serialized)) as A;
+  });
 
 const runAnalyticsWorker = (argv: ReadonlyArray<string>) => {
   const flagIndex = getWorkerFlagIndex(argv, INTERNAL_ANALYTICS_WORKER_FLAG);

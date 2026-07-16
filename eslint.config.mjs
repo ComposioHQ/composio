@@ -106,6 +106,10 @@ export default [
           message:
             'Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch.',
         },
+        {
+          selector: "MemberExpression[object.name='process'][property.name='env']",
+          message: 'Read environment variables through effect/Config instead of process.env.',
+        },
       ],
     },
   },
