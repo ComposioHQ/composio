@@ -84,6 +84,14 @@ const effectSchemaRestrictedImportPatterns = [
 export default [
   {
     ignores: [
+      '**/.venv/**',
+      '**/.next/**',
+      '**/site-packages/**',
+      '**/__fixtures__/**',
+      '**/fixtures/**',
+      'docs/.source/**',
+      'ts/vendor/**',
+      'ts/packages/cli-local-tools/vendor/**',
       'ts/packages/**/dist/**',
       'ts/packages/**/.generated/**',
       'ts/packages/**/acp-adapters/**',
