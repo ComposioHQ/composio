@@ -47,6 +47,8 @@ import { InChatAuthTerminal } from '@/components/in-chat-auth-terminal';
 import { MediaSplit } from '@/components/media-split';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
+import { ForAgent } from '@/components/for-agent';
+import { ExperimentalBadge } from '@/components/experimental-badge';
 import {
   ShieldCheck,
   Route as RouteIcon,
@@ -145,6 +147,8 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     MediaSplit,
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
+    ForAgent,
+    ExperimentalBadge,
     // Lucide icons
     ShieldCheck,
     RouteIcon,
