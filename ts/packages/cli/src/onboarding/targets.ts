@@ -55,6 +55,12 @@ export const parseTargetList = (
     .split(',')
     .map(item => item.trim().toLowerCase())
     .filter(Boolean);
+  const unsupported = requested.filter(id => !isSkillInstallTarget(id));
+  if (unsupported.length > 0) {
+    throw new Error(
+      `Unsupported onboarding target: ${unsupported.join(', ')}. Supported: ${formatSkillInstallTargetList()}`
+    );
+  }
   const requestedSet = new Set(requested);
   return detected.filter(target => requestedSet.has(target.id));
 };
