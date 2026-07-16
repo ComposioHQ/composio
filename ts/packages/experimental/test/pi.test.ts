@@ -444,4 +444,35 @@ describe('PiProvider', () => {
       })
     ).toEqual(['https://connect.composio.dev/abc123']);
   });
+
+  it('extracts generic Composio auth links case-insensitively', () => {
+    expect(extractComposioConnectLinks('Open HTTPS://auth.Composio.dev/LINK/abc123')).toEqual([
+      'HTTPS://auth.Composio.dev/LINK/abc123',
+    ]);
+  });
+
+  it('returns connect links first and deduplicates links across classifiers', () => {
+    const genericLink = 'https://auth.composio.dev/link/generic';
+    const connectLink = 'https://connect.composio.dev/link/connect';
+
+    expect(
+      extractComposioConnectLinks(`${genericLink} ${connectLink} ${genericLink} ${connectLink}`)
+    ).toEqual([connectLink, genericLink]);
+  });
+
+  it('trims repeated trailing punctuation from auth links', () => {
+    const repeatedPunctuation = '!?.,;:'.repeat(5_000);
+
+    expect(
+      extractComposioConnectLinks(
+        `Connect at https://connect.composio.dev/abc123${repeatedPunctuation} or https://auth.composio.dev/link/xyz!?.,`
+      )
+    ).toEqual(['https://connect.composio.dev/abc123', 'https://auth.composio.dev/link/xyz']);
+  });
+
+  it('handles long adversarial nonmatches without backtracking', () => {
+    const nonMatch = `https://${'composio'.repeat(20_000)}/not-a-link`;
+
+    expect(extractComposioConnectLinks(nonMatch)).toEqual([]);
+  });
 });

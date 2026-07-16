@@ -259,6 +259,64 @@ export function dereferenceJsonSchema<T = unknown>(
 }
 
 /**
+ * Returns a deep-cloned JSON Schema whose `required` arrays contain each entry
+ * at most once. Duplicate entries are invalid in JSON Schema 2020-12 but do
+ * not change the schema's meaning, so preserving the first occurrence is safe.
+ *
+ * Tool schemas originate both from the Composio API and direct provider calls.
+ * Keeping this normalization provider-agnostic lets every SDK provider receive
+ * canonical API schemas, while providers that further transform a schema can
+ * reapply it at their own emission boundary.
+ */
+export function deduplicateJsonSchemaRequiredArrays<T = unknown>(schema: T): T {
+  const seenSchemaValues = new WeakMap<object, unknown>();
+  const seenInstanceValues = new WeakMap<object, unknown>();
+  const instanceValueKeywords = new Set(['const', 'default', 'enum', 'examples']);
+
+  function walk(value: unknown, isSchema: boolean, depth = 0): unknown {
+    if (depth > MAX_NODE_DEPTH) {
+      throw new RangeError(`JSON Schema exceeds maximum nesting depth of ${MAX_NODE_DEPTH}`);
+    }
+
+    const seen = isSchema ? seenSchemaValues : seenInstanceValues;
+
+    if (Array.isArray(value)) {
+      const existing = seen.get(value);
+      if (existing) return existing;
+
+      const clone: unknown[] = [];
+      seen.set(value, clone);
+      for (const item of value) {
+        clone.push(walk(item, isSchema, depth + 1));
+      }
+      return clone;
+    }
+
+    if (!isPlainObject(value)) return value;
+
+    const existing = seen.get(value);
+    if (existing) return existing;
+
+    const clone: Record<string, unknown> = {};
+    seen.set(value, clone);
+    for (const [key, child] of Object.entries(value)) {
+      Object.defineProperty(clone, key, {
+        configurable: true,
+        enumerable: true,
+        value:
+          isSchema && key === 'required' && Array.isArray(child)
+            ? [...new Set(walk(child, false, depth + 1) as unknown[])]
+            : walk(child, isSchema && !instanceValueKeywords.has(key), depth + 1),
+        writable: true,
+      });
+    }
+    return clone;
+  }
+
+  return walk(schema, true) as T;
+}
+
+/**
  * Removes all non-required properties from the schema
  *
  * if no items are required, the schema is returned as is

@@ -1,7 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Effect, Config, Option } from 'effect';
-import { HttpClient } from '@effect/platform';
+import { FileSystem, HttpClient, Path } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -11,11 +9,11 @@ import {
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
-import { targetLabel } from 'src/onboarding/targets';
-import decompress from 'decompress';
+import extractZip from 'extract-zip';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
+export const SKILL_RELEASE_TAG_FILENAME = '.composio-release-tag';
 export const DOCS_SKILL_NAME = 'composio-docs';
 /** Fetched fresh from the docs site so the skill never goes stale with releases. */
 const DOCS_SKILL_URL = Config.string('DOCS_SKILL_URL').pipe(
@@ -25,6 +23,22 @@ export type SkillReleaseChannel = CliReleaseChannel;
 export type SkillInstallTarget = 'claude' | 'codex' | 'cursor' | 'dust' | 'openclaw';
 
 const SKILL_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+const SKILL_TARGET_LABELS: Record<SkillInstallTarget, string> = {
+  claude: 'Claude Code',
+  codex: 'Codex',
+  cursor: 'Cursor',
+  dust: 'Dust',
+  openclaw: 'OpenClaw',
+};
+
+const SKILL_TARGET_DIRECTORIES: Record<SkillInstallTarget, ReadonlyArray<string>> = {
+  claude: ['.claude', 'skills'],
+  codex: ['.codex', 'skills'],
+  cursor: ['.cursor', 'skills'],
+  dust: ['.dust', 'skills'],
+  openclaw: ['.openclaw', 'skills'],
+};
 
 type GitHubConfig = GitHubRepoConfig & {
   TAG: Option.Option<string>;
@@ -49,26 +63,17 @@ export const resolveInstalledSkillName = (skillName?: string): string => {
 
 export const resolveTargetSkillPath = ({
   home,
+  path,
   skillName,
   target,
 }: {
   home: string;
+  path: Path.Path;
   skillName: string;
   target: SkillInstallTarget;
-}): string => {
-  switch (target) {
-    case 'claude':
-      return path.join(home, '.claude', 'skills', skillName);
-    case 'codex':
-      return path.join(home, '.codex', 'skills', skillName);
-    case 'cursor':
-      return path.join(home, '.cursor', 'skills', skillName);
-    case 'dust':
-      return path.join(home, '.dust', 'skills', skillName);
-    case 'openclaw':
-      return path.join(home, '.openclaw', 'skills', skillName);
-  }
-};
+}): string => path.join(home, ...SKILL_TARGET_DIRECTORIES[target], skillName);
+
+const resolveTargetLabel = (target: SkillInstallTarget): string => SKILL_TARGET_LABELS[target];
 
 export const inferSkillReleaseChannel = (tagOrVersion: string): SkillReleaseChannel =>
   tagOrVersion.includes('-beta.') ? 'beta' : 'stable';
@@ -123,10 +128,13 @@ export const installSkill = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const ui = yield* TerminalUI;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const httpClient = yield* HttpClient.HttpClient;
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
     const home = os.homedir;
@@ -134,7 +142,7 @@ export const installSkill = (options?: {
     const skillName = resolveInstalledSkillName(options?.skillName);
 
     const agentSkillDir = path.join(home, '.agents', 'skills', skillName);
-    const targetSkillPath = resolveTargetSkillPath({ home, skillName, target });
+    const targetSkillPath = resolveTargetSkillPath({ home, path, skillName, target });
 
     const tag = yield* resolveSkillReleaseTag({
       channel: options?.channel,
@@ -185,61 +193,65 @@ export const installSkill = (options?: {
 
     // Extract to a temp dir, then move into place
     const tmpDir = path.join(os.homedir, '.agents', '.tmp-skill-install');
-    fs.mkdirSync(tmpDir, { recursive: true });
 
-    try {
+    yield* Effect.gen(function* () {
+      yield* fs.makeDirectory(tmpDir, { recursive: true });
       const zipPath = path.join(tmpDir, SKILL_ASSET_NAME);
-      fs.writeFileSync(zipPath, new Uint8Array(zipData));
+      yield* fs.writeFile(zipPath, new Uint8Array(zipData));
 
       yield* Effect.tryPromise({
-        try: () => decompress(zipPath, tmpDir),
+        try: () => extractZip(zipPath, { dir: tmpDir }),
         catch: error => new Error(`Failed to extract skill zip: ${error}`),
       });
 
       // The zip contains composio-cli/ directory
       const extractedDir = path.join(tmpDir, SKILL_NAME);
-      if (!fs.existsSync(extractedDir)) {
+      if (!(yield* fs.exists(extractedDir))) {
         return yield* Effect.fail(new Error('Extracted skill directory not found'));
       }
 
-      // Remove old skill dir and move new one into place
-      fs.rmSync(agentSkillDir, { recursive: true, force: true });
-      fs.mkdirSync(path.dirname(agentSkillDir), { recursive: true });
-      fs.cpSync(extractedDir, agentSkillDir, { recursive: true });
-    } finally {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
+      yield* Effect.gen(function* () {
+        // Replace the canonical skill and agent target without interruption leaving either absent.
+        yield* fs.remove(agentSkillDir, { recursive: true, force: true });
+        yield* fs.makeDirectory(path.dirname(agentSkillDir), { recursive: true });
+        yield* fs.copy(extractedDir, agentSkillDir, { overwrite: true });
+        yield* fs.writeFileString(path.join(agentSkillDir, SKILL_RELEASE_TAG_FILENAME), `${tag}\n`);
+
+        yield* fs.makeDirectory(path.dirname(targetSkillPath), { recursive: true });
+        yield* fs.remove(targetSkillPath, { recursive: true, force: true });
+        const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
+        yield* fs.symlink(relativeTarget, targetSkillPath);
+      }).pipe(Effect.uninterruptible);
+    }).pipe(
+      Effect.ensuring(fs.remove(tmpDir, { recursive: true, force: true }).pipe(Effect.orDie))
+    );
+
+    if (!options?.silent) {
+      yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
     }
-
-    linkSkillIntoTarget({ agentSkillDir, targetSkillPath });
-
-    yield* ui.log.success(`Installed ${skillName} skill for ${targetLabel(target)}`);
   });
 
-/** Create the agent-specific symlink, replacing any existing entry. */
-const linkSkillIntoTarget = ({
-  agentSkillDir,
-  targetSkillPath,
-}: {
-  agentSkillDir: string;
-  targetSkillPath: string;
-}): void => {
-  fs.mkdirSync(path.dirname(targetSkillPath), { recursive: true });
-  try {
-    const stat = fs.lstatSync(targetSkillPath);
-    // Entry exists (symlink, broken symlink, or directory) — remove it
-    if (stat.isSymbolicLink()) {
-      fs.unlinkSync(targetSkillPath);
-    } else if (stat.isDirectory()) {
-      fs.rmSync(targetSkillPath, { recursive: true, force: true });
-    } else {
-      fs.unlinkSync(targetSkillPath);
-    }
-  } catch {
-    // lstatSync throws if nothing exists at the path — that's fine
-  }
-  const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
-  fs.symlinkSync(relativeTarget, targetSkillPath);
-};
+/**
+ * Wrapped version that catches all errors and logs a warning instead of failing.
+ */
+export const installSkillSafe = (options?: {
+  readonly releaseTag?: string;
+  readonly channel?: SkillReleaseChannel;
+  readonly target?: SkillInstallTarget;
+  readonly skillName?: string;
+  readonly silent?: boolean;
+}) =>
+  installSkill(options).pipe(
+    Effect.sandbox,
+    Effect.catchAll(cause =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* Effect.logDebug('Skill install failed:', cause);
+        const targetLabel = resolveTargetLabel(options?.target ?? 'claude');
+        yield* ui.log.warn(`Could not install ${targetLabel} skill (non-fatal)`);
+      })
+    )
+  );
 
 /**
  * Install the composio-docs skill: teaches agents how to discover Composio's
@@ -251,6 +263,8 @@ export const installDocsSkill = (options: { readonly target: SkillInstallTarget 
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const ui = yield* TerminalUI;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const httpClient = yield* HttpClient.HttpClient;
     const url = yield* DOCS_SKILL_URL;
     const home = os.homedir;
@@ -274,13 +288,19 @@ export const installDocsSkill = (options: { readonly target: SkillInstallTarget 
     }
 
     const agentSkillDir = path.join(home, '.agents', 'skills', DOCS_SKILL_NAME);
-    fs.mkdirSync(agentSkillDir, { recursive: true });
-    fs.writeFileSync(path.join(agentSkillDir, 'SKILL.md'), body);
+    const targetSkillPath = resolveTargetSkillPath({ home, path, skillName: DOCS_SKILL_NAME, target });
 
-    const targetSkillPath = resolveTargetSkillPath({ home, skillName: DOCS_SKILL_NAME, target });
-    linkSkillIntoTarget({ agentSkillDir, targetSkillPath });
+    yield* Effect.gen(function* () {
+      yield* fs.makeDirectory(agentSkillDir, { recursive: true });
+      yield* fs.writeFileString(path.join(agentSkillDir, 'SKILL.md'), body);
 
-    yield* ui.log.success(`Installed ${DOCS_SKILL_NAME} skill for ${targetLabel(target)}`);
+      yield* fs.makeDirectory(path.dirname(targetSkillPath), { recursive: true });
+      yield* fs.remove(targetSkillPath, { recursive: true, force: true });
+      const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
+      yield* fs.symlink(relativeTarget, targetSkillPath);
+    }).pipe(Effect.uninterruptible);
+
+    yield* ui.log.success(`Installed ${DOCS_SKILL_NAME} skill for ${resolveTargetLabel(target)}`);
   });
 
 /**
@@ -294,29 +314,8 @@ export const installDocsSkillSafe = (options: { readonly target: SkillInstallTar
         const ui = yield* TerminalUI;
         yield* Effect.logDebug('Docs skill install failed:', cause);
         yield* ui.log.warn(
-          `Could not install ${DOCS_SKILL_NAME} skill for ${targetLabel(options.target)} (non-fatal)`
+          `Could not install ${DOCS_SKILL_NAME} skill for ${resolveTargetLabel(options.target)} (non-fatal)`
         );
-      })
-    )
-  );
-
-/**
- * Wrapped version that catches all errors and logs a warning instead of failing.
- */
-export const installSkillSafe = (options?: {
-  readonly releaseTag?: string;
-  readonly channel?: SkillReleaseChannel;
-  readonly target?: SkillInstallTarget;
-  readonly skillName?: string;
-}) =>
-  installSkill(options).pipe(
-    Effect.sandbox,
-    Effect.catchAll(cause =>
-      Effect.gen(function* () {
-        const ui = yield* TerminalUI;
-        yield* Effect.logDebug('Skill install failed:', cause);
-        const label = targetLabel(options?.target ?? 'claude');
-        yield* ui.log.warn(`Could not install ${label} skill (non-fatal)`);
       })
     )
   );

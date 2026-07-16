@@ -5,6 +5,9 @@ on:
     types: [dashboard-production-deploy]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-clients:
     runs-on: ubuntu-latest
@@ -50,7 +53,7 @@ jobs:
           echo "$(wc -l < /tmp/client-definitions.ts) lines"
 
       - name: Sync Connect clients
-        uses: anthropics/claude-code-action@a92e7c70a4da9793dc164451d829089dc057a464 # v1.0.159
+        uses: anthropics/claude-code-action@536f2c32a39763739000b0e1ac69ca2647d97ce9 # v1.0.170
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: 'Read,Write,Edit,Glob,Grep,Bash(curl *)'

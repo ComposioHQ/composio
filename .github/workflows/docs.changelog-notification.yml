@@ -6,6 +6,9 @@ on:
     paths:
       - 'docs/content/changelog/**.mdx'
 
+permissions:
+  contents: read
+
 jobs:
   notify-changelog:
     name: Send Changelog Notification

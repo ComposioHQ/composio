@@ -29,6 +29,7 @@ api_base='https://api.example.test'
 archive_url="https://downloads.example.test/$valid_tag/$archive_name"
 curl_log="$tmpdir/curl.log"
 git_log="$tmpdir/git.log"
+composio_log="$tmpdir/composio.log"
 
 cat > "$bin_dir/curl" <<'EOF'
 #!/usr/bin/env bash
@@ -144,9 +145,16 @@ fi
 mkdir -p "$dest"
 cat > "$dest/composio" <<'BIN'
 #!/usr/bin/env bash
+set -euo pipefail
+
+printf '%s\n' "$*" >> "$TEST_COMPOSIO_LOG"
+
 case "${1:-}" in
 install)
     exit 0
+    ;;
+setup)
+    exit "${TEST_SETUP_EXIT:-0}"
     ;;
 --version|version)
     echo 'composio fake 98.0.0'
@@ -172,6 +180,7 @@ chmod +x "$bin_dir/git"
 
 export TEST_CURL_LOG="$curl_log"
 export TEST_GIT_LOG="$git_log"
+export TEST_COMPOSIO_LOG="$composio_log"
 export TEST_API_BASE="$api_base"
 export TEST_ARCHIVE_NAME="$archive_name"
 export TEST_ARCHIVE_URL="$archive_url"
@@ -179,16 +188,26 @@ export TEST_VALID_TAG="$valid_tag"
 export TEST_MISSING_ASSET_TAG="$missing_asset_tag"
 export TEST_TAG_WITHOUT_RELEASE="$tag_without_release"
 
-output=$(env \
-    PATH="$bin_dir:$PATH" \
-    HOME="$home_dir" \
-    SHELL="/bin/bash" \
-    COMPOSIO_INSTALL_DIR="$install_dir" \
-    COMPOSIO_GITHUB_URL='https://github.example.test' \
-    COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
-    COMPOSIO_GITHUB_OWNER='FakeOwner' \
-    COMPOSIO_GITHUB_REPO='fake-repo' \
-    bash "$repo_root/install.sh" 2>&1)
+run_installer() {
+    local test_home="$1"
+    local test_install_dir="$2"
+    shift 2
+
+    env \
+        PATH="$bin_dir:$PATH" \
+        HOME="$test_home" \
+        SHELL="/bin/bash" \
+        COMPOSIO_INSTALL_DIR="$test_install_dir" \
+        COMPOSIO_INSTALL_PLUGINS="${COMPOSIO_INSTALL_PLUGINS:-1}" \
+        COMPOSIO_GITHUB_URL='https://github.example.test' \
+        COMPOSIO_GITHUB_API_BASE_URL="$api_base" \
+        COMPOSIO_GITHUB_OWNER='FakeOwner' \
+        COMPOSIO_GITHUB_REPO='fake-repo' \
+        TEST_SETUP_EXIT="${TEST_SETUP_EXIT:-0}" \
+        bash "$repo_root/install.sh" "$@"
+}
+
+output=$(run_installer "$home_dir" "$install_dir" 2>&1)
 
 printf '%s\n' "$output"
 
@@ -224,4 +243,47 @@ if grep -q "$tag_without_release" "$curl_log"; then
     exit 1
 fi
 
-printf 'install.sh release fallback test passed\n'
+expected_setup='setup --target auto --yes --if-present'
+if ! grep -qxF "$expected_setup" "$composio_log"; then
+    echo "Expected installer to invoke: composio $expected_setup" >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+no_plugins_home="$tmpdir/home-no-plugins"
+no_plugins_install="$tmpdir/install-no-plugins"
+mkdir -p "$no_plugins_home" "$no_plugins_install"
+: > "$composio_log"
+run_installer "$no_plugins_home" "$no_plugins_install" --no-plugins >/dev/null 2>&1
+if grep -q '^setup ' "$composio_log"; then
+    echo 'Expected --no-plugins to skip agent plugin setup.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+env_opt_out_home="$tmpdir/home-env-opt-out"
+env_opt_out_install="$tmpdir/install-env-opt-out"
+mkdir -p "$env_opt_out_home" "$env_opt_out_install"
+: > "$composio_log"
+COMPOSIO_INSTALL_PLUGINS=0 run_installer "$env_opt_out_home" "$env_opt_out_install" >/dev/null 2>&1
+if grep -q '^setup ' "$composio_log"; then
+    echo 'Expected COMPOSIO_INSTALL_PLUGINS=0 to skip agent plugin setup.' >&2
+    cat "$composio_log" >&2
+    exit 1
+fi
+
+failed_setup_home="$tmpdir/home-failed-setup"
+failed_setup_install="$tmpdir/install-failed-setup"
+mkdir -p "$failed_setup_home" "$failed_setup_install"
+: > "$composio_log"
+if failed_output=$(TEST_SETUP_EXIT=23 run_installer "$failed_setup_home" "$failed_setup_install" 2>&1); then
+    echo 'Expected installer to fail when detected agent plugin setup fails.' >&2
+    exit 1
+fi
+if ! grep -q 'Composio CLI was installed, but agent plugin setup failed' <<<"$failed_output"; then
+    echo 'Expected installer to explain how to retry failed plugin setup.' >&2
+    printf '%s\n' "$failed_output" >&2
+    exit 1
+fi
+
+printf 'install.sh release fallback and plugin setup tests passed\n'

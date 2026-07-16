@@ -41,7 +41,8 @@ console.log(`🔄 Submitting tool outputs to OpenAI...`);
 console.log(JSON.stringify(modelInputs, null, 2));
 const finalResponse = await openai.responses.create({
   model: 'gpt-4.1',
-  input: [...initialResponse.output, ...modelInputs],
+  previous_response_id: initialResponse.id,
+  input: modelInputs,
   tools,
 });
 

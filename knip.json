@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreWorkspaces": [
+    "ts/e2e-tests/**"
+  ],
+  "ignoreBinaries": [
+    "mise",
+    "swift",
+    "python",
+    "python3",
+    "vhs",
+    "ps",
+    "ruff"
+  ],
+  "ignore": [
+    "**/.next/**",
+    "**/build/**",
+    "docs/**",
+    "**/*.d.ts"
+  ]
+}

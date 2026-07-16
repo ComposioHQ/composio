@@ -63,7 +63,8 @@ class LangchainProvider(
         )
         action_func.__signature__ = Signature(  # type: ignore
             parameters=get_signature_format_from_schema_params(
-                schema_params=schema_params
+                schema_params=schema_params,
+                skip_default=self.skip_default,
             )
         )
         action_func.__doc__ = tool.description

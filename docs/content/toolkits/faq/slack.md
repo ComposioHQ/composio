@@ -18,10 +18,6 @@ When a member of a Slack workspace tries to install a non-Marketplace app.
 
 `Settings → Apps & Workflows → App Management Settings`
 
-## Do I have to be a Workspace Owner to install the app?
-
-In some cases — yes. For example, when installing non-Marketplace apps, you'll need to be an owner to install directly and complete the connection. As a member, you'd need to either request approval, or ask the owner to disable **Require approved apps**.
-
 ## Why am I being asked to submit a request during auth?
 
 Because **Require approved apps** is enabled in the workspace's **App Management Settings**. Slack is asking for admin/owner approval before completing the install.
@@ -31,7 +27,7 @@ Because **Require approved apps** is enabled in the workspace's **App Management
 Two ways:
 
 - Disable both **Require apps from Slack Marketplace** and **Require approved apps** in the workspace's app management settings.
-- Use the workspace's own OAuth app — recommended and safest. See [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
+- Use the workspace's own OAuth app, which is recommended and safest. See [How to create OAuth credentials for Slack](https://composio.dev/auth/slack).
 
 ## What is the difference between Slack and Slackbot toolkits?
 
@@ -61,4 +57,14 @@ For the Slack toolkit, set `as_user=True` to post as the authenticated user. For
 
 See [Triggers](/docs/triggers).
 
----
+## Slack Marketplace warnings during OAuth
+
+Slack may show a Marketplace warning when the OAuth app is not listed or approved in Slack Marketplace. The OAuth flow can still work if the workspace allows non-Marketplace apps, but workspaces with stricter app policies may require admin approval before the connection can complete.
+
+Composio is working on Marketplace review for the managed Slack app. Until that review is complete, use the workspace's own Slack OAuth app or ask a workspace admin to approve the app if the warning blocks users.
+
+![Slack OAuth consent warning stating that the app is not approved by Slack.](/images/kb/toolkits/slack/slack-marketplace-warning.png)
+
+## Do I have to be a Workspace Owner to install the app?
+
+In some cases — yes. For example, when installing non-Marketplace apps, you'll need to be an owner to install directly and complete the connection. As a member, you'd need to either request approval, or ask the owner to disable **Require approved apps**.

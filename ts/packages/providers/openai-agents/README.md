@@ -1,78 +1,56 @@
 # @composio/openai-agents
 
-The OpenAI Agents API provider for Composio SDK, providing seamless integration with OpenAI's Agents API and tools.
-
-## Features
-
-- **OpenAI Agents Integration**: Seamless integration with OpenAI's Agents SDK
-- **Tool Integration**: Easy integration of Composio tools with OpenAI Agents
-- **Type Safety**: Full TypeScript support with proper type definitions
-- **Strict Mode**: Support for strict mode tool parameter validation
+Composio provider for the [OpenAI Agents SDK](https://openai.github.io/openai-agents-js/) (`@openai/agents`). It converts Composio tools into the Agents SDK's native tool format so your agents can act across 1000+ apps.
 
 ## Installation
 
 ```bash
-npm install @composio/openai-agents @openai/agents
-# or
-yarn add @composio/openai-agents @openai/agents
-# or
-pnpm add @composio/openai-agents @openai/agents
+npm install @composio/core @composio/openai-agents @openai/agents
 ```
 
-## Environment Variables
+Set two environment variables:
 
-Required environment variables:
+- `COMPOSIO_API_KEY` from the [Composio dashboard](https://dashboard.composio.dev/settings)
+- `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com/api-keys)
 
-- `COMPOSIO_API_KEY`: Your Composio API key
-- `OPENAI_API_KEY`: Your OpenAI API key
+## Quickstart
 
-## Example
+Create a session for your user, hand its tools to an agent, and run it:
 
 ```typescript
-import { OpenAIAgentsProvider } from '@composio/openai-agents';
 import { Composio } from '@composio/core';
+import { OpenAIAgentsProvider } from '@composio/openai-agents';
 import { Agent, run } from '@openai/agents';
 
-const composio = new Composio({
-  provider: new OpenAIAgentsProvider(),
-});
+const composio = new Composio({ provider: new OpenAIAgentsProvider() });
 
-// Fetch tools from Composio
-const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  beforeExecute: async (toolSlug, toolkitSlug, params) => {
-    console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
-    return params;
-  },
-  afterExecute: async (toolSlug, toolkitSlug, result) => {
-    console.log(`✅ Tool ${toolSlug} executed`);
-    return result;
-  },
-});
+// Each session is scoped to one of your users
+const session = await composio.create('user_123');
+const tools = await session.tools();
 
-// Create an agent with the tools
 const agent = new Agent({
-  name: 'Hackernews assistant',
-  tools: tools,
+  name: 'Personal Assistant',
+  instructions: 'You are a helpful personal assistant. Use Composio tools to take action.',
+  model: 'gpt-5.2',
+  tools,
 });
 
-// Run the agent with a query
-const result = await run(agent, 'Tell me about the user `pg` in hackernews');
+const result = await run(agent, 'Summarize my emails from today');
+console.log(result.finalOutput);
 ```
 
-## Provider Configuration
+For multi-turn conversations, store `session.sessionId` and reuse it with `composio.use(sessionId)` instead of creating a new session each turn.
 
-The OpenAI Agents provider can be configured with various options:
+## Strict mode
+
+Pass `strict: true` to enable strict JSON schema validation for tool parameters (see the [Agents SDK options reference](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)):
 
 ```typescript
-const provider = new OpenAIAgentsProvider({
-  strict: true, // Enable strict mode for tool parameters
-});
+const provider = new OpenAIAgentsProvider({ strict: true });
 ```
 
-## Documentation
+## Links
 
-For more information about OpenAI Agents and how to use them, see:
-
-- [OpenAI Strict Mode](https://openai.github.io/openai-agents-js/guides/tools/#options-reference)
-- [OpenAI Agents SDK Documentation](https://openai.github.io/openai-agents-js/)
-- [OpenAI Agents SDK GitHub](https://github.com/openai/openai-agents-js)
+- [Composio quickstart](https://docs.composio.dev/docs/quickstart)
+- [Composio documentation](https://docs.composio.dev)
+- [OpenAI Agents SDK documentation](https://openai.github.io/openai-agents-js/)

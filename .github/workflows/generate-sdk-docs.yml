@@ -15,6 +15,9 @@ on:
       - 'mise.lock'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   generate-ts-docs:
     runs-on: ubuntu-latest

@@ -1,0 +1,38 @@
+---
+title: 'TypeScript SDK 0.14.0 hardens file uploads and tool execution'
+description: 'TypeScript SDK 0.14.0 blocks unsafe URL uploads, redacts secrets from telemetry, and makes tool execution more reliable.'
+date: '2026-07-15'
+---
+
+TypeScript SDK `@composio/core` `0.14.0` closes file-upload and telemetry exposure paths, prevents duplicate tool side effects after retries, and aligns trigger creation with backend connection resolution.
+
+### SDK versions
+
+| SDK                         | Version  |
+| --------------------------- | -------- |
+| TypeScript `@composio/core` | `0.14.0` |
+
+### File and telemetry security
+
+- URL file uploads and automatic uploads during tool execution reject private, loopback, link-local, carrier-grade NAT, and reserved addresses. Redirects are checked at every hop, and blocked requests raise `ComposioBlockedInternalUrlError`.
+- Error telemetry redacts URL query strings, authorization credentials, and secret-like key-value pairs before transport.
+- The package root exports `assertSafeFileUploadPath`, `isBlockedSensitiveFileUploadPath`, and `BUILTIN_FILE_UPLOAD_PATH_DENY_SEGMENTS` so downstream packages can apply the same sensitive-file denylist.
+
+### Tool execution reliability
+
+- `tools.execute()` and `tools.proxyExecute()` no longer retry non-idempotent writes, preventing a timeout from repeating side effects such as sending the same email twice.
+- `OpenAIProvider.handleToolCalls()` executes every tool call from the first assistant choice and returns one result for each `tool_call_id` in deterministic order.
+- Provider tool schemas normalize duplicate JSON Schema `required` entries before they are emitted.
+
+### Trigger and toolkit behavior
+
+`triggers.create()` now sends `user_id` directly to the backend when `connectedAccountId` is omitted. This removes the extra connected-account lookup and lets the backend select the first active connection for the user and toolkit.
+
+<Callout type="warn">
+**Behavior change**
+
+A missing or invalid connection now surfaces the backend upsert error instead of `ComposioConnectedAccountNotFoundError`. Self-hosted deployments need a backend version that resolves trigger connections from `user_id`.
+
+</Callout>
+
+Toolkit version pins are also case-insensitive in configuration objects and environment variables, so casing differences no longer fall back silently to `latest`.

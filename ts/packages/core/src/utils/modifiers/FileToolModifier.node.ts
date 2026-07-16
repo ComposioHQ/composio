@@ -18,6 +18,7 @@ import type { beforeFileUploadModifier } from '../../types/modifiers.types';
 import {
   downloadFileFromS3,
   getFileDataAfterUploadingToS3,
+  isHttpUrl,
   type GetFileDataAfterUploadingToS3Options,
 } from '../fileUtils.node';
 import {
@@ -150,7 +151,7 @@ const hydrateFiles = async (
     if (typeof value === 'string') {
       // Match the URL/local-path split used downstream in
       // getFileDataAfterUploadingToS3 so the hook sees the same categorisation.
-      const source = value.startsWith('http') ? 'url' : 'path';
+      const source = isHttpUrl(value) ? 'url' : 'path';
       const pathOrUrl = await runBeforeFileUpload(value, source);
       logger.debug(`Uploading file "${pathOrUrl}"`);
       return getFileDataAfterUploadingToS3(pathOrUrl, {

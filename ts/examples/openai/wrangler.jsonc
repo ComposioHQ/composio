@@ -1,0 +1,20 @@
+/**
+ * Wrangler config for the OpenAI × Composio Workers example.
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "openai-composio-example",
+  "main": "src/cloudflare.ts",
+  "compatibility_date": "2025-06-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+  /**
+   * COMPOSIO_API_KEY and OPENAI_API_KEY are provided as Worker secrets, not
+   * committed here:
+   *   wrangler secret put COMPOSIO_API_KEY
+   *   wrangler secret put OPENAI_API_KEY
+   */
+}

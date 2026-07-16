@@ -95,6 +95,7 @@ class AutogenProvider(
         # Set signature and annotations
         params = get_signature_format_from_schema_params(
             schema_params=schema_params,
+            skip_default=self.skip_default,
         )
         function.__doc__ = tool.description
         setattr(function, "__signature__", Signature(parameters=params))

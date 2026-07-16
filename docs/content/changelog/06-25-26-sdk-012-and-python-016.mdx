@@ -1,0 +1,52 @@
+---
+title: "TypeScript SDK 0.12.0 and Python SDK 0.16.0"
+description: "TypeScript SDK 0.12.0 adds request cancellation and becomes ESM-only. Python SDK 0.16.0 fixes file transfer, retries, schema handling, and provider aliases."
+date: "2026-06-25"
+---
+
+This release improves failure handling on both SDKs. TypeScript callers can cancel a request rather than waiting for a slow network operation. Python fixes file handling, request timeouts, retry safety, and schema compatibility that could otherwise produce incorrect tool calls.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.12.0` |
+| Python `composio` | `0.16.0` |
+
+### TypeScript: request cancellation and ESM-only packages
+
+Public TypeScript SDK methods accept a trailing `{ signal?: AbortSignal }` request-options argument. Caller-initiated aborts are normalized to `ComposioRequestCancelledError`, including custom tools that cooperatively use `SessionContext.signal`.
+
+<Callout type="warn">
+**Breaking change**
+
+The TypeScript SDK packages are ESM-only in `0.12.0`. Use Node.js `22.22.3` or newer and ESM imports. The SDK no longer ships `.cjs` artifacts or its prior CommonJS compatibility layer.
+</Callout>
+
+**Before:**
+
+```javascript
+const { Composio } = require('@composio/core');
+```
+
+**After:**
+
+```javascript
+import { Composio } from '@composio/core';
+```
+
+The deprecated auth-config `uuid` response field was also removed. Use the canonical `id` field instead.
+
+### TypeScript improvements
+
+- `authConfigs.list()` adds `search` and `showDisabled` filters.
+- Tool schema handling preserves and resolves internal `$defs` and `$ref` values for automatic file upload and download.
+- Custom tools correctly convert both Zod 3 and Zod 4 schemas to JSON Schema.
+- The Anthropic provider sanitizes unsupported input-schema property names and restores the original tool arguments before execution.
+
+### Python fixes
+
+- File fields hidden behind `$ref` or `$defs` are resolved before automatic upload and download handling.
+- `tools.execute()` and `tools.proxy()` no longer retry non-idempotent writes, preventing duplicate side effects after timeouts, 429s, or 5xx responses.
+- Session file transfers and presigned S3 requests now use bounded connect and read timeouts, surfacing typed file errors rather than hanging.
+- Provider tool schemas safely alias Python-invalid parameter names, preserve the original names for execution, and avoid mutating OpenAI Agents source schemas.

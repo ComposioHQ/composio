@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import decompress from 'decompress';
+import extractZip from 'extract-zip';
 
 export const RUN_COMPANION_MODULE_BASENAMES = [
   'run-helpers-runtime',
@@ -455,7 +455,7 @@ export const repairMissingInstalledRunCompanionModules = async ({
     const packageDirectory = path.join(extractDirectory, path.parse(asset.name).name);
     fs.writeFileSync(archivePath, archiveData);
     fs.mkdirSync(extractDirectory, { recursive: true });
-    await decompress(archivePath, extractDirectory);
+    await extractZip(archivePath, { dir: extractDirectory });
 
     const installDirectory = resolveCompanionInstallDirectory(execPath);
     const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(packageDirectory);

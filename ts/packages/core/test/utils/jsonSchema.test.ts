@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { dereferenceJsonSchema } from '../../src/utils/jsonSchema';
+import {
+  deduplicateJsonSchemaRequiredArrays,
+  dereferenceJsonSchema,
+} from '../../src/utils/jsonSchema';
 import { JsonSchemaRefResolutionError } from '../../src/errors/ValidationErrors';
 import logger from '../../src/utils/logger';
+import { ToolSchema } from '../../src/types/tool.types';
 
 const containsRef = (value: unknown): boolean => {
   if (value === null || typeof value !== 'object') return false;
@@ -482,5 +486,112 @@ describe('dereferenceJsonSchema', () => {
       expect(out.properties.resolved).toEqual({ type: 'integer' });
       expect(out.properties.dangling).toEqual(PERMISSIVE);
     });
+  });
+});
+
+describe('deduplicateJsonSchemaRequiredArrays', () => {
+  it('deduplicates every required array without mutating the input schema', () => {
+    const schema = {
+      type: 'object',
+      required: ['owner', 'name', 'owner'],
+      properties: {
+        options: {
+          type: 'object',
+          required: ['enabled', 'enabled'],
+          properties: { enabled: { type: 'boolean' } },
+        },
+      },
+    };
+
+    const normalized = deduplicateJsonSchemaRequiredArrays(schema);
+
+    expect(normalized).toEqual({
+      type: 'object',
+      required: ['owner', 'name'],
+      properties: {
+        options: {
+          type: 'object',
+          required: ['enabled'],
+          properties: { enabled: { type: 'boolean' } },
+        },
+      },
+    });
+    expect(schema.required).toEqual(['owner', 'name', 'owner']);
+    expect(schema.properties.options.required).toEqual(['enabled', 'enabled']);
+  });
+
+  it('does not normalize literal instance values', () => {
+    const sharedValue = {
+      type: 'object',
+      required: ['preserve', 'preserve'],
+      properties: { preserve: { type: 'string' } },
+    };
+    const schema = {
+      type: 'object',
+      required: ['value', 'value'],
+      properties: {
+        schemaValue: sharedValue,
+        value: {
+          const: sharedValue,
+          default: { required: ['preserve', 'preserve'] },
+          enum: [{ required: ['preserve', 'preserve'] }],
+          examples: [{ required: ['preserve', 'preserve'] }],
+        },
+      },
+    };
+
+    const normalized = deduplicateJsonSchemaRequiredArrays(schema);
+
+    expect(normalized).toMatchObject({
+      required: ['value'],
+      properties: {
+        schemaValue: { required: ['preserve'] },
+        value: {
+          const: { required: ['preserve', 'preserve'] },
+          default: { required: ['preserve', 'preserve'] },
+          enum: [{ required: ['preserve', 'preserve'] }],
+          examples: [{ required: ['preserve', 'preserve'] }],
+        },
+      },
+    });
+    expect(normalized.properties.value.const).not.toBe(schema.properties.value.const);
+  });
+
+  it('fails predictably for schemas nested beyond the supported depth', () => {
+    const defaultValue: Record<string, unknown> = {};
+    let cursor = defaultValue;
+    for (let i = 0; i <= 512; i++) {
+      cursor.child = {};
+      cursor = cursor.child as Record<string, unknown>;
+    }
+
+    expect(() =>
+      deduplicateJsonSchemaRequiredArrays({
+        type: 'object',
+        properties: { value: { default: defaultValue } },
+      })
+    ).toThrow('JSON Schema exceeds maximum nesting depth of 512');
+  });
+
+  it('normalizes schemas at the shared ToolSchema API boundary', () => {
+    const tool = ToolSchema.parse({
+      slug: 'TEST_TOOL',
+      name: 'Test tool',
+      inputParameters: {
+        type: 'object',
+        required: ['name', 'name'],
+        properties: {
+          name: { type: 'string' },
+          options: {
+            type: 'object',
+            required: ['enabled', 'enabled'],
+            properties: { enabled: { type: 'boolean' } },
+          },
+        },
+      },
+    });
+
+    expect(tool.inputParameters?.required).toEqual(['name']);
+    expect(tool.inputParameters?.properties.options.required).toEqual(['enabled']);
   });
 });

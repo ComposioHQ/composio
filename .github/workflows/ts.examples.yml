@@ -1,0 +1,69 @@
+name: Examples TypeScript SDK
+
+on:
+  push:
+    branches: [master, next]
+    paths:
+      - 'ts/examples/**'
+      - 'ts/packages/core/**'
+      - 'ts/packages/providers/**'
+      - 'eslint.config.mjs'
+      - 'package.json'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.examples.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'turbo.jsonc'
+  pull_request:
+    branches: [master, next]
+    paths:
+      - 'ts/examples/**'
+      - 'ts/packages/core/**'
+      - 'ts/packages/providers/**'
+      - 'eslint.config.mjs'
+      - 'package.json'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/workflows/ts.examples.yml'
+      - 'mise.toml'
+      - 'mise.lock'
+      - 'turbo.jsonc'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  examples:
+    name: Examples TypeScript SDK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-turbo-cache: 'true'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Examples depend on the built @composio/* workspace packages for type
+      # resolution and the Workers bundle. turbo typecheck also builds these via
+      # ^build, but building explicitly keeps the wrangler step self-contained.
+      - name: Build SDK packages
+        run: pnpm run build:packages
+
+      - name: Typecheck examples
+        run: pnpm run typecheck:examples
+
+      - name: Lint examples
+        run: pnpm run lint:examples
+
+      # Prove the Cloudflare Workers entry bundles without secrets or deploying.
+      - name: Cloudflare Workers dry-run build
+        run: pnpm exec turbo cf:dry-run --filter='./ts/examples/*'

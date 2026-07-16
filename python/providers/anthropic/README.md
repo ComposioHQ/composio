@@ -1,71 +1,73 @@
-## 🚀🔗 Leveraging Claude with Composio
+# composio-anthropic
 
-Facilitate the integration of Claude with Composio to empower Claude models to directly interact with external applications, broadening their capabilities and application scope.
+Adapts Composio tools to the Claude Messages API tool format and executes the tool calls Claude returns.
 
-### Objective
-
-- **Automate starring a GitHub repository** using conversational instructions via Claude Function Calls.
-
-### Installation and Setup
-
-Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
+## Installation
 
 ```bash
-# Install Composio LangChain package
-pip install composio-claude
-
-# Connect your GitHub account
-composio-cli add github
-
-# View available applications you can connect with
-composio-cli show-apps
+pip install composio composio-anthropic anthropic
 ```
 
-### Usage Steps
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `ANTHROPIC_API_KEY` in your environment.
 
-#### 1. Import Base Packages
+## Quickstart
 
-Prepare your environment by initializing necessary imports from Claude and setting up your client.
+`AnthropicProvider` is non-agentic: Claude returns `tool_use` blocks, `handle_tool_calls` executes them, and you send the results back as `tool_result` blocks.
 
 ```python
+import json
 import anthropic
+from composio import Composio
+from composio_anthropic import AnthropicProvider
 
-# Initialize Claude client
+composio = Composio(provider=AnthropicProvider())
 client = anthropic.Anthropic()
-```
 
-### Step 2: Integrating GitHub Tools with Composio
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
-```python
-from composio_claude import App, ComposioToolSet
+messages = [
+    {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+]
 
-toolset = ComposioToolSet()
-actions = toolset.get_tools(tools=App.GITHUB)
-```
-
-### Step 3: Agent Execution
-
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
-
-```python
-my_task = "Star a repo composiohq/composio on GitHub"
-
-# Create a chat completion request to decide on the action
-response = client.beta.tools.messages.create(
-    model="claude-3-opus-20240229",
-    max_tokens=1024,
-    tools= actions,
-    messages=[{"role": "user", "content": "Star me composiohq/composio repo in github."}],
+response = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=4096,
+    tools=tools,
+    messages=messages,
 )
-pprint(response)
+
+# Agentic loop: keep executing tool calls until the model responds with text
+while response.stop_reason == "tool_use":
+    tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+    results = composio.provider.handle_tool_calls(user_id="user_123", response=response)
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [
+            {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
+            for i, result in enumerate(results)
+        ]
+    })
+    response = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=4096,
+        tools=tools,
+        messages=messages,
+    )
+
+# Print final response
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
 ```
 
-### Step 4: Validate Execution Response
+`handle_tool_calls` extracts every `tool_use` block from the response, executes the matching Composio tools, and returns the raw results in order. Claude occasionally emits tool input as a JSON string instead of an object; the provider normalizes this before execution.
 
-Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
+Building on the Claude Agent SDK instead of the Messages API? Use [`composio-claude-agent-sdk`](../claude_agent_sdk).
 
-```python
-result = toolset.handle_tool_calls(response)
-pprint(result)
-```
+## Links
+
+- Anthropic provider docs: https://docs.composio.dev/docs/providers/anthropic
+- Composio docs: https://docs.composio.dev

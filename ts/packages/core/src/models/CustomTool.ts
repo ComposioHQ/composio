@@ -483,9 +483,7 @@ export function buildCustomToolsMapFromResponse(
   tools: CustomTool[],
   toolkits: CustomToolkit[] | undefined,
   experimental:
-    | SessionCreateResponse['experimental']
-    | SessionRetrieveResponse['experimental']
-    | undefined
+    SessionCreateResponse['experimental'] | SessionRetrieveResponse['experimental'] | undefined
 ): CustomToolsMap {
   const byFinalSlug = new Map<string, CustomToolsMapEntry>();
   const byOriginalSlug = new Map<string, CustomToolsMapEntry>();

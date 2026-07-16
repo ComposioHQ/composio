@@ -1,66 +1,56 @@
-## 🚀🔗 Integrating Composio with Google AI Python
+# composio-google
 
-Streamline the integration of Composio with Google AI Python to enhance the capabilities of Gemini models, allowing them to interact directly with external applications and expanding their operational scope.
+Adapts Composio tools to the Vertex AI SDK (`vertexai.generative_models`) as `FunctionDeclaration` objects for Gemini function calling.
 
-### Objective
-
-- **Automate starring a GitHub repository** using conversational instructions via Google AI Python's Function Calling feature.
-
-### Installation and Setup
-
-Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
+## Installation
 
 ```bash
-# Install Composio LangChain package
-pip install composio-google
-
-# Connect your GitHub account
-composio-cli add github
-
-# View available applications you can connect with
-composio-cli show-apps
+pip install composio composio-google google-cloud-aiplatform
 ```
 
-### Usage Steps
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) in your environment. Vertex AI authenticates with Google Cloud credentials; run `gcloud auth application-default login` or set `GOOGLE_APPLICATION_CREDENTIALS`.
 
-#### 1. Import Base Packages
+## Quickstart
 
-Prepare your environment by initializing necessary imports from Google AI Python and setting up your client.
+`GoogleProvider` is non-agentic: the model returns function calls, and `composio.provider.handle_response` executes every function call in the response and returns the results.
 
 ```python
-from vertexai.generative_models import GenerativeModel
+import vertexai
+from vertexai.generative_models import GenerativeModel, Tool
 
-# Initialize Google AI Python client
-model = GenerativeModel("gemini-pro")
+from composio import Composio
+from composio_google import GoogleProvider
+
+vertexai.init(project="your-gcp-project", location="us-central1")
+
+composio = Composio(provider=GoogleProvider())
+
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+model = GenerativeModel(
+    "gemini-2.0-flash",
+    tools=[Tool(function_declarations=tools)],
+)
+chat = model.start_chat()
+
+response = chat.send_message(
+    "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+)
+
+# Execute the function calls the model requested
+results = composio.provider.handle_response(user_id="user_123", response=response)
+print(results)
 ```
 
-### Step 2: Integrating GitHub Tools with Composio
+To execute a single call instead of the whole response, use `composio.provider.execute_tool_call(user_id="user_123", function_call=part.function_call)`.
 
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for Google AI Python operations.
-```python
-from composio_google import App, ComposioToolset
+## composio-google vs composio-gemini
 
-toolset = ComposioToolset()
-actions = toolset.get_tools(apps=[App.GITHUB])
-```
+This package targets the Vertex AI SDK (`vertexai.generative_models`, installed via `google-cloud-aiplatform`). [`composio-gemini`](../gemini) targets the newer `google-genai` SDK with Automatic Function Calling. For new projects, use `composio-gemini`.
 
-### Step 3: Agent Execution
+## Links
 
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
-
-```python
-# Define task
-task = "Star a repo composiohq/composio on GitHub"
-
-# Send a message to the model
-response = chat.send_message(task)
-```
-
-### Step 4: Validate Execution Response
-
-Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
-
-```python
-result = composio_toolset.handle_response(response)
-print("Function call result:", result)
-```
+- Google provider docs: https://docs.composio.dev/docs/providers/google
+- Composio docs: https://docs.composio.dev

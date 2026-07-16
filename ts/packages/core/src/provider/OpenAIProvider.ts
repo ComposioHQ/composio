@@ -16,6 +16,7 @@ import { ExecuteToolModifiers } from '../types/modifiers.types';
 import { ExecuteToolFnOptions } from '../types/provider.types';
 import { McpUrlResponse, McpServerGetResponse } from '../types/mcp.types';
 import { normalizeToolArguments } from '../utils/toolArguments';
+import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
 
 export type OpenAiTool = OpenAI.ChatCompletionTool;
 export type OpenAiToolCollection = Array<OpenAiTool>;
@@ -96,7 +97,7 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     const formattedSchema: OpenAI.FunctionDefinition = {
       name: tool.slug,
       description: tool.description,
-      parameters: tool.inputParameters,
+      parameters: deduplicateJsonSchemaRequiredArrays(tool.inputParameters),
     };
     return {
       type: 'function',
@@ -246,20 +247,24 @@ export class OpenAIProvider extends BaseNonAgenticProvider<
     modifiers?: ExecuteToolModifiers
   ): Promise<OpenAI.ChatCompletionToolMessageParam[]> {
     const outputs: OpenAI.ChatCompletionToolMessageParam[] = [];
-    for (const message of chatCompletion.choices) {
-      if (message.message.tool_calls && message.message.tool_calls[0].type === 'function') {
-        const toolResult = await this.executeToolCall(
-          userId,
-          message.message.tool_calls[0],
-          options,
-          modifiers
-        );
-        outputs.push({
-          role: 'tool',
-          tool_call_id: message.message.tool_calls[0].id,
-          content: toolResult,
-        });
+    // Only the first choice is actionable: its tool results feed back into a
+    // single assistant turn. With n > 1, iterating every choice would run each
+    // tool call once per choice and orphan the tool_call_ids belonging to the
+    // alternative completions.
+    const [choice] = chatCompletion.choices;
+    // A single assistant message can carry several tool calls (parallel tool
+    // calls, on by default). Each one needs its own tool result, otherwise the
+    // next request fails since some tool_call_ids go unanswered.
+    for (const toolCall of choice?.message.tool_calls ?? []) {
+      if (toolCall.type !== 'function') {
+        continue;
       }
+      const toolResult = await this.executeToolCall(userId, toolCall, options, modifiers);
+      outputs.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: toolResult,
+      });
     }
     return outputs;
   }

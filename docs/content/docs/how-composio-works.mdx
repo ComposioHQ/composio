@@ -13,7 +13,7 @@ Create a session for a user, then read its tools formatted for your framework. T
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(user_id="user_123")
+session = composio.sessions.create(user_id="user_123")
 
 tools = session.tools()
 ```

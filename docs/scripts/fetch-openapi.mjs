@@ -10,9 +10,10 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { PRODUCTION_BASE_URL, PRODUCTION_API_V3_URL, PRODUCTION_API_V31_URL } from './production-api.mjs';
 
-const OPENAPI_V3_URL = process.env.OPENAPI_SPEC_URL || 'https://backend.composio.dev/api/v3/openapi.json';
-const OPENAPI_V31_URL = process.env.OPENAPI_V31_SPEC_URL || 'https://backend.composio.dev/api/v3.1/openapi.json';
+const OPENAPI_V3_URL = process.env.OPENAPI_SPEC_URL || `${PRODUCTION_API_V3_URL}/openapi.json`;
+const OPENAPI_V31_URL = process.env.OPENAPI_V31_SPEC_URL || `${PRODUCTION_API_V31_URL}/openapi.json`;
 
 // Tags to ignore (internal/admin)
 const IGNORED_TAGS = [
@@ -89,6 +90,17 @@ function cleanOperationIds(paths) {
  * Post-process a spec: remove CookieAuth, normalize unions, fix nullable.
  */
 function postProcessSpec(spec) {
+  // Pin the server to production. The published docs must always show the
+  // production base URL in their curl examples, regardless of which environment
+  // the source spec was fetched from (a staging fetch would otherwise bake a
+  // staging server URL into the committed reference).
+  spec.servers = [
+    {
+      url: PRODUCTION_BASE_URL,
+      description: 'PRODUCTION API',
+    },
+  ];
+
   // Filter tags list
   if (spec.tags) {
     spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.includes(tag.name));

@@ -178,6 +178,7 @@ Full-stack templates live as cloneable repos on GitHub. Docs pages describe what
 - `examples/` excluded from tsconfig.json (twoslash handles type-checking via `<include>`, Next.js `tsc` can't resolve local relative imports)
 - Welcome page revamped: hero cards (Tutorial + How it works), full-width Quickstart, AIToolsBanner component, Explore section
 - AIToolsBanner component has markdown fallback in `lib/source.ts` for LLM crawlers
+- The legacy `docs/examples/` sample-code folder (14 standalone app folders) was removed — it was orphaned (not referenced by any `content/examples` `<include>`, the source config, or the `llms.txt`/`llms-full.txt` routes). The live `/examples` page is sourced from `content/examples/`.
 
 ---
 

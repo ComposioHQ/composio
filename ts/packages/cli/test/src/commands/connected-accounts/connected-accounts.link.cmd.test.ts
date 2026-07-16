@@ -132,6 +132,31 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData: makeConnectedAccountsData(),
       fixture: 'global-test-user-id',
     })
+  )('[Given] --no-browser [Then] waits for ACTIVE without opening the browser', it => {
+    it.scoped('prints the URL and waits without calling open', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--no-browser']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+        const parsed = extractJsonObject(output);
+
+        expect(parsed).not.toBeNull();
+        expect(parsed?.status).toBe('success');
+        expect(parsed?.connected_account_id).toBe('con_test_link');
+        expect(output).toContain('https://app.composio.dev/link?token=lt_test_token');
+        expect(output).toContain('Open this URL in your browser to authorize');
+        expect(output).not.toContain('Redirecting you to the authorization page');
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+    })
   )('[Given] --list [Then] it shows existing accounts without opening a new link', it => {
     it.scoped('lists alias and word_id for existing accounts', () =>
       Effect.gen(function* () {

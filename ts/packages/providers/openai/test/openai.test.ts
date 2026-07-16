@@ -122,6 +122,18 @@ describe('OpenAIProvider', () => {
         },
       });
     });
+
+    it('deduplicates required entries for directly wrapped tools', () => {
+      const wrapped = provider.wrapTool({
+        ...mockTool,
+        inputParameters: {
+          ...mockTool.inputParameters!,
+          required: ['input', 'input'],
+        },
+      }) as MockedOpenAIChatCompletionTool;
+
+      expect(wrapped.function.parameters.required).toEqual(['input']);
+    });
   });
 
   describe('wrapTools', () => {
@@ -291,7 +303,7 @@ describe('OpenAIProvider', () => {
       ]);
     });
 
-    it('should handle multiple tool calls', async () => {
+    it('should handle multiple parallel tool calls in a single message', async () => {
       const userId = 'test-user';
       const chatCompletion = {
         id: 'chat-123',
@@ -303,6 +315,8 @@ describe('OpenAIProvider', () => {
             message: {
               role: 'assistant',
               content: null,
+              // Parallel tool calls arrive as several entries in one message's
+              // tool_calls array (on by default), not as separate choices.
               tool_calls: [
                 {
                   id: 'call-123',
@@ -312,16 +326,6 @@ describe('OpenAIProvider', () => {
                     arguments: JSON.stringify({ input: 'test-value-1' }),
                   },
                 } as const,
-              ],
-            },
-            index: 0,
-            finish_reason: 'tool_calls' as const,
-          },
-          {
-            message: {
-              role: 'assistant',
-              content: null,
-              tool_calls: [
                 {
                   id: 'call-456',
                   type: 'function',
@@ -332,7 +336,7 @@ describe('OpenAIProvider', () => {
                 } as const,
               ],
             },
-            index: 1,
+            index: 0,
             finish_reason: 'tool_calls' as const,
           },
         ],
@@ -361,7 +365,7 @@ describe('OpenAIProvider', () => {
       expect(executeToolCallSpy).toHaveBeenNthCalledWith(
         2,
         userId,
-        chatCompletion.choices[1].message.tool_calls![0],
+        chatCompletion.choices[0].message.tool_calls![1],
         undefined,
         undefined
       );
@@ -375,6 +379,56 @@ describe('OpenAIProvider', () => {
           role: 'tool',
           tool_call_id: 'call-456',
           content: JSON.stringify({ result: 'success-2' }),
+        },
+      ]);
+    });
+
+    it('should only handle tool calls from the first choice when n > 1', async () => {
+      const userId = 'test-user';
+      const makeChoice = (index: number, callId: string) => ({
+        message: {
+          role: 'assistant',
+          content: null,
+          tool_calls: [
+            {
+              id: callId,
+              type: 'function',
+              function: {
+                name: 'test-tool',
+                arguments: JSON.stringify({ input: 'value' }),
+              },
+            } as const,
+          ],
+        },
+        index,
+        finish_reason: 'tool_calls' as const,
+      });
+      const chatCompletion = {
+        id: 'chat-123',
+        model: 'gpt-4',
+        created: 123456789,
+        object: 'chat.completion',
+        // n > 1: alternative completions the caller never continues. Only the
+        // first choice's tool calls should run; the rest would orphan their ids.
+        choices: [makeChoice(0, 'call-first'), makeChoice(1, 'call-second')],
+        usage: {
+          prompt_tokens: 10,
+          completion_tokens: 20,
+          total_tokens: 30,
+        },
+      } as OpenAI.ChatCompletion;
+
+      const executeToolCallSpy = vi.spyOn(provider, 'executeToolCall');
+      executeToolCallSpy.mockResolvedValue(JSON.stringify({ result: 'success' }));
+
+      const results = await provider.handleToolCalls(userId, chatCompletion);
+
+      expect(executeToolCallSpy).toHaveBeenCalledTimes(1);
+      expect(results).toEqual([
+        {
+          role: 'tool',
+          tool_call_id: 'call-first',
+          content: JSON.stringify({ result: 'success' }),
         },
       ]);
     });

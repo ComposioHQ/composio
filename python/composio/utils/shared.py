@@ -9,6 +9,7 @@ import json
 import keyword
 import typing as t
 import uuid
+from functools import reduce
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
@@ -445,6 +446,8 @@ def json_schema_to_model(
     :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
+    if model_name is None:
+        model_name = "GeneratedModel"
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
         updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
@@ -580,22 +583,26 @@ def get_signature_format_from_schema_params(
             param_type = param_allOf[0].get("type", None)
         if param_oneOf is not None or param_anyOf is not None:
             param_types = [ptype.get("type") for ptype in (param_oneOf or param_anyOf)]
-            if len(param_types) == 1:
-                annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]
-            elif len(param_types) == 2:
-                # Check as redefinition and union was incompatible
-                # @karan to check if this is the right way to do it
-                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                annotation: t.Type = t.Union[t1, t2]  # type: ignore
-            elif len(param_types) == 3:
-                t1: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[0]]  # type: ignore
-                t2: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[1]]  # type: ignore
-                t3: t.Type = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_types[2]]  # type: ignore
-                annotation: t.Type = t.Union[t1, t2, t3]  # type: ignore
+            # Map each option to a Python type, falling back to t.Any for options
+            # that are missing a "type" key or use an unrecognized type, then build
+            # a Union for any count of members (no 1/2/3-member cap).
+            mapped_types: t.List[t.Any] = [
+                _annotation_from_json_schema_type(ptype) for ptype in param_types
+            ]
+            if len(mapped_types) == 1:
+                annotation = mapped_types[0]
             else:
-                raise ValueError("Invalid 'oneOf' schema")
+                annotation = reduce(lambda a, b: t.Union[a, b], mapped_types)
             param_default = param_schema.get("default", "")
+        elif isinstance(param_type, list):
+            annotation = _annotation_from_json_schema_type(param_type)
+            scalar_type = param_type[0] if len(param_type) == 1 else None
+            if isinstance(scalar_type, str) and scalar_type in FALLBACK_VALUES:
+                param_default = param_schema.get(
+                    "default", FALLBACK_VALUES[scalar_type]
+                )
+            else:
+                param_default = param_schema.get("default", "")
         elif param_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
             annotation = PYDANTIC_TYPE_TO_PYTHON_TYPE[param_type]
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
@@ -625,6 +632,27 @@ def get_signature_format_from_schema_params(
             continue
         none_default_parameters.append(parameter)
     return default_parameters + none_default_parameters
+
+
+def _annotation_from_json_schema_type(schema_type: t.Any) -> t.Any:
+    """Convert a JSON Schema ``type`` value to a Python annotation.
+
+    JSON Schema Draft 2020-12 and OpenAPI 3.1 allow ``type`` to be an array,
+    including inside ``anyOf`` and ``oneOf`` branches.  Keep that form from
+    reaching the scalar dictionary lookup, where a list would be unhashable.
+    """
+    if isinstance(schema_type, list):
+        mapped_types = [_annotation_from_json_schema_type(item) for item in schema_type]
+        if not mapped_types:
+            return t.Any
+        if len(mapped_types) == 1:
+            return mapped_types[0]
+        return reduce(lambda left, right: t.Union[left, right], mapped_types)
+
+    if isinstance(schema_type, str):
+        return PYDANTIC_TYPE_TO_PYTHON_TYPE.get(schema_type, t.Any)
+
+    return t.Any
 
 
 def get_pydantic_signature_format_from_schema_params(
