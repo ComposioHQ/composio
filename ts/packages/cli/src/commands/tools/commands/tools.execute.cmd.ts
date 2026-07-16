@@ -2,10 +2,21 @@ import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import type { Composio } from '@composio/client';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
-import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Predicate, Schema } from 'effect';
+import {
+  Cause,
+  Data,
+  Effect,
+  Either,
+  Exit,
+  Fiber,
+  HashSet,
+  Option,
+  Predicate,
+  Schema,
+} from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -135,8 +146,6 @@ const resolveInput = (input: Option.Option<string>) =>
     missingValue: '{}',
   });
 
-const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
-
 const invalidArguments = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 type ToolExecutionErrorFields = {
@@ -163,22 +172,15 @@ class ReportedToolExecutionError extends Data.TaggedError(
 )<ToolExecutionErrorFields> {}
 
 const parseArguments = (raw: string) =>
-  Effect.gen(function* () {
-    const parsed = yield* Effect.try({
-      try: () => parseJsonIsh(raw),
-      catch: () =>
-        invalidArguments(
-          'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
-        ),
-    });
-    return yield* Schema.decodeUnknown(JsonObject)(parsed).pipe(
-      Effect.mapError(() =>
-        invalidArguments(
-          'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
-        )
+  parseJsonRecord(raw).pipe(
+    Either.mapLeft(error =>
+      invalidArguments(
+        error.reason === 'not-a-record'
+          ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
+          : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
       )
-    );
-  });
+    )
+  );
 
 const hasNestedKey = (
   record: Record<string, unknown>,
@@ -292,6 +294,7 @@ const ciRedactReplacer = (_key: string, value: unknown): unknown => {
 };
 
 const formatUnknownObject = (value: object): string => {
+  // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws synchronously on circular or BigInt-bearing API payloads; this plain string formatter must stay synchronous for its callers, so it falls back to util.inspect instead of becoming an Effect
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -324,6 +327,7 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+// eslint-disable-next-line no-restricted-syntax -- COMPOSIO_CLI_INVOCATION_ORIGIN is a spawn-time handshake the parent `composio run` process injects into nested CLI invocations, not user configuration, and it must be read fresh at call time
 const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';
 
 type StoredExecuteOutputSummary = {
@@ -374,6 +378,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       contents: json,
       name: `${toolSlug}_OUTPUT`,
       extension: 'json',
+      // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested executions share one output directory; it is inter-process plumbing, not user configuration
       directoryPath: sharedDirectory?.trim() || process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim(),
     });
 
@@ -1071,6 +1076,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         args: parsedArgs,
         resolvedUserId: 'local',
         selectedConnectedAccountId: undefined,
+        // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested local-tool executions write into its shared output directory; inter-process plumbing, not user configuration
         executeOutputDir: process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() || undefined,
         executeParams: {
           userId: 'local',
@@ -1143,6 +1149,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         )
       : parsedArgs;
     const executeOutputDir =
+      // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` and must take precedence over the session artifacts directory; inter-process plumbing, not user configuration
       process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||
       Option.getOrUndefined(
         yield* resolveCliSessionArtifacts({

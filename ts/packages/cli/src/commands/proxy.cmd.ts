@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Data, Effect, Option } from 'effect';
+import { Data, Effect, Either, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -21,7 +21,7 @@ import {
   ComposioNoActiveConnectionError,
   mapComposioError,
 } from 'src/services/composio-error-overrides';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
 
 const endpoint = Args.text({ name: 'url' }).pipe(
   Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
@@ -107,13 +107,8 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
 
 const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
-export const parseProxyBody = (raw: string): unknown => {
-  try {
-    return parseJsonIsh(raw);
-  } catch {
-    return raw;
-  }
-};
+export const parseProxyBody = (raw: string): unknown =>
+  Either.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
 const formatProxyOutput = (
   result: Pick<SessionProxyExecuteResponse, 'status' | 'data' | 'headers' | 'binary_data'>

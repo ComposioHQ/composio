@@ -94,7 +94,6 @@
     "@modelcontextprotocol/sdk": "catalog:",
     "@zed-industries/claude-code-acp": "^0.16.2",
     "@zed-industries/codex-acp": "^0.16.0",
-    "comment-json": "^5.0.0",
     "effect": "catalog:",
     "extract-zip": "^2.0.1",
     "indent-string": "^5.0.0",

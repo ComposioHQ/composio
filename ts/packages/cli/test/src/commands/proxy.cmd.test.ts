@@ -1,6 +1,6 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Exit, Option } from 'effect';
-import { afterEach, it, vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import type {
   SessionCreateParams,
   SessionProxyExecuteParams,
