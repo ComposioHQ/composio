@@ -8,9 +8,9 @@ A **local sandbox** is a Composio session with the remote sandbox disabled: Comp
 
 1. Create a Composio session with `sandbox: { enable: false }`.
 2. `experimental_createLocalWorkbenchSession` returns the two pieces you run yourself: a Python **helper** (`composio_helper.py`) and the **env** it needs.
-3. Boot a Tenki microVM with that env and write the helper into it.
+3. `createTenkiSandbox` (in `src/sandbox/tenki.ts`) boots a microVM and injects the helper. It implements the same `UserSandbox` contract as the canonical local-sandbox example's E2B runner — `writeFile`, `run`, `teardown` — so Tenki specifics never leak past that one file.
 4. Run agent code inside the guest. It imports the helper and calls `run_composio_tool(...)` — every call routes back through the Tool Router under the session's connections, so auth stays managed while execution stays inside your boundary.
-5. Terminate the microVM.
+5. `teardown()` terminates the microVM. Boot is failure-atomic (a session that fails readiness is terminated, not leaked), and a `maxDurationMs` backstop makes the VM self-terminate even if the host process crashes before teardown.
 
 The agent here calls a HackerNews tool because that toolkit needs no OAuth connection, so the example runs with just the two API keys.
 
@@ -50,7 +50,7 @@ The `env` returned by `experimental_createLocalWorkbenchSession` contains your C
 
 ## Swapping the runtime
 
-Tenki is one way to honor the local-sandbox contract. The contract itself is small: create a box, write `helperSource` into it as `composio_helper.py`, pass `env` to the process, and tear down on your schedule. See the [local sandbox docs](https://docs.composio.dev/docs/sandbox/local) for the details.
+Tenki is one way to honor the local-sandbox contract, and it is deliberately isolated in `src/sandbox/tenki.ts` behind the `UserSandbox` interface (`writeFile`, `run`, `teardown`). To run on your own VM, container, or CI worker, replace `createTenkiSandbox` with any factory that honors the same contract: create a box, write `helperSource` into it as `composio_helper.py`, pass `env` to the process, and tear down on your schedule. See the [local sandbox docs](https://docs.composio.dev/docs/sandbox/local) for the details.
 
 ## Related Examples
 

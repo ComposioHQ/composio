@@ -6,13 +6,18 @@
  * example uses Tenki (https://tenki.cloud) as that sandbox: a disposable
  * Linux microVM that boots in ~2 seconds and is destroyed at the end.
  *
+ * Tenki is isolated behind the sandbox contract in `src/sandbox/tenki.ts`
+ * (`createTenkiSandbox` -> `UserSandbox`), the same shape as the canonical
+ * local-sandbox example's E2B runner — swap the factory to run on any box
+ * that honors the contract.
+ *
  * Flow:
  *   1. Create a Composio session with the remote sandbox disabled
  *   2. Get the local-workbench pieces: a Python helper + the env it needs
- *   3. Boot a Tenki microVM with that env, inject the helper
+ *   3. Boot a Tenki microVM behind the sandbox contract (helper injected)
  *   4. Run agent code inside the guest — it calls Composio tools through
  *      the helper, so execution stays inside your security boundary
- *   5. Terminate the microVM
+ *   5. Tear the microVM down (a max-duration backstop covers host crashes)
  *
  * Prerequisites:
  *   - COMPOSIO_API_KEY (https://app.composio.dev)
@@ -24,16 +29,14 @@
  */
 import { Composio } from '@composio/core';
 import { experimental_createLocalWorkbenchSession } from '@composio/experimental/workbench';
-import { TenkiSandbox } from '@tenkicloud/sandbox';
 import 'dotenv/config';
-
-const GUEST_HOME = '/home/tenki';
+import { commandErrorText, createTenkiSandbox } from './sandbox/tenki';
 
 /**
- * Agent code that runs *inside* the Tenki microVM. The injected
- * composio_helper.py is the only Composio-specific thing the guest carries:
- * tool calls route back through the Tool Router session created by the host,
- * so auth and discovery stay managed while execution happens in your box.
+ * Agent code that runs *inside* the microVM. The injected composio_helper.py
+ * is the only Composio-specific thing the guest carries: tool calls route
+ * back through the Tool Router session created by the host, so auth and
+ * discovery stay managed while execution happens in your box.
  */
 const AGENT_SCRIPT = `"""Agent code running inside the Tenki microVM."""
 import json
@@ -52,34 +55,6 @@ print("[guest] tool response:")
 print(json.dumps(response, indent=2))
 `;
 
-/**
- * Boot a Tenki microVM. Session creation needs a project; discover one from
- * the API key's identity (override with TENKI_WORKSPACE_ID / TENKI_PROJECT_ID).
- */
-async function createTenkiMicroVm(tenki: TenkiSandbox, env: Record<string, string>) {
-  const identity = await tenki.whoAmI();
-  const workspace =
-    identity.workspaces.find(ws => ws.id === process.env.TENKI_WORKSPACE_ID) ??
-    identity.workspaces[0];
-  const project =
-    workspace?.projects.find(p => p.id === process.env.TENKI_PROJECT_ID) ?? workspace?.projects[0];
-  if (!workspace || !project) {
-    throw new Error('No Tenki workspace/project visible for this API key');
-  }
-
-  return tenki.createAndWait({
-    name: 'composio-local-sandbox',
-    workspaceId: workspace.id,
-    projectId: project.id,
-    // The helper calls Composio's backend from inside the guest.
-    allowOutbound: true,
-    // SECURITY: this env contains your Composio *project* API key. Anything
-    // running in the sandbox can read it — treat the sandbox as your trust
-    // boundary and rotate the key if a run could have leaked it.
-    env,
-  });
-}
-
 async function main() {
   for (const name of ['COMPOSIO_API_KEY', 'TENKI_API_KEY']) {
     if (!process.env[name]) {
@@ -94,6 +69,10 @@ async function main() {
   const session = await composio.sessions.create('default', {
     toolkits: ['hackernews'], // no OAuth needed, so the example runs as-is
     sandbox: { enable: false }, // code execution happens in OUR box instead
+    // `mcp: true` only affects the *type* of the returned session (the hosted
+    // MCP endpoint exists at runtime either way); it yields the full `Session`
+    // that experimental_createLocalWorkbenchSession expects.
+    mcp: true,
   });
   console.log(`✅ Session: ${session.sessionId}`);
 
@@ -101,36 +80,43 @@ async function main() {
   const { helperSource, env } = await experimental_createLocalWorkbenchSession(composio, session);
 
   console.log('🚀 Booting a Tenki microVM...');
-  const tenki = new TenkiSandbox(); // reads TENKI_API_KEY from the environment
   const startedAt = Date.now();
-  const microVm = await createTenkiMicroVm(tenki, env);
+  const sandbox = await createTenkiSandbox({
+    apiKey: process.env.TENKI_API_KEY!,
+    timeoutMs: 120_000, // creation + readiness budget; failed boots are terminated
+    maxDurationMs: 15 * 60_000, // backstop if this host dies before teardown()
+    remoteDir: '/home/tenki/composio',
+    helperSource,
+    // SECURITY: this env contains your Composio *project* API key and is
+    // passed to the process running in the sandbox. Anything running there
+    // can read it — treat the sandbox as your trust boundary and rotate the
+    // key if a run could have leaked it.
+    env,
+    workspaceId: process.env.TENKI_WORKSPACE_ID,
+    projectId: process.env.TENKI_PROJECT_ID,
+  });
   console.log(`✅ microVM ready in ${((Date.now() - startedAt) / 1000).toFixed(1)}s`);
 
   try {
-    const python = await microVm.exec('bash', { args: ['-lc', 'command -v python3'] });
-    if (python.exitCode !== 0) {
-      throw new Error('python3 not found in the guest image; pick an image that ships Python 3');
-    }
-
-    console.log('📄 Injecting composio_helper.py and the agent script...');
-    await microVm.writeFile(`${GUEST_HOME}/composio_helper.py`, helperSource);
-    await microVm.writeFile(`${GUEST_HOME}/agent.py`, AGENT_SCRIPT);
+    console.log('📄 Injecting the agent script...');
+    await sandbox.writeFile(`${sandbox.remoteDir}/agent.py`, AGENT_SCRIPT);
 
     console.log('🤖 Running the agent inside the microVM...\n');
-    const result = await microVm.exec('python3', {
-      args: [`${GUEST_HOME}/agent.py`],
+    await sandbox.run(`cd ${sandbox.remoteDir} && python3 agent.py`, {
       timeoutMs: 120_000,
-      onOutput: chunk => process.stdout.write(chunk.data),
+      env: sandbox.env,
+      onStdout: chunk => process.stdout.write(chunk),
+      onStderr: chunk => process.stderr.write(chunk),
     });
-    if (result.exitCode !== 0) {
-      throw new Error(`agent exited with code ${result.exitCode}`);
-    }
 
     console.log('\n✅ Done. Tool execution ran inside your microVM;');
     console.log('   auth and tool discovery stayed managed by Composio.');
+  } catch (error) {
+    console.error(`❌ Agent run failed: ${commandErrorText(error)}`);
+    process.exitCode = 1;
   } finally {
     console.log('🧹 Terminating the microVM...');
-    await microVm.close();
+    await sandbox.teardown();
   }
 }
 
