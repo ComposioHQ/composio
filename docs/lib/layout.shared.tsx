@@ -1,32 +1,17 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import Image from 'next/image';
-import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
 
-// Composio Logo Component with light/dark mode switching
 function ComposioLogo() {
   return (
-    <>
-      {/* Light mode logo (black) */}
-      <Image
-        src="/Composio Logo.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="dark:hidden"
-        priority
-      />
-      {/* Dark mode logo (white) */}
-      <Image
-        src="/Composio Logo Dark.svg"
-        alt="Composio"
-        width={110}
-        height={20}
-        className="hidden dark:block"
-        priority
-      />
-    </>
+    <Image
+      src="/Composio Logo Dark.svg"
+      alt="Composio"
+      width={110}
+      height={20}
+      priority
+    />
   );
 }
 
@@ -36,7 +21,7 @@ export function baseOptions(): BaseLayoutProps {
       title: <ComposioLogo />,
       transparentMode: 'top',
     },
-    themeSwitch: { enabled: true, mode: 'light-dark-system' },
+    themeSwitch: { enabled: false },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,
@@ -74,18 +59,6 @@ export function baseOptions(): BaseLayoutProps {
         ),
         text: 'GitHub',
         url: 'https://github.com/composiohq/composio',
-        external: true,
-        secondary: true,
-      },
-      {
-        type: 'button',
-        text: (
-          <span className="inline-flex items-center gap-1.5">
-            <Play className="size-4" style={{ color: 'var(--composio-orange)' }} />
-            Playground
-          </span>
-        ),
-        url: 'https://dashboard.composio.dev/~/project/playground?utm_source=docs&utm_medium=navbar&utm_campaign=playground',
         external: true,
         secondary: true,
       },

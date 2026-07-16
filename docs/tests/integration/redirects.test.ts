@@ -9,7 +9,8 @@ import { fetchPage, fetchNoRedirect, BASE_URL } from "./helpers";
 
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
-  { from: "/", to: "/docs" },
+  { from: "/", to: "/docs/quickstart" },
+  { from: "/docs", to: "/docs/quickstart" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
   { from: "/providers/openai", to: "/docs/providers/openai" },
@@ -31,7 +32,7 @@ const REDIRECTS = [
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
-  { from: "/docs/welcome", to: "/docs" },
+  { from: "/docs/welcome", to: "/docs/quickstart" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox" },
   { from: "/docs/sandbox/remote", to: "/docs/sandbox" },

@@ -19,7 +19,7 @@
 
 @media (prefers-color-scheme: dark) {
 	.logoloop {
-		--logoloop-fadeColorAuto: #0b0b0b;
+		--logoloop-fadeColorAuto: var(--composio-surface-0, #050912);
 	}
 }
 

@@ -12,27 +12,37 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { LegacyBadge } from '@/components/legacy-badge';
 import { ExperimentalBadge } from '@/components/experimental-badge';
-import { RelatedLinks } from '@/components/related-links';
+import { DocsNextLink } from '@/components/docs-next-link';
+import { groupSidebarSections } from '@/lib/group-sidebar-sections';
+import { getAdjacentDocsPages } from '@/lib/docs-next-page';
+import { sanitizeToc } from '@/lib/sanitize-toc';
+
+const docsNavigationTree = groupSidebarSections(source.pageTree);
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = page.data as any;
   const MDX = data.body;
   const isLanding = !params.slug || params.slug.length === 0;
+  const adjacentPages = isLanding
+    ? {}
+    : getAdjacentDocsPages(docsNavigationTree, page.url);
 
   return (
     <DocsPage
-      toc={data.toc}
+      toc={sanitizeToc(data.toc)}
       full={isLanding ? true : data.full}
+      breadcrumb={{ enabled: false }}
       footer={{ enabled: false }}
       tableOfContentPopover={{ enabled: false }}
-      tableOfContent={
-        data.related?.length ? { footer: <RelatedLinks items={data.related} /> } : undefined
-      }
+      tableOfContent={{
+        enabled: !isLanding && data.full !== true,
+        style: 'clerk',
+        header: data.legacy ? <LegacyBadge inline /> : undefined,
+      }}
     >
       {!isLanding && (
         <>
@@ -58,6 +68,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
             a: createRelativeLink(source, page),
           })}
         />
+        <DocsNextLink previous={adjacentPages.previous} next={adjacentPages.next} />
         {!isLanding && <EditOnGitHub path={`docs/content/docs/${page.path}`} />}
       </DocsBody>
     </DocsPage>

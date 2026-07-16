@@ -13,6 +13,7 @@ import type { ApiPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { VersionBadge, extractVersionFromPath } from '@/components/version-badge';
+import { sanitizeToc } from '@/lib/sanitize-toc';
 
 interface OpenAPIPageData {
   title: string;
@@ -37,7 +38,7 @@ export default async function Page({
       ? extractVersionFromPath(apiProps.operations[0].path)
       : null;
     return (
-      <DocsPage full footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsPage full breadcrumb={{ enabled: false }} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
         <div className="mb-4 flex items-start justify-between gap-4">
           <h1 className="text-2xl font-semibold">
             {pageData.title}
@@ -57,18 +58,22 @@ export default async function Page({
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mdxData = page.data as any;
   const MDX = mdxData.body;
 
   return (
-    <DocsPage toc={mdxData.toc} full={mdxData.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+    <DocsPage
+      toc={sanitizeToc(mdxData.toc)}
+      full={mdxData.full}
+      breadcrumb={{ enabled: false }}
+      footer={{ enabled: false }}
+      tableOfContentPopover={{ enabled: false }}
+    >
       <DocsTitle>{mdxData.title}</DocsTitle>
       <PageActions path={page.url} />
       <DocsBody>
         <MDX
           components={getMDXComponents({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             a: createRelativeLink(referenceSource as any, page),
           })}
         />

@@ -57,7 +57,7 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <DocsPage toc={toc} footer={{ enabled: false }}>
+    <DocsPage toc={toc} breadcrumb={{ enabled: false }} footer={{ enabled: false }}>
       <DocsTitle id="changelog">Changelog</DocsTitle>
       <PageActions path="/reference/changelog" />
       <DocsBody>

@@ -177,17 +177,19 @@
    Palette (synced with ~/composio/landing + ~/composio/composio_dashboard):
    - Brand: #0007cd / oklch(0.387 0.264 264.1) — deep electric blue
    - Light: Content #fbfbfb, Card #ffffff
-   - Dark:  Content #0f0f0f, Card #1a1a1a
+   - Dark:  Content #080b10, Card #0d1118, Raised #111722
 
    Typography:
-   - All text: ABC Diatype (sans, loaded locally in app/layout.tsx)
+   - Body text: Inter
+   - Headings/navigation: ABC Diatype
    - Code: JetBrains Mono
    ========================================================================== */
 
 @theme inline {
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --radius: 0;
+  --radius: var(--composio-radius);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -219,13 +221,13 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-sm: var(--composio-radius);
+  --radius-md: var(--composio-radius);
+  --radius-lg: var(--composio-radius);
+  --radius-xl: var(--composio-radius);
+  --radius-2xl: var(--composio-radius);
+  --radius-3xl: var(--composio-radius);
+  --radius-4xl: var(--composio-radius);
 }
 
 /* ==========================================================================
@@ -238,13 +240,22 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 :root {
   /* Brand — deep electric blue, shared with composio.dev + dashboard */
   --composio-brand: #0007cd;
+  --composio-link-hover: #1e7aff; /* hover: noticeably brighter, nudged toward cyan */
   --composio-orange: var(--composio-brand); /* legacy alias — kept for back-compat */
   --composio-sidebar: #fbfbfb;
+  --composio-radius: 0.375rem;
 
   /* Fumadocs overrides - Light */
   --color-fd-background: #fbfbfb;
@@ -263,7 +274,7 @@ html {
   --color-fd-accent: #f3f3f3;
   --color-fd-accent-foreground: #0f0f0f;
   --color-fd-ring: var(--composio-brand);
-  --radius: 0;
+  --radius: var(--composio-radius);
   --background: oklch(0.985 0 0);
   --foreground: oklch(0.218 0 0);
   --card: oklch(1 0 0);
@@ -299,60 +310,72 @@ html {
 
 .dark {
   /* Lift the brand blue on dark backgrounds — `#0007cd` is too dark
-     against `#0f0f0f`. */
+     against the subdued blue-black surface scale. */
   --composio-brand: #5B8BF0;
+  --composio-link-hover: #87c7ff; /* hover: brighter + slightly cyan of the brand blue */
   --composio-orange: var(--composio-brand);
 
-  --composio-sidebar: #0f0f0f;
+  --composio-surface-0: #080b10;
+  --composio-surface-1: #0d1118;
+  --composio-surface-2: #111722;
+  --composio-surface-3: #161d29;
+  --composio-surface-4: #1b2432;
+  --composio-surface-5: #222c3d;
+  --composio-surface-border: transparent;
+  --composio-surface-border-soft: transparent;
+  --composio-radius: 0.375rem;
+  --radius: var(--composio-radius);
+
+  --composio-sidebar: var(--composio-surface-0);
 
   /* Fumadocs overrides - Dark */
-  --color-fd-background: #0f0f0f;
-  --color-fd-foreground: #fbfbfb;
-  --color-fd-muted: #1f1f1f;
-  --color-fd-muted-foreground: #b4b4b4;
-  --color-fd-border: rgba(255, 255, 255, 0.06);
-  --color-fd-card: #1c1c1c;
-  --color-fd-card-foreground: #fbfbfb;
-  --color-fd-popover: #1a1a1a;
-  --color-fd-popover-foreground: #fbfbfb;
-  --color-fd-primary: #fbfbfb;
-  --color-fd-primary-foreground: #0f0f0f;
-  --color-fd-secondary: #1a1a1a;
-  --color-fd-secondary-foreground: #fbfbfb;
-  --color-fd-accent: #1a1a1a;
-  --color-fd-accent-foreground: #fbfbfb;
+  --color-fd-background: var(--composio-surface-0);
+  --color-fd-foreground: #c4ccda;
+  --color-fd-muted: var(--composio-surface-2);
+  --color-fd-muted-foreground: #8c97aa;
+  --color-fd-border: var(--composio-surface-border-soft);
+  --color-fd-card: var(--composio-surface-1);
+  --color-fd-card-foreground: #c4ccda;
+  --color-fd-popover: var(--composio-surface-3);
+  --color-fd-popover-foreground: #c4ccda;
+  --color-fd-primary: #cbd4e3;
+  --color-fd-primary-foreground: var(--composio-surface-0);
+  --color-fd-secondary: var(--composio-surface-2);
+  --color-fd-secondary-foreground: #c4ccda;
+  --color-fd-accent: var(--composio-surface-3);
+  --color-fd-accent-foreground: #c4ccda;
   --color-fd-ring: var(--composio-brand);
-  --background: oklch(0.159 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.218 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.218 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.218 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.706 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.155 0.012 264);
+  --foreground: oklch(0.82 0.023 260);
+  --card: oklch(0.18 0.014 264);
+  --card-foreground: oklch(0.82 0.023 260);
+  --popover: oklch(0.23 0.016 264);
+  --popover-foreground: oklch(0.82 0.023 260);
+  --primary: oklch(0.84 0.024 260);
+  --primary-foreground: oklch(0.155 0.012 264);
+  --secondary: oklch(0.22 0.016 264);
+  --secondary-foreground: oklch(0.82 0.023 260);
+  --muted: oklch(0.22 0.016 264);
+  --muted-foreground: oklch(0.64 0.026 260);
+  --accent: oklch(0.25 0.018 264);
+  --accent-foreground: oklch(0.82 0.023 260);
   --destructive: oklch(0.637 0.208 25.3);
-  --border: oklch(1 0 0 / 6%);
-  --input: oklch(1 0 0 / 15%);
+  --border: transparent;
+  --input: transparent;
   --ring: oklch(0.745 0.128 275);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar: oklch(0.155 0.012 264);
+  --sidebar-foreground: oklch(0.82 0.023 260);
   --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 6%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-primary-foreground: oklch(0.84 0.024 260);
+  --sidebar-accent: oklch(0.22 0.016 264);
+  --sidebar-accent-foreground: oklch(0.82 0.023 260);
+  --sidebar-border: transparent;
+  --sidebar-ring: oklch(0.62 0.15 264);
 }
 
 /* ==========================================================================
@@ -361,6 +384,12 @@ html {
 
 html {
   background-color: var(--color-fd-background);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ==========================================================================
@@ -369,9 +398,23 @@ html {
 
 /* Headings */
 h1, h2, h3, h4 {
-  font-family: var(--font-sans);
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
   font-weight: 500;
   letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+:is(.prose, .prose-no-margin, [data-fumadocs-body]) {
+  font-family: var(--font-body), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+:is(.prose, [data-fumadocs-body]) p {
+  text-wrap: pretty;
+}
+
+:is(.prose, .prose-no-margin, [data-fumadocs-body]) :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+  color: var(--color-fd-foreground);
 }
 
 /* Code - IBM Plex Mono (uses --font-mono from Next.js) */
@@ -385,8 +428,32 @@ pre, code, kbd, samp {
   font-size: 0.875em;
 }
 
+:is(.prose, .prose-no-margin, [data-fumadocs-body]) :not(pre) > code {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dark :is(.prose, .prose-no-margin, [data-fumadocs-body]) :not(pre) > code {
+  color: #8fb7ff;
+}
+
 pre {
-  border-radius: var(--radius);
+  border-radius: var(--composio-radius);
+}
+
+.dark figure:has(pre) {
+  box-shadow:
+    0 1px 3px rgba(2, 5, 12, 0.42),
+    0 1px 2px -1px rgba(2, 5, 12, 0.5);
+}
+
+:is(.prose, [data-fumadocs-body]) :is(img, video) {
+  border-radius: var(--composio-radius);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  outline-offset: -1px;
 }
 
 /* ==========================================================================
@@ -398,15 +465,29 @@ pre {
   text-decoration: none;
 }
 
+:is(.prose, [data-fumadocs-body]) a:not([data-card]):hover {
+  color: var(--composio-link-hover);
+}
+
 /* Heading anchors stay neutral */
 .prose :is(h1, h2, h3, h4) a {
   color: inherit;
 }
 
+.prose :is(h1, h2, h3, h4) > a[data-card] {
+  border-radius: var(--composio-radius);
+  transition: color 160ms ease;
+}
+
+.prose :is(h1, h2, h3, h4) > a[data-card]:hover svg,
+.prose :is(h1, h2, h3, h4) > a[data-card]:focus-visible svg {
+  color: var(--composio-link-hover);
+}
+
 a:focus-visible {
   outline: 2px solid var(--composio-orange);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--composio-radius);
 }
 
 /* ==========================================================================
@@ -429,27 +510,171 @@ a:focus-visible {
   display: none;
 }
 
+.docs-section-sidebar {
+  --docs-nav-font-size: 0.875rem;
+  --docs-nav-text: #b8c3d4;
+  --docs-nav-text-muted: #96a3b7;
+}
+
 /* Sidebar nav items */
 #nd-sidebar [data-radix-scroll-area-viewport] a,
 #nd-sidebar [data-radix-scroll-area-viewport] button {
   padding: 0.375rem 0.5rem;
-  border-radius: 0.375rem;
-  color: var(--color-fd-foreground);
+  border-radius: var(--composio-radius);
+  color: var(--docs-nav-text, var(--color-fd-foreground)) !important;
+  font-size: var(--docs-nav-font-size) !important;
   transition: background-color 0.15s ease;
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
 #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
   background-color: rgba(0, 0, 0, 0.05);
+  color: var(--composio-link-hover) !important;
 }
 
 .dark #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
 .dark #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--composio-surface-2);
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] a[data-active="true"] {
-  color: var(--composio-orange);
+  color: var(--composio-brand) !important;
+}
+
+/* Section-grouped docs sidebar: top-level chapter names stay visible,
+   sub-pages only appear when the chapter is active/open. */
+.docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label {
+  margin-top: 0.25rem;
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--docs-nav-font-size) !important;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--docs-nav-text) !important;
+}
+
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div:first-child > .docs-sidebar-folder-label {
+  margin-top: 0;
+}
+
+.docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label[data-active="true"] {
+  background: var(--composio-surface-2);
+  color: var(--composio-brand) !important;
+}
+
+.docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 0.35rem;
+  inset-inline-start: 0;
+  width: 1px;
+  background: var(--composio-brand);
+}
+
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] [data-icon="true"] {
+  display: none;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: top;
+  transform: translateY(-0.25rem);
+  transition:
+    grid-template-rows 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 340ms ease,
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: grid-template-rows, opacity, transform;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content-inner > * {
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity 260ms ease,
+    transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] .docs-sidebar-folder-content-inner > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] .docs-sidebar-folder-content-inner > *:nth-child(1) {
+  transition-delay: 70ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] .docs-sidebar-folder-content-inner > *:nth-child(2) {
+  transition-delay: 115ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] .docs-sidebar-folder-content-inner > *:nth-child(3) {
+  transition-delay: 160ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="true"] .docs-sidebar-folder-content-inner > *:nth-child(4) {
+  transition-delay: 205ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="false"] .docs-sidebar-folder-content-inner > *:nth-child(1) {
+  transition-delay: 135ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="false"] .docs-sidebar-folder-content-inner > *:nth-child(2) {
+  transition-delay: 90ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="false"] .docs-sidebar-folder-content-inner > *:nth-child(3) {
+  transition-delay: 45ms;
+}
+
+.docs-section-sidebar .docs-sidebar-folder-content[data-open="false"] .docs-sidebar-folder-content-inner > *:nth-child(4) {
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .docs-section-sidebar .docs-sidebar-folder-content,
+  .docs-section-sidebar .docs-sidebar-folder-content-inner > * {
+    transition: none;
+  }
+}
+
+/* Flat sidebar hierarchy: sub-pages are one step smaller and dimmed; only
+   the active page (and hover) renders full-strength. */
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a,
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div button {
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+  font-size: calc(var(--docs-nav-font-size) - 1px) !important;
+  letter-spacing: 0;
+  color: var(--docs-nav-text-muted) !important;
+}
+
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] > div > div > div a[data-active="true"] {
+  color: var(--composio-brand) !important;
+}
+
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] a:hover,
+.docs-section-sidebar #nd-sidebar [data-radix-scroll-area-viewport] button:hover {
+  color: var(--composio-link-hover) !important;
+}
+
+/* Section labels: full size, slightly dimmed unless their section is active. */
+.docs-section-sidebar #nd-sidebar .docs-sidebar-folder-label:not([data-active="true"]) {
+  color: var(--docs-nav-text-muted, var(--color-fd-muted-foreground)) !important;
 }
 
 /* CLI commands table — prevent command column from wrapping */
@@ -461,11 +686,11 @@ a:focus-visible {
 #nd-sidebar p.inline-flex {
   margin-top: 1.75rem !important;
   margin-bottom: 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-fd-muted-foreground);
+  color: var(--docs-nav-text-muted, var(--color-fd-muted-foreground)) !important;
 }
 
 /* First section header - less top margin */
@@ -514,7 +739,9 @@ textarea:focus-visible {
 }
 
 [data-card="true"] {
-  background: var(--color-fd-muted);
+  border: 0;
+  border-radius: var(--composio-radius);
+  background: var(--color-fd-card);
 }
 
 [data-card="true"]:hover {
@@ -527,10 +754,81 @@ textarea:focus-visible {
 }
 
 .prose blockquote {
-  border-left-color: var(--composio-orange);
+  border-left-color: transparent;
   background: var(--color-fd-muted);
   padding: 1rem;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--composio-radius);
+}
+
+.dark :is(
+  [data-card="true"],
+  [data-fumadocs-tabs],
+  [data-callout],
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  pre,
+  figure,
+  blockquote,
+  [class*="border"],
+  .terminal-theme,
+  .terminal-panel,
+  .terminal-panel-sm,
+  .terminal-session-sent,
+  .terminal-input-field--stacked
+):not([class*="animate-spin"]) {
+  border-color: transparent !important;
+  border-width: 0 !important;
+}
+
+.dark :is(
+  [data-card="true"],
+  [data-fumadocs-tabs],
+  [data-callout],
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  pre,
+  figure,
+  [class*="rounded"],
+  [class*="border"],
+  .terminal-theme,
+  .terminal-panel,
+  .terminal-panel-sm,
+  .terminal-session-sent,
+  .terminal-input-field--stacked
+) {
+  border-radius: var(--composio-radius) !important;
+}
+
+.dark :is(
+  button[aria-label],
+  button[title],
+  button[class^="size-"],
+  button[class*=" size-"],
+  [role="button"][aria-label],
+  [role="button"][title],
+  [role="button"][class^="size-"],
+  [role="button"][class*=" size-"],
+  a[aria-label],
+  a[title],
+  a[class^="size-"],
+  a[class*=" size-"],
+  a[href*="github.com"]
+):has(svg):not([data-card="true"]) {
+  background: transparent !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.dark :is(svg, button > svg, [role="button"] > svg, a > svg) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Callouts — muted links, not brand accent */
@@ -573,7 +871,7 @@ textarea:focus-visible {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--color-fd-muted-foreground);
-  border-radius: 0.375rem;
+  border-radius: var(--composio-radius);
   transition: color var(--header-transition), background var(--header-transition);
 }
 
@@ -608,7 +906,7 @@ textarea:focus-visible {
   justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 0.375rem;
+  border-radius: var(--composio-radius);
   color: var(--color-fd-muted-foreground);
   transition: color var(--header-transition), background var(--header-transition);
 }
@@ -626,7 +924,7 @@ textarea:focus-visible {
 /* Search toggle - match style */
 #nd-nav [data-search-toggle] {
   height: 2.25rem;
-  border-radius: 0.375rem;
+  border-radius: var(--composio-radius);
   transition: border-color var(--header-transition);
 }
 
@@ -643,7 +941,7 @@ nav a[href*="app.composio"] {
   padding: 0 0.875rem;
   background: var(--color-fd-primary);
   color: var(--color-fd-primary-foreground);
-  border-radius: 0.375rem;
+  border-radius: var(--composio-radius);
   font-size: 0.8125rem;
   font-weight: 500;
   transition: opacity var(--header-transition);
@@ -700,14 +998,86 @@ p.text-fd-muted-foreground.not-prose:has(> code.text-xs) {
    Table of Contents (Right Sidebar)
    ========================================================================== */
 
-/* Prevent "On this page" from being cut off by header */
-#nd-toc {
-  top: 4rem;
+.docs-section-sidebar:has(#nd-toc) {
+  --fd-toc-width: 18rem !important;
 }
 
-/* TOC - scope primary color to orange for active indicator */
-#nd-toc {
-  --color-fd-primary: var(--composio-orange);
+.docs-section-sidebar > article {
+  max-width: 61rem;
+  padding-inline: clamp(2rem, 4vw, 4.5rem) !important;
+  padding-block-start: clamp(4rem, 5vw, 5.5rem) !important;
+}
+
+/* TOC - visually distinct from the left chapter sidebar */
+.docs-section-sidebar #nd-toc {
+  --color-fd-primary: var(--color-fd-foreground);
+  top: 4rem;
+  width: var(--fd-toc-width);
+  padding-inline: 1rem 1.5rem;
+  border-inline-start: 1px solid var(--color-fd-border);
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+}
+
+.docs-section-sidebar #nd-toc > h3 {
+  display: none !important;
+}
+
+.docs-section-sidebar #nd-toc [style*="mask-image"] {
+  opacity: 0;
+}
+
+.docs-section-sidebar #nd-toc a {
+  position: relative;
+  min-height: 0;
+  padding-block: 0.375rem !important;
+  border-radius: 0;
+  background-color: transparent;
+  color: var(--docs-nav-text-muted) !important;
+  font-family: var(--font-display), "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--docs-nav-font-size) !important;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  transition: color 160ms ease;
+}
+
+.docs-section-sidebar #nd-toc a:hover {
+  color: var(--composio-link-hover) !important;
+}
+
+.docs-section-sidebar #nd-toc a[data-active="true"] {
+  background-color: transparent !important;
+  color: var(--composio-brand) !important;
+}
+
+.docs-section-sidebar #nd-toc a[data-active="true"]::before {
+  content: none;
+}
+
+.for-agent-content {
+  max-height: 18rem;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  border: 1px solid color-mix(in oklab, var(--color-fd-foreground) 8%, transparent);
+  border-radius: var(--composio-radius);
+  background-color: color-mix(in oklab, var(--color-fd-background) 96%, #000 4%);
+  scrollbar-gutter: stable;
+}
+
+.dark .for-agent-content {
+  background-color: color-mix(in oklab, var(--color-fd-background) 88%, #000 12%);
+}
+
+.for-agent-content:hover,
+.for-agent-content:focus-within {
+  overflow-y: auto;
+}
+
+@media (max-width: 1279px) {
+  .docs-section-sidebar > article {
+    padding-inline: clamp(1.25rem, 5vw, 2.5rem) !important;
+    padding-block-start: 3rem !important;
+  }
 }
 
 /* Accordion copy-link button: hidden by default, visible on hover */
@@ -842,18 +1212,14 @@ body {
   --hero-shimmer: #0a0a0a;
 }
 .dark {
-  /* Aligned with --color-fd-card / --color-fd-muted so the hero chat
-     panel sits at the same grey as the feature cards below it; the
-     darker `#141416` chat surface used to read as a shadow patch
-     against the page bg. */
-  --hero-surface: #1c1c1c;
-  --hero-surface-2: #222222;
-  --hero-bubble: #262626;
-  --hero-text: rgba(245, 245, 247, 0.92);
-  --hero-text-muted: rgba(245, 245, 247, 0.5);
-  --hero-border: rgba(255, 255, 255, 0.08);
-  --hero-border-soft: rgba(255, 255, 255, 0.04);
-  --hero-shimmer: #f5f5f7;
+  --hero-surface: var(--composio-surface-1);
+  --hero-surface-2: var(--composio-surface-2);
+  --hero-bubble: var(--composio-surface-3);
+  --hero-text: rgba(216, 219, 226, 0.9);
+  --hero-text-muted: rgba(216, 219, 226, 0.48);
+  --hero-border: var(--composio-surface-border);
+  --hero-border-soft: var(--composio-surface-border-soft);
+  --hero-shimmer: #d8dbe2;
 }
 
 /* ==========================================================================
@@ -894,11 +1260,11 @@ body {
 .dark .hero-tool-shimmer {
   background-image: linear-gradient(
     90deg,
-    rgba(245, 245, 247, 0.35) 0%,
-    rgba(245, 245, 247, 0.7) 40%,
-    rgba(245, 245, 247, 1) 50%,
-    rgba(245, 245, 247, 0.7) 60%,
-    rgba(245, 245, 247, 0.35) 100%
+    rgba(216, 219, 226, 0.32) 0%,
+    rgba(216, 219, 226, 0.62) 40%,
+    rgba(216, 219, 226, 0.86) 50%,
+    rgba(216, 219, 226, 0.62) 60%,
+    rgba(216, 219, 226, 0.32) 100%
   );
 }
 
@@ -934,13 +1300,12 @@ body {
   }
 }
 
-/* Square the navbar theme toggle (and its inner icons) to match the
-   zero-radius search input. Fumadocs hard-codes `rounded-full` via
-   Tailwind utilities, so the override needs !important to beat the
-   utility layer's specificity. */
+/* Match the navbar theme toggle to the shared component radius. Fumadocs
+   hard-codes `rounded-full` via Tailwind utilities, so the override needs
+   !important to beat the utility layer's specificity. */
 [data-theme-toggle],
 [data-theme-toggle] > * {
-  border-radius: 0 !important;
+  border-radius: var(--composio-radius) !important;
 }
 
 
@@ -960,9 +1325,9 @@ body {
 }
 
 .terminal-theme {
-    --terminal-radius-window: 12px;
-    --terminal-radius-panel: 4px;
-    --terminal-radius-sm: 2px;
+    --terminal-radius-window: var(--composio-radius);
+    --terminal-radius-panel: var(--composio-radius);
+    --terminal-radius-sm: var(--composio-radius);
     --terminal-session-pad-x: 14px;
     --terminal-session-pad-y: 12px;
     --terminal-session-gap: 8px;
@@ -978,23 +1343,23 @@ body {
 }
 
 .terminal-theme-claude {
-    --terminal-bg: #0b0b0b;
-    --terminal-editor-bg: #1f1f1e;
-    --terminal-fg: #ffffff;
-    --terminal-white: #ffffff;
-    --terminal-dim: #c3c2b7;
-    --terminal-dimmer: #898781;
-    --terminal-vdim: #3d3d3d;
-    --terminal-surface: #232323;
-    --terminal-input-bg: #1f1f1e;
-    --terminal-popover: #2a2a2a;
-    --terminal-panel: rgba(255, 255, 255, 0.05);
-    --terminal-panel-strong: rgba(255, 255, 255, 0.07);
-    --terminal-border: rgba(255, 255, 255, 0.1);
-    --terminal-preview-bg: #0e0e0d;
-    --terminal-preview-border: #222220;
-    --terminal-input-border: #565552;
-    --terminal-progress-track: #3d3d3d;
+    --terminal-bg: var(--composio-surface-0);
+    --terminal-editor-bg: var(--composio-surface-1);
+    --terminal-fg: #d8dbe2;
+    --terminal-white: #d8dbe2;
+    --terminal-dim: #a8adba;
+    --terminal-dimmer: #818998;
+    --terminal-vdim: var(--composio-surface-5);
+    --terminal-surface: var(--composio-surface-2);
+    --terminal-input-bg: var(--composio-surface-1);
+    --terminal-popover: var(--composio-surface-3);
+    --terminal-panel: rgba(91, 139, 240, 0.08);
+    --terminal-panel-strong: rgba(91, 139, 240, 0.12);
+    --terminal-border: var(--composio-surface-border);
+    --terminal-preview-bg: var(--composio-surface-1);
+    --terminal-preview-border: var(--composio-surface-border-soft);
+    --terminal-input-border: transparent;
+    --terminal-progress-track: var(--composio-surface-5);
     --terminal-progress-fill: #d97757;
     --terminal-green: #4cc38a;
     --terminal-green-dim: #6fd4a8;
@@ -1011,12 +1376,16 @@ body {
     --terminal-diff-insert-bg: rgba(76, 195, 138, 0.12);
     --terminal-diff-delete-fg: #ff8d77;
     --terminal-diff-delete-bg: rgba(255, 90, 90, 0.12);
-    --terminal-diff-text: #ffffff;
+    --terminal-diff-text: #d8dbe2;
     --terminal-traffic-red: #ff5f57;
     --terminal-traffic-yellow: #febc2e;
     --terminal-traffic-green: #28c840;
     background-color: var(--terminal-bg);
     color: var(--terminal-fg);
+}
+
+.dark .terminal-theme-claude.shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(2, 5, 12, 0.72);
 }
 
 .terminal-theme-claude-light,
@@ -1066,7 +1435,7 @@ html:not(.dark) .terminal-theme-claude {
 .terminal-input-field--stacked {
     position: relative;
     border: none;
-    border-radius: 0;
+    border-radius: var(--composio-radius);
     background: transparent;
     padding-block: 6px;
     padding-inline: 0;
@@ -1089,6 +1458,11 @@ html:not(.dark) .terminal-theme-claude {
 
 .terminal-input-field--stacked::after {
     bottom: 0;
+}
+
+.dark .terminal-input-field--stacked::before,
+.dark .terminal-input-field--stacked::after {
+    background: transparent;
 }
 
 .terminal-cursor {
@@ -1188,4 +1562,21 @@ html:not(.dark) .terminal-theme-claude {
 .diff-copy-button:focus-visible {
   outline: 2px solid light-dark(rgb(0 0 0 / 0.2), rgb(255 255 255 / 0.25));
   outline-offset: 1px;
+}
+
+/* ExampleCallout — light-blue bordered tile linking a docs subsection to the
+   example-writeup section that demonstrates it (components/example-callout.tsx). */
+/* Specificity must beat the prose/fumadocs-body link color rules. */
+:is(.prose, [data-fumadocs-body]) a.example-callout:not([data-card]),
+:is(.prose, [data-fumadocs-body]) a.example-callout:not([data-card]):hover,
+.example-callout {
+  --example-accent: #669bb3;
+  border: 1px solid rgb(102 155 179 / 0.45);
+  background-color: rgb(102 155 179 / 0.08);
+  color: var(--example-accent);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.example-callout:hover {
+  border-color: var(--example-accent);
+  background-color: rgb(102 155 179 / 0.14);
 }

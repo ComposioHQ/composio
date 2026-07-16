@@ -9,7 +9,6 @@ import { fetchPage } from "./helpers";
 
 /** Critical pages that must always render */
 const CRITICAL_PAGES = [
-  { path: "/docs", name: "Docs home" },
   { path: "/docs/quickstart", name: "Quickstart" },
   { path: "/docs/authentication", name: "Authentication" },
   { path: "/docs/how-composio-works", name: "How Composio works" },
@@ -35,11 +34,11 @@ describe("Page rendering - critical pages", () => {
 });
 
 describe("Page rendering - content markers", () => {
-  test("docs home contains navigation elements", async () => {
+  test("docs root resolves to quickstart navigation elements", async () => {
     const res = await fetchPage("/docs");
     const html = await res.text();
-    // Should have some sidebar/nav content
     expect(html).toContain("Quickstart");
+    expect(res.url).toContain("/docs/quickstart");
   });
 
   test("quickstart page contains expected content", async () => {

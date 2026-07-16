@@ -45,7 +45,7 @@ function useAskAIShortcut() {
 
 /** Desktop: search bar + Ask AI button side by side */
 export function SearchAndAskAI() {
-  const { enabled, hotKey, setOpenSearch } = useSearchContext();
+  const { enabled, setOpenSearch } = useSearchContext();
   const { text } = useI18n();
   useAskAIShortcut();
   const isMac = useIsMac();
@@ -56,17 +56,15 @@ export function SearchAndAskAI() {
         <button
           type="button"
           data-search-full=""
-          className="inline-flex items-center gap-2 rounded-none border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground w-full max-w-[240px]"
+          className="group inline-flex w-full max-w-[240px] items-center gap-2 rounded-none border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
           onClick={() => setOpenSearch(true)}
         >
           <Search className="size-4" />
           {text.search}
-          <div className="ms-auto inline-flex gap-0.5">
-            {hotKey.map((k, i) => (
-              <kbd key={i} className="rounded-md border bg-fd-background px-1.5">
-                {k.display}
-              </kbd>
-            ))}
+          <div className="ms-auto inline-flex max-w-0 overflow-hidden opacity-0 transition-[max-width,opacity] duration-150 group-hover:max-w-16 group-hover:opacity-100 group-focus-visible:max-w-16 group-focus-visible:opacity-100">
+            <kbd className="whitespace-nowrap rounded-md border bg-fd-background px-1.5">
+              {isMac ? '⌘ K' : 'Ctrl K'}
+            </kbd>
           </div>
         </button>
       )}
@@ -75,12 +73,13 @@ export function SearchAndAskAI() {
         onClick={() => {
           toggleEveChat();
         }}
-        className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0"
+        className="group inline-flex shrink-0 items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10"
       >
         Ask AI
-        <div className="hidden lg:inline-flex gap-0.5">
-          <kbd className="rounded-md border bg-fd-background px-1.5">{isMac ? '⌘' : 'Ctrl'}</kbd>
-          <kbd className="rounded-md border bg-fd-background px-1.5">I</kbd>
+        <div className="hidden max-w-0 overflow-hidden opacity-0 transition-[max-width,opacity] duration-150 group-hover:max-w-16 group-hover:opacity-100 group-focus-visible:max-w-16 group-focus-visible:opacity-100 lg:inline-flex">
+          <kbd className="whitespace-nowrap rounded-md border bg-fd-background px-1.5">
+            {isMac ? '⌘ I' : 'Ctrl I'}
+          </kbd>
         </div>
       </button>
     </>

@@ -23,8 +23,6 @@ import { ToolkitsLanding } from '@/components/toolkits/toolkits-landing';
 import { ManagedAuthList } from '@/components/toolkits/managed-auth-list';
 import { Mermaid } from '@/components/mermaid';
 import { AIToolsBanner } from '@/components/ai-tools-banner';
-import { DocsHero } from '@/components/docs-hero';
-import { HomeFeatures } from '@/components/home-features';
 import { SessionFlow } from '@/components/session-flow';
 import { TriggersFlow } from '@/components/triggers-flow';
 import { SlackBotFlow } from '@/components/slack-bot-flow';
@@ -38,8 +36,6 @@ import { WorkbenchFlow } from '@/components/workbench-flow';
 import { AuthConfigFlow } from '@/components/auth-config-flow';
 import { WhiteLabelFlow } from '@/components/white-label-flow';
 import { ImportConnectionFlow } from '@/components/import-connection-flow';
-import { HomeSurfaces } from '@/components/home-surfaces';
-import { HomeResources } from '@/components/home-resources';
 import { Glossary, GlossaryTerm } from '@/components/glossary';
 import { ApiBaseUrl } from '@/components/api-base-url';
 import { ApiEndpointsTable } from '@/components/api-endpoints-table';
@@ -50,6 +46,7 @@ import { PackageInstall } from '@/components/package-install';
 import { ManageConnectionsVisual } from '@/components/manage-connections-visual';
 import { ConnectionRefreshVisual } from '@/components/connection-refresh-visual';
 import { ForAgent } from '@/components/for-agent';
+import { ExampleCallout } from '@/components/example-callout';
 import { ExperimentalBadge } from '@/components/experimental-badge';
 import {
   ShieldCheck,
@@ -123,8 +120,6 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ManagedAuthList,
     Mermaid,
     AIToolsBanner,
-    DocsHero,
-    HomeFeatures,
     SessionFlow,
     TriggersFlow,
     SlackBotFlow,
@@ -138,8 +133,6 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     AuthConfigFlow,
     WhiteLabelFlow,
     ImportConnectionFlow,
-    HomeSurfaces,
-    HomeResources,
     StepTitle,
     Glossary,
     GlossaryTerm,
@@ -152,6 +145,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ManageConnectionsVisual,
     ConnectionRefreshVisual,
     ForAgent,
+    ExampleCallout,
     ExperimentalBadge,
     // Lucide icons
     ShieldCheck,

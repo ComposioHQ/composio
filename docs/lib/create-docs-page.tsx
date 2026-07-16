@@ -10,8 +10,8 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
+import { sanitizeToc } from '@/lib/sanitize-toc';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Source = any;
 
 export function createDocsPage(source: Source, contentDir: string = 'content/docs') {
@@ -23,7 +23,13 @@ export function createDocsPage(source: Source, contentDir: string = 'content/doc
     const MDX = page.data.body;
 
     return (
-      <DocsPage toc={page.data.toc} full={page.data.full} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+      <DocsPage
+        toc={sanitizeToc(page.data.toc)}
+        full={page.data.full}
+        breadcrumb={{ enabled: false }}
+        footer={{ enabled: false }}
+        tableOfContentPopover={{ enabled: false }}
+      >
         <DocsTitle>{page.data.title}</DocsTitle>
         <PageActions path={page.url} />
         <DocsBody>

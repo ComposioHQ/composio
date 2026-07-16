@@ -57,6 +57,16 @@ const config = {
   },
   async redirects() {
     return [
+      {
+        source: '/',
+        destination: '/docs/quickstart',
+        permanent: false,
+      },
+      {
+        source: '/docs',
+        destination: '/docs/quickstart',
+        permanent: false,
+      },
       // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
       // Renamed/moved pages -> new location
       {
@@ -176,11 +186,6 @@ const config = {
         permanent: true,
       },
       // === end docs v3 reorganization redirects ===
-      {
-        source: '/',
-        destination: '/docs',
-        permanent: false,
-      },
       // Meta Tools moved from the Reference tab to the Toolkits tab.
       {
         source: '/reference/meta-tools',
@@ -206,7 +211,7 @@ const config = {
       },
       {
         source: '/docs/welcome',
-        destination: '/docs',
+        destination: '/docs/quickstart',
         permanent: true,
       },
       // The workbench was renamed to the sandbox; keep old links working.

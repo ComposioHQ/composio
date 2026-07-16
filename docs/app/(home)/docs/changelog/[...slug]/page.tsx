@@ -40,7 +40,12 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
 
   // If there are multiple entries for the same date, show all of them
   return (
-    <DocsPage toc={[]} footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
+    <DocsPage
+      toc={[]}
+      breadcrumb={{ enabled: false }}
+      footer={{ enabled: false }}
+      tableOfContentPopover={{ enabled: false }}
+    >
       <Link
         href="/docs/changelog"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"

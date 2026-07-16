@@ -259,10 +259,12 @@ export default function CustomSearchDialog({
                   onClick={() => props.onOpenChange(false)}
                   className="rounded-lg px-2.5 py-2 text-start text-sm transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground"
                 >
-                  <p className="font-medium">{link.title}</p>
-                  <p className="text-xs text-fd-muted-foreground">
-                    {link.description}
-                  </p>
+                  <span className="block">
+                    <span key="title" className="block font-medium">{link.title}</span>
+                    <span key="description" className="block text-xs text-fd-muted-foreground">
+                      {link.description}
+                    </span>
+                  </span>
                 </Link>
               ))}
             </div>

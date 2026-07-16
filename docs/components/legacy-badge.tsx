@@ -7,15 +7,19 @@
  */
 interface LegacyBadgeProps {
   title?: string;
+  inline?: boolean;
 }
 
 export function LegacyBadge({
   title = 'Legacy: superseded by sessions; kept for existing integrations',
+  inline = false,
 }: LegacyBadgeProps) {
   return (
     <span
       title={title}
-      className="not-prose inline-flex w-fit items-center gap-1.5 rounded-md border border-fd-border bg-fd-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-fd-muted-foreground"
+      className={`not-prose inline-flex w-fit items-center gap-1.5 rounded-md border border-fd-border bg-fd-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-fd-muted-foreground ${
+        inline ? 'ml-3 align-middle' : 'mb-3'
+      }`}
     >
       Legacy
     </span>
