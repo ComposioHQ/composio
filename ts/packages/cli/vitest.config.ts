@@ -18,7 +18,7 @@ export default defineConfig({
       '@composio/ts-builders': path.join(tsBuildersDir, 'src/index.ts'),
       '@composio/json-schema-to-zod': path.join(jsonSchemaToZodDir, 'src/index.ts'),
       '@composio/cli-local-tools': path.join(cliLocalToolsDir, 'src/index.ts'),
-      'effect-errors/*': path.resolve(__dirname, './src/effect-errors'),
+      'effect-errors': path.resolve(__dirname, './src/effect-errors'),
       // @composio/core uses package.json "imports" (#config_defaults, #platform, etc.)
       // Vitest/Vite does not resolve these for workspace deps, so alias them explicitly
       '#config_defaults': path.join(coreDir, 'src/utils/config-defaults/ConfigDefaults.node.ts'),
