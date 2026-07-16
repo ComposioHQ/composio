@@ -7,6 +7,7 @@ import { Effect, Option, Schema } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import {
   detectNativeUiCallerAgent,
+  isInteractivePermissionUiDisabled,
   requestNativeUiPermissionDecision,
   type NativeUiCallerAgent,
 } from 'src/services/native-ui-sidecar';
@@ -945,6 +946,12 @@ const requestPermissionDecision = async (params: {
   readonly toolSlug: string;
   readonly accountLabel?: string;
 }): Promise<PermissionDecision> => {
+  if (await Effect.runPromise(isInteractivePermissionUiDisabled)) {
+    throw new Error(
+      `Interactive permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI); cannot collect an approval for ${params.toolSlug}.`
+    );
+  }
+
   // Prefer the bundled macOS native sidecar when it is available. The browser
   // prompt remains the cross-platform fallback and is only opened when the
   // native sidecar is missing or fails before returning a decision.
@@ -974,6 +981,16 @@ export const gateToolExecution = (params: GateParams) =>
     );
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
+    }
+
+    // Fail closed instead of spawning approval UI where nobody can answer it
+    // (tests, CI). Cached allow decisions above still apply.
+    if (yield* isInteractivePermissionUiDisabled) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool execution requires interactive approval, but permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI): ${params.toolSlug}`
+        )
+      );
     }
 
     const decision = yield* Effect.tryPromise(() =>

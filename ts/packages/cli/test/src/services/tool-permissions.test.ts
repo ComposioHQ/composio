@@ -36,6 +36,7 @@ describe('tool permissions', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   it('drops only corrupt cache entries, keeping valid snapshots and allow decisions', () => {
@@ -110,6 +111,22 @@ describe('tool permissions', () => {
       const result = yield* gateToolExecution({ toolSlug: 'GMAIL_SEND_EMAIL' });
 
       expect(result).toBeUndefined();
+    })
+  );
+
+  it.effect('fails closed when interactive approval is needed but permission UI is disabled', () =>
+    Effect.gen(function* () {
+      vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '1');
+
+      const failure = yield* gateToolExecution({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({ permissions: { default: 'ask_every_call' } }),
+      }).pipe(Effect.flip);
+
+      expect(failure).toBeInstanceOf(Error);
+      if (failure instanceof Error) {
+        expect(failure.message).toContain('permission prompts are disabled');
+      }
     })
   );
 });
