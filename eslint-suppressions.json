@@ -270,7 +270,7 @@
       "count": 4
     },
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "ts/packages/cli/src/services/upgrade-binary.ts": {

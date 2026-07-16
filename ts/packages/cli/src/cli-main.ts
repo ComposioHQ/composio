@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
@@ -40,7 +40,6 @@ import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
-import { canRenderTerminalDecoration } from 'src/utils/stdio';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RequiredLayer = Layer.Layer<any, any, never>;
@@ -195,10 +194,10 @@ const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand
   return names;
 };
 
-showUpdateNotice();
 checkForUpdateInBackground();
 
-trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
+showUpdateNotice.pipe(
+  Effect.andThen(trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext))),
   Effect.andThen(runWithArgs),
   Effect.scoped,
   Effect.mapError(error =>
@@ -212,6 +211,7 @@ trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pi
   ),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const cliUserConfig = yield* ComposioCliUserConfig;
       const visibility = {
         isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -220,15 +220,15 @@ trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pi
       };
       const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
       const text = HelpDoc.toAnsiText(error.error).trim();
-      const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
+      const errorEffect = text.length > 0 ? ui.error(text) : Effect.void;
       const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
       const tipEffect =
         flagMatch && valueOptionNames.has(flagMatch[1])
-          ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+          ? ui.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
           : Effect.void;
       const cmdName = matchCommandFromArgv(process.argv, visibility);
       const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-      const helpEffect = helpText ? Console.error(helpText) : Effect.void;
+      const helpEffect = helpText ? ui.error(helpText) : Effect.void;
       return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
@@ -247,11 +247,11 @@ trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pi
           error.operation === 'uninstall'
             ? 'Composio plugin uninstall was unsuccessful.'
             : 'Composio setup was unsuccessful.';
-        if (canRenderTerminalDecoration()) {
+        if ((yield* ui.capabilities).canDecorate) {
           yield* ui.log.error(error.message);
           yield* ui.outro(summary);
         } else {
-          yield* Console.error(`${summary} ${error.message}`);
+          yield* ui.error(`${summary} ${error.message}`);
         }
         process.exitCode = 1;
       })
@@ -281,7 +281,8 @@ trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pi
           }
         ).trim();
         if (message.length > 0) {
-          yield* Console.error(message);
+          const ui = yield* TerminalUI;
+          yield* ui.error(message);
           const cliUserConfig = yield* ComposioCliUserConfig;
           const visibility = {
             isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -291,7 +292,7 @@ trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pi
           const cmdName = matchCommandFromArgv(process.argv, visibility);
           const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
           if (helpText) {
-            yield* Console.error(helpText);
+            yield* ui.error(helpText);
           }
           process.exitCode = 1;
         }

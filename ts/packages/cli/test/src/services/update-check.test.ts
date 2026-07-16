@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { Effect } from 'effect';
 import { withHttpServer } from 'test/__utils__/http-server';
+import type { TerminalUI } from 'src/services/terminal-ui';
 import {
   createUpdateChecker,
   parseLatestVersionFromReleases,
@@ -31,10 +33,23 @@ function makeConfig(overrides?: Partial<UpdateCheckConfig>): UpdateCheckConfig {
     binaryAssetName: 'composio-darwin-aarch64.zip',
     accessToken: undefined,
     fetchFn: () => Promise.reject(new Error('fetch not configured')),
-    isInteractive: () => true,
     ...overrides,
   };
 }
+
+const makeTerminal = (
+  output: string[],
+  isInteractive = true
+): Pick<TerminalUI, 'capabilities' | 'error'> => ({
+  capabilities: Effect.succeed({
+    stdinIsTTY: isInteractive,
+    stdoutIsTTY: isInteractive,
+    stderrIsTTY: isInteractive,
+    isInteractive,
+    canDecorate: isInteractive,
+  }),
+  error: line => Effect.sync(() => output.push(line)),
+});
 
 /** Write a state file to the test config's stateFile path. */
 function writeState(config: UpdateCheckConfig, state: UpdateCheckState): void {
@@ -132,23 +147,18 @@ describe('parseLatestVersionFromReleases', () => {
 // ── showUpdateNotice ────────────────────────────────────────────────────
 
 describe('showUpdateNotice', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let stderrSpy: any;
+  let output: string[];
 
   beforeEach(() => {
-    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-  });
-
-  afterEach(() => {
-    stderrSpy.mockRestore();
+    output = [];
   });
 
   it('does nothing when no state file exists', () => {
     const { showUpdateNotice } = createUpdateChecker(makeConfig());
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 
   it('does nothing when cached version equals current version', () => {
@@ -156,9 +166,9 @@ describe('showUpdateNotice', () => {
     writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 
   it('does nothing when cached version is older than current', () => {
@@ -166,9 +176,9 @@ describe('showUpdateNotice', () => {
     writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.0' });
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 
   it('prints upgrade hint when cached version is newer', () => {
@@ -176,23 +186,22 @@ describe('showUpdateNotice', () => {
     writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).toHaveBeenCalledOnce();
-    const output = stderrSpy.mock.calls[0][0] as string;
-    expect(output).toContain('Update available');
-    expect(output).toContain('0.3.0');
-    expect(output).toContain('composio upgrade');
+    expect(output).toHaveLength(1);
+    expect(output[0]).toContain('Update available');
+    expect(output[0]).toContain('0.3.0');
+    expect(output[0]).toContain('composio upgrade');
   });
 
   it('does not print upgrade hint in non-interactive environments', () => {
-    const config = makeConfig({ currentVersion: '0.2.0', isInteractive: () => false });
+    const config = makeConfig({ currentVersion: '0.2.0' });
     writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output, false)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 
   it('silently ignores corrupt state file', () => {
@@ -201,9 +210,9 @@ describe('showUpdateNotice', () => {
     writeFileSync(config.stateFile, 'not-json!!!');
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 
   it('does nothing when cached version is not valid semver', () => {
@@ -211,9 +220,9 @@ describe('showUpdateNotice', () => {
     writeState(config, { lastChecked: new Date().toISOString(), latestVersion: 'not-semver' });
     const { showUpdateNotice } = createUpdateChecker(config);
 
-    showUpdateNotice();
+    Effect.runSync(showUpdateNotice(makeTerminal(output)));
 
-    expect(stderrSpy).not.toHaveBeenCalled();
+    expect(output).toEqual([]);
   });
 });
 

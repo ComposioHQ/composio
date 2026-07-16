@@ -2,11 +2,12 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import { arch as getArch, homedir, platform as getPlatform } from 'node:os';
 import { dirname, join } from 'node:path';
+import { Effect } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
-import { isInteractiveTerminal } from 'src/utils/stdio';
 import { resolveInstalledCliVersion } from './run-companion-modules';
+import { TerminalUI } from './terminal-ui';
 
 /**
  * Background update check for @composio/cli.
@@ -51,7 +52,6 @@ export interface UpdateCheckConfig {
   readonly binaryAssetName: string | undefined;
   readonly accessToken: string | undefined;
   readonly fetchFn: (url: string, init?: RequestInit) => Promise<Response>;
-  readonly isInteractive: () => boolean;
 }
 
 const _home = join(homedir(), '.composio');
@@ -75,7 +75,6 @@ const defaultConfig: UpdateCheckConfig = {
   binaryAssetName: getCurrentBinaryAssetName(),
   accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
   fetchFn: fetch,
-  isInteractive: isInteractiveTerminal,
 };
 
 // ── Pure helpers ────────────────────────────────────────────────────────
@@ -124,11 +123,14 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    * If a cached newer version is known, print a one-line hint to stderr.
    * Purely synchronous — reads a tiny JSON file and does a semver compare.
    */
-  function showUpdateNotice(): void {
-    try {
-      if (!config.isInteractive()) return;
+  function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
+    return Effect.gen(function* () {
+      const capabilities = yield* terminal.capabilities;
+      if (!capabilities.isInteractive) return;
 
-      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      const state = yield* Effect.try(
+        () => JSON.parse(readFileSync(config.stateFile, 'utf-8')) as UpdateCheckState
+      );
       if (!state.latestVersion || !semver.valid(state.latestVersion)) return;
       if (state.latestVersion === config.currentVersion) return;
 
@@ -139,10 +141,8 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
         `  ${dim('Update available:')} ${dim(config.currentVersion)} ${dim('→')} ${bold(cyanBright(state.latestVersion))}\n` +
         `  ${dim('Run')} ${cyanBright('composio upgrade')} ${dim('to update')}\n`;
 
-      process.stderr.write(`\n${msg}\n`);
-    } catch {
-      // Silently ignore — ENOENT, corrupt JSON, etc. Never block the CLI.
-    }
+      yield* terminal.error(`\n${msg}`);
+    }).pipe(Effect.ignore);
   }
 
   /**
@@ -223,9 +223,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 const _checker = createUpdateChecker(defaultConfig);
 
 /** Print upgrade hint to stderr if a newer version is cached. */
-export function showUpdateNotice(): void {
-  _checker.showUpdateNotice();
-}
+export const showUpdateNotice = Effect.flatMap(TerminalUI, _checker.showUpdateNotice);
 
 /** Fire-and-forget background fetch to GitHub. */
 export function checkForUpdateInBackground(): void {
