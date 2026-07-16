@@ -1,0 +1,168 @@
+---
+title: Governance with TealTiger
+description: Add deterministic policy enforcement, PII detection, cost tracking, and audit evidence to Composio tool calls using TealTiger governance modifiers.
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Governance with TealTiger
+
+[TealTiger](https://github.com/agentguard-ai/tealtiger) adds deterministic governance to Composio tool calls — policy enforcement, PII detection, cost tracking, and structured audit evidence. No LLM in the governance path. All evaluation completes in under 5ms.
+
+<Callout type="info">
+TealTiger uses Composio's native `beforeExecute` and `afterExecute` modifier hooks. No changes to Composio core are required.
+</Callout>
+
+## Installation
+
+```bash
+pip install composio-tealtiger
+```
+
+## Zero-Config (Observe Mode)
+
+The simplest way to add governance — observe all tool calls, track costs, detect PII, and produce audit entries without blocking anything.
+
+```python
+// @noErrors
+from composio import Composio
+from composio_tealtiger import governance_modifiers
+
+composio = Composio()
+
+# Add governance with zero config — observe mode
+tools = composio.tools.get(
+    user_id="user_123",
+    toolkits=["github", "slack"],
+    **governance_modifiers()
+)
+
+# Every tool call is now tracked:
+# - Cost per call and cumulative
+# - PII detection (report-only, never blocks)
+# - Correlation IDs for tracing
+# - Evaluation time (<5ms)
+```
+
+## Enforce Mode (Policy Enforcement)
+
+When you're ready to enforce policies, provide a `TealEngine` with your rules:
+
+```python
+// @noErrors
+from composio import Composio
+from composio_tealtiger import governance_modifiers, GovernanceDenyError
+from tealtiger import TealEngine
+
+engine = TealEngine(policies=[
+    # Only allow GitHub and HackerNews tools for this agent
+    {"type": "tool_allowlist", "agent": "coder", "allowed": ["GITHUB_*", "HACKERNEWS_*"]},
+    # Block PII in tool arguments
+    {"type": "pii_block", "categories": ["ssn", "credit_card"]},
+    # Enforce $5 budget per session
+    {"type": "cost_limit", "max_per_session": 5.00},
+])
+
+composio = Composio()
+
+tools = composio.tools.get(
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"],
+    **governance_modifiers(engine=engine, mode="ENFORCE", agent_id="coder")
+)
+```
+
+### What happens at runtime
+
+| Tool call | Result | Reason |
+|-----------|--------|--------|
+| `GITHUB_GET_REPOS` | ✅ ALLOWED | In allowlist |
+| `GMAIL_SEND_EMAIL` | ❌ DENIED | Not in allowlist |
+| `GITHUB_CREATE_ISSUE` with SSN in body | ❌ DENIED | PII detected |
+| Any call after $5 spent | ❌ DENIED | Budget exceeded |
+
+## Handling Denials
+
+In ENFORCE mode, denied tool calls raise `GovernanceDenyError` before reaching the external service:
+
+```python
+// @noErrors
+from composio_tealtiger import GovernanceDenyError
+
+try:
+    result = composio.tools.execute(
+        "GMAIL_SEND_EMAIL",
+        {"user_id": "user_123", "arguments": {"to": "test@example.com"}},
+        **governance_modifiers(engine=engine, mode="ENFORCE", agent_id="coder")
+    )
+except GovernanceDenyError as e:
+    print(f"Blocked: {e.decision['reason']}")
+    print(f"Codes: {e.decision['reason_codes']}")
+    # Blocked: Tool 'GMAIL_SEND_EMAIL' not in allowlist for agent 'coder'
+    # Codes: ['TOOL_NOT_ALLOWED']
+```
+
+## Kill Switch
+
+Instantly freeze any agent's tool access — no policy changes required:
+
+```python
+// @noErrors
+from tealtiger import freeze, unfreeze
+
+# Emergency: block all tool execution for an agent
+freeze("coder")
+
+# Or freeze ALL agents
+freeze("*")
+
+# After investigation, restore
+unfreeze("coder")
+```
+
+## Audit Trail
+
+Every governance evaluation produces a structured record:
+
+```json
+{
+  "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp_ms": 1720000000000,
+  "action": "DENY",
+  "mode": "ENFORCE",
+  "tool_slug": "GMAIL_SEND_EMAIL",
+  "toolkit_slug": "gmail",
+  "agent_id": "coder",
+  "reason": "Tool not in allowlist for agent 'coder'",
+  "reason_codes": ["TOOL_NOT_ALLOWED"],
+  "pii_detected": [],
+  "cost_tracked": 0.0,
+  "cumulative_cost": 1.23,
+  "evaluation_time_ms": 0.42
+}
+```
+
+## Governance Modes
+
+| Mode | Behavior |
+|------|----------|
+| `OBSERVE` | Allow all, track everything. Zero config. |
+| `MONITOR` | Evaluate policies, log violations, but allow all. |
+| `ENFORCE` | Block policy violations before tools execute. |
+
+## What's Governed
+
+| Feature | Description |
+|---------|-------------|
+| Tool allowlisting | Pattern-based control over which tools each agent can call |
+| PII detection | Block SSN, credit cards, emails, phone numbers in arguments |
+| Cost governance | Per-session budget limits with cumulative tracking |
+| Kill switch | Instant freeze/unfreeze per agent or fleet-wide |
+| Audit trail | Structured record per decision with correlation IDs |
+
+## Resources
+
+- [composio-tealtiger source](https://github.com/agentguard-ai/tealtiger/tree/main/packages/composio-tealtiger)
+- [TealTiger documentation](https://docs.tealtiger.ai)
+- [TealTiger on PyPI](https://pypi.org/project/tealtiger/)
