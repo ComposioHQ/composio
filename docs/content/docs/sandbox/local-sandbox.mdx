@@ -27,6 +27,8 @@ You create a [session](/docs/how-composio-works) with the remote sandbox turned 
 The sandbox is your security boundary. The helper reaches Composio with your project `COMPOSIO_API_KEY`, which acts across every connection on the project. Isolate the sandbox like anything else holding a project credential, and rotate the key if a run could have leaked it.
 </Callout>
 
+<ExampleCallout href="/examples/local-sandbox-pr-reviewer#create-the-local-sandbox-session">See how we run a PR reviewer inside a sandbox we own while Composio keeps handling auth and tool calls.</ExampleCallout>
+
 <ForAgent title="local sandbox setup">
 
 To run agent code in your own infrastructure instead of the hosted sandbox:
@@ -63,10 +65,3 @@ Security: `env` injects your project `COMPOSIO_API_KEY` into the sandbox, and an
 `experimental_createLocalWorkbenchSession` and the rest of the experimental workbench surface: [Experimental](/reference/sdk-reference/typescript/experimental).
 
 </ForAgent>
-
-## Next
-
-<Cards>
-<Card icon={<Code />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a PR into a sandbox you own and post one grounded review." />
-<Card icon={<Database />} title="Hosted sandbox" href="/docs/sandbox" description="The managed environment: built-in helpers, files and mounts, compute tiers." />
-</Cards>

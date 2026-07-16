@@ -273,7 +273,3 @@ A few things are specific to the Anthropic provider:
 - **`handleToolCalls` returns Messages API content, not raw strings.** On the TypeScript side it returns `Anthropic.Messages.MessageParam[]` (a `user` message of `tool_result` blocks) that you append directly to your message list. This is why the loop above does not build `tool_result` blocks by hand.
 - **String-encoded tool inputs are handled for you.** Claude occasionally emits a tool's `input` as a JSON string instead of an object. The provider normalizes this before execution, so you do not have to parse it yourself.
 - **`cacheTools` only.** The constructor takes no other options. There is no agentic execution in this provider; you run the loop (Messages API) or hand the loop to the Claude Agent SDK (Agent SDK tab).
-
-## Next
-
-<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

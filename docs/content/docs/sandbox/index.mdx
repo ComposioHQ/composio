@@ -31,6 +31,8 @@ Two properties shape where the sandbox belongs in your architecture:
 - **Cold start.** Provisioning a session or running its first cell takes seconds to 10s+. Keep sandbox work out of latency-sensitive request paths; run it in a background worker instead.
 - **No toolkit allowlist.** The `toolkits` list you pass at session creation *preloads* tools — it doesn't restrict them. Code in the sandbox can call any tool the user has connected, so the real write boundary is the OAuth scopes on the connected accounts.
 
+<ExampleCallout href="/examples/funnelwatch#reason-over-the-whole-day-not-one-event">See how we use this loop to reason over a whole day of business intelligence data.</ExampleCallout>
+
 <ForAgent title="running the agent loop">
 
 **Mental model: three places code runs**
@@ -134,6 +136,8 @@ These functions are pre-initialized in every sandbox, so your agent can call the
 
 Why call tools from *inside* the sandbox instead of from your agent loop? Data locality. When a script fetches with `run_composio_tool` and computes in the same cell, the (possibly large) raw results stay in the sandbox — only the computed answer travels back into your model's context. Auth is injected automatically for the session's user, so scripts call tools without handling credentials.
 
+<ExampleCallout href="/examples/local-sandbox-pr-reviewer#run-the-reviewer-and-stream-output">See how a PR reviewer calls run_composio_tool to reach GitHub from inside the sandbox.</ExampleCallout>
+
 <ForAgent title="helper contract">
 
 The helpers are **pre-loaded globals** — do not `import` them. Never call `COMPOSIO_*` meta tools from inside a cell (it causes cycles); use the helpers instead. Every helper returns an **`(result, error)` tuple: check `error` first, then parse defensively**.
@@ -211,6 +215,8 @@ await report.save("./report.pdf");
 
 Beyond upload and download, the mount API can also list and delete files — the full method surface is in the dropdown.
 
+<ExampleCallout href="/examples/funnelwatch#reason-over-the-whole-day-not-one-event">See how we use files and mounts to do aggregations on business intelligence data.</ExampleCallout>
+
 <ForAgent title="mount API and gotchas">
 
 **Method surface**
@@ -268,17 +274,11 @@ You can also change the compute tier in the middle of a session. This recreates 
 **Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime).
 </Callout>
 
+<ExampleCallout href="/examples/funnelwatch#watch-247-with-all-the-context-it-needs">See how we size one long-lived sandbox to carry a full day of analytics.</ExampleCallout>
+
 <ForAgent title="compute tier">
 
 - Tiers larger than `standard` require `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python); older SDKs reject the size option.
 - A mid-session tier change is a sandbox recreation: re-run any setup cells (imports, variables, staged `/tmp` files) afterward — only `/mnt/files/` carries over.
 
 </ForAgent>
-
-## Next
-
-<Cards>
-<Card icon={<Code />} title="Local sandbox" href="/docs/sandbox/local-sandbox" description="Run the agent's code in your own infrastructure — same helpers, your security boundary." />
-<Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools, auth, and sandbox state to a user" />
-<Card icon={<Code />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a PR into a sandbox you own and post one grounded review." />
-</Cards>

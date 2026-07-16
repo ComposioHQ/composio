@@ -326,7 +326,3 @@ if (account.experimental) {
 | `ComposioSharedConnectionNotAccessibleError` (400) | A session pinned a SHARED connection that the session's `userID` cannot use. The error is raised at session create time, so the session never enters a state that fails mid-execution. |
 
 The access errors are caught the same way as any other Composio exception (`ComposioAclOnlyForSharedError` and `ComposioSharedAccessDeniedError` are exported from `@composio/core`, and live under `composio.exceptions` in Python).
-
-## Next
-
-<Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Pin connected accounts, auth configs, and toolkit restrictions into a session" />
