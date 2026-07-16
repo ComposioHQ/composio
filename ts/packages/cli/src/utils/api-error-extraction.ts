@@ -9,20 +9,43 @@
  * `tools execute` command (for error display).
  */
 
-import { Option, Predicate, Schema } from 'effect';
+import { Predicate } from 'effect';
 
-const ApiErrorDetailsSchema = Schema.Struct({
-  message: Schema.optional(Schema.String),
-  code: Schema.optional(Schema.Number),
-  slug: Schema.optional(Schema.String),
-  status: Schema.optional(Schema.Number),
-  request_id: Schema.optional(Schema.String),
-  suggested_fix: Schema.optional(Schema.String),
-});
+export interface ApiErrorDetails {
+  readonly message?: string;
+  readonly code?: number;
+  readonly slug?: string;
+  readonly status?: number;
+  readonly request_id?: string;
+  readonly suggested_fix?: string;
+}
 
-export type ApiErrorDetails = typeof ApiErrorDetailsSchema.Type;
+const pickString = (value: object, key: string): string | undefined =>
+  Predicate.hasProperty(value, key) && Predicate.isString(value[key]) ? value[key] : undefined;
 
-const decodeApiErrorDetails = Schema.decodeUnknownOption(ApiErrorDetailsSchema);
+const pickNumber = (value: object, key: string): number | undefined =>
+  Predicate.hasProperty(value, key) && Predicate.isNumber(value[key]) ? value[key] : undefined;
+
+// Field-by-field extraction: a present-but-mistyped field (e.g. a numeric
+// `message`) drops only that field, not the node's other perfectly good
+// details like `slug` and `request_id`.
+const extractCandidate = (value: object): ApiErrorDetails | undefined => {
+  const candidate: ApiErrorDetails = {
+    message: pickString(value, 'message'),
+    code: pickNumber(value, 'code'),
+    slug: pickString(value, 'slug'),
+    status: pickNumber(value, 'status'),
+    request_id: pickString(value, 'request_id'),
+    suggested_fix: pickString(value, 'suggested_fix'),
+  };
+  const hasAnyApiField =
+    candidate.message !== undefined ||
+    candidate.code !== undefined ||
+    candidate.slug !== undefined ||
+    candidate.status !== undefined ||
+    candidate.request_id !== undefined;
+  return hasAnyApiField ? candidate : undefined;
+};
 
 /**
  * Extract a human-readable message from an unknown error value.
@@ -104,13 +127,6 @@ export const extractSlug = (value: unknown): string | undefined => {
  * Skips Error instances and Effect's UnknownException wrappers.
  */
 export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefined => {
-  const hasApiFields = (candidate: unknown): boolean =>
-    Predicate.hasProperty(candidate, 'message') ||
-    Predicate.hasProperty(candidate, 'code') ||
-    Predicate.hasProperty(candidate, 'slug') ||
-    Predicate.hasProperty(candidate, 'status') ||
-    Predicate.hasProperty(candidate, 'request_id');
-
   const hasStrongApiFields = (candidate: ApiErrorDetails): boolean =>
     typeof candidate.slug === 'string' || typeof candidate.request_id === 'string';
 
@@ -126,10 +142,10 @@ export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefi
     }
     seen.add(current);
 
-    const candidate = Option.getOrUndefined(decodeApiErrorDetails(current));
+    const candidate = extractCandidate(current);
     const isWrapper = current instanceof Error || Predicate.isTagged(current, 'UnknownException');
 
-    if (candidate !== undefined && hasApiFields(current) && !isWrapper) {
+    if (candidate !== undefined && !isWrapper) {
       if (hasStrongApiFields(candidate)) {
         return candidate;
       }
