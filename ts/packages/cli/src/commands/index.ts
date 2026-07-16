@@ -540,9 +540,9 @@ export const runWithConfig = Effect.gen(function* () {
       return parallelExecute;
     }
     if (isGenerateGraph(normalizedArgv)) {
-      return Effect.sync(() => {
-        process.stdout.write(`${JSON.stringify(renderCommandHintGraph(), null, 2)}\n`);
-      });
+      return Effect.flatMap(TerminalUI, ui =>
+        ui.output(JSON.stringify(renderCommandHintGraph(), null, 2), { force: true })
+      );
     }
     if (isDebugApiInfo(normalizedArgv)) {
       return Effect.gen(function* () {
@@ -564,28 +564,27 @@ export const runWithConfig = Effect.gen(function* () {
           Effect.mapError(formatResolveCommandProjectError),
           Effect.option
         );
-        return yield* Effect.sync(() => {
-          process.stdout.write(
-            `${JSON.stringify(
-              {
-                apiKey,
-                orgId: orgId ?? null,
-                consumerUserId:
-                  Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
-                    ? (consumerProject.value.consumerUserId ?? null)
-                    : null,
-              },
-              null,
-              2
-            )}\n`
-          );
-        });
+        return yield* ui.output(
+          JSON.stringify(
+            {
+              apiKey,
+              orgId: orgId ?? null,
+              consumerUserId:
+                Option.isSome(consumerProject) && consumerProject.value.projectType === 'CONSUMER'
+                  ? (consumerProject.value.consumerUserId ?? null)
+                  : null,
+            },
+            null,
+            2
+          ),
+          { force: true }
+        );
       });
     }
     if (isDebugWhoIsMyMaster(normalizedArgv)) {
-      return Effect.sync(() => {
-        process.stdout.write(`${JSON.stringify({ master: detectMaster() }, null, 2)}\n`);
-      });
+      return Effect.flatMap(TerminalUI, ui =>
+        ui.output(JSON.stringify({ master: detectMaster() }, null, 2), { force: true })
+      );
     }
     const executeHelpSlug = parseExecuteInputHelpSlug(normalizedArgv);
     if (executeHelpSlug) {

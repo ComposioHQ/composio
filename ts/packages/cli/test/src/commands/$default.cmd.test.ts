@@ -150,12 +150,9 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         vi.stubEnv('CODEX_THREAD_ID', 'thread_123');
         vi.stubEnv('CLAUDE_CODE_ENTRYPOINT', 'sdk-ts');
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
 
         yield* cli(['debug', 'who-is-my-master']);
-        const output = write.mock.calls.map(call => String(call[0])).join('\n');
+        const output = (yield* MockConsole.getLines()).join('\n');
 
         expect(output).toContain('"master": "codex"');
       })
@@ -165,15 +162,8 @@ describe('CLI: composio', () => {
   layer(TestLive())(it => {
     it.scoped('[Given] artifacts cwd [Then] it prints the current session artifact directory', () =>
       Effect.gen(function* () {
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
-
         yield* cli(['artifacts', 'cwd']);
-        const output = write.mock.calls
-          .map(call => String(call[0]))
-          .join('\n')
-          .trim();
+        const output = (yield* MockConsole.getLines()).join('\n').trim();
 
         expect(output).toContain(path.join(os.tmpdir(), 'composio'));
       })
