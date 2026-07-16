@@ -38,7 +38,7 @@ Restart Claude Code (or run `/reload-plugins`) when prompted.
 
 Try: *"Star `composiohq/composio` on GitHub."*
 
-On first use, Claude sets up everything it needs — it offers to install the Composio CLI if it's missing (behind the normal permission prompt), signs you in with `composio login`, and hands you an OAuth link to connect GitHub. Approve it in your browser and Claude runs the action. Connections persist, so next time it just runs.
+The first time, Claude installs the Composio CLI if it's missing, signs you in with `composio login`, and gives you an OAuth link for GitHub. Approve it in your browser and Claude runs the action.
 
 </Step>
 </Steps>
@@ -122,4 +122,4 @@ The plugin is open source: [ComposioHQ/composio-plugin-cc](https://github.com/Co
 
 For plugin issues — install errors, marketplace not updating — see the [Claude Code plugin troubleshooting docs](https://docs.claude.com/en/docs/claude-code/plugins-reference#common-issues).
 
-For everything else — auth, connections, tool execution — run `composio --help` or see the [CLI reference](/docs/cli). `composio whoami` checks your login state; `composio connections list` shows what's connected.
+For auth or connection issues, see the [CLI reference](/docs/cli) or run `composio --help`.
