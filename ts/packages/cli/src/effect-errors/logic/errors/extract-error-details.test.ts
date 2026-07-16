@@ -29,7 +29,7 @@ describe('extractErrorDetails function', () => {
 
     expect(result).toStrictEqual({
       isPlainString: false,
-      message,
+      message: `${message}\nCaused by: ${cause}`,
       type: 'Error',
     });
   });
