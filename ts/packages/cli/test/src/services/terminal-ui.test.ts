@@ -1,9 +1,25 @@
-import { describe, expect, layer } from '@effect/vitest';
+import { describe, expect, it, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
 describe('TerminalUI', () => {
+  it('classifies prompt and decoration capabilities independently', () => {
+    expect(
+      getTerminalCapabilities({
+        stdin: { isTTY: false },
+        stdout: { isTTY: true },
+        stderr: { isTTY: true },
+      })
+    ).toEqual({
+      stdinIsTTY: false,
+      stdoutIsTTY: true,
+      stderrIsTTY: true,
+      isInteractive: false,
+      canDecorate: true,
+    });
+  });
+
   layer(TestLive())(it => {
     // -----------------------------------------------------------------------
     // Data output
@@ -16,6 +32,16 @@ describe('TerminalUI', () => {
 
         const lines = yield* MockConsole.getLines();
         expect(lines).toContain('ak_test123');
+      })
+    );
+
+    it.scoped('error writes raw diagnostics capturable by MockConsole', () =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error('diagnostic');
+
+        const lines = yield* MockConsole.getLines();
+        expect(lines).toContain('diagnostic');
       })
     );
 

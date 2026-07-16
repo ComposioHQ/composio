@@ -90,7 +90,15 @@ const testConfigProvider = ConfigProvider.fromMap(
 
 const terminalUIWithConfirm = (confirmed: boolean) =>
   TerminalUI.of({
+    capabilities: Effect.succeed({
+      stdinIsTTY: true,
+      stdoutIsTTY: true,
+      stderrIsTTY: true,
+      isInteractive: true,
+      canDecorate: true,
+    }),
     output: data => Console.log(data),
+    error: data => Console.error(data),
     intro: title => Console.log(`-- ${title} --`),
     outro: message => Console.log(`-- ${message} --`),
     log: {
