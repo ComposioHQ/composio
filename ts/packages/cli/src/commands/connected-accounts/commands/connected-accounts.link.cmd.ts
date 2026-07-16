@@ -45,6 +45,18 @@ class ConnectedAccountsDecodeError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
+class ConnectedAccountsRequestError extends Data.TaggedError(
+  'commands/ConnectedAccountsRequestError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+class BrowserOpenError extends Data.TaggedError('commands/BrowserOpenError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
@@ -128,8 +140,11 @@ const waitForActiveConnection = (
       yield* ui.log.warn(`Redirect URL has an unexpected scheme: ${redirectUrl}`);
       yield* ui.log.info('Open the URL manually if you trust the source.');
     } else if (!noBrowser) {
-      yield* Effect.tryPromise(() => open(redirectUrl, { wait: false })).pipe(
-        Effect.catchAll(error =>
+      yield* Effect.tryPromise({
+        try: () => open(redirectUrl, { wait: false }),
+        catch: cause => new BrowserOpenError({ message: 'Failed to open the browser.', cause }),
+      }).pipe(
+        Effect.catchTag('commands/BrowserOpenError', error =>
           Effect.gen(function* () {
             yield* Effect.logDebug('Failed to open browser:', error);
             yield* ui.log.warn('Could not open the browser automatically.');
@@ -142,9 +157,14 @@ const waitForActiveConnection = (
     yield* ui.useMakeSpinner('Waiting for authentication...', spinner =>
       Effect.retry(
         Effect.gen(function* () {
-          const account = yield* Effect.tryPromise(() =>
-            client.connectedAccounts.retrieve(connectedAccountId)
-          );
+          const account = yield* Effect.tryPromise({
+            try: () => client.connectedAccounts.retrieve(connectedAccountId),
+            catch: cause =>
+              new ConnectedAccountsRequestError({
+                message: `Failed to fetch connected account "${connectedAccountId}".`,
+                cause,
+              }),
+          });
           if (account.status === 'ACTIVE') {
             return account;
           }
@@ -237,8 +257,13 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
     );
 
     if (!noBrowser) {
-      yield* Effect.tryPromise(() => open(dashboardUrl, { wait: false })).pipe(
-        Effect.catchAll(() => ui.log.warn('Could not open the browser automatically.'))
+      yield* Effect.tryPromise({
+        try: () => open(dashboardUrl, { wait: false }),
+        catch: cause => new BrowserOpenError({ message: 'Failed to open the browser.', cause }),
+      }).pipe(
+        Effect.catchTag('commands/BrowserOpenError', () =>
+          ui.log.warn('Could not open the browser automatically.')
+        )
       );
     }
 
@@ -282,15 +307,21 @@ const listActiveConnectedAccounts = (params: {
   readonly toolkitSlug?: string;
   readonly authConfigId?: string;
 }) =>
-  Effect.tryPromise(() =>
-    params.client.connectedAccounts.list({
-      user_ids: [params.userId],
-      toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
-      auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
-      statuses: ['ACTIVE'],
-      limit: 100,
-    })
-  );
+  Effect.tryPromise({
+    try: () =>
+      params.client.connectedAccounts.list({
+        user_ids: [params.userId],
+        toolkit_slugs: params.toolkitSlug ? [params.toolkitSlug] : undefined,
+        auth_config_ids: params.authConfigId ? [params.authConfigId] : undefined,
+        statuses: ['ACTIVE'],
+        limit: 100,
+      }),
+    catch: cause =>
+      new ConnectedAccountsRequestError({
+        message: `Failed to list connected accounts for user "${params.userId}".`,
+        cause,
+      }),
+  });
 
 const formatExistingAccountLabels = (
   items: ReadonlyArray<{
@@ -443,14 +474,20 @@ const handleListConnectedAccounts = (params: {
 
     const accounts = yield* params.ui.withSpinner(
       `Listing connected accounts for "${toolkitSlug}"...`,
-      Effect.tryPromise(() =>
-        client.connectedAccounts.list({
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [resolvedUserId.value],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        })
-      )
+      Effect.tryPromise({
+        try: () =>
+          client.connectedAccounts.list({
+            toolkit_slugs: [toolkitSlug],
+            user_ids: [resolvedUserId.value],
+            statuses: ['ACTIVE'],
+            limit: 100,
+          }),
+        catch: cause =>
+          new ConnectedAccountsRequestError({
+            message: `Failed to list connected accounts for "${toolkitSlug}".`,
+            cause,
+          }),
+      })
     );
     const connectedAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
       Effect.mapError(
@@ -578,13 +615,19 @@ const handleLegacyAuthConfigLink = (params: {
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
-        Effect.tryPromise(() =>
-          client.link.create({
-            auth_config_id: params.authConfigId,
-            user_id: resolvedUserId.value,
-            ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
-          })
-        )
+        Effect.tryPromise({
+          try: () =>
+            client.link.create({
+              auth_config_id: params.authConfigId,
+              user_id: resolvedUserId.value,
+              ...(Option.isSome(normalizedAlias) && { alias: normalizedAlias.value }),
+            }),
+          catch: cause =>
+            new ConnectedAccountsRequestError({
+              message: `Failed to create link for auth config "${params.authConfigId}".`,
+              cause,
+            }),
+        })
       )
       .pipe(
         Effect.asSome,
@@ -781,12 +824,20 @@ const runConnectedAccountsLink = (params: {
                 }
               : undefined,
           });
-          return yield* Effect.tryPromise(() =>
-            client.toolRouter.session.link(sessionId, {
-              toolkit: toolkitSlug,
-              ...(Option.isSome(normalizedAliasOption) && { alias: normalizedAliasOption.value }),
-            })
-          );
+          return yield* Effect.tryPromise({
+            try: () =>
+              client.toolRouter.session.link(sessionId, {
+                toolkit: toolkitSlug,
+                ...(Option.isSome(normalizedAliasOption) && {
+                  alias: normalizedAliasOption.value,
+                }),
+              }),
+            catch: cause =>
+              new ConnectedAccountsRequestError({
+                message: `Failed to create link for toolkit "${toolkitSlug}".`,
+                cause,
+              }),
+          });
         })
       )
       .pipe(
