@@ -1,9 +1,0 @@
-{
-  "title": "Setting up triggers",
-  "pages": [
-    "creating-triggers",
-    "subscribing-to-events",
-    "managing-triggers",
-    "custom-oauth-webhooks"
-  ]
-}

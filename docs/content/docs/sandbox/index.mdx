@@ -1,0 +1,284 @@
+---
+title: Sandboxes
+description: A persistent Python sandbox where your agent writes code, calls tools programmatically, and processes data
+keywords: [sandbox, remote sandbox, workbench, remote execution, bulk operations, data processing, code execution, mount, compute tier, package management]
+related:
+  - title: Local sandbox
+    href: /docs/sandbox/local-sandbox
+    description: Run the agent's code in your own infrastructure — same helpers, your security boundary.
+---
+
+LLMs are very good at spinning up scripts to do advanced analysis work. The **sandbox** superpowers your agent by giving it a remote environment where it can:
+
+1. Write and run Python scripts
+2. Call external APIs and invoke other LLMs as needed
+3. Use a filesystem and shell to store and reference outputs
+
+The sandbox is automatically spun up at the start of a [session](/docs/how-composio-works). Think of it as a persistent Jupyter notebook: variables, imports, files, and in-memory state from one call are available in the next. Your agent runs Python in it through the `COMPOSIO_REMOTE_WORKBENCH` meta tool, and shell commands through `COMPOSIO_REMOTE_BASH_TOOL`.
+
+<Callout title="Renamed from workbench">
+This feature used to be called the **workbench**. The preferred session config key is now `sandbox`, but `workbench` still works as a fully supported alias.
+</Callout>
+
+## Where it fits
+
+Use the sandbox when a task is too complex for individual tool calls. Your agent starts with [`SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE`](/docs/how-composio-works#meta-tools) for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent reaches for `COMPOSIO_REMOTE_WORKBENCH` instead.
+
+<WorkbenchFlow />
+
+Two properties shape where the sandbox belongs in your architecture:
+
+- **Cold start.** Provisioning a session or running its first cell takes seconds to 10s+. Keep sandbox work out of latency-sensitive request paths; run it in a background worker instead.
+- **No toolkit allowlist.** The `toolkits` list you pass at session creation *preloads* tools — it doesn't restrict them. Code in the sandbox can call any tool the user has connected, so the real write boundary is the OAuth scopes on the connected accounts.
+
+<ForAgent title="running the agent loop">
+
+**Mental model: three places code runs**
+
+- **Host** — your application. The agent loop's control plane (the LLM deciding the next step) lives here. There is no autonomous-agent abstraction inside the sandbox; the loop always runs in your app.
+- **Composio backend** — executes tool calls, whether they originate from the host (`COMPOSIO_MULTI_EXECUTE_TOOL`) or from inside a cell (`run_composio_tool`).
+- **Sandbox VM** — runs only the code the agent writes, submitted as cells via `COMPOSIO_REMOTE_WORKBENCH`. Never ship or maintain host code in the sandbox; push *data* to the mount instead.
+
+**The host-driven loop (verified pattern)**
+
+`session.tools()` returns provider-wrapped **meta tools**, not your toolkits' tools: `COMPOSIO_SEARCH_TOOLS`, `COMPOSIO_GET_TOOL_SCHEMAS`, `COMPOSIO_MULTI_EXECUTE_TOOL`, `COMPOSIO_REMOTE_WORKBENCH`, `COMPOSIO_REMOTE_BASH_TOOL`, `COMPOSIO_MANAGE_CONNECTIONS`. The model discovers concrete tools with `SEARCH_TOOLS` and calls them via `MULTI_EXECUTE` or, inside a cell, `run_composio_tool`.
+
+```python
+import json
+from composio import Composio
+from composio_openai import OpenAIResponsesProvider
+from openai import OpenAI
+
+composio = Composio(provider=OpenAIResponsesProvider())
+openai = OpenAI()
+
+# One long-lived session. `sandbox` is the preferred key; `workbench` is an alias.
+session = composio.create(
+    user_id="user_123",
+    toolkits=["stripe", "hubspot", "slack"],  # lowercase slugs; PRELOADS these, does not restrict
+    sandbox={"enable": True, "sandbox_size": "standard"},
+)
+
+tools = session.tools()  # META tools (see above), provider-wrapped
+messages = [
+    {"role": "system", "content": SYSTEM_PROMPT},
+    {"role": "user", "content": question},
+]
+for _ in range(8):  # always bound the loop
+    resp = openai.responses.create(model=MODEL, tools=tools, input=messages)
+    calls = [it for it in (resp.output or []) if getattr(it, "type", None) == "function_call"]
+    if not calls:  # no tool call means final answer
+        break
+    messages += resp.output  # carry the assistant's calls forward
+    for call in calls:
+        out = session.execute(call.name, arguments=json.loads(call.arguments or "{}"))
+        messages.append({
+            "type": "function_call_output",
+            "call_id": call.call_id,
+            "output": json.dumps(out.data, default=str)[:12000],  # cap what re-enters context
+        })
+final = (getattr(resp, "output_text", None) or "").strip()
+```
+
+`session.execute(...)` returns a response with `.data`, `.error`, and `.log_id`. Sandbox stdout typically lands in `.data["stdout"]`; normalize defensively: `data.get("stdout") or data.get("output") or data.get("result")`.
+
+**Cells**
+
+A cell is one `COMPOSIO_REMOTE_WORKBENCH` call: one chunk of Python.
+
+- The code argument is **`code_to_execute`** — not `code` or `command`. A wrong guess fails with `Validation error: Required at "code_to_execute"`.
+- Each cell has a **~3-minute execution limit**. If a cell makes many tool calls, parallelize inside it:
+
+```python
+import concurrent.futures
+with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+    results = list(ex.map(lambda a: run_composio_tool("HUBSPOT_GET_DEAL", a), accounts))
+```
+
+- The interpreter is persistent: variables, imports, and files carry over to the next cell. Still, **treat each task as a fresh workspace** — redefine what you need instead of relying on variables a previous task left behind, so state can't bleed across tasks.
+
+**Session lifecycle and concurrency**
+
+- **Reuse one long-lived session** and persist its id: `composio.use(session_id)` to reattach, `composio.create(...)` only on first run or if stale. Per-run sessions lose the mount's data and pay a cold start every time.
+- Cells share one persistent interpreter, so **serialize agent runs with a lock** — one run drives the session at a time. Pair with the fresh-workspace rule above.
+- **Cold start mitigation**: make ingest fast and local, and run sandbox-touching analysis in a background worker that coalesces bursts into one cycle. Running sandbox work synchronously per inbound event trips client timeouts.
+
+**Auth and read-only**
+
+- Auth is auto-injected for the session's user; in-cell `run_composio_tool` uses their connected accounts automatically.
+- Tool-level *blocking* (a denylist) exists and session blocks apply inside the sandbox too, but there's no "only allow these" switch.
+- Enforce read-only with connected-account OAuth scopes (the real boundary — write tools fail at the API), a denylist of write tools (fragile), or prompt-level instructions (soft) — never by trusting the `toolkits` preload list.
+
+**Host vs cell tool calls**
+
+Both are valid. Prefer in-cell `run_composio_tool` when the agent fetches **and** computes, so large results stay in the sandbox. Prefer host-level `MULTI_EXECUTE` for a single simple read whose small result you want directly in context. Sessions can also set `enable_auto_workbench_offload` so large tool responses auto-route into the sandbox instead of your context.
+
+**Two LLM paths coexist by design**
+
+Your control-loop model drives tool calls; `invoke_llm` handles in-cell semantic subtasks and cannot drive tool calls. Needing both is expected, not a smell.
+
+</ForAgent>
+
+## Built-in helpers
+
+These functions are pre-initialized in every sandbox, so your agent can call them without any setup:
+
+| Helper | What it does |
+|--------|-------------|
+| `run_composio_tool` | Execute any Composio tool (e.g., `GMAIL_SEND_EMAIL`, `SLACK_SEND_MESSAGE`) and get structured results |
+| `invoke_llm` | Call an LLM for classification, summarization, content generation, or data extraction |
+| `upload_local_file` | Upload generated files (reports, CSVs, images) to cloud storage and get a download URL |
+| `proxy_execute` | Make direct API calls to connected services when no pre-built tool exists |
+| `web_search` | Search the web and return results for research or data enrichment |
+| `smart_file_extract` | Extract text from PDFs, images, and other file formats in the sandbox |
+
+Why call tools from *inside* the sandbox instead of from your agent loop? Data locality. When a script fetches with `run_composio_tool` and computes in the same cell, the (possibly large) raw results stay in the sandbox — only the computed answer travels back into your model's context. Auth is injected automatically for the session's user, so scripts call tools without handling credentials.
+
+<ForAgent title="helper contract">
+
+The helpers are **pre-loaded globals** — do not `import` them. Never call `COMPOSIO_*` meta tools from inside a cell (it causes cycles); use the helpers instead. Every helper returns an **`(result, error)` tuple: check `error` first, then parse defensively**.
+
+| Helper | Signature | Notes |
+|---|---|---|
+| `run_composio_tool` | `(tool_slug, arguments, *, account=None, print_schema_for_tool=False, retry_params=None)` | Payload is under `result["data"]`, often nested — parse defensively. `print_schema_for_tool=True` prints the tool's input schema first. Auth is auto-injected. |
+| `invoke_llm` | `(query, reasoning_effort=None)` | Semantic subtasks (summarize, classify, extract). `reasoning_effort` is `'low'`, `'medium'`, or `'high'`. Query capped at 200k chars. Composio-managed model, not your key. **Cannot drive tool calls** — that's your loop's job. |
+| `web_search` | `(query)` | Web search (Exa). |
+| `proxy_execute` | `(method, endpoint, toolkit, query_params=None, body=None, headers=None)` | Direct authed API call when no tool exists. One toolkit per call. |
+| `upload_local_file` | `(*file_paths)` | Upload sandbox files to Composio storage for user-downloadable artifacts. Multiple files are auto-zipped. Returns a dict with `s3_url`, `uploaded_file`, `s3key`. |
+| `smart_file_extract` | `(sandbox_file_path, show_preview=True)` | Extract text from PDFs, images, and other formats. |
+| `get_mount_file_url` | `(file_path)` | Shareable download URL for a `/mnt/files` file. |
+| `get_mount_file_s3_key` | `(file_path)` | S3 key when a downstream tool wants a raw key, not a URL. |
+
+The idiomatic error-first pattern:
+
+```python
+res, err = run_composio_tool("STRIPE_LIST_INVOICES", {"limit": 50})
+if err:
+    print("error:", err)
+else:
+    data = res.get("data") or {}
+    invoices = data.get("invoices") or []
+    print("count:", len(invoices))
+```
+
+Tool discovery from inside a cell: `session.tools()` only exposes meta tools, so find concrete tool slugs with `SEARCH_TOOLS` at the loop level, then inspect a tool's schema in-cell with `print_schema_for_tool=True`.
+
+</ForAgent>
+
+## Files and mounts
+
+The sandbox has a persistent file mount at `/mnt/files/`. Code running in the sandbox reads and writes files there, and the mount survives sandbox restarts: changing the [compute tier](#compute-tier) recreates the sandbox and clears in-memory state, but `/mnt/files/` persists.
+
+Move files between your app and the mount with `session.experimental.files`. Upload an input file and the agent reads it at `/mnt/files/<path>`. When the agent writes a result, download it from your app. This is especially useful during long-lived agent sessions: you can regularly flush files the agent produces (such as data retrieved from tool calls) to your own durable storage.
+
+<Callout>
+The files API ships under `session.experimental`, so the surface may change in a future release.
+</Callout>
+
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+session = composio.create("user_123")
+
+# Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+uploaded = session.experimental.files.upload("./sales.csv")
+print(uploaded.sandbox_mount_prefix, uploaded.mount_relative_path)
+# /mnt/files sales.csv
+
+# After the agent writes a result in the sandbox, download it
+report = session.experimental.files.download("/report.pdf")
+report.save("./report.pdf")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123");
+
+// Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+const uploaded = await session.experimental.files.upload("./sales.csv");
+console.log(uploaded.sandboxMountPrefix, uploaded.mountRelativePath);
+// /mnt/files sales.csv
+
+// After the agent writes a result in the sandbox, download it
+const report = await session.experimental.files.download("/report.pdf");
+await report.save("./report.pdf");
+```
+</Tab>
+</Tabs>
+
+Beyond upload and download, the mount API can also list and delete files — the full method surface is in the dropdown.
+
+<ForAgent title="mount API and gotchas">
+
+**Method surface**
+
+| Method | What it does |
+|---|---|
+| `upload(input, options?)` | Upload from a local path, URL, `File`, or buffer. Returns a `RemoteFile`. |
+| `list(options?)` | List files under `path` on the mount, with `cursor` and `limit` pagination. |
+| `download(path, options?)` | Fetch a file from the mount as a `RemoteFile`. |
+| `delete(path, options?)` | Remove a file or directory from the mount. |
+
+A `RemoteFile` carries the file's bytes and a presigned `downloadUrl`. Read it with `text()` or `buffer()`, or write it to disk with `save(path)`. Its `expiresAt` is when that download link expires, not a TTL on the file: the mount itself has no expiry you set.
+
+Every file lives on the session's default `files` mount, surfaced at `/mnt/files/`. Each method takes a `mountId` to address a mount by ID, but there's no SDK call to create custom mounts today, so you'll normally work with `files`.
+
+**Gotchas**
+
+- `/mnt/files/` is a **FUSE mount backed by cloud storage, not local disk**. Fine for reading inputs and writing small results; do heavy I/O (ffmpeg, image transforms, large intermediates) in `/tmp` or `/home/user/`, then copy final outputs to `/mnt/files/`.
+- The mount is **per-session**. A new session gets a fresh, empty mount — a new session will not see data staged in another session's mount. This is the main reason to reuse one long-lived session.
+- The filesystem survives sandbox restarts; in-memory state does not. Changing the compute tier recreates the sandbox but `/mnt/files/` persists.
+- The host has no local `/mnt` — it reads and writes the same bytes through `session.experimental.files` (note the `experimental` prefix: the surface may change).
+
+**Session loss = mount loss — plan the re-seed**
+
+Persisting the session id (to reuse one session across restarts) means persisting your *data*: the mount belongs to that session. If the saved id stops resolving and you provision a fresh session, the new mount starts empty while any host-side cache still has everything — the host and the agent now silently see different worlds. On re-provision, re-mark your local copies dirty and re-upload them, and alert on the transition. Corollary: never latch "Composio unavailable" on first failure — retry with backoff and surface the degraded state through your own alerting, because a graceful local fallback is precisely what hides the outage (lesson from [FunnelWatch](/examples/funnelwatch)).
+
+**API reference**
+
+Full `upload`/`list`/`download`/`delete` signatures and the `RemoteFile` shape: [Session files](/reference/sdk-reference/typescript/session-files), [RemoteFile](/reference/sdk-reference/typescript/remote-file).
+
+</ForAgent>
+
+## The environment
+
+Two knobs shape the runtime itself: what's installed in it, and how much compute it gets.
+
+### Package management
+
+The sandbox manages dependencies automatically and corrects common mistakes in the code your agent generates. For example, if a script accesses `result["apiKey"]` but the actual field name is `api_key`, the sandbox resolves the mismatch instead of failing.
+
+Common packages come pre-installed: `pandas`, `numpy`, `matplotlib`, `Pillow`, `PyTorch`, and `reportlab`. If the agent uses a package that isn't already installed, the sandbox installs it automatically.
+
+### Compute tier
+
+Sandboxes default to `standard` (1 vCPU, 1 GB RAM). For heavier workloads (large dataframes, ML preprocessing, or big bulk operations), pick a larger tier when creating the session via `sandbox.sandboxSize` (TypeScript) or `sandbox.sandbox_size` (Python):
+
+- `standard` (1 vCPU, 1 GB RAM)
+- `medium` (2 vCPU, 2 GB)
+- `large` (4 vCPU, 4 GB)
+- `xlarge` (8 vCPU, 8 GB)
+
+You can also change the compute tier in the middle of a session. This recreates the sandbox, clearing in-memory state (the `/mnt/files/` mount persists). See [Configuring sessions → Sandbox compute tier](/docs/configuring-sessions#sandbox-compute-tier) for examples.
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime).
+</Callout>
+
+<ForAgent title="compute tier">
+
+- Tiers larger than `standard` require `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python); older SDKs reject the size option.
+- A mid-session tier change is a sandbox recreation: re-run any setup cells (imports, variables, staged `/tmp` files) afterward — only `/mnt/files/` carries over.
+
+</ForAgent>
+
+## Next
+
+<Cards>
+<Card icon={<Code />} title="Local sandbox" href="/docs/sandbox/local-sandbox" description="Run the agent's code in your own infrastructure — same helpers, your security boundary." />
+<Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools, auth, and sandbox state to a user" />
+<Card icon={<Code />} title="Local sandbox PR reviewer" href="/examples/local-sandbox-pr-reviewer" description="A worked example: clone a PR into a sandbox you own and post one grounded review." />
+</Cards>

@@ -6,6 +6,7 @@
     "general-agent-with-pi",
     "standup-slackbot",
     "local-sandbox-pr-reviewer",
+    "funnelwatch",
     "imessage-agent"
   ]
 }

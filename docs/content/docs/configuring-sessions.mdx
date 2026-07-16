@@ -335,6 +335,33 @@ const session = await composio.create("user_123", {
 </Tab>
 </Tabs>
 
+<ForAgent title="read-only by construction">
+
+**Toolkit-level registration is not read-only**
+
+Registering a toolkit grants its *entire* tool surface — `SEARCH_TOOLS` will discover its write tools, and sandbox code can call them through `run_composio_tool`. A system prompt saying "never write" is a request, not a boundary: it's one clever prompt (or one bug) away from a refund or an outbound email.
+
+For observe-only agents (dashboards, analysts, monitors), make "cannot write" structural with per-toolkit `enable` allowlists — enumerate the reads and stop:
+
+```python
+READ_ONLY_TOOLS = {
+    "stripe": ["STRIPE_LIST_CHARGES", "STRIPE_LIST_SUBSCRIPTIONS", "STRIPE_LIST_CUSTOMERS"],
+    "hubspot": ["HUBSPOT_SEARCH_DEALS", "HUBSPOT_LIST_CONTACTS"],
+    "slack": ["SLACK_FETCH_CONVERSATION_HISTORY"],  # reads only — sends stay host-side
+}
+
+session = composio.create(user_id=user_id, tools=READ_ONLY_TOOLS,
+                          workbench={"enable": True})
+```
+
+Layer it: privileged actions the *host* performs (posting alerts, say) can run outside the session via direct `tools.execute`, keeping the agent's surface pure-read; provider-side least privilege (a restricted read-only Stripe key, minimal [OAuth scopes](/docs/controlling-scopes)) backstops the allowlist; the prompt stays as the last layer, not the only one.
+
+**Verify the boundary, don't assume it**
+
+After creating the session, probe it: `SEARCH_TOOLS` for a write action ("create a refund") should return nothing usable. Worked example: [FunnelWatch](/examples/funnelwatch), a read-only revenue agent built on exactly this pattern.
+
+</ForAgent>
+
 ## Filtering tools by tags
 
 Tools carry behavior tags that you can filter on. The available tags are:
@@ -587,7 +614,7 @@ When a user has multiple connected accounts for a toolkit, the session uses the 
 
 ## Disabling the sandbox
 
-By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
+By default, sessions include the [sandbox](/docs/sandbox), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
@@ -673,7 +700,7 @@ const session = await composio.create("user_123", {
 **Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload, but expect future pricing to track actual usage.
 </Callout>
 
-Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts) survives the restart.
+Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox#files-and-mounts) survives the restart.
 
 ## Session methods
 
@@ -899,4 +926,4 @@ console.log(tool.outputParameters);
 
 ## Next
 
-<Card icon={<Database />} title="Sandbox" href="/docs/sandbox/remote" description="Give sessions a persistent compute environment with COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL" />
+<Card icon={<Database />} title="Sandbox" href="/docs/sandbox" description="Give sessions a persistent compute environment with COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL" />
