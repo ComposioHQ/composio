@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { HelpDoc, ValidationError } from '@effect/cli';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { ConfigProvider, Effect, Option, Predicate } from 'effect';
+import { Config, ConfigProvider, Effect, Option, Predicate } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { ComposioNoActiveConnectionError } from 'src/services/composio-error-overrides';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -985,9 +985,11 @@ describe('CLI: composio execute', () => {
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
         expect(output.tokenCount).toBeGreaterThan(10_000);
-        expect(output.outputFilePath).toMatch(
-          /composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
-        );
+        // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
+        // vitest setup pins to a per-test temp directory.
+        const cacheDir = yield* ConfigProvider.fromEnv().load(Config.string('COMPOSIO_CACHE_DIR'));
+        expect(output.outputFilePath).toMatch(/\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/);
+        expect(output.outputFilePath.startsWith(`${cacheDir}/`)).toBe(true);
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');

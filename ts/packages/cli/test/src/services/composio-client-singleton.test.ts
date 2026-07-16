@@ -121,6 +121,11 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     const program = Effect.gen(function* () {
+      const path = yield* Path.Path;
+      // The session-id reader resolves its cache dir from COMPOSIO_CACHE_DIR
+      // (stubbed by the shared vitest setup) before falling back to homedir,
+      // so point it at the directory this test writes the fixture into.
+      vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_current',
         expiresAt: new Date(Date.now() + 60_000).toISOString(),
@@ -154,6 +159,8 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     const program = Effect.gen(function* () {
+      const path = yield* Path.Path;
+      vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_expired',
         expiresAt: new Date(Date.now() - 60_000).toISOString(),

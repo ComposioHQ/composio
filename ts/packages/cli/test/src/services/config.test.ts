@@ -1,4 +1,4 @@
-import { describe, it, vi } from '@effect/vitest';
+import { beforeEach, describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 
 import { Config, ConfigProvider, Effect, Option, Data, LogLevel } from 'effect';
@@ -328,6 +328,21 @@ describe('Config', () => {
     const withEnvConfigProvider = Effect.withConfigProvider(
       extendConfigProvider(ConfigProvider.fromEnv())
     );
+
+    // These cases assert what the config resolves from a clean environment,
+    // but the developer's shell (direnv) and the shared vitest setup both
+    // export COMPOSIO_* variables. Neutralize every APP_CONFIG input.
+    beforeEach(() => {
+      vi.stubEnv('COMPOSIO_USER_API_KEY', undefined);
+      vi.stubEnv('COMPOSIO_ENVIRONMENT', undefined);
+      vi.stubEnv('COMPOSIO_BASE_URL', undefined);
+      vi.stubEnv('COMPOSIO_WEB_URL', undefined);
+      vi.stubEnv('COMPOSIO_CACHE_DIR', undefined);
+      vi.stubEnv('COMPOSIO_LOG_LEVEL', undefined);
+      vi.stubEnv('COMPOSIO_ORG_ID', undefined);
+      vi.stubEnv('COMPOSIO_PROJECT_ID', undefined);
+      vi.stubEnv('COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', undefined);
+    });
 
     describe('APP_CONFIG', () => {
       it('[When] no env variable is set', () => {
