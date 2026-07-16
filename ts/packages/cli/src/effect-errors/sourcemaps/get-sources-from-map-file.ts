@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- vendored effect-errors module: path.resolve here is pure string arithmetic on stack-trace file paths, not filesystem access
 import path from 'node:path';
 
 import type { PlatformError } from '@effect/platform/Error';

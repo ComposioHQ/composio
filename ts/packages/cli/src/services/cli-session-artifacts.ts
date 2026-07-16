@@ -10,7 +10,9 @@ export const resolveArtifactsRoot = Effect.gen(function* () {
   const cliUserConfig = yield* ComposioCliUserConfig;
 
   return (
+    // eslint-disable-next-line no-restricted-syntax -- read inline so a blank/whitespace-only COMPOSIO_SESSION_DIR falls through the || precedence chain (session dir > cache dir > user config > tmpdir)
     process.env.COMPOSIO_SESSION_DIR?.trim() ||
+    // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_CACHE_DIR is the second rung of the same fall-through chain: env overrides must beat the persisted artifactDirectory before the tmpdir default
     process.env.COMPOSIO_CACHE_DIR?.trim() ||
     cliUserConfig.data.artifactDirectory?.trim() ||
     path.join(os.tmpdir, 'composio')

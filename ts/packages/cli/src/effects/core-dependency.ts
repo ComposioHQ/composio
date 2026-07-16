@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- pure synchronous path-string joins to locate package.json and the pnpm store layout; all I/O goes through @effect/platform FileSystem/Command
 import path from 'node:path';
 import { Command, FileSystem } from '@effect/platform';
 import { Effect, Match } from 'effect';

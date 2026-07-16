@@ -82,6 +82,7 @@ export const parseJson = (text: string): unknown => {
   if (!value) {
     return undefined;
   }
+  // eslint-disable-next-line no-restricted-syntax -- sync JSON sniffing of sub-agent stdout shared with the non-Effect child-process runtime; non-JSON text is returned verbatim by design
   try {
     return JSON.parse(value);
   } catch {
@@ -246,6 +247,7 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
     return undefined;
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- a parse failure here is the signal to fall through, not an error to surface
   try {
     return JSON.parse(trimmed);
   } catch {
@@ -260,6 +262,7 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
       continue;
     }
 
+    // eslint-disable-next-line no-restricted-syntax -- probes each fenced block for valid JSON; an invalid block just advances the scan
     try {
       return JSON.parse(candidate);
     } catch {
@@ -340,6 +343,7 @@ const tryParseStructuredJson = (text: string): unknown | undefined => {
     }
 
     const candidate = trimmed.slice(start, end + 1);
+    // eslint-disable-next-line no-restricted-syntax -- probes each balanced {...}/[...] substring for valid JSON inside a tight scanning loop; failures just skip the candidate
     try {
       const parsed = JSON.parse(candidate);
       const nextCandidate = {

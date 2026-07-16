@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- pure synchronous normalize/resolve/relative to key the in-memory virtual file map; ts.CompilerHost callbacks are sync and cannot yield Effect Path service
 import path from 'node:path';
 import ts from 'typescript';
 

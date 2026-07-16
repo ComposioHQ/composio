@@ -190,6 +190,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 current.receivedFinal &&
                 current.chunks.length === Object.keys(current.chunks).length
               ) {
+                // eslint-disable-next-line no-restricted-syntax -- synchronous Pusher channel.bind callback with no Effect runtime in scope: JSON.parse of a reassembled chunk payload may throw, the event is dropped and the finally clears the buffer
                 try {
                   const parsed = decodeRawRealtimeEvent(JSON.parse(current.chunks.join('')));
                   if (Option.isSome(parsed)) {

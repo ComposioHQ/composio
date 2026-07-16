@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- only pure string helpers (join/dirname) for the homedir-bounded ancestor walk; every filesystem access goes through @effect/platform FileSystem
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { FileSystem } from '@effect/platform';
@@ -6,8 +7,6 @@ import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';
 import * as constants from 'src/constants';
 import { type ProjectKeys, projectKeysFromJSON } from 'src/models/project-keys';
-import type { PlatformError } from '@effect/platform/Error';
-import type { ParseError } from 'effect/ParseResult';
 
 /**
  * Keys allowed in `.composio/.env` files.

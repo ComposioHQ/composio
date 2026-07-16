@@ -1,6 +1,7 @@
 import { Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
+// eslint-disable-next-line no-restricted-imports -- only resolve/dirname string arithmetic on the --out flag value; no filesystem access, so the Path service layer adds nothing here
 import path from 'node:path';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -184,6 +185,7 @@ export const triggersCmd$Listen = Command.make(
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);
       const generatedWebhookSecret = `composio-forward-secret-${randomUUID()}`;
+      // eslint-disable-next-line no-restricted-syntax -- the forward signing secret is an optional raw passthrough from the user's shell; its literal presence/absence selects the generated-secret fallback
       const webhookSecret = process.env.COMPOSIO_WEBHOOK_SECRET ?? generatedWebhookSecret;
       const outputFilePathOption = Option.getOrUndefined(out);
       const outputFilePath = outputFilePathOption ? path.resolve(outputFilePathOption) : undefined;
@@ -210,6 +212,7 @@ export const triggersCmd$Listen = Command.make(
 
       yield* ui.intro('composio dev triggers listen');
       if (forwardUrl) {
+        // eslint-disable-next-line no-restricted-syntax -- re-checks the same raw env var to tell the user whether they supplied a secret or this session generated one
         if (process.env.COMPOSIO_WEBHOOK_SECRET) {
           yield* ui.note(
             `Forward URL: ${forwardUrl}\nSigning secret: ${webhookSecret}`,

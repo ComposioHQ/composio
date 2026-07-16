@@ -1,5 +1,10 @@
+// This module is preloaded into the user's spawned child process, where no Effect
+// runtime or @effect/platform layers are provided, so it uses sync Node builtins.
+// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- path.join builds run-file output paths in the child process, outside the Effect runtime
 import * as path from 'node:path';
 import process from 'node:process';
 import { Effect, Predicate, Schema } from 'effect';
@@ -158,8 +163,10 @@ export const installRunHelpers = async ({
   Reflect.set(globalThis, 'zod', z);
 
   const perfDebugEnabled =
+    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
     helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
   const toolDebugEnabled =
+    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
     helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
   const perfDebugStart = Date.now();
   let perfDebugSeq = 0;
@@ -312,6 +319,7 @@ export const installRunHelpers = async ({
     if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
     }
+    // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
     try {
       return JSON.stringify(value, null, 2);
     } catch {
@@ -461,6 +469,7 @@ export const installRunHelpers = async ({
     ) {
       return helperContext.master;
     }
+    // eslint-disable-next-line no-restricted-syntax -- sniffs CODEX_*/CLAUDE_* keys in the child process's inherited environment to detect which master agent spawned this run
     const envKeys = Object.keys(process.env || {});
     if (envKeys.some(key => key.startsWith('CODEX_'))) return 'codex';
     if (envKeys.some(key => key.startsWith('CLAUDE_'))) return 'claude';
@@ -468,6 +477,7 @@ export const installRunHelpers = async ({
   };
 
   const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
+    // eslint-disable-next-line no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
     try {
       const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
       const parsed = decodeExperimentalSubagentConfig(raw);
@@ -665,6 +675,7 @@ export const installRunHelpers = async ({
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
     const env: Record<string, string | undefined> = {
+      // eslint-disable-next-line no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
       ...process.env,
       ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
       ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
@@ -802,6 +813,7 @@ export const installRunHelpers = async ({
       resolvedTarget: target,
       master,
     });
+    // eslint-disable-next-line no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
     try {
       const response = await invokeAcpSubAgent({
         prompt: prompt.trim(),

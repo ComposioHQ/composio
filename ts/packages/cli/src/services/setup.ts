@@ -191,6 +191,7 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
 
   let repository = trimmed;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(repository)) {
+    // eslint-disable-next-line no-restricted-syntax -- new URL() throws on malformed input inside this pure sync validator; an unparseable repository string simply normalizes to undefined
     try {
       const url = new URL(repository);
       const isCanonicalGitHubUrl =

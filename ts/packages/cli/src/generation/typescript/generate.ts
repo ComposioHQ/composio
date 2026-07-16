@@ -1,4 +1,5 @@
 import * as ts from '@composio/ts-builders';
+// eslint-disable-next-line no-restricted-imports -- pure synchronous path.join to compute the generated index.ts filename; sources are emitted in memory, no I/O here
 import path from 'node:path';
 import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';

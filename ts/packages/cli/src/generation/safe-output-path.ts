@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- pure synchronous resolve/relative/isAbsolute string checks to reject path traversal outside outputDir; no I/O in this module
 import path from 'node:path';
 import { Data, Effect } from 'effect';
 

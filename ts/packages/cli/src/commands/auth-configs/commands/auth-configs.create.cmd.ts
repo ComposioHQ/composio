@@ -62,6 +62,7 @@ export const authConfigsCmd$Create = Command.make(
       // Parse custom credentials JSON if provided
       let parsedCustomCredentials: Record<string, unknown> | undefined;
       if (Option.isSome(customCredentials)) {
+        // eslint-disable-next-line no-restricted-syntax -- guards a synchronous JSON.parse of the user-supplied --custom-credentials flag; the catch prints usage guidance and returns instead of failing the Effect
         try {
           parsedCustomCredentials = JSON.parse(customCredentials.value) as Record<string, unknown>;
         } catch {

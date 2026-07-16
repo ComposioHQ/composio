@@ -1,6 +1,12 @@
+// This module is invoked synchronously from bin.ts BEFORE the Effect runtime
+// boots, so the @effect/platform FileSystem/Path/Os layers do not exist yet.
+// eslint-disable-next-line no-restricted-imports -- sync cache read/mkdir before the Effect runtime boots
 import { readFileSync, mkdirSync } from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- fire-and-forget cache write runs in a bare promise chain, outside the Effect runtime
 import { writeFile } from 'node:fs/promises';
+// eslint-disable-next-line no-restricted-imports -- platform/arch/homedir resolved at module load to build defaultConfig, pre-runtime
 import { arch as getArch, homedir, platform as getPlatform } from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- joins the ~/.composio cache-file path at module load, pre-runtime
 import { dirname, join } from 'node:path';
 import { Effect, Predicate, Schema } from 'effect';
 import semver from 'semver';
@@ -73,6 +79,7 @@ const defaultConfig: UpdateCheckConfig = {
   checkIntervalMs: CHECK_INTERVAL_MS,
   releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
   binaryAssetName: getCurrentBinaryAssetName(),
+  // eslint-disable-next-line no-restricted-syntax -- defaultConfig is built at module load, before effect/Config can be evaluated
   accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
   fetchFn: fetch,
 };
@@ -148,9 +155,11 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    * The public wrapper discards it (fire-and-forget).
    */
   function checkForUpdate(): Promise<void> | undefined {
+    // eslint-disable-next-line no-restricted-syntax -- pre-runtime fire-and-forget path; must never throw back into bin.ts
     try {
       // Throttle: skip if checked recently.
       let previousLatestVersion: string | undefined;
+      // eslint-disable-next-line no-restricted-syntax -- ENOENT/corrupt state file just means "re-check"; no Effect runtime is available here
       try {
         const state = Schema.decodeUnknownSync(UpdateCheckStateSchema)(
           readFileSync(config.stateFile, 'utf-8')
@@ -175,6 +184,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       // Always persist lastChecked to prevent retry loops when the fetch
       // fails or returns no matching releases with a matching binary.
       const writeState = (latestVersion?: string): Promise<void> => {
+        // eslint-disable-next-line no-restricted-syntax -- mkdir failure bails out silently inside a bare promise chain, not an Effect
         try {
           const stateDir = dirname(config.stateFile);
           mkdirSync(stateDir, { recursive: true });

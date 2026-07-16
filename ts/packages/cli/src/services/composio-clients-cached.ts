@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- cache-file locations are joined under setupCacheDir; this module self-provides only BunFileSystem + NodeOs layers, not a platform context carrying the Path service
 import path from 'node:path';
 import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
 import { FileSystem } from '@effect/platform';

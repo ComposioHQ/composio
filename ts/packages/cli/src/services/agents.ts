@@ -1,5 +1,6 @@
 import { FileSystem } from '@effect/platform';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
+// eslint-disable-next-line no-restricted-imports -- only joins the resolved cache dir with the constant agent.json name; not worth threading the Path service into every agentConfigPath caller
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -80,6 +81,7 @@ export class AgentResponseDecodeError extends Data.TaggedError(
 }> {}
 
 const agentsBaseURL = (): string =>
+  // eslint-disable-next-line no-restricted-syntax -- read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer
   (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
 
 const decodeAgentResponse =

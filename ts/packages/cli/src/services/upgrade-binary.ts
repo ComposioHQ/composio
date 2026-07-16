@@ -1,6 +1,8 @@
 import { Data, Effect, Config, Match, Option, Predicate, Record as EffectRecord } from 'effect';
 import { HttpClient, HttpClientResponse, FileSystem } from '@effect/platform';
+// eslint-disable-next-line no-restricted-imports -- pure path-string joins/parses (no I/O), complementing the FileSystem service calls
 import * as path from 'node:path';
+// eslint-disable-next-line no-restricted-imports -- recursive cp/rm replace the local-tools asset dir in one Effect.tryPromise step
 import { cp as copyPath, rm as removePath } from 'node:fs/promises';
 import { APP_VERSION } from '../constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';

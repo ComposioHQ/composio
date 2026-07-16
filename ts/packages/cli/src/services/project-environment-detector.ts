@@ -1,6 +1,7 @@
 import { BunFileSystem } from '@effect/platform-bun';
 import { FileSystem } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
+// eslint-disable-next-line no-restricted-imports -- only pure path.join string composition to build candidate manifest paths in the ancestor walk; all reads go through @effect/platform FileSystem
 import * as path from 'node:path';
 import process from 'node:process';
 import { getAncestors } from 'src/utils/get-ancestors';
@@ -496,6 +497,7 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
 
+    // eslint-disable-next-line no-restricted-syntax -- npm_config_user_agent is transient metadata injected by the package manager that spawned this process, not CLI configuration; read once as the last-resort heuristic when no lockfile or manifest evidence exists
     const userAgent = parseUserAgent(process.env.npm_config_user_agent);
     if (userAgent) return userAgent;
 

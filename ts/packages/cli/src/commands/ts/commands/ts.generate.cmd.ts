@@ -15,6 +15,7 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
+// eslint-disable-next-line no-restricted-imports -- used only for path.normalize in the synchronous --output-dir node_modules validation; pure string normalization with no filesystem access
 import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';

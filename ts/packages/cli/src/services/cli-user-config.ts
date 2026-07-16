@@ -2,7 +2,9 @@ import { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
+// eslint-disable-next-line no-restricted-imports -- os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable
 import os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- serves the same sync resolvers: path.join must work outside the Effect runtime where the Path service cannot be yielded
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';
@@ -38,6 +40,7 @@ const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonObject));
 
 export const resolveCliConfigDirectorySync = (): string =>
+  // eslint-disable-next-line no-restricted-syntax -- this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here
   process.env.COMPOSIO_CACHE_DIR?.trim() || path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
 
 export const resolveCliConfigPathSync = (): string =>

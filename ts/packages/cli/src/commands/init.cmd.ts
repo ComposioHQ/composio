@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- only path.join is used, pure string composition of config-file paths under already-resolved directories; all I/O goes through @effect/platform FileSystem
 import path from 'node:path';
 import { Command as CliCommand, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';

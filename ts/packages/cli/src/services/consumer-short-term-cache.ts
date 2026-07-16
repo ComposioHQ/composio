@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- cachePath is a plain sync helper joining the resolved cache dir with a constant file name; its callers do not carry the Path service in context
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
@@ -46,17 +47,13 @@ const CacheEntrySchema = Schema.Struct({
     })
   ),
 });
-const CacheStateSchema = Schema.Record({
-  key: Schema.String,
-  value: CacheEntrySchema,
-});
 
 export type ConsumerToolRouterAuthConfigMappings =
   typeof ConsumerToolRouterAuthConfigMappingsSchema.Type;
 export type ConsumerToolRouterConnectedAccountMappings =
   typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
 type CacheEntry = typeof CacheEntrySchema.Type;
-type CacheState = typeof CacheStateSchema.Type;
+type CacheState = { readonly [key: string]: CacheEntry };
 const decodeCacheShell = Schema.decodeUnknownOption(
   Schema.parseJson(Schema.Record({ key: Schema.String, value: Schema.Unknown }))
 );

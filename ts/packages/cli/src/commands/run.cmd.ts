@@ -1,5 +1,8 @@
+// eslint-disable-next-line no-restricted-imports -- synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- joins and resolves preload/sandbox paths in synchronous helpers where the @effect/platform Path service is unavailable
 import * as path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -291,6 +294,7 @@ const resolveRunHelperContext = () =>
     const orgId = Option.getOrUndefined(userContext.data.orgId);
     const defaultComposioDir = path.join(os.homedir(), USER_COMPOSIO_DIR);
     const configuredCacheDir =
+      // eslint-disable-next-line no-restricted-syntax -- honors the same COMPOSIO_CACHE_DIR/CACHE_DIR overrides the run-helpers child runtime reads, so the sandbox read roots match the child's cache location
       process.env.COMPOSIO_CACHE_DIR?.trim() || process.env.CACHE_DIR?.trim() || defaultComposioDir;
     const baseReadAccessRoots = [
       ...new Set([defaultComposioDir, configuredCacheDir].map(value => path.resolve(value))),
@@ -418,9 +422,11 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
+        // eslint-disable-next-line no-restricted-syntax -- reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity
         const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
+        // eslint-disable-next-line no-restricted-syntax -- reads the COMPOSIO_RUN_ACP_ONLY flag a parent process sets to force the ACP-only subagent path in the child run
         const acpOnly = process.env.COMPOSIO_RUN_ACP_ONLY === '1';
         if (Option.isNone(file)) {
           const [inlineCode] = args;
@@ -471,6 +477,7 @@ export const runCmd = Command.make('run', {
         );
         const ui = yield* TerminalUI;
         let cleanupPaths: ReadonlyArray<string> = [];
+        // eslint-disable-next-line no-restricted-syntax -- try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit
         try {
           yield* appendCliSessionHistory({
             orgId: helperContext.orgId,
@@ -494,6 +501,7 @@ export const runCmd = Command.make('run', {
           const child = Bun.spawn({
             cmd: runCommand.cmd,
             env: {
+              // eslint-disable-next-line no-restricted-syntax -- spreads the caller's full environment into the spawned script so user-provided variables reach the child process
               ...process.env,
               BUN_BE_BUN: '1',
               COMPOSIO_CLI_PARENT_RUN_ID: runId,

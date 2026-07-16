@@ -1,5 +1,11 @@
+// This module is shared with the extracted companion .mjs runtime and provides synchronous
+// helpers (e.g. resolveInstalledCliVersion) called outside any Effect context, so it cannot
+// depend on the layer-provided @effect/platform services.
+// eslint-disable-next-line no-restricted-imports -- sync fs calls back non-Effect callers (version resolution, companion-module path probing) that run before or outside the CLI's Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir seeds the mkdtempSync scratch dir for the plain-async self-repair path, which runs without the Effect runtime
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- path joins/resolves companion-asset locations for the same non-Effect callers; no platform Path service layer is available to them
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Schema } from 'effect';
@@ -372,6 +378,7 @@ const resolveRepairReleaseTag = ({
   execPath: string;
   appVersion: string;
 }) =>
+  // eslint-disable-next-line no-restricted-syntax -- GITHUB_TAG pins the release used for self-repair (set by the binary build workflow); this plain function runs outside the Effect runtime, so effect/Config is not available
   process.env.GITHUB_TAG?.trim() ||
   readInstalledReleaseTag(execPath) ||
   `@composio/cli@${appVersion}`;
@@ -398,10 +405,16 @@ export const repairMissingInstalledRunCompanionModules = async ({
   }
 
   const releaseTag = resolveRepairReleaseTag({ execPath, appVersion });
+  // The GITHUB_* overrides below let CI and forks redirect the self-repair download;
+  // this plain-async repair path runs outside the Effect runtime, so effect/Config is not available.
   const githubConfig = {
+    // eslint-disable-next-line no-restricted-syntax -- GITHUB_API_BASE_URL override for the non-Effect self-repair download path
     apiBaseUrl: process.env.GITHUB_API_BASE_URL || DEFAULT_GITHUB_CONFIG.apiBaseUrl,
+    // eslint-disable-next-line no-restricted-syntax -- GITHUB_OWNER override for the non-Effect self-repair download path
     owner: process.env.GITHUB_OWNER || DEFAULT_GITHUB_CONFIG.owner,
+    // eslint-disable-next-line no-restricted-syntax -- GITHUB_REPO override for the non-Effect self-repair download path
     repo: process.env.GITHUB_REPO || DEFAULT_GITHUB_CONFIG.repo,
+    // eslint-disable-next-line no-restricted-syntax -- GITHUB_ACCESS_TOKEN raises the GitHub rate limit for the non-Effect self-repair download path
     accessToken: process.env.GITHUB_ACCESS_TOKEN,
   };
 
@@ -454,6 +467,7 @@ export const repairMissingInstalledRunCompanionModules = async ({
   }
 
   const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-'));
+  // eslint-disable-next-line no-restricted-syntax -- try/finally guarantees the mkdtempSync scratch dir is removed; this plain-async repair path runs outside the Effect runtime, so Effect.acquireRelease is not available
   try {
     const archivePath = path.join(tempDirectory, asset.name);
     const extractDirectory = path.join(tempDirectory, 'extract');

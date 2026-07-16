@@ -43,6 +43,7 @@ export const triggersCmd$Create = Command.make(
 
       let parsedTriggerConfig: Record<string, unknown> | undefined;
       if (Option.isSome(triggerConfig)) {
+        // eslint-disable-next-line no-restricted-syntax -- the catch branch yields TerminalUI error/step messages, which Effect.try's catch callback cannot do inside this generator
         try {
           const parsed: unknown = JSON.parse(triggerConfig.value);
           if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {

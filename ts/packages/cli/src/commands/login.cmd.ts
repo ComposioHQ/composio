@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- single path.join composing the pending-login file path under the already-resolved cache dir, pure string manipulation with no I/O
 import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { FileSystem } from '@effect/platform';

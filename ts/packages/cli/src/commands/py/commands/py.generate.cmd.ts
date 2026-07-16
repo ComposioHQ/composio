@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- normalizes the user-supplied output dir inside a synchronous Options validator, before the @effect/platform Path service is resolved
 import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe, String } from 'effect';

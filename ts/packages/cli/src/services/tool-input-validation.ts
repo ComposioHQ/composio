@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- path.join here is pure cache-path string composition in plain sync helpers (toolDefinitionPath); the @effect/platform Path service would force Effect context onto string-only joins
 import path from 'node:path';
 import { AutoCorrect, CliConfig } from '@effect/cli';
 import { FileSystem } from '@effect/platform';

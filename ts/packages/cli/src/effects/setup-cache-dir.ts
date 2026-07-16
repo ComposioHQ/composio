@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- single pure synchronous path.join of the NodeOs homedir with the cache dir constant; directory creation uses @effect/platform FileSystem
 import path from 'node:path';
 import { Effect, pipe, Option } from 'effect';
 import { FileSystem } from '@effect/platform';

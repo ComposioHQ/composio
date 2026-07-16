@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- pure path-string arithmetic (resolve/dirname); no filesystem I/O involved
 import path from 'node:path';
 
 /**

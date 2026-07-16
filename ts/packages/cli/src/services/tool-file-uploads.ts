@@ -1,4 +1,9 @@
+// This module's upload pipeline is plain async/await around the raw
+// @composio/client promise API, so the Effect-scoped @effect/platform
+// FileSystem/Path services are not reachable from these helpers.
+// eslint-disable-next-line no-restricted-imports -- fs.readFile runs in promise-based upload helpers outside the Effect runtime
 import fs from 'node:fs/promises';
+// eslint-disable-next-line no-restricted-imports -- path.basename is pure string handling in the same non-Effect promise pipeline
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';

@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- pure synchronous path-string manipulation (join/dirname) while walking ancestor node_modules dirs; disk checks use @effect/platform FileSystem/Command
 import path from 'node:path';
 import { Command, FileSystem } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';

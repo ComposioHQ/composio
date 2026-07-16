@@ -1,5 +1,10 @@
 import http from 'node:http';
+// The permissions cache is read/written by plain async helpers serialized on a
+// promise write queue (atomic temp-file rename), shared with the node:http
+// browser-approval flow — none of it runs inside the Effect runtime.
+// eslint-disable-next-line no-restricted-imports -- fs is used by the promise-queue cache helpers outside the Effect runtime
 import fs from 'node:fs/promises';
+// eslint-disable-next-line no-restricted-imports -- path.join/dirname compose the cache file path inside the same non-Effect helpers
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
@@ -82,15 +87,6 @@ const ConsumerPermissionSnapshotSchema = Schema.Struct({
   fetchedAt: Schema.Number,
 });
 const CachedAllowDecisionSchema = Schema.Struct({ expiresAt: Schema.Number });
-const CacheFileSchema = Schema.Struct({
-  entries: Schema.Record({ key: Schema.String, value: ConsumerPermissionSnapshotSchema }),
-  allowEntries: Schema.optional(
-    Schema.Record({
-      key: Schema.String,
-      value: CachedAllowDecisionSchema,
-    })
-  ),
-});
 const PermissionResolveResponseSchema = Schema.Struct({
   experimental: Schema.optional(
     Schema.Struct({ permissions: Schema.optional(ToolRouterPermissionsConfigSchema) })
@@ -106,7 +102,12 @@ export type PermissionOverrideState = typeof PermissionOverrideStateSchema.Type;
 export type ToolRouterPermissionsConfig = typeof ToolRouterPermissionsConfigSchema.Type;
 export type ConsumerPermissionSnapshot = typeof ConsumerPermissionSnapshotSchema.Type;
 type CachedAllowDecision = typeof CachedAllowDecisionSchema.Type;
-type CacheFile = typeof CacheFileSchema.Type;
+// Decoding of the cache file is per-entry (decodeCacheShell + decodeSnapshotEntry /
+// decodeAllowEntry below), so the file shape only needs a type, not a schema value.
+type CacheFile = {
+  readonly entries: Readonly<Record<string, ConsumerPermissionSnapshot>>;
+  readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>> | undefined;
+};
 type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
 const UnknownRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
 const decodeCacheShell = Schema.decodeUnknownOption(
@@ -209,6 +210,7 @@ const pruneAllowEntries = (
 };
 
 const readCacheFile = async (): Promise<CacheFile> => {
+  // eslint-disable-next-line no-restricted-syntax -- plain async helper on the promise write queue, outside the Effect runtime; a missing or unreadable cache file degrades to an empty cache
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
     const parsed = decodeCacheFileTolerant(raw);
@@ -226,6 +228,7 @@ const writeCacheFile = async (cache: CacheFile): Promise<void> => {
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
   const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
+  // eslint-disable-next-line no-restricted-syntax -- atomic write cleanup in a plain async helper outside the Effect runtime: remove the temp file on failure, then rethrow to the promise queue
   try {
     await fs.writeFile(
       tempPath,
@@ -1008,6 +1011,7 @@ const requestPermissionInBrowser = (params: {
       reject(error);
     });
     server.listen(0, '127.0.0.1', async () => {
+      // eslint-disable-next-line no-restricted-syntax -- node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here
       try {
         const address = server.address();
         const port = typeof address === 'object' && address ? address.port : undefined;
@@ -1038,7 +1042,7 @@ const requestPermissionDecision = async (params: {
   const nativeDecision = await requestNativeUiPermissionDecision(params).catch(() => undefined);
   if (nativeDecision === 'allow_once' || nativeDecision === 'allow_session') return nativeDecision;
   if (nativeDecision === 'deny' || nativeDecision === 'dismissed') return 'deny';
-  return requestPermissionInBrowser({ ...params, agent: detectNativeUiCallerAgent() });
+  return requestPermissionInBrowser({ ...params, agent: await detectNativeUiCallerAgent() });
 };
 
 export const gateToolExecution = (params: GateParams) =>
