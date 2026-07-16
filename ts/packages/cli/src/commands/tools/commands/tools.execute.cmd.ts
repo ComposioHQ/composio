@@ -19,6 +19,7 @@ import {
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { logToolDebug, makePerfDebugLogger } from 'src/services/runtime-debug-logger';
 import { ToolsExecutor, detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolExecuteResponse } from 'src/services/tools-executor';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -40,7 +41,6 @@ import {
   formatResolveCommandProjectError,
 } from 'src/services/command-project';
 import { commandHintStep } from 'src/services/command-hints';
-import { isPerfDebugEnabled, isToolDebugEnabled } from 'src/services/runtime-debug-flags';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
@@ -344,22 +344,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
     } satisfies StoredExecuteOutputSummary;
   });
 
-const perfDebugEpoch = Date.now();
-const perfDebugLog = (label: string, details: Record<string, unknown> = {}) => {
-  if (!isPerfDebugEnabled()) return;
-  process.stderr.write(
-    `[perf] ${JSON.stringify({
-      phase: 'event',
-      label,
-      elapsedMs: Date.now() - perfDebugEpoch,
-      ...details,
-    })}\n`
-  );
-};
-const toolDebugLog = (label: string, details: Record<string, unknown> = {}) => {
-  if (!isToolDebugEnabled()) return;
-  process.stderr.write(`[tool-debug] ${JSON.stringify({ label, ...details })}\n`);
-};
+const perfDebugLog = makePerfDebugLogger();
 
 const prepareExecuteOutput = (
   toolSlug: string,
@@ -705,8 +690,7 @@ class ToolExecutionError extends Error {
 }
 
 type CachedValidationDecision =
-  | { readonly status: 'valid' | 'stale' }
-  | { readonly status: 'fail'; readonly error: unknown };
+  { readonly status: 'valid' | 'stale' } | { readonly status: 'fail'; readonly error: unknown };
 
 type ValidationState = {
   readonly cacheHit: boolean;
@@ -745,12 +729,12 @@ const spawnBackgroundValidationGuard = (params: {
   };
 }) =>
   Effect.gen(function* () {
-    perfDebugLog('execute.validation.background_spawn', { slug: params.slug });
+    yield* perfDebugLog('execute.validation.background_spawn', { slug: params.slug });
     const validationFiber = yield* validateToolInputArguments(params.slug, params.args, {
       orgId: params.resolvedProject.orgId,
       projectId: params.resolvedProject.projectId,
     }).pipe(Effect.forkDaemon);
-    perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
+    yield* perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
     return validationGuardFromFiber(validationFiber);
   });
 
@@ -765,7 +749,7 @@ const initializeValidationState = (params: {
 }) =>
   Effect.gen(function* () {
     if (!params.cachedDefinition) {
-      perfDebugLog('execute.validation.cache_miss', { slug: params.slug });
+      yield* perfDebugLog('execute.validation.cache_miss', { slug: params.slug });
       return {
         cacheHit: false,
         validationGuard: Effect.never,
@@ -774,7 +758,7 @@ const initializeValidationState = (params: {
     }
     const cachedDefinition = params.cachedDefinition;
 
-    perfDebugLog('execute.validation.cache_hit', {
+    yield* perfDebugLog('execute.validation.cache_hit', {
       slug: params.slug,
       cachedVersion: cachedDefinition.version,
     });
@@ -787,26 +771,24 @@ const initializeValidationState = (params: {
       }
     ).pipe(
       Effect.tap(result =>
-        Effect.sync(() =>
-          perfDebugLog('execute.validation.version_check_done', {
-            slug: params.slug,
-            cachedVersion: cachedDefinition.version,
-            latestVersion: result.latestVersion,
-            isStale: result.isStale,
-          })
-        )
+        perfDebugLog('execute.validation.version_check_done', {
+          slug: params.slug,
+          cachedVersion: cachedDefinition.version,
+          latestVersion: result.latestVersion,
+          isStale: result.isStale,
+        })
       ),
       Effect.either,
       Effect.forkDaemon
     );
     const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
-      perfDebugLog('execute.validation.cached_start', { slug: params.slug });
+      yield* perfDebugLog('execute.validation.cached_start', { slug: params.slug });
       const result = yield* validateToolInputArgumentsWithDefinition(
         params.slug,
         params.args,
         cachedDefinition
       ).pipe(Effect.either);
-      perfDebugLog('execute.validation.cached_end', {
+      yield* perfDebugLog('execute.validation.cached_end', {
         slug: params.slug,
         successful: Either.isRight(result),
       });
@@ -816,7 +798,7 @@ const initializeValidationState = (params: {
 
       const freshnessEither = yield* Fiber.join(versionCheckFiber);
       const isStale = Either.isRight(freshnessEither) && freshnessEither.right.isStale;
-      perfDebugLog('execute.validation.cached_failed', {
+      yield* perfDebugLog('execute.validation.cached_failed', {
         slug: params.slug,
         cacheStillCurrent: !isStale,
       });
@@ -1171,7 +1153,7 @@ const runConnectedToolkitFailFast = (params: {
 }) =>
   Effect.gen(function* () {
     if (params.skipConnectionCheck || params.skipChecks) {
-      perfDebugLog('execute.connected_toolkits.skipped', {
+      yield* perfDebugLog('execute.connected_toolkits.skipped', {
         slug: params.slug,
         reason: params.skipChecks ? 'skip-checks' : 'skip-connection-check',
       });
@@ -1180,7 +1162,7 @@ const runConnectedToolkitFailFast = (params: {
     if (params.resolvedProject.projectType !== 'CONSUMER') return;
     if (isLocalToolSlug(params.slug)) return;
 
-    perfDebugLog('execute.connected_toolkits.refresh_start', {
+    yield* perfDebugLog('execute.connected_toolkits.refresh_start', {
       slug: params.slug,
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
@@ -1190,24 +1172,20 @@ const runConnectedToolkitFailFast = (params: {
       consumerUserId: params.resolvedUserId,
     }).pipe(
       Effect.tap(() =>
-        Effect.sync(() =>
-          perfDebugLog('execute.connected_toolkits.refresh_end', {
-            slug: params.slug,
-            orgId: params.resolvedProject.orgId,
-            consumerUserId: params.resolvedUserId,
-            successful: true,
-          })
-        )
+        perfDebugLog('execute.connected_toolkits.refresh_end', {
+          slug: params.slug,
+          orgId: params.resolvedProject.orgId,
+          consumerUserId: params.resolvedUserId,
+          successful: true,
+        })
       ),
       Effect.catchAll(() =>
-        Effect.sync(() =>
-          perfDebugLog('execute.connected_toolkits.refresh_end', {
-            slug: params.slug,
-            orgId: params.resolvedProject.orgId,
-            consumerUserId: params.resolvedUserId,
-            successful: false,
-          })
-        )
+        perfDebugLog('execute.connected_toolkits.refresh_end', {
+          slug: params.slug,
+          orgId: params.resolvedProject.orgId,
+          consumerUserId: params.resolvedUserId,
+          successful: false,
+        })
       ),
       Effect.forkDaemon,
       Effect.asVoid
@@ -1220,7 +1198,7 @@ const runConnectedToolkitFailFast = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     });
-    perfDebugLog(
+    yield* perfDebugLog(
       Option.isSome(cachedToolkits)
         ? 'execute.connected_toolkits.cache_hit'
         : 'execute.connected_toolkits.cache_miss',
@@ -1234,7 +1212,7 @@ const runConnectedToolkitFailFast = (params: {
     );
 
     if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
-      perfDebugLog('execute.connected_toolkits.fail_fast', {
+      yield* perfDebugLog('execute.connected_toolkits.fail_fast', {
         slug: params.slug,
         toolkit,
         orgId: params.resolvedProject.orgId,
@@ -1377,16 +1355,16 @@ const runExecuteWithSpinner = (params: {
           return;
         }
 
-        perfDebugLog('execute.tool_call.start', { slug: params.slug });
+        yield* perfDebugLog('execute.tool_call.start', { slug: params.slug });
         const resultEither = yield* params.executor
           .execute(params.slug, params.executeParams)
           .pipe(Effect.raceFirst(validationGuard))
           .pipe(Effect.either);
-        toolDebugLog('execute_result', {
+        yield* logToolDebug('execute_result', {
           slug: params.slug,
           result: Either.isRight(resultEither) ? resultEither.right : resultEither.left,
         });
-        perfDebugLog('execute.tool_call.end', {
+        yield* perfDebugLog('execute.tool_call.end', {
           slug: params.slug,
           successful: Either.isRight(resultEither),
         });
@@ -1431,7 +1409,7 @@ const runExecuteWithSpinner = (params: {
         if (validationState.awaitCachedValidationDecision) {
           const decision = yield* validationState.awaitCachedValidationDecision;
           if (decision.status === 'fail') {
-            perfDebugLog('execute.validation.post_success_failure_ignored', {
+            yield* perfDebugLog('execute.validation.post_success_failure_ignored', {
               slug: params.slug,
             });
           }
@@ -1565,7 +1543,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       skipConnectionCheck: params.skipConnectionCheck,
       skipChecks: params.skipChecks,
     });
-    toolDebugLog('execute_params', {
+    yield* logToolDebug('execute_params', {
       slug: params.slug,
       userId: context.resolvedUserId,
       connectedAccountId: context.selectedConnectedAccountId,
@@ -1573,7 +1551,7 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
       projectId: context.resolvedProject.projectId,
       orgId: context.resolvedProject.orgId,
     });
-    perfDebugLog('execute.prepare', {
+    yield* perfDebugLog('execute.prepare', {
       slug: params.slug,
       surface: params.surface,
       projectMode: params.projectMode,

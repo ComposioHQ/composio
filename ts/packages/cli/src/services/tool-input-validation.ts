@@ -6,7 +6,7 @@ import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import { z } from 'zod/v3';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
-import { isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { ComposioUserContext } from 'src/services/user-context';
 
@@ -67,11 +67,6 @@ const resolveLatestAvailableVersion = (params: {
   }
 
   return params.toolkitLatestVersion;
-};
-
-const toolDebugLog = (label: string, details: Record<string, unknown>) => {
-  if (!isToolDebugEnabled()) return;
-  console.error(`[tool-debug] ${JSON.stringify({ label, ...details })}`);
 };
 
 const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolInputDefinition => {
@@ -154,7 +149,7 @@ const fetchResolvedLatestToolVersion = (
       orgId: params?.orgId,
       projectId: params?.projectId,
     });
-    toolDebugLog('latest_tool_version', {
+    yield* logToolDebug('latest_tool_version', {
       slug,
       orgId: params?.orgId,
       projectId: params?.projectId,
@@ -191,7 +186,7 @@ const fetchAndCacheToolInputDefinition = (
     }
 
     const tool = yield* repo.getToolDetailed(slug);
-    toolDebugLog('tool_detail', {
+    yield* logToolDebug('tool_detail', {
       slug,
       tool,
     });
@@ -204,7 +199,7 @@ const fetchAndCacheToolInputDefinition = (
         toolLatestVersion: selectLatestVersion(tool.available_versions),
         toolkitLatestVersion: null,
       });
-    toolDebugLog('resolved_tool_version', {
+    yield* logToolDebug('resolved_tool_version', {
       slug,
       resolvedVersion: version,
       cachePath: schemaPath,
@@ -259,7 +254,7 @@ export const refreshToolInputDefinitionIfVersionChanged = (
 ) =>
   Effect.gen(function* () {
     const latestVersion = yield* fetchResolvedLatestToolVersion(slug, params);
-    toolDebugLog('resolved_tool_version', {
+    yield* logToolDebug('resolved_tool_version', {
       slug,
       mode: 'refresh',
       cachedVersion,
