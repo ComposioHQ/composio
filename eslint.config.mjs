@@ -20,6 +20,29 @@ const portableRestrictedImportPaths = [
   },
 ];
 
+const cliRestrictedSyntax = [
+  {
+    selector: 'TryStatement',
+    message:
+      'Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch.',
+  },
+  {
+    selector: "MemberExpression[object.name='process'][property.name='env']",
+    message: 'Read environment variables through effect/Config instead of process.env.',
+  },
+];
+
+const cliProcessStreamRestrictions = [
+  {
+    selector: "MemberExpression[object.name='process'][property.name='stdout']",
+    message: 'Write output and read terminal capabilities through TerminalUI.',
+  },
+  {
+    selector: "MemberExpression[object.name='process'][property.name='stderr']",
+    message: 'Write errors and read terminal capabilities through TerminalUI.',
+  },
+];
+
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
@@ -101,16 +124,16 @@ export default [
       ],
       'no-restricted-syntax': [
         'error',
-        {
-          selector: 'TryStatement',
-          message:
-            'Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch.',
-        },
-        {
-          selector: "MemberExpression[object.name='process'][property.name='env']",
-          message: 'Read environment variables through effect/Config instead of process.env.',
-        },
+        ...cliRestrictedSyntax,
+        ...cliProcessStreamRestrictions,
       ],
+    },
+  },
+  {
+    files: ['ts/packages/cli/src/services/terminal-ui.ts'],
+    rules: {
+      // TerminalUI is the sole CLI boundary for Node's stdout and stderr streams.
+      'no-restricted-syntax': ['error', ...cliRestrictedSyntax],
     },
   },
   {
