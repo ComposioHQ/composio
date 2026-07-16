@@ -3,8 +3,23 @@ import { Effect, Option } from 'effect';
 import {
   decodeToolRouterPermissionsConfig,
   gateToolExecution,
+  resolveGateState,
   ToolPermissionDeniedError,
+  type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
+
+const snapshotFixture = (
+  overrides: Partial<ConsumerPermissionSnapshot> = {}
+): ConsumerPermissionSnapshot => ({
+  orgId: 'org_test',
+  projectId: 'project_test',
+  consumerUserId: 'user_test',
+  enhancedControlsEnabled: true,
+  permissions: { default: 'allow_all', overrides: {} },
+  connectedAccountIds: [],
+  fetchedAt: Date.now(),
+  ...overrides,
+});
 
 describe('tool permissions', () => {
   it('maps forward-version permission modes to interactive safe defaults', () => {
@@ -25,6 +40,53 @@ describe('tool permissions', () => {
       });
     }
   });
+
+  it('skips gating when no snapshot applies (developer mode)', () => {
+    expect(resolveGateState({ toolSlug: 'GMAIL_SEND_EMAIL' })).toBe('skip');
+  });
+
+  it('skips gating when enhanced controls are known disabled', () => {
+    expect(
+      resolveGateState({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({ enhancedControlsEnabled: false }),
+      })
+    ).toBe('skip');
+    expect(
+      resolveGateState({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({ permissions: undefined }),
+      })
+    ).toBe('skip');
+  });
+
+  it('fails closed to the interactive default when the snapshot state is unknown', () => {
+    expect(resolveGateState({ toolSlug: 'GMAIL_SEND_EMAIL', snapshot: 'unknown' })).toBe(
+      'ask_every_call'
+    );
+  });
+
+  it('resolves overrides ahead of the default mode', () => {
+    expect(
+      resolveGateState({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({
+          permissions: {
+            default: 'allow_all',
+            overrides: { 'GMAIL_SEND_EMAIL:__none__': 'always_deny' },
+          },
+        }),
+      })
+    ).toBe('always_deny');
+  });
+
+  it.effect('lets execution proceed ungated without a snapshot', () =>
+    Effect.gen(function* () {
+      const result = yield* gateToolExecution({ toolSlug: 'GMAIL_SEND_EMAIL' });
+
+      expect(result).toBeUndefined();
+    })
+  );
 
   it.effect('preserves permission-policy denial identity', () =>
     Effect.gen(function* () {

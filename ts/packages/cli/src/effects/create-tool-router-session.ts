@@ -18,7 +18,7 @@ import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import {
   ENHANCED_LINK_URL_OVERWRITE,
   getConsumerPermissionSnapshot,
-  type ConsumerPermissionSnapshot,
+  type ConsumerPermissionSnapshotState,
 } from 'src/services/tool-permissions';
 
 export interface CreateToolRouterSessionOptions {
@@ -52,7 +52,7 @@ export interface CreatedToolRouterSession {
   readonly sessionId: string;
   /** Inline local-tool custom definitions that should be forwarded to v3.1 search/execute calls. */
   readonly localExperimentalPayload?: ReturnType<typeof createLocalToolRouterExperimentalPayload>;
-  readonly permissionSnapshot?: ConsumerPermissionSnapshot;
+  readonly permissionSnapshot?: ConsumerPermissionSnapshotState;
   readonly connectedAccounts?: Record<string, string>;
   readonly connectedAccountWordIds?: Record<string, string>;
 }
@@ -214,7 +214,7 @@ export const createToolRouterSessionContext = (
       : undefined;
     const experimentalPayload = {
       ...(localExperimentalPayload ?? {}),
-      ...(permissionSnapshot?.enhancedControlsEnabled
+      ...(typeof permissionSnapshot === 'object' && permissionSnapshot?.enhancedControlsEnabled
         ? { link_url_overwrite: ENHANCED_LINK_URL_OVERWRITE }
         : {}),
     };

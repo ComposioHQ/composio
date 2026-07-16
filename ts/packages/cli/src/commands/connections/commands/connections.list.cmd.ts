@@ -97,12 +97,16 @@ export const connectionsCmd$List = Command.make('list', { toolkit }, ({ toolkit 
         }),
     });
     const result = yield* decodeConnectedAccountListWithFallback(rawResult);
-    const permissionSnapshot = yield* getConsumerPermissionSnapshot({
+    const permissionSnapshotState = yield* getConsumerPermissionSnapshot({
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
       consumerUserId,
       connectedAccountIds: result.items.map(item => item.id),
     });
+    // Display-only consumer: an unknown snapshot state renders no permission
+    // groups, same as before the state was distinguishable.
+    const permissionSnapshot =
+      typeof permissionSnapshotState === 'object' ? permissionSnapshotState : undefined;
     const permissionGroups = new Map(
       result.items.map(item => [
         item.id,
