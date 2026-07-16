@@ -7,6 +7,7 @@ import {
   userDataFromJSON,
   userDataToJSON,
 } from 'src/models/user-data';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
 import type { PlatformError } from '@effect/platform/Error';
@@ -26,8 +27,7 @@ import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/c
  */
 const KEYRING_SERVICE = 'com.composio.cli';
 const KEYRING_USER = 'default';
-const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
-const decodeUserDataJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonObject));
+const decodeUserDataJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
 
 const normalizeEncodedUserData = (encoded: string, omitApiKey: boolean) =>
   Effect.gen(function* () {

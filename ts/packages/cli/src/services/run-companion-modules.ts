@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { Schema } from 'effect';
 import extractZip from 'extract-zip';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
+import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
   'run-helpers-runtime',
@@ -333,21 +334,7 @@ const fetchChecksums = async ({
     return undefined;
   }
 
-  const text = await response.text();
-  const checksums = new Map<string, string>();
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      continue;
-    }
-
-    const parts = trimmed.split(/\s+/);
-    if (parts.length >= 2) {
-      checksums.set(parts[1]!, parts[0]!);
-    }
-  }
-
-  return checksums;
+  return parseChecksumsText(await response.text());
 };
 
 const verifyChecksum = async ({
@@ -359,10 +346,7 @@ const verifyChecksum = async ({
   expectedHash: string;
   fileName: string;
 }) => {
-  const digest = await crypto.subtle.digest('SHA-256', data.slice().buffer);
-  const actualHash = Array.from(new Uint8Array(digest))
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
+  const actualHash = await sha256Hex(data);
 
   if (actualHash !== expectedHash) {
     throw new Error(

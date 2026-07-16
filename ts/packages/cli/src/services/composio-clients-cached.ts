@@ -37,6 +37,17 @@ export const CACHE_FILES = {
 } as const;
 
 /**
+ * Cache filter that keeps only items whose slug starts with one of the
+ * requested toolkits' `<TOOLKIT>_` prefixes.
+ */
+const filterBySlugPrefixes =
+  (toolkitSlugs: ReadonlyArray<string>) =>
+  <T extends { readonly slug: string }>(data: ReadonlyArray<T>) => {
+    const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+    return Effect.succeed(data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p))));
+  };
+
+/**
  * Generic cache helper function that handles both cache read/write with graceful error handling.
  */
 function createCachedEffect<T, E, R>(
@@ -187,12 +198,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: TriggerTypes) => {
-                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return Effect.succeed(
-                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
-                );
-              }
+            ? (data: TriggerTypes) => filterBySlugPrefixes(toolkitSlugs)(data)
             : undefined;
         return createCachedEffect(
           CACHE_FILES.triggerTypes,
@@ -206,12 +212,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: Tools) => {
-                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return Effect.succeed(
-                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
-                );
-              }
+            ? (data: Tools) => filterBySlugPrefixes(toolkitSlugs)(data)
             : undefined;
         return createCachedEffect(
           CACHE_FILES.tools,

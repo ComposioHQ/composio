@@ -494,7 +494,11 @@ const emitExecuteFailureTelemetry = (params: {
       ? getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
           args: params.args,
-          error: new ToolInputValidationError(params.toolSlug, 'server', [message]),
+          error: new ToolInputValidationError({
+            toolSlug: params.toolSlug,
+            schemaPath: 'server',
+            issues: [message],
+          }),
           surface: params.surface,
           projectMode: params.projectMode,
           stage:

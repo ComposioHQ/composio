@@ -16,6 +16,7 @@ import {
 } from 'src/services/composio-error-overrides';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import { ToolFileUploadError, uploadToolInputFiles } from 'src/services/tool-file-uploads';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
@@ -197,7 +198,7 @@ export const ToolsExecutorLive = Layer.effect(
             connectedAccounts: params.connectedAccounts,
             cacheScope: params.cacheScope,
           });
-          const toolkitSlug = slug.split('_')[0]?.toLowerCase();
+          const toolkitSlug = toolkitFromToolSlug(slug);
           const permissionGateResult = yield* gateToolExecution({
             toolSlug: slug,
             connectedAccountId: toolkitSlug ? connectedAccounts?.[toolkitSlug] : undefined,

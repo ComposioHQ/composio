@@ -1,10 +1,11 @@
-// eslint-disable-next-line no-restricted-imports -- only pure string helpers (join/dirname) for the homedir-bounded ancestor walk; every filesystem access goes through @effect/platform FileSystem
+// eslint-disable-next-line no-restricted-imports -- only the pure path.join string helper for the homedir-bounded ancestor walk; every filesystem access goes through @effect/platform FileSystem
 import path from 'node:path';
 import { Effect, Option } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';
+import { getAncestors } from 'src/utils/get-ancestors';
 import * as constants from 'src/constants';
 import { type ProjectKeys, projectKeysFromJSON } from 'src/models/project-keys';
 
@@ -79,10 +80,9 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
         }
 
         // 2. Walk up from CWD, stop at homedir (not filesystem root)
-        let dir = proc.cwd;
         const stopAt = os.homedir;
 
-        while (true) {
+        for (const dir of getAncestors(proc.cwd)) {
           const composioDir = path.join(dir, constants.PROJECT_COMPOSIO_DIR);
 
           // 2a. Check .composio/.env
@@ -140,8 +140,7 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
           }
 
           // Stop at homedir to avoid reading from system directories
-          if (dir === stopAt || dir === path.dirname(dir)) break;
-          dir = path.dirname(dir);
+          if (dir === stopAt) break;
         }
 
         // 3. Nothing found

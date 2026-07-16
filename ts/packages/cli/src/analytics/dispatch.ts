@@ -13,6 +13,7 @@ import {
 } from 'effect';
 import * as constants from 'src/constants';
 import { spawnDetached } from 'src/services/detached-process';
+import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { AnalyticsEnvelope, TrackEvent } from './types';
@@ -151,14 +152,6 @@ const readOptionalJson = <A>(filePath: string) =>
     const raw = yield* fs.readFileString(filePath, 'utf8');
     return (yield* decodeJson(raw)) as A;
   }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
-
-const djb2Hash = (value: string): number => {
-  let hash = 5381;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 33) ^ value.charCodeAt(index);
-  }
-  return Math.abs(hash >>> 0);
-};
 
 const hashString = (value: string): string => djb2Hash(value).toString(16).padStart(8, '0');
 

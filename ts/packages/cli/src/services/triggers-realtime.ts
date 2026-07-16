@@ -1,4 +1,5 @@
 import { Data, Effect, Option, Runtime, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
   ComposioSessionRepository,
@@ -6,7 +7,7 @@ import {
   type CliRealtimeCredentialsResponse,
 } from 'src/services/composio-clients';
 
-const RawRealtimeEvent = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const RawRealtimeEvent = JsonRecordSchema;
 type RawRealtimeEvent = typeof RawRealtimeEvent.Type;
 const decodeRawRealtimeEvent = Schema.decodeUnknownOption(RawRealtimeEvent);
 

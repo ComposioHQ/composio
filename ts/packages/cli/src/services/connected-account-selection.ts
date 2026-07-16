@@ -20,15 +20,15 @@ export type CachedConnectedAccountSummary = typeof CachedConnectedAccountSummary
 
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();
 
-const parseTimestamp = (value: string | undefined): number => {
+const parseTimestamp = (value: string | null | undefined): number => {
   if (!value) return 0;
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const compareNewestFirst = (
-  left: Pick<ConnectedAccountItem, 'updated_at' | 'created_at'>,
-  right: Pick<ConnectedAccountItem, 'updated_at' | 'created_at'>
+export const compareNewestFirst = (
+  left: { readonly updated_at?: string | null; readonly created_at?: string | null },
+  right: { readonly updated_at?: string | null; readonly created_at?: string | null }
 ): number =>
   Math.max(parseTimestamp(right.updated_at), parseTimestamp(right.created_at)) -
   Math.max(parseTimestamp(left.updated_at), parseTimestamp(left.created_at));

@@ -18,6 +18,7 @@ import {
   ensureBundledBinaryExecutable,
   getLocalToolsBundleRootCandidates,
 } from '@composio/cli-local-tools';
+import { hasEnvPrefix } from 'src/services/master-detector';
 
 const NATIVE_UI_BINARY_NAME = 'composio-native-ui';
 
@@ -66,9 +67,6 @@ export class NativeUiDecisionMissingError extends Data.TaggedError(
 // node-os.ts precedent.
 // eslint-disable-next-line no-restricted-syntax -- Sole raw-env boundary of this module: prefix scanning needs the full environment map, which effect/Config cannot enumerate.
 const rawProcessEnv: NodeJS.ProcessEnv = process.env;
-
-const hasEnvPrefix = (env: NodeJS.ProcessEnv, prefix: string): boolean =>
-  Object.keys(env).some(key => key.startsWith(prefix));
 
 const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
 

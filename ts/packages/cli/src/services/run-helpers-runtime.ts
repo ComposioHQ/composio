@@ -9,8 +9,9 @@ import * as path from 'node:path';
 import process from 'node:process';
 import { Effect, Predicate, Schema } from 'effect';
 import { z } from 'zod';
+import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
-import type { MasterKind } from 'src/services/master-detector';
+import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
   parseJson,
@@ -51,7 +52,7 @@ type RunHelpersInstallParams = {
 
 type RunCliResult = unknown;
 
-const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const JsonObject = JsonRecordSchema;
 const ExperimentalSubagentConfig = Schema.Struct({
   experimental_subagent: Schema.optional(
     Schema.Struct({ target: Schema.optional(Schema.Unknown) })
@@ -469,11 +470,7 @@ export const installRunHelpers = async ({
     ) {
       return helperContext.master;
     }
-    // eslint-disable-next-line no-restricted-syntax -- sniffs CODEX_*/CLAUDE_* keys in the child process's inherited environment to detect which master agent spawned this run
-    const envKeys = Object.keys(process.env || {});
-    if (envKeys.some(key => key.startsWith('CODEX_'))) return 'codex';
-    if (envKeys.some(key => key.startsWith('CLAUDE_'))) return 'claude';
-    return 'user';
+    return detectMaster();
   };
 
   const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {

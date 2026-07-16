@@ -631,6 +631,23 @@ const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSet
   return Effect.void;
 };
 
+const toSetupTargetResult = (params: {
+  readonly adapter: SetupTargetAdapter;
+  readonly final: InspectedSetupTarget;
+  readonly pluginChanged: boolean;
+  readonly skillChanged: boolean;
+}): SetupTargetResult => ({
+  target: params.adapter.target,
+  available: params.final.available,
+  marketplace_configured: params.final.marketplace_configured,
+  plugin_installed: params.final.plugin_installed,
+  plugin_enabled: params.final.plugin_enabled,
+  cli_skill_ready: params.final.cli_skill_ready,
+  changed: params.pluginChanged || params.skillChanged,
+  plugin_changed: params.pluginChanged,
+  skill_changed: params.skillChanged,
+});
+
 const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) =>
   Effect.gen(function* () {
     const steps: SetupStep[] = [];
@@ -671,17 +688,7 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
       });
     }
 
-    return {
-      target: adapter.target,
-      available: final.available,
-      marketplace_configured: final.marketplace_configured,
-      plugin_installed: final.plugin_installed,
-      plugin_enabled: final.plugin_enabled,
-      cli_skill_ready: final.cli_skill_ready,
-      changed: pluginChanged || skillChanged,
-      plugin_changed: pluginChanged,
-      skill_changed: skillChanged,
-    } satisfies SetupTargetResult;
+    return toSetupTargetResult({ adapter, final, pluginChanged, skillChanged });
   });
 
 const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) =>
@@ -721,17 +728,7 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
       });
     }
 
-    return {
-      target: adapter.target,
-      available: final.available,
-      marketplace_configured: final.marketplace_configured,
-      plugin_installed: final.plugin_installed,
-      plugin_enabled: final.plugin_enabled,
-      cli_skill_ready: final.cli_skill_ready,
-      changed: pluginChanged || skillChanged,
-      plugin_changed: pluginChanged,
-      skill_changed: skillChanged,
-    } satisfies SetupTargetResult;
+    return toSetupTargetResult({ adapter, final, pluginChanged, skillChanged });
   });
 
 const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHost>>>> = {
@@ -781,18 +778,25 @@ export const inspectSetupTargets = (
     return inspected;
   });
 
-export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+const runSetupTargets = <E, R>(
+  inspected: ReadonlyArray<InspectedSetupTarget>,
+  runAdapter: (
+    adapter: SetupTargetAdapter,
+    status: InspectedSetupTarget
+  ) => Effect.Effect<SetupTargetResult, E, R>,
+  verb: 'Setup' | 'Uninstall'
+) =>
   Effect.gen(function* () {
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
-      const result = yield* installAdapter(ADAPTERS[status.target], status).pipe(
+      const result = yield* runAdapter(ADAPTERS[status.target], status).pipe(
         Effect.mapError(error => {
           if (completed.length === 0) return error;
           const targets = completed.map(item => item.target).join(', ');
           return setupProcessError({
             adapter: ADAPTERS[status.target],
             stage: 'mutate',
-            message: `Setup completed for ${targets} before a later target failed: ${errorMessage(error)}`,
+            message: `${verb} completed for ${targets} before a later target failed: ${errorMessage(error)}`,
             cause: error,
           });
         })
@@ -802,23 +806,8 @@ export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarge
     return completed;
   });
 
+export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+  runSetupTargets(inspected, installAdapter, 'Setup');
+
 export const uninstallSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
-  Effect.gen(function* () {
-    const completed: SetupTargetResult[] = [];
-    for (const status of inspected) {
-      const result = yield* uninstallAdapter(ADAPTERS[status.target], status).pipe(
-        Effect.mapError(error => {
-          if (completed.length === 0) return error;
-          const targets = completed.map(item => item.target).join(', ');
-          return setupProcessError({
-            adapter: ADAPTERS[status.target],
-            stage: 'mutate',
-            message: `Uninstall completed for ${targets} before a later target failed: ${errorMessage(error)}`,
-            cause: error,
-          });
-        })
-      );
-      completed.push(result);
-    }
-    return completed;
-  });
+  runSetupTargets(inspected, uninstallAdapter, 'Uninstall');

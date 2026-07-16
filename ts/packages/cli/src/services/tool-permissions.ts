@@ -8,8 +8,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Data, Effect, Option, Schema } from 'effect';
+import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
+import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
 import {
   detectNativeUiCallerAgent,
   isInteractivePermissionUiDisabled,
@@ -109,30 +111,16 @@ type CacheFile = {
   readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>> | undefined;
 };
 type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
-const UnknownRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
 const decodeCacheShell = Schema.decodeUnknownOption(
   Schema.parseJson(
     Schema.Struct({
-      entries: Schema.optional(UnknownRecordSchema),
-      allowEntries: Schema.optional(UnknownRecordSchema),
+      entries: Schema.optional(JsonRecordSchema),
+      allowEntries: Schema.optional(JsonRecordSchema),
     })
   )
 );
 const decodeSnapshotEntry = Schema.decodeUnknownOption(ConsumerPermissionSnapshotSchema);
 const decodeAllowEntry = Schema.decodeUnknownOption(CachedAllowDecisionSchema);
-
-const collectDecodedEntries = <A>(
-  entries: Readonly<Record<string, unknown>> | undefined,
-  decode: (value: unknown) => Option.Option<A>
-): Record<string, A> =>
-  Object.fromEntries(
-    Object.entries(entries ?? {}).flatMap(([key, value]) =>
-      Option.match(decode(value), {
-        onNone: () => [],
-        onSome: entry => [[key, entry] as const],
-      })
-    )
-  );
 
 // Per-entry decode: one stale or version-skewed entry drops only itself.
 // Discarding the whole file would also wipe all cached allow decisions and
@@ -199,15 +187,11 @@ const uniq = (values: ReadonlyArray<string | undefined>) => [
 const pruneAllowEntries = (
   entries: Readonly<Record<string, CachedAllowDecision>> | undefined,
   now = Date.now()
-): Record<string, CachedAllowDecision> => {
-  const freshEntries: Record<string, CachedAllowDecision> = {};
-  for (const [key, entry] of Object.entries(entries ?? {})) {
-    if (typeof entry.expiresAt === 'number' && entry.expiresAt > now) {
-      freshEntries[key] = entry;
-    }
-  }
-  return freshEntries;
-};
+): Record<string, CachedAllowDecision> =>
+  EffectRecord.filter(
+    entries ?? {},
+    entry => typeof entry.expiresAt === 'number' && entry.expiresAt > now
+  );
 
 const readCacheFile = async (): Promise<CacheFile> => {
   // eslint-disable-next-line no-restricted-syntax -- plain async helper on the promise write queue, outside the Effect runtime; a missing or unreadable cache file degrades to an empty cache
@@ -444,7 +428,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     }
     return snapshot;
   }).pipe(
-    Effect.catchAll(error =>
+    Effect.catchTag('services/ToolPermissionsRequestError', error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to refresh consumer permission cache', error);
         return undefined;
@@ -520,7 +504,7 @@ export const getOrgEnhancedControlsStatus = (params: {
       platformSupported,
     };
   }).pipe(
-    Effect.catchAll(error =>
+    Effect.catchTag('services/ToolPermissionsRequestError', error =>
       Effect.gen(function* () {
         yield* Effect.logDebug('Failed to read enhanced controls status', error);
         return undefined;

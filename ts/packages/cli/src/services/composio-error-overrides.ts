@@ -5,6 +5,7 @@ import {
   extractSlug,
   type ApiErrorDetails,
 } from 'src/utils/api-error-extraction';
+import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 const NO_CONNECTION_SLUGS: ReadonlySet<string> = new Set([
   'ActionExecute_ConnectedAccountNotFound',
@@ -79,10 +80,10 @@ export const buildNoActiveConnectionMessage = (params: {
     return `No active connection found for toolkit "${params.toolkit}". Run \`composio link ${params.toolkit}\`, then retry.`;
   }
   if (params.toolSlug) {
-    const idx = params.toolSlug.indexOf('_');
-    const toolkit =
-      idx <= 0 ? params.toolSlug.toLowerCase() : params.toolSlug.slice(0, idx).toLowerCase();
-    if (toolkit !== 'composio') {
+    // `toolkitFromToolSlug` returns the whole slug lowercased when there is no
+    // underscore, so keep the explicit 'composio' guard for the bare-slug case.
+    const toolkit = toolkitFromToolSlug(params.toolSlug);
+    if (toolkit && toolkit !== 'composio') {
       return `No active connection found for toolkit "${toolkit}". Run \`composio link ${toolkit}\`, then retry.`;
     }
   }

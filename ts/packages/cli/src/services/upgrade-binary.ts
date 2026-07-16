@@ -10,6 +10,7 @@ import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
+import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 
 // Note: `node:zlib` does not support Github's zip files
 import extractZip from 'extract-zip';
@@ -268,18 +269,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
           return Option.none();
         }
 
-        const checksums = new Map<string, string>();
-        for (const line of text.split('\n')) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          // Format: "<hash>  <filename>" (two spaces, sha256sum compatible)
-          const parts = trimmed.split(/\s+/);
-          if (parts.length >= 2) {
-            checksums.set(parts[1], parts[0]);
-          }
-        }
-
-        return Option.some(checksums);
+        return Option.some(parseChecksumsText(text));
       });
 
     /**
@@ -291,23 +281,14 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       fileName: string
     ): Effect.Effect<void, UpgradeBinaryError> =>
       Effect.gen(function* () {
-        const hashBuffer = yield* Effect.tryPromise({
-          try: () => {
-            // Copy into a fresh ArrayBuffer to avoid SharedArrayBuffer type incompatibility
-            const buf = new ArrayBuffer(data.byteLength);
-            new Uint8Array(buf).set(data);
-            return crypto.subtle.digest('SHA-256', buf);
-          },
+        const actual = yield* Effect.tryPromise({
+          try: () => sha256Hex(data),
           catch: error =>
             new UpgradeBinaryError({
               cause: error,
               message: 'Failed to compute SHA-256 checksum',
             }),
         });
-
-        const actual = Array.from(new Uint8Array(hashBuffer))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
 
         if (actual !== expectedHash) {
           return yield* Effect.fail(

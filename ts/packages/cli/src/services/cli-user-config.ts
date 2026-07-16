@@ -6,6 +6,7 @@ import type { ParseError } from 'effect/ParseResult';
 import os from 'node:os';
 // eslint-disable-next-line no-restricted-imports -- serves the same sync resolvers: path.join must work outside the Effect runtime where the Path service cannot be yielded
 import path from 'node:path';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';
 import {
@@ -36,8 +37,18 @@ export type CliUserConfigResolved = {
 const detectReleaseChannel = (version: string): CliReleaseChannel =>
   /-[0-9A-Za-z.-]+$/.test(version) ? 'beta' : 'stable';
 
-const JsonObject = Schema.Record({ key: Schema.String, value: Schema.Unknown });
-const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonObject));
+const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
+  developer: {
+    enabled: true,
+    destructiveActions: false,
+  },
+  experimentalFeatures: {},
+  artifactDirectory: Option.none(),
+  experimentalSubagent: Option.none(),
+  security: 'auto',
+});
+
+const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
 
 export const resolveCliConfigDirectorySync = (): string =>
   // eslint-disable-next-line no-restricted-syntax -- this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here
@@ -83,16 +94,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
     const configDir = yield* setupCacheDir;
     const jsonConfigPath = path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
 
-    let rawConfig = CliUserConfig.make({
-      developer: {
-        enabled: true,
-        destructiveActions: false,
-      },
-      experimentalFeatures: {},
-      artifactDirectory: Option.none(),
-      experimentalSubagent: Option.none(),
-      security: 'auto',
-    });
+    let rawConfig = DEFAULT_CLI_USER_CONFIG;
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
       if (!Predicate.isRecord(value)) {
@@ -144,22 +146,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
     });
 
     if (yield* fs.exists(jsonConfigPath)) {
-      yield* load.pipe(
-        Effect.catchAll(() =>
-          persist(
-            CliUserConfig.make({
-              developer: {
-                enabled: true,
-                destructiveActions: false,
-              },
-              experimentalFeatures: {},
-              artifactDirectory: Option.none(),
-              experimentalSubagent: Option.none(),
-              security: 'auto',
-            })
-          )
-        )
-      );
+      yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));
     } else {
       yield* persist(rawConfig);
     }

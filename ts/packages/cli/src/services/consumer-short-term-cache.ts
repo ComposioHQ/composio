@@ -3,6 +3,7 @@ import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
 import {
@@ -12,6 +13,8 @@ import {
   resolveConsumerProject,
 } from 'src/services/composio-clients';
 import { resolveCommandProject } from 'src/services/command-project';
+import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
+import { djb2Hash } from 'src/utils/djb2';
 import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
 import { ComposioUserContext } from 'src/services/user-context';
 import {
@@ -54,9 +57,7 @@ export type ConsumerToolRouterConnectedAccountMappings =
   typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
 type CacheEntry = typeof CacheEntrySchema.Type;
 type CacheState = { readonly [key: string]: CacheEntry };
-const decodeCacheShell = Schema.decodeUnknownOption(
-  Schema.parseJson(Schema.Record({ key: Schema.String, value: Schema.Unknown }))
-);
+const decodeCacheShell = Schema.decodeUnknownOption(Schema.parseJson(JsonRecordSchema));
 const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
 
 // Per-entry decode: one stale or version-skewed entry (e.g. written by a
@@ -65,28 +66,14 @@ const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
 export const decodeCacheStateTolerant = (raw: string): CacheState =>
   Option.match(decodeCacheShell(raw), {
     onNone: (): CacheState => ({}),
-    onSome: shell =>
-      Object.fromEntries(
-        Object.entries(shell).flatMap(([key, value]) =>
-          Option.match(decodeCacheEntry(value), {
-            onNone: () => [],
-            onSome: entry => [[key, entry] as const],
-          })
-        )
-      ),
+    onSome: shell => collectDecodedEntries(shell, decodeCacheEntry),
   });
 
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
 const cachePath = (cacheDir: string) => path.join(cacheDir, CACHE_FILE);
 
-const cwdHash = (cwd: string): string => {
-  let hash = 5381;
-  for (let i = 0; i < cwd.length; i += 1) {
-    hash = (hash * 33) ^ cwd.charCodeAt(i);
-  }
-  return Math.abs(hash >>> 0).toString(36);
-};
+const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
 const createProbablyMyCliSessionId = (cwd: string): string => {
   const random = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
@@ -268,26 +255,30 @@ const mergeConnectedAccountMappings = (params: {
   });
 };
 
-export const getFreshConsumerConnectedToolkitsFromCache = (params: {
-  orgId: string;
-  consumerUserId: string;
-}) =>
+// Shared prefix of every getFresh*FromCache accessor: bail to Option.none()
+// when the cache is disabled, the entry is missing, or its TTL has passed.
+const getFreshCacheEntry = (params: { orgId: string; consumerUserId: string }) =>
   Effect.gen(function* () {
     const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
     if (disabled) {
-      return Option.none<ReadonlyArray<string>>();
+      return Option.none<CacheEntry>();
     }
     const state = yield* readCache();
     const entry = state[cacheKey(params.orgId, params.consumerUserId)];
     if (!entry) {
-      return Option.none<ReadonlyArray<string>>();
+      return Option.none<CacheEntry>();
     }
     const expiresAtMs = Date.parse(entry.expiresAt);
     if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
-      return Option.none<ReadonlyArray<string>>();
+      return Option.none<CacheEntry>();
     }
-    return Option.some(entry.toolkits);
+    return Option.some(entry);
   });
+
+export const getFreshConsumerConnectedToolkitsFromCache = (params: {
+  orgId: string;
+  consumerUserId: string;
+}) => getFreshCacheEntry(params).pipe(Effect.map(Option.map(entry => entry.toolkits)));
 
 export const getFreshConsumerToolRouterAuthConfigsFromCache = (params: {
   orgId: string;
@@ -295,21 +286,12 @@ export const getFreshConsumerToolRouterAuthConfigsFromCache = (params: {
   toolkits?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
-    if (disabled) {
-      return Option.none<ConsumerToolRouterAuthConfigMappings>();
-    }
-    const state = yield* readCache();
-    const entry = state[cacheKey(params.orgId, params.consumerUserId)];
-    if (!entry) {
-      return Option.none<ConsumerToolRouterAuthConfigMappings>();
-    }
-    const expiresAtMs = Date.parse(entry.expiresAt);
-    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+    const entry = yield* getFreshCacheEntry(params);
+    if (Option.isNone(entry)) {
       return Option.none<ConsumerToolRouterAuthConfigMappings>();
     }
 
-    const mappings = normalizeAuthConfigMappings(entry.toolRouterAuthConfigs);
+    const mappings = normalizeAuthConfigMappings(entry.value.toolRouterAuthConfigs);
     if (!mappings) {
       return Option.none<ConsumerToolRouterAuthConfigMappings>();
     }
@@ -339,21 +321,12 @@ export const getFreshConsumerToolRouterConnectedAccountsFromCache = (params: {
   toolkits?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
-    const disabled = yield* APP_CONFIG.DISABLE_CONNECTED_ACCOUNT_CACHE;
-    if (disabled) {
-      return Option.none<ConsumerToolRouterConnectedAccountMappings>();
-    }
-    const state = yield* readCache();
-    const entry = state[cacheKey(params.orgId, params.consumerUserId)];
-    if (!entry) {
-      return Option.none<ConsumerToolRouterConnectedAccountMappings>();
-    }
-    const expiresAtMs = Date.parse(entry.expiresAt);
-    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+    const entry = yield* getFreshCacheEntry(params);
+    if (Option.isNone(entry)) {
       return Option.none<ConsumerToolRouterConnectedAccountMappings>();
     }
 
-    const mappings = normalizeConnectedAccountMappings(entry.toolRouterConnectedAccounts);
+    const mappings = normalizeConnectedAccountMappings(entry.value.toolRouterConnectedAccounts);
     if (!mappings) {
       return Option.none<ConsumerToolRouterConnectedAccountMappings>();
     }
@@ -363,25 +336,23 @@ export const getFreshConsumerToolRouterConnectedAccountsFromCache = (params: {
     }
 
     const requestedToolkits = params.toolkits.map(toolkit => toolkit.toLowerCase());
-    const filteredConnectedAccounts = requestedToolkits.reduce<Record<string, string>>(
-      (acc, toolkit) => {
+    const filteredConnectedAccounts = EffectRecord.fromEntries(
+      requestedToolkits.flatMap(toolkit => {
         const connectedAccountId = mappings.connectedAccounts?.[toolkit];
-        if (typeof connectedAccountId === 'string') {
-          acc[toolkit] = connectedAccountId;
-        }
-        return acc;
-      },
-      {}
+        return typeof connectedAccountId === 'string'
+          ? [[toolkit, connectedAccountId] as const]
+          : [];
+      })
     );
-    const filteredAvailableConnectedAccounts = requestedToolkits.reduce<
-      Record<string, ReadonlyArray<CachedConnectedAccountSummary>>
-    >((acc, toolkit) => {
-      const accounts = mappings.availableConnectedAccounts?.[toolkit];
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        acc[toolkit] = accounts;
-      }
-      return acc;
-    }, {});
+    const filteredAvailableConnectedAccounts: Record<
+      string,
+      ReadonlyArray<CachedConnectedAccountSummary>
+    > = EffectRecord.fromEntries(
+      requestedToolkits.flatMap(toolkit => {
+        const accounts = mappings.availableConnectedAccounts?.[toolkit];
+        return Array.isArray(accounts) && accounts.length > 0 ? [[toolkit, accounts] as const] : [];
+      })
+    );
     const filtered = normalizeConnectedAccountMappings({
       connectedAccounts: filteredConnectedAccounts,
       availableConnectedAccounts: filteredAvailableConnectedAccounts,

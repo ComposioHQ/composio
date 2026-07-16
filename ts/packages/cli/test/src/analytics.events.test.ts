@@ -27,9 +27,11 @@ describe('CLI analytics execute failure events', () => {
   });
 
   it('marks cached-schema validation failures as fast_fail', () => {
-    const error = new ToolInputValidationError('GMAIL_SEND_EMAIL', '/tmp/schema.json', [
-      'Unknown key "recipient"',
-    ]);
+    const error = new ToolInputValidationError({
+      toolSlug: 'GMAIL_SEND_EMAIL',
+      schemaPath: '/tmp/schema.json',
+      issues: ['Unknown key "recipient"'],
+    });
 
     const event = getToolExecuteValidationFailedEvent({
       toolSlug: 'GMAIL_SEND_EMAIL',

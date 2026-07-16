@@ -2,6 +2,7 @@ import { FileSystem } from '@effect/platform';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
 // eslint-disable-next-line no-restricted-imports -- only joins the resolved cache dir with the constant agent.json name; not worth threading the Path service into every agentConfigPath caller
 import path from 'node:path';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
@@ -11,7 +12,7 @@ export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 
-const UnknownFields = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const UnknownFields = JsonRecordSchema;
 
 const AgentComposioCredentials = Schema.Struct({
   member_id: Schema.optional(Schema.NullOr(Schema.String)),

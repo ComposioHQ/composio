@@ -1,4 +1,5 @@
 import { Predicate, Schema } from 'effect';
+import { JsonRecordSchema } from 'src/effects/json';
 import type { MasterKind } from 'src/services/master-detector';
 
 export type InvokeAgentTarget = 'claude' | 'codex';
@@ -90,9 +91,7 @@ export const parseJson = (text: string): unknown => {
   }
 };
 
-const decodeStructuredSchema = Schema.decodeUnknownSync(
-  Schema.parseJson(Schema.Record({ key: Schema.String, value: Schema.Unknown }))
-);
+const decodeStructuredSchema = Schema.decodeUnknownSync(Schema.parseJson(JsonRecordSchema));
 
 export const decodeStructuredSchemaJson = (text: string): Record<string, unknown> =>
   decodeStructuredSchema(text);

@@ -32,6 +32,7 @@ import {
   type ToolkitVersionSpec,
   type ToolkitVersionOverrides,
 } from 'src/effects/toolkit-version-overrides';
+import { JsonRecordSchema } from 'src/effects/json';
 import { Session, RetrievedSession } from 'src/models/session';
 import { TriggerType, TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import * as constants from 'src/constants';
@@ -98,6 +99,16 @@ export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingEr
 }> {}
 
 export type HttpError = HttpServerError | HttpDecodingError;
+
+// Sort items by slug.
+// TODO: make sure this happens on the server-side.
+const sortBySlug = <T extends { readonly slug: string }>(
+  items: ReadonlyArray<T>
+): ReadonlyArray<T> =>
+  Array.sort(
+    items,
+    Order.mapInput(Order.string, (item: T) => item.slug)
+  );
 
 const validateToolkitVersionsImpl = (
   client: {
@@ -293,8 +304,8 @@ export const ToolDetailedResponse = Schema.Struct({
   description: Schema.String,
   tags: Schema.Array(Schema.String),
   available_versions: Schema.Array(Schema.String),
-  input_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
-  output_parameters: Schema.Record({ key: Schema.String, value: Schema.Unknown }),
+  input_parameters: JsonRecordSchema,
+  output_parameters: JsonRecordSchema,
   no_auth: Schema.optionalWith(Schema.Boolean, { default: () => false }),
   toolkit: Schema.optionalWith(
     Schema.Struct({
@@ -2064,14 +2075,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
       const getToolkits = () =>
         client.toolkits.list().pipe(
           Effect.map(response => response.items),
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
+          Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>)
         );
 
       /**
@@ -2100,16 +2104,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
             )
           ),
           { concurrency: MAX_CONCURRENT_REQUESTS_PER_ENDPOINT }
-        ).pipe(
-          Effect.flatMap(
-            Effect.fn(function* (toolkits) {
-              // Sort apps by slug.
-              // TODO: make sure this happens on the server-side.
-              const orderBySlug = Order.mapInput(Order.string, (app: Toolkit) => app.slug);
-              return Array.sort(toolkits, orderBySlug) as ReadonlyArray<Toolkit>;
-            })
-          )
-        );
+        ).pipe(Effect.map(items => sortBySlug(items) as ReadonlyArray<Toolkit>));
 
       return {
         getToolkits,
@@ -2124,14 +2119,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getTools: (toolkitSlugs?: ReadonlyArray<string>) =>
           client.tools.list(toolkitSlugs ?? []).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
           ),
         /**
          * Fetches tools with per-toolkit version support.
@@ -2141,14 +2129,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getToolsByVersionSpecs: (specs: ReadonlyArray<ToolkitVersionSpec>) =>
           client.tools.listByVersionSpecs(specs).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (tools) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: Tool) => app.slug);
-                return Array.sort(tools, orderBySlug) as ReadonlyArray<Tool>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<Tool>)
           ),
         getTriggerTypesAsEnums: () => client.triggersTypes.retrieveEnum(),
         /**
@@ -2164,14 +2145,7 @@ export class ComposioToolkitsRepository extends Effect.Service<ComposioToolkitsR
         getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) =>
           client.triggersTypes.list(toolkitSlugs).pipe(
             Effect.map(response => response.items),
-            Effect.flatMap(
-              Effect.fn(function* (triggerTypes) {
-                // Sort apps by slug.
-                // TODO: make sure this happens on the server-side.
-                const orderBySlug = Order.mapInput(Order.string, (app: TriggerType) => app.slug);
-                return Array.sort(triggerTypes, orderBySlug) as ReadonlyArray<TriggerType>;
-              })
-            )
+            Effect.map(items => sortBySlug(items) as ReadonlyArray<TriggerType>)
           ),
         /**
          * Validates that the given toolkit slugs are valid by comparing them against the list
