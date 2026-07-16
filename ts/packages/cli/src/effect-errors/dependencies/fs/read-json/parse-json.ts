@@ -5,14 +5,10 @@ import { JsonParsingError } from './json-parsing.error';
 
 export const parseJson = (data: string) =>
   pipe(
-    Effect.sync(() => parse(data, null, true)),
-    Effect.catchAll(e =>
-      Effect.fail(
-        new JsonParsingError({
-          cause: e,
-        })
-      )
-    ),
+    Effect.try({
+      try: () => parse(data, null, true),
+      catch: cause => new JsonParsingError({ cause }),
+    }),
     Effect.withSpan('parse-json', {
       attributes: {
         data,
