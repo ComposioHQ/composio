@@ -210,6 +210,36 @@ describe('consumer short-term cache', () => {
   );
 
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] one corrupt entry among valid ones [Then] only the corrupt entry is dropped',
+    it => {
+      it.scoped('keeps valid cache entries when a sibling entry is corrupt', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'consumer-short-term-cache.json'),
+            JSON.stringify({
+              'org_bad:consumer-user-bad': { toolkits: 'not-an-array', expiresAt: 42 },
+              'org_test:consumer-user-test': {
+                toolkits: ['github'],
+                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+              },
+            })
+          );
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          const toolkits = Option.getOrElse(cached, (): ReadonlyArray<string> => []);
+          expect(toolkits).toContain('github');
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a full auth-config cache hit [Then] cache reads are toolkit-complete',
     it => {
       it.scoped('returns cached auth configs when every requested toolkit is covered', () =>

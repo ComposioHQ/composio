@@ -107,7 +107,42 @@ export type ConsumerPermissionSnapshot = typeof ConsumerPermissionSnapshotSchema
 type CachedAllowDecision = typeof CachedAllowDecisionSchema.Type;
 type CacheFile = typeof CacheFileSchema.Type;
 type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
-const decodeCacheFile = Schema.decodeUnknownOption(Schema.parseJson(CacheFileSchema));
+const UnknownRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(
+    Schema.Struct({
+      entries: Schema.optional(UnknownRecordSchema),
+      allowEntries: Schema.optional(UnknownRecordSchema),
+    })
+  )
+);
+const decodeSnapshotEntry = Schema.decodeUnknownOption(ConsumerPermissionSnapshotSchema);
+const decodeAllowEntry = Schema.decodeUnknownOption(CachedAllowDecisionSchema);
+
+const collectDecodedEntries = <A>(
+  entries: Readonly<Record<string, unknown>> | undefined,
+  decode: (value: unknown) => Option.Option<A>
+): Record<string, A> =>
+  Object.fromEntries(
+    Object.entries(entries ?? {}).flatMap(([key, value]) =>
+      Option.match(decode(value), {
+        onNone: () => [],
+        onSome: entry => [[key, entry] as const],
+      })
+    )
+  );
+
+// Per-entry decode: one stale or version-skewed entry drops only itself.
+// Discarding the whole file would also wipe all cached allow decisions and
+// be persisted back on the next write.
+export const decodeCacheFileTolerant = (raw: string): CacheFile =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheFile => ({ entries: {} }),
+    onSome: shell => ({
+      entries: collectDecodedEntries(shell.entries, decodeSnapshotEntry),
+      allowEntries: collectDecodedEntries(shell.allowEntries, decodeAllowEntry),
+    }),
+  });
 
 export class ToolPermissionDeniedError extends Data.TaggedError(
   'services/ToolPermissionDeniedError'
@@ -179,13 +214,11 @@ const pruneAllowEntries = (
 const readCacheFile = async (): Promise<CacheFile> => {
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
-    const parsed = decodeCacheFile(raw);
-    return Option.isSome(parsed)
-      ? {
-          entries: parsed.value.entries,
-          allowEntries: pruneAllowEntries(parsed.value.allowEntries),
-        }
-      : { entries: {} };
+    const parsed = decodeCacheFileTolerant(raw);
+    return {
+      entries: parsed.entries,
+      allowEntries: pruneAllowEntries(parsed.allowEntries),
+    };
   } catch {
     return { entries: {} };
   }

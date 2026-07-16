@@ -57,7 +57,27 @@ export type ConsumerToolRouterConnectedAccountMappings =
   typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
 type CacheEntry = typeof CacheEntrySchema.Type;
 type CacheState = typeof CacheStateSchema.Type;
-const decodeCacheState = Schema.decodeUnknown(Schema.parseJson(CacheStateSchema));
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(Schema.Record({ key: Schema.String, value: Schema.Unknown }))
+);
+const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
+
+// Per-entry decode: one stale or version-skewed entry (e.g. written by a
+// newer CLI) drops only itself; discarding the whole cache would also be
+// persisted back on the next write, permanently destroying the good entries.
+export const decodeCacheStateTolerant = (raw: string): CacheState =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheState => ({}),
+    onSome: shell =>
+      Object.fromEntries(
+        Object.entries(shell).flatMap(([key, value]) =>
+          Option.match(decodeCacheEntry(value), {
+            onNone: () => [],
+            onSome: entry => [[key, entry] as const],
+          })
+        )
+      ),
+  });
 
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
@@ -122,9 +142,7 @@ const readCache = () =>
       return {} satisfies CacheState;
     }
     const raw = yield* fs.readFileString(filePath, 'utf8');
-    return yield* decodeCacheState(raw).pipe(
-      Effect.catchAll(() => Effect.succeed({} satisfies CacheState))
-    );
+    return decodeCacheStateTolerant(raw);
   });
 
 const writeCache = (state: CacheState) =>

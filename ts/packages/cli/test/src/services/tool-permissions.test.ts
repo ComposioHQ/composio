@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest';
 import { Effect, Option } from 'effect';
 import {
+  decodeCacheFileTolerant,
   decodeToolRouterPermissionsConfig,
   gateToolExecution,
   resolveGateState,
@@ -39,6 +40,29 @@ describe('tool permissions', () => {
         },
       });
     }
+  });
+
+  it('drops only corrupt cache entries, keeping valid snapshots and allow decisions', () => {
+    const good = snapshotFixture();
+    const raw = JSON.stringify({
+      entries: {
+        good: good,
+        skewed: { ...good, fetchedAt: 'not-a-number' },
+      },
+      allowEntries: {
+        kept: { expiresAt: Date.now() + 60_000 },
+        broken: { expiresAt: 'soon' },
+      },
+    });
+
+    const decoded = decodeCacheFileTolerant(raw);
+
+    expect(Object.keys(decoded.entries)).toStrictEqual(['good']);
+    expect(Object.keys(decoded.allowEntries ?? {})).toStrictEqual(['kept']);
+  });
+
+  it('returns an empty cache for unparseable cache files', () => {
+    expect(decodeCacheFileTolerant('not json')).toStrictEqual({ entries: {} });
   });
 
   it('skips gating when no snapshot applies (developer mode)', () => {
