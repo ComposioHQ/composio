@@ -63,6 +63,7 @@ app.get('/test/mcp-client', async c => {
         enable: ['HACKERNEWS_GET_USER'],
       },
     },
+    mcp: true,
   });
 
   const { mcp } = session;
@@ -72,6 +73,7 @@ app.get('/test/mcp-client', async c => {
       type: 'http',
       url: mcp.url,
       headers: mcp.headers,
+      redirect: 'follow',
     },
   });
   // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp
@@ -105,6 +107,7 @@ app.get('/test/agent', async c => {
         enable: ['HACKERNEWS_GET_USER'],
       },
     },
+    mcp: true,
   });
 
   const { mcp, sessionId } = session;
@@ -114,6 +117,7 @@ app.get('/test/agent', async c => {
       type: 'http',
       url: mcp.url,
       headers: mcp.headers,
+      redirect: 'follow',
     },
   });
   // Intentionally do not close the HTTP MCP client here: in workerd, @ai-sdk/mcp

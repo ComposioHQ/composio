@@ -10,6 +10,9 @@ on:
       - 'python/composio/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-docs:
     runs-on: ubuntu-latest
@@ -63,7 +66,7 @@ jobs:
 
       - name: Check docs for staleness
         if: steps.diff.outputs.has_changes == 'true'
-        uses: anthropics/claude-code-action/base-action@a92e7c70a4da9793dc164451d829089dc057a464 # v1.0.159
+        uses: anthropics/claude-code-action/base-action@536f2c32a39763739000b0e1ac69ca2647d97ce9 # v1.0.170
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |

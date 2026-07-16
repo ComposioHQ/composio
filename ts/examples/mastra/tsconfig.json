@@ -10,7 +10,9 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/cloudflare.ts"]
 }

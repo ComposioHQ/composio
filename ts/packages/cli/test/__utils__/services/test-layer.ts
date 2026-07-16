@@ -1,7 +1,6 @@
-import path from 'node:path';
 import * as tempy from 'tempy';
 import { CliApp, CliConfig } from '@effect/cli';
-import { Command, FetchHttpClient, FileSystem } from '@effect/platform';
+import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
 import {
   ConfigProvider,
@@ -69,6 +68,7 @@ import { ProjectEnvironmentDetector } from 'src/services/project-environment-det
 import { CommandRunner } from 'src/services/command-runner';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { CommandExecutor } from '@effect/platform';
+import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
 export interface TestLiveInput {
   /**
@@ -197,6 +197,9 @@ export interface TestLiveInput {
    * When NOT set, uses a default mock that always returns exit code 0.
    */
   commandRunner?: CommandRunner;
+
+  /** Override setup's Claude skill installer. Defaults to an idempotent no-op. */
+  setupSkillInstaller?: SetupSkillInstaller;
 
   /**
    * Override TerminalUI behavior for tests.
@@ -1235,6 +1238,12 @@ export const TestLayer = (input?: TestLiveInput) =>
           CommandRunner,
           new CommandRunner({
             run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+            capture: () =>
+              Effect.succeed({
+                exitCode: 0,
+                stdout: '',
+                stderr: '',
+              }),
           })
         );
 
@@ -1242,6 +1251,17 @@ export const TestLayer = (input?: TestLiveInput) =>
     const TerminalUILayer = input?.terminalUI
       ? Layer.succeed(TerminalUI, input.terminalUI)
       : TerminalUITest;
+
+    const SetupSkillInstallerTest = Layer.succeed(
+      SetupSkillInstaller,
+      input?.setupSkillInstaller ??
+        new SetupSkillInstaller({
+          isClaudeSkillReady: Effect.succeed(false),
+          hasManagedClaudeSkill: Effect.succeed(false),
+          ensureClaudeSkill: Effect.succeed(false),
+          removeClaudeSkill: Effect.succeed(false),
+        })
+    );
 
     const _console = yield* MockConsole.make;
 
@@ -1259,6 +1279,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       JsPackageManagerDetector.Default,
       ProjectEnvironmentDetector.Default,
       CommandRunnerTest,
+      SetupSkillInstallerTest,
       ToolsExecutorTest,
       BunFileSystem.layer,
       BunContext.layer,
@@ -1297,14 +1318,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
     }
 
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
-    const realFixturePath = path.resolve(
-      new URL('.', import.meta.url).pathname,
-      '..',
-      '..',
-      '__fixtures__',
-      fixture
-    );
+    const fixtureRoot = yield* path.fromFileUrl(new URL('.', import.meta.url));
+    const realFixturePath = path.resolve(fixtureRoot, '..', '..', '__fixtures__', fixture);
     const tmpFixturesPath = path.join(tempDir, 'test', '__fixtures__', fixture);
 
     yield* Effect.logDebug(`Using fixture at: ${tmpFixturesPath}`);
@@ -1340,10 +1357,10 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
 
     // Break symlinks in node_modules to isolate test from real packages
     const nodeModulesPath = path.join(tmpFixturesPath, 'node_modules');
-    yield* breakSymlinksInNodeModules(fs, nodeModulesPath);
+    yield* breakSymlinksInNodeModules(fs, path, nodeModulesPath);
 
     return tmpFixturesPath;
-  }).pipe(Effect.provide(BunFileSystem.layer));
+  }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)));
 }
 
 /**
@@ -1353,6 +1370,7 @@ function setupFixtureFolder({ fixture, tempDir }: { fixture?: string; tempDir: s
  */
 function breakSymlinksInNodeModules(
   fs: FileSystem.FileSystem,
+  path: Path.Path,
   nodeModulesPath: string
 ): Effect.Effect<void, never, never> {
   // Helper: break a symlink by replacing it with a copy of its target

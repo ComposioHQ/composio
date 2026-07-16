@@ -22,7 +22,7 @@ It depends on the integration type. OAuth apps (public) let users select which p
 
 ## How do I set up the Notion webhook ingress endpoint?
 
-With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned — just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
+With Composio-managed Notion credentials, the webhook ingress endpoint is already provisioned, so just create the trigger. If you bring your own Notion OAuth app, the verification flow runs in reverse from Slack's: Notion sends a verification token to the ingress endpoint, and you paste that token back into Notion to finalize.
 
 1. **Create the endpoint.**
 
@@ -48,4 +48,6 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 4. **Paste the token back into Notion's verify field** to complete setup. Continue with [Creating triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers#create-the-trigger).
 
----
+## Notion database trigger fires for new pages, not updates
+
+In manual testing, the Notion trigger fired when pages were added to the watched database, but not for updates. Test by adding a new page to the target database.

@@ -19,6 +19,9 @@ on:
         default: 'latest'
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   toolchain-versions:
     name: Read toolchain test matrix

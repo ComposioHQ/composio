@@ -10,6 +10,7 @@ import typing as t
 
 import pytest
 
+from composio.exceptions import InvalidSchemaError
 from composio.utils.openapi import function_signature_from_jsonschema
 
 
@@ -106,3 +107,48 @@ class TestExistingShapesUnchanged:
     @pytest.mark.schema
     def test_typeless_property_is_any(self):
         assert _annotation({"description": "free form"}) is t.Any
+
+
+class TestListValuedType:
+    """A list-valued ``type`` (e.g. ``["string", "null"]``) resolves to a Union.
+
+    JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a list of
+    types rather than an ``anyOf``. A list is unhashable, so the older
+    ``p_type in OPENAPI_TO_PYTHON`` membership test raised
+    ``TypeError: unhashable type: 'list'`` and crashed tool wrapping.
+    """
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_nullable_list_is_optional(self):
+        assert _annotation({"type": ["string", "null"]}) == t.Optional[str]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_single_member_list_resolves_to_that_type(self):
+        assert _annotation({"type": ["integer"]}) is int
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_multiple_non_null_members_build_a_union(self):
+        assert _annotation({"type": ["string", "integer"]}) == t.Union[str, int]
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_nullable_array_preserves_items_schema(self):
+        assert (
+            _annotation({"type": ["array", "null"], "items": {"type": "string"}})
+            == t.Optional[t.List[str]]
+        )
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    @pytest.mark.parametrize("property_type", ["file", ["file", "null"]])
+    def test_unrecognized_member_raises_invalid_schema(self, property_type: t.Any):
+        with pytest.raises(InvalidSchemaError, match="Invalid property type file"):
+            _annotation({"type": property_type})
+
+    @pytest.mark.unit
+    @pytest.mark.schema
+    def test_empty_list_resolves_to_any(self):
+        assert _annotation({"type": []}) is t.Any

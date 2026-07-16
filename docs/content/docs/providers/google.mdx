@@ -13,7 +13,7 @@ The Google provider formats Composio tools for [Gemini](https://ai.google.dev/) 
 
 <IntegrationContent value="gemini">
 
-The Google Generative AI provider transforms Composio tools into Gemini function declarations. Gemini is non-agentic, so the model returns function calls and you run the loop: execute each call with `composio.provider.executeToolCall`, feed the result back, and repeat until the model replies with text.
+In Python, the Gemini provider (`composio_gemini`) wraps Composio tools as typed callables, and the `google-genai` SDK's Automatic Function Calling executes tool calls inside the chat loop for you. In TypeScript, the Google provider transforms Composio tools into Gemini function declarations, and you run the loop: execute each call with `composio.provider.executeToolCall`, feed the result back, and repeat until the model replies with text.
 
 <Steps>
 <Step>
@@ -21,14 +21,10 @@ The Google Generative AI provider transforms Composio tools into Gemini function
 
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
-```bash
-pip install composio composio_google google-genai
-```
+<PackageInstall ecosystem="python" packages="composio composio_gemini google-genai" />
 </Tab>
 <Tab value="TypeScript">
-```bash
-npm install @composio/core @composio/google @google/genai
-```
+<PackageInstall packages="@composio/core @composio/google @google/genai" />
 </Tab>
 </Tabs>
 </Step>
@@ -53,11 +49,11 @@ GOOGLE_API_KEY=xxxxxxxxx
 <Tab value="Python">
 ```python
 from composio import Composio
-from composio_google import GoogleProvider
+from composio_gemini import GeminiProvider
 from google import genai
 from google.genai import types
 
-composio = Composio(provider=GoogleProvider())
+composio = Composio(provider=GeminiProvider())
 client = genai.Client()
 
 # Create a session for your user
@@ -66,16 +62,11 @@ tools = session.tools()
 
 config = types.GenerateContentConfig(tools=tools)
 chat = client.chats.create(model="gemini-3-pro-preview", config=config)
-response = chat.send_message("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
 
-# Agentic loop: keep executing tool calls until the model responds with text
-while response.function_calls:
-    parts = []
-    for fc in response.function_calls:
-        result = composio.provider.execute_tool_call(user_id="user_123", function_call=fc)
-        parts.append(types.Part.from_function_response(name=fc.name, response=result))
-    response = chat.send_message(parts)
-
+# Automatic Function Calling executes tool calls inside the chat loop
+response = chat.send_message(
+    "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+)
 print(response.text)
 ```
 </Tab>
@@ -141,9 +132,7 @@ The Google ADK provider transforms Composio tools into ADK's `FunctionTool` form
 <Step>
 **Install**
 
-```bash
-pip install composio composio_google_adk google-adk
-```
+<PackageInstall ecosystem="python" packages="composio composio_google_adk google-adk" />
 </Step>
 
 <Step>

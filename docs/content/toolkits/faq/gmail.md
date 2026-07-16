@@ -51,4 +51,12 @@ result = composio.tools.execute(
 
 This approach works for any tool whose parameters accept file uploads. See [Automatic File Handling](/docs/tools-direct/executing-tools#automatic-file-handling) for more details.
 
----
+## Why can Gmail filter setup show an app-blocked error?
+
+If a user on Composio-managed Gmail auth hits Google's "app is blocked" / unverified-app screen after adding `gmail.settings.basic`, use your own Google OAuth app verified for `https://www.googleapis.com/auth/gmail.settings.basic`, then reconnect.
+
+## When should I avoid `gmail.metadata` when fetching full Gmail email content?
+
+Use `https://www.googleapis.com/auth/gmail.metadata` only when the app needs message metadata such as labels and headers, not message bodies or payload content. Gmail treats `gmail.metadata` as a restricted metadata-only scope, and it is not compatible with broader content-access scopes such as `gmail.readonly`, `gmail.modify`, or `mail.google.com` in the same OAuth request.
+
+If a tool needs full email content, remove `gmail.metadata` from the auth config and request a Gmail scope that allows message content access. Then reconnect the account so the new scope set is granted.

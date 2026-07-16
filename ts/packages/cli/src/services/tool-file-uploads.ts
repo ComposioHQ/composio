@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
+import { assertSafeFileUploadPath } from '@composio/core';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
@@ -146,11 +147,31 @@ const readFileFromUrl = async (url: string) => {
   };
 };
 
-const readFileFromDisk = async (filePath: string) => ({
-  bytes: new Uint8Array(await fs.readFile(filePath)),
-  fileName: path.basename(filePath),
-  mimeType: 'application/octet-stream',
-});
+const readFileFromDisk = async (filePath: string) => {
+  // Enforce the sensitive-path denylist at the lowest-level local read, so any
+  // caller of this reader (not just `uploadToolInputFiles`) is protected. This
+  // is the single canonical guard shared with `@composio/core`; without it the
+  // CLI's upload path would silently exfiltrate ~/.ssh/id_rsa, ~/.aws/credentials,
+  // .env files, etc. (issue #3746 / GHSA-hp3h-89pf-5q58). URLs and File objects
+  // are intentionally not path-checked, matching the core SDK.
+  //
+  // The CLI intentionally exposes NO opt-out for this guard (unlike the core/Python
+  // SDKs' `sensitiveFileUploadProtection` flag): the primary attack vector is an
+  // agent that has been prompt-injected into supplying its own tool arguments, so a
+  // `--force`/env override would hand that attacker a trivial bypass. Pass a
+  // CLI-appropriate remediation so the error does not advertise an SDK-only opt-out.
+  assertSafeFileUploadPath(filePath, {
+    remediation:
+      'The Composio CLI always enforces this denylist and has no opt-out. To upload this ' +
+      'file, copy it to a location outside sensitive directories (e.g. ~/.ssh, ~/.aws) and ' +
+      'pass the copy instead.',
+  });
+  return {
+    bytes: new Uint8Array(await fs.readFile(filePath)),
+    fileName: path.basename(filePath),
+    mimeType: 'application/octet-stream',
+  };
+};
 
 const readUploadSource = async (file: string | File) => {
   if (isFileLike(file)) {

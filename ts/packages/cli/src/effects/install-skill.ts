@@ -1,7 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Effect, Config, Option } from 'effect';
-import { HttpClient } from '@effect/platform';
+import { FileSystem, HttpClient, Path } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -11,10 +9,11 @@ import {
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
-import decompress from 'decompress';
+import extractZip from 'extract-zip';
 
 const SKILL_NAME = 'composio-cli';
 const SKILL_ASSET_NAME = 'composio-skill.zip';
+export const SKILL_RELEASE_TAG_FILENAME = '.composio-release-tag';
 export type SkillReleaseChannel = CliReleaseChannel;
 export type SkillInstallTarget = 'claude' | 'codex' | 'openclaw';
 
@@ -24,6 +23,12 @@ const SKILL_TARGET_LABELS: Record<SkillInstallTarget, string> = {
   claude: 'Claude Code',
   codex: 'Codex',
   openclaw: 'OpenClaw',
+};
+
+const SKILL_TARGET_DIRECTORIES: Record<SkillInstallTarget, ReadonlyArray<string>> = {
+  claude: ['.claude', 'skills'],
+  codex: ['.codex', 'skills'],
+  openclaw: ['.openclaw', 'skills'],
 };
 
 type GitHubConfig = GitHubRepoConfig & {
@@ -49,22 +54,15 @@ export const resolveInstalledSkillName = (skillName?: string): string => {
 
 export const resolveTargetSkillPath = ({
   home,
+  path,
   skillName,
   target,
 }: {
   home: string;
+  path: Path.Path;
   skillName: string;
   target: SkillInstallTarget;
-}): string => {
-  switch (target) {
-    case 'claude':
-      return path.join(home, '.claude', 'skills', skillName);
-    case 'codex':
-      return path.join(home, '.codex', 'skills', skillName);
-    case 'openclaw':
-      return path.join(home, '.openclaw', 'skills', skillName);
-  }
-};
+}): string => path.join(home, ...SKILL_TARGET_DIRECTORIES[target], skillName);
 
 const resolveTargetLabel = (target: SkillInstallTarget): string => SKILL_TARGET_LABELS[target];
 
@@ -121,10 +119,13 @@ export const installSkill = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   Effect.gen(function* () {
     const os = yield* NodeOs;
     const ui = yield* TerminalUI;
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const httpClient = yield* HttpClient.HttpClient;
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
     const home = os.homedir;
@@ -132,7 +133,7 @@ export const installSkill = (options?: {
     const skillName = resolveInstalledSkillName(options?.skillName);
 
     const agentSkillDir = path.join(home, '.agents', 'skills', skillName);
-    const targetSkillPath = resolveTargetSkillPath({ home, skillName, target });
+    const targetSkillPath = resolveTargetSkillPath({ home, path, skillName, target });
 
     const tag = yield* resolveSkillReleaseTag({
       channel: options?.channel,
@@ -183,50 +184,42 @@ export const installSkill = (options?: {
 
     // Extract to a temp dir, then move into place
     const tmpDir = path.join(os.homedir, '.agents', '.tmp-skill-install');
-    fs.mkdirSync(tmpDir, { recursive: true });
 
-    try {
+    yield* Effect.gen(function* () {
+      yield* fs.makeDirectory(tmpDir, { recursive: true });
       const zipPath = path.join(tmpDir, SKILL_ASSET_NAME);
-      fs.writeFileSync(zipPath, new Uint8Array(zipData));
+      yield* fs.writeFile(zipPath, new Uint8Array(zipData));
 
       yield* Effect.tryPromise({
-        try: () => decompress(zipPath, tmpDir),
+        try: () => extractZip(zipPath, { dir: tmpDir }),
         catch: error => new Error(`Failed to extract skill zip: ${error}`),
       });
 
       // The zip contains composio-cli/ directory
       const extractedDir = path.join(tmpDir, SKILL_NAME);
-      if (!fs.existsSync(extractedDir)) {
+      if (!(yield* fs.exists(extractedDir))) {
         return yield* Effect.fail(new Error('Extracted skill directory not found'));
       }
 
-      // Remove old skill dir and move new one into place
-      fs.rmSync(agentSkillDir, { recursive: true, force: true });
-      fs.mkdirSync(path.dirname(agentSkillDir), { recursive: true });
-      fs.cpSync(extractedDir, agentSkillDir, { recursive: true });
-    } finally {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    }
+      yield* Effect.gen(function* () {
+        // Replace the canonical skill and agent target without interruption leaving either absent.
+        yield* fs.remove(agentSkillDir, { recursive: true, force: true });
+        yield* fs.makeDirectory(path.dirname(agentSkillDir), { recursive: true });
+        yield* fs.copy(extractedDir, agentSkillDir, { overwrite: true });
+        yield* fs.writeFileString(path.join(agentSkillDir, SKILL_RELEASE_TAG_FILENAME), `${tag}\n`);
 
-    // Create agent-specific symlink — always replace any existing entry.
-    fs.mkdirSync(path.dirname(targetSkillPath), { recursive: true });
-    try {
-      const stat = fs.lstatSync(targetSkillPath);
-      // Entry exists (symlink, broken symlink, or directory) — remove it
-      if (stat.isSymbolicLink()) {
-        fs.unlinkSync(targetSkillPath);
-      } else if (stat.isDirectory()) {
-        fs.rmSync(targetSkillPath, { recursive: true, force: true });
-      } else {
-        fs.unlinkSync(targetSkillPath);
-      }
-    } catch {
-      // lstatSync throws if nothing exists at the path — that's fine
-    }
-    const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
-    fs.symlinkSync(relativeTarget, targetSkillPath);
+        yield* fs.makeDirectory(path.dirname(targetSkillPath), { recursive: true });
+        yield* fs.remove(targetSkillPath, { recursive: true, force: true });
+        const relativeTarget = path.relative(path.dirname(targetSkillPath), agentSkillDir);
+        yield* fs.symlink(relativeTarget, targetSkillPath);
+      }).pipe(Effect.uninterruptible);
+    }).pipe(
+      Effect.ensuring(fs.remove(tmpDir, { recursive: true, force: true }).pipe(Effect.orDie))
+    );
 
-    yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    if (!options?.silent) {
+      yield* ui.log.success(`Installed ${skillName} skill for ${resolveTargetLabel(target)}`);
+    }
   });
 
 /**
@@ -237,6 +230,7 @@ export const installSkillSafe = (options?: {
   readonly channel?: SkillReleaseChannel;
   readonly target?: SkillInstallTarget;
   readonly skillName?: string;
+  readonly silent?: boolean;
 }) =>
   installSkill(options).pipe(
     Effect.sandbox,

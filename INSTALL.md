@@ -6,12 +6,12 @@ This guide provides multiple ways to install the Composio CLI on your system.
 
 ### One-line Install
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
 ```
 
 ### Install specific version
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- v0.1.24
+curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash -s -- v0.1.24
 ```
 
 ### What the install script does:
@@ -149,13 +149,13 @@ If the download fails:
 1. **Check your internet connection**
 2. **Try again with verbose output:**
    ```bash
-   curl -v -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
+   curl -v -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
    ```
 
 3. **Manual download:**
    ```bash
    # Download the install script first
-   curl -O https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh
+   curl -O https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh
    
    # Review the script
    cat install.sh
@@ -189,7 +189,7 @@ The installer respects these environment variables:
 Example:
 ```bash
 export COMPOSIO_INSTALL="/usr/local"
-curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
 ```
 
 ## Development

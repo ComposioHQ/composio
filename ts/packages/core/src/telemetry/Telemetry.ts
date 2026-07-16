@@ -18,6 +18,7 @@ import {
 } from '../services/telemetry/TelemetryService.types';
 import { TelemetryService } from '../services/telemetry/TelemetryService';
 import logger from '../utils/logger';
+import { redactSensitiveText } from './redact';
 /**
  * The Telemetry class is used to log the telemetry for any given instance which extends InstrumentedInstance.
  *
@@ -207,28 +208,30 @@ export class TelemetryTransport {
       },
       source: this.telemetrySource,
     };
+    // Redact secrets (URLs with tokens, Authorization headers, API keys, etc.)
+    // from free-form error text before it is transported off-process.
     // client error, this is likely handled by the API itseld
     if (error instanceof ComposioClientError) {
       telemetryPayload.error = {
         errorId: error.errorId,
         name: error.name,
-        message: error.message,
-        stack: error.stack,
+        message: redactSensitiveText(error.message),
+        stack: redactSensitiveText(error.stack),
       };
     } else if (error instanceof ComposioError) {
       telemetryPayload.error = {
         errorId: error.errorId,
         name: error.name,
         code: error.code,
-        message: error.message,
-        stack: error.stack,
+        message: redactSensitiveText(error.message),
+        stack: redactSensitiveText(error.stack),
       };
     } else if (error instanceof Error) {
       telemetryPayload.error = {
         errorId: error.errorId,
         name: error.name ?? 'Unknown error',
-        message: error.message,
-        stack: error.stack,
+        message: redactSensitiveText(error.message),
+        stack: redactSensitiveText(error.stack),
       };
     }
 

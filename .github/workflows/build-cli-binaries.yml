@@ -298,12 +298,12 @@ jobs:
 
           ### Linux and macOS
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash
           ```
 
           ### Install specific version
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/main/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
+          curl -fsSL https://raw.githubusercontent.com/ComposioHQ/composio/next/install.sh | bash -s -- RELEASE_TAG_PLACEHOLDER
           ```
 
           ## Manual Installation

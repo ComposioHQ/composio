@@ -24,6 +24,13 @@ on:
       - 'python/pyproject.toml'
       - 'python/requirements*.txt'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
   toolchain-versions:
     name: Read toolchain test matrix
@@ -55,13 +62,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip dependencies
+      - name: Cache uv dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/pip
-          key: pip-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml') }}
+          path: ~/.cache/uv
+          key: uv-${{ matrix.python-version }}-${{ hashFiles('python/pyproject.toml', 'mise.toml') }}
           restore-keys: |
-            pip-${{ matrix.python-version }}-
+            uv-${{ matrix.python-version }}-
 
       - name: Install UV
         run: |

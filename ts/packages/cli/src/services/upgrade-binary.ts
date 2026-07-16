@@ -10,7 +10,7 @@ import { CompareSemverError, semverComparator } from 'src/effects/compare-semver
 import { fetchLatestCliRelease, type GitHubRelease } from 'src/effects/resolve-cli-release';
 
 // Note: `node:zlib` does not support Github's zip files
-import decompress from 'decompress';
+import extractZip from 'extract-zip';
 import type { Predicate } from 'effect/Predicate';
 import { renderPrettyError } from './utils/pretty-error';
 import { TerminalUI } from './terminal-ui';
@@ -360,7 +360,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         yield* Effect.tryPromise({
           try: async () => {
-            await decompress(zipPath, extractDir);
+            await extractZip(zipPath, { dir: extractDir });
           },
           catch: error =>
             new UpgradeBinaryError({
