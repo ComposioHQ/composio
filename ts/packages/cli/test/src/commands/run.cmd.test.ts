@@ -44,11 +44,10 @@ describe('CLI: composio run', () => {
         Effect.gen(function* () {
           const spawn = vi.fn(() => ({ exited: Promise.resolve(7) }));
           const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-          const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
           vi.stubGlobal('Bun', { spawn });
 
           yield* cli(['run', 'console.log("hi")', '--flag', 'value']);
-          const output = stderrWrite.mock.calls.map(([chunk]) => String(chunk));
+          const output = yield* MockConsole.getLines();
 
           expect(spawn).toHaveBeenCalledTimes(1);
           const spawnConfig = (spawn as any).mock.calls[0][0] as {
@@ -71,7 +70,7 @@ describe('CLI: composio run', () => {
             })
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-          expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log\n$/));
+          expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
           expect(exit).toHaveBeenCalledWith(7);
         })
     );

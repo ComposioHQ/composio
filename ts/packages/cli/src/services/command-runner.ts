@@ -16,9 +16,13 @@ export class CommandRunner extends Effect.Service<CommandRunner>()('services/Com
     capture: (command: Command.Command) =>
       Effect.scoped(
         Effect.gen(function* () {
-          const process = yield* Command.start(command);
+          const childProcess = yield* Command.start(command);
           const [exitCode, stdout, stderr] = yield* Effect.all(
-            [process.exitCode, collectText(process.stdout), collectText(process.stderr)],
+            [
+              childProcess.exitCode,
+              collectText(childProcess.stdout),
+              collectText(childProcess.stderr),
+            ],
             { concurrency: 'unbounded' }
           );
           return { exitCode: Number(exitCode), stdout, stderr } satisfies CommandResult;

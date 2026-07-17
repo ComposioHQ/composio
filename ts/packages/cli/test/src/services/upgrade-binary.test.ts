@@ -14,7 +14,15 @@ import { collectExpectedRunCompanionAssetRelativePaths } from 'src/services/run-
 const TerminalUINoop = Layer.succeed(
   TerminalUI,
   TerminalUI.of({
+    capabilities: Effect.succeed({
+      stdinIsTTY: false,
+      stdoutIsTTY: false,
+      stderrIsTTY: false,
+      isInteractive: false,
+      canDecorate: false,
+    }),
     output: () => Effect.void,
+    error: () => Effect.void,
     intro: () => Effect.void,
     outro: () => Effect.void,
     log: {

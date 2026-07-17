@@ -50,6 +50,13 @@ const testConfigProvider = ConfigProvider.fromMap(
 ).pipe(extendConfigProvider);
 
 const RecordingTerminalUI = TerminalUI.of({
+  capabilities: Effect.succeed({
+    stdinIsTTY: true,
+    stdoutIsTTY: true,
+    stderrIsTTY: true,
+    isInteractive: true,
+    canDecorate: true,
+  }),
   output: (data, options) =>
     Console.log(
       JSON.stringify({
@@ -57,6 +64,7 @@ const RecordingTerminalUI = TerminalUI.of({
         data,
       })
     ),
+  error: data => Console.error(data),
   intro: title => Console.log(title),
   outro: message => Console.log(message),
   log: {

@@ -342,6 +342,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
 const perfDebugEpoch = Date.now();
 const perfDebugLog = (label: string, details: Record<string, unknown> = {}) => {
   if (!isPerfDebugEnabled()) return;
+  // eslint-disable-next-line no-restricted-syntax -- migrated with the typed-error slice (PR 8 of this stack)
   process.stderr.write(
     `[perf] ${JSON.stringify({
       phase: 'event',
@@ -353,6 +354,7 @@ const perfDebugLog = (label: string, details: Record<string, unknown> = {}) => {
 };
 const toolDebugLog = (label: string, details: Record<string, unknown> = {}) => {
   if (!isToolDebugEnabled()) return;
+  // eslint-disable-next-line no-restricted-syntax -- migrated with the typed-error slice (PR 8 of this stack)
   process.stderr.write(`[tool-debug] ${JSON.stringify({ label, ...details })}\n`);
 };
 

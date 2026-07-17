@@ -57,6 +57,7 @@ const main = async (): Promise<void> => {
 
 void main().catch(error => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  // eslint-disable-next-line no-restricted-syntax -- migrated with the typed-error slice (PR 8 of this stack)
   process.stderr.write(`${message}\n`);
   process.exit(1);
 });

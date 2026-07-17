@@ -10,7 +10,15 @@ import { TerminalUI } from 'src/services/terminal-ui';
 export const TerminalUITest = Layer.succeed(
   TerminalUI,
   TerminalUI.of({
+    capabilities: Effect.succeed({
+      stdinIsTTY: false,
+      stdoutIsTTY: false,
+      stderrIsTTY: false,
+      isInteractive: false,
+      canDecorate: false,
+    }),
     output: data => Console.log(data),
+    error: data => Console.error(data),
 
     intro: title => Console.log(`-- ${title} --`),
     outro: message => Console.log(`-- ${message} --`),

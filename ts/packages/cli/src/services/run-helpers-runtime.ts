@@ -326,6 +326,7 @@ export const installRunHelpers = async ({
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
     appendRunLogLine(line);
     if (shouldStreamHelperLog(step, formattedLine)) {
+      // eslint-disable-next-line no-restricted-syntax -- migrated with the typed-error slice (PR 8 of this stack)
       process.stderr.write(`${line}\n`);
     }
   };
