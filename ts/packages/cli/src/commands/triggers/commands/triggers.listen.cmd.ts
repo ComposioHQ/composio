@@ -332,13 +332,24 @@ export const triggersCmd$Listen = Command.make(
           Effect.onInterrupt(() => ui.log.info('Stopped listening for realtime trigger events.'))
         );
 
-      if (maxEventsLimit === undefined) {
-        yield* listenEffect;
-        return;
-      }
+      yield* Effect.gen(function* () {
+        if (maxEventsLimit === undefined) {
+          yield* listenEffect;
+          return;
+        }
 
-      yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
-      yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
+        yield* Effect.raceFirst(listenEffect, Deferred.await(stopWhenDone));
+        yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
+      }).pipe(
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+            );
+            process.exitCode = 1;
+          })
+        )
+      );
     })
 ).pipe(
   Command.withDescription(

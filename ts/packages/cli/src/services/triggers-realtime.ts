@@ -62,8 +62,12 @@ type ChunkedRealtimeEvent = {
 export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
   'services/TriggerRealtimeSubscriptionError'
 )<{
+  readonly message: string;
   readonly cause?: unknown;
 }> {}
+
+const subscriptionError = (message: string) => (cause: unknown) =>
+  new TriggerRealtimeSubscriptionError({ message, cause });
 
 /**
  * Service for listening to trigger events over Composio CLI realtime channels.
@@ -80,11 +84,14 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
       const runtime = yield* Effect.runtime<never>();
 
       const listenWith = (params: {
-        getRealtimeCredentials: () => Effect.Effect<CliRealtimeCredentialsResponse>;
+        getRealtimeCredentials: () => Effect.Effect<
+          CliRealtimeCredentialsResponse,
+          TriggerRealtimeSubscriptionError
+        >;
         authRealtimeChannel: (params: {
           channel_name: string;
           socket_id: string;
-        }) => Effect.Effect<CliRealtimeAuthResponse>;
+        }) => Effect.Effect<CliRealtimeAuthResponse, TriggerRealtimeSubscriptionError>;
         onEvent: (data: RawRealtimeEvent) => void;
       }) =>
         Effect.acquireUseRelease(
@@ -94,7 +101,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
 
             const pusherModule = yield* Effect.tryPromise({
               try: () => import('pusher-js'),
-              catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              catch: subscriptionError('Failed to load the realtime client'),
             });
 
             const Pusher = pusherModule.default as unknown as PusherCtor;
@@ -252,14 +259,20 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
           resource =>
             Effect.tryPromise({
               try: () => resource.shutdown(),
-              catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
+              catch: subscriptionError('Failed to shut down the realtime subscription'),
             }).pipe(Effect.catchAll(() => Effect.void))
         );
 
       const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
         listenWith({
-          getRealtimeCredentials: () => sessionRepo.getRealtimeCredentials().pipe(Effect.orDie),
-          authRealtimeChannel: params => sessionRepo.authRealtimeChannel(params).pipe(Effect.orDie),
+          getRealtimeCredentials: () =>
+            sessionRepo
+              .getRealtimeCredentials()
+              .pipe(Effect.mapError(subscriptionError('Failed to fetch realtime credentials'))),
+          authRealtimeChannel: params =>
+            sessionRepo
+              .authRealtimeChannel(params)
+              .pipe(Effect.mapError(subscriptionError('Failed to authorize the realtime channel'))),
           onEvent,
         });
 
@@ -277,13 +290,13 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             getRealtimeCredentials: () =>
               Effect.tryPromise({
                 try: () => client.cli.realtime.credentials(),
-                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
-              }).pipe(Effect.orDie),
+                catch: subscriptionError('Failed to fetch realtime credentials'),
+              }),
             authRealtimeChannel: params =>
               Effect.tryPromise({
                 try: () => client.cli.realtime.auth(params),
-                catch: cause => new TriggerRealtimeSubscriptionError({ cause }),
-              }).pipe(Effect.orDie),
+                catch: subscriptionError('Failed to authorize the realtime channel'),
+              }),
             onEvent,
           });
         });
