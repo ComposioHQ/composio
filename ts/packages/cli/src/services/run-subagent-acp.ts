@@ -1,14 +1,18 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import { Readable, Writable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
 import type { MasterKind } from 'src/services/master-detector';
 import {
-  resolveRunCompanionAssetPath,
-  resolveRunCompanionModulePath,
+  resolveRunCompanionAssetPathSync,
+  resolveRunCompanionModulePathSync,
   RUN_CODEX_ACP_BINARY_TARGETS,
 } from 'src/services/run-companion-modules';
 import {
@@ -36,7 +40,7 @@ type LegacySetSessionModelConnection = {
 
 const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null => {
   if (target === 'claude') {
-    return resolveRunCompanionAssetPath({
+    return resolveRunCompanionAssetPathSync({
       callerImportMetaUrl: import.meta.url,
       execPath: process.execPath,
       relativePathFromRoot: 'acp-adapters/claude-code-acp.mjs',
@@ -50,7 +54,7 @@ const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null =>
     return null;
   }
 
-  return resolveRunCompanionAssetPath({
+  return resolveRunCompanionAssetPathSync({
     callerImportMetaUrl: import.meta.url,
     execPath: process.execPath,
     relativePathFromRoot: binaryTarget.relativePath,
@@ -131,7 +135,7 @@ export const resolveAcpAdapterCommand = (
 };
 
 const chunkFlushPattern = /[\s,.;:!?)\]}"]$/;
-const structuredOutputMcpModulePath = resolveRunCompanionModulePath({
+const structuredOutputMcpModulePath = resolveRunCompanionModulePathSync({
   callerImportMetaUrl: import.meta.url,
   execPath: process.execPath,
   relativeNoExtensionFromCaller: './run-subagent-output-mcp',

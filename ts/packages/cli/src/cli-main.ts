@@ -49,22 +49,22 @@ export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies Requir
 
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioCliUserConfigLayer = Layer.provide(
   ComposioCliUserConfigLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 );
 
 export const ComposioSessionRepositoryLive = Layer.provide(
   ComposioSessionRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -74,17 +74,17 @@ export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
 
 export const UpgradeBinaryLive = Layer.provide(
   UpgradeBinary.Default,
-  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, FetchHttpClient.layer)
 ) satisfies RequiredLayer;
 
 export const TriggersRealtimeLive = Layer.provide(
   TriggersRealtime.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ToolsExecutorLive = Layer.provide(
@@ -94,7 +94,7 @@ export const ToolsExecutorLive = Layer.provide(
 
 export const ProjectContextLive = Layer.provide(
   ProjectContext.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, NodeProcess.Default)
 ) satisfies RequiredLayer;
 
 export const SetupSkillInstallerLive = Layer.provide(
@@ -121,6 +121,7 @@ const layers = Layer.mergeAll(
   ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,

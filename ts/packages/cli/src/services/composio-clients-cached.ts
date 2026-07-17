@@ -1,6 +1,5 @@
-import path from 'node:path';
 import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
@@ -36,6 +35,17 @@ export const CACHE_FILES = {
 } as const;
 
 /**
+ * Cache filter that keeps only items whose slug starts with one of the
+ * requested toolkits' `<TOOLKIT>_` prefixes.
+ */
+const filterBySlugPrefixes =
+  (toolkitSlugs: ReadonlyArray<string>) =>
+  <T extends { readonly slug: string }>(data: ReadonlyArray<T>) => {
+    const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
+    return Effect.succeed(data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p))));
+  };
+
+/**
  * Generic cache helper function that handles both cache read/write with graceful error handling.
  */
 function createCachedEffect<T, E, R>(
@@ -48,6 +58,7 @@ function createCachedEffect<T, E, R>(
   // First define the cache-handling function that will run with all required services
   const cacheEffect = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
 
     const cacheFilePath = path.join(cacheDir, cacheFileName);
@@ -107,7 +118,7 @@ function createCachedEffect<T, E, R>(
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
   return handledCacheEffect.pipe(
-    Effect.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default))
+    Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
 
@@ -186,12 +197,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTriggerTypes: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: TriggerTypes) => {
-                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return Effect.succeed(
-                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
-                );
-              }
+            ? (data: TriggerTypes) => filterBySlugPrefixes(toolkitSlugs)(data)
             : undefined;
         return createCachedEffect(
           CACHE_FILES.triggerTypes,
@@ -205,12 +211,7 @@ export const ComposioToolkitsRepositoryCached = Layer.effect(
       getTools: (toolkitSlugs?: ReadonlyArray<string>) => {
         const cacheFilter =
           toolkitSlugs && toolkitSlugs.length > 0
-            ? (data: Tools) => {
-                const prefixes = toolkitSlugs.map(s => `${s.toUpperCase()}_`);
-                return Effect.succeed(
-                  data.filter(t => prefixes.some(p => t.slug.toUpperCase().startsWith(p)))
-                );
-              }
+            ? (data: Tools) => filterBySlugPrefixes(toolkitSlugs)(data)
             : undefined;
         return createCachedEffect(
           CACHE_FILES.tools,

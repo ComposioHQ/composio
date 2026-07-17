@@ -1,8 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { Deferred, Effect, Either, Option, Runtime } from 'effect';
-import path from 'node:path';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -180,8 +179,6 @@ const extractEventFileId = (eventData: Record<string, unknown>): string => {
 
   return `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 };
-
-const resolveFallbackArtifactsDir = () => resolveArtifactsRoot();
 
 const parseStreamPath = (expression: string): ReadonlyArray<string | number> => {
   const trimmed = expression.trim();
@@ -379,6 +376,7 @@ export const listenCmd = Command.make(
 
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const runtime = yield* Effect.runtime<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
@@ -420,10 +418,9 @@ export const listenCmd = Command.make(
         orgId: resolvedProject.orgId,
         consumerUserId,
       });
-      const artifactsRoot = Option.match(artifactsOption, {
-        onNone: () => resolveFallbackArtifactsDir(),
-        onSome: value => value.directoryPath,
-      });
+      const artifactsRoot = Option.isSome(artifactsOption)
+        ? artifactsOption.value.directoryPath
+        : yield* resolveArtifactsRoot;
       const triggerDir = path.join(
         artifactsRoot,
         listeningToProjectEvent ? 'events' : 'triggers',

@@ -1,7 +1,6 @@
-import path from 'node:path';
 import process from 'node:process';
 import { Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Effect } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -48,7 +47,7 @@ const COMPLETIONS_MARKER = '# Composio CLI completions';
 const UNSAFE_PATH_CHARS = /[;`$|&"'()\n\r\\]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
-const detectShell = (): Shell | undefined => {
+const detectShell = (path: Path.Path): Shell | undefined => {
   const shellEnv = process.env.SHELL ?? '';
   const base = path.basename(shellEnv);
   if (base === 'zsh') return 'zsh';
@@ -61,7 +60,7 @@ const detectShell = (): Shell | undefined => {
  * Return candidate rc file paths for a shell, ordered by preference.
  * For bash this mirrors the install.sh fallback: .bashrc then .bash_profile.
  */
-const rcFileCandidates = (shell: Shell, homedir: string): string[] => {
+const rcFileCandidates = (path: Path.Path, shell: Shell, homedir: string): string[] => {
   switch (shell) {
     case 'zsh':
       return [path.join(homedir, '.zshrc')];
@@ -106,6 +105,7 @@ const pathBlockForShell = (shell: Shell, installDir: string): string => {
 };
 
 const buildShellConfig = (
+  path: Path.Path,
   shell: Shell,
   rcFile: string,
   installDir: string,
@@ -150,12 +150,13 @@ export const installShellIntegration = (params: {
 }): Effect.Effect<
   void,
   PlatformError,
-  TerminalUI | NodeOs | FileSystem.FileSystem | ComposioCliUserConfig
+  TerminalUI | NodeOs | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* ui.intro('composio install');
 
@@ -171,7 +172,7 @@ export const installShellIntegration = (params: {
     }
 
     // Detect user shell
-    const shell = detectShell();
+    const shell = detectShell(path);
     if (!shell) {
       yield* ui.log.warn(
         'Could not detect your shell. Manually add the following to your shell config:'
@@ -204,8 +205,8 @@ export const installShellIntegration = (params: {
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
     }
 
-    const rcFile = yield* resolveRcFile(rcFileCandidates(shell, os.homedir), fs);
-    const config = buildShellConfig(shell, rcFile, installDir, completionScript, os.homedir);
+    const rcFile = yield* resolveRcFile(rcFileCandidates(path, shell, os.homedir), fs);
+    const config = buildShellConfig(path, shell, rcFile, installDir, completionScript, os.homedir);
 
     const uniqueTargetFiles = [...new Set([config.pathFile, config.completionFile])];
     const existingByFile = new Map<string, string>();

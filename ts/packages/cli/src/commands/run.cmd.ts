@@ -1,9 +1,11 @@
+// eslint-disable-next-line no-restricted-imports -- synchronous fs (mkdtempSync/writeFileSync/rmSync/existsSync) builds and tears down the run preload files in plain helpers that execute outside the Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir and os.homedir locate the preload scratch directory and ~/.composio in the same synchronous helpers
 import * as os from 'node:os';
-import * as path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { Args, Command, Options } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
@@ -147,6 +149,7 @@ export const wrapFileSourceForRun = (source: string): string => {
 };
 
 export const inferCliInvocationPrefix = (
+  path: Path.Path,
   argv: ReadonlyArray<string> = process.argv
 ): ReadonlyArray<string> => {
   const entrypoint = argv[1];
@@ -171,19 +174,22 @@ type RunHelperModuleUrls = {
   readonly helpersRuntimeModuleUrl: string;
 };
 
-const resolveRunHelperModuleUrls = (): RunHelperModuleUrls => ({
-  helpersRuntimeModuleUrl: pathToFileURL(
-    resolveRunCompanionModulePath({
-      callerImportMetaUrl: import.meta.url,
-      execPath: process.execPath,
-      relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-    })
-  ).href,
-});
+const resolveRunHelperModuleUrls: Effect.Effect<
+  RunHelperModuleUrls,
+  never,
+  FileSystem.FileSystem | Path.Path
+> = Effect.map(
+  resolveRunCompanionModulePath({
+    callerImportMetaUrl: import.meta.url,
+    execPath: process.execPath,
+    relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
+  }),
+  modulePath => ({ helpersRuntimeModuleUrl: pathToFileURL(modulePath).href })
+);
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext = {},
-  moduleUrls: RunHelperModuleUrls = resolveRunHelperModuleUrls()
+  moduleUrls: RunHelperModuleUrls
 ): string =>
   [
     `import { installRunHelpers } from ${JSON.stringify(moduleUrls.helpersRuntimeModuleUrl)};`,
@@ -192,6 +198,7 @@ export const buildRunHelpersSource = (
   ].join('\n');
 
 const createRunHelpersPreloadFile = (
+  path: Path.Path,
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext,
   moduleUrls: RunHelperModuleUrls
@@ -231,11 +238,13 @@ const createRunHelpersPreloadFile = (
 };
 
 export const buildRunCommand = ({
+  path,
   file,
   args,
   preloadPath,
   preloadDirectory,
 }: {
+  path: Path.Path;
   file: Option.Option<string>;
   args: ReadonlyArray<string>;
   preloadPath: string;
@@ -285,6 +294,7 @@ export const buildRunCommand = ({
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
@@ -417,6 +427,7 @@ export const runCmd = Command.make('run', {
       args,
     }) =>
       Effect.gen(function* () {
+        const path = yield* Path.Path;
         const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
         const perfDebug = isPerfDebugEnabled();
         const toolDebug = isToolDebugEnabled();
@@ -446,25 +457,17 @@ export const runCmd = Command.make('run', {
           skipToolParamsCheck,
           skipChecks,
         };
-        const runHelperModuleUrls = yield* Effect.tryPromise({
-          try: async () => {
-            await repairMissingInstalledRunCompanionModules({
-              callerImportMetaUrl: import.meta.url,
-              execPath: process.execPath,
-              appVersion: APP_VERSION,
-            });
-
-            return resolveRunHelperModuleUrls();
-          },
-          catch: error =>
-            new Error(
-              error instanceof Error
-                ? error.message
-                : `Failed to prepare the modules required by 'composio run': ${String(error)}`
-            ),
-        });
+        const runHelperModuleUrls = yield* repairMissingInstalledRunCompanionModules({
+          callerImportMetaUrl: import.meta.url,
+          execPath: process.execPath,
+          appVersion: APP_VERSION,
+        }).pipe(
+          Effect.mapError(error => new Error(error.message)),
+          Effect.andThen(resolveRunHelperModuleUrls)
+        );
         const preload = createRunHelpersPreloadFile(
-          inferCliInvocationPrefix(),
+          path,
+          inferCliInvocationPrefix(path),
           helperContext,
           runHelperModuleUrls
         );
@@ -483,6 +486,7 @@ export const runCmd = Command.make('run', {
           }).pipe(Effect.catchAll(() => Effect.void));
           process.stderr.write(`RUN_LOG_FILE=${preload.runLogFilePath}\n`);
           const runCommand = buildRunCommand({
+            path,
             file,
             args,
             preloadPath: preload.preloadPath,

@@ -1,6 +1,6 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
-import path from 'node:path';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
@@ -10,7 +10,7 @@ export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 
-const UnknownFields = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const UnknownFields = JsonRecordSchema;
 
 const AgentComposioCredentials = Schema.Struct({
   member_id: Schema.optional(Schema.NullOr(Schema.String)),
@@ -157,6 +157,7 @@ export const safeAgentSummary = (identity: AgentIdentity): SafeAgentSummary => (
 });
 
 export const agentConfigPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, AGENT_CONFIG_FILE_NAME);
 });

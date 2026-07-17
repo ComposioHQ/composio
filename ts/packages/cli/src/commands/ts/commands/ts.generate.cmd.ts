@@ -15,6 +15,7 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
 import { Effect, Option, pipe, Array } from 'effect';
@@ -96,8 +97,7 @@ type FetchResult = {
   toolkits: ReadonlyArray<Toolkit>;
   triggerTypes: ReadonlyArray<TriggerType>;
   typeableTools:
-    | { withTypes: true; tools: ReadonlyArray<Tool> }
-    | { withTypes: false; tools: ToolsAsEnums };
+    { withTypes: true; tools: ReadonlyArray<Tool> } | { withTypes: false; tools: ToolsAsEnums };
   /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
   versionMap: ToolkitVersionOverrides;
 };

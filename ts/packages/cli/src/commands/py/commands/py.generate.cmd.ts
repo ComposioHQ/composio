@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import { Command, Options } from '@effect/cli';
 import { pipe, Effect, Option, Array } from 'effect';

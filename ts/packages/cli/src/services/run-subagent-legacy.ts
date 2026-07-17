@@ -1,6 +1,10 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as path from 'node:path';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import { spawn } from 'node:child_process';
 import type { MasterKind } from 'src/services/master-detector';
 import {

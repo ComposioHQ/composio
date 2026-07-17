@@ -1,28 +1,21 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option } from 'effect';
 import { getOrCreateProbablyMyCliSessionIdForCurrentCwd } from 'src/services/consumer-short-term-cache';
-import { resolveCliConfigPathSync } from 'src/services/cli-user-config';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
+import { NodeOs } from 'src/services/node-os';
 
-const readConfiguredArtifactDirectory = (): string | undefined => {
-  try {
-    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-    const parsed = JSON.parse(raw) as { artifact_directory?: unknown };
-    return typeof parsed.artifact_directory === 'string' &&
-      parsed.artifact_directory.trim().length > 0
-      ? parsed.artifact_directory.trim()
-      : undefined;
-  } catch {
-    return undefined;
-  }
-};
+export const resolveArtifactsRoot = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const os = yield* NodeOs;
+  const cliUserConfig = yield* ComposioCliUserConfig;
 
-export const resolveArtifactsRoot = (): string =>
-  process.env.COMPOSIO_SESSION_DIR?.trim() ||
-  process.env.COMPOSIO_CACHE_DIR?.trim() ||
-  readConfiguredArtifactDirectory() ||
-  path.join(os.tmpdir(), 'composio');
+  return (
+    process.env.COMPOSIO_SESSION_DIR?.trim() ||
+    process.env.COMPOSIO_CACHE_DIR?.trim() ||
+    cliUserConfig.data.artifactDirectory?.trim() ||
+    path.join(os.tmpdir, 'composio')
+  );
+});
 
 const SESSION_HISTORY_FILE = 'session-history.jsonl';
 
@@ -42,19 +35,24 @@ export const resolveCliSessionArtifacts = (params?: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const sessionIdOption = yield* getOrCreateProbablyMyCliSessionIdForCurrentCwd(params).pipe(
-      Effect.catchAll(() => Effect.succeed(Option.none<string>()))
+      Effect.option,
+      Effect.map(Option.flatten)
     );
     if (Option.isNone(sessionIdOption)) {
       return Option.none<CliSessionArtifacts>();
     }
 
-    const directoryPath = path.join(resolveArtifactsRoot(), sessionIdOption.value);
-    try {
-      fs.mkdirSync(directoryPath, { recursive: true });
-    } catch {
+    const directoryPath = path.join(yield* resolveArtifactsRoot, sessionIdOption.value);
+    const directoryCreated = yield* fs
+      .makeDirectory(directoryPath, { recursive: true })
+      .pipe(Effect.option, Effect.map(Option.isSome));
+    if (!directoryCreated) {
       return Option.none<CliSessionArtifacts>();
     }
+
     return Option.some({
       sessionId: sessionIdOption.value,
       directoryPath,
@@ -68,6 +66,7 @@ export const appendCliSessionHistory = (params: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
     const artifactsOption = yield* resolveCliSessionArtifacts({
       orgId: params.orgId,
       consumerUserId: params.consumerUserId,
@@ -81,11 +80,9 @@ export const appendCliSessionHistory = (params: {
       sessionId: artifactsOption.value.sessionId,
       ...params.entry,
     });
-    try {
-      fs.appendFileSync(artifactsOption.value.historyFilePath, `${line}\n`, 'utf8');
-    } catch {
-      // Best-effort — session history write is non-fatal.
-    }
+    yield* fs
+      .writeFileString(artifactsOption.value.historyFilePath, `${line}\n`, { flag: 'a' })
+      .pipe(Effect.ignore);
   });
 
 export const storeCliSessionArtifact = (params: {
@@ -97,26 +94,32 @@ export const storeCliSessionArtifact = (params: {
   readonly consumerUserId?: string;
 }) =>
   Effect.gen(function* () {
-    const directoryPath =
-      params.directoryPath ||
-      Option.getOrUndefined(
-        yield* resolveCliSessionArtifacts({
-          orgId: params.orgId,
-          consumerUserId: params.consumerUserId,
-        }).pipe(Effect.map(Option.map(artifacts => artifacts.directoryPath)))
-      ) ||
-      path.join(resolveArtifactsRoot(), `adhoc_${randomToken(12)}`);
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const directoryPath = yield* Effect.gen(function* () {
+      if (params.directoryPath) {
+        return params.directoryPath;
+      }
 
-    try {
-      fs.mkdirSync(directoryPath, { recursive: true });
+      const artifactsOption = yield* resolveCliSessionArtifacts({
+        orgId: params.orgId,
+        consumerUserId: params.consumerUserId,
+      });
+      if (Option.isSome(artifactsOption)) {
+        return artifactsOption.value.directoryPath;
+      }
+
+      return path.join(yield* resolveArtifactsRoot, `adhoc_${randomToken(12)}`);
+    });
+
+    return yield* Effect.gen(function* () {
+      yield* fs.makeDirectory(directoryPath, { recursive: true });
       const extension = (params.extension ?? 'json').replace(/^\.+/, '') || 'json';
       const filePath = path.join(
         directoryPath,
         `${sanitizeArtifactName(params.name)}_${randomToken()}.${extension}`
       );
-      fs.writeFileSync(filePath, params.contents, 'utf8');
+      yield* fs.writeFileString(filePath, params.contents);
       return filePath;
-    } catch {
-      return undefined;
-    }
+    }).pipe(Effect.option, Effect.map(Option.getOrUndefined));
   });
