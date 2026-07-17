@@ -5,10 +5,16 @@
  * the `written` frontmatter field), so a current, dated guide can show its date
  * without being marked legacy.
  */
-export function LegacyBadge() {
+interface LegacyBadgeProps {
+  title?: string;
+}
+
+export function LegacyBadge({
+  title = 'Legacy: superseded by sessions; kept for existing integrations',
+}: LegacyBadgeProps) {
   return (
     <span
-      title="Legacy: superseded by sessions; kept for existing integrations"
+      title={title}
       className="not-prose inline-flex w-fit items-center gap-1.5 rounded-md border border-fd-border bg-fd-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-fd-muted-foreground"
     >
       Legacy

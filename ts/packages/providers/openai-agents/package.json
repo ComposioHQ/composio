@@ -1,6 +1,6 @@
 {
   "name": "@composio/openai-agents",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "",
   "main": "src/index.ts",
   "type": "module",

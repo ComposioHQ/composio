@@ -13,11 +13,15 @@ from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import normalize_tool_arguments
 
 
-# Recursively remove 'examples' keys from the schema properties
+# Recursively remove unsupported annotation/validation keys from schema properties.
 def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
     """
     Remove 'examples', 'pattern', and 'default' keys from all properties in the
-    schema, including nested ones. Also ensure that any 'items' object has a 'type' key.
+    schema, including nested ones.
+
+    Array item schemas are otherwise preserved verbatim. JSON Schema permits
+    ``items`` to use combiners, references, object keywords, or an empty schema
+    without declaring a direct ``type``.
     """
     # Handle properties directly
     if "properties" in schema_obj and isinstance(schema_obj["properties"], dict):
@@ -31,12 +35,6 @@ def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
                 if "default" in prop_value:
                     del prop_value["default"]
 
-                # Ensure 'items' has a 'type' key
-                if "items" in prop_value and isinstance(prop_value["items"], dict):
-                    if "type" not in prop_value["items"]:
-                        # Default to string type for items if not specified
-                        prop_value["items"]["type"] = "string"
-
                 # Recursively process nested properties
                 _remove_examples_from_schema(prop_value)
 
@@ -48,9 +46,6 @@ def _remove_examples_from_schema(schema_obj: t.Dict[str, t.Any]) -> None:
             del schema_obj["items"]["pattern"]
         if "default" in schema_obj["items"]:
             del schema_obj["items"]["default"]
-        # Ensure items has a type
-        if "type" not in schema_obj["items"]:
-            schema_obj["items"]["type"] = "string"
         _remove_examples_from_schema(schema_obj["items"])
 
     # Handle any other nested object properties

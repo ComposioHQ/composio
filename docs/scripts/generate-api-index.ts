@@ -31,6 +31,7 @@ interface OpenAPIOperation {
   tags?: string[];
   description?: string;
   operationId?: string;
+  deprecated?: boolean;
   'x-api-version'?: string;
 }
 
@@ -44,6 +45,7 @@ interface OperationEntry {
   method: string;
   path: string;
   operationId: string;
+  deprecated: boolean;
 }
 
 function slugify(text: string): string {
@@ -85,6 +87,7 @@ function getOperationsByTag(spec: OpenAPISpec): Record<string, OperationEntry[]>
             method: method.toUpperCase(),
             path,
             operationId: operation.operationId || slugify(operation.summary || path),
+            deprecated: operation.deprecated === true,
           });
         }
       }
@@ -216,6 +219,10 @@ function generateIndexPages() {
           pathV3: v3Op ? v3Op.path : op.path.replace('/v3.1/', '/v3/'),
           summary: op.summary,
           href: `/reference/api-reference/${tagSlug}/${op.operationId}`,
+          // OpenAPI marks these `deprecated`; we surface them with the existing
+          // "Legacy" tag rather than a separate one. Only emitted when true so
+          // non-legacy pages stay byte-identical.
+          ...(op.deprecated ? { legacy: true } : {}),
         };
       });
 
@@ -247,6 +254,10 @@ ${body}
         pathV3: op.path,
         summary: op.summary,
         href: `/reference/v3/api-reference/${tagSlug}/${op.operationId}`,
+        // OpenAPI marks these `deprecated`; we surface them with the existing
+        // "Legacy" tag rather than a separate one. Only emitted when true so
+        // non-legacy pages stay byte-identical.
+        ...(op.deprecated ? { legacy: true } : {}),
       }));
 
       const v3Content = `---

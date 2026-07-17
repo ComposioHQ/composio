@@ -10,10 +10,25 @@ exponential backoff with jitter, and caps attempts so CI still fails fast when
 the backend is genuinely down.
 
 This matters because `generate-toolkits.ts` issues ~6500 requests per run
-(a few catalog pages + 3 per toolkit across a ~2.1k catalog), which exceeds the
-staging limit of 2000 requests/minute.
+(a few catalog pages + 3 per toolkit across a ~2.1k catalog), which can exceed
+the backend request limit.
 Before this helper, runs failed with `429`, and `generate-meta-tools.ts` — which
 runs immediately after — inherited the exhausted rate-limit window.
+
+## Toolkit versions
+
+`generate-toolkits.ts` owns the complete toolkit catalog and always sources it
+from the production API. For a version-only repair, run the narrower generator:
+
+```bash
+COMPOSIO_API_KEY=... bun run generate:toolkit-versions
+```
+
+Both paths share `toolkit-versions.ts`, so they fetch and apply changelog values
+with identical semantics: a toolkit missing from the production changelog gets
+`version: null`. Any `COMPOSIO_API_BASE` override must normalize to
+`https://backend.composio.dev/api/v3`; non-production sources fail before a
+request is made.
 
 ## fetch-openapi.mjs
 
