@@ -39,7 +39,7 @@ catalog:
   '@effect/language-service': ^0.86.3
   '@effect/platform': ^0.96.2
   '@effect/platform-bun': ^0.90.0
-  '@effect/platform-node': ^0.107.0
+  '@effect/platform-node': ^0.108.0
   '@effect/platform-node-shared': ^0.60.0
   '@effect/vitest': ^0.29.0
   '@mastra/core': ^1.50.1
