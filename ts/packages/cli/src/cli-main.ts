@@ -1,11 +1,12 @@
 import process from 'node:process';
-import { Cause, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
+import { CliConfig, HelpDoc, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { buildRootCommand, runWithConfig } from 'src/commands';
+import { collectValueOptionNames } from 'src/commands/command-introspection';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
@@ -140,53 +141,6 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
-const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
-  switch (usage._tag) {
-    case 'Named': {
-      if (Option.isSome(usage.acceptedValues)) {
-        for (const name of usage.names) {
-          if (name.startsWith('-')) {
-            acc.add(name);
-          }
-        }
-      }
-      return;
-    }
-    case 'Optional':
-    case 'Repeated': {
-      collectValueOptionNamesFromUsage(usage.usage, acc);
-      return;
-    }
-    case 'Alternation':
-    case 'Concat': {
-      collectValueOptionNamesFromUsage(usage.left, acc);
-      collectValueOptionNamesFromUsage(usage.right, acc);
-      return;
-    }
-    case 'Mixed':
-    case 'Empty': {
-      return;
-    }
-  }
-};
-
-const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand>) => {
-  const names = new Set<string>();
-  const visited = new Set<CommandDescriptor.Command<unknown>>();
-  const visit = (command: CommandDescriptor.Command<unknown>) => {
-    if (visited.has(command)) {
-      return;
-    }
-    visited.add(command);
-    collectValueOptionNamesFromUsage(CommandDescriptor.getUsage(command), names);
-    for (const [, subcommand] of HashMap.toEntries(CommandDescriptor.getSubcommands(command))) {
-      visit(subcommand);
-    }
-  };
-  visit(rootCommand.descriptor);
-  return names;
-};
-
 const runWithTelemetry = Effect.gen(function* () {
   const ui = yield* TerminalUI;
   const terminal = yield* ui.capabilities;
@@ -314,6 +268,5 @@ showUpdateNotice.pipe(
   ),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  effect =>
-    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
+  BunRuntime.runMain({ teardown })
 );

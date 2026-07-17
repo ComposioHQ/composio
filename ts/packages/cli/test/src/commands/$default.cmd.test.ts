@@ -138,14 +138,9 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         vi.stubEnv('CODEX_THREAD_ID', 'thread_123');
         vi.stubEnv('CLAUDE_CODE_ENTRYPOINT', 'sdk-ts');
-        // The debug command still writes to process.stdout until the
-        // seam-rules PR of this stack routes it through TerminalUI.
-        const write = vi
-          .spyOn(process.stdout, 'write')
-          .mockImplementation((() => true) as typeof process.stdout.write);
 
         yield* cli(['debug', 'who-is-my-master']);
-        const output = write.mock.calls.map(call => String(call[0])).join('\n');
+        const output = (yield* MockConsole.getLines()).join('\n');
 
         expect(output).toContain('"master": "codex"');
       })

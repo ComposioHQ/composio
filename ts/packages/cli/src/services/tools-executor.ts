@@ -20,6 +20,7 @@ import type { NodeOs } from 'src/services/node-os';
 import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import type { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
@@ -63,6 +64,7 @@ export interface ToolsExecutor {
     | ComposioUserContext
     | ComposioToolkitsRepository
     | ComposioCliUserConfig
+    | TerminalUI
   >;
 }
 
