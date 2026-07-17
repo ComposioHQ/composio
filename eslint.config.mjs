@@ -174,15 +174,21 @@ export default [
   {
     files: ['ts/packages/cli/src/**/*.{ts,tsx}'],
     rules: {
-      // uncommented by the platform-imports PR of this stack (the
-      // CommandDescriptor/Usage seam entries by the seam-rules PR).
-      // 'no-restricted-imports': [
-      //   'error',
-      //   {
-      //     paths: [...cliRestrictedImportPaths, ...cliDescriptorSeamRestrictedImportPaths],
-      //     patterns: [...cliRestrictedImportPatterns, ...cliDescriptorSeamRestrictedImportPatterns],
-      //   },
-      // ],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...cliRestrictedImportPaths,
+            // uncommented by the seam-rules PR of this stack
+            // ...cliDescriptorSeamRestrictedImportPaths,
+          ],
+          patterns: [
+            ...cliRestrictedImportPatterns,
+            // uncommented by the seam-rules PR of this stack
+            // ...cliDescriptorSeamRestrictedImportPatterns,
+          ],
+        },
+      ],
       // uncommented by the terminal-streams PR of this stack (the try/catch and
       // process.env entries by the boundary-ratchet PR).
       // 'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
