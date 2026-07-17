@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { vi, afterEach } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
 import { FileSystem } from '@effect/platform';
 import { ConfigProvider, Effect, Option } from 'effect';
 import path from 'node:path';
@@ -29,8 +29,20 @@ const cacheEnabledTestConfigProvider = makeTestConfigProvider([
   ['COMPOSIO_DISABLE_CONNECTED_ACCOUNT_CACHE', 'false'],
 ]);
 
+// Instant the wall clock is pinned to; fixture expiresAt values below are
+// written relative to it so freshness checks in the SUT stay deterministic.
+const PINNED_NOW = '2026-01-01T00:00:00.000Z';
+const ONE_MINUTE_FROM_PINNED_NOW = '2026-01-01T00:01:00.000Z';
+
 describe('consumer short-term cache', () => {
+  beforeEach(() => {
+    // Fake ONLY Date so real timers and promise scheduling keep working.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(PINNED_NOW));
+  });
+
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -182,6 +194,34 @@ describe('consumer short-term cache', () => {
   });
 
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
+    '[Given] a malformed persisted cache [Then] cache reads fail closed',
+    it => {
+      it.scoped('ignores cache entries that do not match the persisted schema', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          yield* fs.writeFileString(
+            path.join(cacheDir, 'consumer-short-term-cache.json'),
+            JSON.stringify({
+              'org_test:consumer-user-test': {
+                toolkits: 'github',
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
+              },
+            })
+          );
+
+          const cached = yield* getFreshConsumerConnectedToolkitsFromCache({
+            orgId: 'org_test',
+            consumerUserId: 'consumer-user-test',
+          });
+
+          expect(cached).toEqual(Option.none());
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] one corrupt entry among valid ones [Then] only the corrupt entry is dropped',
     it => {
       it.scoped('keeps valid cache entries when a sibling entry is corrupt', () =>
@@ -194,7 +234,7 @@ describe('consumer short-term cache', () => {
               'org_bad:consumer-user-bad': { toolkits: 'not-an-array', expiresAt: 42 },
               'org_test:consumer-user-test': {
                 toolkits: ['github'],
-                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                expiresAt: ONE_MINUTE_FROM_PINNED_NOW,
               },
             })
           );

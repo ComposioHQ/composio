@@ -935,9 +935,9 @@ describe('CLI: composio execute', () => {
         expect(output.storedInFile).toBe(true);
         expect(output.logId).toBe('log_large_output');
         expect(output.tokenCount).toBeGreaterThan(10_000);
-        expect(output.outputFilePath).toMatch(
-          /composio\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/
-        );
+        // Session artifacts fall back to COMPOSIO_CACHE_DIR, which the shared
+        // vitest setup pins to a per-test temp directory.
+        expect(output.outputFilePath).toMatch(/\/[^/]+\/GMAIL_SEND_EMAIL_OUTPUT_[^.]+\.json$/);
         expect(fs.existsSync(output.outputFilePath)).toBe(true);
         const storedJson = fs.readFileSync(output.outputFilePath, 'utf8');
         expect(storedJson).toContain('token token token');
@@ -1123,7 +1123,7 @@ describe('CLI: composio execute', () => {
     it => {
       it.scoped('uploads local file paths before Tool Router execution', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-upload-${Date.now()}.txt`);
+          const tempFile = path.join(os.tmpdir(), `composio-upload-${crypto.randomUUID()}.txt`);
           fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
 
           const originalFetch = globalThis.fetch;
@@ -1222,7 +1222,7 @@ describe('CLI: composio execute', () => {
     it => {
       it.scoped('injects into the single file_uploadable field before upload hydration', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-inject-${Date.now()}.png`);
+          const tempFile = path.join(os.tmpdir(), `composio-inject-${crypto.randomUUID()}.png`);
           fs.writeFileSync(tempFile, 'png-binary-ish', 'utf8');
 
           const originalFetch = globalThis.fetch;
@@ -1314,7 +1314,7 @@ describe('CLI: composio execute', () => {
     it => {
       it.scoped('treats property-bearing schema nodes as object-like during upload hydration', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-nested-${Date.now()}.png`);
+          const tempFile = path.join(os.tmpdir(), `composio-nested-${crypto.randomUUID()}.png`);
           fs.writeFileSync(tempFile, 'nested-png-binary-ish', 'utf8');
 
           const originalFetch = globalThis.fetch;
@@ -1403,7 +1403,10 @@ describe('CLI: composio execute', () => {
     it => {
       it.scoped('propagates upload failures from file hydration', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-upload-fail-${Date.now()}.txt`);
+          const tempFile = path.join(
+            os.tmpdir(),
+            `composio-upload-fail-${crypto.randomUUID()}.txt`
+          );
           fs.writeFileSync(tempFile, 'hello from failed cli upload', 'utf8');
 
           const originalFetch = globalThis.fetch;

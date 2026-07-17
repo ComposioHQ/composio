@@ -23,7 +23,7 @@ export default defineConfig({
       ),
       '@composio/json-schema-to-zod': path.join(jsonSchemaToZodDir, 'src/index.ts'),
       '@composio/cli-local-tools': path.join(cliLocalToolsDir, 'src/index.ts'),
-      'effect-errors/*': path.resolve(__dirname, './src/effect-errors'),
+      'effect-errors': path.resolve(__dirname, './src/effect-errors'),
       // @composio/core uses package.json "imports" (#config_defaults, #platform, etc.)
       // Vitest/Vite does not resolve these for workspace deps, so alias them explicitly
       '#config_defaults': path.join(coreDir, 'src/utils/config-defaults/ConfigDefaults.node.ts'),
@@ -41,6 +41,7 @@ export default defineConfig({
     // When defined, Vitest will run all matched files with import.meta.vitest inside.
     includeSource: ['src/**/*.ts', 'test/__utils__/*-compiler.ts'],
     unstubEnvs: true,
+    setupFiles: ['./test/__utils__/vitest.setup.ts'],
     globalSetup: './test/__utils__/vitest.global-setup.ts',
   },
 });
