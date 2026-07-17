@@ -1,7 +1,7 @@
 import { FileSystem } from '@effect/platform/FileSystem';
 import { Effect, pipe } from 'effect';
 
-import { parseJson } from './parse-json';
+import { parseJsonRecord } from 'src/utils/parse-json';
 
 export const readJsonEffect = <TJson>(filePath: string) =>
   pipe(
@@ -13,7 +13,7 @@ export const readJsonEffect = <TJson>(filePath: string) =>
         return null;
       }
 
-      const json = yield* parseJson(data);
+      const json = yield* parseJsonRecord(data);
 
       return json as TJson;
     }),

@@ -1,7 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
 import { FileSystem } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { Deferred, Effect, Option, Runtime } from 'effect';
+import { Deferred, Effect, Either, Option, Runtime } from 'effect';
 import path from 'node:path';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -20,7 +20,7 @@ import {
   formatConnectedAccountChoices,
   resolveConnectedAccountSelection,
 } from 'src/services/connected-account-selection';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
@@ -80,23 +80,16 @@ const resolveParamsInput = (input: Option.Option<string>) =>
   resolveOptionalTextInput(input, { missingValue: '{}' });
 
 const parseCreateParams = (raw: string) =>
-  Effect.gen(function* () {
-    const parsed = yield* Effect.try({
-      try: () => parseJsonIsh(raw),
-      catch: () =>
+  parseJsonRecord(raw).pipe(
+    Either.mapLeft(
+      error =>
         new Error(
-          "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
-        ),
-    });
-
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return yield* Effect.fail(
-        new Error("Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'.")
-      );
-    }
-
-    return parsed as Record<string, unknown>;
-  });
+          error.reason === 'not-a-record'
+            ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
+            : "Invalid --params input. Provide JSON or a JS-style object literal, e.g. -p '{ trigger_config: { ... } }'."
+        )
+    )
+  );
 
 const assertSupportedListenParams = (params: {
   listeningToProjectEvent: boolean;
