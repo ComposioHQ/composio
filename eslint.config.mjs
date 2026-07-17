@@ -189,16 +189,8 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            ...cliRestrictedImportPaths,
-            // uncommented by the seam-rules PR of this stack
-            // ...cliDescriptorSeamRestrictedImportPaths,
-          ],
-          patterns: [
-            ...cliRestrictedImportPatterns,
-            // uncommented by the seam-rules PR of this stack
-            // ...cliDescriptorSeamRestrictedImportPatterns,
-          ],
+          paths: [...cliRestrictedImportPaths, ...cliDescriptorSeamRestrictedImportPaths],
+          patterns: [...cliRestrictedImportPatterns, ...cliDescriptorSeamRestrictedImportPatterns],
         },
       ],
       'no-restricted-syntax': [
@@ -237,34 +229,32 @@ export default [
   //     ],
   //   },
   // },
-  // uncommented by the seam-rules PR of this stack.
-  // {
-  //   // The one file allowed to touch @effect/cli's CommandDescriptor/Usage
-  //   // modules (the Effect CLI v4 redesign seam).
-  //   files: ['ts/packages/cli/src/commands/command-introspection.ts'],
-  //   rules: {
-  //     'no-restricted-imports': [
-  //       'error',
-  //       {
-  //         paths: cliRestrictedImportPaths,
-  //         patterns: cliRestrictedImportPatterns,
-  //       },
-  //     ],
-  //   },
-  // },
-  // uncommented by the seam-rules PR of this stack.
-  // {
-  //   files: ['ts/packages/cli/src/services/tool-input-validation.ts'],
-  //   rules: {
-  //     'no-restricted-imports': [
-  //       'error',
-  //       {
-  //         paths: [...cliRestrictedImportPaths, ...effectSchemaRestrictedImportPaths],
-  //         patterns: [...cliRestrictedImportPatterns, ...effectSchemaRestrictedImportPatterns],
-  //       },
-  //     ],
-  //   },
-  // },
+  {
+    // The one file allowed to touch @effect/cli's CommandDescriptor/Usage
+    // modules (the Effect CLI v4 redesign seam).
+    files: ['ts/packages/cli/src/commands/command-introspection.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: cliRestrictedImportPaths,
+          patterns: cliRestrictedImportPatterns,
+        },
+      ],
+    },
+  },
+  {
+    files: ['ts/packages/cli/src/services/tool-input-validation.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [...cliRestrictedImportPaths, ...effectSchemaRestrictedImportPaths],
+          patterns: [...cliRestrictedImportPatterns, ...effectSchemaRestrictedImportPatterns],
+        },
+      ],
+    },
+  },
   {
     files: ['ts/packages/cli/src/services/terminal-ui.ts'],
     rules: {
