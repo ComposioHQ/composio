@@ -27,15 +27,15 @@ Follow existing local patterns before introducing new service abstractions.
 
 ## Effect Platform Boundaries
 
-`node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are banned policy for new code in `src/` (ESLint rule groups are defined in the root `eslint.config.mjs` and activated group-by-group over the guardrails PR stack):
+`node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are eslint-banned in `src/`:
 
 - Path arithmetic → `Path` service from `@effect/platform` (`const path = yield* Path.Path`).
 - Filesystem I/O → `FileSystem` service from `@effect/platform`.
-- homedir/tmpdir/platform/arch → the `NodeOs` service; subprocesses → platform `Command`.
-- Environment reads → `effect/Config`; sync fallible ops (`JSON.parse`, `new URL`) → `Either.try` with a `Data.TaggedError`.
+- homedir/tmpdir/platform/arch → the `NodeOs` service; subprocesses → platform `Command` or `services/detached-process.ts`.
+- Environment reads → `effect/Config`; sync fallible ops (`JSON.parse`, `new URL`) → `Either.try` with a `Data.TaggedError` (JSON records via `parseJsonRecord` in `src/utils/parse-json.ts`).
 - Helpers that cannot become Effects (sync callbacks, promise pipelines) take the resolved service instance as a plain parameter instead of importing Node builtins.
 
-Never add an `eslint-disable` for these rules in new code — thread the service instead. Full policy: `ts/packages/cli/AGENTS.md`.
+Never add an `eslint-disable`: `pnpm run validate:boundaries` (CI-blocking via `pnpm test`) rejects any disable not registered in `eslint-boundaries.json`. Genuine new runtime boundaries require regenerating the manifest with `pnpm run validate:boundaries -- --update` plus a justification in the PR. Full policy: "Effect Boundary Policy" in `ts/packages/cli/AGENTS.md`.
 
 ## Required Checks
 

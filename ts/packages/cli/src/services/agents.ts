@@ -80,6 +80,7 @@ export class AgentResponseDecodeError extends Data.TaggedError(
 }> {}
 
 const agentsBaseURL = (): string =>
+  // eslint-disable-next-line no-restricted-syntax -- read lazily at request time inside a plain sync helper so tests can repoint agents.composio.dev per call without rebuilding a Config layer
   (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
 
 const decodeAgentResponse =

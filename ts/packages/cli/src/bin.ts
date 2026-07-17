@@ -19,6 +19,7 @@ const stripTelemetryDebugFlag = (argv: ReadonlyArray<string>): string[] => {
   normalizedArgv.splice(flagIndex, 1);
   // Bootstrap runs before the Effect runtime and ConfigProvider exist; the stripped flag is
   // persisted as an env var so later effect/Config reads and child processes observe it.
+  // eslint-disable-next-line no-restricted-syntax -- pre-runtime env write during bootstrap
   process.env[CLI_TELEMETRY_DEBUG_ENV_VAR] = 'true';
   return normalizedArgv;
 };

@@ -217,8 +217,7 @@ export default [
       ],
       'no-restricted-syntax': [
         'error',
-        // uncommented by the boundary-ratchet PR of this stack
-        // ...cliRestrictedSyntax,
+        ...cliRestrictedSyntax,
         ...cliProcessStreamRestrictions,
         ...cliDescriptorSeamRestrictedSyntax,
       ],

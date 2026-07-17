@@ -48,6 +48,7 @@ const UNSAFE_PATH_CHARS = /[;`$|&"'()\n\r\\]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
 const detectShell = (path: Path.Path): Shell | undefined => {
+  // eslint-disable-next-line no-restricted-syntax -- $SHELL is read inside a plain synchronous helper that mirrors install.sh's shell detection, outside any Effect context
   const shellEnv = process.env.SHELL ?? '';
   const base = path.basename(shellEnv);
   if (base === 'zsh') return 'zsh';
@@ -161,6 +162,7 @@ export const installShellIntegration = (params: {
     yield* ui.intro('composio install');
 
     // Detect install directory — either from env or default ~/.composio
+    // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_INSTALL_DIR is the handoff variable set by the install.sh bootstrapper for this one-shot post-install step; read directly to stay byte-compatible with the script
     const installDir = process.env.COMPOSIO_INSTALL_DIR ?? path.join(os.homedir, '.composio');
 
     if (isUnsafePath(installDir)) {
