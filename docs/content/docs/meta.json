@@ -21,6 +21,7 @@
     "programmatic-auth-configs",
     "controlling-scopes",
     "white-labeling-authentication",
+    "oauth-callback-identity-verification",
     "---Triggers---",
     "triggers",
     "setting-up-triggers/creating-triggers",

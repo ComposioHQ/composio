@@ -1,0 +1,60 @@
+---
+title: 'OAuth callback identity verification'
+description: 'Opt-in per-project verification that confirms which user an OAuth connection belongs to before it activates. Off by default; existing connections are unaffected.'
+date: '2026-07-17'
+---
+
+OAuth callback identity verification lets your own server confirm which user a returning OAuth flow belongs to before Composio activates the connected account. It is opt-in per project and off by default, so existing projects and connections keep working unchanged.
+
+### Why it exists
+
+An OAuth callback carries an authorization code back to Composio, but the callback itself does not prove which of your users is completing it. When verification is enabled, Composio pauses activation and hands the flow to your server, which asserts the user from its own authenticated session. The connection activates only when that assertion matches the user it was initiated for.
+
+### How it works
+
+1. A user starts an OAuth connection as usual, initiated with your `user_id`.
+2. After the provider redirects back, Composio redirects the user's browser to your verifier URL with a single-use `session_uri` and nothing else.
+3. Your server identifies the signed-in user and calls `POST /api/v3.1/connected_accounts/complete_auth` with the `session_uri` and that `user_id`.
+4. Composio confirms the `user_id` matches the connection owner, completes the token exchange, and returns the now-active connected account.
+
+### Completing a verification
+
+```bash
+curl -X POST "https://backend.composio.dev/api/v3.1/connected_accounts/complete_auth" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_uri": "session_xxx",
+    "user_id": "user_123"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "connected_account": {
+    "id": "ca_your-connected-account-id",
+    "user_id": "user_123",
+    "status": "ACTIVE",
+    "toolkit": { "slug": "github" },
+    "auth_config": {
+      "id": "ac_your-auth-config-id",
+      "auth_scheme": "OAUTH2",
+      "is_composio_managed": true
+    }
+  }
+}
+```
+
+The `session_uri` is single-use. A request whose `user_id` does not match the connection owner is rejected with a `400`, and an unknown, expired, or already-consumed session returns a `404`.
+
+### Enabling
+
+Verification is configured per project and is off by default. Once enabled for a project, connections must be initiated with a real `user_id` — a connection started for the default user cannot be verified.
+
+<Callout type="info">
+No action is required for existing projects. Verification applies only after you enable it, and connections initiated without it continue to activate as before.
+</Callout>
+
+See the [OAuth callback identity verification guide](/docs/oauth-callback-identity-verification) for the full flow and setup.
