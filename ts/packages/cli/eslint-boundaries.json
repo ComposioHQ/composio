@@ -1,0 +1,71 @@
+{
+  "src/analytics/events.ts": {
+    "no-restricted-syntax": 3
+  },
+  "src/bin.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/cli-main.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/commands/index.ts": {
+    "no-restricted-syntax": 2
+  },
+  "src/commands/install.cmd.ts": {
+    "no-restricted-syntax": 2
+  },
+  "src/commands/run.cmd.ts": {
+    "no-restricted-imports": 2,
+    "no-restricted-syntax": 5
+  },
+  "src/commands/tools/commands/tools.execute.cmd.ts": {
+    "no-restricted-syntax": 4
+  },
+  "src/commands/triggers/commands/triggers.listen.cmd.ts": {
+    "no-restricted-syntax": 2
+  },
+  "src/services/agents.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/services/cli-session-artifacts.ts": {
+    "no-restricted-syntax": 2
+  },
+  "src/services/cli-user-config.ts": {
+    "no-restricted-imports": 1,
+    "no-restricted-syntax": 1
+  },
+  "src/services/detached-process.ts": {
+    "no-restricted-imports": 1
+  },
+  "src/services/master-detector.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/services/native-ui-sidecar.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/services/node-os.ts": {
+    "no-restricted-imports": 1
+  },
+  "src/services/project-environment-detector.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/services/run-helpers-runtime.ts": {
+    "no-restricted-imports": 2,
+    "no-restricted-syntax": 6
+  },
+  "src/services/run-subagent-output-mcp.ts": {
+    "no-restricted-imports": 1
+  },
+  "src/services/runtime-debug-flags.ts": {
+    "no-restricted-syntax": 2
+  },
+  "src/services/tool-permissions.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/ui/colors.ts": {
+    "no-restricted-syntax": 1
+  },
+  "src/ui/redact.ts": {
+    "no-restricted-syntax": 1
+  }
+}
