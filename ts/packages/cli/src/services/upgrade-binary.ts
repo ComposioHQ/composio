@@ -1,7 +1,5 @@
 import { Data, Effect, Config, Match, Option, Predicate, Record as EffectRecord } from 'effect';
-import { HttpClient, HttpClientResponse, FileSystem } from '@effect/platform';
-// eslint-disable-next-line no-restricted-imports -- pure path-string joins/parses (no I/O), complementing the FileSystem service calls
-import * as path from 'node:path';
+import { HttpClient, HttpClientResponse, FileSystem, Path } from '@effect/platform';
 // eslint-disable-next-line no-restricted-imports -- recursive cp/rm replace the local-tools asset dir in one Effect.tryPromise step
 import { cp as copyPath, rm as removePath } from 'node:fs/promises';
 import { APP_VERSION } from '../constants';
@@ -46,6 +44,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
   effect: Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const githubConfig = yield* Config.all(GITHUB_CONFIG);
 
     /**
@@ -159,11 +158,21 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         return release;
       });
 
+    const provideFsAndPath = <A, E>(
+      effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path>
+    ) =>
+      effect.pipe(
+        Effect.provideService(FileSystem.FileSystem, fs),
+        Effect.provideService(Path.Path, path)
+      );
+
     /**
      * Check if update is available
      */
     const resolveCurrentReleaseIdentifier = (currentPath: string) =>
-      readInstalledReleaseTag(currentPath) || `@composio/cli@${APP_VERSION}`;
+      provideFsAndPath(readInstalledReleaseTag(currentPath)).pipe(
+        Effect.map(releaseTag => releaseTag || `@composio/cli@${APP_VERSION}`)
+      );
 
     const isUpdateAvailable = (
       release: GitHubRelease,
@@ -431,8 +440,9 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         const sourceDirectory = path.dirname(sourcePath);
         const targetDirectory = path.dirname(targetPath);
-        const companionRelativePaths =
-          collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
+        const companionRelativePaths = yield* provideFsAndPath(
+          collectExpectedRunCompanionAssetRelativePaths(sourceDirectory)
+        );
         for (const relativePath of companionRelativePaths) {
           const sourceCompanion = path.join(sourceDirectory, relativePath);
           const sourceExists = yield* fs
@@ -498,14 +508,15 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
 
         const releaseTag = options.releaseTag;
         if (releaseTag) {
-          yield* Effect.try({
-            try: () => writeInstalledReleaseTag(targetDirectory, releaseTag),
-            catch: error =>
-              new UpgradeBinaryError({
-                cause: error,
-                message: 'Failed to update installed release metadata',
-              }),
-          });
+          yield* provideFsAndPath(writeInstalledReleaseTag(targetDirectory, releaseTag)).pipe(
+            Effect.mapError(
+              error =>
+                new UpgradeBinaryError({
+                  cause: error,
+                  message: 'Failed to update installed release metadata',
+                })
+            )
+          );
         }
       });
 
@@ -524,7 +535,7 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
         const currentPath = yield* getCurrentExecutablePath();
         const prerelease = options.prerelease ?? false;
         const explicitTag = options.tag;
-        const currentReleaseIdentifier = resolveCurrentReleaseIdentifier(currentPath);
+        const currentReleaseIdentifier = yield* resolveCurrentReleaseIdentifier(currentPath);
         yield* Effect.logDebug(`Current executable path: ${currentPath}`);
         yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);
 
@@ -615,5 +626,5 @@ export class UpgradeBinary extends Effect.Service<UpgradeBinary>()('services/Upg
       upgrade,
     } as const;
   }),
-  dependencies: [],
+  dependencies: [Path.layer],
 }) {}

@@ -1,10 +1,10 @@
 // This module's upload pipeline is plain async/await around the raw
 // @composio/client promise API, so the Effect-scoped @effect/platform
-// FileSystem/Path services are not reachable from these helpers.
+// FileSystem service is not reachable from these helpers. The Path service
+// instance is resolved by the Effect caller and passed in as a parameter.
 // eslint-disable-next-line no-restricted-imports -- fs.readFile runs in promise-based upload helpers outside the Effect runtime
 import fs from 'node:fs/promises';
-// eslint-disable-next-line no-restricted-imports -- path.basename is pure string handling in the same non-Effect promise pipeline
-import path from 'node:path';
+import type { Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
 import { Data, Predicate } from 'effect';
@@ -143,7 +143,7 @@ export const findFileUploadablePaths = (
   });
 };
 
-const readFileFromUrl = async (url: string) => {
+const readFileFromUrl = async (path: Path.Path, url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new ToolFileUploadError({
@@ -164,7 +164,7 @@ const readFileFromUrl = async (url: string) => {
   };
 };
 
-const readFileFromDisk = async (filePath: string) => {
+const readFileFromDisk = async (path: Path.Path, filePath: string) => {
   // Enforce the sensitive-path denylist at the lowest-level local read, so any
   // caller of this reader (not just `uploadToolInputFiles`) is protected. This
   // is the single canonical guard shared with `@composio/core`; without it the
@@ -190,7 +190,7 @@ const readFileFromDisk = async (filePath: string) => {
   };
 };
 
-const readUploadSource = async (file: string | File) => {
+const readUploadSource = async (path: Path.Path, file: string | File) => {
   if (isFileLike(file)) {
     return {
       bytes: new Uint8Array(await file.arrayBuffer()),
@@ -200,11 +200,11 @@ const readUploadSource = async (file: string | File) => {
   }
 
   if (typeof file === 'string' && /^https?:\/\//i.test(file)) {
-    return readFileFromUrl(file);
+    return readFileFromUrl(path, file);
   }
 
   if (typeof file === 'string') {
-    return readFileFromDisk(file);
+    return readFileFromDisk(path, file);
   }
 
   throw new ToolFileUploadError({
@@ -214,12 +214,13 @@ const readUploadSource = async (file: string | File) => {
 };
 
 const uploadFile = async (params: {
+  readonly path: Path.Path;
   readonly file: string | File;
   readonly toolSlug: string;
   readonly toolkitSlug: string;
   readonly client: RawComposioClient;
 }) => {
-  const fileData = await readUploadSource(params.file);
+  const fileData = await readUploadSource(params.path, params.file);
   const { createHash } = await import('node:crypto');
   const md5 = createHash('md5').update(fileData.bytes).digest('hex');
   const presigned = await params.client.files.createPresignedURL({
@@ -258,6 +259,7 @@ const hydrateFileUploads = async (
   value: unknown,
   schema: JsonSchema | undefined,
   ctx: {
+    readonly path: Path.Path;
     readonly toolSlug: string;
     readonly toolkitSlug: string;
     readonly client: RawComposioClient;
@@ -269,6 +271,7 @@ const hydrateFileUploads = async (
     }
 
     return uploadFile({
+      path: ctx.path,
       file: value,
       toolSlug: ctx.toolSlug,
       toolkitSlug: ctx.toolkitSlug,
@@ -314,6 +317,7 @@ const hydrateFileUploads = async (
 };
 
 export const uploadToolInputFiles = async (params: {
+  readonly path: Path.Path;
   readonly toolSlug: string;
   readonly arguments_: Record<string, unknown>;
   readonly inputSchema: JsonSchema;
@@ -325,6 +329,7 @@ export const uploadToolInputFiles = async (params: {
   }
 
   const hydrated = await hydrateFileUploads(params.arguments_, params.inputSchema, {
+    path: params.path,
     toolSlug: params.toolSlug,
     toolkitSlug: params.toolkitSlug ?? toolkitFromToolSlug(params.toolSlug) ?? 'unknown',
     client: params.client,

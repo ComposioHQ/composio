@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-restricted-imports -- cache-file locations are joined under setupCacheDir; this module self-provides only BunFileSystem + NodeOs layers, not a platform context carrying the Path service
-import path from 'node:path';
 import { Effect, Option, ParseResult, Layer, Array as Arr } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { FORCE_CONFIG } from 'src/effects/force-config';
@@ -60,6 +58,7 @@ function createCachedEffect<T, E, R>(
   // First define the cache-handling function that will run with all required services
   const cacheEffect = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
 
     const cacheFilePath = path.join(cacheDir, cacheFileName);
@@ -119,7 +118,7 @@ function createCachedEffect<T, E, R>(
   // This ensures the returned effect has the same error type as the original computation
   // by providing all the required cache services
   return handledCacheEffect.pipe(
-    Effect.provide(Layer.mergeAll(BunFileSystem.layer, NodeOs.Default))
+    Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default))
   ) as Effect.Effect<T, E, R>;
 }
 

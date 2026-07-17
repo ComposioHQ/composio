@@ -105,7 +105,9 @@ const writableStreamFromQueue = (queue: Queue.Queue<Uint8Array>): WritableStream
     abort: () => Effect.runPromise(Queue.shutdown(queue)),
   });
 
-const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null => {
+const resolveShippedAdapterAsset = (
+  target: InvokeAgentTarget
+): Effect.Effect<string | null, never, FileSystem.FileSystem | Path.Path> => {
   if (target === 'claude') {
     return resolveRunCompanionAssetPath({
       callerImportMetaUrl: import.meta.url,
@@ -118,7 +120,7 @@ const resolveShippedAdapterAsset = (target: InvokeAgentTarget): string | null =>
     candidate => candidate.platform === process.platform && candidate.arch === process.arch
   );
   if (!binaryTarget) {
-    return null;
+    return Effect.succeed(null);
   }
 
   return resolveRunCompanionAssetPath({
@@ -137,62 +139,65 @@ const resolveInstalledAdapter = (target: InvokeAgentTarget): string | null => {
   return Option.getOrNull(Option.liftThrowable(() => require.resolve(specifier))());
 };
 
-export const resolveAcpAdapterCommand = (target: InvokeAgentTarget): AcpAdapterCommand => {
-  const binary = target === 'claude' ? 'claude-code-acp' : 'codex-acp';
-  const packageName =
-    target === 'claude' ? '@zed-industries/claude-code-acp' : '@zed-industries/codex-acp';
+export const resolveAcpAdapterCommand = (
+  target: InvokeAgentTarget
+): Effect.Effect<AcpAdapterCommand, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    const binary = target === 'claude' ? 'claude-code-acp' : 'codex-acp';
+    const packageName =
+      target === 'claude' ? '@zed-industries/claude-code-acp' : '@zed-industries/codex-acp';
 
-  // 1. Prefer shipped companion assets next to the CLI binary / dist bundle.
-  const shipped = resolveShippedAdapterAsset(target);
-  if (shipped) {
-    if (target === 'codex') {
+    // 1. Prefer shipped companion assets next to the CLI binary / dist bundle.
+    const shipped = yield* resolveShippedAdapterAsset(target);
+    if (shipped) {
+      if (target === 'codex') {
+        return {
+          cmd: [shipped],
+          source: 'shipped',
+        } satisfies AcpAdapterCommand;
+      }
+
       return {
-        cmd: [shipped],
+        cmd: [process.execPath, shipped],
+        env: {
+          BUN_BE_BUN: '1',
+        },
         source: 'shipped',
-      };
+      } satisfies AcpAdapterCommand;
     }
 
-    return {
-      cmd: [process.execPath, shipped],
-      env: {
-        BUN_BE_BUN: '1',
-      },
-      source: 'shipped',
-    };
-  }
-
-  // 2. Try the installed dependency bundle next (no npx overhead).
-  const bundled = resolveInstalledAdapter(target);
-  if (bundled) {
-    return {
-      cmd: [process.execPath, bundled],
-      env: {
-        BUN_BE_BUN: '1',
-      },
-      source: 'bundled',
-    };
-  }
-
-  // 3. Check if the binary is on PATH.
-  if (typeof Bun !== 'undefined' && typeof Bun.which === 'function') {
-    const resolved = Bun.which(binary);
-    if (resolved) {
+    // 2. Try the installed dependency bundle next (no npx overhead).
+    const bundled = resolveInstalledAdapter(target);
+    if (bundled) {
       return {
-        cmd: [resolved],
-        source: 'which',
-      };
+        cmd: [process.execPath, bundled],
+        env: {
+          BUN_BE_BUN: '1',
+        },
+        source: 'bundled',
+      } satisfies AcpAdapterCommand;
     }
-  }
 
-  // 4. Fall back to npx.
-  return {
-    cmd: [process.platform === 'win32' ? 'npx.cmd' : 'npx', '-y', packageName],
-    source: 'npx',
-  };
-};
+    // 3. Check if the binary is on PATH.
+    if (typeof Bun !== 'undefined' && typeof Bun.which === 'function') {
+      const resolved = Bun.which(binary);
+      if (resolved) {
+        return {
+          cmd: [resolved],
+          source: 'which',
+        } satisfies AcpAdapterCommand;
+      }
+    }
+
+    // 4. Fall back to npx.
+    return {
+      cmd: [process.platform === 'win32' ? 'npx.cmd' : 'npx', '-y', packageName],
+      source: 'npx',
+    } satisfies AcpAdapterCommand;
+  });
 
 const chunkFlushPattern = /[\s,.;:!?)\]}"]$/;
-const structuredOutputMcpModulePath = resolveRunCompanionModulePath({
+const resolveStructuredOutputMcpModulePath = resolveRunCompanionModulePath({
   callerImportMetaUrl: import.meta.url,
   execPath: process.execPath,
   relativeNoExtensionFromCaller: './run-subagent-output-mcp',
@@ -506,6 +511,7 @@ export const createStructuredOutputMcpContext = ({
 
     const fs = yield* FileSystem.FileSystem;
     const pathApi = yield* Path.Path;
+    const structuredOutputMcpModulePath = yield* resolveStructuredOutputMcpModulePath;
 
     const build = Effect.gen(function* () {
       // Keep this on an OS temp dir for now. Repointing MCP schema/result files into
@@ -727,7 +733,7 @@ const invokeAcpSubAgentEffect = ({
       structuredOutputMcp ? structuredOutputMcp.cleanup : Effect.void
     );
 
-    const resolved = resolveAcpAdapterCommand(target);
+    const resolved = yield* resolveAcpAdapterCommand(target);
     helperDebugLog('subAgent.acp.resolve', {
       target,
       source: resolved.source,

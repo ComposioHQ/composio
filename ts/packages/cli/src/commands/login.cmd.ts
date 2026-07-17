@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-restricted-imports -- single path.join composing the pending-login file path under the already-resolved cache dir, pure string manipulation with no I/O
-import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Data, DateTime, Effect, Option, Schedule, Schema } from 'effect';
 import open from 'open';
 import {
@@ -116,6 +114,7 @@ class InvalidOrganizationError extends Data.TaggedError('commands/InvalidOrganiz
 const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const pendingLoginPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, PENDING_LOGIN_FILE_NAME);
 });

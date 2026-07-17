@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@effect/vitest';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Cause, Data, Effect, FiberId } from 'effect';
 
 import { captureErrors } from 'src/effect-errors/capture-errors';
@@ -31,7 +31,7 @@ const render = (captured: Effect.Effect.Success<ReturnType<typeof capture>>): st
   );
 
 const capture = <E>(cause: Cause.Cause<E>) =>
-  captureErrors(cause).pipe(Effect.provide(BunFileSystem.layer));
+  captureErrors(cause).pipe(Effect.provide([BunFileSystem.layer, BunPath.layer]));
 
 describe('captureErrorsFrom (structural Cause traversal)', () => {
   it('returns no errors for an empty cause', () => {

@@ -1,8 +1,6 @@
 import { Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Deferred, Effect, Option, Runtime } from 'effect';
-// eslint-disable-next-line no-restricted-imports -- only resolve/dirname string arithmetic on the --out flag value; no filesystem access, so the Path service layer adds nothing here
-import path from 'node:path';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
@@ -181,6 +179,7 @@ export const triggersCmd$Listen = Command.make(
         Effect.mapError(formatResolveCommandProjectError)
       );
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const realtime = yield* TriggersRealtime;
       const runtime = yield* Effect.runtime<never>();
       const forwardUrl = Option.getOrUndefined(forward);

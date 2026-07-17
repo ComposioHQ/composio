@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports -- pure synchronous path-string manipulation (join/dirname) while walking ancestor node_modules dirs; disk checks use @effect/platform FileSystem/Command
-import path from 'node:path';
-import { Command, FileSystem } from '@effect/platform';
+import { Command, FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
 import {
   JsPackageManagerDetector,
@@ -17,6 +15,8 @@ const DEFAULT_PACKAGE_MANAGER: PackageManager = 'npm';
 
 export function pyFindComposioCoreGenerated(cwd: string) {
   return Effect.gen(function* () {
+    const path = yield* Path.Path;
+
     /**
      * Returns a `ComposioCorePkgNotFound` error with the given message and cause.
      * It lazily identifies the package manager used by the user to tell them how to install `@composio/core`.
@@ -104,6 +104,7 @@ export function jsFindComposioCoreGenerated(cwd: string) {
         }) satisfies Effect.Effect<never, ComposioCorePkgNotFound, JsPackageManagerDetector>;
 
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* Effect.logDebug('Detecting package manager...');
     const pkgManagerDetector = yield* JsPackageManagerDetector;

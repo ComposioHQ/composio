@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
@@ -124,6 +124,7 @@ describe('tool input validation', () => {
       Effect.provide(
         Layer.mergeAll(
           BunFileSystem.layer,
+          BunPath.layer,
           Layer.succeed(NodeOs, defaultNodeOs({ homedir: cacheDir }))
         )
       ),

@@ -49,12 +49,12 @@ export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies Requir
 
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioCliUserConfigLayer = Layer.provide(
   ComposioCliUserConfigLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 );
 
 export const ComposioSessionRepositoryLive = Layer.provide(

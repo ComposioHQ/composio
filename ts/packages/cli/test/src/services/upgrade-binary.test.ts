@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from '@effect/vitest';
 import { ConfigProvider, Effect, Layer } from 'effect';
-import { FetchHttpClient } from '@effect/platform';
+import { FetchHttpClient, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
 import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -409,16 +409,19 @@ describe('UpgradeBinary', () => {
     mkdirSync(path.dirname(sourceLocalToolPath), { recursive: true });
     writeFileSync(sourceLocalToolPath, 'imessage-sidecar');
 
-    for (const relativePath of collectExpectedRunCompanionAssetRelativePaths(sourceDir)) {
-      const companionPath = path.join(sourceDir, relativePath);
-      mkdirSync(path.dirname(companionPath), { recursive: true });
-      writeFileSync(companionPath, 'support-file');
-    }
-
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
     const execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
 
     return Effect.gen(function* () {
+      const companionRelativePaths = yield* collectExpectedRunCompanionAssetRelativePaths(
+        sourceDir
+      ).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer)));
+      for (const relativePath of companionRelativePaths) {
+        const companionPath = path.join(sourceDir, relativePath);
+        mkdirSync(path.dirname(companionPath), { recursive: true });
+        writeFileSync(companionPath, 'support-file');
+      }
+
       const result = yield* runUpgradeSuccess([
         ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
       ]);

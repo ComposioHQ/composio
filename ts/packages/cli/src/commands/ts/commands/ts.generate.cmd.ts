@@ -15,12 +15,10 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
-// eslint-disable-next-line no-restricted-imports -- used only for path.normalize in the synchronous --output-dir node_modules validation; pure string normalization with no filesystem access
-import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe } from 'effect';
 import { Match } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
@@ -328,8 +326,9 @@ function fetchAllData(
  */
 function validateOutputDir(
   outputDir: string
-): Effect.Effect<string, ValidationError.ValidationError> {
+): Effect.Effect<string, ValidationError.ValidationError, Path.Path> {
   return Effect.gen(function* () {
+    const path = yield* Path.Path;
     const normalizedPath = path.normalize(outputDir);
 
     if (normalizedPath.includes('node_modules')) {

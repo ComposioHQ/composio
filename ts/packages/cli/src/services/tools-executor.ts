@@ -207,6 +207,7 @@ export const ToolsExecutorLive = Layer.effect(
               : undefined,
             snapshot: permissionSnapshot,
           });
+          const path = yield* Path.Path;
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(
@@ -219,6 +220,7 @@ export const ToolsExecutorLive = Layer.effect(
                   return Effect.tryPromise({
                     try: () =>
                       uploadToolInputFiles({
+                        path,
                         toolSlug: slug,
                         arguments_: params.arguments,
                         inputSchema: definition.schema,

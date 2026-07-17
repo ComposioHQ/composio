@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-restricted-imports -- cachePath is a plain sync helper joining the resolved cache dir with a constant file name; its callers do not carry the Path service in context
-import path from 'node:path';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { JsonRecordSchema } from 'src/effects/json';
@@ -71,7 +69,11 @@ export const decodeCacheStateTolerant = (raw: string): CacheState =>
 
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
-const cachePath = (cacheDir: string) => path.join(cacheDir, CACHE_FILE);
+const cachePath = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const cacheDir = yield* setupCacheDir;
+  return path.join(cacheDir, CACHE_FILE);
+});
 
 const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
@@ -120,8 +122,7 @@ const resolveSearchSessionMetadata = (params: {
 const readCache = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const cacheDir = yield* setupCacheDir;
-    const filePath = cachePath(cacheDir);
+    const filePath = yield* cachePath;
     if (!(yield* fs.exists(filePath))) {
       return {} satisfies CacheState;
     }
@@ -133,9 +134,10 @@ const writeCache = (state: CacheState) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const cacheDir = yield* setupCacheDir;
+    const filePath = yield* cachePath;
     yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
     yield* fs
-      .writeFileString(cachePath(cacheDir), JSON.stringify(state, null, 2))
+      .writeFileString(filePath, JSON.stringify(state, null, 2))
       .pipe(Effect.catchAll(() => Effect.void));
   });
 
@@ -366,8 +368,7 @@ export const getFreshConsumerToolRouterConnectedAccountsFromCache = (params: {
 export const invalidateConsumerConnectedToolkitsCache = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const cacheDir = yield* setupCacheDir;
-    const filePath = cachePath(cacheDir);
+    const filePath = yield* cachePath;
     if (yield* fs.exists(filePath)) {
       yield* fs.remove(filePath);
     }

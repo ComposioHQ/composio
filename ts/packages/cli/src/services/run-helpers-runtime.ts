@@ -4,9 +4,8 @@
 import * as fs from 'node:fs';
 // eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
 import * as os from 'node:os';
-// eslint-disable-next-line no-restricted-imports -- path.join builds run-file output paths in the child process, outside the Effect runtime
-import * as path from 'node:path';
 import process from 'node:process';
+import { Path } from '@effect/platform';
 import { Effect, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { JsonRecordSchema } from 'src/effects/json';
@@ -156,8 +155,9 @@ export const installRunHelpers = async ({
   helperContext = {},
 }: RunHelpersInstallParams): Promise<void> => {
   // This preload runs in the user's child process, outside the CLI runtime.
-  // Resolve the live service once at that boundary and keep all writes centralized.
+  // Resolve the live services once at that boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
+  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
 
   Reflect.set(globalThis, 'z', z);

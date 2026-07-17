@@ -1,9 +1,7 @@
 import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { Data, Deferred, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
-// eslint-disable-next-line no-restricted-imports -- only path.join is used, pure string composition of trigger-artifact file paths under the already-resolved artifacts root; all I/O goes through @effect/platform FileSystem
-import path from 'node:path';
+import { Data, Deferred, Effect, Either, Option, Predicate, Runtime } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -443,6 +441,7 @@ export const listenCmd = Command.make(
 
       const ui = yield* TerminalUI;
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
       const runtime = yield* Effect.runtime<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;

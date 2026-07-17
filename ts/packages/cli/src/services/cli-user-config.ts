@@ -1,11 +1,9 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
 // eslint-disable-next-line no-restricted-imports -- os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable
 import os from 'node:os';
-// eslint-disable-next-line no-restricted-imports -- serves the same sync resolvers: path.join must work outside the Effect runtime where the Path service cannot be yielded
-import path from 'node:path';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';
@@ -50,12 +48,18 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
 
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
 
+// The sync resolvers below run from non-Effect call sites (dev.cmd messages,
+// run-helpers-runtime child process), so the Path service is materialized once
+// from its pure default layer instead of being yielded from context.
+const syncPath = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+
 export const resolveCliConfigDirectorySync = (): string =>
   // eslint-disable-next-line no-restricted-syntax -- this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here
-  process.env.COMPOSIO_CACHE_DIR?.trim() || path.join(os.homedir(), constants.USER_COMPOSIO_DIR);
+  process.env.COMPOSIO_CACHE_DIR?.trim() ||
+  syncPath.join(os.homedir(), constants.USER_COMPOSIO_DIR);
 
 export const resolveCliConfigPathSync = (): string =>
-  path.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
+  syncPath.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
 
 export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
   ComposioCliUserConfig,
@@ -89,6 +93,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
   ComposioCliUserConfig,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const version = yield* getVersion;
     const channel = detectReleaseChannel(version);
     const configDir = yield* setupCacheDir;

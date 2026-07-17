@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- only path.join is used, pure string composition of config-file paths under already-resolved directories; all I/O goes through @effect/platform FileSystem
-import path from 'node:path';
 import { Command as CliCommand, Options } from '@effect/cli';
 import { Effect, Option } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioUserContext } from 'src/services/user-context';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
@@ -44,6 +42,7 @@ const yesOpt = Options.boolean('yes').pipe(
 const writeProjectConfig = (composioDir: string, selected: ProjectKeys) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* fs
       .makeDirectory(composioDir, { recursive: true })
@@ -77,6 +76,7 @@ const makeOutputJson = (selected: ProjectKeys, composioDir: string) =>
 const getGlobalUserApiKey = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
     const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
     const exists = yield* fs.exists(userConfigPath);
@@ -104,6 +104,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const { cwd, selected } = params;
     const ui = yield* TerminalUI;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const ctx = yield* ComposioUserContext;
 
     const envPath = path.join(cwd, '.env.local');
@@ -230,6 +231,7 @@ export const initCmd = CliCommand.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
+      const path = yield* Path.Path;
 
       yield* ui.intro('composio dev init');
 

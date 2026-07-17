@@ -37,19 +37,25 @@ describe('run-subagent-acp', () => {
     expect(input.destroyed).toBe(true);
   });
 
-  it('[Given] bundled adapter packages [Then] it resolves to the bundled path without npx', () => {
-    const result = resolveAcpAdapterCommand('claude');
-    expect(result.source).toBe('bundled');
-    expect(result.cmd[0]).toBe(process.execPath);
-    expect(result.cmd[1]).toMatch(/claude-code-acp/);
-  });
+  it.effect(
+    '[Given] bundled adapter packages [Then] it resolves to the bundled path without npx',
+    () =>
+      Effect.gen(function* () {
+        const result = yield* resolveAcpAdapterCommand('claude');
+        expect(result.source).toBe('bundled');
+        expect(result.cmd[0]).toBe(process.execPath);
+        expect(result.cmd[1]).toMatch(/claude-code-acp/);
+      }).pipe(Effect.provide(BunContext.layer))
+  );
 
-  it('[Given] bundled codex adapter [Then] it resolves to the bundled path', () => {
-    const result = resolveAcpAdapterCommand('codex');
-    expect(result.source).toBe('bundled');
-    expect(result.cmd[0]).toBe(process.execPath);
-    expect(result.cmd[1]).toMatch(/codex-acp/);
-  });
+  it.effect('[Given] bundled codex adapter [Then] it resolves to the bundled path', () =>
+    Effect.gen(function* () {
+      const result = yield* resolveAcpAdapterCommand('codex');
+      expect(result.source).toBe('bundled');
+      expect(result.cmd[0]).toBe(process.execPath);
+      expect(result.cmd[1]).toMatch(/codex-acp/);
+    }).pipe(Effect.provide(BunContext.layer))
+  );
 
   it('[Given] an ACP invoke error [Then] it is classified for fallback', () => {
     const error = new AcpInvokeError('initialize_failed', 'boom');

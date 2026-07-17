@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
@@ -24,7 +24,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -55,7 +55,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -76,7 +76,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -117,7 +117,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -170,7 +170,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {
@@ -215,7 +215,7 @@ describe('ComposioCliUserConfig', () => {
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
     const CliUserConfigTest = Layer.provideMerge(
       ComposioCliUserConfigLive,
-      Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
     );
 
     return Effect.gen(function* () {

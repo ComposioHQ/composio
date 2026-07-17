@@ -1,6 +1,5 @@
 import * as ts from '@composio/ts-builders';
-// eslint-disable-next-line no-restricted-imports -- pure synchronous path.join to compute the generated index.ts filename; sources are emitted in memory, no I/O here
-import path from 'node:path';
+import { Path } from '@effect/platform';
 import { safeOutputPath, type SafeOutputPathError } from 'src/generation/safe-output-path';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
@@ -21,8 +20,9 @@ type GenerateTypeScriptSourcesParams = {
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
   return (
     index: ToolkitIndex
-  ): Effect.Effect<Array<SourceFile>, GenerateTypeScriptSourcesError, never> =>
+  ): Effect.Effect<Array<SourceFile>, GenerateTypeScriptSourcesError, Path.Path> =>
     Effect.gen(function* () {
+      const path = yield* Path.Path;
       const toolkitSources = yield* generateTypeScriptToolkitSources(params.banner)(index);
 
       const indexSource = generateIndexSource(params)(index);

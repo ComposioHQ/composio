@@ -1,5 +1,6 @@
 import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
+import type { Path } from '@effect/platform/Path';
 import { Effect, Predicate, pipe } from 'effect';
 
 import type { JsonParsingError } from 'effect-errors/dependencies/fs';
@@ -24,7 +25,7 @@ export const isRawErrorLocation = (value: MaybeMappedSources): value is RawError
 export const maybeMapSourcemaps = (
   name: string,
   stacktrace: string[]
-): Effect.Effect<MaybeMappedSources[], PlatformError | JsonParsingError, FileSystem> =>
+): Effect.Effect<MaybeMappedSources[], PlatformError | JsonParsingError, FileSystem | Path> =>
   pipe(
     Effect.forEach(stacktrace, stackLine =>
       Effect.gen(function* () {

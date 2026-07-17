@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- normalizes the user-supplied output dir inside a synchronous Options validator, before the @effect/platform Path service is resolved
-import path from 'node:path';
 import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Array, Data, Effect, Option, pipe, String } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
@@ -64,6 +62,7 @@ export function generatePythonTypeStubs({
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const client = yield* ComposioToolkitsRepository;
 
     yield* ui.intro('composio generate py');

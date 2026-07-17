@@ -1,8 +1,6 @@
 import { BunFileSystem } from '@effect/platform-bun';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Match } from 'effect';
-// eslint-disable-next-line no-restricted-imports -- only pure path.join string composition to build candidate manifest paths in the ancestor walk; all reads go through @effect/platform FileSystem
-import * as path from 'node:path';
 import process from 'node:process';
 import { getAncestors } from 'src/utils/get-ancestors';
 
@@ -100,7 +98,7 @@ const isTsConfig = (name: string) => {
   return lower === 'tsconfig.json' || (lower.startsWith('tsconfig.') && lower.endsWith('.json'));
 };
 
-const countExtensions = (files: string[]) => {
+const countExtensions = (path: Path.Path, files: string[]) => {
   let ts = 0;
   let js = 0;
   let py = 0;
@@ -157,7 +155,7 @@ const SYSTEM_ROOTS = new Set([
 ]);
 
 /** Reject system roots (/, /tmp, /var, /private/tmp, etc.) as project roots. */
-const isSystemRoot = (dir: string): boolean => {
+const isSystemRoot = (path: Path.Path, dir: string): boolean => {
   const resolved = path.resolve(dir);
   if (SYSTEM_ROOTS.has(resolved)) return true;
   const parent = path.dirname(resolved);
@@ -210,7 +208,7 @@ const makeReadDirectoryOptional = (fs: FileSystem.FileSystem) => (dir: string) =
 const makeReadFileStringOptional = (fs: FileSystem.FileSystem) => (filePath: string) =>
   fs.readFileString(filePath).pipe(Effect.catchAll(() => Effect.succeed<string | null>(null)));
 
-const makeReadPackageJson = (fs: FileSystem.FileSystem) => {
+const makeReadPackageJson = (fs: FileSystem.FileSystem, path: Path.Path) => {
   const readFileStringOptional = makeReadFileStringOptional(fs);
   return (dir: string) =>
     Effect.gen(function* () {
@@ -229,6 +227,7 @@ const makeReadPackageJson = (fs: FileSystem.FileSystem) => {
 
 const analyzeDirectory = (
   fs: FileSystem.FileSystem,
+  path: Path.Path,
   dir: string
 ): Effect.Effect<DirEvidence, ProjectEnvironmentDetectorError> =>
   Effect.gen(function* () {
@@ -244,7 +243,7 @@ const analyzeDirectory = (
     );
     const readDirectoryOptional = makeReadDirectoryOptional(fs);
     const readFileStringOptional = makeReadFileStringOptional(fs);
-    const readPackageJson = makeReadPackageJson(fs);
+    const readPackageJson = makeReadPackageJson(fs, path);
 
     const lowerFiles = files.map(file => file.toLowerCase());
     const fileSet = new Set(lowerFiles);
@@ -355,7 +354,7 @@ const analyzeDirectory = (
     }
 
     // Score from file extensions
-    const extensionCounts = countExtensions(files);
+    const extensionCounts = countExtensions(path, files);
     if (extensionCounts.ts > 0) {
       tsScore += Math.min(3, extensionCounts.ts);
       jsHints.tsFiles = true;
@@ -373,7 +372,7 @@ const analyzeDirectory = (
       if (!fileSet.has(subdir)) continue;
       const actualSubdir = fileByLower.get(subdir) ?? subdir;
       const subFiles = yield* readDirectoryOptional(path.join(dir, actualSubdir));
-      const subCounts = countExtensions(subFiles);
+      const subCounts = countExtensions(path, subFiles);
       if (subCounts.ts > 0) {
         tsScore += Math.min(2, subCounts.ts);
         jsHints.tsFiles = true;
@@ -405,13 +404,14 @@ const analyzeDirectory = (
 
 const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
   Effect.gen(function* () {
-    const dirs = getAncestors(cwd);
+    const path = yield* Path.Path;
+    const dirs = yield* getAncestors(cwd);
     let bestWeak: ReturnType<typeof pickBestWeak> | null = null;
     let ambiguous: { dir: string; details: string } | null = null;
 
     for (const [depth, dir] of dirs.entries()) {
-      const evidence = yield* analyzeDirectory(fs, dir);
-      const systemRoot = isSystemRoot(dir);
+      const evidence = yield* analyzeDirectory(fs, path, dir);
+      const systemRoot = isSystemRoot(path, dir);
 
       if (evidence.strongJs && evidence.strongPy) {
         if (depth === 0 && !systemRoot) {
@@ -442,7 +442,7 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
         bestWeak = weakCandidate;
     }
 
-    if (bestWeak && !isSystemRoot(bestWeak.dir))
+    if (bestWeak && !isSystemRoot(path, bestWeak.dir))
       return {
         language: bestWeak.language,
         rootDir: bestWeak.dir,
@@ -471,9 +471,10 @@ const detectLanguage = (fs: FileSystem.FileSystem, cwd: string) =>
 
 const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const readDirectoryOptional = makeReadDirectoryOptional(fs);
-    const readPackageJson = makeReadPackageJson(fs);
-    const dirs = getAncestors(cwd);
+    const readPackageJson = makeReadPackageJson(fs, path);
+    const dirs = yield* getAncestors(cwd);
 
     for (const dir of dirs) {
       const files = yield* readDirectoryOptional(dir);
@@ -506,9 +507,10 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
 
 const detectPythonPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const readDirectoryOptional = makeReadDirectoryOptional(fs);
     const readFileStringOptional = makeReadFileStringOptional(fs);
-    const dirs = getAncestors(cwd);
+    const dirs = yield* getAncestors(cwd);
     let fallback: PythonPackageManager | null = null;
 
     for (const dir of dirs) {
@@ -552,6 +554,7 @@ export class ProjectEnvironmentDetector extends Effect.Service<ProjectEnvironmen
   {
     effect: Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
 
       const detectProjectEnvironment = (
         cwd: string
@@ -578,14 +581,16 @@ export class ProjectEnvironmentDetector extends Effect.Service<ProjectEnvironmen
             rootDir: detection.rootDir,
             evidence: detection.evidence.evidence,
           } satisfies ProjectEnvironment;
-        });
+        }).pipe(Effect.provideService(Path.Path, path));
 
       return {
         detectProjectEnvironment,
-        detectJsPackageManager: (cwd: string) => detectJsPackageManager(fs, cwd),
-        detectPythonPackageManager: (cwd: string) => detectPythonPackageManager(fs, cwd),
+        detectJsPackageManager: (cwd: string) =>
+          detectJsPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
+        detectPythonPackageManager: (cwd: string) =>
+          detectPythonPackageManager(fs, cwd).pipe(Effect.provideService(Path.Path, path)),
       };
     }),
-    dependencies: [BunFileSystem.layer],
+    dependencies: [BunFileSystem.layer, Path.layer],
   }
 ) {}

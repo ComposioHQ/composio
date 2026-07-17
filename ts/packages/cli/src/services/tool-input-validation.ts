@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-restricted-imports -- path.join here is pure cache-path string composition in plain sync helpers (toolDefinitionPath); the @effect/platform Path service would force Effect context onto string-only joins
-import path from 'node:path';
 import { AutoCorrect, CliConfig } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Option, ParseResult, Schema } from 'effect';
 import { jsonSchemaToZodSchema } from '@composio/core';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
@@ -33,10 +31,10 @@ const decodeObjectSchemaWithProperties = Schema.decodeUnknownOption(ObjectSchema
 
 const sanitizeToolSlug = (slug: string) => slug.replace(/[^A-Za-z0-9_.-]/g, '_');
 
-const toolDefinitionPath = (cacheDir: string, slug: string) =>
+const toolDefinitionPath = (path: Path.Path, cacheDir: string, slug: string) =>
   path.join(cacheDir, TOOL_DEFINITIONS_DIR, `${sanitizeToolSlug(slug)}.json`);
 
-const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, cacheDir: string) =>
+const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, path: Path.Path, cacheDir: string) =>
   fs.makeDirectory(path.join(cacheDir, TOOL_DEFINITIONS_DIR), { recursive: true });
 
 const parseSchemaFile = (raw: string, schemaPath: string) =>
@@ -110,8 +108,9 @@ const serializeCachedToolDefinition = (definition: CachedToolInputDefinition): s
 export const getCachedToolInputDefinition = (slug: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
 
     const raw = yield* fs
       .readFileString(schemaPath, 'utf8')
@@ -135,15 +134,17 @@ export const getCachedToolInputDefinition = (slug: string) =>
 
 export const getToolDefinitionCachePath = (slug: string) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    return toolDefinitionPath(cacheDir, slug);
+    return toolDefinitionPath(path, cacheDir, slug);
   });
 
 export const invalidateToolInputDefinition = (slug: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
     yield* fs
       .remove(schemaPath)
       .pipe(
@@ -186,11 +187,12 @@ const fetchAndCacheToolInputDefinition = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
     const localDefinition = getLocalToolInputDefinition(slug);
-    const schemaPath = toolDefinitionPath(cacheDir, localDefinition?.finalSlug ?? slug);
-    yield* ensureToolDefinitionsDir(fs, cacheDir);
+    const schemaPath = toolDefinitionPath(path, cacheDir, localDefinition?.finalSlug ?? slug);
+    yield* ensureToolDefinitionsDir(fs, path, cacheDir);
 
     if (localDefinition) {
       yield* fs.writeFileString(

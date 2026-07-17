@@ -1,7 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { Path } from '@effect/platform';
+import { BunPath } from '@effect/platform-bun';
+import { Effect } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
@@ -33,89 +36,117 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     expect(schemaHasFileUploadable({ anyOf: ['not-a-schema', null] })).toBe(false);
   });
 
-  it('refuses to read/upload a path under a sensitive directory (~/.ssh/id_rsa)', async () => {
-    const createPresignedURL = vi.fn();
-    const client = makeClient(createPresignedURL);
-
-    await expect(
-      uploadToolInputFiles({
-        toolSlug: 'GMAIL_SEND_EMAIL',
-        arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-        inputSchema,
-        client,
-      })
-    ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
-
-    // The guard must fire BEFORE any network round-trip: no presigned URL, no upload.
-    expect(createPresignedURL).not.toHaveBeenCalled();
-  });
-
-  it('surfaces CLI-appropriate remediation, not the SDK-only opt-out, in the block error', async () => {
-    const client = makeClient(vi.fn());
-
-    // The CLI has no `sensitiveFileUploadProtection` opt-out (by design), so the
-    // error must not point users at that non-existent knob (issue #3763 review #2/#3).
-    await expect(
-      uploadToolInputFiles({
-        toolSlug: 'GMAIL_SEND_EMAIL',
-        arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-        inputSchema,
-        client,
-      })
-    ).rejects.toThrowError(/has no opt-out/i);
-
-    await expect(
-      uploadToolInputFiles({
-        toolSlug: 'GMAIL_SEND_EMAIL',
-        arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
-        inputSchema,
-        client,
-      })
-    ).rejects.not.toThrowError(/sensitiveFileUploadProtection/);
-  });
-
-  it('refuses credential-like basenames (.env) even outside a sensitive directory', async () => {
-    const createPresignedURL = vi.fn();
-    const client = makeClient(createPresignedURL);
-
-    await expect(
-      uploadToolInputFiles({
-        toolSlug: 'GMAIL_SEND_EMAIL',
-        arguments_: { attachment: path.join(os.tmpdir(), '.env') },
-        inputSchema,
-        client,
-      })
-    ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
-    expect(createPresignedURL).not.toHaveBeenCalled();
-  });
-
-  it('still uploads a normal (non-sensitive) local file', async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
-    try {
-      const file = path.join(root, 'document.pdf');
-      writeFileSync(file, 'hello');
-
-      const createPresignedURL = vi.fn(async () => ({
-        new_presigned_url: 'https://s3.example.com/put',
-        key: 's3key-123',
-      }));
+  it.effect('refuses to read/upload a path under a sensitive directory (~/.ssh/id_rsa)', () =>
+    Effect.gen(function* () {
+      const pathApi = yield* Path.Path;
+      const createPresignedURL = vi.fn();
       const client = makeClient(createPresignedURL);
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+            inputSchema,
+            client,
+          })
+        ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
       );
 
-      const result = await uploadToolInputFiles({
-        toolSlug: 'GMAIL_SEND_EMAIL',
-        arguments_: { attachment: file },
-        inputSchema,
-        client,
-      });
+      // The guard must fire BEFORE any network round-trip: no presigned URL, no upload.
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(BunPath.layer))
+  );
+
+  it.effect(
+    'surfaces CLI-appropriate remediation, not the SDK-only opt-out, in the block error',
+    () =>
+      Effect.gen(function* () {
+        const pathApi = yield* Path.Path;
+        const client = makeClient(vi.fn());
+
+        // The CLI has no `sensitiveFileUploadProtection` opt-out (by design), so the
+        // error must not point users at that non-existent knob (issue #3763 review #2/#3).
+        yield* Effect.promise(() =>
+          expect(
+            uploadToolInputFiles({
+              path: pathApi,
+              toolSlug: 'GMAIL_SEND_EMAIL',
+              arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+              inputSchema,
+              client,
+            })
+          ).rejects.toThrowError(/has no opt-out/i)
+        );
+
+        yield* Effect.promise(() =>
+          expect(
+            uploadToolInputFiles({
+              path: pathApi,
+              toolSlug: 'GMAIL_SEND_EMAIL',
+              arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
+              inputSchema,
+              client,
+            })
+          ).rejects.not.toThrowError(/sensitiveFileUploadProtection/)
+        );
+      }).pipe(Effect.provide(BunPath.layer))
+  );
+
+  it.effect('refuses credential-like basenames (.env) even outside a sensitive directory', () =>
+    Effect.gen(function* () {
+      const pathApi = yield* Path.Path;
+      const createPresignedURL = vi.fn();
+      const client = makeClient(createPresignedURL);
+
+      yield* Effect.promise(() =>
+        expect(
+          uploadToolInputFiles({
+            path: pathApi,
+            toolSlug: 'GMAIL_SEND_EMAIL',
+            arguments_: { attachment: path.join(os.tmpdir(), '.env') },
+            inputSchema,
+            client,
+          })
+        ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
+      );
+      expect(createPresignedURL).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(BunPath.layer))
+  );
+
+  it.effect('still uploads a normal (non-sensitive) local file', () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'composio-upload-'));
+    const file = path.join(root, 'document.pdf');
+    writeFileSync(file, 'hello');
+
+    const createPresignedURL = vi.fn(async () => ({
+      new_presigned_url: 'https://s3.example.com/put',
+      key: 's3key-123',
+    }));
+    const client = makeClient(createPresignedURL);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, statusText: 'OK' }))
+    );
+
+    return Effect.gen(function* () {
+      const pathApi = yield* Path.Path;
+      const result = yield* Effect.promise(() =>
+        uploadToolInputFiles({
+          path: pathApi,
+          toolSlug: 'GMAIL_SEND_EMAIL',
+          arguments_: { attachment: file },
+          inputSchema,
+          client,
+        })
+      );
 
       expect(createPresignedURL).toHaveBeenCalledTimes(1);
       expect(result.attachment).toMatchObject({ s3key: 's3key-123', name: 'document.pdf' });
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
+    }).pipe(
+      Effect.provide(BunPath.layer),
+      Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
+    );
   });
 });

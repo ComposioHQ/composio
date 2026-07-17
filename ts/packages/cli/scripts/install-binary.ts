@@ -30,7 +30,8 @@ export function installBinary() {
     yield* Effect.tryPromise(() => $`cp ${binaryPath} ${installDir}/composio`.quiet());
 
     const sourceDirectory = path.dirname(path.resolve(binaryPath));
-    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
+    const companionRelativePaths =
+      yield* collectExpectedRunCompanionAssetRelativePaths(sourceDirectory);
 
     for (const relativePath of companionRelativePaths) {
       const sourcePath = path.join(sourceDirectory, relativePath);

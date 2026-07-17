@@ -4,14 +4,15 @@
 import { readFileSync, mkdirSync } from 'node:fs';
 // eslint-disable-next-line no-restricted-imports -- fire-and-forget cache write runs in a bare promise chain, outside the Effect runtime
 import { writeFile } from 'node:fs/promises';
-// eslint-disable-next-line no-restricted-imports -- platform/arch/homedir resolved at module load to build defaultConfig, pre-runtime
-import { arch as getArch, homedir, platform as getPlatform } from 'node:os';
-// eslint-disable-next-line no-restricted-imports -- joins the ~/.composio cache-file path at module load, pre-runtime
-import { dirname, join } from 'node:path';
-import { Effect, Predicate, Schema } from 'effect';
+// eslint-disable-next-line no-restricted-imports -- platform/arch resolved at module load to build the default config, pre-runtime
+import { arch as getArch, platform as getPlatform } from 'node:os';
+import { Path } from '@effect/platform';
+import { BunFileSystem } from '@effect/platform-bun';
+import { Config, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
+import { NodeOs } from './node-os';
 import { resolveInstalledCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
@@ -60,7 +61,11 @@ export interface UpdateCheckConfig {
   readonly fetchFn: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
-const _home = join(homedir(), '.composio');
+const defaultStateFile = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const os = yield* NodeOs;
+  return path.join(os.homedir, '.composio', 'update-check.json');
+});
 
 function getCurrentBinaryAssetName(): string | undefined {
   const platform = getPlatform();
@@ -73,16 +78,24 @@ function getCurrentBinaryAssetName(): string | undefined {
   return `composio-${platform}-${arch}.zip`;
 }
 
-const defaultConfig: UpdateCheckConfig = {
-  stateFile: join(_home, 'update-check.json'),
-  currentVersion: resolveInstalledCliVersion(process.execPath, APP_VERSION),
-  checkIntervalMs: CHECK_INTERVAL_MS,
-  releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
-  binaryAssetName: getCurrentBinaryAssetName(),
-  // eslint-disable-next-line no-restricted-syntax -- defaultConfig is built at module load, before effect/Config can be evaluated
-  accessToken: process.env.COMPOSIO_GITHUB_ACCESS_TOKEN,
-  fetchFn: fetch,
-};
+const defaultConfig = (stateFile: string) =>
+  Effect.gen(function* () {
+    const currentVersion = yield* resolveInstalledCliVersion(process.execPath, APP_VERSION);
+    const accessToken = yield* Effect.orDie(
+      Config.option(Config.string('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
+        Config.map(Option.getOrUndefined)
+      )
+    );
+    return {
+      stateFile,
+      currentVersion,
+      checkIntervalMs: CHECK_INTERVAL_MS,
+      releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
+      binaryAssetName: getCurrentBinaryAssetName(),
+      accessToken,
+      fetchFn: fetch,
+    } satisfies UpdateCheckConfig;
+  });
 
 // ── Pure helpers ────────────────────────────────────────────────────────
 
@@ -122,6 +135,11 @@ export function parseLatestVersionFromReleases(
 // ── Factory ─────────────────────────────────────────────────────────────
 
 export function createUpdateChecker(config: UpdateCheckConfig) {
+  // checkForUpdate runs in a bare promise chain outside the Effect runtime, so
+  // the Path service is materialized from its pure default layer instead of
+  // being yielded from context.
+  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+
   /**
    * If a cached newer version is known, print a one-line hint to stderr.
    * Purely synchronous — reads a tiny JSON file and does a semver compare.
@@ -186,7 +204,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       const writeState = (latestVersion?: string): Promise<void> => {
         // eslint-disable-next-line no-restricted-syntax -- mkdir failure bails out silently inside a bare promise chain, not an Effect
         try {
-          const stateDir = dirname(config.stateFile);
+          const stateDir = path.dirname(config.stateFile);
           mkdirSync(stateDir, { recursive: true });
         } catch {
           // If we can't create the directory, bail out silently.
@@ -227,12 +245,25 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
 
 // ── Public API (production defaults, fire-and-forget) ───────────────────
 
-const _checker = createUpdateChecker(defaultConfig);
+const DefaultConfigLayers = Layer.mergeAll(Path.layer, NodeOs.Default, BunFileSystem.layer);
 
 /** Print upgrade hint to stderr if a newer version is cached. */
-export const showUpdateNotice = Effect.flatMap(TerminalUI, _checker.showUpdateNotice);
+export const showUpdateNotice = Effect.gen(function* () {
+  const terminal = yield* TerminalUI;
+  const stateFile = yield* defaultStateFile;
+  const config = yield* defaultConfig(stateFile);
+  yield* createUpdateChecker(config).showUpdateNotice(terminal);
+}).pipe(Effect.provide(DefaultConfigLayers));
 
 /** Fire-and-forget background fetch to GitHub. */
 export function checkForUpdateInBackground(): void {
-  _checker.checkForUpdate();
+  // Runs from cli-main before the runtime boots; runPromiseExit never throws back
+  // into the caller and checkForUpdate swallows its own failures.
+  void Effect.runPromiseExit(
+    Effect.gen(function* () {
+      const stateFile = yield* defaultStateFile;
+      const config = yield* defaultConfig(stateFile);
+      return createUpdateChecker(config).checkForUpdate();
+    }).pipe(Effect.provide(DefaultConfigLayers))
+  );
 }

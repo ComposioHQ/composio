@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- vendored effect-errors module: path.resolve here is pure string arithmetic on stack-trace file paths, not filesystem access
-import path from 'node:path';
-
 import type { PlatformError } from '@effect/platform/Error';
 import { FileSystem } from '@effect/platform/FileSystem';
+import { Path } from '@effect/platform/Path';
 import { Effect, pipe } from 'effect';
 import { type RawSourceMap, SourceMapConsumer } from 'source-map-js';
 
@@ -30,11 +28,12 @@ export const getSourcesFromMapFile = (
 ): Effect.Effect<
   ErrorRelatedSources | RawErrorLocation | undefined,
   PlatformError | JsonParsingError,
-  FileSystem
+  FileSystem | Path
 > =>
   pipe(
     Effect.gen(function* () {
       const fs = yield* FileSystem;
+      const path = yield* Path;
       const fileExists = yield* fs.exists(`${location.filePath}.map`);
       if (!fileExists) {
         return {

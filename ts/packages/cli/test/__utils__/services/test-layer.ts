@@ -810,7 +810,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioUserContextTest = Layer.provideMerge(
       ComposioUserContextLive,
-      Layer.merge(BunFileSystem.layer, NodeOsTest)
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
     );
 
     let rawCliUserConfig = CliUserConfig.make({

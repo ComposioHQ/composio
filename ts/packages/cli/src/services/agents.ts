@@ -1,7 +1,5 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Option, Predicate, Schema } from 'effect';
-// eslint-disable-next-line no-restricted-imports -- only joins the resolved cache dir with the constant agent.json name; not worth threading the Path service into every agentConfigPath caller
-import path from 'node:path';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -160,6 +158,7 @@ export const safeAgentSummary = (identity: AgentIdentity): SafeAgentSummary => (
 });
 
 export const agentConfigPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
   const cacheDir = yield* setupCacheDir;
   return path.join(cacheDir, AGENT_CONFIG_FILE_NAME);
 });

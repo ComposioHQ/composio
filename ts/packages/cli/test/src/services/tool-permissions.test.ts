@@ -133,7 +133,7 @@ describe('tool permissions', () => {
       const result = yield* gateToolExecution({ toolSlug: 'GMAIL_SEND_EMAIL' });
 
       expect(result).toBeUndefined();
-    })
+    }).pipe(Effect.provide(BunPath.layer))
   );
 
   it.effect('preserves permission-policy denial identity', () =>
@@ -161,7 +161,7 @@ describe('tool permissions', () => {
         expect(failure.deniedBy).toBe('permissions');
         expect(failure.toolSlug).toBe('GMAIL_SEND_EMAIL');
       }
-    })
+    }).pipe(Effect.provide(BunPath.layer))
   );
 
   it.effect('fails closed when interactive approval is needed but permission UI is disabled', () =>
@@ -178,7 +178,7 @@ describe('tool permissions', () => {
         expect(failure.deniedBy).toBe('permissions');
         expect(failure.message).toContain('permission prompts are disabled');
       }
-    })
+    }).pipe(Effect.provide(BunPath.layer))
   );
 
   it.effect('honors cached allow decisions even when permission UI is disabled', () =>

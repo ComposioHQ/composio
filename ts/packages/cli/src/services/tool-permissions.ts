@@ -1,11 +1,11 @@
 import http from 'node:http';
 // The permissions cache is read/written by plain async helpers serialized on a
 // promise write queue (atomic temp-file rename), shared with the node:http
-// browser-approval flow — none of it runs inside the Effect runtime.
+// browser-approval flow — none of it runs inside the Effect runtime. The Path
+// service instance is resolved in the Effect entry points and passed down.
 // eslint-disable-next-line no-restricted-imports -- fs is used by the promise-queue cache helpers outside the Effect runtime
 import fs from 'node:fs/promises';
-// eslint-disable-next-line no-restricted-imports -- path.join/dirname compose the cache file path inside the same non-Effect helpers
-import path from 'node:path';
+import { Path } from '@effect/platform';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
@@ -175,7 +175,7 @@ interface GateParams {
 
 const allowDecisionMemoryCache = new Map<string, number>();
 
-const cachePath = () => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
+const cachePath = (path: Path.Path) => path.join(resolveCliConfigDirectorySync(), CACHE_FILE_NAME);
 const cacheKey = (params: { orgId: string; projectId: string; consumerUserId: string }) =>
   [params.orgId, params.projectId, params.consumerUserId].join(':');
 const normalizeBaseUrl = (baseURL: string) => baseURL.replace(/\/$/, '');
@@ -193,10 +193,10 @@ const pruneAllowEntries = (
     entry => typeof entry.expiresAt === 'number' && entry.expiresAt > now
   );
 
-const readCacheFile = async (): Promise<CacheFile> => {
+const readCacheFile = async (path: Path.Path): Promise<CacheFile> => {
   // eslint-disable-next-line no-restricted-syntax -- plain async helper on the promise write queue, outside the Effect runtime; a missing or unreadable cache file degrades to an empty cache
   try {
-    const raw = await fs.readFile(cachePath(), 'utf8');
+    const raw = await fs.readFile(cachePath(path), 'utf8');
     const parsed = decodeCacheFileTolerant(raw);
     return {
       entries: parsed.entries,
@@ -207,8 +207,8 @@ const readCacheFile = async (): Promise<CacheFile> => {
   }
 };
 
-const writeCacheFile = async (cache: CacheFile): Promise<void> => {
-  const targetPath = cachePath();
+const writeCacheFile = async (path: Path.Path, cache: CacheFile): Promise<void> => {
+  const targetPath = cachePath(path);
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
 
   const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
@@ -236,20 +236,21 @@ const writeCacheFile = async (cache: CacheFile): Promise<void> => {
 let cacheWriteQueue: Promise<void> = Promise.resolve();
 
 const updateCacheFile = async (
+  path: Path.Path,
   update: (current: CacheFile) => CacheFile | Promise<CacheFile>
 ): Promise<void> => {
   const previous = cacheWriteQueue.catch(() => undefined);
   const next = previous.then(async () => {
-    const current = await readCacheFile();
-    await writeCacheFile(await update(current));
+    const current = await readCacheFile(path);
+    await writeCacheFile(path, await update(current));
   });
 
   cacheWriteQueue = next.catch(() => undefined);
   await next;
 };
 
-const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void> =>
-  updateCacheFile(current => ({
+const writeCacheEntry = async (path: Path.Path, entry: ConsumerPermissionSnapshot): Promise<void> =>
+  updateCacheFile(path, current => ({
     entries: {
       ...current.entries,
       [cacheKey(entry)]: entry,
@@ -257,12 +258,15 @@ const writeCacheEntry = async (entry: ConsumerPermissionSnapshot): Promise<void>
     allowEntries: current.allowEntries,
   }));
 
-const readCachedEntry = async (params: {
-  orgId: string;
-  projectId: string;
-  consumerUserId: string;
-}): Promise<ConsumerPermissionSnapshot | undefined> => {
-  const cache = await readCacheFile();
+const readCachedEntry = async (
+  path: Path.Path,
+  params: {
+    orgId: string;
+    projectId: string;
+    consumerUserId: string;
+  }
+): Promise<ConsumerPermissionSnapshot | undefined> => {
+  const cache = await readCacheFile(path);
   return cache.entries[cacheKey(params)];
 };
 
@@ -326,6 +330,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     if (!apiKey) return undefined;
@@ -413,7 +418,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     // on the next command instead of pinning ask_every_call for the TTL.
     if (!resolved.resolveFailed) {
       yield* Effect.tryPromise({
-        try: () => writeCacheEntry(snapshot),
+        try: () => writeCacheEntry(path, snapshot),
         catch: cause =>
           new ToolPermissionsCacheError({
             operation: 'write',
@@ -443,9 +448,10 @@ export const getConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
     const cached = yield* Effect.tryPromise({
-      try: () => readCachedEntry(params),
+      try: () => readCachedEntry(path, params),
       catch: cause =>
         new ToolPermissionsCacheError({
           operation: 'read',
@@ -558,10 +564,14 @@ const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
   return true;
 };
 
-const isAllowCached = async (cacheKey: string, now = Date.now()): Promise<boolean> => {
+const isAllowCached = async (
+  path: Path.Path,
+  cacheKey: string,
+  now = Date.now()
+): Promise<boolean> => {
   if (isAllowCachedInMemory(cacheKey, now)) return true;
 
-  const cache = await readCacheFile();
+  const cache = await readCacheFile(path);
   const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
   if (expiresAt === undefined || expiresAt <= now) return false;
 
@@ -569,11 +579,15 @@ const isAllowCached = async (cacheKey: string, now = Date.now()): Promise<boolea
   return true;
 };
 
-const cacheAllowDecision = async (cacheKey: string, now = Date.now()): Promise<void> => {
+const cacheAllowDecision = async (
+  path: Path.Path,
+  cacheKey: string,
+  now = Date.now()
+): Promise<void> => {
   const expiresAt = now + ALLOW_FOR_DURATION_MS;
   allowDecisionMemoryCache.set(cacheKey, expiresAt);
 
-  await updateCacheFile(current => ({
+  await updateCacheFile(path, current => ({
     entries: current.entries,
     allowEntries: {
       ...current.allowEntries,
@@ -1045,9 +1059,10 @@ export const gateToolExecution = (params: GateParams) =>
       });
     }
 
+    const path = yield* Path.Path;
     const cacheKey = allowCacheKey(params);
     const hasCachedAllow = yield* Effect.tryPromise({
-      try: () => isAllowCached(cacheKey),
+      try: () => isAllowCached(path, cacheKey),
       catch: cause =>
         new ToolPermissionsCacheError({
           operation: 'read',
@@ -1093,7 +1108,7 @@ export const gateToolExecution = (params: GateParams) =>
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
       yield* Effect.tryPromise({
-        try: () => cacheAllowDecision(cacheKey),
+        try: () => cacheAllowDecision(path, cacheKey),
         catch: cause =>
           new ToolPermissionsCacheError({
             operation: 'write',
