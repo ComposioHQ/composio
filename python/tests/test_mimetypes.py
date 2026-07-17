@@ -33,9 +33,11 @@ class TestGuess:
         """A known extension resolves to its MIME type."""
         assert guess(filename) == expected
 
-    def test_extension_lookup_is_case_sensitive(self) -> None:
-        """The extension table is lower-case, so an upper-case suffix misses."""
-        assert guess("photo.PNG") == _default
+    def test_extension_lookup_is_case_insensitive(self) -> None:
+        """Uppercase extensions resolve the same as lowercase."""
+        assert guess("photo.PNG") == "image/png"
+        assert guess("report.PDF") == "application/pdf"
+        assert guess("style.CSS") == "text/css"
 
     def test_unknown_extension_returns_default(self) -> None:
         assert guess("file.unknownext") == _default
