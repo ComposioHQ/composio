@@ -1,5 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Either, Option } from 'effect';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -43,23 +44,21 @@ export const triggersCmd$Create = Command.make(
 
       let parsedTriggerConfig: Record<string, unknown> | undefined;
       if (Option.isSome(triggerConfig)) {
-        // eslint-disable-next-line no-restricted-syntax -- the catch branch yields TerminalUI error/step messages, which Effect.try's catch callback cannot do inside this generator
-        try {
-          const parsed: unknown = JSON.parse(triggerConfig.value);
-          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        const parsed = parseJsonRecord(triggerConfig.value);
+        if (Either.isLeft(parsed)) {
+          if (parsed.left.reason === 'not-a-record') {
             yield* ui.log.error(
               '--trigger-config must be a JSON object (e.g. \'{"key":"value"}\').'
             );
-            return;
+          } else {
+            yield* ui.log.error('Invalid JSON in --trigger-config. Please provide valid JSON.');
+            yield* ui.log.step(
+              'Example:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
+            );
           }
-          parsedTriggerConfig = parsed as Record<string, unknown>;
-        } catch {
-          yield* ui.log.error('Invalid JSON in --trigger-config. Please provide valid JSON.');
-          yield* ui.log.step(
-            'Example:\n> composio dev triggers create "GMAIL_NEW_GMAIL_MESSAGE" --trigger-config \'{"label":"inbox"}\''
-          );
           return;
         }
+        parsedTriggerConfig = parsed.right;
       }
 
       const createdOpt = yield* ui

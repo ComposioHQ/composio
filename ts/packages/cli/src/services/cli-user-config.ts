@@ -48,7 +48,7 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
 
 const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
 
-// The sync resolvers below run from non-Effect call sites (dev.cmd messages,
+// The sync resolvers below run from non-Effect call sites (the
 // run-helpers-runtime child process), so the Path service is materialized once
 // from its pure default layer instead of being yielded from context.
 const syncPath = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
@@ -60,6 +60,17 @@ export const resolveCliConfigDirectorySync = (): string =>
 
 export const resolveCliConfigPathSync = (): string =>
   syncPath.join(resolveCliConfigDirectorySync(), constants.CLI_CONFIG_FILE_NAME);
+
+/**
+ * Effect-based resolver for the CLI config file path. Prefer this over
+ * `resolveCliConfigPathSync` inside Effect-hosted code: it honors the
+ * COMPOSIO_CACHE_DIR override via `effect/Config` and the NodeOs service.
+ */
+export const resolveCliConfigPath = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const configDir = yield* setupCacheDir;
+  return path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
+});
 
 export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
   ComposioCliUserConfig,
@@ -93,11 +104,9 @@ export const ComposioCliUserConfigLive = Layer.effect(
   ComposioCliUserConfig,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
     const version = yield* getVersion;
     const channel = detectReleaseChannel(version);
-    const configDir = yield* setupCacheDir;
-    const jsonConfigPath = path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
+    const jsonConfigPath = yield* resolveCliConfigPath;
 
     let rawConfig = DEFAULT_CLI_USER_CONFIG;
 

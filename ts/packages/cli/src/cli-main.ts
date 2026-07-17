@@ -42,8 +42,9 @@ import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overri
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RequiredLayer = Layer.Layer<any, any, never>;
+// Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
+// produced context and error type while still pinning the requirements (RIn) to `never`.
+type RequiredLayer = Layer.Layer<never, unknown, never>;
 
 export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
 

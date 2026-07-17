@@ -1,11 +1,5 @@
 import http from 'node:http';
-// The permissions cache is read/written by plain async helpers serialized on a
-// promise write queue (atomic temp-file rename), shared with the node:http
-// browser-approval flow — none of it runs inside the Effect runtime. The Path
-// service instance is resolved in the Effect entry points and passed down.
-// eslint-disable-next-line no-restricted-imports -- fs is used by the promise-queue cache helpers outside the Effect runtime
-import fs from 'node:fs/promises';
-import { Path } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
 import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
@@ -193,64 +187,67 @@ const pruneAllowEntries = (
     entry => typeof entry.expiresAt === 'number' && entry.expiresAt > now
   );
 
-const readCacheFile = async (path: Path.Path): Promise<CacheFile> => {
-  // eslint-disable-next-line no-restricted-syntax -- plain async helper on the promise write queue, outside the Effect runtime; a missing or unreadable cache file degrades to an empty cache
-  try {
-    const raw = await fs.readFile(cachePath(path), 'utf8');
-    const parsed = decodeCacheFileTolerant(raw);
-    return {
-      entries: parsed.entries,
-      allowEntries: pruneAllowEntries(parsed.allowEntries),
-    };
-  } catch {
-    return { entries: {} };
-  }
-};
+// A missing or unreadable cache file degrades to an empty cache.
+const readCacheFile = (fs: FileSystem.FileSystem, path: Path.Path): Effect.Effect<CacheFile> =>
+  fs.readFileString(cachePath(path)).pipe(
+    Effect.map((raw): CacheFile => {
+      const parsed = decodeCacheFileTolerant(raw);
+      return {
+        entries: parsed.entries,
+        allowEntries: pruneAllowEntries(parsed.allowEntries),
+      };
+    }),
+    Effect.orElseSucceed((): CacheFile => ({ entries: {} }))
+  );
 
-const writeCacheFile = async (path: Path.Path, cache: CacheFile): Promise<void> => {
-  const targetPath = cachePath(path);
-  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+const writeCacheFile = (fs: FileSystem.FileSystem, path: Path.Path, cache: CacheFile) =>
+  Effect.gen(function* () {
+    const targetPath = cachePath(path);
+    yield* fs.makeDirectory(path.dirname(targetPath), { recursive: true });
 
-  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
-  // eslint-disable-next-line no-restricted-syntax -- atomic write cleanup in a plain async helper outside the Effect runtime: remove the temp file on failure, then rethrow to the promise queue
-  try {
-    await fs.writeFile(
-      tempPath,
-      `${JSON.stringify(
-        {
-          entries: cache.entries,
-          allowEntries: pruneAllowEntries(cache.allowEntries),
-        } satisfies CacheFile,
-        null,
-        2
-      )}\n`,
-      'utf8'
-    );
-    await fs.rename(tempPath, targetPath);
-  } catch (error) {
-    await fs.rm(tempPath, { force: true }).catch(() => undefined);
-    throw error;
-  }
-};
-
-let cacheWriteQueue: Promise<void> = Promise.resolve();
-
-const updateCacheFile = async (
-  path: Path.Path,
-  update: (current: CacheFile) => CacheFile | Promise<CacheFile>
-): Promise<void> => {
-  const previous = cacheWriteQueue.catch(() => undefined);
-  const next = previous.then(async () => {
-    const current = await readCacheFile(path);
-    await writeCacheFile(path, await update(current));
+    const tempPath = `${targetPath}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
+    // Atomic write: on failure the temp file is dropped (best effort) and the
+    // original error is surfaced.
+    yield* fs
+      .writeFileString(
+        tempPath,
+        `${JSON.stringify(
+          {
+            entries: cache.entries,
+            allowEntries: pruneAllowEntries(cache.allowEntries),
+          } satisfies CacheFile,
+          null,
+          2
+        )}\n`
+      )
+      .pipe(
+        Effect.andThen(fs.rename(tempPath, targetPath)),
+        Effect.onError(() => fs.remove(tempPath, { force: true }).pipe(Effect.ignore))
+      );
   });
 
-  cacheWriteQueue = next.catch(() => undefined);
-  await next;
-};
+// Serializes the read-modify-write cycles on the cache file so concurrent
+// writers cannot interleave (the same role the previous promise write queue
+// played for the plain async helpers).
+const cacheWriteSemaphore = Effect.unsafeMakeSemaphore(1);
 
-const writeCacheEntry = async (path: Path.Path, entry: ConsumerPermissionSnapshot): Promise<void> =>
-  updateCacheFile(path, current => ({
+const updateCacheFile = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  update: (current: CacheFile) => CacheFile
+) =>
+  cacheWriteSemaphore.withPermits(1)(
+    readCacheFile(fs, path).pipe(
+      Effect.flatMap(current => writeCacheFile(fs, path, update(current)))
+    )
+  );
+
+const writeCacheEntry = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  entry: ConsumerPermissionSnapshot
+) =>
+  updateCacheFile(fs, path, current => ({
     entries: {
       ...current.entries,
       [cacheKey(entry)]: entry,
@@ -258,17 +255,16 @@ const writeCacheEntry = async (path: Path.Path, entry: ConsumerPermissionSnapsho
     allowEntries: current.allowEntries,
   }));
 
-const readCachedEntry = async (
+const readCachedEntry = (
+  fs: FileSystem.FileSystem,
   path: Path.Path,
   params: {
     orgId: string;
     projectId: string;
     consumerUserId: string;
   }
-): Promise<ConsumerPermissionSnapshot | undefined> => {
-  const cache = await readCacheFile(path);
-  return cache.entries[cacheKey(params)];
-};
+): Effect.Effect<ConsumerPermissionSnapshot | undefined> =>
+  readCacheFile(fs, path).pipe(Effect.map(cache => cache.entries[cacheKey(params)]));
 
 const isFreshForAccounts = (
   entry: ConsumerPermissionSnapshot | undefined,
@@ -330,6 +326,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
@@ -417,17 +414,16 @@ export const refreshConsumerPermissionSnapshot = (params: {
     // A fail-closed snapshot is not persisted, so a healthy fetch replaces it
     // on the next command instead of pinning ask_every_call for the TTL.
     if (!resolved.resolveFailed) {
-      yield* Effect.tryPromise({
-        try: () => writeCacheEntry(path, snapshot),
-        catch: cause =>
-          new ToolPermissionsCacheError({
-            operation: 'write',
-            message: 'Failed to write the tool permissions cache.',
-            cause,
-          }),
-      }).pipe(
-        Effect.catchTag('services/ToolPermissionsCacheError', error =>
-          Effect.logDebug('Failed to write the tool permissions cache', error)
+      yield* writeCacheEntry(fs, path, snapshot).pipe(
+        Effect.catchAll(cause =>
+          Effect.logDebug(
+            'Failed to write the tool permissions cache',
+            new ToolPermissionsCacheError({
+              operation: 'write',
+              message: 'Failed to write the tool permissions cache.',
+              cause,
+            })
+          )
         )
       );
     }
@@ -448,17 +444,12 @@ export const getConsumerPermissionSnapshot = (params: {
   readonly connectedAccountIds?: ReadonlyArray<string>;
 }) =>
   Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const connectedAccountIds = uniq(params.connectedAccountIds ?? []);
-    const cached = yield* Effect.tryPromise({
-      try: () => readCachedEntry(path, params),
-      catch: cause =>
-        new ToolPermissionsCacheError({
-          operation: 'read',
-          message: 'Failed to read the tool permissions cache.',
-          cause,
-        }),
-    }).pipe(Effect.catchTag('services/ToolPermissionsCacheError', () => Effect.succeed(undefined)));
+    // Read failures are absorbed inside readCacheFile (empty cache), so an
+    // unreadable cache file behaves exactly like a cache miss here.
+    const cached = yield* readCachedEntry(fs, path, params);
 
     if (isFreshForAccounts(cached, connectedAccountIds)) {
       yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds }).pipe(
@@ -564,37 +555,44 @@ const isAllowCachedInMemory = (cacheKey: string, now = Date.now()): boolean => {
   return true;
 };
 
-const isAllowCached = async (
+const isAllowCached = (
+  fs: FileSystem.FileSystem,
   path: Path.Path,
   cacheKey: string,
   now = Date.now()
-): Promise<boolean> => {
-  if (isAllowCachedInMemory(cacheKey, now)) return true;
+): Effect.Effect<boolean> =>
+  Effect.suspend(() => {
+    if (isAllowCachedInMemory(cacheKey, now)) return Effect.succeed(true);
 
-  const cache = await readCacheFile(path);
-  const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
-  if (expiresAt === undefined || expiresAt <= now) return false;
+    return readCacheFile(fs, path).pipe(
+      Effect.map(cache => {
+        const expiresAt = cache.allowEntries?.[cacheKey]?.expiresAt;
+        if (expiresAt === undefined || expiresAt <= now) return false;
 
-  allowDecisionMemoryCache.set(cacheKey, expiresAt);
-  return true;
-};
+        allowDecisionMemoryCache.set(cacheKey, expiresAt);
+        return true;
+      })
+    );
+  });
 
-const cacheAllowDecision = async (
+const cacheAllowDecision = (
+  fs: FileSystem.FileSystem,
   path: Path.Path,
   cacheKey: string,
   now = Date.now()
-): Promise<void> => {
-  const expiresAt = now + ALLOW_FOR_DURATION_MS;
-  allowDecisionMemoryCache.set(cacheKey, expiresAt);
+) =>
+  Effect.suspend(() => {
+    const expiresAt = now + ALLOW_FOR_DURATION_MS;
+    allowDecisionMemoryCache.set(cacheKey, expiresAt);
 
-  await updateCacheFile(path, current => ({
-    entries: current.entries,
-    allowEntries: {
-      ...current.allowEntries,
-      [cacheKey]: { expiresAt },
-    },
-  }));
-};
+    return updateCacheFile(fs, path, current => ({
+      entries: current.entries,
+      allowEntries: {
+        ...current.allowEntries,
+        [cacheKey]: { expiresAt },
+      },
+    }));
+  });
 
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"']/g, char => {
@@ -1059,17 +1057,12 @@ export const gateToolExecution = (params: GateParams) =>
       });
     }
 
+    const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const cacheKey = allowCacheKey(params);
-    const hasCachedAllow = yield* Effect.tryPromise({
-      try: () => isAllowCached(path, cacheKey),
-      catch: cause =>
-        new ToolPermissionsCacheError({
-          operation: 'read',
-          message: 'Failed to read the tool permissions allow cache.',
-          cause,
-        }),
-    }).pipe(Effect.catchTag('services/ToolPermissionsCacheError', () => Effect.succeed(false)));
+    // Read failures are absorbed inside readCacheFile (empty cache), so an
+    // unreadable allow cache behaves exactly like "no cached allow decision".
+    const hasCachedAllow = yield* isAllowCached(fs, path, cacheKey);
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
     }
@@ -1107,17 +1100,16 @@ export const gateToolExecution = (params: GateParams) =>
     }
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
-      yield* Effect.tryPromise({
-        try: () => cacheAllowDecision(path, cacheKey),
-        catch: cause =>
-          new ToolPermissionsCacheError({
-            operation: 'write',
-            message: 'Failed to cache the tool permission allow decision.',
-            cause,
-          }),
-      }).pipe(
-        Effect.catchTag('services/ToolPermissionsCacheError', error =>
-          Effect.logDebug('Failed to cache tool permission allow decision', error)
+      yield* cacheAllowDecision(fs, path, cacheKey).pipe(
+        Effect.catchAll(cause =>
+          Effect.logDebug(
+            'Failed to cache tool permission allow decision',
+            new ToolPermissionsCacheError({
+              operation: 'write',
+              message: 'Failed to cache the tool permission allow decision.',
+              cause,
+            })
+          )
         )
       );
     }

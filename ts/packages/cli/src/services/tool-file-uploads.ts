@@ -1,13 +1,12 @@
 // This module's upload pipeline is plain async/await around the raw
-// @composio/client promise API, so the Effect-scoped @effect/platform
-// FileSystem service is not reachable from these helpers. The Path service
-// instance is resolved by the Effect caller and passed in as a parameter.
-// eslint-disable-next-line no-restricted-imports -- fs.readFile runs in promise-based upload helpers outside the Effect runtime
-import fs from 'node:fs/promises';
-import type { Path } from '@effect/platform';
+// @composio/client promise API. The Effect caller resolves the platform
+// FileSystem and Path services and passes the instances in as parameters;
+// `readLocalFileBytes` below is the single point where a FileSystem effect
+// is run to completion inside this promise pipeline.
+import type { FileSystem, Path } from '@effect/platform';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';
-import { Data, Predicate } from 'effect';
+import { Cause, Data, Effect, Exit, Predicate } from 'effect';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 
 type JsonSchema = Record<string, unknown>;
@@ -164,7 +163,18 @@ const readFileFromUrl = async (path: Path.Path, url: string) => {
   };
 };
 
-const readFileFromDisk = async (path: Path.Path, filePath: string) => {
+// Runs the FileSystem read to completion for the plain-async pipeline above.
+// A failed read rejects with the underlying platform error (not a FiberFailure
+// wrapper), matching this module's throw-based error contract.
+const readLocalFileBytes = (fs: FileSystem.FileSystem, filePath: string): Promise<Uint8Array> =>
+  Effect.runPromiseExit(fs.readFile(filePath)).then(exit =>
+    Exit.match(exit, {
+      onFailure: cause => Promise.reject<Uint8Array>(Cause.squash(cause)),
+      onSuccess: bytes => Promise.resolve(bytes),
+    })
+  );
+
+const readFileFromDisk = async (fs: FileSystem.FileSystem, path: Path.Path, filePath: string) => {
   // Enforce the sensitive-path denylist at the lowest-level local read, so any
   // caller of this reader (not just `uploadToolInputFiles`) is protected. This
   // is the single canonical guard shared with `@composio/core`; without it the
@@ -184,13 +194,19 @@ const readFileFromDisk = async (path: Path.Path, filePath: string) => {
       'pass the copy instead.',
   });
   return {
-    bytes: new Uint8Array(await fs.readFile(filePath)),
+    // Copy into a fresh ArrayBuffer-backed view: `fetch` bodies reject the
+    // wider ArrayBufferLike-backed Uint8Array that FileSystem returns.
+    bytes: new Uint8Array(await readLocalFileBytes(fs, filePath)),
     fileName: path.basename(filePath),
     mimeType: 'application/octet-stream',
   };
 };
 
-const readUploadSource = async (path: Path.Path, file: string | File) => {
+const readUploadSource = async (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  file: string | File
+) => {
   if (isFileLike(file)) {
     return {
       bytes: new Uint8Array(await file.arrayBuffer()),
@@ -204,7 +220,7 @@ const readUploadSource = async (path: Path.Path, file: string | File) => {
   }
 
   if (typeof file === 'string') {
-    return readFileFromDisk(path, file);
+    return readFileFromDisk(fs, path, file);
   }
 
   throw new ToolFileUploadError({
@@ -214,13 +230,14 @@ const readUploadSource = async (path: Path.Path, file: string | File) => {
 };
 
 const uploadFile = async (params: {
+  readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly file: string | File;
   readonly toolSlug: string;
   readonly toolkitSlug: string;
   readonly client: RawComposioClient;
 }) => {
-  const fileData = await readUploadSource(params.path, params.file);
+  const fileData = await readUploadSource(params.fs, params.path, params.file);
   const { createHash } = await import('node:crypto');
   const md5 = createHash('md5').update(fileData.bytes).digest('hex');
   const presigned = await params.client.files.createPresignedURL({
@@ -259,6 +276,7 @@ const hydrateFileUploads = async (
   value: unknown,
   schema: JsonSchema | undefined,
   ctx: {
+    readonly fs: FileSystem.FileSystem;
     readonly path: Path.Path;
     readonly toolSlug: string;
     readonly toolkitSlug: string;
@@ -271,6 +289,7 @@ const hydrateFileUploads = async (
     }
 
     return uploadFile({
+      fs: ctx.fs,
       path: ctx.path,
       file: value,
       toolSlug: ctx.toolSlug,
@@ -317,6 +336,7 @@ const hydrateFileUploads = async (
 };
 
 export const uploadToolInputFiles = async (params: {
+  readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly toolSlug: string;
   readonly arguments_: Record<string, unknown>;
@@ -329,6 +349,7 @@ export const uploadToolInputFiles = async (params: {
   }
 
   const hydrated = await hydrateFileUploads(params.arguments_, params.inputSchema, {
+    fs: params.fs,
     path: params.path,
     toolSlug: params.toolSlug,
     toolkitSlug: params.toolkitSlug ?? toolkitFromToolSlug(params.toolSlug) ?? 'unknown',

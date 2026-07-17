@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from '@effect/vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Effect } from 'effect';
-import { withHttpServer } from 'test/__utils__/http-server';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import { Effect, Layer } from 'effect';
+import { withHttpServerEffect } from 'test/__utils__/http-server';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import {
   createUpdateChecker,
@@ -13,6 +14,9 @@ import {
 } from 'src/services/update-check';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
+
+/** Platform services required by the update checker's Effects. */
+const PlatformLayers = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
 
 /** Create a temp directory that is cleaned up after each test. */
 let tempDir: string;
@@ -160,7 +164,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('does nothing when cached version equals current version', () =>
@@ -172,7 +176,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('does nothing when cached version is older than current', () =>
@@ -184,7 +188,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('prints upgrade hint when cached version is newer', () =>
@@ -199,7 +203,7 @@ describe('showUpdateNotice', () => {
       expect(output[0]).toContain('Update available');
       expect(output[0]).toContain('0.3.0');
       expect(output[0]).toContain('composio upgrade');
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('does not print upgrade hint in non-interactive environments', () =>
@@ -211,7 +215,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output, false));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('silently ignores corrupt state file', () =>
@@ -224,7 +228,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 
   it.effect('does nothing when cached version is not valid semver', () =>
@@ -236,7 +240,7 @@ describe('showUpdateNotice', () => {
       yield* showUpdateNotice(makeTerminal(output));
 
       expect(output).toEqual([]);
-    })
+    }).pipe(Effect.provide(PlatformLayers))
   );
 });
 
@@ -244,8 +248,8 @@ describe('showUpdateNotice', () => {
 
 describe('checkForUpdate', () => {
   // Pin the wall clock so the throttle math in checkForUpdate is deterministic.
-  // Only Date is faked: the SUT drives fire-and-forget promise chains, which
-  // need real timers/microtasks to settle.
+  // Only Date is faked: the SUT awaits real fetch promises through
+  // Effect.tryPromise, which need real timers/microtasks to settle.
   const pinnedNow = new Date('2026-01-01T00:00:00.000Z');
   const staleLastChecked = '2025-12-30T23:00:00.000Z'; // 25 hours before pinnedNow
 
@@ -258,224 +262,255 @@ describe('checkForUpdate', () => {
     vi.useRealTimers();
   });
 
-  it('skips fetch when cache is fresh', () => {
-    const fetchFn = vi.fn();
-    const config = makeConfig({ fetchFn: fetchFn as unknown as typeof fetch });
-    writeState(config, {
-      lastChecked: new Date().toISOString(),
-      latestVersion: '0.2.0',
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
+  it.effect('skips fetch when cache is fresh', () =>
+    Effect.gen(function* () {
+      const fetchFn = vi.fn();
+      const config = makeConfig({ fetchFn: fetchFn as unknown as typeof fetch });
+      writeState(config, {
+        lastChecked: new Date().toISOString(),
+        latestVersion: '0.2.0',
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
 
-    const result = checkForUpdate();
+      yield* checkForUpdate;
 
-    expect(result).toBeUndefined(); // returned early, no promise
-    expect(fetchFn).not.toHaveBeenCalled();
-  });
+      expect(fetchFn).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(PlatformLayers))
+  );
 
-  it('fetches when cache is stale', async () => {
-    const stale = staleLastChecked;
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
+  it.effect('fetches when cache is stale', () =>
+    Effect.gen(function* () {
+      const stale = staleLastChecked;
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
+        }) as unknown as typeof fetch,
+      });
+      writeState(config, { lastChecked: stale, latestVersion: '0.2.0' });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      expect(config.fetchFn).toHaveBeenCalledOnce();
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.3.0');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('fetches when no cache exists', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.4.0', '0.3.0'])),
+        }) as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      expect(existsSync(config.stateFile)).toBe(true);
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.4.0');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('fetches when cache file is corrupt', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.5.0'])),
+        }) as unknown as typeof fetch,
+      });
+      mkdirSync(dirname(config.stateFile), { recursive: true });
+      writeFileSync(config.stateFile, 'garbage');
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.5.0');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect(
+    'still writes lastChecked when no CLI releases with the required binary are found',
+    () =>
+      Effect.gen(function* () {
+        const config = makeConfig({
+          fetchFn: vi.fn().mockResolvedValue({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                {
+                  tag_name: '@composio/core@1.0.0',
+                  assets: [{ name: 'composio-darwin-aarch64.zip' }],
+                },
+              ]),
+          }) as unknown as typeof fetch,
+        });
+        const { checkForUpdate } = createUpdateChecker(config);
+
+        yield* checkForUpdate;
+
+        expect(existsSync(config.stateFile)).toBe(true);
+        const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+        expect(state.lastChecked).toBeDefined();
+        // Falls back to currentVersion since no previous state and no matching releases found
+        expect(state.latestVersion).toBe(config.currentVersion);
+      }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect(
+    'preserves previous latestVersion when no CLI releases with the required binary are found',
+    () =>
+      Effect.gen(function* () {
+        const config = makeConfig({
+          fetchFn: vi.fn().mockResolvedValue({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                {
+                  tag_name: '@composio/core@1.0.0',
+                  assets: [{ name: 'composio-darwin-aarch64.zip' }],
+                },
+              ]),
+          }) as unknown as typeof fetch,
+        });
+        const stale = staleLastChecked;
+        writeState(config, { lastChecked: stale, latestVersion: '0.3.0' });
+        const { checkForUpdate } = createUpdateChecker(config);
+
+        yield* checkForUpdate;
+
+        const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+        expect(state.latestVersion).toBe('0.3.0');
+        expect(new Date(state.lastChecked).getTime()).toBeGreaterThan(new Date(stale).getTime());
+      }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('writes lastChecked on HTTP errors to prevent retry loops', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+        }) as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      // Should not fail
+      yield* checkForUpdate;
+
+      expect(existsSync(config.stateFile)).toBe(true);
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.lastChecked).toBeDefined();
+      expect(state.latestVersion).toBe(config.currentVersion);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('writes lastChecked on network errors to prevent retry loops', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockRejectedValue(new Error('DNS failed')) as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
+      expect(existsSync(config.stateFile)).toBe(true);
+      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+      expect(state.lastChecked).toBeDefined();
+      expect(state.latestVersion).toBe(config.currentVersion);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('sends Authorization header when accessToken is set', () =>
+    Effect.gen(function* () {
+      const fetchFn = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
-      }) as unknown as typeof fetch,
-    });
-    writeState(config, { lastChecked: stale, latestVersion: '0.2.0' });
-    const { checkForUpdate } = createUpdateChecker(config);
+        json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
+      });
+      const config = makeConfig({
+        accessToken: 'ghp_secret123',
+        fetchFn: fetchFn as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
 
-    await checkForUpdate();
+      yield* checkForUpdate;
 
-    expect(config.fetchFn).toHaveBeenCalledOnce();
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.latestVersion).toBe('0.3.0');
-  });
+      expect(fetchFn).toHaveBeenCalledOnce();
+      const [, init] = fetchFn.mock.calls[0];
+      expect(init.headers.Authorization).toBe('Bearer ghp_secret123');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
 
-  it('fetches when no cache exists', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
+  it.effect('does not send Authorization header when accessToken is undefined', () =>
+    Effect.gen(function* () {
+      const fetchFn = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(makeReleasesPayload(['0.4.0', '0.3.0'])),
-      }) as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
+        json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
+      });
+      const config = makeConfig({
+        accessToken: undefined,
+        fetchFn: fetchFn as unknown as typeof fetch,
+      });
+      const { checkForUpdate } = createUpdateChecker(config);
 
-    await checkForUpdate();
+      yield* checkForUpdate;
 
-    expect(existsSync(config.stateFile)).toBe(true);
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.latestVersion).toBe('0.4.0');
-  });
-
-  it('fetches when cache file is corrupt', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(makeReleasesPayload(['0.5.0'])),
-      }) as unknown as typeof fetch,
-    });
-    mkdirSync(dirname(config.stateFile), { recursive: true });
-    writeFileSync(config.stateFile, 'garbage');
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.latestVersion).toBe('0.5.0');
-  });
-
-  it('still writes lastChecked when no CLI releases with the required binary are found', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            { tag_name: '@composio/core@1.0.0', assets: [{ name: 'composio-darwin-aarch64.zip' }] },
-          ]),
-      }) as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    expect(existsSync(config.stateFile)).toBe(true);
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.lastChecked).toBeDefined();
-    // Falls back to currentVersion since no previous state and no matching releases found
-    expect(state.latestVersion).toBe(config.currentVersion);
-  });
-
-  it('preserves previous latestVersion when no CLI releases with the required binary are found', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            { tag_name: '@composio/core@1.0.0', assets: [{ name: 'composio-darwin-aarch64.zip' }] },
-          ]),
-      }) as unknown as typeof fetch,
-    });
-    const stale = staleLastChecked;
-    writeState(config, { lastChecked: stale, latestVersion: '0.3.0' });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.latestVersion).toBe('0.3.0');
-    expect(new Date(state.lastChecked).getTime()).toBeGreaterThan(new Date(stale).getTime());
-  });
-
-  it('writes lastChecked on HTTP errors to prevent retry loops', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-      }) as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    // Should not throw
-    await checkForUpdate();
-
-    expect(existsSync(config.stateFile)).toBe(true);
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.lastChecked).toBeDefined();
-    expect(state.latestVersion).toBe(config.currentVersion);
-  });
-
-  it('writes lastChecked on network errors to prevent retry loops', async () => {
-    const config = makeConfig({
-      fetchFn: vi.fn().mockRejectedValue(new Error('DNS failed')) as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    expect(existsSync(config.stateFile)).toBe(true);
-    const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-    expect(state.lastChecked).toBeDefined();
-    expect(state.latestVersion).toBe(config.currentVersion);
-  });
-
-  it('sends Authorization header when accessToken is set', async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
-    });
-    const config = makeConfig({
-      accessToken: 'ghp_secret123',
-      fetchFn: fetchFn as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    expect(fetchFn).toHaveBeenCalledOnce();
-    const [, init] = fetchFn.mock.calls[0];
-    expect(init.headers.Authorization).toBe('Bearer ghp_secret123');
-  });
-
-  it('does not send Authorization header when accessToken is undefined', async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(makeReleasesPayload(['0.2.1'])),
-    });
-    const config = makeConfig({
-      accessToken: undefined,
-      fetchFn: fetchFn as unknown as typeof fetch,
-    });
-    const { checkForUpdate } = createUpdateChecker(config);
-
-    await checkForUpdate();
-
-    const [, init] = fetchFn.mock.calls[0];
-    expect(init.headers.Authorization).toBeUndefined();
-  });
+      const [, init] = fetchFn.mock.calls[0];
+      expect(init.headers.Authorization).toBeUndefined();
+    }).pipe(Effect.provide(PlatformLayers))
+  );
 });
 
 // ── Integration: real HTTP server ───────────────────────────────────────
 
 describe('checkForUpdate with real HTTP', () => {
-  it('fetches from a real server and writes state', async () => {
-    await withHttpServer(
+  it.effect('fetches from a real server and writes state', () =>
+    withHttpServerEffect(
       (_req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(makeReleasesPayload(['0.1.26', '0.2.0', '0.2.1'])));
       },
-      async baseUrl => {
-        const config = makeConfig({ releasesUrl: baseUrl, fetchFn: fetch });
-        const { checkForUpdate } = createUpdateChecker(config);
+      baseUrl =>
+        Effect.gen(function* () {
+          const config = makeConfig({ releasesUrl: baseUrl, fetchFn: fetch });
+          const { checkForUpdate } = createUpdateChecker(config);
 
-        await checkForUpdate();
+          yield* checkForUpdate;
 
-        const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-        expect(state.latestVersion).toBe('0.2.1');
-      }
-    );
-  });
+          const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
+          expect(state.latestVersion).toBe('0.2.1');
+        })
+    ).pipe(Effect.provide(PlatformLayers))
+  );
 
-  it('passes Authorization header to the server', async () => {
+  it.effect('passes Authorization header to the server', () => {
     let receivedAuth: string | undefined;
 
-    await withHttpServer(
+    return withHttpServerEffect(
       (req, res) => {
         receivedAuth = req.headers.authorization;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(makeReleasesPayload(['0.2.1'])));
       },
-      async baseUrl => {
-        const config = makeConfig({
-          releasesUrl: baseUrl,
-          accessToken: 'ghp_test_token',
-          fetchFn: fetch,
-        });
-        const { checkForUpdate } = createUpdateChecker(config);
+      baseUrl =>
+        Effect.gen(function* () {
+          const config = makeConfig({
+            releasesUrl: baseUrl,
+            accessToken: 'ghp_test_token',
+            fetchFn: fetch,
+          });
+          const { checkForUpdate } = createUpdateChecker(config);
 
-        await checkForUpdate();
+          yield* checkForUpdate;
 
-        expect(receivedAuth).toBe('Bearer ghp_test_token');
-      }
-    );
+          expect(receivedAuth).toBe('Bearer ghp_test_token');
+        })
+    ).pipe(Effect.provide(PlatformLayers));
   });
 });

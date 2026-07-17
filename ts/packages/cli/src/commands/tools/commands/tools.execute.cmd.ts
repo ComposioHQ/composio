@@ -282,14 +282,14 @@ const ciRedactReplacer = (_key: string, value: unknown): unknown => {
   return value;
 };
 
-const formatUnknownObject = (value: object): string => {
-  // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws synchronously on circular or BigInt-bearing API payloads; this plain string formatter must stay synchronous for its callers, so it falls back to util.inspect instead of becoming an Effect
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return util.inspect(value, { depth: 5, breakLength: 120 });
-  }
-};
+// JSON.stringify throws synchronously on circular or BigInt-bearing API
+// payloads; fall back to util.inspect so the formatter stays a plain string
+// function for its callers.
+const formatUnknownObject = (value: object): string =>
+  Either.getOrElse(
+    Either.try(() => JSON.stringify(value, null, 2)),
+    () => util.inspect(value, { depth: 5, breakLength: 120 })
+  );
 
 const redactRequestId = (value: object): object => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

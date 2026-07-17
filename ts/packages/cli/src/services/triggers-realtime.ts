@@ -1,4 +1,4 @@
-import { Data, Effect, Option, Runtime, Schema } from 'effect';
+import { Data, Effect, Either, Option, Runtime, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
@@ -191,16 +191,16 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 current.receivedFinal &&
                 current.chunks.length === Object.keys(current.chunks).length
               ) {
-                // eslint-disable-next-line no-restricted-syntax -- synchronous Pusher channel.bind callback with no Effect runtime in scope: JSON.parse of a reassembled chunk payload may throw, the event is dropped and the finally clears the buffer
-                try {
-                  const parsed = decodeRawRealtimeEvent(JSON.parse(current.chunks.join('')));
-                  if (Option.isSome(parsed)) {
-                    params.onEvent(parsed.value);
-                  }
-                } catch {
-                  // Silently discard events that fail to parse after chunk reassembly
-                } finally {
-                  chunkedEvents.delete(typed.id);
+                const reassembled = current.chunks.join('');
+                chunkedEvents.delete(typed.id);
+                // Silently discard events that fail to parse after chunk
+                // reassembly; the buffer entry is already cleared either way.
+                const parsed = Either.try((): unknown => JSON.parse(reassembled)).pipe(
+                  Either.getRight,
+                  Option.flatMap(decodeRawRealtimeEvent)
+                );
+                if (Option.isSome(parsed)) {
+                  params.onEvent(parsed.value);
                 }
               }
             });

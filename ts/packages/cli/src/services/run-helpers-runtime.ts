@@ -14,6 +14,7 @@ import { detectMaster, type MasterKind } from 'src/services/master-detector';
 import {
   isAcpInvokeError,
   parseJson,
+  type HelperDebugLog,
   type InvokeAgentNormalizedOptions,
 } from 'src/services/run-subagent-shared';
 import { invokeAcpSubAgent } from 'src/services/run-subagent-acp';
@@ -149,42 +150,328 @@ const encodeBase64 = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
-// eslint-disable-next-line max-lines-per-function
-export const installRunHelpers = async ({
-  cliPrefix,
-  helperContext = {},
-}: RunHelpersInstallParams): Promise<void> => {
-  // This preload runs in the user's child process, outside the CLI runtime.
-  // Resolve the live services once at that boundary and keep all writes centralized.
-  const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
-  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
-  const writeError = (line: string) => Effect.runSync(terminal.error(line));
+// ---------------------------------------------------------------------------
+// Pure helpers — no run-context captures, hoisted to module scope
+// ---------------------------------------------------------------------------
 
-  Reflect.set(globalThis, 'z', z);
-  Reflect.set(globalThis, 'zod', z);
+const executeId = () => crypto.randomUUID().slice(0, 8);
 
-  const perfDebugEnabled =
-    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
-  const toolDebugEnabled =
-    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
-    helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
-  const perfDebugStart = Date.now();
-  let perfDebugSeq = 0;
-  const executeId = () => crypto.randomUUID().slice(0, 8);
-  const proxySessionCache = new Map<string, string>();
-  const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
-    /\/$/,
-    ''
-  );
-  const sharedRunOutputDir =
-    typeof helperContext.runOutputDir === 'string' && helperContext.runOutputDir.length > 0
-      ? helperContext.runOutputDir
-      : null;
-  const sharedRunLogFilePath =
-    typeof helperContext.runLogFilePath === 'string' && helperContext.runLogFilePath.length > 0
-      ? helperContext.runLogFilePath
-      : null;
+const truncateDebugText = (value: unknown, max = 240) => {
+  const text = typeof value === 'string' ? value : String(value ?? '');
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+};
+
+const previewDebugValue = (value: unknown): string => {
+  if (value == null) return '';
+  if (typeof value === 'string') return truncateDebugText(value.replace(/\s+/g, ' ').trim());
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return `array(${value.length})`;
+  if (Predicate.isRecord(value)) {
+    const preferred = ['message', 'error', 'title', 'summary', 'brief', 'status'];
+    for (const key of preferred) {
+      const candidate = value[key];
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return truncateDebugText(candidate.trim());
+      }
+    }
+    return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
+  }
+  return truncateDebugText(String(value));
+};
+
+const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
+  switch (step) {
+    case 'subAgent.target':
+      return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;
+    case 'subAgent.acp.resolve':
+      return `[experimental_subAgent] ACP via ${details.source} (${details.target})`;
+    case 'subAgent.acp.initialized':
+      return `[experimental_subAgent] ACP initialized (${details.target})`;
+    case 'subAgent.acp.session':
+      return `[experimental_subAgent] session ready (${details.target})`;
+    case 'subAgent.acp.model':
+      return details.applied === true
+        ? `[experimental_subAgent] model=${details.model}`
+        : `[experimental_subAgent] model unchanged (${details.model})`;
+    case 'subAgent.acp.message': {
+      const text = previewDebugValue(details.text);
+      return text ? `[experimental_subAgent] ${text}` : null;
+    }
+    case 'subAgent.acp.thought': {
+      const text = previewDebugValue(details.text);
+      return text ? `[experimental_subAgent:thinking] ${text}` : null;
+    }
+    case 'subAgent.acp.tool_call': {
+      const locations = Array.isArray(details.locations) ? details.locations : [];
+      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
+      return `[experimental_subAgent:tool] ${details.status || 'pending'} ${
+        details.title || details.kind || 'tool'
+      }${where}`;
+    }
+    case 'subAgent.acp.tool_call_update': {
+      const locations = Array.isArray(details.locations) ? details.locations : [];
+      const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
+      const preview = previewDebugValue(details.rawOutput);
+      return `[experimental_subAgent:tool] ${details.status || 'update'} ${
+        details.title || details.toolCallId || details.kind || 'tool'
+      }${where}${preview ? ` -> ${preview}` : ''}`;
+    }
+    case 'subAgent.acp.plan': {
+      const entries = Array.isArray(details.entries)
+        ? details.entries.filter(Predicate.isRecord)
+        : [];
+      if (entries.length === 0) return '[experimental_subAgent:plan] updated';
+      const summary = entries
+        .slice(0, 3)
+        .map(entry => {
+          const status = typeof entry.status === 'string' ? entry.status : 'pending';
+          const content = typeof entry.content === 'string' ? entry.content : '';
+          return `${status}:${truncateDebugText(content, 48)}`;
+        })
+        .join(' | ');
+      return `[experimental_subAgent:plan] ${summary}`;
+    }
+    case 'subAgent.acp.fallback':
+      return `[experimental_subAgent] ACP fallback (${details.code})`;
+    case 'execute.prepare':
+      return `[execute] ${details.slug}`;
+    case 'search.prepare':
+      return `[search] ${truncateDebugText(details.query || '', 96)}`;
+    case 'proxy.request':
+      return `[proxy] ${details.method} ${truncateDebugText(details.endpoint || '', 96)}`;
+    case 'cli.result': {
+      const command = typeof details.command === 'string' ? details.command : 'cli';
+      const state = details.successful === false ? 'failed' : 'ok';
+      const preview = previewDebugValue(details.preview);
+      return `[${command}] ${state}${preview ? ` ${preview}` : ''}`;
+    }
+    case 'cli.error': {
+      const command = typeof details.command === 'string' ? details.command : 'cli';
+      const stderr = previewDebugValue(details.stderr);
+      return `[${command}] failed${stderr ? ` ${stderr}` : ''}`;
+    }
+    default:
+      return null;
+  }
+};
+
+const stringifyForPrompt = (value: unknown): string => {
+  if (value === undefined) return 'undefined';
+  if (value === null) return 'null';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+const attachPromptMethod = <T>(value: T): T => {
+  if (!Predicate.isRecord(value)) return value;
+  if (typeof value.prompt === 'function') return value;
+  Object.defineProperty(value, 'prompt', {
+    value: () => stringifyForPrompt('data' in value ? value.data : value),
+    enumerable: false,
+  });
+  return value;
+};
+
+const isPlainObjectForExecute = Predicate.isRecord;
+
+const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
+  if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
+  const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
+  const explicit: Record<string, string> = {
+    'text/plain': 'txt',
+    'application/json': 'json',
+    'application/pdf': 'pdf',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+  if (explicit[normalized]) return explicit[normalized];
+  const subtype = normalized.split('/')[1] || 'bin';
+  return subtype.includes('+') ? (subtype.split('+').pop() ?? 'bin') : subtype;
+};
+
+const describeDebugValue = (value: unknown) => {
+  if (Array.isArray(value)) return { type: 'array', length: value.length };
+  if (Predicate.isRecord(value)) {
+    return { type: 'object', keys: Object.keys(value).slice(0, 20) };
+  }
+  return {
+    type: typeof value,
+    value: typeof value === 'string' ? value.slice(0, 200) : (value ?? null),
+  };
+};
+
+const summarizeCliResultPreview = (result: RunCliResult): unknown => {
+  if (!Predicate.isRecord(result)) return result;
+  if ('data' in result && result.data !== undefined) return result.data;
+  if (typeof result.error === 'string' && result.error.trim().length > 0)
+    return result.error.trim();
+  return result;
+};
+
+const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
+  // eslint-disable-next-line no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
+  try {
+    const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
+    const parsed = decodeExperimentalSubagentConfig(raw);
+    const target = parsed.experimental_subagent?.target;
+    return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
+  } catch {
+    return 'auto';
+  }
+};
+
+const normalizeInvokeAgentOptions = (
+  options: Record<string, unknown> = {}
+): InvokeAgentNormalizedOptions => {
+  if (options == null || typeof options !== 'object' || Array.isArray(options)) {
+    throw new Error('experimental_subAgent() options must be an object when provided.');
+  }
+  if (options.schema !== undefined && options.jsonSchema !== undefined) {
+    throw new Error(
+      'experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.'
+    );
+  }
+  const requestedTarget = options.target;
+  if (
+    requestedTarget !== undefined &&
+    requestedTarget !== 'claude' &&
+    requestedTarget !== 'codex' &&
+    requestedTarget !== 'user'
+  ) {
+    throw new Error(
+      'experimental_subAgent() target must be "claude", "codex", or "user" when provided.'
+    );
+  }
+  const inputSchema = options.schema ?? options.jsonSchema;
+  let structuredSchema: Record<string, unknown> | undefined;
+  let zodSchema: z.ZodType | undefined;
+  if (inputSchema !== undefined) {
+    if (inputSchema instanceof z.ZodType) {
+      if (typeof z.toJSONSchema !== 'function') {
+        throw new Error(
+          'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
+        );
+      }
+      zodSchema = inputSchema;
+      const generatedSchema = z.toJSONSchema(inputSchema);
+      structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
+    } else if (Predicate.isRecord(inputSchema)) {
+      structuredSchema = inputSchema;
+    } else {
+      throw new Error('experimental_subAgent() schema must be a Zod schema or JSON Schema object.');
+    }
+  }
+  return {
+    ...(requestedTarget === undefined ? {} : { target: requestedTarget }),
+    ...(typeof options.model === 'string' ? { model: options.model } : {}),
+    ...(options.schema === undefined ? {} : { schema: options.schema }),
+    ...(options.jsonSchema === undefined ? {} : { jsonSchema: options.jsonSchema }),
+    ...(structuredSchema === undefined ? {} : { structuredSchema }),
+    ...(zodSchema === undefined ? {} : { zodSchema }),
+  };
+};
+
+const normalizeProxyToolkit = (toolkit: string) => {
+  if (typeof toolkit !== 'string' || toolkit.trim().length === 0) {
+    throw new Error('proxy() requires a non-empty toolkit string.');
+  }
+  return toolkit.trim();
+};
+
+const normalizeFetchHeaders = (headers: HeadersInit | undefined) => {
+  if (!headers) return [];
+  const normalized: Array<{ name: string; type: string; value: string }> = [];
+  new Headers(headers).forEach((value, name) => {
+    normalized.push({ name, type: 'header', value });
+  });
+  return normalized;
+};
+
+const normalizeFetchBody = async (body: unknown) => {
+  if (body === undefined || body === null) return undefined;
+  if (typeof body === 'string' || typeof body === 'number' || typeof body === 'boolean')
+    return body;
+  if (typeof Blob !== 'undefined' && body instanceof Blob) return await body.text();
+  if (body instanceof ArrayBuffer) return encodeBase64(new Uint8Array(body));
+  if (ArrayBuffer.isView(body)) {
+    return encodeBase64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength));
+  }
+  return body;
+};
+
+const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
+  if (typeof Request !== 'undefined' && input instanceof Request) {
+    throw new Error(
+      'proxy() does not support passing a Request instance yet. Pass a URL string and init instead.'
+    );
+  }
+  const endpoint = input instanceof URL ? input.toString() : input;
+  if (typeof endpoint !== 'string' || endpoint.trim().length === 0) {
+    throw new Error('proxy fetch requires a non-empty URL string or URL object.');
+  }
+  const method = typeof init.method === 'string' ? init.method.toUpperCase() : 'GET';
+  if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    throw new Error('proxy fetch only supports GET, POST, PUT, DELETE, PATCH.');
+  }
+  return {
+    endpoint: endpoint.trim(),
+    method,
+    parameters: normalizeFetchHeaders(init.headers),
+    body: await normalizeFetchBody(init.body),
+  };
+};
+
+const toProxyResponse = async (result: ProxyExecuteResponse) => {
+  const headers = new Headers(result?.headers || {});
+  if (result?.binary_data?.url) {
+    const binaryResponse = await fetch(result.binary_data.url);
+    binaryResponse.headers.forEach((value, key) => {
+      if (!headers.has(key)) headers.set(key, value);
+    });
+    return new Response(binaryResponse.body, {
+      status: result.status ?? binaryResponse.status,
+      headers,
+    });
+  }
+  if (result?.data === undefined || result?.data === null) {
+    return new Response(null, { status: result?.status ?? 200, headers });
+  }
+  if (typeof result.data === 'string') {
+    if (!headers.has('content-type')) headers.set('content-type', 'text/plain; charset=utf-8');
+    return new Response(result.data, { status: result.status ?? 200, headers });
+  }
+  if (!headers.has('content-type')) headers.set('content-type', 'application/json; charset=utf-8');
+  return new Response(JSON.stringify(result.data), { status: result.status ?? 200, headers });
+};
+
+// ---------------------------------------------------------------------------
+// Helper factories — capture the per-run context passed by installRunHelpers
+// ---------------------------------------------------------------------------
+
+type RunHelperLoggers = {
+  readonly perfDebugLog: (phase: string, label: string, details?: Record<string, unknown>) => void;
+  readonly helperDebugLog: HelperDebugLog;
+};
+
+const createRunHelperLoggers = (params: {
+  readonly helperContext: RunHelperContext;
+  readonly writeError: (line: string) => void;
+  readonly sharedRunLogFilePath: string | null;
+  readonly perfDebugEnabled: boolean;
+  readonly perfDebugStart: number;
+}): RunHelperLoggers => {
+  const { helperContext, writeError, sharedRunLogFilePath, perfDebugEnabled, perfDebugStart } =
+    params;
 
   const appendRunLogLine = (line: string) => {
     if (!sharedRunLogFilePath || line.length === 0) return;
@@ -198,112 +485,13 @@ export const installRunHelpers = async ({
     writeError(`[perf] ${JSON.stringify(payload)}`);
   };
 
-  const truncateDebugText = (value: unknown, max = 240) => {
-    const text = typeof value === 'string' ? value : String(value ?? '');
-    return text.length > max ? `${text.slice(0, max - 1)}…` : text;
-  };
-
-  const previewDebugValue = (value: unknown): string => {
-    if (value == null) return '';
-    if (typeof value === 'string') return truncateDebugText(value.replace(/\s+/g, ' ').trim());
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (Array.isArray(value)) return `array(${value.length})`;
-    if (Predicate.isRecord(value)) {
-      const preferred = ['message', 'error', 'title', 'summary', 'brief', 'status'];
-      for (const key of preferred) {
-        const candidate = value[key];
-        if (typeof candidate === 'string' && candidate.trim().length > 0) {
-          return truncateDebugText(candidate.trim());
-        }
-      }
-      return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
-    }
-    return truncateDebugText(String(value));
-  };
-
-  const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
-    switch (step) {
-      case 'subAgent.target':
-        return `[experimental_subAgent] triggered with ${details.resolvedTarget}`;
-      case 'subAgent.acp.resolve':
-        return `[experimental_subAgent] ACP via ${details.source} (${details.target})`;
-      case 'subAgent.acp.initialized':
-        return `[experimental_subAgent] ACP initialized (${details.target})`;
-      case 'subAgent.acp.session':
-        return `[experimental_subAgent] session ready (${details.target})`;
-      case 'subAgent.acp.model':
-        return details.applied === true
-          ? `[experimental_subAgent] model=${details.model}`
-          : `[experimental_subAgent] model unchanged (${details.model})`;
-      case 'subAgent.acp.message': {
-        const text = previewDebugValue(details.text);
-        return text ? `[experimental_subAgent] ${text}` : null;
-      }
-      case 'subAgent.acp.thought': {
-        const text = previewDebugValue(details.text);
-        return text ? `[experimental_subAgent:thinking] ${text}` : null;
-      }
-      case 'subAgent.acp.tool_call': {
-        const locations = Array.isArray(details.locations) ? details.locations : [];
-        const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-        return `[experimental_subAgent:tool] ${details.status || 'pending'} ${
-          details.title || details.kind || 'tool'
-        }${where}`;
-      }
-      case 'subAgent.acp.tool_call_update': {
-        const locations = Array.isArray(details.locations) ? details.locations : [];
-        const where = locations.length > 0 ? ` ${locations.slice(0, 2).join(', ')}` : '';
-        const preview = previewDebugValue(details.rawOutput);
-        return `[experimental_subAgent:tool] ${details.status || 'update'} ${
-          details.title || details.toolCallId || details.kind || 'tool'
-        }${where}${preview ? ` -> ${preview}` : ''}`;
-      }
-      case 'subAgent.acp.plan': {
-        const entries = Array.isArray(details.entries)
-          ? details.entries.filter(Predicate.isRecord)
-          : [];
-        if (entries.length === 0) return '[experimental_subAgent:plan] updated';
-        const summary = entries
-          .slice(0, 3)
-          .map(entry => {
-            const status = typeof entry.status === 'string' ? entry.status : 'pending';
-            const content = typeof entry.content === 'string' ? entry.content : '';
-            return `${status}:${truncateDebugText(content, 48)}`;
-          })
-          .join(' | ');
-        return `[experimental_subAgent:plan] ${summary}`;
-      }
-      case 'subAgent.acp.fallback':
-        return `[experimental_subAgent] ACP fallback (${details.code})`;
-      case 'execute.prepare':
-        return `[execute] ${details.slug}`;
-      case 'search.prepare':
-        return `[search] ${truncateDebugText(details.query || '', 96)}`;
-      case 'proxy.request':
-        return `[proxy] ${details.method} ${truncateDebugText(details.endpoint || '', 96)}`;
-      case 'cli.result': {
-        const command = typeof details.command === 'string' ? details.command : 'cli';
-        const state = details.successful === false ? 'failed' : 'ok';
-        const preview = previewDebugValue(details.preview);
-        return `[${command}] ${state}${preview ? ` ${preview}` : ''}`;
-      }
-      case 'cli.error': {
-        const command = typeof details.command === 'string' ? details.command : 'cli';
-        const stderr = previewDebugValue(details.stderr);
-        return `[${command}] failed${stderr ? ` ${stderr}` : ''}`;
-      }
-      default:
-        return null;
-    }
-  };
-
   const shouldStreamHelperLog = (step: string, formattedLine: string | null): boolean => {
     if (helperContext.logsOff === true) return false;
     if (helperContext.debug === true) return true;
     return formattedLine !== null && (step.startsWith('subAgent.') || step.startsWith('agent.'));
   };
 
-  const helperDebugLog = (step: string, details: Record<string, unknown> = {}) => {
+  const helperDebugLog: HelperDebugLog = (step, details = {}) => {
     const formattedLine = formatHelperDebugEvent(step, details);
     const elapsedMs = Date.now() - perfDebugStart;
     const line = formattedLine ?? `[run:debug] ${JSON.stringify({ step, elapsedMs, ...details })}`;
@@ -313,49 +501,14 @@ export const installRunHelpers = async ({
     }
   };
 
-  const stringifyForPrompt = (value: unknown): string => {
-    if (value === undefined) return 'undefined';
-    if (value === null) return 'null';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-      return String(value);
-    }
-    // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return String(value);
-    }
-  };
+  return { perfDebugLog, helperDebugLog };
+};
 
-  const attachPromptMethod = <T>(value: T): T => {
-    if (!Predicate.isRecord(value)) return value;
-    if (typeof value.prompt === 'function') return value;
-    Object.defineProperty(value, 'prompt', {
-      value: () => stringifyForPrompt('data' in value ? value.data : value),
-      enumerable: false,
-    });
-    return value;
-  };
-
-  const isPlainObjectForExecute = Predicate.isRecord;
-
-  const runFileExtensionFromMimeType = (mimeType: string | undefined): string => {
-    if (typeof mimeType !== 'string' || mimeType.trim().length === 0) return 'bin';
-    const normalized = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
-    const explicit: Record<string, string> = {
-      'text/plain': 'txt',
-      'application/json': 'json',
-      'application/pdf': 'pdf',
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/webp': 'webp',
-      'image/gif': 'gif',
-    };
-    if (explicit[normalized]) return explicit[normalized];
-    const subtype = normalized.split('/')[1] || 'bin';
-    return subtype.includes('+') ? (subtype.split('+').pop() ?? 'bin') : subtype;
-  };
+const createExecutePayloadMaterializer = (params: {
+  readonly path: Path.Path;
+  readonly sharedRunOutputDir: string | null;
+}): ((value: unknown) => Promise<unknown>) => {
+  const { path, sharedRunOutputDir } = params;
 
   const writeTempExecuteFile = async (value: unknown): Promise<unknown> => {
     const outputDir = sharedRunOutputDir || path.join(os.tmpdir(), 'composio-run-files');
@@ -398,6 +551,22 @@ export const installRunHelpers = async ({
     return value;
   };
 
+  return materializeExecutePayload;
+};
+
+const createCliRunner = (params: {
+  readonly cliPrefix: ReadonlyArray<string>;
+  readonly helperContext: RunHelperContext;
+  readonly sharedRunOutputDir: string | null;
+  readonly perfDebugEnabled: boolean;
+  readonly toolDebugEnabled: boolean;
+  readonly loggers: RunHelperLoggers;
+}): ((args: ReadonlyArray<string>) => Promise<RunCliResult>) => {
+  const { cliPrefix, helperContext, sharedRunOutputDir, perfDebugEnabled, toolDebugEnabled } =
+    params;
+  const { perfDebugLog, helperDebugLog } = params.loggers;
+  let perfDebugSeq = 0;
+
   const maybeLoadStoredCliResult = (result: RunCliResult): RunCliResult => {
     if (!Predicate.isRecord(result) || result.storedInFile !== true) {
       return attachPromptMethod(result);
@@ -414,25 +583,6 @@ export const installRunHelpers = async ({
         outputFilePath,
       },
     });
-  };
-
-  const describeDebugValue = (value: unknown) => {
-    if (Array.isArray(value)) return { type: 'array', length: value.length };
-    if (Predicate.isRecord(value)) {
-      return { type: 'object', keys: Object.keys(value).slice(0, 20) };
-    }
-    return {
-      type: typeof value,
-      value: typeof value === 'string' ? value.slice(0, 200) : (value ?? null),
-    };
-  };
-
-  const summarizeCliResultPreview = (result: RunCliResult): unknown => {
-    if (!Predicate.isRecord(result)) return result;
-    if ('data' in result && result.data !== undefined) return result.data;
-    if (typeof result.error === 'string' && result.error.trim().length > 0)
-      return result.error.trim();
-    return result;
   };
 
   const logCliResultPreview = (
@@ -460,212 +610,6 @@ export const installRunHelpers = async ({
       data: 'data' in result ? describeDebugValue(result.data) : null,
       preview: summarizeCliResultPreview(result),
     });
-  };
-
-  const detectInvokeAgentMaster = (): MasterKind | 'user' => {
-    if (
-      helperContext.master === 'claude' ||
-      helperContext.master === 'codex' ||
-      helperContext.master === 'user'
-    ) {
-      return helperContext.master;
-    }
-    return detectMaster();
-  };
-
-  const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-    // eslint-disable-next-line no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
-    try {
-      const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
-      const parsed = decodeExperimentalSubagentConfig(raw);
-      const target = parsed.experimental_subagent?.target;
-      return target === 'claude' || target === 'codex' || target === 'auto' ? target : 'auto';
-    } catch {
-      return 'auto';
-    }
-  };
-
-  const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
-    if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
-    const configuredTarget = readConfiguredExperimentalSubagentTarget();
-    if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
-    const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
-    if (detected === 'codex' || detected === 'claude') return detected;
-    if (typeof Bun.which === 'function' && Bun.which('codex')) return 'codex';
-    if (typeof Bun.which === 'function' && Bun.which('claude')) return 'claude';
-    throw new Error(
-      'experimental_subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: "codex" | "claude" }.'
-    );
-  };
-
-  const normalizeInvokeAgentOptions = (
-    options: Record<string, unknown> = {}
-  ): InvokeAgentNormalizedOptions => {
-    if (options == null || typeof options !== 'object' || Array.isArray(options)) {
-      throw new Error('experimental_subAgent() options must be an object when provided.');
-    }
-    if (options.schema !== undefined && options.jsonSchema !== undefined) {
-      throw new Error(
-        'experimental_subAgent() accepts either options.schema or options.jsonSchema, not both.'
-      );
-    }
-    const requestedTarget = options.target;
-    if (
-      requestedTarget !== undefined &&
-      requestedTarget !== 'claude' &&
-      requestedTarget !== 'codex' &&
-      requestedTarget !== 'user'
-    ) {
-      throw new Error(
-        'experimental_subAgent() target must be "claude", "codex", or "user" when provided.'
-      );
-    }
-    const inputSchema = options.schema ?? options.jsonSchema;
-    let structuredSchema: Record<string, unknown> | undefined;
-    let zodSchema: z.ZodType | undefined;
-    if (inputSchema !== undefined) {
-      if (inputSchema instanceof z.ZodType) {
-        if (typeof z.toJSONSchema !== 'function') {
-          throw new Error(
-            'experimental_subAgent() requires Zod 4 with z.toJSONSchema() when using options.schema.'
-          );
-        }
-        zodSchema = inputSchema;
-        const generatedSchema = z.toJSONSchema(inputSchema);
-        structuredSchema = Schema.decodeUnknownSync(JsonObject)(generatedSchema);
-      } else if (Predicate.isRecord(inputSchema)) {
-        structuredSchema = inputSchema;
-      } else {
-        throw new Error(
-          'experimental_subAgent() schema must be a Zod schema or JSON Schema object.'
-        );
-      }
-    }
-    return {
-      ...(requestedTarget === undefined ? {} : { target: requestedTarget }),
-      ...(typeof options.model === 'string' ? { model: options.model } : {}),
-      ...(options.schema === undefined ? {} : { schema: options.schema }),
-      ...(options.jsonSchema === undefined ? {} : { jsonSchema: options.jsonSchema }),
-      ...(structuredSchema === undefined ? {} : { structuredSchema }),
-      ...(zodSchema === undefined ? {} : { zodSchema }),
-    };
-  };
-
-  const requireConsumerProxyContext = () => {
-    if (!helperContext.apiKey) {
-      throw new Error('proxy() requires an authenticated Composio user session.');
-    }
-    if (!helperContext.orgId || !helperContext.consumerProjectId || !helperContext.consumerUserId) {
-      throw new Error(
-        'proxy() requires a consumer project context so it can use the consumer project credentials.'
-      );
-    }
-    return {
-      apiKey: helperContext.apiKey,
-      orgId: helperContext.orgId,
-      projectId: helperContext.consumerProjectId,
-      userId: helperContext.consumerUserId,
-    };
-  };
-
-  const normalizeProxyToolkit = (toolkit: string) => {
-    if (typeof toolkit !== 'string' || toolkit.trim().length === 0) {
-      throw new Error('proxy() requires a non-empty toolkit string.');
-    }
-    return toolkit.trim();
-  };
-
-  const normalizeFetchHeaders = (headers: HeadersInit | undefined) => {
-    if (!headers) return [];
-    const normalized: Array<{ name: string; type: string; value: string }> = [];
-    new Headers(headers).forEach((value, name) => {
-      normalized.push({ name, type: 'header', value });
-    });
-    return normalized;
-  };
-
-  const normalizeFetchBody = async (body: unknown) => {
-    if (body === undefined || body === null) return undefined;
-    if (typeof body === 'string' || typeof body === 'number' || typeof body === 'boolean')
-      return body;
-    if (typeof Blob !== 'undefined' && body instanceof Blob) return await body.text();
-    if (body instanceof ArrayBuffer) return encodeBase64(new Uint8Array(body));
-    if (ArrayBuffer.isView(body)) {
-      return encodeBase64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength));
-    }
-    return body;
-  };
-
-  const normalizeFetchInput = async (input: unknown, init: RequestInit = {}) => {
-    if (typeof Request !== 'undefined' && input instanceof Request) {
-      throw new Error(
-        'proxy() does not support passing a Request instance yet. Pass a URL string and init instead.'
-      );
-    }
-    const endpoint = input instanceof URL ? input.toString() : input;
-    if (typeof endpoint !== 'string' || endpoint.trim().length === 0) {
-      throw new Error('proxy fetch requires a non-empty URL string or URL object.');
-    }
-    const method = typeof init.method === 'string' ? init.method.toUpperCase() : 'GET';
-    if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-      throw new Error('proxy fetch only supports GET, POST, PUT, DELETE, PATCH.');
-    }
-    return {
-      endpoint: endpoint.trim(),
-      method,
-      parameters: normalizeFetchHeaders(init.headers),
-      body: await normalizeFetchBody(init.body),
-    };
-  };
-
-  const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
-    const auth = requireConsumerProxyContext();
-    const response = await fetch(`${composioBaseURL}${pathname}`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-user-api-key': auth.apiKey,
-        'x-org-id': auth.orgId,
-        'x-project-id': auth.projectId,
-      },
-      body: JSON.stringify(body),
-    });
-    const raw = await response.text();
-    const parsed = parseJson(raw);
-    if (!response.ok) {
-      const responseMessage = Predicate.isRecord(parsed) ? parsed.message : undefined;
-      const responseError = Predicate.isRecord(parsed) ? parsed.error : undefined;
-      const detail =
-        typeof parsed === 'string'
-          ? parsed
-          : typeof responseMessage === 'string'
-            ? responseMessage
-            : typeof responseError === 'string'
-              ? responseError
-              : raw.trim() || undefined;
-      const error = new Error(
-        `Composio proxy request failed with status ${response.status}${detail ? `: ${detail}` : ''}`
-      );
-      Object.assign(error, { status: response.status, response: parsed ?? raw });
-      throw error;
-    }
-    return parsed;
-  };
-
-  const getProxySessionId = async (toolkit: string) => {
-    const cached = proxySessionCache.get(toolkit);
-    if (cached) return cached;
-    const auth = requireConsumerProxyContext();
-    const created = await Schema.decodeUnknownPromise(ProxySessionResponse)(
-      await fetchComposioJson('/api/v3/tool_router/session', {
-        user_id: auth.userId,
-        manage_connections: { enable: false },
-        toolkits: { enable: [toolkit] },
-      })
-    );
-    const sessionId = created.session_id;
-    proxySessionCache.set(toolkit, sessionId);
-    return sessionId;
   };
 
   const runCliJson = async (args: ReadonlyArray<string>): Promise<RunCliResult> => {
@@ -731,6 +675,24 @@ export const installRunHelpers = async ({
     return result;
   };
 
+  return runCliJson;
+};
+
+const createSearchAndExecuteHelpers = (params: {
+  readonly helperContext: RunHelperContext;
+  readonly sharedRunOutputDir: string | null;
+  readonly runCliJson: (args: ReadonlyArray<string>) => Promise<RunCliResult>;
+  readonly materializeExecutePayload: (value: unknown) => Promise<unknown>;
+  readonly helperDebugLog: HelperDebugLog;
+}) => {
+  const {
+    helperContext,
+    sharedRunOutputDir,
+    runCliJson,
+    materializeExecutePayload,
+    helperDebugLog,
+  } = params;
+
   const search = async (
     query: string,
     options: Record<string, unknown> = {}
@@ -791,6 +753,39 @@ export const installRunHelpers = async ({
     return result;
   };
 
+  return { search, execute };
+};
+
+const createExperimentalSubAgent = (params: {
+  readonly helperContext: RunHelperContext;
+  readonly helperDebugLog: HelperDebugLog;
+}) => {
+  const { helperContext, helperDebugLog } = params;
+
+  const detectInvokeAgentMaster = (): MasterKind | 'user' => {
+    if (
+      helperContext.master === 'claude' ||
+      helperContext.master === 'codex' ||
+      helperContext.master === 'user'
+    ) {
+      return helperContext.master;
+    }
+    return detectMaster();
+  };
+
+  const resolveInvokeAgentTarget = (requestedTarget?: string): 'claude' | 'codex' => {
+    if (requestedTarget === 'claude' || requestedTarget === 'codex') return requestedTarget;
+    const configuredTarget = readConfiguredExperimentalSubagentTarget();
+    if (configuredTarget === 'claude' || configuredTarget === 'codex') return configuredTarget;
+    const detected = requestedTarget === 'user' ? 'user' : detectInvokeAgentMaster();
+    if (detected === 'codex' || detected === 'claude') return detected;
+    if (typeof Bun.which === 'function' && Bun.which('codex')) return 'codex';
+    if (typeof Bun.which === 'function' && Bun.which('claude')) return 'claude';
+    throw new Error(
+      'experimental_subAgent() could not determine an agent CLI. Current master is user; install codex or claude, or pass { target: "codex" | "claude" }.'
+    );
+  };
+
   const experimentalSubAgentImpl = async (
     prompt: string,
     options: Record<string, unknown> = {}
@@ -843,31 +838,82 @@ export const installRunHelpers = async ({
   };
 
   Object.defineProperty(experimentalSubAgentImpl, 'schema', { value: experimentalSubAgentSchema });
-  Reflect.set(globalThis, 'experimental_subAgent', experimentalSubAgentImpl);
-  Reflect.set(globalThis, 'invokeAgent', experimentalSubAgentImpl);
+  return experimentalSubAgentImpl;
+};
 
-  const toProxyResponse = async (result: ProxyExecuteResponse) => {
-    const headers = new Headers(result?.headers || {});
-    if (result?.binary_data?.url) {
-      const binaryResponse = await fetch(result.binary_data.url);
-      binaryResponse.headers.forEach((value, key) => {
-        if (!headers.has(key)) headers.set(key, value);
-      });
-      return new Response(binaryResponse.body, {
-        status: result.status ?? binaryResponse.status,
-        headers,
-      });
+const createProxyHelper = (params: {
+  readonly helperContext: RunHelperContext;
+  readonly composioBaseURL: string;
+  readonly helperDebugLog: HelperDebugLog;
+}) => {
+  const { helperContext, composioBaseURL, helperDebugLog } = params;
+  const proxySessionCache = new Map<string, string>();
+
+  const requireConsumerProxyContext = () => {
+    if (!helperContext.apiKey) {
+      throw new Error('proxy() requires an authenticated Composio user session.');
     }
-    if (result?.data === undefined || result?.data === null) {
-      return new Response(null, { status: result?.status ?? 200, headers });
+    if (!helperContext.orgId || !helperContext.consumerProjectId || !helperContext.consumerUserId) {
+      throw new Error(
+        'proxy() requires a consumer project context so it can use the consumer project credentials.'
+      );
     }
-    if (typeof result.data === 'string') {
-      if (!headers.has('content-type')) headers.set('content-type', 'text/plain; charset=utf-8');
-      return new Response(result.data, { status: result.status ?? 200, headers });
+    return {
+      apiKey: helperContext.apiKey,
+      orgId: helperContext.orgId,
+      projectId: helperContext.consumerProjectId,
+      userId: helperContext.consumerUserId,
+    };
+  };
+
+  const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
+    const auth = requireConsumerProxyContext();
+    const response = await fetch(`${composioBaseURL}${pathname}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-user-api-key': auth.apiKey,
+        'x-org-id': auth.orgId,
+        'x-project-id': auth.projectId,
+      },
+      body: JSON.stringify(body),
+    });
+    const raw = await response.text();
+    const parsed = parseJson(raw);
+    if (!response.ok) {
+      const responseMessage = Predicate.isRecord(parsed) ? parsed.message : undefined;
+      const responseError = Predicate.isRecord(parsed) ? parsed.error : undefined;
+      const detail =
+        typeof parsed === 'string'
+          ? parsed
+          : typeof responseMessage === 'string'
+            ? responseMessage
+            : typeof responseError === 'string'
+              ? responseError
+              : raw.trim() || undefined;
+      const error = new Error(
+        `Composio proxy request failed with status ${response.status}${detail ? `: ${detail}` : ''}`
+      );
+      Object.assign(error, { status: response.status, response: parsed ?? raw });
+      throw error;
     }
-    if (!headers.has('content-type'))
-      headers.set('content-type', 'application/json; charset=utf-8');
-    return new Response(JSON.stringify(result.data), { status: result.status ?? 200, headers });
+    return parsed;
+  };
+
+  const getProxySessionId = async (toolkit: string) => {
+    const cached = proxySessionCache.get(toolkit);
+    if (cached) return cached;
+    const auth = requireConsumerProxyContext();
+    const created = await Schema.decodeUnknownPromise(ProxySessionResponse)(
+      await fetchComposioJson('/api/v3/tool_router/session', {
+        user_id: auth.userId,
+        manage_connections: { enable: false },
+        toolkits: { enable: [toolkit] },
+      })
+    );
+    const sessionId = created.session_id;
+    proxySessionCache.set(toolkit, sessionId);
+    return sessionId;
   };
 
   const proxy = async (toolkit: string) => {
@@ -906,7 +952,78 @@ export const installRunHelpers = async ({
     Object.defineProperty(proxyFetch, 'toolkit', { value: normalizedToolkit });
     return proxyFetch;
   };
+
   Object.defineProperty(proxy, 'schema', { value: proxySchema });
+  return proxy;
+};
+
+export const installRunHelpers = async ({
+  cliPrefix,
+  helperContext = {},
+}: RunHelpersInstallParams): Promise<void> => {
+  // This preload runs in the user's child process, outside the CLI runtime.
+  // Resolve the live services once at that boundary and keep all writes centralized.
+  const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
+  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const writeError = (line: string) => Effect.runSync(terminal.error(line));
+
+  Reflect.set(globalThis, 'z', z);
+  Reflect.set(globalThis, 'zod', z);
+
+  const perfDebugEnabled =
+    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
+    helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
+  const toolDebugEnabled =
+    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
+    helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
+  const perfDebugStart = Date.now();
+  const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(
+    /\/$/,
+    ''
+  );
+  const sharedRunOutputDir =
+    typeof helperContext.runOutputDir === 'string' && helperContext.runOutputDir.length > 0
+      ? helperContext.runOutputDir
+      : null;
+  const sharedRunLogFilePath =
+    typeof helperContext.runLogFilePath === 'string' && helperContext.runLogFilePath.length > 0
+      ? helperContext.runLogFilePath
+      : null;
+
+  const loggers = createRunHelperLoggers({
+    helperContext,
+    writeError,
+    sharedRunLogFilePath,
+    perfDebugEnabled,
+    perfDebugStart,
+  });
+  const { helperDebugLog } = loggers;
+
+  const materializeExecutePayload = createExecutePayloadMaterializer({
+    path,
+    sharedRunOutputDir,
+  });
+  const runCliJson = createCliRunner({
+    cliPrefix,
+    helperContext,
+    sharedRunOutputDir,
+    perfDebugEnabled,
+    toolDebugEnabled,
+    loggers,
+  });
+  const { search, execute } = createSearchAndExecuteHelpers({
+    helperContext,
+    sharedRunOutputDir,
+    runCliJson,
+    materializeExecutePayload,
+    helperDebugLog,
+  });
+
+  const experimentalSubAgentImpl = createExperimentalSubAgent({ helperContext, helperDebugLog });
+  Reflect.set(globalThis, 'experimental_subAgent', experimentalSubAgentImpl);
+  Reflect.set(globalThis, 'invokeAgent', experimentalSubAgentImpl);
+
+  const proxy = createProxyHelper({ helperContext, composioBaseURL, helperDebugLog });
 
   Reflect.set(globalThis, 'search', search);
   Reflect.set(globalThis, 'execute', execute);

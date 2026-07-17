@@ -1,14 +1,6 @@
-// This module is invoked synchronously from bin.ts BEFORE the Effect runtime
-// boots, so the @effect/platform FileSystem/Path/Os layers do not exist yet.
-// eslint-disable-next-line no-restricted-imports -- sync cache read/mkdir before the Effect runtime boots
-import { readFileSync, mkdirSync } from 'node:fs';
-// eslint-disable-next-line no-restricted-imports -- fire-and-forget cache write runs in a bare promise chain, outside the Effect runtime
-import { writeFile } from 'node:fs/promises';
-// eslint-disable-next-line no-restricted-imports -- platform/arch resolved at module load to build the default config, pre-runtime
-import { arch as getArch, platform as getPlatform } from 'node:os';
-import { Path } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { BunFileSystem } from '@effect/platform-bun';
-import { Config, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
@@ -19,10 +11,10 @@ import { TerminalUI } from './terminal-ui';
 /**
  * Background update check for @composio/cli.
  *
- * Two entry points, both called synchronously from bin.ts BEFORE the Effect
- * runtime boots — they must never block or throw:
+ * Two entry points, both called from cli-main BEFORE the root command's
+ * Effect runtime boots — they must never block or throw:
  *
- *   showUpdateNotice()              — sync file read (~1 ms)
+ *   showUpdateNotice                — reads a tiny cached JSON file (~1 ms)
  *   checkForUpdateInBackground()    — fire-and-forget fetch, no await
  *
  * Strategy:
@@ -48,6 +40,11 @@ const UpdateCheckStateSchema = Schema.parseJson(
   })
 );
 
+/** Non-2xx response from the GitHub releases API; swallowed after the state write. */
+class UpdateCheckHttpError extends Data.TaggedError('UpdateCheckHttpError')<{
+  readonly status: number;
+}> {}
+
 // ── Injectable configuration ────────────────────────────────────────────
 
 /** Dependencies injected into the update checker — mirrors the Effect service pattern. */
@@ -67,9 +64,9 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(): string | undefined {
-  const platform = getPlatform();
-  const rawArch: string = getArch();
+function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): string | undefined {
+  const { platform } = os;
+  const rawArch: string = os.arch;
   if (platform !== 'darwin' && platform !== 'linux') return undefined;
 
   const arch = rawArch === 'arm64' || rawArch === 'aarch64' ? 'aarch64' : rawArch;
@@ -80,6 +77,7 @@ function getCurrentBinaryAssetName(): string | undefined {
 
 const defaultConfig = (stateFile: string) =>
   Effect.gen(function* () {
+    const os = yield* NodeOs;
     const currentVersion = yield* resolveInstalledCliVersion(process.execPath, APP_VERSION);
     const accessToken = yield* Effect.orDie(
       Config.option(Config.string('COMPOSIO_GITHUB_ACCESS_TOKEN')).pipe(
@@ -91,7 +89,7 @@ const defaultConfig = (stateFile: string) =>
       currentVersion,
       checkIntervalMs: CHECK_INTERVAL_MS,
       releasesUrl: `${GITHUB_REPO.API_BASE_URL}/repos/${GITHUB_REPO.OWNER}/${GITHUB_REPO.REPO}/releases?per_page=100`,
-      binaryAssetName: getCurrentBinaryAssetName(),
+      binaryAssetName: getCurrentBinaryAssetName(os),
       accessToken,
       fetchFn: fetch,
     } satisfies UpdateCheckConfig;
@@ -135,22 +133,22 @@ export function parseLatestVersionFromReleases(
 // ── Factory ─────────────────────────────────────────────────────────────
 
 export function createUpdateChecker(config: UpdateCheckConfig) {
-  // checkForUpdate runs in a bare promise chain outside the Effect runtime, so
-  // the Path service is materialized from its pure default layer instead of
-  // being yielded from context.
-  const path = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
+  const readState = Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const rawState = yield* fs.readFileString(config.stateFile);
+    return yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+  });
 
   /**
    * If a cached newer version is known, print a one-line hint to stderr.
-   * Purely synchronous — reads a tiny JSON file and does a semver compare.
+   * Reads a tiny JSON file and does a semver compare.
    */
   function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
     return Effect.gen(function* () {
       const capabilities = yield* terminal.capabilities;
       if (!capabilities.isInteractive) return;
 
-      const rawState = yield* Effect.try(() => readFileSync(config.stateFile, 'utf-8'));
-      const state = yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+      const state = yield* readState;
       if (!state.latestVersion || !semver.valid(state.latestVersion)) return;
       if (state.latestVersion === config.currentVersion) return;
 
@@ -169,76 +167,70 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    * Fetch the latest @composio/cli release from GitHub, requiring the current
    * platform binary asset before writing the result to the state file.
    *
-   * Returns the internal promise so tests can await completion.
-   * The public wrapper discards it (fire-and-forget).
+   * Never fails: every fetch/parse/write error is swallowed so nothing can
+   * propagate back into the fire-and-forget caller.
    */
-  function checkForUpdate(): Promise<void> | undefined {
-    // eslint-disable-next-line no-restricted-syntax -- pre-runtime fire-and-forget path; must never throw back into bin.ts
-    try {
-      // Throttle: skip if checked recently.
-      let previousLatestVersion: string | undefined;
-      // eslint-disable-next-line no-restricted-syntax -- ENOENT/corrupt state file just means "re-check"; no Effect runtime is available here
-      try {
-        const state = Schema.decodeUnknownSync(UpdateCheckStateSchema)(
-          readFileSync(config.stateFile, 'utf-8')
-        );
-        if (Date.now() - new Date(state.lastChecked).getTime() < config.checkIntervalMs) {
-          return undefined;
-        }
-        previousLatestVersion = state.latestVersion;
-      } catch {
-        // ENOENT or corrupt file — re-check.
-      }
+  const checkForUpdate = Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
-      const headers: Record<string, string> = {
-        Accept: 'application/vnd.github.v3+json',
-        'User-Agent': `composio-cli/${config.currentVersion}`,
-      };
-
-      if (config.accessToken) {
-        headers.Authorization = `Bearer ${config.accessToken}`;
-      }
-
-      // Always persist lastChecked to prevent retry loops when the fetch
-      // fails or returns no matching releases with a matching binary.
-      const writeState = (latestVersion?: string): Promise<void> => {
-        // eslint-disable-next-line no-restricted-syntax -- mkdir failure bails out silently inside a bare promise chain, not an Effect
-        try {
-          const stateDir = path.dirname(config.stateFile);
-          mkdirSync(stateDir, { recursive: true });
-        } catch {
-          // If we can't create the directory, bail out silently.
-          return Promise.resolve();
-        }
-
-        const state: UpdateCheckState = {
-          lastChecked: new Date().toISOString(),
-          latestVersion: latestVersion ?? previousLatestVersion ?? config.currentVersion,
-        };
-
-        return writeFile(config.stateFile, JSON.stringify(state, null, 2)).then(() => {});
-      };
-
-      return config
-        .fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
-        .then((releases: unknown) => {
-          const latestVersion = parseLatestVersionFromReleases(releases, config.binaryAssetName);
-          return writeState(latestVersion);
-        })
-        .catch(() => {
-          // Silently ignore fetch/parse errors — never block the CLI.
-          // Still update the timestamp to prevent unbounded retry loops.
-          return writeState().catch(() => {});
-        });
-    } catch {
-      // Silently ignore.
-      return undefined;
+    // Throttle: skip if checked recently. A missing or corrupt state file
+    // just means "re-check".
+    const cachedState = yield* Effect.option(readState);
+    if (
+      Option.isSome(cachedState) &&
+      Date.now() - new Date(cachedState.value.lastChecked).getTime() < config.checkIntervalMs
+    ) {
+      return;
     }
-  }
+    const previousLatestVersion = Option.getOrUndefined(
+      Option.map(cachedState, state => state.latestVersion)
+    );
+
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': `composio-cli/${config.currentVersion}`,
+    };
+
+    if (config.accessToken) {
+      headers.Authorization = `Bearer ${config.accessToken}`;
+    }
+
+    // Always persist lastChecked to prevent retry loops when the fetch
+    // fails or returns no matching releases with a matching binary.
+    const writeState = (latestVersion?: string) =>
+      fs.makeDirectory(path.dirname(config.stateFile), { recursive: true }).pipe(
+        Effect.matchEffect({
+          // If we can't create the directory, bail out silently.
+          onFailure: () => Effect.void,
+          onSuccess: () => {
+            const state: UpdateCheckState = {
+              lastChecked: new Date().toISOString(),
+              latestVersion: latestVersion ?? previousLatestVersion ?? config.currentVersion,
+            };
+            return fs.writeFileString(config.stateFile, JSON.stringify(state, null, 2));
+          },
+        })
+      );
+
+    const fetchLatestVersion = Effect.gen(function* () {
+      const response = yield* Effect.tryPromise(() =>
+        config.fetchFn(config.releasesUrl, { headers, signal: AbortSignal.timeout(10_000) })
+      );
+      if (!response.ok) {
+        return yield* new UpdateCheckHttpError({ status: response.status });
+      }
+      const releases: unknown = yield* Effect.tryPromise(() => response.json());
+      return parseLatestVersionFromReleases(releases, config.binaryAssetName);
+    });
+
+    yield* fetchLatestVersion.pipe(
+      Effect.flatMap(writeState),
+      // Silently ignore fetch/parse errors — never block the CLI.
+      // Still update the timestamp to prevent unbounded retry loops.
+      Effect.catchAll(() => Effect.ignore(writeState()))
+    );
+  });
 
   return { showUpdateNotice, checkForUpdate };
 }
@@ -263,7 +255,7 @@ export function checkForUpdateInBackground(): void {
     Effect.gen(function* () {
       const stateFile = yield* defaultStateFile;
       const config = yield* defaultConfig(stateFile);
-      return createUpdateChecker(config).checkForUpdate();
+      yield* createUpdateChecker(config).checkForUpdate;
     }).pipe(Effect.provide(DefaultConfigLayers))
   );
 }

@@ -1369,8 +1369,7 @@ const buildDefaultHeaders = (params: {
 };
 
 // Utility function for calling the Composio API and decoding its response.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const callClient = <T, S extends Schema.Schema<any, any>>(
+const callClient = <T, S extends Schema.Schema.AnyNoContext>(
   clientSingleton: ComposioClientSingleton,
   apiCall: (client: _RawComposioClient) => APIPromise<T>,
   responseSchema: S
@@ -1411,17 +1410,16 @@ const callClient = <T, S extends Schema.Schema<any, any>>(
     return { metrics, data: typedJson };
   });
 
-// Schema constraint for paginated responses
-type PaginatedSchema = Schema.Schema<
-  {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    items: ReadonlyArray<any>;
-    next_cursor: string | null;
-    total_pages: number;
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any
->;
+// Schema constraint for paginated responses: the decoded page must expose the
+// pagination envelope, expressed through the schema's `Type` phantom property so
+// concrete item types stay free of `any`.
+type PaginatedSchema = Schema.Schema.AnyNoContext & {
+  readonly Type: {
+    readonly items: ReadonlyArray<unknown>;
+    readonly next_cursor: string | null;
+    readonly total_pages: number;
+  };
+};
 
 // Maximum items per page allowed by the server
 const MAX_PAGE_SIZE = 1000;

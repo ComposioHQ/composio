@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { Path } from '@effect/platform';
-import { BunPath } from '@effect/platform-bun';
-import { Effect } from 'effect';
+import { FileSystem, Path } from '@effect/platform';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import { Effect, Layer } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { ComposioSensitiveFilePathBlockedError } from '@composio/core';
 import { schemaHasFileUploadable, uploadToolInputFiles } from 'src/services/tool-file-uploads';
@@ -38,6 +38,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
 
   it.effect('refuses to read/upload a path under a sensitive directory (~/.ssh/id_rsa)', () =>
     Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
       const createPresignedURL = vi.fn();
       const client = makeClient(createPresignedURL);
@@ -45,6 +46,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       yield* Effect.promise(() =>
         expect(
           uploadToolInputFiles({
+            fs: fsApi,
             path: pathApi,
             toolSlug: 'GMAIL_SEND_EMAIL',
             arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
@@ -56,13 +58,14 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
 
       // The guard must fire BEFORE any network round-trip: no presigned URL, no upload.
       expect(createPresignedURL).not.toHaveBeenCalled();
-    }).pipe(Effect.provide(BunPath.layer))
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
   it.effect(
     'surfaces CLI-appropriate remediation, not the SDK-only opt-out, in the block error',
     () =>
       Effect.gen(function* () {
+        const fsApi = yield* FileSystem.FileSystem;
         const pathApi = yield* Path.Path;
         const client = makeClient(vi.fn());
 
@@ -71,6 +74,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
         yield* Effect.promise(() =>
           expect(
             uploadToolInputFiles({
+              fs: fsApi,
               path: pathApi,
               toolSlug: 'GMAIL_SEND_EMAIL',
               arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
@@ -83,6 +87,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
         yield* Effect.promise(() =>
           expect(
             uploadToolInputFiles({
+              fs: fsApi,
               path: pathApi,
               toolSlug: 'GMAIL_SEND_EMAIL',
               arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
@@ -91,11 +96,12 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
             })
           ).rejects.not.toThrowError(/sensitiveFileUploadProtection/)
         );
-      }).pipe(Effect.provide(BunPath.layer))
+      }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
   it.effect('refuses credential-like basenames (.env) even outside a sensitive directory', () =>
     Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
       const createPresignedURL = vi.fn();
       const client = makeClient(createPresignedURL);
@@ -103,6 +109,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       yield* Effect.promise(() =>
         expect(
           uploadToolInputFiles({
+            fs: fsApi,
             path: pathApi,
             toolSlug: 'GMAIL_SEND_EMAIL',
             arguments_: { attachment: path.join(os.tmpdir(), '.env') },
@@ -112,7 +119,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
         ).rejects.toBeInstanceOf(ComposioSensitiveFilePathBlockedError)
       );
       expect(createPresignedURL).not.toHaveBeenCalled();
-    }).pipe(Effect.provide(BunPath.layer))
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
   it.effect('still uploads a normal (non-sensitive) local file', () => {
@@ -131,9 +138,11 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
     );
 
     return Effect.gen(function* () {
+      const fsApi = yield* FileSystem.FileSystem;
       const pathApi = yield* Path.Path;
       const result = yield* Effect.promise(() =>
         uploadToolInputFiles({
+          fs: fsApi,
           path: pathApi,
           toolSlug: 'GMAIL_SEND_EMAIL',
           arguments_: { attachment: file },
@@ -145,7 +154,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       expect(createPresignedURL).toHaveBeenCalledTimes(1);
       expect(result.attachment).toMatchObject({ s3key: 's3key-123', name: 'document.pdf' });
     }).pipe(
-      Effect.provide(BunPath.layer),
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });

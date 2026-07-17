@@ -1,5 +1,5 @@
 import { Command, Error as PlatformError } from '@effect/platform';
-import { Data, Effect, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
@@ -191,22 +191,21 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
 
   let repository = trimmed;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(repository)) {
-    // eslint-disable-next-line no-restricted-syntax -- new URL() throws on malformed input inside this pure sync validator; an unparseable repository string simply normalizes to undefined
-    try {
-      const url = new URL(repository);
-      const isCanonicalGitHubUrl =
-        url.protocol === 'https:' &&
-        url.hostname.toLowerCase() === 'github.com' &&
-        url.port === '' &&
-        url.username === '' &&
-        url.password === '' &&
-        url.search === '' &&
-        url.hash === '';
-      if (!isCanonicalGitHubUrl) return undefined;
-      repository = url.pathname;
-    } catch {
-      return undefined;
-    }
+    // new URL() throws on malformed input; an unparseable repository string
+    // simply normalizes to undefined.
+    const parsedUrl = Either.try(() => new URL(repository));
+    if (Either.isLeft(parsedUrl)) return undefined;
+    const url = parsedUrl.right;
+    const isCanonicalGitHubUrl =
+      url.protocol === 'https:' &&
+      url.hostname.toLowerCase() === 'github.com' &&
+      url.port === '' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.search === '' &&
+      url.hash === '';
+    if (!isCanonicalGitHubUrl) return undefined;
+    repository = url.pathname;
   }
 
   repository = repository.replace(/^\/+|\/+$/g, '').replace(/\.git$/i, '');

@@ -252,8 +252,7 @@ const makeLive: TerminalUI = {
       ? Effect.promise(async () => {
           const result = await p.select({
             message,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            options: [...options] as any,
+            options: [...options],
             output: process.stderr,
           });
           // p.select returns Value | symbol (symbol on cancel)
