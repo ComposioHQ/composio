@@ -27,34 +27,34 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Group / Command      | Purpose                                                                                                              |
+| Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `version`            | Display CLI version                                                                                                  |
-| `whoami`             | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)                          |
-| `login`              | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
-| `logout`             | Clear stored API key                                                                                                 |
-| `signup`             | Create a Composio account                                                                                            |
-| `upgrade`            | Self-update binary from GitHub releases                                                                              |
-| `init`               | Bootstrap a Composio project in the current directory                                                                |
-| `install`            | Install local-tool integrations                                                                                      |
-| `generate {ts        | py}`                                                                                                                 | Generate type stubs (auto-detects project language if no subcommand) |
-| `agent`              | Manage AI agent presets                                                                                              |
-| `toolkits`           | List / inspect / version toolkits                                                                                    |
-| `tools`              | List / inspect / `execute` tools                                                                                     |
-| `triggers`           | List / manage trigger types                                                                                          |
-| `auth-configs`       | Manage auth-config resources (`ac_*`)                                                                                |
-| `connected-accounts` | Manage connected accounts (`ca_*`)                                                                                   |
-| `connections`        | Alias / helper for connected-account flows                                                                           |
-| `orgs`               | Manage organizations                                                                                                 |
-| `projects`           | Manage projects                                                                                                      |
-| `local-tools`        | Manage local toolkits (via `@composio/cli-local-tools`)                                                              |
-| `logs`               | View tool-execution logs (`logs-cmd/`)                                                                               |
-| `config`             | Read/write CLI config                                                                                                |
-| `listen`             | Listen for events                                                                                                    |
-| `proxy`              | Proxy authenticated API requests                                                                                     |
-| `run`                | Run a saved script / preset                                                                                          |
-| `dev`                | Developer-only utilities                                                                                             |
-| `artifacts`          | Manage generated artifacts                                                                                           |
+| `version` | Display CLI version |
+| `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
+| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout` | Clear stored API key |
+| `signup` | Create a Composio account |
+| `upgrade` | Self-update binary from GitHub releases |
+| `init` | Bootstrap a Composio project in the current directory |
+| `install` | Install local-tool integrations |
+| `generate {ts        | py}` | Generate type stubs (auto-detects project language if no subcommand) |
+| `agent` | Manage AI agent presets |
+| `toolkits` | List / inspect / version toolkits |
+| `tools` | List / inspect / `execute` tools |
+| `triggers` | List / manage trigger types |
+| `auth-configs` | Manage auth-config resources (`ac_*`) |
+| `connected-accounts` | Manage connected accounts (`ca_*`) |
+| `connections` | Alias / helper for connected-account flows |
+| `orgs` | Manage organizations |
+| `projects` | Manage projects |
+| `local-tools` | Manage local toolkits (via `@composio/cli-local-tools`) |
+| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `config` | Read/write CLI config |
+| `listen` | Listen for events |
+| `proxy` | Proxy authenticated API requests |
+| `run` | Run a saved script / preset |
+| `dev` | Developer-only utilities |
+| `artifacts` | Manage generated artifacts |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
@@ -135,6 +135,15 @@ Effect.gen(function* () {
 ```
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
+
+### Effect safety and migration seams
+
+- Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Either`, `Exit`, `Cause`, `ValidationError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
+- Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
+- Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `Schema` or narrow them with `Predicate`; an `as` assertion is not validation.
+- Do not inspect private `@effect/cli` descriptor shapes. Use public `CommandDescriptor` operations or keep declarative command metadata that can move to Effect v4's public command tree.
+- Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `catchAll` blocks that flatten distinct failures into one message-only error.
+- Prefer Effect services over Node builtins for platform access in new code: `Path`/`FileSystem`/`Command` from `@effect/platform` instead of `node:path`/`node:fs`/`node:child_process`, and `effect/Config` instead of `process.env`. These rules are policy for new CLI code effective now; the matching ESLint rule groups are defined (commented out) in the root `eslint.config.mjs` and are activated group-by-group over the guardrails PR stack as existing code migrates.
 
 ## Vendor Reference Sources
 
