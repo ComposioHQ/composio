@@ -1,9 +1,13 @@
+import { FileSystem, Path } from '@effect/platform';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Config, ConfigProvider, Effect, Layer, Option } from 'effect';
 import {
   decodeCacheFileTolerant,
+  decodeToolRouterPermissionsConfig,
   gateToolExecution,
   resolveGateState,
+  ToolPermissionDeniedError,
   type ConsumerPermissionSnapshot,
 } from 'src/services/tool-permissions';
 
@@ -36,7 +40,25 @@ describe('tool permissions', () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllEnvs();
+  });
+
+  it('maps forward-version permission modes to interactive safe defaults', () => {
+    const decoded = decodeToolRouterPermissionsConfig({
+      default: 'future_default_mode',
+      overrides: {
+        'GMAIL_SEND_EMAIL:__none__': 'future_override_mode',
+      },
+    });
+
+    expect(Option.isSome(decoded)).toBe(true);
+    if (Option.isSome(decoded)) {
+      expect(decoded.value).toStrictEqual({
+        default: 'ask_every_call',
+        overrides: {
+          'GMAIL_SEND_EMAIL:__none__': 'ask_always',
+        },
+      });
+    }
   });
 
   it('drops only corrupt cache entries, keeping valid snapshots and allow decisions', () => {
@@ -111,7 +133,35 @@ describe('tool permissions', () => {
       const result = yield* gateToolExecution({ toolSlug: 'GMAIL_SEND_EMAIL' });
 
       expect(result).toBeUndefined();
-    })
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
+
+  it.effect('preserves permission-policy denial identity', () =>
+    Effect.gen(function* () {
+      const failure = yield* gateToolExecution({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: {
+          orgId: 'org_test',
+          projectId: 'project_test',
+          consumerUserId: 'user_test',
+          enhancedControlsEnabled: true,
+          permissions: {
+            default: 'allow_all',
+            overrides: {
+              'GMAIL_SEND_EMAIL:__none__': 'always_deny',
+            },
+          },
+          connectedAccountIds: [],
+          fetchedAt: PINNED_NOW,
+        },
+      }).pipe(Effect.flip);
+
+      expect(failure).toBeInstanceOf(ToolPermissionDeniedError);
+      if (failure instanceof ToolPermissionDeniedError) {
+        expect(failure.deniedBy).toBe('permissions');
+        expect(failure.toolSlug).toBe('GMAIL_SEND_EMAIL');
+      }
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 
   it.effect('fails closed when interactive approval is needed but permission UI is disabled', () =>
@@ -123,10 +173,42 @@ describe('tool permissions', () => {
         snapshot: snapshotFixture({ permissions: { default: 'ask_every_call' } }),
       }).pipe(Effect.flip);
 
-      expect(failure).toBeInstanceOf(Error);
-      if (failure instanceof Error) {
+      expect(failure).toBeInstanceOf(ToolPermissionDeniedError);
+      if (failure instanceof ToolPermissionDeniedError) {
+        expect(failure.deniedBy).toBe('permissions');
         expect(failure.message).toContain('permission prompts are disabled');
       }
-    })
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
+  );
+
+  it.effect('honors cached allow decisions even when permission UI is disabled', () =>
+    Effect.gen(function* () {
+      vi.stubEnv('COMPOSIO_DISABLE_PERMISSION_UI', '1');
+
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      // The shared vitest setup pins COMPOSIO_CACHE_DIR to a fresh temp directory.
+      const cacheDir = yield* ConfigProvider.fromEnv().load(Config.string('COMPOSIO_CACHE_DIR'));
+      // Key shape: `${orgId}:${projectId}:${consumerUserId}:${toolSlug}:${accountId}`.
+      const allowKey = 'org_cached_allow:project_test:user_test:GMAIL_SEND_EMAIL:__none__';
+      yield* fs.writeFileString(
+        path.join(cacheDir, 'tool-permissions-cache.json'),
+        JSON.stringify({
+          entries: {},
+          // Unexpired relative to the pinned clock the SUT's expiry check reads.
+          allowEntries: { [allowKey]: { expiresAt: PINNED_NOW + 60_000 } },
+        })
+      );
+
+      const result = yield* gateToolExecution({
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        snapshot: snapshotFixture({
+          orgId: 'org_cached_allow',
+          permissions: { default: 'ask_every_call' },
+        }),
+      });
+
+      expect(result).toStrictEqual({ approvalStatus: 'cached_approved' });
+    }).pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)))
   );
 });

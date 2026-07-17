@@ -1,5 +1,5 @@
 import { Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import type { ConnectedAccountListParams } from '@composio/client/resources/connected-accounts';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -12,6 +12,13 @@ import {
   resolveCommandProject,
 } from 'src/services/command-project';
 import { formatConnectedAccountsTable, formatConnectedAccountsJson } from '../format';
+
+class ConnectedAccountsListRequestError extends Data.TaggedError(
+  'commands/ConnectedAccountsListRequestError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const toolkits = Options.text('toolkits').pipe(
   Options.withDescription(
@@ -73,18 +80,24 @@ export const connectedAccountsCmd$List = Command.make(
 
       const rawResult = yield* ui.withSpinner(
         'Fetching connected accounts...',
-        Effect.tryPromise(() =>
-          client.connectedAccounts.list({
-            toolkit_slugs: toolkitSlugs,
-            user_ids: Option.isSome(userId) ? [userId.value] : undefined,
-            // Bypass the stale Stainless union (still missing 'REVOKED')
-            // until @composio/client is regenerated.
-            statuses: Option.isSome(status)
-              ? ([status.value] as ConnectedAccountListParams['statuses'])
-              : undefined,
-            limit: clampLimit(limit),
-          })
-        )
+        Effect.tryPromise({
+          try: () =>
+            client.connectedAccounts.list({
+              toolkit_slugs: toolkitSlugs,
+              user_ids: Option.isSome(userId) ? [userId.value] : undefined,
+              // Bypass the stale Stainless union (still missing 'REVOKED')
+              // until @composio/client is regenerated.
+              statuses: Option.isSome(status)
+                ? ([status.value] as ConnectedAccountListParams['statuses'])
+                : undefined,
+              limit: clampLimit(limit),
+            }),
+          catch: cause =>
+            new ConnectedAccountsListRequestError({
+              message: 'Failed to list connected accounts.',
+              cause,
+            }),
+        })
       );
       const result = yield* decodeConnectedAccountListWithFallback(rawResult);
 

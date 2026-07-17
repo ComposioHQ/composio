@@ -1,7 +1,7 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import { Effect } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
-import { ComposioToolkitsRepository, InvalidToolkitsError } from 'src/services/composio-clients';
+import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { formatTriggerTypesJson, formatTriggerTypesTable } from '../format';
@@ -39,7 +39,7 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
       const clampedLimit = clampLimit(limit);
 
       yield* repo.validateToolkits([toolkit]).pipe(
-        Effect.catchTag('services/InvalidToolkitsError', (error: InvalidToolkitsError) =>
+        Effect.catchTag('services/InvalidToolkitsError', error =>
           Effect.gen(function* () {
             const availableExample = error.availableToolkits.slice(0, 8).join(', ');
             yield* ui.log.error(
@@ -47,7 +47,9 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
             );
             yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
             return yield* Effect.fail(
-              new Error(`Invalid toolkit slug "${toolkit}" for trigger listing.`)
+              ValidationError.invalidValue(
+                HelpDoc.p(`Invalid toolkit slug "${toolkit}" for trigger listing.`)
+              )
             );
           })
         )
