@@ -1,5 +1,5 @@
-import { Command } from '@effect/platform';
-import { Data, Effect } from 'effect';
+import { Command, Error as PlatformError } from '@effect/platform';
+import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
@@ -120,23 +120,40 @@ const MINIMUM_CODEX_SETUP_VERSION = '0.139.0';
 export class SetupCommandError extends Data.TaggedError('services/SetupCommandError')<{
   readonly message: string;
   readonly operation: 'setup' | 'uninstall';
+  readonly cause?: unknown;
 }> {}
 
-const asRecord = (value: unknown): Record<string, unknown> | undefined => {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined;
-  return value as Record<string, unknown>;
-};
+type SetupFailureStage = 'detect' | 'inspect' | 'validate' | 'mutate' | 'verify' | 'skill';
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  asRecord(value) !== undefined;
+export class SetupProcessError extends Data.TaggedError('services/SetupProcessError')<{
+  readonly message: string;
+  readonly target: AgentHost;
+  readonly stage: SetupFailureStage;
+  readonly cause?: unknown;
+}> {}
 
-const parseJson = (value: string): unknown => {
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return undefined;
-  }
-};
+const setupProcessError = (params: {
+  readonly adapter: SetupTargetAdapter;
+  readonly stage: SetupFailureStage;
+  readonly message: string;
+  readonly cause?: unknown;
+}) =>
+  new SetupProcessError({
+    message: params.message,
+    target: params.adapter.target,
+    stage: params.stage,
+    ...(params.cause === undefined ? {} : { cause: params.cause }),
+  });
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  Predicate.isRecord(value) ? value : undefined;
+
+const decodeJsonOption = Schema.decodeUnknownOption(Schema.parseJson());
+
+const parseJson = (value: string): unknown | undefined =>
+  Option.getOrUndefined(decodeJsonOption(value));
+
+const isRecord = Predicate.isRecord;
 
 const recordsFrom = (
   value: unknown,
@@ -174,21 +191,21 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
 
   let repository = trimmed;
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(repository)) {
-    try {
-      const url = new URL(repository);
-      const isCanonicalGitHubUrl =
-        url.protocol === 'https:' &&
-        url.hostname.toLowerCase() === 'github.com' &&
-        url.port === '' &&
-        url.username === '' &&
-        url.password === '' &&
-        url.search === '' &&
-        url.hash === '';
-      if (!isCanonicalGitHubUrl) return undefined;
-      repository = url.pathname;
-    } catch {
-      return undefined;
-    }
+    // new URL() throws on malformed input; an unparseable repository string
+    // simply normalizes to undefined.
+    const parsedUrl = Either.try(() => new URL(repository));
+    if (Either.isLeft(parsedUrl)) return undefined;
+    const url = parsedUrl.right;
+    const isCanonicalGitHubUrl =
+      url.protocol === 'https:' &&
+      url.hostname.toLowerCase() === 'github.com' &&
+      url.port === '' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.search === '' &&
+      url.hash === '';
+    if (!isCanonicalGitHubUrl) return undefined;
+    repository = url.pathname;
   }
 
   repository = repository.replace(/^\/+|\/+$/g, '').replace(/\.git$/i, '');
@@ -245,29 +262,33 @@ const pluginState = (
 const commandText = (executable: string, args: ReadonlyArray<string>) =>
   [executable, ...args].join(' ');
 
-const capture = (executable: string, args: ReadonlyArray<string>) =>
+const capture = (
+  adapter: SetupTargetAdapter,
+  args: ReadonlyArray<string>,
+  stage: Extract<SetupFailureStage, 'detect' | 'inspect'>
+) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    return yield* runner.capture(Command.make(executable, ...args)).pipe(
+    return yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
       Effect.timeoutFail({
         duration: SETUP_COMMAND_TIMEOUT,
         onTimeout: () =>
-          new Error(
-            `The \`${commandText(executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`
-          ),
+          setupProcessError({
+            adapter,
+            stage,
+            message: `The \`${commandText(adapter.executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+          }),
       })
     );
   });
 
-const isCommandNotFound = (error: unknown): boolean => {
-  if (error === null || typeof error !== 'object') return false;
-  const record = error as Record<string, unknown>;
-  return record._tag === 'SystemError' && record.reason === 'NotFound';
-};
-
-const captureOptional = (executable: string, args: ReadonlyArray<string>) =>
-  capture(executable, args).pipe(
-    Effect.catchIf(isCommandNotFound, () => Effect.succeed<CommandResult | undefined>(undefined))
+const captureOptional = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =>
+  capture(adapter, args, 'detect').pipe(
+    Effect.catchIf(Schema.is(PlatformError.SystemError), error =>
+      error.reason === 'NotFound'
+        ? Effect.succeed<CommandResult | undefined>(undefined)
+        : Effect.fail(error)
+    )
   );
 
 const targetLabel = (target: AgentHost): string => (target === 'claude' ? 'Claude Code' : 'Codex');
@@ -315,9 +336,14 @@ const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string)
 
     for (const args of adapter.inspectionHelpArgs) {
       const command = commandText(adapter.executable, args);
-      const result = yield* capture(adapter.executable, args).pipe(
-        Effect.mapError(
-          error => new Error(capabilityCheckFailureMessage(adapter, command, errorMessage(error)))
+      const result = yield* capture(adapter, args, 'detect').pipe(
+        Effect.mapError(cause =>
+          setupProcessError({
+            adapter,
+            stage: 'detect',
+            message: capabilityCheckFailureMessage(adapter, command, errorMessage(cause)),
+            cause,
+          })
         )
       );
       if (result.exitCode !== 0) {
@@ -336,56 +362,60 @@ const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string)
 
 const detectAdapter = (adapter: SetupTargetAdapter) =>
   Effect.gen(function* () {
-    const versionArgs = ['--version'] as const;
+    const versionArgs = ['--version'];
     const versionCommand = commandText(adapter.executable, versionArgs);
-    const captureResult = yield* captureOptional(adapter.executable, versionArgs).pipe(
-      Effect.map(result => ({ result }) as const),
-      Effect.catchAll(error => Effect.succeed({ error } as const))
-    );
-    if ('error' in captureResult) {
-      return {
-        available: true,
-        supported: false,
-        unsupportedReason: capabilityCheckFailureMessage(
-          adapter,
-          versionCommand,
-          errorMessage(captureResult.error)
-        ),
-      };
-    }
-    const { result } = captureResult;
-    if (!result) return { available: false, supported: false };
-    if (result.exitCode === 127) return { available: false, supported: false };
-    if (result.exitCode !== 0) {
-      return {
-        available: true,
-        supported: false,
-        unsupportedReason: capabilityCheckFailureMessage(
-          adapter,
-          versionCommand,
-          commandResultDetail(result)
-        ),
-      };
-    }
+    return yield* captureOptional(adapter, versionArgs).pipe(
+      Effect.matchEffect({
+        onFailure: cause =>
+          Effect.succeed({
+            available: true,
+            supported: false,
+            unsupportedReason: capabilityCheckFailureMessage(
+              adapter,
+              versionCommand,
+              errorMessage(cause)
+            ),
+          }),
+        onSuccess: result => {
+          if (!result || result.exitCode === 127) {
+            return Effect.succeed({ available: false, supported: false });
+          }
+          if (result.exitCode !== 0) {
+            return Effect.succeed({
+              available: true,
+              supported: false,
+              unsupportedReason: capabilityCheckFailureMessage(
+                adapter,
+                versionCommand,
+                commandResultDetail(result)
+              ),
+            });
+          }
 
-    const version = result.stdout.trim() || result.stderr.trim();
-    const support = yield* supportsInspection(adapter, version).pipe(
-      Effect.catchAll(error =>
-        Effect.succeed({ supported: false, reason: errorMessage(error) } as const)
-      )
+          const version = result.stdout.trim() || result.stderr.trim();
+          return supportsInspection(adapter, version).pipe(
+            Effect.match({
+              onFailure: cause => ({ supported: false, reason: errorMessage(cause) }),
+              onSuccess: support => support,
+            }),
+            Effect.map(support =>
+              version
+                ? {
+                    available: true,
+                    supported: support.supported,
+                    version,
+                    ...(support.supported ? {} : { unsupportedReason: support.reason }),
+                  }
+                : {
+                    available: true,
+                    supported: support.supported,
+                    ...(support.supported ? {} : { unsupportedReason: support.reason }),
+                  }
+            )
+          );
+        },
+      })
     );
-    return version
-      ? {
-          available: true,
-          supported: support.supported,
-          version,
-          ...(support.supported ? {} : { unsupportedReason: support.reason }),
-        }
-      : {
-          available: true,
-          supported: support.supported,
-          ...(support.supported ? {} : { unsupportedReason: support.reason }),
-        };
   });
 
 const commandFailureSuffix = (result: CommandResult): string => {
@@ -393,7 +423,7 @@ const commandFailureSuffix = (result: CommandResult): string => {
 };
 
 const errorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message;
+  if (Predicate.isError(error)) return error.message;
   return String(error);
 };
 
@@ -411,12 +441,14 @@ const captureInspection = (
   operation: string,
   setupOperation: SetupOperation
 ) =>
-  capture(adapter.executable, args).pipe(
-    Effect.mapError(
-      error =>
-        new Error(
-          `Failed to inspect ${targetLabel(adapter.target)} ${operation}: ${errorMessage(error)}. ${recoveryHint(adapter, setupOperation)}`
-        )
+  capture(adapter, args, 'inspect').pipe(
+    Effect.mapError(cause =>
+      setupProcessError({
+        adapter,
+        stage: 'inspect',
+        message: `Failed to inspect ${targetLabel(adapter.target)} ${operation}: ${errorMessage(cause)}. ${recoveryHint(adapter, setupOperation)}`,
+        cause,
+      })
     )
   );
 
@@ -428,19 +460,19 @@ const requireInspection = <T>(
   setupOperation: SetupOperation
 ) => {
   if (result.exitCode !== 0) {
-    return Effect.fail(
-      new Error(
-        `Failed to inspect ${targetLabel(adapter.target)} ${operation}${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`
-      )
-    );
+    return setupProcessError({
+      adapter,
+      stage: 'inspect',
+      message: `Failed to inspect ${targetLabel(adapter.target)} ${operation}${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`,
+    });
   }
   const inspected = parse(result.stdout);
   if (!inspected) {
-    return Effect.fail(
-      new Error(
-        `${targetLabel(adapter.target)} returned invalid JSON while inspecting ${operation}. ${recoveryHint(adapter, setupOperation)}`
-      )
-    );
+    return setupProcessError({
+      adapter,
+      stage: 'inspect',
+      message: `${targetLabel(adapter.target)} returned invalid JSON while inspecting ${operation}. ${recoveryHint(adapter, setupOperation)}`,
+    });
   }
   return Effect.succeed(inspected);
 };
@@ -470,7 +502,11 @@ const inspectAdapter = (
     }
 
     if (!detection.supported) {
-      return yield* Effect.fail(new Error(unsupportedInspectionMessage(adapter)));
+      return yield* setupProcessError({
+        adapter,
+        stage: 'inspect',
+        message: unsupportedInspectionMessage(adapter),
+      });
     }
 
     const [marketplaces, plugins] = yield* Effect.all([
@@ -551,41 +587,65 @@ const runRequired = (
     const result = yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
       Effect.timeoutFail({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () => new Error(`${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`),
+        onTimeout: () =>
+          setupProcessError({
+            adapter,
+            stage: 'mutate',
+            message: `${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+          }),
       }),
-      Effect.mapError(
-        error =>
-          new Error(
-            `${operation} failed: ${errorMessage(error)}. ${recoveryHint(adapter, setupOperation)}`
-          )
+      Effect.mapError(cause =>
+        setupProcessError({
+          adapter,
+          stage: 'mutate',
+          message: `${operation} failed: ${errorMessage(cause)}. ${recoveryHint(adapter, setupOperation)}`,
+          cause,
+        })
       )
     );
     if (result.exitCode !== 0) {
-      return yield* Effect.fail(
-        new Error(
-          `${operation} failed${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`
-        )
-      );
+      return yield* setupProcessError({
+        adapter,
+        stage: 'mutate',
+        message: `${operation} failed${commandFailureSuffix(result)}. ${recoveryHint(adapter, setupOperation)}`,
+      });
     }
   });
 
 const validateInitialState = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) => {
   if (!initial.available) {
-    return Effect.fail(
-      new Error(
-        `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`
-      )
-    );
+    return setupProcessError({
+      adapter,
+      stage: 'validate',
+      message: `${adapter.executable} is not installed or not available on PATH. Install it and rerun \`composio setup --target ${adapter.target}\`.`,
+    });
   }
   if (initial.marketplace_conflict) {
-    return Effect.fail(
-      new Error(
-        `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`
-      )
-    );
+    return setupProcessError({
+      adapter,
+      stage: 'validate',
+      message: `The ${adapter.target} marketplace named "composio" points to a different source. Run \`${adapter.marketplaceRemoveCommand}\`, then rerun \`composio setup --target ${adapter.target}\`.`,
+    });
   }
   return Effect.void;
 };
+
+const toSetupTargetResult = (params: {
+  readonly adapter: SetupTargetAdapter;
+  readonly final: InspectedSetupTarget;
+  readonly pluginChanged: boolean;
+  readonly skillChanged: boolean;
+}): SetupTargetResult => ({
+  target: params.adapter.target,
+  available: params.final.available,
+  marketplace_configured: params.final.marketplace_configured,
+  plugin_installed: params.final.plugin_installed,
+  plugin_enabled: params.final.plugin_enabled,
+  cli_skill_ready: params.final.cli_skill_ready,
+  changed: params.pluginChanged || params.skillChanged,
+  plugin_changed: params.pluginChanged,
+  skill_changed: params.skillChanged,
+});
 
 const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) =>
   Effect.gen(function* () {
@@ -607,35 +667,27 @@ const installAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarg
     let skillChanged = false;
     if (adapter.skillSource === 'standalone' && !initial.cli_skill_ready) {
       skillChanged = yield* skillInstaller.ensureClaudeSkill.pipe(
-        Effect.mapError(
-          error =>
-            new Error(
-              `Installing the Claude Code CLI skill failed: ${errorMessage(error)}. ${recoveryHint(adapter, 'setup')}`
-            )
+        Effect.mapError(cause =>
+          setupProcessError({
+            adapter,
+            stage: 'skill',
+            message: `Installing the Claude Code CLI skill failed: ${errorMessage(cause)}. ${recoveryHint(adapter, 'setup')}`,
+            cause,
+          })
         )
       );
     }
 
     const final = yield* inspectAdapter(adapter);
     if (!isSetupReady(final)) {
-      return yield* Effect.fail(
-        new Error(
-          `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`composio setup --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
-        )
-      );
+      return yield* setupProcessError({
+        adapter,
+        stage: 'verify',
+        message: `Setup commands completed, but ${adapter.target} did not report the Composio plugin and CLI skill as ready. Rerun \`composio setup --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+      });
     }
 
-    return {
-      target: adapter.target,
-      available: final.available,
-      marketplace_configured: final.marketplace_configured,
-      plugin_installed: final.plugin_installed,
-      plugin_enabled: final.plugin_enabled,
-      cli_skill_ready: final.cli_skill_ready,
-      changed: pluginChanged || skillChanged,
-      plugin_changed: pluginChanged,
-      skill_changed: skillChanged,
-    } satisfies SetupTargetResult;
+    return toSetupTargetResult({ adapter, final, pluginChanged, skillChanged });
   });
 
 const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTarget) =>
@@ -655,35 +707,27 @@ const uninstallAdapter = (adapter: SetupTargetAdapter, initial: InspectedSetupTa
     let skillChanged = false;
     if (adapter.skillSource === 'standalone') {
       skillChanged = yield* skillInstaller.removeClaudeSkill.pipe(
-        Effect.mapError(
-          error =>
-            new Error(
-              `Removing the Claude Code CLI skill failed: ${errorMessage(error)}. ${recoveryHint(adapter, 'uninstall')}`
-            )
+        Effect.mapError(cause =>
+          setupProcessError({
+            adapter,
+            stage: 'skill',
+            message: `Removing the Claude Code CLI skill failed: ${errorMessage(cause)}. ${recoveryHint(adapter, 'uninstall')}`,
+            cause,
+          })
         )
       );
     }
 
     const final = yield* inspectAdapter(adapter, undefined, 'uninstall');
     if (final.plugin_installed) {
-      return yield* Effect.fail(
-        new Error(
-          `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`
-        )
-      );
+      return yield* setupProcessError({
+        adapter,
+        stage: 'verify',
+        message: `Uninstall commands completed, but ${adapter.target} still reports the Composio plugin as installed. Rerun \`composio setup --uninstall --target ${adapter.target}\` or inspect the native ${adapter.target} plugin configuration.`,
+      });
     }
 
-    return {
-      target: adapter.target,
-      available: final.available,
-      marketplace_configured: final.marketplace_configured,
-      plugin_installed: final.plugin_installed,
-      plugin_enabled: final.plugin_enabled,
-      cli_skill_ready: final.cli_skill_ready,
-      changed: pluginChanged || skillChanged,
-      plugin_changed: pluginChanged,
-      skill_changed: skillChanged,
-    } satisfies SetupTargetResult;
+    return toSetupTargetResult({ adapter, final, pluginChanged, skillChanged });
   });
 
 const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHost>>>> = {
@@ -733,17 +777,27 @@ export const inspectSetupTargets = (
     return inspected;
   });
 
-export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+const runSetupTargets = <E, R>(
+  inspected: ReadonlyArray<InspectedSetupTarget>,
+  runAdapter: (
+    adapter: SetupTargetAdapter,
+    status: InspectedSetupTarget
+  ) => Effect.Effect<SetupTargetResult, E, R>,
+  verb: 'Setup' | 'Uninstall'
+) =>
   Effect.gen(function* () {
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
-      const result = yield* installAdapter(ADAPTERS[status.target], status).pipe(
+      const result = yield* runAdapter(ADAPTERS[status.target], status).pipe(
         Effect.mapError(error => {
           if (completed.length === 0) return error;
           const targets = completed.map(item => item.target).join(', ');
-          return new Error(
-            `Setup completed for ${targets} before a later target failed: ${errorMessage(error)}`
-          );
+          return setupProcessError({
+            adapter: ADAPTERS[status.target],
+            stage: 'mutate',
+            message: `${verb} completed for ${targets} before a later target failed: ${errorMessage(error)}`,
+            cause: error,
+          });
         })
       );
       completed.push(result);
@@ -751,20 +805,8 @@ export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarge
     return completed;
   });
 
+export const installSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
+  runSetupTargets(inspected, installAdapter, 'Setup');
+
 export const uninstallSetupTargets = (inspected: ReadonlyArray<InspectedSetupTarget>) =>
-  Effect.gen(function* () {
-    const completed: SetupTargetResult[] = [];
-    for (const status of inspected) {
-      const result = yield* uninstallAdapter(ADAPTERS[status.target], status).pipe(
-        Effect.mapError(error => {
-          if (completed.length === 0) return error;
-          const targets = completed.map(item => item.target).join(', ');
-          return new Error(
-            `Uninstall completed for ${targets} before a later target failed: ${errorMessage(error)}`
-          );
-        })
-      );
-      completed.push(result);
-    }
-    return completed;
-  });
+  runSetupTargets(inspected, uninstallAdapter, 'Uninstall');

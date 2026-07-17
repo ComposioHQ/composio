@@ -3,6 +3,7 @@ import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLeve
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import { BinaryBuildError } from './build-error';
 
 /**
  * Usage: `bun scripts/build-binary.ts`
@@ -68,7 +69,10 @@ export function buildBinary() {
     process.exitCode = exitCode;
 
     if (exitCode !== 0) {
-      return yield* Effect.fail(new Error('Failed to build binary'));
+      return yield* new BinaryBuildError({
+        message: 'Failed to build binary',
+        exitCode,
+      });
     }
 
     yield* Effect.logDebug('', 'Binary built successfully');

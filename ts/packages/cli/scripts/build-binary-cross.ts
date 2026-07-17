@@ -19,6 +19,7 @@ import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLeve
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
 import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import { BinaryBuildError } from './build-error';
 
 /**
  * Maps Bun cross-compilation targets to Composio artifact names.
@@ -103,7 +104,11 @@ export function buildBinaryCross() {
     process.exitCode = exitCode;
 
     if (exitCode !== 0) {
-      return yield* Effect.fail(new Error(`Failed to cross-compile binary for ${target}`));
+      return yield* new BinaryBuildError({
+        message: `Failed to cross-compile binary for ${target}`,
+        target,
+        exitCode,
+      });
     }
 
     const companionOutputDir = './dist/binaries/companions';

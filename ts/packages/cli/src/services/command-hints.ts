@@ -1,7 +1,11 @@
+import { Record as EffectRecord } from 'effect';
+
 type HintParams = Readonly<Record<string, string | undefined>>;
 
-const getParam = (params: HintParams | undefined, key: string, fallback: string) =>
-  params?.[key]?.trim() ? params[key]! : fallback;
+const getParam = (params: HintParams | undefined, key: string, fallback: string) => {
+  const value = params?.[key];
+  return value?.trim() ? value : fallback;
+};
 
 export type CommandHintId =
   | 'root.search'
@@ -120,7 +124,7 @@ export const commandHintLinks = (id: CommandHintId): ReadonlyArray<CommandHintId
   COMMAND_HINTS[id].links ?? [];
 
 export const renderCommandHintGraph = () => ({
-  nodes: (Object.keys(COMMAND_HINTS) as CommandHintId[]).map(id => ({
+  nodes: EffectRecord.toEntries(COMMAND_HINTS).map(([id]) => ({
     id,
     example: commandHintExample(id),
     links: [...commandHintLinks(id)],

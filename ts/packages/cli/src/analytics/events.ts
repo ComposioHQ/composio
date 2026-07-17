@@ -87,6 +87,9 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
   1607, // Upstream_ValidationError
   3702, // ComposioTools_ValidationError
 ]);
+// A parent `composio run` process hands these values to child CLI invocations through the
+// environment at spawn time; the event builders below are plain synchronous functions that
+// run outside any Effect context, so effect/Config is not available here.
 const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';
 const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;
 

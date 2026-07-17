@@ -1,4 +1,4 @@
-import { Effect, Config, Option } from 'effect';
+import { Config, Data, Effect, Option } from 'effect';
 import { FileSystem, HttpClient, Path } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -6,6 +6,7 @@ import { GITHUB_CONFIG } from 'src/effects/github-config';
 import { APP_VERSION, type CliReleaseChannel } from 'src/constants';
 import {
   fetchLatestCliRelease,
+  fetchCliReleaseByTag,
   type GitHubRelease,
   type GitHubRepoConfig,
 } from 'src/effects/resolve-cli-release';
@@ -35,6 +36,13 @@ type GitHubConfig = GitHubRepoConfig & {
   TAG: Option.Option<string>;
   ACCESS_TOKEN: Option.Option<string>;
 };
+
+export class SkillInstallError extends Data.TaggedError('effects/SkillInstallError')<{
+  readonly cause?: unknown;
+  readonly message: string;
+  readonly phase: 'release' | 'download' | 'extract';
+  readonly status?: number;
+}> {}
 
 const hasSkillAsset = (release: GitHubRelease) =>
   release.assets.some(asset => asset.name === SKILL_ASSET_NAME);
@@ -142,44 +150,59 @@ export const installSkill = (options?: {
       releaseTag: options?.releaseTag,
     });
 
-    // Find the skill asset URL from the release
-    const releaseUrl = `${githubConfig.API_BASE_URL}/repos/${githubConfig.OWNER}/${githubConfig.REPO}/releases/tags/${encodeURIComponent(tag)}`;
-    const releaseResponse = yield* httpClient
-      .get(releaseUrl)
-      .pipe(
-        Effect.catchAll(error => Effect.fail(new Error(`Failed to fetch release ${tag}: ${error}`)))
-      );
-
-    if (releaseResponse.status < 200 || releaseResponse.status >= 300) {
-      return yield* Effect.fail(
-        new Error(`Release ${tag} not found (HTTP ${releaseResponse.status})`)
-      );
-    }
-
-    const release = (yield* releaseResponse.json.pipe(
-      Effect.catchAll(() => Effect.fail(new Error('Failed to parse release JSON')))
-    )) as { assets: Array<{ name: string; browser_download_url: string }> };
+    const release = yield* fetchCliReleaseByTag({ githubConfig, httpClient, tag }).pipe(
+      Effect.mapError(
+        error =>
+          new SkillInstallError({
+            cause: error,
+            message: error.message,
+            phase: 'release',
+            status: error.status,
+          })
+      )
+    );
 
     const skillAsset = release.assets.find(a => a.name === SKILL_ASSET_NAME);
     if (!skillAsset) {
       return yield* Effect.fail(
-        new Error(`Skill asset ${SKILL_ASSET_NAME} not found in release ${tag}`)
+        new SkillInstallError({
+          message: `Skill asset ${SKILL_ASSET_NAME} not found in release ${tag}`,
+          phase: 'release',
+        })
       );
     }
 
     // Download the skill zip
-    const downloadResponse = yield* httpClient
-      .get(skillAsset.browser_download_url)
-      .pipe(Effect.catchAll(error => Effect.fail(new Error(`Failed to download skill: ${error}`))));
+    const downloadResponse = yield* httpClient.get(skillAsset.browser_download_url).pipe(
+      Effect.mapError(
+        cause =>
+          new SkillInstallError({
+            cause,
+            message: 'Failed to download skill',
+            phase: 'download',
+          })
+      )
+    );
 
     if (downloadResponse.status < 200 || downloadResponse.status >= 300) {
       return yield* Effect.fail(
-        new Error(`Failed to download skill (HTTP ${downloadResponse.status})`)
+        new SkillInstallError({
+          message: `Failed to download skill (HTTP ${downloadResponse.status})`,
+          phase: 'download',
+          status: downloadResponse.status,
+        })
       );
     }
 
     const zipData = yield* downloadResponse.arrayBuffer.pipe(
-      Effect.catchAll(() => Effect.fail(new Error('Failed to read skill zip data')))
+      Effect.mapError(
+        cause =>
+          new SkillInstallError({
+            cause,
+            message: 'Failed to read skill zip data',
+            phase: 'download',
+          })
+      )
     );
 
     // Extract to a temp dir, then move into place
@@ -192,13 +215,23 @@ export const installSkill = (options?: {
 
       yield* Effect.tryPromise({
         try: () => extractZip(zipPath, { dir: tmpDir }),
-        catch: error => new Error(`Failed to extract skill zip: ${error}`),
+        catch: cause =>
+          new SkillInstallError({
+            cause,
+            message: 'Failed to extract skill zip',
+            phase: 'extract',
+          }),
       });
 
       // The zip contains composio-cli/ directory
       const extractedDir = path.join(tmpDir, SKILL_NAME);
       if (!(yield* fs.exists(extractedDir))) {
-        return yield* Effect.fail(new Error('Extracted skill directory not found'));
+        return yield* Effect.fail(
+          new SkillInstallError({
+            message: 'Extracted skill directory not found',
+            phase: 'extract',
+          })
+        );
       }
 
       yield* Effect.gen(function* () {
