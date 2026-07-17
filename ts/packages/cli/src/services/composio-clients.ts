@@ -1013,15 +1013,21 @@ export const getSessionInfo = (params: {
   });
 
 /**
- * Calls GET /api/v3/auth/session/info using only the x-user-api-key header.
- * Unlike getSessionInfo which requires org/project IDs, this variant resolves
- * session metadata from the UAK alone — useful during login before org/project
- * context is known.
+ * Calls GET /api/v3/auth/session/info using the x-user-api-key header.
+ * Unlike getSessionInfo which requires both org AND project IDs, this variant
+ * resolves session metadata from the UAK alone — useful during login before
+ * org/project context is known.
+ *
+ * When `orgId` is provided, it is forwarded as `x-org-id` so the backend
+ * resolves the session against the caller's currently-selected global org
+ * (set via `composio orgs switch`). Without it, the backend falls back to the
+ * API key's home org, which makes the response ignore any org switch.
  * Uses plain fetch since this endpoint is not available in @composio/client.
  */
 export const getSessionInfoByUserApiKey = (params: {
   baseURL: string;
   userApiKey: string;
+  orgId?: string;
 }): Effect.Effect<SessionInfoResponse, HttpServerError | HttpDecodingError> =>
   Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
@@ -1031,6 +1037,7 @@ export const getSessionInfoByUserApiKey = (params: {
           redirect: 'error',
           headers: {
             'x-user-api-key': params.userApiKey,
+            ...(params.orgId ? { 'x-org-id': params.orgId } : {}),
             'User-Agent': '@composio/cli',
             Accept: '*/*',
             'Content-Type': 'application/json',

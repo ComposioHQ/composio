@@ -31,6 +31,8 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               const sessionInfo = yield* getSessionInfoByUserApiKey({
                 baseURL: ctx.data.baseURL,
                 userApiKey: apiKey,
+                // Reflect the org selected via `composio orgs switch`, not the key's home org.
+                orgId: Option.getOrUndefined(ctx.data.orgId),
               }).pipe(Effect.option);
               const email = Option.map(sessionInfo, info => info.org_member.email).pipe(
                 Option.getOrUndefined
