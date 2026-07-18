@@ -54,12 +54,24 @@ const cliRestrictedImportPaths = [
     message: 'Use Command from @effect/platform instead.',
   },
   {
+    name: 'fs',
+    message: 'Use FileSystem from @effect/platform instead.',
+  },
+  {
     name: 'node:fs',
     message: 'Use FileSystem from @effect/platform instead.',
   },
   {
+    name: 'os',
+    message: 'Use an Effect service instead of importing node:os directly.',
+  },
+  {
     name: 'node:os',
     message: 'Use an Effect service instead of importing node:os directly.',
+  },
+  {
+    name: 'path',
+    message: 'Use Path from @effect/platform instead.',
   },
   {
     name: 'node:path',
@@ -69,7 +81,7 @@ const cliRestrictedImportPaths = [
 
 const cliRestrictedImportPatterns = [
   {
-    group: ['node:fs/*'],
+    group: ['fs/*', 'node:fs/*'],
     message: 'Use FileSystem from @effect/platform instead.',
   },
 ];

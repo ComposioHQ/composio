@@ -1,7 +1,6 @@
 import { BunFileSystem } from '@effect/platform-bun';
 import { Data, Effect, Option, Schema, pipe } from 'effect';
-import { FileSystem } from '@effect/platform';
-import * as path from 'path';
+import { FileSystem, Path } from '@effect/platform';
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
@@ -36,6 +35,7 @@ export class JsPackageManagerDetector extends Effect.Service<JsPackageManagerDet
       yield* Effect.logDebug('[JsPackageManagerDetector] Identifying JS package manager...');
 
       const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
 
       const parsePackageManager = (pm: string): Option.Option<PackageManager> => {
         if (pm.startsWith('pnpm@')) return Option.some('pnpm');
@@ -151,6 +151,6 @@ export class JsPackageManagerDetector extends Effect.Service<JsPackageManagerDet
         detectJsPackageManager,
       };
     }),
-    dependencies: [BunFileSystem.layer],
+    dependencies: [BunFileSystem.layer, Path.layer],
   }
 ) {}

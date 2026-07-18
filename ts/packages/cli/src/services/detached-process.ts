@@ -21,14 +21,44 @@ export const spawnDetached = (
   options?: { readonly inheritStderr?: boolean }
 ): Effect.Effect<void, DetachedProcessSpawnError> =>
   Effect.try({
-    try: () => {
-      const child = spawn(command, [...args], {
+    try: () =>
+      spawn(command, [...args], {
         detached: true,
         stdio: options?.inheritStderr === true ? ['ignore', 'ignore', 'inherit'] : 'ignore',
         // Leaving `env` unset makes the child inherit the complete parent environment.
-      });
-      child.on('error', () => undefined);
-      child.unref();
-    },
+      }),
     catch: cause => new DetachedProcessSpawnError({ command, cause }),
-  });
+  }).pipe(
+    Effect.flatMap(child =>
+      Effect.async<void, DetachedProcessSpawnError>(resume => {
+        let settled = false;
+
+        const cleanup = () => {
+          child.removeListener('spawn', onSpawn);
+          child.removeListener('error', onError);
+        };
+
+        const settle = (result: Effect.Effect<void, DetachedProcessSpawnError>) => {
+          if (settled) {
+            return;
+          }
+
+          settled = true;
+          cleanup();
+          resume(result);
+        };
+
+        const onSpawn = () => {
+          child.unref();
+          settle(Effect.void);
+        };
+
+        const onError = (cause: Error) => {
+          settle(Effect.fail(new DetachedProcessSpawnError({ command, cause })));
+        };
+
+        child.once('spawn', onSpawn);
+        child.once('error', onError);
+      })
+    )
+  );

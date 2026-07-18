@@ -5,9 +5,10 @@
 import { fileURLToPath } from 'node:url';
 import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
-import { Config, Data, Effect, Option, Schema } from 'effect';
+import { Config, ConfigProvider, Data, Effect, Option, Schema } from 'effect';
 import extractZip from 'extract-zip';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
+import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 
 export const RUN_COMPANION_MODULE_BASENAMES: ReadonlyArray<string> = [
@@ -413,6 +414,13 @@ const toRepairError = (error: unknown) =>
     cause: error,
   });
 
+// Self-repair honors the unprefixed GITHUB_* contract (set by CI and the binary
+// build workflow, mirrored by cli-local-tools) first, then falls back to the
+// CLI-wide COMPOSIO_-prefixed spelling installed by cli-main's config provider.
+const repairConfigProvider = BaseConfigProviderLive.pipe(
+  ConfigProvider.orElse(() => extendConfigProvider(BaseConfigProviderLive))
+);
+
 const resolveRepairReleaseTag = ({
   execPath,
   appVersion,
@@ -426,7 +434,7 @@ const resolveRepairReleaseTag = ({
       Config.option(Config.string('GITHUB_TAG')).pipe(
         Config.map(tag => Option.getOrUndefined(Option.map(tag, value => value.trim())))
       )
-    );
+    ).pipe(Effect.withConfigProvider(repairConfigProvider));
     if (pinnedTag) {
       return pinnedTag;
     }
@@ -451,7 +459,7 @@ const githubRepairConfig = Effect.orDie(
       Config.map(Option.getOrUndefined)
     ),
   })
-);
+).pipe(Effect.withConfigProvider(repairConfigProvider));
 
 export const repairMissingInstalledRunCompanionModules = ({
   callerImportMetaUrl,
