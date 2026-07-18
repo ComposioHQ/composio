@@ -220,6 +220,26 @@ console.log('Account deleted successfully');
 Deletion is permanent and cannot be undone.
 </Callout>
 
+## Credential masking
+
+By default, sensitive fields in connected account responses are partially masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
+
+Instead of returning full values, the API returns the first 4 characters followed by `...`:
+
+```json
+{
+  "access_token": "gho_...",
+  "refresh_token": "ghr_...",
+  "api_key": "sk-l..."
+}
+```
+
+Values shorter than 4 characters are replaced with `REDACTED`.
+
+This applies to the Get Connected Account and List Connected Accounts endpoints.
+
+If your use case requires calling a provider API directly, use [Proxy execute](/docs/extending-sessions/proxy-execute) instead of retrieving the raw access token. Composio injects the connected account's credentials server-side, so your application does not need to handle them.
+
 ## Multiple accounts
 
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).
