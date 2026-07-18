@@ -507,6 +507,53 @@ class TestTriggers:
             mock_builder.connect.assert_called_once_with(timeout=15.0)
             assert result == mock_subscription
 
+    def test_subscription_builder_disconnects_pusher_on_connect_timeout(
+        self, mock_client
+    ):
+        """`_SubcriptionBuilder.connect()` must disconnect the pusher connection
+        it started when it times out, otherwise pysher's background thread redials
+        forever for the life of the process. Regression test for #3858."""
+        from composio.core.models.triggers import _SubcriptionBuilder
+
+        builder = _SubcriptionBuilder(client=mock_client)
+
+        # The pusher instance returned by _get_pusher_instance: a bare Mock whose
+        # .connect() starts a (fake) connection and .disconnect() must be called
+        # on the timeout path.
+        fake_pusher = Mock()
+
+        # project info returned by internal.get_sdk_realtime_credentials().
+        fake_project_info = Mock()
+        fake_project_info.pusher_key = "pk"
+        fake_project_info.pusher_cluster = "cl"
+        fake_project_info.project_id = "proj"
+
+        with (
+            patch.object(builder, "_get_pusher_instance", return_value=fake_pusher),
+            patch.object(
+                builder.internal,
+                "get_sdk_realtime_credentials",
+                return_value=fake_project_info,
+            ),
+        ):
+            # The subscription never reports is_alive(), so the wait loop always
+            # exhausts the deadline and takes the timeout branch.
+            with (
+                patch.object(builder.subscription, "is_alive", return_value=False),
+                patch("composio.core.models.triggers.time.sleep"),
+            ):
+                # Use a tiny timeout so the deadline is immediately in the past;
+                # time.time() returns a fixed value past it so the loop exits
+                # after one iteration without relying on real time.
+                with patch("composio.core.models.triggers.time.time") as mock_time:
+                    mock_time.return_value = 1_000_000.0
+                    with pytest.raises(exceptions.ComposioSDKTimeoutError):
+                        builder.connect(timeout=0.0)
+
+            # The pusher connection we started must have been torn down.
+            fake_pusher.connect.assert_called_once()
+            fake_pusher.disconnect.assert_called_once()
+
 
 class TestVerifyWebhook:
     """Test cases for verify_webhook method."""

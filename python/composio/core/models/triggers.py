@@ -864,7 +864,11 @@ class _SubcriptionBuilder(WithLogger):
         )
         pusher.connect()
 
-        # Wait for connection to get established
+        # Wait for connection to get established. If we time out, we must tear
+        # down the connection we just started; otherwise pysher's background
+        # thread keeps redialing every `reconnect_interval` for the life of the
+        # process (and, if it eventually succeeds, silently consumes events for
+        # the abandoned subscription). See issue #3858.
         deadline = time.time() + timeout
         while time.time() < deadline:
             if not self.subscription.is_alive():
@@ -873,6 +877,7 @@ class _SubcriptionBuilder(WithLogger):
 
             self.subscription._pusher = pusher  # pylint: disable=protected-access
             return self.subscription
+        pusher.disconnect()
         raise ComposioSDKTimeoutError(
             "Timed out while waiting for trigger listener to be established"
         )
