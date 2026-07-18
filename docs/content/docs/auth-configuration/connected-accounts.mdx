@@ -220,18 +220,6 @@ console.log('Account deleted successfully');
 Deletion is permanent and cannot be undone.
 </Callout>
 
-## Credential redaction
-
-OAuth credential values in connected account responses are redacted for security. This includes `access_token`, `refresh_token`, and `Authorization` fields.
-
-OAuth token redaction applies to both Composio-managed and custom auth configs. Project masking settings do not restore raw OAuth tokens in connected account responses.
-
-If you need to call a provider API that is not covered by a Composio tool, use [Proxy execute](/docs/extending-sessions/proxy-execute). Composio injects the connected account's credentials server-side, so your application can call the provider API without handling the raw credentials.
-
-<Callout type="info">
-If Proxy execute cannot cover your use case, contact support with the provider endpoint and flow you need. Do not build integrations that depend on reading raw OAuth tokens from connected account responses.
-</Callout>
-
 ## Multiple accounts
 
 Users can connect multiple accounts for the same toolkit (e.g., personal and work Gmail).

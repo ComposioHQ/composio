@@ -17,9 +17,3 @@ Sensitive fields are now partially masked, revealing only the **first 4 characte
 Before: REDACTED
 After:  abcd...
 ```
-
-### Current behavior
-
-Connected-account OAuth tokens are now redacted for both Composio-managed and custom auth configs. Project masking settings do not restore raw access tokens, refresh tokens, or authorization headers in connected account responses.
-
-Use [Proxy execute](/docs/extending-sessions/proxy-execute) when you need to call a provider API without handling its raw credentials. See the [June 4 security update](/docs/changelog/2026/06/04) for details.
