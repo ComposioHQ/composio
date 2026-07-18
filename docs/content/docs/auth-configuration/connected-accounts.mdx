@@ -220,40 +220,16 @@ console.log('Account deleted successfully');
 Deletion is permanent and cannot be undone.
 </Callout>
 
-## Credential masking
+## Credential redaction
 
-By default, sensitive fields in connected account responses are partially masked for security. This affects fields like `access_token`, `refresh_token`, `api_key`, `bearer_token`, `password`, and other secrets.
+OAuth credential values in connected account responses are redacted for security. This includes `access_token`, `refresh_token`, and `Authorization` fields.
 
-Instead of returning full values, the API returns the first 4 characters followed by `...`:
+OAuth token redaction applies to both Composio-managed and custom auth configs. Project masking settings do not restore raw OAuth tokens in connected account responses.
 
-```json
-{
-  "access_token": "gho_...",
-  "refresh_token": "ghr_...",
-  "api_key": "sk-l..."
-}
-```
+If you need to call a provider API that is not covered by a Composio tool, use [Proxy execute](/docs/extending-sessions/proxy-execute). Composio injects the connected account's credentials server-side, so your application can call the provider API without handling the raw credentials.
 
-Values shorter than 4 characters are replaced with `REDACTED`.
-
-This applies to the Get Connected Account and List Connected Accounts endpoints.
-
-### Disabling masking
-
-If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
-
-1. **Dashboard**: Go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets"
-2. **API**:
-
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"mask_secret_keys_in_connected_account": false}'
-```
-
-<Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
+<Callout type="info">
+If Proxy execute cannot cover your use case, contact support with the provider endpoint and flow you need. Do not build integrations that depend on reading raw OAuth tokens from connected account responses.
 </Callout>
 
 ## Multiple accounts

@@ -18,9 +18,8 @@ Before: REDACTED
 After:  abcd...
 ```
 
-### Disabling Masking
+### Current behavior
 
-If you need to disable masking for your use case, you have two options:
+Connected-account OAuth tokens are now redacted for both Composio-managed and custom auth configs. Project masking settings do not restore raw access tokens, refresh tokens, or authorization headers in connected account responses.
 
-1. **Via UI:** Navigate to **Project Settings** → **Configuration** tab and update the masking settings
-2. **Via API:** Use the [Patch Project Config API](https://docs.composio.dev/rest-api/projects/patch-org-project-config)
+Use [Proxy execute](/docs/extending-sessions/proxy-execute) when you need to call a provider API without handling its raw credentials. See the [June 4 security update](/docs/changelog/2026/06/04) for details.
