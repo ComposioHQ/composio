@@ -1,0 +1,154 @@
+---
+title: AI/ML API
+description: Use AI/ML API's OpenAI-compatible endpoint with Composio's OpenAI provider.
+keywords: [aimlapi, ai ml api, openai compatible, gateway]
+---
+
+AI/ML API exposes an OpenAI-compatible chat completions endpoint at `https://api.aimlapi.com/v1`. Because Composio's OpenAI provider already emits OpenAI tool-call shapes, you do not need a separate Composio provider package for AI/ML API.
+
+Use this path when you want AI/ML API to host the model call and Composio to handle tool discovery, authentication, and tool execution.
+
+<Steps>
+<Step>
+**Install**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+<PackageInstall ecosystem="python" packages="composio composio_openai openai" />
+</Tab>
+<Tab value="TypeScript">
+<PackageInstall packages="@composio/core @composio/openai openai" />
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+**Configure API keys**
+
+```txt title=".env"
+COMPOSIO_API_KEY=xxxxxxxxx
+AIMLAPI_API_KEY=xxxxxxxxx
+```
+
+Set `COMPOSIO_API_KEY` from [Composio settings](https://dashboard.composio.dev/~/project/settings/api-keys). Set `AIMLAPI_API_KEY` from your AI/ML API account.
+</Step>
+
+<Step>
+**Create a session and run chat completions**
+
+<Tabs groupId="language" items={["Python", "TypeScript"]} persist>
+<Tab value="Python">
+```python
+import json
+import os
+
+from openai import OpenAI
+from composio import Composio
+from composio_openai import OpenAIProvider
+
+composio = Composio(provider=OpenAIProvider())
+client = OpenAI(
+    api_key=os.environ["AIMLAPI_API_KEY"],
+    base_url="https://api.aimlapi.com/v1",
+)
+
+session = composio.create(user_id="user_123")
+tools = session.tools()
+
+messages = [
+    {
+        "role": "user",
+        "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+    }
+]
+
+response = client.chat.completions.create(
+    model="openai/gpt-4o-mini",
+    messages=messages,
+    tools=tools,
+)
+
+while response.choices[0].message.tool_calls:
+    results = composio.provider.handle_tool_calls(response=response, user_id="user_123")
+    messages.append(response.choices[0].message)
+    for index, tool_call in enumerate(response.choices[0].message.tool_calls):
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": json.dumps(results[index]),
+            }
+        )
+    response = client.chat.completions.create(
+        model="openai/gpt-4o-mini",
+        messages=messages,
+        tools=tools,
+    )
+
+print(response.choices[0].message.content)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import OpenAI from 'openai';
+import { Composio } from '@composio/core';
+import { OpenAIProvider } from '@composio/openai';
+
+const composio = new Composio({
+  provider: new OpenAIProvider(),
+});
+
+const client = new OpenAI({
+  apiKey: process.env.AIMLAPI_API_KEY,
+  baseURL: 'https://api.aimlapi.com/v1',
+});
+
+const session = await composio.create('user_123');
+const tools = await session.tools();
+
+const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+  {
+    role: 'user',
+    content: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+  },
+];
+
+let response = await client.chat.completions.create({
+  model: 'openai/gpt-4o-mini',
+  messages,
+  tools,
+});
+
+while (response.choices[0].message.tool_calls?.length) {
+  const results = await composio.provider.handleToolCalls('user_123', response);
+  messages.push(response.choices[0].message);
+  for (const [index, toolCall] of response.choices[0].message.tool_calls.entries()) {
+    messages.push({
+      role: 'tool',
+      tool_call_id: toolCall.id,
+      content: JSON.stringify(results[index]),
+    });
+  }
+  response = await client.chat.completions.create({
+    model: 'openai/gpt-4o-mini',
+    messages,
+    tools,
+  });
+}
+
+console.log(response.choices[0].message.content);
+```
+</Tab>
+</Tabs>
+</Step>
+</Steps>
+
+## Notes
+
+- Start with chat completions. Responses API compatibility depends on the OpenAI-compatible gateway's support for the Responses shape.
+- Keep the Composio provider as `OpenAIProvider`; the only gateway-specific configuration is the OpenAI client's `base_url` or `baseURL`.
+- Use a model name that is available in your AI/ML API account.
+
+## Next
+
+<Card icon={<BookOpen />} title="OpenAI provider" href="/docs/providers/openai" description="Use the same provider with OpenAI's native endpoints, Responses API, and Agents SDK." />

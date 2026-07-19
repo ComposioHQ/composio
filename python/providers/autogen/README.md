@@ -45,12 +45,12 @@ user_proxy = UserProxyAgent(
 # Register tools with both agents
 composio.provider.register_tools(caller=chatbot, executor=user_proxy, tools=tools)
 
-response = user_proxy.initiate_chat(
+response = user_proxy.run(
     chatbot,
     message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
-)
+).process()
 
-print(response.chat_history)
+print(response)
 ```
 
 For multi-turn use, store `session.session_id` and reuse it with `composio.use(session_id)` instead of calling `create()` again.
