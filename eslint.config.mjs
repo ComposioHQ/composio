@@ -20,16 +20,27 @@ const portableRestrictedImportPaths = [
   },
 ];
 
+const cliProcessEnvMessage =
+  'Read environment variables through effect/Config instead of process.env.';
+
+const cliProcessEnvRestrictions = [
+  "MemberExpression[object.name='process'][computed=false][property.name='env']",
+  "MemberExpression[object.name='process'][computed=true][property.value='env']",
+  "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.name='env']",
+  "VariableDeclarator[init.name='process'] > ObjectPattern > Property[key.value='env']",
+  "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.name='env']",
+  "AssignmentExpression[right.name='process'] > ObjectPattern > Property[key.value='env']",
+  "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.name='env']",
+  "AssignmentPattern[right.name='process'] > ObjectPattern > Property[key.value='env']",
+].map(selector => ({ selector, message: cliProcessEnvMessage }));
+
 const cliRestrictedSyntax = [
   {
     selector: 'TryStatement',
     message:
       'Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch.',
   },
-  {
-    selector: "MemberExpression[object.name='process'][property.name='env']",
-    message: 'Read environment variables through effect/Config instead of process.env.',
-  },
+  ...cliProcessEnvRestrictions,
 ];
 
 const cliProcessStreamRestrictions = [
