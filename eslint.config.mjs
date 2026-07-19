@@ -104,6 +104,18 @@ const cliDescriptorSeamRestrictedImportPatterns = [
   },
 ];
 
+const cliDescriptorSeamRestrictedSyntax = [
+  {
+    selector: 'ImportExpression[source.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]',
+    message: cliDescriptorSeamMessage,
+  },
+  {
+    selector:
+      "CallExpression[callee.name='require'][arguments.0.value=/^@effect\\/cli(?:\\/(?:CommandDescriptor|Usage))?$/]",
+    message: cliDescriptorSeamMessage,
+  },
+];
+
 const effectSchemaRestrictedImportPaths = [
   {
     name: 'zod',
@@ -114,6 +126,17 @@ const effectSchemaRestrictedImportPaths = [
 const effectSchemaRestrictedImportPatterns = [
   {
     group: ['zod/*'],
+    message: 'Use Schema from effect for tool input validation.',
+  },
+];
+
+const effectSchemaRestrictedSyntax = [
+  {
+    selector: 'ImportExpression[source.value=/^zod(?:\\/|$)/]',
+    message: 'Use Schema from effect for tool input validation.',
+  },
+  {
+    selector: "CallExpression[callee.name='require'][arguments.0.value=/^zod(?:\\/|$)/]",
     message: 'Use Schema from effect for tool input validation.',
   },
 ];
@@ -198,6 +221,7 @@ export default [
         // uncommented by the boundary-ratchet PR of this stack
         // ...cliRestrictedSyntax,
         ...cliProcessStreamRestrictions,
+        ...cliDescriptorSeamRestrictedSyntax,
       ],
     },
   },
@@ -241,6 +265,7 @@ export default [
           patterns: cliRestrictedImportPatterns,
         },
       ],
+      'no-restricted-syntax': ['error', ...cliProcessStreamRestrictions],
     },
   },
   {
@@ -252,6 +277,12 @@ export default [
           paths: [...cliRestrictedImportPaths, ...effectSchemaRestrictedImportPaths],
           patterns: [...cliRestrictedImportPatterns, ...effectSchemaRestrictedImportPatterns],
         },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        ...cliProcessStreamRestrictions,
+        ...cliDescriptorSeamRestrictedSyntax,
+        ...effectSchemaRestrictedSyntax,
       ],
     },
   },

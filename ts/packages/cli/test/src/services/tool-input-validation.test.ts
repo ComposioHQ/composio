@@ -145,4 +145,20 @@ describe('tool input validation', () => {
       expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
     })
   );
+
+  it.effect('preserves all field and unknown-key failures in one validation pass', () =>
+    Effect.gen(function* () {
+      const error = yield* validateToolInputArgumentsWithDefinition(
+        'GMAIL_SEND_EMAIL',
+        { recipient_email: 42, subject: false, recipent_email: 'karan@composio.dev' },
+        definition
+      ).pipe(Effect.flip);
+
+      expect(error.issues.some(issue => issue.startsWith('recipient_email:'))).toBe(true);
+      expect(error.issues.some(issue => issue.startsWith('subject:'))).toBe(true);
+      expect(error.issues).toContain(
+        '<root>: Unknown key "recipent_email". Use "recipient_email" instead. Allowed top-level keys: recipient_email, subject, body'
+      );
+    })
+  );
 });

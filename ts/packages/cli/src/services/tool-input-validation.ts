@@ -1,8 +1,11 @@
 import { AutoCorrect, CliConfig } from '@effect/cli';
 import { FileSystem, Path } from '@effect/platform';
 import { Data, Effect, Option, ParseResult, Schema } from 'effect';
-import { jsonSchemaToZodSchema } from '@composio/core';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
+import {
+  jsonSchemaToEffectSchema,
+  type JsonSchemaValidationIssue,
+} from '@composio/json-schema-to-effect-schema';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
@@ -397,15 +400,8 @@ const formatUnknownKeyIssue = (
   });
 };
 
-type ToolInputSchemaIssue = {
-  readonly code: string;
-  readonly keys?: ReadonlyArray<string>;
-  readonly message: string;
-  readonly path: ReadonlyArray<PropertyKey>;
-};
-
 const formatSchemaIssues = (
-  schemaIssues: ReadonlyArray<ToolInputSchemaIssue>,
+  schemaIssues: ReadonlyArray<JsonSchemaValidationIssue>,
   allowedKeys: ReadonlyArray<string>
 ): ReadonlyArray<string> =>
   schemaIssues.flatMap(issue => {
@@ -420,27 +416,10 @@ const formatSchemaIssues = (
 const compileToolInputSchema = (
   jsonSchema: Record<string, unknown>,
   allowedKeys: ReadonlyArray<string>
-) => {
-  const validator = jsonSchemaToZodSchema(jsonSchema);
-
-  return Schema.declare([Schema.Unknown], {
-    decode: () => (input, _options, ast) => {
-      const parsed = validator.safeParse(input);
-      if (parsed.success) {
-        return ParseResult.succeed(parsed.data);
-      }
-
-      const messages = formatSchemaIssues(parsed.error.issues, allowedKeys);
-      const [first, ...rest] = messages.map(message => new ParseResult.Type(ast, input, message));
-      return ParseResult.fail(
-        first
-          ? new ParseResult.Composite(ast, input, [first, ...rest])
-          : new ParseResult.Type(ast, input, 'Input does not match the tool schema.')
-      );
-    },
-    encode: () => input => ParseResult.succeed(input),
+) =>
+  jsonSchemaToEffectSchema(jsonSchema, {
+    formatIssues: issues => formatSchemaIssues(issues, allowedKeys),
   });
-};
 
 export const validateToolInputArgumentsWithDefinition = (
   slug: string,
