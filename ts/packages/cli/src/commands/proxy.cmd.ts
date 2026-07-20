@@ -1,5 +1,6 @@
 import { Args, Command, Options } from '@effect/cli';
 import { Data, Effect, Either, Option } from 'effect';
+import type { Composio } from '@composio/client';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -22,6 +23,10 @@ import {
   mapComposioError,
 } from 'src/services/composio-error-overrides';
 import { parseJsonRecord } from 'src/utils/parse-json';
+import {
+  formatConnectedAccountChoices,
+  resolveConnectedAccountSelection,
+} from 'src/services/connected-account-selection';
 
 const endpoint = Args.text({ name: 'url' }).pipe(
   Args.withDescription('Absolute or relative API endpoint to call through proxy execute.')
@@ -30,6 +35,13 @@ const endpoint = Args.text({ name: 'url' }).pipe(
 const toolkit = Options.text('toolkit').pipe(
   Options.withAlias('t'),
   Options.withDescription('Toolkit slug whose connected account should be used')
+);
+
+const account = Options.text('account').pipe(
+  Options.withDescription(
+    'Connected account selector. Matches alias, word_id, or connected account id for the toolkit.'
+  ),
+  Options.optional
 );
 
 const method = Options.text('method').pipe(
@@ -248,9 +260,48 @@ const runProxyConnectedToolkitFailFast = (params: {
     }
   });
 
+const resolveProxyConnectedAccount = (params: {
+  readonly client: Composio;
+  readonly toolkit: string;
+  readonly userId: string;
+  readonly selector: string;
+}) =>
+  Effect.gen(function* () {
+    const accounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [params.toolkit],
+          user_ids: [params.userId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: error =>
+        new Error(
+          `Failed to load connected accounts for toolkit "${params.toolkit}": ${String(error)}`
+        ),
+    });
+    const items = accounts.items as Parameters<typeof resolveConnectedAccountSelection>[0];
+    const selected = resolveConnectedAccountSelection(items, params.selector);
+    if (selected) return selected.id;
+
+    const choices = formatConnectedAccountChoices(
+      accounts.items as Parameters<typeof formatConnectedAccountChoices>[0]
+    );
+    const hint =
+      choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : ' No active connected accounts were found for that toolkit.';
+    return yield* Effect.fail(
+      new Error(
+        `No connected account matched "${params.selector}" for toolkit "${params.toolkit}".${hint}`
+      )
+    );
+  });
+
 export const proxyCmd = Command.make('proxy', {
   endpoint,
   toolkit,
+  account,
   method,
   headers,
   data,
@@ -263,6 +314,7 @@ export const proxyCmd = Command.make('proxy', {
       '',
       'Examples:',
       '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
+      '  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
       `  composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
       `    -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
       '',
@@ -271,8 +323,9 @@ export const proxyCmd = Command.make('proxy', {
       '  composio run \'const f = await proxy("gmail"); ...\'   Use proxy in a script',
     ].join('\n')
   ),
-  Command.withHandler(({ endpoint, toolkit, method, headers, data, skipConnectionCheck }) =>
+  Command.withHandler(options =>
     Effect.gen(function* () {
+      const { endpoint, toolkit, account, method, headers, data, skipConnectionCheck } = options;
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
@@ -320,8 +373,19 @@ export const proxyCmd = Command.make('proxy', {
             orgId: resolvedProject.orgId,
             projectId: resolvedProject.projectId,
           });
+          const selectedConnectedAccountId = Option.isSome(account)
+            ? yield* resolveProxyConnectedAccount({
+                client,
+                toolkit: normalizedToolkit,
+                userId: consumerUserId,
+                selector: account.value,
+              })
+            : undefined;
           const { sessionId } = yield* resolveToolRouterSession(client, consumerUserId, {
             toolkits: [normalizedToolkit],
+            connectedAccounts: selectedConnectedAccountId
+              ? { [normalizedToolkit]: selectedConnectedAccountId }
+              : undefined,
             cacheScope: {
               orgId: resolvedProject.orgId,
               projectId: resolvedProject.projectId,

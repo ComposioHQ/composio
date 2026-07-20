@@ -23,8 +23,6 @@ import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
@@ -339,6 +337,32 @@ const formatExistingAccountLabels = (
     })
     .join(', ');
 
+const isAliasConflictMessage = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('alias') &&
+    (normalized.includes('already') ||
+      normalized.includes('in use') ||
+      normalized.includes('exists') ||
+      normalized.includes('taken') ||
+      normalized.includes('duplicate'))
+  );
+};
+
+const showAliasConflictGuidance = (params: {
+  readonly ui: TerminalUI;
+  readonly alias: string;
+  readonly executeCommand: string;
+  readonly listCommand: string;
+}) =>
+  params.ui.note(
+    [
+      `Use the existing alias: ${params.executeCommand} <TOOL_SLUG> --account ${params.alias} -d '{ ... }'`,
+      `List connected accounts: ${params.listCommand}`,
+    ].join('\n'),
+    'Tips'
+  );
+
 const ensureAliasForAdditionalAccount = (params: {
   readonly ui: TerminalUI;
   readonly alias: Option.Option<string>;
@@ -637,9 +661,18 @@ const handleLegacyAuthConfigLink = (params: {
               extractMessage(error) ??
               `Failed to create link for auth config "${params.authConfigId}".`;
             yield* params.ui.log.error(message);
-            yield* params.ui.log.step(
-              'Browse available auth configs:\n> composio dev auth-configs list'
-            );
+            if (Option.isSome(normalizedAlias) && isAliasConflictMessage(message)) {
+              yield* showAliasConflictGuidance({
+                ui: params.ui,
+                alias: normalizedAlias.value,
+                executeCommand: 'composio dev playground-execute',
+                listCommand: 'composio dev connected-accounts list',
+              });
+            } else {
+              yield* params.ui.log.step(
+                'Browse available auth configs:\n> composio dev auth-configs list'
+              );
+            }
             return Option.none();
           })
         )
@@ -702,13 +735,7 @@ const runConnectedAccountsLink = (params: {
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
-    const cliConfig = yield* ComposioCliUserConfig;
-    const aliasOption = cliConfig.isExperimentalFeatureEnabled(
-      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-    )
-      ? params.alias
-      : Option.none<string>();
-    const normalizedAliasOption = yield* resolveNormalizedAliasOption(aliasOption);
+    const normalizedAliasOption = yield* resolveNormalizedAliasOption(params.alias);
 
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
@@ -767,7 +794,7 @@ const runConnectedAccountsLink = (params: {
         projectName: params.projectName,
         noWait: params.noWait,
         noBrowser: params.noBrowser,
-        alias: aliasOption,
+        alias: params.alias,
         ui,
         clientSingleton,
         projectContext,
@@ -855,7 +882,16 @@ const runConnectedAccountsLink = (params: {
               extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
             yield* ui.log.error(message);
             yield* Effect.logDebug('Link error:', error);
-            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            if (Option.isSome(normalizedAliasOption) && isAliasConflictMessage(message)) {
+              yield* showAliasConflictGuidance({
+                ui,
+                alias: normalizedAliasOption.value,
+                executeCommand: 'composio execute',
+                listCommand: `composio connections list --toolkit ${toolkitSlug}`,
+              });
+            } else {
+              yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
+            }
             return Option.none();
           })
         ),

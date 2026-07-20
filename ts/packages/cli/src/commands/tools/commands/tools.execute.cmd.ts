@@ -1114,17 +1114,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const accountSelector = cliConfig.isExperimentalFeatureEnabled(
-      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-    )
-      ? params.account
-      : Option.none<string>();
     const toolkitSlug = isLocalToolSlug(params.slug) ? undefined : toolkitFromToolSlug(params.slug);
     const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
       client,
       toolkitSlug,
       userId: resolvedUserId.value,
-      selector: accountSelector,
+      selector: params.account,
     });
     const args = Option.isSome(params.file)
       ? yield* getOrFetchToolInputDefinition(params.slug, {

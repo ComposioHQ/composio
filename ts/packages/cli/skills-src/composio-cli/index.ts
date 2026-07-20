@@ -76,7 +76,6 @@ const commands: SkillCommand[] = [
         name: '`--account`',
         description:
           'Select which connected account to use by alias, word_id, or account id when multiple accounts exist for the same toolkit.',
-        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
       },
     ],
     examples: [
@@ -136,7 +135,6 @@ const commands: SkillCommand[] = [
         name: '`--alias`',
         description:
           'Assign an alias to the connected account. Required when creating an additional account for the same toolkit.',
-        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
       },
     ],
     notes: ['Retry the original `execute` command after linking succeeds.'],
@@ -169,7 +167,6 @@ const commands: SkillCommand[] = [
       {
         name: '`--account`',
         description: 'Select which connected account to use by alias, word_id, or account id.',
-        features: [CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT],
       },
     ],
     notes: [
@@ -183,7 +180,13 @@ const commands: SkillCommand[] = [
       'Use `proxy` when a toolkit supports a raw API operation that is easier than finding a dedicated tool slug.',
     examples: [
       {
-        code: 'composio proxy https://api.github.com/user --toolkit github --method GET </dev/null',
+        code: 'composio proxy https://api.github.com/user --toolkit github --account work --method GET </dev/null',
+      },
+    ],
+    flags: [
+      {
+        name: '`--account`',
+        description: 'Select which connected account to use by alias, word_id, or account id.',
       },
     ],
   },

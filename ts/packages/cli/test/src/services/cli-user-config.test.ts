@@ -34,8 +34,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), false);
-      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
-      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
       assertEquals(config.data.artifactDirectory, undefined);
 
@@ -86,8 +84,6 @@ describe('ComposioCliUserConfig', () => {
       assertEquals(config.data.developerDangerousCommandsEnabled, false);
       assertEquals(config.data.experimentalFeatures.listen, undefined);
       assertEquals(config.isExperimentalFeatureEnabled('listen'), true);
-      assertEquals(config.data.experimentalFeatures.multi_account, undefined);
-      assertEquals(config.isExperimentalFeatureEnabled('multi_account'), true);
       assertEquals(config.data.experimentalSubagentTarget, 'auto');
     }).pipe(Effect.provide(CliUserConfigTest));
   });

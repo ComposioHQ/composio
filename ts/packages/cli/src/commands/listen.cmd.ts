@@ -21,8 +21,6 @@ import {
 } from 'src/services/connected-account-selection';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { matchesTriggerListenFilters } from './triggers/filter';
 import { parseTriggerListenEvent } from './triggers/parse';
 import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
@@ -462,12 +460,6 @@ export const listenCmd = Command.make(
         orgId: resolvedProject.orgId,
         projectId: resolvedProject.projectId,
       });
-      const cliConfig = yield* ComposioCliUserConfig;
-      const accountSelector = cliConfig.isExperimentalFeatureEnabled(
-        CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-      )
-        ? account
-        : Option.none<string>();
       const {
         listeningToProjectEvent,
         createParams,
@@ -482,7 +474,7 @@ export const listenCmd = Command.make(
         timeout,
         stream,
         maxEvents,
-        account: accountSelector,
+        account,
         client,
         resolvedProject,
       });
