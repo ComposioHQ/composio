@@ -495,10 +495,8 @@ describe('CLI: composio dev connected-accounts link', () => {
       fixture: 'global-test-user-id',
     })
   )('[Given] a duplicate alias [Then] link explains how to use the existing account', it => {
-    it.scoped('prints account-selection recovery commands for the API error', () =>
+    it.scoped('detects the exact existing alias before creating a link', () =>
       Effect.gen(function* () {
-        toolRouterLinkSpy.mockRejectedValueOnce(new Error('Alias "work" is already in use'));
-
         yield* cli(['link', 'gmail', '--alias', 'work']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
@@ -506,8 +504,8 @@ describe('CLI: composio dev connected-accounts link', () => {
         expect(output).toContain('Alias "work" is already in use');
         expect(output).toContain('composio execute <TOOL_SLUG> --account work');
         expect(output).toContain('composio connections list --toolkit gmail');
-        expect(toolRouterCreateSpy).toHaveBeenCalled();
-        expect(toolRouterLinkSpy).toHaveBeenCalled();
+        expect(toolRouterCreateSpy).not.toHaveBeenCalled();
+        expect(toolRouterLinkSpy).not.toHaveBeenCalled();
       })
     );
   });

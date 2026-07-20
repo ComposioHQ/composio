@@ -1,5 +1,8 @@
+import type { Composio } from '@composio/client';
+import { Data, Effect, Option, Schema } from 'effect';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
-import { Schema } from 'effect';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
+import type { TerminalUI } from 'src/services/terminal-ui';
 
 // `ConnectedAccountItem` widened with an `'UNKNOWN'` sentinel for statuses
 // the closed schema doesn't yet know about. Selection only picks `'ACTIVE'`,
@@ -134,3 +137,65 @@ export const formatConnectedAccountChoices = (
   items: ReadonlyArray<ConnectedAccountItem>
 ): ReadonlyArray<string> =>
   items.filter(isUsableConnectedAccount).sort(compareNewestFirst).map(formatConnectedAccountChoice);
+
+export class ConnectedAccountResolutionError extends Data.TaggedError(
+  'services/ConnectedAccountResolutionError'
+)<{
+  readonly message: string;
+  readonly toolkitSlug: string;
+  readonly cause?: unknown;
+}> {}
+
+export const resolveConnectedAccountForToolkit = (params: {
+  readonly client: Composio;
+  readonly toolkitSlug?: string;
+  readonly userId: string;
+  readonly selector: Option.Option<string>;
+}): Effect.Effect<string | undefined, ConnectedAccountResolutionError, TerminalUI> =>
+  Effect.gen(function* () {
+    if (!params.toolkitSlug) return undefined;
+    const toolkitSlug = params.toolkitSlug;
+
+    const accounts = yield* Effect.tryPromise({
+      try: () =>
+        params.client.connectedAccounts.list({
+          toolkit_slugs: [toolkitSlug],
+          user_ids: [params.userId],
+          statuses: ['ACTIVE'],
+          limit: 100,
+        }),
+      catch: cause =>
+        new ConnectedAccountResolutionError({
+          message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
+          toolkitSlug,
+          cause,
+        }),
+    });
+    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectedAccountResolutionError({
+            message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
+            toolkitSlug,
+            cause,
+          })
+      )
+    );
+
+    const selected = resolveConnectedAccountSelection(
+      selectableAccounts,
+      Option.getOrUndefined(params.selector)
+    );
+    if (selected) return selected.id;
+    if (Option.isNone(params.selector)) return undefined;
+
+    const choices = formatConnectedAccountChoices(selectableAccounts);
+    const hint =
+      choices.length > 0
+        ? ` Available accounts: ${choices.join(', ')}.`
+        : ' No active connected accounts were found for that toolkit.';
+    return yield* new ConnectedAccountResolutionError({
+      message: `No connected account matched "${params.selector.value}" for toolkit "${toolkitSlug}".${hint}`,
+      toolkitSlug,
+    });
+  });

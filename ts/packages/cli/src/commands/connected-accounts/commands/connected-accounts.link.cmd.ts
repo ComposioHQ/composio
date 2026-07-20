@@ -337,18 +337,6 @@ const formatExistingAccountLabels = (
     })
     .join(', ');
 
-const isAliasConflictMessage = (message: string): boolean => {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes('alias') &&
-    (normalized.includes('already') ||
-      normalized.includes('in use') ||
-      normalized.includes('exists') ||
-      normalized.includes('taken') ||
-      normalized.includes('duplicate'))
-  );
-};
-
 const showAliasConflictGuidance = (params: {
   readonly ui: TerminalUI;
   readonly alias: string;
@@ -362,6 +350,37 @@ const showAliasConflictGuidance = (params: {
     ].join('\n'),
     'Tips'
   );
+
+const ensureAliasIsAvailable = (params: {
+  readonly ui: TerminalUI;
+  readonly alias: Option.Option<string>;
+  readonly existingAccounts: ReadonlyArray<{
+    readonly id: string;
+    readonly alias?: string | null;
+  }>;
+  readonly executeCommand: string;
+  readonly listCommand: string;
+}) =>
+  Effect.gen(function* () {
+    if (Option.isNone(params.alias)) return true as const;
+
+    const normalizedAlias = params.alias.value.toLowerCase();
+    const existing = params.existingAccounts.find(
+      item => item.alias?.trim().toLowerCase() === normalizedAlias
+    );
+    if (!existing) return true as const;
+
+    yield* params.ui.log.error(
+      `Alias "${params.alias.value}" is already in use by connected account "${existing.id}".`
+    );
+    yield* showAliasConflictGuidance({
+      ui: params.ui,
+      alias: params.alias.value,
+      executeCommand: params.executeCommand,
+      listCommand: params.listCommand,
+    });
+    return false as const;
+  });
 
 const ensureAliasForAdditionalAccount = (params: {
   readonly ui: TerminalUI;
@@ -636,6 +655,15 @@ const handleLegacyAuthConfigLink = (params: {
       // failure must not abort the link flow.
       Effect.catchAll(() => Effect.succeed({ items: [] }))
     );
+    const aliasAvailable = yield* ensureAliasIsAvailable({
+      ui: params.ui,
+      alias: normalizedAlias,
+      existingAccounts: existingAccounts.items,
+      executeCommand: 'composio dev playground-execute',
+      listCommand: 'composio dev connected-accounts list',
+    });
+    if (!aliasAvailable) return;
+
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
@@ -661,18 +689,9 @@ const handleLegacyAuthConfigLink = (params: {
               extractMessage(error) ??
               `Failed to create link for auth config "${params.authConfigId}".`;
             yield* params.ui.log.error(message);
-            if (Option.isSome(normalizedAlias) && isAliasConflictMessage(message)) {
-              yield* showAliasConflictGuidance({
-                ui: params.ui,
-                alias: normalizedAlias.value,
-                executeCommand: 'composio dev playground-execute',
-                listCommand: 'composio dev connected-accounts list',
-              });
-            } else {
-              yield* params.ui.log.step(
-                'Browse available auth configs:\n> composio dev auth-configs list'
-              );
-            }
+            yield* params.ui.log.step(
+              'Browse available auth configs:\n> composio dev auth-configs list'
+            );
             return Option.none();
           })
         )
@@ -836,6 +855,14 @@ const runConnectedAccountsLink = (params: {
       // failure must not abort the link flow.
       Effect.catchAll(() => Effect.succeed({ items: [] }))
     );
+    const aliasAvailable = yield* ensureAliasIsAvailable({
+      ui,
+      alias: normalizedAliasOption,
+      existingAccounts: existingAccounts.items,
+      executeCommand: 'composio execute',
+      listCommand: `composio connections list --toolkit ${toolkitSlug}`,
+    });
+    if (!aliasAvailable) return;
 
     const linkOpt = yield* ui
       .withSpinner(
@@ -882,16 +909,7 @@ const runConnectedAccountsLink = (params: {
               extractMessage(error) ?? `Failed to create link for toolkit "${toolkitSlug}".`;
             yield* ui.log.error(message);
             yield* Effect.logDebug('Link error:', error);
-            if (Option.isSome(normalizedAliasOption) && isAliasConflictMessage(message)) {
-              yield* showAliasConflictGuidance({
-                ui,
-                alias: normalizedAliasOption.value,
-                executeCommand: 'composio execute',
-                listCommand: `composio connections list --toolkit ${toolkitSlug}`,
-              });
-            } else {
-              yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
-            }
+            yield* ui.log.step('Browse available toolkits:\n> composio dev toolkits list');
             return Option.none();
           })
         ),
