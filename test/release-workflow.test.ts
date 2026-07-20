@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { findIgnoredChangesetReleases } from '../ts/scripts/validate-changesets.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const tsCorePackageJson = JSON.parse(
@@ -35,6 +36,10 @@ const pythonReleaseWorkflow = readFileSync(
 );
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
 const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
+const validateChangesetsScriptPath = new URL(
+  '../ts/scripts/validate-changesets.mjs',
+  import.meta.url
+).pathname;
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
 const releaseScript = readFileSync(releaseScriptUrl, 'utf8');
@@ -244,6 +249,57 @@ if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
 
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {
   throw new Error('changeset:release must use the CLI-release filtering script');
+}
+
+if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
+  throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+{
+  const violations = findIgnoredChangesetReleases(
+    {
+      changesets: [
+        {
+          id: 'ignored-package-fixture',
+          releases: [
+            { name: '@composio/cli', type: 'patch' },
+            { name: '@composio/core', type: 'patch' },
+          ],
+        },
+      ],
+    },
+    ['@composio/cli']
+  );
+
+  if (
+    violations.length !== 1 ||
+    violations[0].changeset !== 'ignored-package-fixture' ||
+    violations[0].package !== '@composio/cli'
+  ) {
+    throw new Error('changeset validation must identify releases targeting ignored packages');
+  }
+}
+
+{
+  const result = spawnSync(process.execPath, [validateChangesetsScriptPath], {
+    encoding: 'utf8',
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      `changeset validation failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+    );
+  }
+}
+
+const validateChangesetsIdx = tsReleaseWorkflow.indexOf('run: pnpm validate:changesets');
+const changesetsActionIdx = tsReleaseWorkflow.indexOf('uses: changesets/action@');
+if (
+  validateChangesetsIdx === -1 ||
+  changesetsActionIdx === -1 ||
+  validateChangesetsIdx > changesetsActionIdx
+) {
+  throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
 if (changesetConfig.baseBranch !== 'next') {

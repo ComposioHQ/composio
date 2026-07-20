@@ -49,6 +49,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate Changesets
+        run: pnpm validate:changesets
+
       - name: Run Linting
         run: pnpm lint
 
