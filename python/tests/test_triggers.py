@@ -1584,3 +1584,56 @@ class TestTriggerSubscriptionParsing:
         assert len(truncated) < len(long)
         assert truncated.startswith("y" * _MAX_LOGGED_FRAME_CHARS)
         assert str(len(long)) in truncated
+
+
+class TestChunkedEventResilience:
+    """A malformed chunked frame must never tear down the subscription.
+
+    ``_handle_chunked_events`` is bound directly as a pysher channel callback,
+    and pysher invokes bound callbacks without a try/except. Before the fix,
+    any malformed frame (bad JSON, missing key, wrong type) propagated up and
+    killed the subscription — the same failure mode already guarded against in
+    ``_parse_payload``.
+    """
+
+    @pytest.fixture
+    def subscription(self):
+        """Create a TriggerSubscription with a mock client."""
+        return TriggerSubscription(client=Mock())
+
+    def test_malformed_json_does_not_raise(self, subscription):
+        """A non-JSON frame is logged and skipped, not raised."""
+        # Must not raise — pysher's dispatch loop has no try/except.
+        subscription._handle_chunked_events("not valid json {")
+        # No chunks were buffered for the bad frame.
+        assert subscription._chunks == {}
+
+    def test_missing_required_key_does_not_raise(self, subscription):
+        """A JSON object missing a required key is skipped, not raised."""
+        # Valid JSON, but missing 'chunk' / 'final' — KeyError must be caught.
+        event = json.dumps({"id": "evt-1", "index": 0})
+        subscription._handle_chunked_events(event)
+        assert subscription._chunks == {}
+
+    def test_valid_chunks_still_reassemble_after_a_bad_frame(self, subscription):
+        """A good multi-chunk event reassembles and dispatches after a bad frame."""
+        with patch.object(subscription, "_handle_event") as mock_handle:
+            # First, a malformed frame for a different id is dropped cleanly.
+            subscription._handle_chunked_events("garbage")
+            # Then a valid two-chunk event for id "good" reassembles.
+            subscription._handle_chunked_events(
+                json.dumps({"id": "good", "index": 0, "chunk": "hel", "final": False})
+            )
+            subscription._handle_chunked_events(
+                json.dumps({"id": "good", "index": 1, "chunk": "lo", "final": True})
+            )
+            mock_handle.assert_called_once_with(event="hello")
+
+    def test_wrong_index_type_does_not_raise(self, subscription):
+        """A non-int 'index' is skipped without raising."""
+        event = json.dumps(
+            {"id": "evt-1", "index": "zero", "chunk": "x", "final": True}
+        )
+        subscription._handle_chunked_events(event)
+        # The bad frame's id was buffered then cleared by the error handler.
+        assert subscription._chunks == {}

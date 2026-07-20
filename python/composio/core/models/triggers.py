@@ -425,7 +425,7 @@ _ = {
 
 
 class _ChunkedTriggerEventData(te.TypedDict):
-    """Cunked trigger event data model."""
+    """Chunked trigger event data model."""
 
     id: str
     index: int
@@ -667,15 +667,43 @@ class TriggerSubscription(Resource):
             return None
 
     def _handle_chunked_events(self, event: str) -> None:
-        """Handle chunked events."""
-        data = _ChunkedTriggerEventData(**json.loads(event))  # type: ignore
-        if data["id"] not in self._chunks:
-            self._chunks[data["id"]] = {}
+        """Handle chunked events.
 
-        self._chunks[data["id"]][data["index"]] = data["chunk"]
-        if data["final"]:
-            _chunks = self._chunks.pop(data["id"])
-            self._handle_event(event="".join([_chunks[idx] for idx in sorted(_chunks)]))
+        Like ``_handle_event``/``_parse_payload``, this is bound directly as a
+        pysher channel callback (see ``_Subscription.bind``). Pysher invokes
+        bound callbacks without a try/except, so any exception raised here — a
+        malformed JSON frame, a missing ``id``/``index``/``final``/``chunk``
+        key, or a wrong field type — propagates up and tears down the whole
+        subscription. Catch broadly and skip the bad frame instead, mirroring
+        the resilience policy already documented on ``_parse_payload``.
+        """
+        try:
+            data = _ChunkedTriggerEventData(**json.loads(event))  # type: ignore
+        except (json.JSONDecodeError, TypeError) as e:
+            self.logger.warning(
+                f"Error decoding chunked payload: {e}; "
+                f"frame: {_truncate_frame(event)}"
+            )
+            return
+
+        try:
+            if data["id"] not in self._chunks:
+                self._chunks[data["id"]] = {}
+
+            self._chunks[data["id"]][data["index"]] = data["chunk"]
+            if data["final"]:
+                _chunks = self._chunks.pop(data["id"])
+                self._handle_event(event="".join([_chunks[idx] for idx in sorted(_chunks)]))
+        except Exception as e:
+            # A single malformed chunk must never propagate into pysher's
+            # dispatch loop and tear down the subscription; drop it and keep
+            # listening. Any already-buffered chunks for this id are cleared so
+            # a later good frame with the same id can reassemble cleanly.
+            self._chunks.pop(data.get("id", ""), None)
+            self.logger.warning(
+                f"Error parsing chunked trigger payload: {e}; "
+                f"frame: {_truncate_frame(event)}"
+            )
 
     def _filters_match(
         self,
