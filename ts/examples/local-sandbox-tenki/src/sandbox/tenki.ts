@@ -72,13 +72,30 @@ export async function createTenkiSandbox(options: SandboxOptions): Promise<UserS
   const tenki = new TenkiSandbox({ authToken: options.apiKey });
 
   // Session creation requires a project; resolve one from the key's identity.
+  // Pinned ids must match exactly — a mistyped id fails loudly instead of
+  // silently booting the microVM in whatever workspace/project comes first.
   const identity = await tenki.whoAmI();
-  const workspace =
-    identity.workspaces.find(ws => ws.id === options.workspaceId) ?? identity.workspaces[0];
-  const project =
-    workspace?.projects.find(p => p.id === options.projectId) ?? workspace?.projects[0];
-  if (!workspace || !project) {
-    throw new Error('No Tenki workspace/project visible for this API key');
+  const workspace = options.workspaceId
+    ? identity.workspaces.find(ws => ws.id === options.workspaceId)
+    : identity.workspaces[0];
+  if (!workspace) {
+    throw new Error(
+      options.workspaceId
+        ? `Tenki workspace ${options.workspaceId} not visible to this API key ` +
+            `(visible: ${identity.workspaces.map(ws => ws.id).join(', ') || 'none'})`
+        : 'No Tenki workspace visible to this API key'
+    );
+  }
+  const project = options.projectId
+    ? workspace.projects.find(p => p.id === options.projectId)
+    : workspace.projects[0];
+  if (!project) {
+    throw new Error(
+      options.projectId
+        ? `Tenki project ${options.projectId} not found in workspace "${workspace.name}" ` +
+            `(visible: ${workspace.projects.map(p => p.id).join(', ') || 'none'})`
+        : `No Tenki project visible in workspace "${workspace.name}"`
+    );
   }
 
   // Failure-atomic boot: take the session handle *before* waiting for
