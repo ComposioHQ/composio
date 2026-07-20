@@ -27,34 +27,34 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Group / Command      | Purpose                                                                                                              |
+| Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `version`            | Display CLI version                                                                                                  |
-| `whoami`             | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)                          |
-| `login`              | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
-| `logout`             | Clear stored API key                                                                                                 |
-| `signup`             | Create a Composio account                                                                                            |
-| `upgrade`            | Self-update binary from GitHub releases                                                                              |
-| `init`               | Bootstrap a Composio project in the current directory                                                                |
-| `install`            | Install local-tool integrations                                                                                      |
-| `generate {ts        | py}`                                                                                                                 | Generate type stubs (auto-detects project language if no subcommand) |
-| `agent`              | Manage AI agent presets                                                                                              |
-| `toolkits`           | List / inspect / version toolkits                                                                                    |
-| `tools`              | List / inspect / `execute` tools                                                                                     |
-| `triggers`           | List / manage trigger types                                                                                          |
-| `auth-configs`       | Manage auth-config resources (`ac_*`)                                                                                |
-| `connected-accounts` | Manage connected accounts (`ca_*`)                                                                                   |
-| `connections`        | Alias / helper for connected-account flows                                                                           |
-| `orgs`               | Manage organizations                                                                                                 |
-| `projects`           | Manage projects                                                                                                      |
-| `local-tools`        | Manage local toolkits (via `@composio/cli-local-tools`)                                                              |
-| `logs`               | View tool-execution logs (`logs-cmd/`)                                                                               |
-| `config`             | Read/write CLI config                                                                                                |
-| `listen`             | Listen for events                                                                                                    |
-| `proxy`              | Proxy authenticated API requests                                                                                     |
-| `run`                | Run a saved script / preset                                                                                          |
-| `dev`                | Developer-only utilities                                                                                             |
-| `artifacts`          | Manage generated artifacts                                                                                           |
+| `version` | Display CLI version |
+| `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
+| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout` | Clear stored API key |
+| `signup` | Create a Composio account |
+| `upgrade` | Self-update binary from GitHub releases |
+| `init` | Bootstrap a Composio project in the current directory |
+| `install` | Install local-tool integrations |
+| `generate {ts        | py}` | Generate type stubs (auto-detects project language if no subcommand) |
+| `agent` | Manage AI agent presets |
+| `toolkits` | List / inspect / version toolkits |
+| `tools` | List / inspect / `execute` tools |
+| `triggers` | List / manage trigger types |
+| `auth-configs` | Manage auth-config resources (`ac_*`) |
+| `connected-accounts` | Manage connected accounts (`ca_*`) |
+| `connections` | Alias / helper for connected-account flows |
+| `orgs` | Manage organizations |
+| `projects` | Manage projects |
+| `local-tools` | Manage local toolkits (via `@composio/cli-local-tools`) |
+| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `config` | Read/write CLI config |
+| `listen` | Listen for events |
+| `proxy` | Proxy authenticated API requests |
+| `run` | Run a saved script / preset |
+| `dev` | Developer-only utilities |
+| `artifacts` | Manage generated artifacts |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
@@ -170,32 +170,17 @@ Outputs land in `recordings/{tapes,svgs,ascii}/<group>/<name>.{tape,svg,ascii}`.
 
 ## Release Workflow
 
-Two channels: **beta** (automatic) and **stable** (manual promotion via changeset).
+Use the repo-local `cli-release` skill before building or publishing first-party CLI binaries.
 
-### Beta (automatic)
-
-Every push to `next` touching `ts/packages/cli/**` triggers `.github/workflows/build-cli-binaries.yml`:
-
-1. Find latest stable `@composio/cli@X.Y.Z`
-2. Compute next patch `X.Y.Z+1`
-3. Build cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
-4. Publish GitHub prerelease `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
-
-Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users install with `composio upgrade --beta`.
-
-### Stable (via changeset)
-
-1. Create a CLI release changeset PR only when intentionally promoting CLI binary behavior through the stable release flow (`.changeset/<name>.md` with `"@composio/cli": patch`). Ordinary CLI source fixes still follow the repo rule: add a changeset only when the release path requires one.
-2. Merge into `next`
-3. Changeset bot opens "Release: update version" PR bumping `package.json`
-4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)
-5. `ts.release.yml` publishes via the repository-controlled `changeset:release` script, which filters `@composio/cli` tag output so only `build-cli-binaries.yml` can create CLI GitHub Releases
-
-Promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
+- A push to `next` touching CLI paths publishes a rolling beta automatically.
+- The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
+- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never add a changeset targeting either package; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
+- A direct `package.json` version bump is supported by the resolver only as an explicit release-owner recovery path, not the contributor default.
 
 ### Key Workflow Files
 
 - `.github/workflows/build-cli-binaries.yml` — binary build + release
-- `.github/workflows/ts.release.yml` — changeset bot + npm publish
 - `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
+- `.github/workflows/cli.bump-homebrew-tap.yml` — stable Homebrew formula update
+- `.github/scripts/cli-release/resolve-release-target.sh` — beta/stable target resolution
 - `.changeset/config.json`
