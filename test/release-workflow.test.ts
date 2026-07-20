@@ -12,7 +12,10 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { findIgnoredChangesetReleases } from '../ts/scripts/validate-changesets.mjs';
+import {
+  findIgnoredChangesetReleases,
+  validateChangesets,
+} from '../ts/scripts/validate-changesets.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const tsCorePackageJson = JSON.parse(
@@ -36,10 +39,6 @@ const pythonReleaseWorkflow = readFileSync(
 );
 const pythonMakefilePath = new URL('../python/Makefile', import.meta.url).pathname;
 const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.url).pathname;
-const validateChangesetsScriptPath = new URL(
-  '../ts/scripts/validate-changesets.mjs',
-  import.meta.url
-).pathname;
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
 const releaseScript = readFileSync(releaseScriptUrl, 'utf8');
@@ -281,14 +280,33 @@ if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-c
 }
 
 {
-  const result = spawnSync(process.execPath, [validateChangesetsScriptPath], {
-    encoding: 'utf8',
-  });
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-validation-'));
+  const changesetDir = join(fixtureDir, '.changeset');
+  const fixturePath = join(changesetDir, 'ignored-package-fixture.md');
 
-  if (result.status !== 0) {
-    throw new Error(
-      `changeset validation failed unexpectedly\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`
+  try {
+    mkdirSync(changesetDir, { recursive: true });
+    writeFileSync(join(changesetDir, 'config.json'), JSON.stringify({ ignore: ['@composio/cli'] }));
+    writeFileSync(
+      fixturePath,
+      '---\n"@composio/cli": patch\n"@composio/core": patch\n---\n\nFixture changeset.\n'
     );
+
+    let validationError = '';
+    try {
+      await validateChangesets(fixtureDir);
+    } catch (error) {
+      validationError = error instanceof Error ? error.message : String(error);
+    }
+
+    if (!validationError.includes('ignored-package-fixture: @composio/cli')) {
+      throw new Error('changeset validation must reject an ignored package outside a git checkout');
+    }
+
+    writeFileSync(fixturePath, '---\n"@composio/core": patch\n---\n\nValid fixture changeset.\n');
+    await validateChangesets(fixtureDir);
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
   }
 }
 
