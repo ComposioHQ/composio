@@ -1,6 +1,6 @@
 import { Validator } from '@cfworker/json-schema';
 import type { OutputUnit, Schema as InterpreterSchema, SchemaDraft } from '@cfworker/json-schema';
-import { Either, ParseResult, Schema } from 'effect';
+import { Schema } from 'effect';
 
 export type JsonSchemaValidationIssue = {
   readonly code: string;
@@ -231,12 +231,13 @@ const propertyIsDeclared = (parent: JsonObject | null, key: string): boolean => 
     return false;
   }
 
-  return Object.keys(parent.patternProperties).some(pattern =>
-    Either.getOrElse(
-      Either.try(() => new RegExp(pattern, 'u').test(key)),
-      () => false
-    )
-  );
+  return Object.keys(parent.patternProperties).some(pattern => {
+    try {
+      return new RegExp(pattern, 'u').test(key);
+    } catch {
+      return false;
+    }
+  });
 };
 
 const hasSpecificChildError = (errors: ReadonlyArray<OutputUnit>, error: OutputUnit): boolean =>
@@ -336,27 +337,22 @@ export const jsonSchemaToEffectSchema = (
   const validator = new Validator(normalizedSchema, options.draft ?? '7', false);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 
-  return Schema.declare([Schema.Unknown], {
-    decode: () => (input, _parseOptions, ast) => {
-      const validation = Either.try(() => validator.validate(input));
-      if (Either.isLeft(validation)) {
-        return ParseResult.fail(
-          new ParseResult.Type(ast, input, `JSON Schema validation failed: ${validation.left}`)
-        );
-      }
-      if (validation.right.valid) {
-        return ParseResult.succeed(input);
+  return Schema.Unknown.check(
+    Schema.makeFilter((input): Schema.FilterOutput => {
+      let validation: ReturnType<Validator['validate']>;
+      try {
+        validation = validator.validate(input);
+      } catch (error) {
+        return `JSON Schema validation failed: ${error}`;
       }
 
-      const issues = mapValidationErrors(validation.right.errors, normalizedSchema);
+      if (validation.valid) {
+        return undefined;
+      }
+
+      const issues = mapValidationErrors(validation.errors, normalizedSchema);
       const messages = formatIssues(issues);
-      const [first, ...rest] = messages.map(message => new ParseResult.Type(ast, input, message));
-      return ParseResult.fail(
-        first
-          ? new ParseResult.Composite(ast, input, [first, ...rest])
-          : new ParseResult.Type(ast, input, 'Input does not match the JSON schema.')
-      );
-    },
-    encode: () => input => ParseResult.succeed(input),
-  });
+      return messages.length > 0 ? messages : 'Input does not match the JSON schema.';
+    })
+  );
 };
