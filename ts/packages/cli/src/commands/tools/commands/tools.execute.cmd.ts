@@ -5,7 +5,7 @@ import util from 'node:util';
 import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
-import { parseJsonIsh } from 'src/utils/parse-json-ish';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -122,21 +122,16 @@ const resolveInput = (input: Option.Option<string>) =>
   });
 
 const parseArguments = (raw: string) =>
-  Effect.gen(function* () {
-    const parsed = yield* Effect.try({
-      try: () => parseJsonIsh(raw),
-      catch: () =>
+  parseJsonRecord(raw).pipe(
+    Either.mapLeft(
+      error =>
         new Error(
-          'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
-        ),
-    });
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return yield* Effect.fail(
-        new Error('Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\'')
-      );
-    }
-    return parsed as Record<string, unknown>;
-  });
+          error.reason === 'not-a-record'
+            ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
+            : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
+        )
+    )
+  );
 
 const hasNestedKey = (
   record: Record<string, unknown>,
@@ -705,8 +700,7 @@ class ToolExecutionError extends Error {
 }
 
 type CachedValidationDecision =
-  | { readonly status: 'valid' | 'stale' }
-  | { readonly status: 'fail'; readonly error: unknown };
+  { readonly status: 'valid' | 'stale' } | { readonly status: 'fail'; readonly error: unknown };
 
 type ValidationState = {
   readonly cacheHit: boolean;
