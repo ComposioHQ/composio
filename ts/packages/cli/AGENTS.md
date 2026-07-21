@@ -179,32 +179,17 @@ Outputs land in `recordings/{tapes,svgs,ascii}/<group>/<name>.{tape,svg,ascii}`.
 
 ## Release Workflow
 
-Two channels: **beta** (automatic) and **stable** (manual promotion via changeset).
+Use the repo-local `cli-release` skill before building or publishing first-party CLI binaries.
 
-### Beta (automatic)
-
-Every push to `next` touching `ts/packages/cli/**` triggers `.github/workflows/build-cli-binaries.yml`:
-
-1. Find latest stable `@composio/cli@X.Y.Z`
-2. Compute next patch `X.Y.Z+1`
-3. Build cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
-4. Publish GitHub prerelease `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
-
-Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users install with `composio upgrade --beta`.
-
-### Stable (via changeset)
-
-1. Create a CLI release changeset PR only when intentionally promoting CLI binary behavior through the stable release flow (`.changeset/<name>.md` with `"@composio/cli": patch`). Ordinary CLI source fixes still follow the repo rule: add a changeset only when the release path requires one.
-2. Merge into `next`
-3. Changeset bot opens "Release: update version" PR bumping `package.json`
-4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)
-5. `ts.release.yml` publishes via the repository-controlled `changeset:release` script, which filters `@composio/cli` tag output so only `build-cli-binaries.yml` can create CLI GitHub Releases
-
-Promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
+- A push to `next` touching CLI paths publishes a rolling beta automatically.
+- The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
+- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never add a changeset targeting either package; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
+- A direct `package.json` version bump is supported by the resolver only as an explicit release-owner recovery path, not the contributor default.
 
 ### Key Workflow Files
 
 - `.github/workflows/build-cli-binaries.yml` — binary build + release
-- `.github/workflows/ts.release.yml` — changeset bot + npm publish
 - `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
+- `.github/workflows/cli.bump-homebrew-tap.yml` — stable Homebrew formula update
+- `.github/scripts/cli-release/resolve-release-target.sh` — beta/stable target resolution
 - `.changeset/config.json`

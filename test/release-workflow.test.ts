@@ -12,6 +12,10 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  findIgnoredChangesetReleases,
+  validateChangesets,
+} from '../ts/scripts/validate-changesets.mjs';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const tsCorePackageJson = JSON.parse(
@@ -244,6 +248,76 @@ if (!tsReleaseWorkflow.includes('publish: pnpm changeset:release')) {
 
 if (packageJson.scripts?.['changeset:release'] !== 'bash ts/scripts/changeset-release.sh') {
   throw new Error('changeset:release must use the CLI-release filtering script');
+}
+
+if (packageJson.scripts?.['validate:changesets'] !== 'node ts/scripts/validate-changesets.mjs') {
+  throw new Error('validate:changesets must use the ignored-package guard');
+}
+
+{
+  const violations = findIgnoredChangesetReleases(
+    {
+      changesets: [
+        {
+          id: 'ignored-package-fixture',
+          releases: [
+            { name: '@composio/cli', type: 'patch' },
+            { name: '@composio/core', type: 'patch' },
+          ],
+        },
+      ],
+    },
+    ['@composio/cli']
+  );
+
+  if (
+    violations.length !== 1 ||
+    violations[0].changeset !== 'ignored-package-fixture' ||
+    violations[0].package !== '@composio/cli'
+  ) {
+    throw new Error('changeset validation must identify releases targeting ignored packages');
+  }
+}
+
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-changeset-validation-'));
+  const changesetDir = join(fixtureDir, '.changeset');
+  const fixturePath = join(changesetDir, 'ignored-package-fixture.md');
+
+  try {
+    mkdirSync(changesetDir, { recursive: true });
+    writeFileSync(join(changesetDir, 'config.json'), JSON.stringify({ ignore: ['@composio/cli'] }));
+    writeFileSync(
+      fixturePath,
+      '---\n"@composio/cli": patch\n"@composio/core": patch\n---\n\nFixture changeset.\n'
+    );
+
+    let validationError = '';
+    try {
+      await validateChangesets(fixtureDir);
+    } catch (error) {
+      validationError = error instanceof Error ? error.message : String(error);
+    }
+
+    if (!validationError.includes('ignored-package-fixture: @composio/cli')) {
+      throw new Error('changeset validation must reject an ignored package outside a git checkout');
+    }
+
+    writeFileSync(fixturePath, '---\n"@composio/core": patch\n---\n\nValid fixture changeset.\n');
+    await validateChangesets(fixtureDir);
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+const validateChangesetsIdx = tsReleaseWorkflow.indexOf('run: pnpm validate:changesets');
+const changesetsActionIdx = tsReleaseWorkflow.indexOf('uses: changesets/action@');
+if (
+  validateChangesetsIdx === -1 ||
+  changesetsActionIdx === -1 ||
+  validateChangesetsIdx > changesetsActionIdx
+) {
+  throw new Error('ts.release.yml must validate pending changesets before changesets/action');
 }
 
 if (changesetConfig.baseBranch !== 'next') {
