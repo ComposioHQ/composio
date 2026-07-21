@@ -1,4 +1,5 @@
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
+import { Schema } from 'effect';
 
 // `ConnectedAccountItem` widened with an `'UNKNOWN'` sentinel for statuses
 // the closed schema doesn't yet know about. Selection only picks `'ACTIVE'`,
@@ -8,13 +9,14 @@ export type SelectableConnectedAccount = Omit<ConnectedAccountItem, 'status'> & 
   readonly status: ConnectedAccountItem['status'] | 'UNKNOWN';
 };
 
-export type CachedConnectedAccountSummary = {
-  readonly id: string;
-  readonly alias: string | null;
-  readonly wordId: string | null;
-  readonly updatedAt: string;
-  readonly createdAt: string;
-};
+export const CachedConnectedAccountSummarySchema = Schema.Struct({
+  id: Schema.String,
+  alias: Schema.NullOr(Schema.String),
+  wordId: Schema.NullOr(Schema.String),
+  updatedAt: Schema.String,
+  createdAt: Schema.String,
+});
+export type CachedConnectedAccountSummary = typeof CachedConnectedAccountSummarySchema.Type;
 
 const normalizeSelector = (value: string): string => value.trim().toLowerCase();
 

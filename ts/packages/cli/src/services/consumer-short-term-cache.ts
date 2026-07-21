@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { NodeProcess } from 'src/services/node-process';
@@ -10,42 +10,69 @@ import {
   getConsumerConnectedToolkits,
   resolveConsumerProject,
 } from 'src/services/composio-clients';
-import type { CachedConnectedAccountSummary } from 'src/services/connected-account-selection';
 import { resolveCommandProject } from 'src/services/command-project';
 import { resolveToolRouterSessionConnections } from 'src/services/tool-router-session-connections';
 import { ComposioUserContext } from 'src/services/user-context';
+import {
+  CachedConnectedAccountSummarySchema,
+  type CachedConnectedAccountSummary,
+} from 'src/services/connected-account-selection';
 
 const CACHE_FILE = 'consumer-short-term-cache.json';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const SEARCH_SESSION_EXTENSION_MS = 5 * 60 * 1000;
 
-export type ConsumerToolRouterAuthConfigMappings = {
-  readonly authConfigs?: Record<string, string>;
-};
+const StringMappingsSchema = Schema.Record({ key: Schema.String, value: Schema.String });
+const AvailableConnectedAccountsSchema = Schema.Record({
+  key: Schema.String,
+  value: Schema.Array(CachedConnectedAccountSummarySchema),
+});
+const ConsumerToolRouterAuthConfigMappingsSchema = Schema.Struct({
+  authConfigs: Schema.optional(StringMappingsSchema),
+});
+const ConsumerToolRouterConnectedAccountMappingsSchema = Schema.Struct({
+  connectedAccounts: Schema.optional(StringMappingsSchema),
+  availableConnectedAccounts: Schema.optional(AvailableConnectedAccountsSchema),
+});
+const CacheEntrySchema = Schema.Struct({
+  toolkits: Schema.Array(Schema.String),
+  expiresAt: Schema.String,
+  toolRouterAuthConfigs: Schema.optional(ConsumerToolRouterAuthConfigMappingsSchema),
+  toolRouterConnectedAccounts: Schema.optional(ConsumerToolRouterConnectedAccountMappingsSchema),
+  probablyMyCliSessionsByCwdHash: Schema.optional(
+    Schema.Record({
+      key: Schema.String,
+      value: Schema.Struct({ id: Schema.String, expiresAt: Schema.String }),
+    })
+  ),
+});
+export type ConsumerToolRouterAuthConfigMappings =
+  typeof ConsumerToolRouterAuthConfigMappingsSchema.Type;
+export type ConsumerToolRouterConnectedAccountMappings =
+  typeof ConsumerToolRouterConnectedAccountMappingsSchema.Type;
+type CacheEntry = typeof CacheEntrySchema.Type;
+type CacheState = { readonly [key: string]: CacheEntry };
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(Schema.Record({ key: Schema.String, value: Schema.Unknown }))
+);
+const decodeCacheEntry = Schema.decodeUnknownOption(CacheEntrySchema);
 
-export type ConsumerToolRouterConnectedAccountMappings = {
-  readonly connectedAccounts?: Record<string, string>;
-  readonly availableConnectedAccounts?: Record<
-    string,
-    ReadonlyArray<CachedConnectedAccountSummary>
-  >;
-};
-
-type CacheEntry = {
-  readonly toolkits: ReadonlyArray<string>;
-  readonly expiresAt: string;
-  readonly toolRouterAuthConfigs?: ConsumerToolRouterAuthConfigMappings;
-  readonly toolRouterConnectedAccounts?: ConsumerToolRouterConnectedAccountMappings;
-  readonly probablyMyCliSessionsByCwdHash?: Record<
-    string,
-    {
-      readonly id: string;
-      readonly expiresAt: string;
-    }
-  >;
-};
-
-type CacheState = Record<string, CacheEntry>;
+// Per-entry decode: one stale or version-skewed entry (e.g. written by a
+// newer CLI) drops only itself; discarding the whole cache would also be
+// persisted back on the next write, permanently destroying the good entries.
+export const decodeCacheStateTolerant = (raw: string): CacheState =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheState => ({}),
+    onSome: shell =>
+      Object.fromEntries(
+        Object.entries(shell).flatMap(([key, value]) =>
+          Option.match(decodeCacheEntry(value), {
+            onNone: () => [],
+            onSome: entry => [[key, entry] as const],
+          })
+        )
+      ),
+  });
 
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
@@ -74,8 +101,8 @@ const resolveSearchSessionMetadata = (params: {
     ...(params.currentEntry?.probablyMyCliSessionsByCwdHash ?? {}),
   };
 
-  const probablyMyCliSessionsByCwdHash = Object.fromEntries(
-    Object.entries(previousMap).filter(([, session]) => {
+  const probablyMyCliSessionsByCwdHash = EffectRecord.fromEntries(
+    EffectRecord.toEntries(previousMap).filter(([, session]) => {
       const expiresAtMs = Date.parse(session.expiresAt);
       return Number.isFinite(expiresAtMs) && expiresAtMs > now;
     })
@@ -110,9 +137,7 @@ const readCache = () =>
       return {} satisfies CacheState;
     }
     const raw = yield* fs.readFileString(filePath, 'utf8');
-    return yield* Effect.sync(() => JSON.parse(raw) as CacheState).pipe(
-      Effect.catchAll(() => Effect.succeed({} satisfies CacheState))
-    );
+    return decodeCacheStateTolerant(raw);
   });
 
 const writeCache = (state: CacheState) =>
@@ -148,7 +173,7 @@ const normalizeAuthConfigMappings = (
       .map(([toolkit, authConfigId]) => [toolkit.toLowerCase(), authConfigId])
       .filter(([, authConfigId]) => typeof authConfigId === 'string' && authConfigId.length > 0)
   );
-  if (Object.keys(authConfigs).length === 0) {
+  if (EffectRecord.isEmptyRecord(authConfigs)) {
     return undefined;
   }
 
@@ -204,16 +229,19 @@ const normalizeConnectedAccountMappings = (
   );
 
   if (
-    Object.keys(connectedAccounts).length === 0 &&
-    Object.keys(availableConnectedAccounts).length === 0
+    EffectRecord.isEmptyRecord(connectedAccounts) &&
+    EffectRecord.isEmptyRecord(availableConnectedAccounts)
   ) {
     return undefined;
   }
 
   return {
-    connectedAccounts: Object.keys(connectedAccounts).length > 0 ? connectedAccounts : undefined,
-    availableConnectedAccounts:
-      Object.keys(availableConnectedAccounts).length > 0 ? availableConnectedAccounts : undefined,
+    connectedAccounts: EffectRecord.isEmptyRecord(connectedAccounts)
+      ? undefined
+      : connectedAccounts,
+    availableConnectedAccounts: EffectRecord.isEmptyRecord(availableConnectedAccounts)
+      ? undefined
+      : availableConnectedAccounts,
   };
 };
 
@@ -289,19 +317,16 @@ export const getFreshConsumerToolRouterAuthConfigsFromCache = (params: {
     }
 
     const requestedToolkits = params.toolkits.map(toolkit => toolkit.toLowerCase());
-    const requestedAuthConfigs = requestedToolkits.map(
-      toolkit => [toolkit, mappings.authConfigs?.[toolkit]] as const
-    );
-
-    if (requestedAuthConfigs.some(([, authConfigId]) => typeof authConfigId !== 'string')) {
-      return Option.none<ConsumerToolRouterAuthConfigMappings>();
+    const requestedAuthConfigs: Record<string, string> = {};
+    for (const toolkit of requestedToolkits) {
+      const authConfigId = mappings.authConfigs?.[toolkit];
+      if (typeof authConfigId !== 'string') {
+        return Option.none<ConsumerToolRouterAuthConfigMappings>();
+      }
+      requestedAuthConfigs[toolkit] = authConfigId;
     }
 
-    const filtered = normalizeAuthConfigMappings({
-      authConfigs: Object.fromEntries(
-        requestedAuthConfigs.map(([toolkit, authConfigId]) => [toolkit, authConfigId as string])
-      ),
-    });
+    const filtered = normalizeAuthConfigMappings({ authConfigs: requestedAuthConfigs });
 
     return filtered ? Option.some(filtered) : Option.none<ConsumerToolRouterAuthConfigMappings>();
   });

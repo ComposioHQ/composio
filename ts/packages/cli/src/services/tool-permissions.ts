@@ -3,10 +3,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import {
   detectNativeUiCallerAgent,
+  isInteractivePermissionUiDisabled,
   requestNativeUiPermissionDecision,
   type NativeUiCallerAgent,
 } from 'src/services/native-ui-sidecar';
@@ -29,13 +30,9 @@ export type PermissionDefaultMode = 'allow_all' | 'ask_every_call' | 'ask_once_p
 export type PermissionOverrideState = 'always_allow' | 'always_deny' | 'ask_once' | 'ask_always';
 export type PermissionDecision = 'allow_once' | 'allow_session' | 'deny';
 export type PermissionApprovalStatus =
-  | 'always_approved'
-  | 'cached_approved'
-  | 'approved_once'
-  | 'approved_for_session';
+  'always_approved' | 'cached_approved' | 'approved_once' | 'approved_for_session';
 export type PermissionGateResult =
-  | { readonly approvalStatus: PermissionApprovalStatus }
-  | undefined;
+  { readonly approvalStatus: PermissionApprovalStatus } | undefined;
 
 export interface ToolRouterPermissionsConfig {
   readonly default: PermissionDefaultMode;
@@ -60,6 +57,73 @@ interface CacheFile {
   readonly entries: Readonly<Record<string, ConsumerPermissionSnapshot>>;
   readonly allowEntries?: Readonly<Record<string, CachedAllowDecision>>;
 }
+
+const PermissionDefaultModeSchema = Schema.Literal(
+  'allow_all',
+  'ask_every_call',
+  'ask_once_per_session'
+);
+const PermissionOverrideStateSchema = Schema.Literal(
+  'always_allow',
+  'always_deny',
+  'ask_once',
+  'ask_always'
+);
+const ToolRouterPermissionsConfigSchema = Schema.Struct({
+  default: PermissionDefaultModeSchema,
+  overrides: Schema.optional(
+    Schema.Record({ key: Schema.String, value: PermissionOverrideStateSchema })
+  ),
+});
+const ConsumerPermissionSnapshotSchema = Schema.Struct({
+  orgId: Schema.String,
+  projectId: Schema.String,
+  consumerUserId: Schema.String,
+  enhancedControlsEnabled: Schema.Boolean,
+  permissions: Schema.optional(ToolRouterPermissionsConfigSchema),
+  connectedAccountIds: Schema.Array(Schema.String),
+  fetchedAt: Schema.Number,
+});
+const CachedAllowDecisionSchema = Schema.Struct({
+  expiresAt: Schema.Number,
+});
+
+const UnknownRecordSchema = Schema.Record({ key: Schema.String, value: Schema.Unknown });
+const decodeCacheShell = Schema.decodeUnknownOption(
+  Schema.parseJson(
+    Schema.Struct({
+      entries: Schema.optional(UnknownRecordSchema),
+      allowEntries: Schema.optional(UnknownRecordSchema),
+    })
+  )
+);
+const decodeSnapshotEntry = Schema.decodeUnknownOption(ConsumerPermissionSnapshotSchema);
+const decodeAllowEntry = Schema.decodeUnknownOption(CachedAllowDecisionSchema);
+
+const collectDecodedEntries = <A>(
+  entries: Readonly<Record<string, unknown>> | undefined,
+  decode: (value: unknown) => Option.Option<A>
+): Record<string, A> =>
+  Object.fromEntries(
+    Object.entries(entries ?? {}).flatMap(([key, value]) =>
+      Option.match(decode(value), {
+        onNone: () => [],
+        onSome: entry => [[key, entry] as const],
+      })
+    )
+  );
+
+// Per-entry decode: one stale or version-skewed entry drops only itself.
+// Discarding the whole file would also wipe all cached allow decisions and
+// be persisted back on the next write.
+export const decodeCacheFileTolerant = (raw: string): CacheFile =>
+  Option.match(decodeCacheShell(raw), {
+    onNone: (): CacheFile => ({ entries: {} }),
+    onSome: shell => ({
+      entries: collectDecodedEntries(shell.entries, decodeSnapshotEntry),
+      allowEntries: collectDecodedEntries(shell.allowEntries, decodeAllowEntry),
+    }),
+  });
 
 interface PermissionResolveResponse {
   readonly experimental?: {
@@ -106,10 +170,11 @@ const pruneAllowEntries = (
 const readCacheFile = async (): Promise<CacheFile> => {
   try {
     const raw = await fs.readFile(cachePath(), 'utf8');
-    const parsed = JSON.parse(raw) as CacheFile;
-    return parsed && typeof parsed === 'object' && parsed.entries
-      ? { entries: parsed.entries, allowEntries: pruneAllowEntries(parsed.allowEntries) }
-      : { entries: {} };
+    const parsed = decodeCacheFileTolerant(raw);
+    return {
+      entries: parsed.entries,
+      allowEntries: pruneAllowEntries(parsed.allowEntries),
+    };
   } catch {
     return { entries: {} };
   }
@@ -252,7 +317,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     }
     const enhancedControlsEnabled =
       remoteEnhancedControlsEnabled && platformSupportsEnhancedControls;
-    const permissions =
+    const resolved =
       enhancedControlsEnabled && connectedAccountIds.length > 0
         ? yield* Effect.tryPromise(() =>
             fetchJson<PermissionResolveResponse>({
@@ -267,19 +332,46 @@ export const refreshConsumerPermissionSnapshot = (params: {
                 default: 'ask_every_call',
               },
             })
-          ).pipe(Effect.map(response => response.experimental?.permissions))
-        : undefined;
+          ).pipe(
+            Effect.map(response => ({
+              permissions: response.experimental?.permissions,
+              resolveFailed: false,
+            })),
+            // The org said enhanced controls are ON but the policy could not
+            // be learned: fail closed to the interactive default instead of
+            // silently allowing tools the policy may explicitly deny.
+            Effect.catchAll(error =>
+              Effect.logDebug(
+                'Failed to resolve consumer permissions; failing closed to ask_every_call',
+                error
+              ).pipe(
+                Effect.as({
+                  permissions: { default: 'ask_every_call' } as ToolRouterPermissionsConfig,
+                  resolveFailed: true,
+                })
+              )
+            )
+          )
+        : { permissions: undefined, resolveFailed: false };
 
     const snapshot: ConsumerPermissionSnapshot = {
       orgId: params.orgId,
       projectId: params.projectId,
       consumerUserId: params.consumerUserId,
       enhancedControlsEnabled,
-      permissions,
+      permissions: resolved.permissions,
       connectedAccountIds,
       fetchedAt: Date.now(),
     };
-    yield* Effect.tryPromise(() => writeCacheEntry(snapshot));
+    // A fail-closed snapshot is not persisted, so a healthy fetch replaces it
+    // on the next command instead of pinning ask_every_call for the TTL.
+    if (!resolved.resolveFailed) {
+      yield* Effect.tryPromise(() => writeCacheEntry(snapshot)).pipe(
+        Effect.catchAll(error =>
+          Effect.logDebug('Failed to write the tool permissions cache', error)
+        )
+      );
+    }
     return snapshot;
   }).pipe(
     Effect.catchAll(error =>
@@ -366,13 +458,24 @@ export const getConnectedAccountPermissionGroup = (params: {
 };
 
 const resolvePermissionState = (
-  params: GateParams
+  params: GateParams & { readonly snapshot: ConsumerPermissionSnapshot }
 ): PermissionOverrideState | PermissionDefaultMode => {
-  const permissions = params.snapshot?.permissions;
+  const permissions = params.snapshot.permissions;
   const override =
     permissions?.overrides?.[permissionField(params.toolSlug, params.connectedAccountId)] ??
     permissions?.overrides?.[accountPermissionField(params.connectedAccountId)];
   return override ?? permissions?.default ?? 'allow_all';
+};
+
+// The gate's decision table: 'skip' means gating does not apply (developer
+// mode, or controls known disabled). A snapshot synthesized from a failed
+// permission resolve carries default: 'ask_every_call' and therefore prompts.
+export const resolveGateState = (
+  params: GateParams
+): PermissionOverrideState | PermissionDefaultMode | 'skip' => {
+  if (params.snapshot === undefined) return 'skip';
+  if (!params.snapshot.enhancedControlsEnabled || !params.snapshot.permissions) return 'skip';
+  return resolvePermissionState({ ...params, snapshot: params.snapshot });
 };
 
 const allowCacheKey = (params: GateParams) =>
@@ -843,6 +946,12 @@ const requestPermissionDecision = async (params: {
   readonly toolSlug: string;
   readonly accountLabel?: string;
 }): Promise<PermissionDecision> => {
+  if (await Effect.runPromise(isInteractivePermissionUiDisabled)) {
+    throw new Error(
+      `Interactive permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI); cannot collect an approval for ${params.toolSlug}.`
+    );
+  }
+
   // Prefer the bundled macOS native sidecar when it is available. The browser
   // prompt remains the cross-platform fallback and is only opened when the
   // native sidecar is missing or fails before returning a decision.
@@ -854,9 +963,9 @@ const requestPermissionDecision = async (params: {
 
 export const gateToolExecution = (params: GateParams) =>
   Effect.gen(function* () {
-    if (!params.snapshot?.enhancedControlsEnabled || !params.snapshot.permissions) return;
+    const state = resolveGateState(params);
+    if (state === 'skip') return;
 
-    const state = resolvePermissionState(params);
     if (state === 'allow_all' || state === 'always_allow') {
       return { approvalStatus: 'always_approved' } satisfies PermissionGateResult;
     }
@@ -872,6 +981,16 @@ export const gateToolExecution = (params: GateParams) =>
     );
     if (hasCachedAllow) {
       return { approvalStatus: 'cached_approved' } satisfies PermissionGateResult;
+    }
+
+    // Fail closed instead of spawning approval UI where nobody can answer it
+    // (tests, CI). Cached allow decisions above still apply.
+    if (yield* isInteractivePermissionUiDisabled) {
+      return yield* Effect.fail(
+        new Error(
+          `Tool execution requires interactive approval, but permission prompts are disabled in this environment (CI/VITEST, or COMPOSIO_DISABLE_PERMISSION_UI): ${params.toolSlug}`
+        )
+      );
     }
 
     const decision = yield* Effect.tryPromise(() =>

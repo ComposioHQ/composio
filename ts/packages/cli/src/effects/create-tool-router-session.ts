@@ -221,18 +221,16 @@ export const createToolRouterSessionContext = (
         experimental: Object.keys(experimentalPayload).length > 0 ? experimentalPayload : undefined,
       })
     ).pipe(
-      Effect.map(
-        (session): CreatedToolRouterSession => ({
-          sessionId: session.session_id,
-          localExperimentalPayload,
-          permissionSnapshot,
-          connectedAccounts: connectionContext.connectedAccounts,
-          connectedAccountWordIds: resolveConnectedAccountWordIds(
-            connectionContext.connectedAccounts,
-            connectionContext.availableConnectedAccounts
-          ),
-        })
-      )
+      Effect.map((session): CreatedToolRouterSession => ({
+        sessionId: session.session_id,
+        localExperimentalPayload,
+        permissionSnapshot,
+        connectedAccounts: connectionContext.connectedAccounts,
+        connectedAccountWordIds: resolveConnectedAccountWordIds(
+          connectionContext.connectedAccounts,
+          connectionContext.availableConnectedAccounts
+        ),
+      }))
     );
   });
 

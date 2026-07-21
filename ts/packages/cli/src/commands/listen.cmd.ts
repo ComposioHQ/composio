@@ -604,6 +604,15 @@ export const listenCmd = Command.make(
                   ui.log.warn(error instanceof Error ? error.message : String(error))
                 )
               )
+      ).pipe(
+        Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
+          Effect.gen(function* () {
+            yield* ui.log.error(
+              `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+            );
+            process.exitCode = 1;
+          })
+        )
       );
     })
 ).pipe(

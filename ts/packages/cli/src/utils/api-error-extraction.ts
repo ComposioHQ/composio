@@ -9,13 +9,42 @@
  * `tools execute` command (for error display).
  */
 
-export type ApiErrorDetails = {
-  message?: string;
-  code?: number;
-  slug?: string;
-  status?: number;
-  request_id?: string;
-  suggested_fix?: string;
+import { Predicate } from 'effect';
+
+export interface ApiErrorDetails {
+  readonly message?: string;
+  readonly code?: number;
+  readonly slug?: string;
+  readonly status?: number;
+  readonly request_id?: string;
+  readonly suggested_fix?: string;
+}
+
+const pickString = (value: object, key: string): string | undefined =>
+  Predicate.hasProperty(value, key) && Predicate.isString(value[key]) ? value[key] : undefined;
+
+const pickNumber = (value: object, key: string): number | undefined =>
+  Predicate.hasProperty(value, key) && Predicate.isNumber(value[key]) ? value[key] : undefined;
+
+// Field-by-field extraction: a present-but-mistyped field (e.g. a numeric
+// `message`) drops only that field, not the node's other perfectly good
+// details like `slug` and `request_id`.
+const extractCandidate = (value: object): ApiErrorDetails | undefined => {
+  const candidate: ApiErrorDetails = {
+    message: pickString(value, 'message'),
+    code: pickNumber(value, 'code'),
+    slug: pickString(value, 'slug'),
+    status: pickNumber(value, 'status'),
+    request_id: pickString(value, 'request_id'),
+    suggested_fix: pickString(value, 'suggested_fix'),
+  };
+  const hasAnyApiField =
+    candidate.message !== undefined ||
+    candidate.code !== undefined ||
+    candidate.slug !== undefined ||
+    candidate.status !== undefined ||
+    candidate.request_id !== undefined;
+  return hasAnyApiField ? candidate : undefined;
 };
 
 /**
@@ -98,16 +127,6 @@ export const extractSlug = (value: unknown): string | undefined => {
  * Skips Error instances and Effect's UnknownException wrappers.
  */
 export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefined => {
-  const isUnknownException = (candidate: object): boolean =>
-    '_tag' in candidate && (candidate as { _tag?: unknown })._tag === 'UnknownException';
-
-  const hasApiFields = (candidate: ApiErrorDetails): boolean =>
-    'message' in candidate ||
-    'code' in candidate ||
-    'slug' in candidate ||
-    'status' in candidate ||
-    'request_id' in candidate;
-
   const hasStrongApiFields = (candidate: ApiErrorDetails): boolean =>
     typeof candidate.slug === 'string' || typeof candidate.request_id === 'string';
 
@@ -123,10 +142,10 @@ export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefi
     }
     seen.add(current);
 
-    const candidate = current as ApiErrorDetails;
-    const isWrapper = current instanceof Error || isUnknownException(current as object);
+    const candidate = extractCandidate(current);
+    const isWrapper = current instanceof Error || Predicate.isTagged(current, 'UnknownException');
 
-    if (hasApiFields(candidate) && !isWrapper) {
+    if (candidate !== undefined && !isWrapper) {
       if (hasStrongApiFields(candidate)) {
         return candidate;
       }

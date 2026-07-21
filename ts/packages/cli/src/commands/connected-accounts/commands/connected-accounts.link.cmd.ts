@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option, Schedule } from 'effect';
+import { Data, Effect, Option, Schedule } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -25,6 +25,14 @@ import {
 } from 'src/services/connected-account-selection';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
+
+class ConnectedAccountsDecodeError extends Data.TaggedError(
+  'commands/ConnectedAccountsDecodeError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const toolkit = Args.text({ name: 'toolkit' }).pipe(
   Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
@@ -53,9 +61,7 @@ const noWait = Options.boolean('no-wait').pipe(
 
 const noBrowser = Options.boolean('no-browser').pipe(
   Options.withDefault(false),
-  Options.withDescription(
-    'Do not open the browser automatically; print the URL to open manually'
-  )
+  Options.withDescription('Do not open the browser automatically; print the URL to open manually')
 );
 
 const alias = Options.text('alias').pipe(
@@ -431,6 +437,15 @@ const handleListConnectedAccounts = (params: {
         })
       )
     );
+    const connectedAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
+      Effect.mapError(
+        cause =>
+          new ConnectedAccountsDecodeError({
+            message: 'The API returned invalid connected account data.',
+            cause,
+          })
+      )
+    );
 
     if (resolvedProject.projectType === 'CONSUMER' && resolvedProject.consumerUserId) {
       yield* writeConsumerConnectedToolkitsCache({
@@ -438,17 +453,13 @@ const handleListConnectedAccounts = (params: {
         consumerUserId: resolvedProject.consumerUserId,
         toolkits: [toolkitSlug],
         toolRouterConnectedAccounts: {
-          connectedAccounts: resolveDefaultConnectedAccountsByToolkit(
-            accounts.items as Parameters<typeof resolveDefaultConnectedAccountsByToolkit>[0]
-          ),
-          availableConnectedAccounts: groupCachedConnectedAccountsByToolkit(
-            accounts.items as Parameters<typeof groupCachedConnectedAccountsByToolkit>[0]
-          ),
+          connectedAccounts: resolveDefaultConnectedAccountsByToolkit(connectedAccounts),
+          availableConnectedAccounts: groupCachedConnectedAccountsByToolkit(connectedAccounts),
         },
       }).pipe(Effect.catchAll(() => Effect.void));
     }
 
-    if (accounts.items.length === 0) {
+    if (connectedAccounts.length === 0) {
       yield* params.ui.log.warn(`No active connected accounts found for "${toolkitSlug}".`);
       yield* params.ui.output(
         JSON.stringify({ toolkit: toolkitSlug, items: [], total: 0 }, null, 2),
@@ -458,17 +469,15 @@ const handleListConnectedAccounts = (params: {
     }
 
     yield* params.ui.note(
-      formatConnectedAccountsTable(
-        accounts.items as Parameters<typeof formatConnectedAccountsTable>[0]
-      ),
+      formatConnectedAccountsTable(connectedAccounts),
       `${toolkitSlug}: connected accounts`
     );
     yield* params.ui.output(
       JSON.stringify(
         {
           toolkit: toolkitSlug,
-          total: accounts.items.length,
-          items: accounts.items,
+          total: connectedAccounts.length,
+          items: connectedAccounts,
         },
         null,
         2
