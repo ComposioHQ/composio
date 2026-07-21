@@ -104,27 +104,47 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.effect("[Given] --version flag [Then] prints composio's version from package.json", () =>
+    it.effect("[Given] --version flag [Then] prints v4's default `<name> v<version>` banner", () =>
       Effect.gen(function* () {
         const args = ['--version'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        // Exact match: scripts and the setup-plugins e2e fixture parse this
-        // output as a bare semver (v3 contract; v4's default would prefix it).
-        expect(output.trim()).toBe(pkg.version);
+        // v4's `CliOutput.defaultFormatter().formatVersion` renders
+        // `<name> v<version>`; Composio deliberately no longer overrides it
+        // (see `cli-config.ts`). The bare-semver `composio version` *command*
+        // is a separate, unaffected contract covered by
+        // `test/src/commands/version.test.ts`.
+        expect(output.trim()).toBe(`composio v${pkg.version}`);
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.effect("[Given] -v flag [Then] prints composio's version from package.json", () =>
+    it.effect("[Given] -v flag [Then] prints v4's default `<name> v<version>` banner", () =>
       Effect.gen(function* () {
         const args = ['-v'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        expect(output.trim()).toBe(pkg.version);
+        expect(output.trim()).toBe(`composio v${pkg.version}`);
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.effect("[Given] a typo'd subcommand [Then] suggests the nearest match", () =>
+      Effect.gen(function* () {
+        const args = ['tols'];
+
+        yield* cli(args).pipe(Effect.catch(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        // v4's parser always computes "Did you mean?" suggestions on
+        // `UnknownSubcommand`/`UnrecognizedOption`; Composio deliberately
+        // keeps them (see `cli-config.ts`) instead of stripping them.
+        expect(output).toContain('Did you mean');
+        expect(output).toContain('tools');
       })
     );
   });

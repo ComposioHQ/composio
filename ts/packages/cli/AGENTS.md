@@ -14,15 +14,14 @@ The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-ori
 
 `bin.ts` is a thin bootstrap: it strips the internal `--telemetry-debug` flag, routes background-worker invocations (analytics dispatch) through a minimal layer set, and otherwise dynamically imports `cli-main.ts`, which composes the full Effect layer stack and drives the root command through `effect/unstable/cli`'s `Command.runWith`, run via `BunRuntime.runMain()`. Key layers (see `cli-main.ts` for the complete list):
 
-- `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [GlobalFlag.Help, GlobalFlag.Version]` (see Configuration below)
-- `CliOutputFormatterLive` — custom `CliOutput.Formatter` that strips "Did you mean?" suggestions from parser errors
+- `CliConfigLive` — `effect/unstable/cli` `CliConfig` restricted to `builtIns: [GlobalFlag.Help, GlobalFlag.Version]` (see Configuration below); the only `CliConfig` customization Composio makes — no custom `CliOutput.Formatter` is provided, so `Command.runWith` renders help, errors, and `--version` with v4's own defaults
 - `ComposioUserContextLive` — User authentication state from `~/.composio/`
 - `ComposioSessionRepositoryLive` — OAuth2 session management
 - `ComposioToolkitsRepositoryCachedLive` — Cached API client for toolkits/tools
 - `UpgradeBinaryLive` — Self-update from GitHub releases
 - `BunFileSystem.layer`, `BunPath.layer`, `BunServices.layer`, `FetchHttpClient.layer` — Bun runtime integration (`@effect/platform-bun`'s `BunContext` no longer exists in v4; `BunServices.layer` is the aggregate replacement)
 
-`Command.runWith` renders help text and parse/validation errors itself (to the right stream) before re-failing with `CliError.ShowHelp`; `cli-main.ts`'s outer catch for that error only derives the process exit code — it must never print, or output doubles. See the module docstring at the top of `cli-main.ts` for the full rationale (case-sensitivity, no-suggestions, argv-prefix contract with `src/commands/index.ts`).
+`Command.runWith` renders help text and parse/validation errors itself (to the right stream) before re-failing with `CliError.ShowHelp`, which carries `[Runtime.errorReported] = false` (suppresses `runMain`'s automatic error log) and `[Runtime.errorExitCode]` (0 for bare `--help`/`--version`, 1 alongside parse errors). `cli-main.ts`'s sandboxed catch-all re-fails `ShowHelp` with its original `Cause` via `Effect.failCause` instead of swallowing it, and its custom `teardown` reads `Runtime.getErrorExitCode` off the squashed failure — so this module never prints for `ShowHelp`, it just lets the error's own contract drive `runMain`. See the module docstring at the top of `cli-main.ts` for the full rationale (argv-prefix contract with `src/commands/index.ts` included).
 
 Errors are captured via the custom `effect-errors/` module (source-mapped stack traces, Effect span timelines, formatted output).
 
@@ -96,7 +95,7 @@ Pipeline for `composio generate {ts,py}`:
 
 ### Configuration
 
-- CLI: `cli-config.ts` defines `ComposioCliConfig` (`builtIns: [GlobalFlag.Help, GlobalFlag.Version]`, `effect/unstable/cli`'s `CliConfig.Service` shrank to just that one field in v4) and `ComposioCliOutputFormatter`, a `CliOutput.Formatter` that wraps `CliOutput.defaultFormatter()` to strip "Did you mean?" suggestions from `UnrecognizedOption`/`UnknownSubcommand` errors. v3's `autoCorrectLimit`/`isCaseSensitive` have no v4 config equivalent: suggestions are always computed by the parser and stripped via the formatter instead, and v4's parser performs no case-folding at all, so case-sensitivity needs no knob. Both are wired into `cli-main.ts`'s layer stack (`CliConfigLive`, `CliOutputFormatterLive`).
+- CLI: `cli-config.ts` defines `ComposioCliConfig` (`builtIns: [GlobalFlag.Help, GlobalFlag.Version]`, `effect/unstable/cli`'s `CliConfig.Service` shrank to just that one field in v4) — the only `CliConfig` customization Composio makes, wired into `cli-main.ts`'s layer stack as `CliConfigLive`. v3's `autoCorrectLimit`/`isCaseSensitive` have no v4 config equivalent, and neither is reproduced anymore: "Did you mean?" suggestions on `UnrecognizedOption`/`UnknownSubcommand` now render as v4's parser always computes them (no config knob exists to disable them, and Composio wants them), and v4's parser performs no case-folding at all, so case-sensitivity needs no knob. `cli-main.ts` provides no custom `CliOutput.Formatter` — `Command.runWith` uses v4's own `CliOutput.defaultFormatter()`, so `--version`/`-v` render `<name> v<version>` (e.g. `composio v1.2.3`). The `composio version` _command_ is unaffected and still prints the bare `pkg.version` via `ui.output()` for scripts to parse.
 - Constants: `constants.ts` — env prefixes (`COMPOSIO_`, `DEBUG_OVERRIDE_`)
 - User config: `~/.composio/user-config.json`
 - Cache files: `toolkits.json`, `tools.json`, `tools-as-enums.json`, `trigger-types.json`

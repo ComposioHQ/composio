@@ -16,20 +16,32 @@
  * help and errors itself* — `Console.log`ing the formatted `HelpDoc` and
  * `Console.error`ing formatted `CliError`s for the resolved `commandPath` —
  * and only then re-fails with a `CliError.ShowHelp`. By the time that
- * failure reaches this module's outer catch, the correct output (respecting
- * whatever command tree/visibility was passed to `Command.runWith`) has
- * already been printed once, to the correct stream.
+ * failure reaches this module, the correct output (respecting whatever
+ * command tree/visibility was passed to `Command.runWith`, using v4's own
+ * `CliOutput.defaultFormatter()` — see `cli-config.ts` for why Composio no
+ * longer overrides it) has already been printed once, to the correct
+ * stream.
  *
- * Consequently this module's `CliError.ShowHelp` handler does **not**
- * render anything — doing so would double-print. It only derives the
- * process exit code, mirroring the rule encoded on the error itself
- * (`ShowHelp[Runtime.errorExitCode] = errors.length ? 1 : 0`, see
- * `CliError.ts`): 0 for a bare `--help`/`--version` request, 1 when the
- * help was shown alongside parse/validation errors. `collectValueOptionNames`
- * and the "Tip: --flag requires a value" logic that used to run in this
- * branch are dropped for the same reason: v4's `CliError.InvalidValue`
- * already renders that exact tip natively ("Missing value for flag --x.
- * Expected: ...") as part of `Command.runWith`'s own error output.
+ * `CliError.ShowHelp` (see `ts/vendor/.../unstable/cli/CliError.ts`) carries
+ * two `effect/Runtime` markers set on the class itself:
+ * `[Runtime.errorExitCode] = errors.length ? 1 : 0` and
+ * `[Runtime.errorReported] = false`. Those markers are how `ShowHelp` tells
+ * the runtime "I already printed my own output; don't log me again, and here
+ * is the exit code to use." Consequently, this module's job for `ShowHelp`
+ * is to do *nothing* — not render, not intercept — and simply let it
+ * propagate to `BunRuntime.runMain`: `errorReported = false` suppresses
+ * `runMain`'s automatic `Effect.logError(cause)` (see `Runtime.makeRunMain`),
+ * and the custom `teardown` below reads `errorExitCode` off the squashed
+ * error to pick the process exit code (0 for a bare `--help`/`--version`
+ * request, 1 when help was shown alongside parse/validation errors). The
+ * sandboxed catch-all handler further down special-cases `ShowHelp` for
+ * exactly this reason: it re-fails with the original `Cause` via
+ * `Effect.failCause` instead of swallowing it like every other error.
+ * `collectValueOptionNames` and the "Tip: --flag requires a value" logic
+ * that used to run in a dedicated `ShowHelp` branch here are gone for a
+ * related reason: v4's `CliError.InvalidValue` already renders that exact
+ * tip natively ("Missing value for flag --x. Expected: ...") as part of
+ * `Command.runWith`'s own error output.
  *
  * `matchCommandFromArgv` / `getCommandHelpText` are still used lower down,
  * in the catch-all defect handler — that is a genuinely different path
@@ -38,12 +50,15 @@
  * for it, so appending the resolved command's help text there is not a
  * double-print.
  *
- * Two behaviors that v3 configured via `CliConfig` (`autoCorrectLimit: 0`,
- * `isCaseSensitive: true`) have no v4 config equivalent and are instead
- * preserved by providing `CliOutput.layer(ComposioCliOutputFormatter)`
- * (suggestion stripping) — see `cli-config.ts` for the full rationale.
- * `CliConfigLive` below narrows the active built-in global flags to just
- * `--help`/`-h` and `--version`/root `-v`, per `ComposioCliConfig`.
+ * v3's `CliConfig` also configured `autoCorrectLimit: 0` and
+ * `isCaseSensitive: true`. Neither has a v4 config equivalent, and neither
+ * is reproduced anymore: v4's parser is always exact-match (no case-folding,
+ * so `isCaseSensitive` needs no knob), and "Did you mean?" suggestions on
+ * `UnrecognizedOption`/`UnknownSubcommand` now render as-is — see
+ * `cli-config.ts` for the full rationale. `CliConfigLive` below narrows the
+ * active built-in global flags to just `--help`/`-h` and `--version`/root
+ * `-v`, per `ComposioCliConfig`; that narrowing is the only `CliConfig`
+ * customization left.
  *
  * `runWithConfig` (from `src/commands`) still receives the *full*
  * `process.argv`, including the node/bun executable and script path
@@ -56,19 +71,18 @@
  * contract at the `runWithConfig` boundary must not change.
  */
 import process from 'node:process';
-import { Cause, ConfigProvider, Effect, Exit, Layer, Logger } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit, Layer, Logger, Predicate, Runtime } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CliError, CliOutput } from 'effect/unstable/cli';
+import { CliConfig, CliError } from 'effect/unstable/cli';
 import { FetchHttpClient } from 'effect/unstable/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import type { Teardown } from 'effect/Runtime';
 import { runWithConfig } from 'src/commands';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
-import { ComposioCliConfig, ComposioCliOutputFormatter } from 'src/cli-config';
+import { ComposioCliConfig } from 'src/cli-config';
 import { getBaseConfigProvider, ConfigLive, extendConfigProvider } from 'src/services/config';
 import {
   ComposioClientSingleton,
@@ -106,10 +120,6 @@ import { SetupCommandError } from 'src/services/setup';
 type RequiredLayer = Layer.Layer<never, unknown, never>;
 
 export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
-
-export const CliOutputFormatterLive = CliOutput.layer(
-  ComposioCliOutputFormatter
-) satisfies RequiredLayer;
 
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
@@ -168,7 +178,6 @@ export const SetupSkillInstallerLive = Layer.provide(
 
 const layers = Layer.mergeAll(
   CliConfigLive.pipe(Layer.provide(ConfigLive)),
-  CliOutputFormatterLive,
   NodeOs.Default,
   NodeProcess.Default,
   UpgradeBinaryLive,
@@ -193,10 +202,23 @@ const layers = Layer.mergeAll(
   Logger.layer([Logger.consolePretty({ stderr: true })])
 ) satisfies RequiredLayer;
 
-export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
-  const shouldFail = Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause);
-  const errorCode = Number(process.exitCode ?? 1);
-  onExit(shouldFail ? errorCode : 0);
+export const teardown: Runtime.Teardown = <E, A>(
+  exit: Exit.Exit<E, A>,
+  onExit: (code: number) => void
+) => {
+  if (Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause)) {
+    const squashed = Cause.squash(exit.cause);
+    // `ShowHelp` carries its own `[Runtime.errorExitCode]` (0 for bare
+    // help/version, 1 alongside parse/validation errors, see the module docs
+    // above); prefer that over the generic fallback whenever it applies.
+    const exitCode =
+      CliError.isCliError(squashed) && Predicate.isTagged(squashed, 'ShowHelp')
+        ? Runtime.getErrorExitCode(squashed)
+        : Number(process.exitCode ?? 1);
+    onExit(exitCode);
+    return;
+  }
+  onExit(0);
 };
 
 // `runWithConfig`'s root command tree (built from every `.cmd.ts` subcommand in
@@ -248,19 +270,6 @@ checkForUpdateInBackground();
 
 showUpdateNotice.pipe(
   Effect.andThen(runWithTelemetry),
-  // `Command.runWith` (see module docs above) already printed help and any
-  // parse/validation errors to the correct streams before re-failing with
-  // `ShowHelp`. Re-rendering here would double-print, so this only derives
-  // the process exit code from the same rule the error already encodes
-  // (`Runtime.errorExitCode` on `ShowHelp`: 0 for bare help/version, 1 when
-  // shown alongside errors).
-  Effect.catchIf(
-    (error): error is CliError.ShowHelp => CliError.isCliError(error) && error._tag === 'ShowHelp',
-    error =>
-      Effect.sync(() => {
-        process.exitCode = error.errors.length > 0 ? 1 : 0;
-      })
-  ),
   Effect.catchIf(
     (error): error is SetupCommandError => error instanceof SetupCommandError,
     error =>
@@ -288,6 +297,20 @@ showUpdateNotice.pipe(
   Effect.sandbox,
   Effect.catch(
     Effect.fn(function* (cause) {
+      const squashed = Cause.squash(cause);
+      if (CliError.isCliError(squashed) && Predicate.isTagged(squashed, 'ShowHelp')) {
+        // `Command.runWith` already printed help and any parse/validation
+        // errors to the correct stream (see the module docs above) before
+        // re-failing with `ShowHelp`. Re-failing with the original `cause`
+        // here — instead of swallowing it like every other error below —
+        // lets it reach `BunRuntime.runMain` untouched: `ShowHelp`'s
+        // `[Runtime.errorReported] = false` suppresses `runMain`'s automatic
+        // error log, and `teardown` reads its `[Runtime.errorExitCode]` to
+        // pick the process exit code. Nothing here may print, or output
+        // doubles.
+        return yield* Effect.failCause(cause);
+      }
+
       const captured = yield* captureErrors(cause, {
         stripCwd: true,
       });
@@ -313,9 +336,9 @@ showUpdateNotice.pipe(
               cliUserConfig.isExperimentalFeatureEnabled(feature),
           };
           // This handles genuine command-execution failures (business errors captured by
-          // effect-errors), a different path from the `CliError.ShowHelp` branch above: those
-          // are CLI parse/validation failures that `Command.runWith` already rendered itself.
-          // Appending the resolved command's help text here is not a double-print of that.
+          // effect-errors), a different path from the `ShowHelp` branch above: those are CLI
+          // parse/validation failures that `Command.runWith` already rendered itself. Appending
+          // the resolved command's help text here is not a double-print of that.
           const cmdName = matchCommandFromArgv(process.argv, visibility);
           const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
           if (helpText) {

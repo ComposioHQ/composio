@@ -42,77 +42,69 @@ This drops `--wizard`, `--completions`, and `--log-level` (Composio has its own
 `--log-level` flag on the default command) — the v4 equivalent of v3's
 `showBuiltIns: false`, scoped to exactly the two builtins Composio wants.
 
-v3's `autoCorrectLimit` and `isCaseSensitive` have **no v4 config field**:
+v3's `autoCorrectLimit` and `isCaseSensitive` have **no v4 config field**, and Composio no
+longer reproduces either behavior:
 
 - The parser always computes "Did you mean?" suggestions internally
   (`internal/auto-suggest.ts`) and bakes them into `CliError.UnrecognizedOption` /
   `CliError.UnknownSubcommand`'s `message` getter. There is no parser switch to disable
-  them.
+  them, and Composio deliberately renders them as-is now — they are useful UX, not a
+  regression to work around.
 - v4's parser performs no case-folding anywhere — flag/subcommand matching is always
   exact, so case-sensitivity needs no config.
 
-## The custom `CliOutput.Formatter` (suggestion stripping)
+`ComposioCliConfig`'s `builtIns` narrowing is the *only* `CliConfig` customization
+Composio makes. There is no custom `CliOutput.Formatter` — `cli-main.ts` provides no
+`CliOutput.layer(...)` at all, so `Command.runWith` uses v4's own
+`CliOutput.defaultFormatter()` for everything: suggestions render, and `--version`
+renders `<name> v<version>` (see the next section). An earlier revision of this file
+wrapped `defaultFormatter()` to strip suggestions and flatten `formatVersion` back to a
+bare semver; that formatter (`ComposioCliOutputFormatter`, `withoutSuggestions`) was
+deleted as a deliberate PR-review decision — do not reintroduce it.
 
-Since suggestions can't be disabled at the parser, Composio suppresses them at render
-time by overriding the `CliOutput.Formatter` service — the only public seam
-`Command.runWith` reads before rendering. `ts/packages/cli/src/cli-config.ts`:
+## `--version` renders v4's default banner; `composio version` is separate
 
-```ts
-const withoutSuggestions = (error: CliError.CliError): CliError.CliError => {
-  switch (error._tag) {
-    case 'UnrecognizedOption':
-      return error.suggestions.length === 0
-        ? error
-        : new CliError.UnrecognizedOption({ ...error, suggestions: [] });
-    case 'UnknownSubcomand':
-      return error.suggestions.length === 0
-        ? error
-        : new CliError.UnknownSubcommand({ ...error, suggestions: [] });
-    default:
-      return error;
-  }
-};
+`--version`/`-v` (the built-in global flag) now prints whatever
+`CliOutput.defaultFormatter().formatVersion(name, version)` renders —
+`` `${name} v${version}` `` (bold/dim colors when the output is a TTY), where `name` is
+the root command's name (`'composio'`, from `Command.make('composio', ...)` in
+`$default.cmd.ts`). This differs on purpose from the `composio version` *command*
+(`src/commands/version.cmd.ts`), which is untouched and still prints the bare
+`pkg.version`/`DEBUG_OVERRIDE_VERSION` via `ui.output()` for scripts and CI to parse.
+Any script that needs a parseable version string must call `composio version`, not
+`composio --version`.
 
-export const ComposioCliOutputFormatter: CliOutput.Formatter = (() => {
-  const base = CliOutput.defaultFormatter();
-  return {
-    ...base,
-    formatCliError: error => base.formatCliError(withoutSuggestions(error)),
-    formatError: error => base.formatError(withoutSuggestions(error)),
-    formatErrors: errors => base.formatErrors(errors.map(withoutSuggestions)),
-  };
-})();
-```
-
-Provided as a layer in `cli-main.ts`: `CliOutput.layer(ComposioCliOutputFormatter)`.
-Note the upstream typo `UnknownSubcomand` (missing the second `m`) — match it exactly,
-it is the real `_tag` in the installed types, not a mistake to "fix".
-
-## `runWith` and the no-double-print rule
+## `runWith`, `ShowHelp`, and the no-double-print rule
 
 v4's `Command.runWith` is not a passive parser: it **renders help and parse/validation
 errors itself** (`Console.log`/`Console.error`, via whichever `CliOutput.Formatter` is
-in context) for the resolved `commandPath`, then re-fails with `CliError.ShowHelp`. By
-the time that failure reaches an outer catch, the correct output has already been
-printed once, to the correct stream. `ts/packages/cli/src/cli-main.ts`'s outer handler
-for `CliError.ShowHelp` therefore does **nothing but derive the exit code**:
+in context — v4's default, per above) for the resolved `commandPath`, then re-fails with
+`CliError.ShowHelp`. By the time that failure reaches this package's runner, the correct
+output has already been printed once, to the correct stream.
 
-```ts
-Effect.catchIf(
-  (error): error is CliError.ShowHelp => CliError.isCliError(error) && error._tag === 'ShowHelp',
-  error =>
-    Effect.sync(() => {
-      process.exitCode = error.errors.length > 0 ? 1 : 0;
-    })
-),
-```
+`CliError.ShowHelp` is not a plain tagged error — it carries two `effect/Runtime`
+markers set on the class itself (`ts/vendor/.../unstable/cli/CliError.ts`):
+`[Runtime.errorExitCode] = errors.length ? 1 : 0` and `[Runtime.errorReported] = false`.
+Those markers *are* the contract: "I already printed my own output; don't log me again
+(`errorReported`), and here is the process exit code to use (`errorExitCode`)."
+`Runtime.makeRunMain` (which `BunRuntime.runMain`/`NodeRuntime.runMain` build on) reads
+`errorReported` off the squashed cause to decide whether to auto-log, and
+`Runtime.defaultTeardown` reads `errorExitCode` the same way — see
+`ts/vendor/effect/packages/effect/src/Runtime.ts`'s `getErrorReported`/`getErrorExitCode`.
 
-This mirrors `Runtime.errorExitCode` already encoded on `ShowHelp` (0 for bare
-`--help`/`--version`, 1 when shown alongside real parse errors). If you add rendering
-in this branch, you will double-print — this is the single most important rule when
-touching the runner. The separate catch-all defect handler further down (genuine
-command-handler failures captured via `effect-errors`) is a different path that
-`Command.runWith` never renders, so appending help text there is not a double-print.
+Consequently `ts/packages/cli/src/cli-main.ts` does **not** intercept `ShowHelp` to
+derive an exit code by hand anymore. Its sandboxed catch-all handler special-cases
+`ShowHelp` (via `CliError.isCliError(squashed) && Predicate.isTagged(squashed,
+'ShowHelp')`, never a direct `._tag ===` check) and re-fails with the original `Cause`
+via `Effect.failCause(cause)` instead of swallowing it like every other error — that lets
+the failure reach `BunRuntime.runMain` untouched, where `errorReported`/`errorExitCode`
+take over. The custom `teardown` in the same file reads `Runtime.getErrorExitCode` off
+the squashed failure for exactly this case, falling back to `Number(process.exitCode ??
+1)` otherwise. If you add rendering anywhere in this path, you will double-print — this
+is the single most important rule when touching the runner. The separate catch-all
+defect handler further down (genuine command-handler failures captured via
+`effect-errors`) is a different path that `Command.runWith` never renders, so appending
+help text there is not a double-print.
 
 ## argv preprocessing and the executable-prefix contract
 
