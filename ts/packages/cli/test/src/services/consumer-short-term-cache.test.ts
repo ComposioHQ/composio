@@ -1,7 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
-import { FileSystem } from '@effect/platform';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Option } from 'effect';
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { extendConfigProvider } from 'src/services/config';
@@ -16,13 +15,13 @@ import {
 import { TestLive } from 'test/__utils__';
 
 const makeTestConfigProvider = (entries: Array<[string, string]>) =>
-  ConfigProvider.fromMap(
-    new Map([
+  ConfigProvider.fromEnv({
+    env: Object.fromEntries([
       ['COMPOSIO_USER_API_KEY', 'test_api_key'],
       ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
       ...entries,
-    ])
-  ).pipe(extendConfigProvider);
+    ]),
+  }).pipe(extendConfigProvider);
 
 const defaultTestConfigProvider = makeTestConfigProvider([]);
 const cacheEnabledTestConfigProvider = makeTestConfigProvider([
@@ -49,7 +48,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: defaultTestConfigProvider }))(
     '[Given] the default cache config [Then] connected-account cache stays disabled',
     it => {
-      it.scoped('returns none even after a write is attempted', () =>
+      it.effect('returns none even after a write is attempted', () =>
         Effect.gen(function* () {
           yield* writeConsumerConnectedToolkitsCache({
             orgId: 'org_test',
@@ -111,7 +110,7 @@ describe('consumer short-term cache', () => {
       },
     })
   )('[Given] no-auth toolkits [Then] refresh caches them as connected', it => {
-    it.scoped('stores connected and no-auth toolkit slugs together', () =>
+    it.effect('stores connected and no-auth toolkit slugs together', () =>
       Effect.gen(function* () {
         vi.spyOn(composioClients, 'getConsumerConnectedToolkits').mockReturnValue(
           Effect.succeed({ toolkits: ['github'] })
@@ -175,7 +174,7 @@ describe('consumer short-term cache', () => {
       },
     })
   )('[Given] a search cache write [Then] no-auth toolkits are preserved', it => {
-    it.scoped('stores active and no-auth toolkit slugs together', () =>
+    it.effect('stores active and no-auth toolkit slugs together', () =>
       Effect.gen(function* () {
         yield* writeConsumerConnectedToolkitsCache({
           orgId: 'org_test',
@@ -196,7 +195,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a malformed persisted cache [Then] cache reads fail closed',
     it => {
-      it.scoped('ignores cache entries that do not match the persisted schema', () =>
+      it.effect('ignores cache entries that do not match the persisted schema', () =>
         Effect.gen(function* () {
           const fs = yield* FileSystem.FileSystem;
           const cacheDir = yield* setupCacheDir;
@@ -224,7 +223,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] one corrupt entry among valid ones [Then] only the corrupt entry is dropped',
     it => {
-      it.scoped('keeps valid cache entries when a sibling entry is corrupt', () =>
+      it.effect('keeps valid cache entries when a sibling entry is corrupt', () =>
         Effect.gen(function* () {
           const fs = yield* FileSystem.FileSystem;
           const cacheDir = yield* setupCacheDir;
@@ -254,7 +253,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a full auth-config cache hit [Then] cache reads are toolkit-complete',
     it => {
-      it.scoped('returns cached auth configs when every requested toolkit is covered', () =>
+      it.effect('returns cached auth configs when every requested toolkit is covered', () =>
         Effect.gen(function* () {
           yield* writeConsumerConnectedToolkitsCache({
             orgId: 'org_test',
@@ -290,7 +289,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] a partial auth-config cache hit [Then] cache read fails closed',
     it => {
-      it.scoped('returns none unless every requested toolkit has a cached auth config', () =>
+      it.effect('returns none unless every requested toolkit has a cached auth config', () =>
         Effect.gen(function* () {
           yield* writeConsumerConnectedToolkitsCache({
             orgId: 'org_test',
@@ -318,7 +317,7 @@ describe('consumer short-term cache', () => {
   layer(TestLive({ baseConfigProvider: cacheEnabledTestConfigProvider }))(
     '[Given] cached connected account metadata [Then] default mappings and summaries are readable',
     it => {
-      it.scoped('returns cached connected account selectors by toolkit', () =>
+      it.effect('returns cached connected account selectors by toolkit', () =>
         Effect.gen(function* () {
           yield* writeConsumerConnectedToolkitsCache({
             orgId: 'org_test',

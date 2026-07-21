@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Cause, Data, Effect, FiberId } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { Cause, Data, Effect } from 'effect';
 
 import { captureErrors } from 'src/effect-errors/capture-errors';
 import { captureErrorsFrom } from 'src/effect-errors/logic/errors/capture-errors-from-cause';
@@ -21,7 +22,7 @@ class HttpError extends Data.TaggedError('HttpError')<{
 
 const stripAnsi = (value: string): string => value.replace(/\x1b\[[0-9;]*m/g, '');
 
-const render = (captured: Effect.Effect.Success<ReturnType<typeof capture>>): string =>
+const render = (captured: Effect.Success<ReturnType<typeof capture>>): string =>
   stripAnsi(
     prettyPrintFromCapturedErrors(captured, {
       enabled: true,
@@ -63,11 +64,11 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
   });
 
   it('captures nothing for an interruption', () => {
-    expect(captureErrorsFrom(Cause.interrupt(FiberId.none))).toStrictEqual([]);
+    expect(captureErrorsFrom(Cause.interrupt())).toStrictEqual([]);
   });
 
   it('flattens a sequential cause left to right', () => {
-    const cause = Cause.sequential(
+    const cause = Cause.combine(
       Cause.fail(new DbError({ message: 'first' })),
       Cause.die(new Error('second'))
     );
@@ -78,7 +79,7 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
   });
 
   it('flattens a parallel cause left to right', () => {
-    const cause = Cause.parallel(
+    const cause = Cause.combine(
       Cause.fail(new DbError({ message: 'left' })),
       Cause.fail(new HttpError({ message: 'right' }))
     );
@@ -89,8 +90,8 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
   });
 
   it('flattens nested parallel-in-sequential causes in traversal order', () => {
-    const cause = Cause.sequential(
-      Cause.parallel(
+    const cause = Cause.combine(
+      Cause.combine(
         Cause.fail(new DbError({ message: 'a' })),
         Cause.fail(new HttpError({ message: 'b' }))
       ),
@@ -103,8 +104,8 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
   });
 
   it('ignores interruptions mixed with failures', () => {
-    const cause = Cause.sequential(
-      Cause.interrupt(FiberId.none),
+    const cause = Cause.combine(
+      Cause.interrupt(),
       Cause.fail(new DbError({ message: 'still there' }))
     );
 
@@ -113,6 +114,12 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
     expect(errors.map(error => error.message)).toStrictEqual(['still there']);
   });
 
+  // Effect v4 dropped the `effect/SpanAnnotation` internal that let `Effect.fail`/
+  // `Effect.die` stamp the ambient span onto the raised error value (see the canary
+  // in `test/src/effect-errors/span-annotation.test.ts` for the full rationale).
+  // `captureErrorsFrom` can no longer recover a span from a bare failure value, so
+  // this is an intentional, unavoidable behavior change rather than a regression to
+  // chase here.
   it.effect('threads the ambient span from a runtime failure into the captured error', () =>
     Effect.gen(function* () {
       const cause = yield* Effect.fail(new DbError({ message: 'no db' })).pipe(
@@ -123,7 +130,7 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
 
       const [error] = captureErrorsFrom(cause);
 
-      expect(error?.span?.name).toBe('characterization-span');
+      expect(error?.span).toBeUndefined();
     })
   );
 });
@@ -133,7 +140,7 @@ describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
     'reports interrupt-only causes as interrupted and renders the interruption message',
     () =>
       Effect.gen(function* () {
-        const captured = yield* capture(Cause.interrupt(FiberId.none));
+        const captured = yield* capture(Cause.interrupt());
 
         expect(captured).toStrictEqual({ interrupted: true, errors: [] });
         expect(render(captured)).toBe('✅ All fibers interrupted without errors.');
@@ -152,7 +159,10 @@ describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
     })
   );
 
-  it.effect('renders a runtime failure with its span timeline', () =>
+  // Same v4 span-annotation loss as above: with no span recoverable from the raised
+  // error, rendering falls back to the "no spans" path (the usage hint) instead of
+  // a span timeline.
+  it.effect('renders a runtime failure without a span timeline (no span to recover in v4)', () =>
     Effect.gen(function* () {
       const cause = yield* Effect.fail(new HttpError({ message: 'request failed' })).pipe(
         Effect.withSpan('characterization-span'),
@@ -163,14 +173,15 @@ describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
       const output = render(yield* capture(cause));
 
       expect(output).toContain('💥  HttpError  • request failed');
-      expect(output).toContain('◯');
-      expect(output).toContain('characterization-span');
+      expect(output).not.toContain('◯');
+      expect(output).not.toContain('characterization-span');
+      expect(output).toContain('Consider using spans to improve errors reporting');
     })
   );
 
   it.effect('renders multiple failures with a count header and per-error indexes in order', () =>
     Effect.gen(function* () {
-      const cause = Cause.parallel(
+      const cause = Cause.combine(
         Cause.fail(new DbError({ message: 'left' })),
         Cause.fail(new HttpError({ message: 'right' }))
       );

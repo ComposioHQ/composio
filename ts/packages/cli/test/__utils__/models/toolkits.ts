@@ -1,7 +1,8 @@
-import { Arbitrary, FastCheck } from 'effect';
+import { FastCheck } from 'effect/testing';
+import { Schema } from 'effect';
 import { Toolkit } from 'src/models/toolkits';
 
-const ToolkitArbitary = Arbitrary.make(Toolkit);
+const ToolkitArbitary = Schema.toArbitrary(Toolkit);
 
 /**
  * Creates multiple test toolkit instances by merging arbitrary generated toolkit data with the provided subset values.

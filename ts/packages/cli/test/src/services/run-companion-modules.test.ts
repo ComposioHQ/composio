@@ -1,11 +1,11 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { BunContext } from '@effect/platform-bun';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { afterEach, describe, expect, layer, vi } from '@effect/vitest';
-import { Effect } from 'effect';
+import { ConfigProvider, Effect } from 'effect';
 import { repairMissingInstalledRunCompanionModules } from 'src/services/run-companion-modules';
-import { BaseConfigProviderLive, extendConfigProvider } from 'src/services/config';
+import { getBaseConfigProvider, extendConfigProvider } from 'src/services/config';
 
 describe('run-companion-modules', () => {
   afterEach(() => {
@@ -13,7 +13,7 @@ describe('run-companion-modules', () => {
     vi.unstubAllEnvs();
   });
 
-  layer(BunContext.layer)(it => {
+  layer(BunServices.layer)(it => {
     it.effect(
       '[Given] malformed release metadata [Then] repair rejects it before using release assets',
       () => {
@@ -78,7 +78,10 @@ describe('run-companion-modules', () => {
         }).pipe(
           // Simulate the cli-main runtime, whose provider rewrites config keys
           // to their COMPOSIO_-prefixed spelling.
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )
@@ -119,7 +122,10 @@ describe('run-companion-modules', () => {
             'https://prefixed-proxy.test/repos/ComposioHQ/composio/releases/tags/%40composio%2Fcli%408.8.8-test'
           );
         }).pipe(
-          Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
+          Effect.provideService(
+            ConfigProvider.ConfigProvider,
+            extendConfigProvider(getBaseConfigProvider())
+          ),
           Effect.ensuring(
             Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
           )

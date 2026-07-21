@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Effect, FileSystem } from 'effect';
 import { NodeProcess } from 'src/services/node-process';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
@@ -31,7 +30,7 @@ describe('CLI: composio generate', () => {
       fixture: 'python-project',
     })
   )(it => {
-    it.scoped('[Given] a valid Python project in cwd [Then] it detects its language', () =>
+    it.effect('[Given] a valid Python project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
         const process = yield* NodeProcess;
         const cwd = process.cwd;
@@ -50,7 +49,7 @@ describe('CLI: composio generate', () => {
       fixture: 'typescript-project',
     })
   )(it => {
-    it.scoped('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
+    it.effect('[Given] a valid TypeScript project in cwd [Then] it detects its language', () =>
       Effect.gen(function* () {
         const process = yield* NodeProcess;
         const cwd = process.cwd;
@@ -69,7 +68,7 @@ describe('CLI: composio generate', () => {
       fixture: 'typescript-pnpm-monorepo',
     })
   )(it => {
-    it.scoped('[Given] a pnpm monorepo project in cwd [Then] it detects TypeScript', () =>
+    it.effect('[Given] a pnpm monorepo project in cwd [Then] it detects TypeScript', () =>
       Effect.gen(function* () {
         const process = yield* NodeProcess;
         const cwd = process.cwd;
@@ -88,7 +87,7 @@ describe('CLI: composio generate', () => {
       fixture: 'typescript-bun-project',
     })
   )(it => {
-    it.scoped('[Given] a bun project in cwd [Then] it detects TypeScript', () =>
+    it.effect('[Given] a bun project in cwd [Then] it detects TypeScript', () =>
       Effect.gen(function* () {
         const process = yield* NodeProcess;
         const cwd = process.cwd;
@@ -107,7 +106,7 @@ describe('CLI: composio generate', () => {
       fixture: 'python-uv-project',
     })
   )(it => {
-    it.scoped('[Given] a uv Python project in cwd [Then] it detects Python', () =>
+    it.effect('[Given] a uv Python project in cwd [Then] it detects Python', () =>
       Effect.gen(function* () {
         const process = yield* NodeProcess;
         const cwd = process.cwd;
@@ -127,7 +126,7 @@ describe('CLI: composio generate', () => {
       toolkitsData: appClientData,
     })
   )(it => {
-    it.scoped(
+    it.effect(
       '[Given] TypeScript project with --toolkits [Then] it filters output to specified toolkits',
       () =>
         Effect.gen(function* () {
@@ -159,7 +158,7 @@ describe('CLI: composio generate', () => {
       toolkitsData: appClientData,
     })
   )(it => {
-    it.scoped(
+    it.effect(
       '[Given] Python project with --toolkits [Then] it filters output to specified toolkits',
       () =>
         Effect.gen(function* () {

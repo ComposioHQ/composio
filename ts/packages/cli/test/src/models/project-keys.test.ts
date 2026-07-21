@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@effect/vitest';
-import { Effect, Option, ParseResult } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { ProjectKeys, projectKeysFromJSON, projectKeysToJSON } from 'src/models/project-keys';
 
 describe('ProjectKeys', () => {
@@ -82,7 +82,7 @@ describe('ProjectKeys', () => {
       Effect.gen(function* () {
         const json = JSON.stringify({ project_id: 'def' });
         const error = yield* Effect.flip(projectKeysFromJSON(json));
-        expect(error).toBeInstanceOf(ParseResult.ParseError);
+        expect(error).toBeInstanceOf(Schema.SchemaError);
       })
     );
 
@@ -90,7 +90,7 @@ describe('ProjectKeys', () => {
       Effect.gen(function* () {
         const json = JSON.stringify({ org_id: 'abc' });
         const error = yield* Effect.flip(projectKeysFromJSON(json));
-        expect(error).toBeInstanceOf(ParseResult.ParseError);
+        expect(error).toBeInstanceOf(Schema.SchemaError);
       })
     );
 
@@ -98,7 +98,7 @@ describe('ProjectKeys', () => {
       Effect.gen(function* () {
         const json = JSON.stringify({ org_id: 123, project_id: 'def' });
         const error = yield* Effect.flip(projectKeysFromJSON(json));
-        expect(error).toBeInstanceOf(ParseResult.ParseError);
+        expect(error).toBeInstanceOf(Schema.SchemaError);
       })
     );
 
@@ -106,14 +106,14 @@ describe('ProjectKeys', () => {
       Effect.gen(function* () {
         const json = JSON.stringify({ org_id: 'abc', project_id: true });
         const error = yield* Effect.flip(projectKeysFromJSON(json));
-        expect(error).toBeInstanceOf(ParseResult.ParseError);
+        expect(error).toBeInstanceOf(Schema.SchemaError);
       })
     );
 
     it.effect('fails on invalid JSON', () =>
       Effect.gen(function* () {
         const error = yield* Effect.flip(projectKeysFromJSON('not json'));
-        expect(error).toBeInstanceOf(ParseResult.ParseError);
+        expect(error).toBeInstanceOf(Schema.SchemaError);
       })
     );
 

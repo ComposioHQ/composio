@@ -29,15 +29,15 @@ const connectedAccountsData = {
   items: testConnectedAccounts,
 } satisfies TestLiveInput['connectedAccountsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev connected-accounts info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
     '[Given] valid ID [Then] shows connected account info',
     it => {
-      it.scoped('displays info for existing account', () =>
+      it.effect('displays info for existing account', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'info', 'con_gmail_active']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -55,7 +55,7 @@ describe('CLI: composio dev connected-accounts info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
     '[Given] nonexistent ID [Then] shows error with hint',
     it => {
-      it.scoped('shows error for nonexistent account', () =>
+      it.effect('shows error for nonexistent account', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'info', 'con_nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -71,7 +71,7 @@ describe('CLI: composio dev connected-accounts info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, connectedAccountsData }))(
     '[Given] no ID argument [Then] shows missing argument warning',
     it => {
-      it.scoped('warns about missing argument', () =>
+      it.effect('warns about missing argument', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'connected-accounts', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -85,7 +85,7 @@ describe('CLI: composio dev connected-accounts info', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'connected-accounts', 'info', 'con_gmail_active']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

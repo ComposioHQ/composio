@@ -1,9 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Effect, Option } from 'effect';
-import { HelpDoc, ValidationError } from '@effect/cli';
+import { Effect, FileSystem, Option } from 'effect';
 import path from 'node:path';
-import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -43,7 +41,7 @@ describe('CLI: composio login', () => {
 
   describe('login --help', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] shows browser, session, direct-login flags and no legacy --api-key', () =>
+      it.effect('[Then] shows browser, session, direct-login flags and no legacy --api-key', () =>
         Effect.gen(function* () {
           yield* cli(['login', '--help']);
           const lines = yield* MockConsole.getLines();
@@ -62,8 +60,11 @@ describe('CLI: composio login', () => {
     });
   });
 
+  // v4 migration note: this business-level validation (only knowable after parsing) is a
+  // plain typed domain error (`LoginOptionError`), not a `CliError.InvalidValue` — see the
+  // migration note in `login.cmd.ts` above `invalidOptionValue`.
   layer(TestLive())(it => {
-    it.scoped('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
+    it.effect('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
       Effect.gen(function* () {
         const error = yield* cli([
           'login',
@@ -73,18 +74,15 @@ describe('CLI: composio login', () => {
           'uak_direct_key',
         ]).pipe(Effect.flip);
 
-        expect(ValidationError.isValidationError(error)).toBe(true);
-        if (!ValidationError.isValidationError(error)) return;
-        expect(ValidationError.isInvalidValue(error)).toBe(true);
-        expect(HelpDoc.toAnsiText(error.error)).toContain(
-          'Use either `--key` or `--user-api-key`, not both.'
-        );
+        expect(error).toMatchObject({
+          message: 'Use either `--key` or `--user-api-key`, not both.',
+        });
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.scoped('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
+    it.effect('[When] stdin is non-interactive [Then] login prints agent instructions', () =>
       Effect.gen(function* () {
         const restoreTty = setTtyState({ stdin: false, stdout: true, stderr: true });
         try {
@@ -125,7 +123,7 @@ describe('CLI: composio login', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
+    it.effect('[When] logging in with --user-api-key --org [Then] stores the chosen org', () =>
       Effect.gen(function* () {
         vi.spyOn(globalThis, 'fetch').mockImplementation(
           async (requestInput: RequestInfo | URL, init?: RequestInit) => {

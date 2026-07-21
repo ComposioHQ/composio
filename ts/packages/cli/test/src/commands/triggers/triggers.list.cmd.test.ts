@@ -1,4 +1,4 @@
-import { ValidationError } from '@effect/cli';
+import { CliError } from 'effect/unstable/cli';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, ConfigProvider, Effect, Exit } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
@@ -50,15 +50,15 @@ const toolkitsData = {
   triggerTypes: testTriggerTypes,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers list [Then] lists trigger types with root-level hint',
     it => {
-      it.scoped('supports the top-level triggers list entrypoint', () =>
+      it.effect('supports the top-level triggers list entrypoint', () =>
         Effect.gen(function* () {
           yield* cli(['triggers', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -75,15 +75,13 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] root triggers list with nonexistent toolkit [Then] shows root toolkit hint',
     it => {
-      it.scoped('uses root toolkit command in the no-results hint', () =>
+      it.effect('uses root toolkit command in the no-results hint', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['triggers', 'list', 'nonexistent']));
           expect(Exit.isFailure(exit)).toBe(true);
           if (Exit.isFailure(exit)) {
             const failure = Cause.squash(exit.cause);
-            expect(
-              ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
-            ).toBe(true);
+            expect(CliError.isCliError(failure) && failure._tag === 'InvalidValue').toBe(true);
           }
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
@@ -99,7 +97,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no toolkit [Then] parse fails because toolkit is required',
     it => {
-      it.scoped('requires a toolkit positional argument', () =>
+      it.effect('requires a toolkit positional argument', () =>
         Effect.gen(function* () {
           const exit = yield* cli(['triggers', 'list']).pipe(Effect.exit);
           expect(JSON.stringify(exit)).toContain('toolkit');
@@ -111,7 +109,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no flags [Then] lists all trigger types',
     it => {
-      it.scoped('lists all trigger types', () =>
+      it.effect('lists all trigger types', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -128,7 +126,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit "gmail" [Then] lists only gmail trigger types',
     it => {
-      it.scoped('filters by toolkit', () =>
+      it.effect('filters by toolkit', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -146,7 +144,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --limit 1 [Then] lists one trigger type with singular grammar',
     it => {
-      it.scoped('uses singular form for one result', () =>
+      it.effect('uses singular form for one result', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'list', 'gmail', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -162,7 +160,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no flags [Then] shows next step hint',
     it => {
-      it.scoped('shows hint to view trigger details', () =>
+      it.effect('shows hint to view trigger details', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -175,7 +173,7 @@ describe('CLI: composio dev triggers list', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'list', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -192,7 +190,7 @@ describe('CLI: composio dev triggers list', () => {
       toolkitsData: { toolkits: makeTestToolkits([{ name: 'Gmail', slug: 'gmail' }]) },
     })
   )('[Given] empty results [Then] shows no trigger types found', it => {
-    it.scoped('shows no trigger types found', () =>
+    it.effect('shows no trigger types found', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'triggers', 'list', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -206,7 +204,7 @@ describe('CLI: composio dev triggers list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit "nonexistent" [Then] shows invalid toolkit error with hint',
     it => {
-      it.scoped('shows hint about verifying toolkit slug', () =>
+      it.effect('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'triggers', 'list', 'nonexistent']).pipe(Effect.ignore);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

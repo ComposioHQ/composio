@@ -44,9 +44,9 @@ const toolkitsData = {
   tools: testTools,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const testLiveOptions = {
   baseConfigProvider: testConfigProvider,
@@ -99,7 +99,7 @@ const extractFirstJsonObject = (output: string): Record<string, unknown> | null 
 
 describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))('[Given] a blank query [Then] typed validation fails', it => {
-    it.scoped('returns the structured missing-query error', () =>
+    it.effect('returns the structured missing-query error', () =>
       Effect.gen(function* () {
         const failure = yield* cli(['search', '   ']).pipe(Effect.flip);
         expect(failure).toBeInstanceOf(ToolsSearchInputError);
@@ -112,7 +112,7 @@ describe('CLI: composio search', () => {
   });
 
   layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns JSON by default', it => {
-    it.scoped('returns JSON payload by default', () =>
+    it.effect('returns JSON payload by default', () =>
       Effect.gen(function* () {
         yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -139,7 +139,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] multiple queries [Then] the CLI returns a batched JSON response',
     it => {
-      it.scoped('returns batched results in JSON', () =>
+      it.effect('returns batched results in JSON', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', 'create issue']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -158,7 +158,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] query with no results [Then] shows not found message',
     it => {
-      it.scoped('shows empty json output', () =>
+      it.effect('shows empty json output', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'nonexistent_query']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -173,7 +173,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] query "send" --toolkits "gmail" --human [Then] scopes to toolkit',
     it => {
-      it.scoped('scopes search to toolkit', () =>
+      it.effect('scopes search to toolkit', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', '--toolkits', 'gmail', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -191,7 +191,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] search --human [Then] it stays human-readable and omits raw JSON',
     it => {
-      it.scoped('does not print raw JSON in human mode', () =>
+      it.effect('does not print raw JSON in human mode', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -210,7 +210,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] search --json [Then] JSON output includes full tool-router payload and next steps',
     it => {
-      it.scoped('prints full search response with next steps for jq', () =>
+      it.effect('prints full search response with next steps for jq', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', '--json']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -239,7 +239,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] search results with workbench snippets [Then] snippets are removed from JSON output',
     it => {
-      it.scoped('omits workbench snippets and emits schema/cache references', () =>
+      it.effect('omits workbench snippets and emits schema/cache references', () =>
         Effect.gen(function* () {
           const live = TestLive({
             ...testLiveOptions,
@@ -290,9 +290,11 @@ describe('CLI: composio search', () => {
             },
           });
 
-          yield* cli(['search', 'send']).pipe(Effect.provide(live));
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const output = yield* Effect.gen(function* () {
+            yield* cli(['search', 'send']);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return lines.join('\n');
+          }).pipe(Effect.provide(live));
 
           expect(output).not.toContain('reference_workbench_snippets');
           expect(output).toContain('~/.composio/tool_definitions/GMAIL_SEND_EMAIL.json');
@@ -305,7 +307,7 @@ describe('CLI: composio search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] search with schema properties [Then] next steps have valid payload and lowercase link',
     it => {
-      it.scoped('next steps use valid payload from input_schema and lowercase toolkit', () =>
+      it.effect('next steps use valid payload from input_schema and lowercase toolkit', () =>
         Effect.gen(function* () {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
@@ -333,9 +335,11 @@ describe('CLI: composio search', () => {
             },
           });
 
-          yield* cli(['search', 'send']).pipe(Effect.provide(live));
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const output = yield* Effect.gen(function* () {
+            yield* cli(['search', 'send']);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return lines.join('\n');
+          }).pipe(Effect.provide(live));
           const parsed = extractFirstJsonObject(output);
           const nextSteps = parsed?.next_steps as
             | {
@@ -361,7 +365,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] search with empty schema [Then] next steps execute uses -d "{}"',
     it => {
-      it.scoped('next steps use -d "{}" when no schema properties', () =>
+      it.effect('next steps use -d "{}" when no schema properties', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -384,7 +388,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] --toolkits filter [Then] it is passed to session create as enabled toolkits',
     it => {
-      it.scoped('passes toolkit filter into tool router session', () =>
+      it.effect('passes toolkit filter into tool router session', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
           let searchParams: SessionSearchParams | undefined;
@@ -470,7 +474,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] local toolkit filter [Then] it is sent as a custom toolkit',
     it => {
-      it.scoped('injects and forwards local custom toolkit payloads', () =>
+      it.effect('injects and forwards local custom toolkit payloads', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
           let searchParams:
@@ -560,7 +564,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] unknown local-style toolkit filter [Then] it is still sent as a remote toolkit',
     it => {
-      it.scoped('does not inject experimental custom toolkits for unknown local-style names', () =>
+      it.effect('does not inject experimental custom toolkits for unknown local-style names', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
 
@@ -601,7 +605,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] multiple queries [Then] search passes all queries to the tool-router session',
     it => {
-      it.scoped('passes batched queries without a parallel flag', () =>
+      it.effect('passes batched queries without a parallel flag', () =>
         Effect.gen(function* () {
           let searchParams: SessionSearchParams | undefined;
 
@@ -674,7 +678,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] search response with recommended plan [Then] it prints plan and execute hint',
     it => {
-      it.scoped('prints plan and command hints', () =>
+      it.effect('prints plan and command hints', () =>
         Effect.gen(function* () {
           const live = TestLive({
             baseConfigProvider: testConfigProvider,
@@ -727,9 +731,11 @@ describe('CLI: composio search', () => {
             },
           });
 
-          yield* cli(['search', 'send email', '--human']).pipe(Effect.provide(live));
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+          const output = yield* Effect.gen(function* () {
+            yield* cli(['search', 'send email', '--human']);
+            const lines = yield* MockConsole.getLines({ stripAnsi: true });
+            return lines.join('\n');
+          }).pipe(Effect.provide(live));
 
           expect(output).toContain('Plan:');
           expect(output).toContain('1. Collect recipient details');
@@ -742,7 +748,7 @@ describe('CLI: composio search', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['search', 'send', '--human']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -756,7 +762,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] consumer search [Then] it uses the resolved consumer user id',
     it => {
-      it.scoped('uses consumer user id from the resolved project context', () =>
+      it.effect('uses consumer user id from the resolved project context', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
           const live = TestLive({
@@ -795,7 +801,7 @@ describe('CLI: composio search', () => {
       toolkitsData,
     })
   )('[Given] no explicit --user-id [Then] consumer search does not require one', it => {
-    it.scoped('runs without printing global test user diagnostics', () =>
+    it.effect('runs without printing global test user diagnostics', () =>
       Effect.gen(function* () {
         yield* cli(['search', 'send']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -811,7 +817,7 @@ describe('CLI: composio search', () => {
   layer(TestLive(testLiveOptions))(
     '[Given] composio search [Then] runs the root search flow',
     it => {
-      it.scoped('search returns matching tools', () =>
+      it.effect('search returns matching tools', () =>
         Effect.gen(function* () {
           yield* cli(['search', 'send', '--human']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

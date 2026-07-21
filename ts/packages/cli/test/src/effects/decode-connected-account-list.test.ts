@@ -1,15 +1,11 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Console, Effect, Layer, ParseResult } from 'effect';
+import { Console, Effect, Layer, Schema } from 'effect';
 import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import { MockConsole } from 'test/__utils__';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
-const TestLayer = Layer.unwrapEffect(
-  Effect.map(MockConsole.make, _console =>
-    Layer.mergeAll(Console.setConsole(_console), TerminalUITest)
-  )
-);
+const TestLayer = Layer.mergeAll(Layer.effect(Console.Console, MockConsole.make), TerminalUITest);
 
 const makeItem = (overrides?: Record<string, unknown>) => ({
   id: 'con_decode_test',
@@ -68,13 +64,13 @@ describe('decodeConnectedAccountItemsWithFallback', () => {
   });
 
   layer(TestLayer)('[Given] a payload the permissive schema cannot decode', it => {
-    it.effect('fails with ParseError instead of leaking the raw payload', () =>
+    it.effect('fails with SchemaError instead of leaking the raw payload', () =>
       Effect.gen(function* () {
         const error = yield* Effect.flip(
           decodeConnectedAccountItemsWithFallback([{ definitely: 'not-an-account' }])
         );
 
-        expect(ParseResult.isParseError(error)).toBe(true);
+        expect(Schema.isSchemaError(error)).toBe(true);
       })
     );
   });

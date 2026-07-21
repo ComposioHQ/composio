@@ -11,7 +11,7 @@ describe('runtime debug logger', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('writes tool diagnostics as the existing JSON line format', () =>
+    it.effect('writes tool diagnostics as the existing JSON line format', () =>
       Effect.gen(function* () {
         setRuntimeDebugFlags({ toolDebug: true });
 
@@ -23,7 +23,7 @@ describe('runtime debug logger', () => {
       })
     );
 
-    it.scoped('writes performance diagnostics with elapsed time', () =>
+    it.effect('writes performance diagnostics with elapsed time', () =>
       Effect.gen(function* () {
         setRuntimeDebugFlags({ perfDebug: true });
         vi.spyOn(Date, 'now').mockReturnValue(125);

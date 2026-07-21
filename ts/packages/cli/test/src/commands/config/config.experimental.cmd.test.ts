@@ -1,8 +1,8 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ValidationError } from '@effect/cli';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, it, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Layer } from 'effect';
+import { Cause, Effect, Exit, FileSystem, Layer, Path } from 'effect';
+import { CliError } from 'effect/unstable/cli';
 import * as tempy from 'tempy';
 import { discoverSkillRoots } from 'src/effects/discover-skill-roots';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -115,16 +115,14 @@ describe('config experimental skill discovery', () => {
 });
 
 layer(TestLive())('config experimental state validation', it => {
-  it.scoped('reports an invalid state through Effect CLI validation', () =>
+  it.effect('reports an invalid state through Effect CLI validation', () =>
     Effect.gen(function* () {
       const exit = yield* Effect.exit(cli(['config', 'experimental', 'local_tools', 'sometimes']));
 
       expect(Exit.isFailure(exit)).toBe(true);
       if (Exit.isFailure(exit)) {
         const failure = Cause.squash(exit.cause);
-        expect(
-          ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
-        ).toBe(true);
+        expect(CliError.isCliError(failure) && failure._tag === 'InvalidValue').toBe(true);
       }
       expect((yield* MockConsole.getLines()).join('\n')).toContain(
         'Invalid state "sometimes". Use "on" or "off".'

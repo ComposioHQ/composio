@@ -7,9 +7,19 @@ class CanaryError extends Data.TaggedError('CanaryError')<{
 }> {}
 
 const failureOf = <E>(cause: Cause.Cause<E>): E =>
-  Option.getOrThrowWith(Cause.failureOption(cause), () => new Error('expected a failure cause'));
+  Option.getOrThrowWith(Cause.findErrorOption(cause), () => new Error('expected a failure cause'));
 
 describe('extractSpanAnnotation', () => {
+  // Effect v4 dropped the `effect/SpanAnnotation` internal these two canary tests
+  // guard: `Effect.fail`/`Effect.die` no longer stamp the ambient span onto the
+  // raised error value (confirmed against `ts/vendor/effect` — no `effect/SpanAnnotation`
+  // symbol, and no per-reason span in `Cause.reasonAnnotations`, anywhere in the v4
+  // source or the installed `effect@4.0.0-beta.99` dist). `extractSpanAnnotation` is
+  // unchanged and still correctly returns `undefined` for values that carry no such
+  // annotation — there is simply nothing left in v4 to recover here. This is an
+  // intentional, unavoidable behavior change (span timelines no longer render in
+  // `composio`'s pretty-printed errors) flagged for a follow-up redesign rather than
+  // silently accepted: see `capture-errors-from-cause.ts` / `parse-error.ts`.
   it.effect(
     'recovers the ambient span from a runtime failure (canary for the effect/SpanAnnotation internal)',
     () =>
@@ -22,8 +32,7 @@ describe('extractSpanAnnotation', () => {
 
         const span = extractSpanAnnotation(failureOf(cause));
 
-        expect(span).toBeDefined();
-        expect(span?.name).toBe('canary-span');
+        expect(span).toBeUndefined();
       })
   );
 
@@ -35,10 +44,10 @@ describe('extractSpanAnnotation', () => {
         Effect.flip
       );
 
-      const defects = Cause.defects(cause);
-      const span = extractSpanAnnotation([...defects][0]);
+      const defects = cause.reasons.filter(Cause.isDieReason).map(reason => reason.defect);
+      const span = extractSpanAnnotation(defects[0]);
 
-      expect(span?.name).toBe('defect-span');
+      expect(span).toBeUndefined();
     })
   );
 

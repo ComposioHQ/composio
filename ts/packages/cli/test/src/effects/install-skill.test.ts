@@ -1,9 +1,18 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { describe, expect, it, vi } from '@effect/vitest';
-import { Config, ConfigProvider, Effect, Exit, Layer } from 'effect';
-import { FetchHttpClient, FileSystem, HttpClient, Path } from '@effect/platform';
-import type * as PlatformError from '@effect/platform/Error';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import {
+  Config,
+  ConfigProvider,
+  Effect,
+  Exit,
+  FileSystem,
+  Layer,
+  Path,
+  PlatformError,
+} from 'effect';
+import { FetchHttpClient, HttpClient } from 'effect/unstable/http';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as tempy from 'tempy';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 import {
@@ -37,16 +46,16 @@ const makeInstallEffect = (home: string, apiBaseUrl: string) =>
         TestPlatform,
         FetchHttpClient.layer,
         TerminalUITest,
-        Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
-      )
-    ),
-    Effect.withConfigProvider(
-      ConfigProvider.fromMap(
-        new Map([
-          ['GITHUB_API_BASE_URL', apiBaseUrl],
-          ['GITHUB_OWNER', 'test-owner'],
-          ['GITHUB_REPO', 'test-repo'],
-        ])
+        Layer.succeed(NodeOs, defaultNodeOs({ homedir: home })),
+        ConfigProvider.layer(
+          ConfigProvider.fromEnv({
+            env: {
+              GITHUB_API_BASE_URL: apiBaseUrl,
+              GITHUB_OWNER: 'test-owner',
+              GITHUB_REPO: 'test-repo',
+            },
+          })
+        )
       )
     ),
     Effect.scoped
@@ -173,8 +182,12 @@ const makeResolveEffect = (
       releaseTag: options.releaseTag,
     });
   }).pipe(
-    Effect.provide(FetchHttpClient.layer),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.provide(
+      Layer.mergeAll(
+        FetchHttpClient.layer,
+        ConfigProvider.layer(ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) }))
+      )
+    ),
     Effect.scoped
   );
 
@@ -242,7 +255,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('fails with a typed decode error for malformed GitHub release lists', () =>
+  it.effect('fails with a typed decode error for malformed GitHub release lists', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -268,7 +281,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('fails with a typed decode error for malformed skill release metadata', () =>
+  it.effect('fails with a typed decode error for malformed skill release metadata', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
@@ -286,7 +299,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped.each(TARGET_SCENARIOS)('installs over %s target', ([, prepareTarget]) =>
+  it.effect.each(TARGET_SCENARIOS)('installs over %s target', ([, prepareTarget]) =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(TEST_SKILL_ZIP);
       const fs = yield* FileSystem.FileSystem;
@@ -308,7 +321,7 @@ describe('install-skill', () => {
     }).pipe(Effect.provide(TestPlatform))
   );
 
-  it.scoped('removes the temporary install directory after extraction fails', () =>
+  it.effect('removes the temporary install directory after extraction fails', () =>
     Effect.gen(function* () {
       const apiBaseUrl = yield* startSkillReleaseServer(new TextEncoder().encode('not a zip'));
       const home = tempy.temporaryDirectory();
@@ -322,7 +335,7 @@ describe('install-skill', () => {
     }).pipe(Effect.provide(TestPlatform))
   );
 
-  it.scoped('resolves the latest stable release when the stable channel is requested', () =>
+  it.effect('resolves the latest stable release when the stable channel is requested', () =>
     Effect.gen(function* () {
       yield* stubBunWhichMiss;
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {
@@ -379,7 +392,7 @@ describe('install-skill', () => {
     })
   );
 
-  it.scoped('resolves the latest beta release when the beta channel is requested', () =>
+  it.effect('resolves the latest beta release when the beta channel is requested', () =>
     Effect.gen(function* () {
       yield* stubBunWhichMiss;
       const apiBaseUrl = yield* startTestHttpServer((_req, res) => {

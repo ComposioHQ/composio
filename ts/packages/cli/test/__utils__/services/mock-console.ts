@@ -1,11 +1,9 @@
 // DO NOT MODIFY THIS FILE.
 // Adapted from https://github.com/Effect-TS/effect/blob/4f2107548fa64c21a8643b7b0efcd556cd16d4b9/packages/cli/test/services/MockConsole.ts
 
-import * as Array from 'effect/Array';
 import * as Console from 'effect/Console';
 import * as Context from 'effect/Context';
 import * as Effect from 'effect/Effect';
-import * as Ref from 'effect/Ref';
 
 export interface MockConsole extends Console.Console {
   readonly getLines: (
@@ -15,7 +13,11 @@ export interface MockConsole extends Console.Console {
   ) => Effect.Effect<ReadonlyArray<string>>;
 }
 
-export const MockConsole = Context.GenericTag<Console.Console, MockConsole>('effect/Console');
+// `Console.Console` is a `Context.Reference` in v4 (it replaces v3's FiberRef-backed
+// console). Reusing its `.key` aliases this service into the same context slot, so
+// providing `MockConsole` overrides the ambient console for anything that reads it.
+export const MockConsole = Context.Service<Console.Console, MockConsole>(Console.Console.key);
+
 const pattern = new RegExp(
   [
     '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
@@ -26,54 +28,40 @@ const pattern = new RegExp(
 
 const stripAnsi = (str: string) => str.replace(pattern, '');
 
-export const make = Effect.gen(function* () {
-  const lines = yield* Ref.make(Array.empty<string>());
+export const make = Effect.sync(() => {
+  // v4's `Console.Console` interface methods are plain synchronous `void`-returning
+  // calls (the effectful wrappers live at the `Console` module level), so the mock
+  // buffers into a local mutable array instead of an `Effect`-hosted `Ref`.
+  const lines: Array<string> = [];
 
   const getLines: MockConsole['getLines'] = (params = {}) =>
-    Ref.get(lines).pipe(
-      Effect.map(lines => (params.stripAnsi || false ? Array.map(lines, stripAnsi) : lines))
-    );
+    Effect.sync(() => (params.stripAnsi || false ? lines.map(stripAnsi) : [...lines]));
 
-  const log: MockConsole['log'] = (...args) => {
-    return Ref.update(lines, Array.appendAll(args));
+  const push = (...args: ReadonlyArray<any>): void => {
+    lines.push(...args);
   };
-
-  const info: MockConsole['info'] = (...args) => {
-    return Ref.update(lines, Array.appendAll(args));
-  };
-
-  const warn: MockConsole['warn'] = (...args) => {
-    return Ref.update(lines, Array.appendAll(args));
-  };
-
-  const error: MockConsole['error'] = (...args) => {
-    return Ref.update(lines, Array.appendAll(args));
-  };
-
-  const clear: MockConsole['clear'] = Ref.update(lines, Array.empty);
 
   return MockConsole.of({
-    [Console.TypeId]: Console.TypeId,
-    clear,
+    clear: () => {},
     getLines,
-    log,
-    info,
-    warn,
-    error,
-    unsafe: globalThis.console,
-    assert: () => Effect.void,
-    count: () => Effect.void,
-    countReset: () => Effect.void,
-    debug: () => Effect.void,
-    dir: () => Effect.void,
-    dirxml: () => Effect.void,
-    group: () => Effect.void,
-    groupEnd: Effect.void,
-    table: () => Effect.void,
-    time: () => Effect.void,
-    timeEnd: () => Effect.void,
-    timeLog: () => Effect.void,
-    trace: () => Effect.void,
+    log: push,
+    info: push,
+    warn: push,
+    error: push,
+    assert: () => {},
+    count: () => {},
+    countReset: () => {},
+    debug: () => {},
+    dir: () => {},
+    dirxml: () => {},
+    group: () => {},
+    groupCollapsed: () => {},
+    groupEnd: () => {},
+    table: () => {},
+    time: () => {},
+    timeEnd: () => {},
+    timeLog: () => {},
+    trace: () => {},
   });
 });
 
@@ -82,4 +70,4 @@ export const getLines = (
     readonly stripAnsi?: boolean;
   }>
 ): Effect.Effect<ReadonlyArray<string>> =>
-  Effect.consoleWith(console => (console as MockConsole).getLines(params));
+  Console.consoleWith(console => (console as MockConsole).getLines(params));

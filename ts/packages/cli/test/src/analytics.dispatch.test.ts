@@ -1,8 +1,9 @@
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
-import { FetchHttpClient, FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Effect, Layer } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { Effect, FileSystem, Layer, Path } from 'effect';
+import { FetchHttpClient } from 'effect/unstable/http';
 import * as tempy from 'tempy';
 import {
   getCurrentCwdSessionId,
@@ -36,11 +37,19 @@ const cwdHash = (cwd: string): string => {
   return Math.abs(hash >>> 0).toString(36);
 };
 
-const makePlatformLayer = (home: string) =>
+// `FetchHttpClient.Fetch` is an `effect` `Context.Reference` whose default
+// value (`globalThis.fetch`) is memoized on first read (see the vendored
+// `effect` source, `Context.ts`'s `getOrCreateDefaultValue`). Once any test in
+// this process reads it, later `vi.spyOn(globalThis, 'fetch')` swaps go
+// unnoticed by `FetchHttpClient`. Tests that assert on fetch calls must
+// therefore provide the spy through the layer explicitly instead of relying
+// on the global being mutated.
+const makePlatformLayer = (home: string, fetchImpl?: typeof fetch) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
+    ...(fetchImpl ? [Layer.succeed(FetchHttpClient.Fetch, fetchImpl)] : []),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
@@ -179,7 +188,7 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__analytics-worker',
         encodedPayload,
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(Effect.provide(makePlatformLayer(home, fetchSpy as unknown as typeof fetch)));
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
@@ -353,7 +362,7 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(Effect.provide(makePlatformLayer(home, fetchSpy as unknown as typeof fetch)));
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;

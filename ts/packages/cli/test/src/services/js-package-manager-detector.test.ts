@@ -1,7 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { BunFileSystem } from '@effect/platform-bun';
-import { FileSystem } from '@effect/platform';
-import { Effect, Layer } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { Effect, FileSystem, Layer } from 'effect';
 import * as tempy from 'tempy';
 import { JsPackageManagerDetector } from 'src/services/js-package-manager-detector';
 import * as path from 'path';
@@ -10,7 +9,7 @@ describe('JsPackageManagerDetector', () => {
   const testLayer = Layer.provideMerge(JsPackageManagerDetector.Default, BunFileSystem.layer);
 
   layer(testLayer)(it => {
-    it.scoped('should detect pnpm from lock file', () =>
+    it.effect('should detect pnpm from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -24,7 +23,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.scoped('should detect bun from lock file', () =>
+    it.effect('should detect bun from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -38,7 +37,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.scoped('should detect yarn from lock file', () =>
+    it.effect('should detect yarn from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -52,7 +51,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.scoped('should detect npm from lock file', () =>
+    it.effect('should detect npm from lock file', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -66,7 +65,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.scoped('should detect from package.json if no lock file is present', () =>
+    it.effect('should detect from package.json if no lock file is present', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;
@@ -83,7 +82,7 @@ describe('JsPackageManagerDetector', () => {
       })
     );
 
-    it.scoped('should detect recursively from parent directory', () =>
+    it.effect('should detect recursively from parent directory', () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const detector = yield* JsPackageManagerDetector;

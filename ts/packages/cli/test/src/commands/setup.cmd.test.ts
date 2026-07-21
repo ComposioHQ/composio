@@ -1,6 +1,7 @@
-import { Command, CommandExecutor } from '@effect/platform';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import { describe, expect, layer } from '@effect/vitest';
-import { Cause, Effect, Exit, Fiber, TestClock } from 'effect';
+import { Cause, Effect, Exit, Fiber } from 'effect';
+import { TestClock } from 'effect/testing';
 import { afterEach, vi } from 'vitest';
 import { SkillInstallError } from 'src/effects/install-skill';
 import { CommandRunner } from 'src/services/command-runner';
@@ -65,9 +66,11 @@ const HOST_OUTPUT_FORMATTERS: Readonly<Record<AgentHost, HostOutputFormatter>> =
   },
 };
 
-const commandParts = (command: Command.Command): ReadonlyArray<string> => {
-  const first = Command.flatten(command)[0];
-  return [first.command, ...first.args];
+const commandParts = (command: ChildProcess.Command): ReadonlyArray<string> => {
+  if (!ChildProcess.isStandardCommand(command)) {
+    throw new Error('Expected a standard command');
+  }
+  return [command.command, ...command.args];
 };
 
 const makeRunner = (
@@ -77,8 +80,8 @@ const makeRunner = (
     readonly stderr?: string;
   }
 ) =>
-  new CommandRunner({
-    run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+  CommandRunner.of({
+    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
     capture: command => {
       const result = respond(commandParts(command));
       return Effect.succeed({
@@ -106,7 +109,7 @@ const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
       return changed;
     });
   };
-  return new SetupSkillInstaller({
+  return SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => ready),
     hasManagedClaudeSkill: Effect.sync(() => ready),
     ensureClaudeSkill: ensureClaudeSkill(),
@@ -241,7 +244,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('fresh Claude install', it => {
-    it.scoped('uses exact native commands and verifies readiness', () =>
+    it.effect('uses exact native commands and verifies readiness', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'claude', '--yes']);
 
@@ -280,7 +283,7 @@ describe('CLI: composio setup', () => {
     codex: { available: true, marketplace: 'canonical', plugin: 'enabled' },
   });
   layer(TestLive({ commandRunner: existingCodex.runner }))('existing Codex install', it => {
-    it.scoped('is idempotent', () =>
+    it.effect('is idempotent', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'codex', '--yes']);
 
@@ -294,7 +297,7 @@ describe('CLI: composio setup', () => {
   });
   let staleSkillRepaired = false;
   let staleSkillReady = false;
-  const staleSkillInstaller = new SetupSkillInstaller({
+  const staleSkillInstaller = SetupSkillInstaller.of({
     isClaudeSkillReady: Effect.sync(() => staleSkillReady),
     hasManagedClaudeSkill: Effect.succeed(true),
     ensureClaudeSkill: Effect.sync(() => {
@@ -314,7 +317,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: staleSkillInstaller,
     })
   )('existing Claude plugin with stale skill', it => {
-    it.scoped('requires approval, then repairs the skill without extra output', () =>
+    it.effect('requires approval, then repairs the skill without extra output', () =>
       Effect.gen(function* () {
         const withoutApproval = yield* Effect.exit(cli(['setup', '--target', 'claude']));
         expect(Exit.isFailure(withoutApproval)).toBe(true);
@@ -342,7 +345,7 @@ describe('CLI: composio setup', () => {
         setupSkillInstaller: makeSkillInstaller(true),
       })
     )(`disabled ${host} plugin`, it => {
-      it.scoped('repairs the plugin through the native path', () =>
+      it.effect('repairs the plugin through the native path', () =>
         Effect.gen(function* () {
           yield* cli(['setup', '--target', host, '--yes']);
 
@@ -364,7 +367,7 @@ describe('CLI: composio setup', () => {
 
   const freshCodex = makeFakeHosts({ codex: { available: true } });
   layer(TestLive({ commandRunner: freshCodex.runner }))('fresh Codex install', it => {
-    it.scoped('uses the public OpenAI marketplace and exact native commands', () =>
+    it.effect('uses the public OpenAI marketplace and exact native commands', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'codex', '--yes']);
 
@@ -394,7 +397,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('automatic setup with one host', it => {
-    it.scoped('installs only the detected host', () =>
+    it.effect('installs only the detected host', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -414,7 +417,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: autoCodex.runner }))(
     'automatic setup with only supported Codex',
     it => {
-      it.scoped('installs Codex when Claude is not detected', () =>
+      it.effect('installs Codex when Claude is not detected', () =>
         Effect.gen(function* () {
           yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -440,7 +443,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('automatic setup with both hosts', it => {
-    it.scoped('selects both detected hosts and reports only plugin status', () =>
+    it.effect('selects both detected hosts and reports only plugin status', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto']);
 
@@ -471,7 +474,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('automatic setup with Claude and unsupported Codex', it => {
-    it.scoped('installs Claude and reports that Codex was skipped', () =>
+    it.effect('installs Claude and reports that Codex was skipped', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -510,7 +513,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: autoCodexWithLegacyClaude.runner }))(
     'automatic setup with unsupported Claude and Codex',
     it => {
-      it.scoped('installs Codex and reports that Claude was skipped', () =>
+      it.effect('installs Codex and reports that Claude was skipped', () =>
         Effect.gen(function* () {
           yield* cli(['setup', '--target', 'auto', '--yes']);
 
@@ -550,7 +553,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('explicit all-host setup', it => {
-    it.scoped('configures both supported hosts', () =>
+    it.effect('configures both supported hosts', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'all', '--yes']);
 
@@ -570,7 +573,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: partialAllTargets.runner }))(
     'explicit all-host setup with a missing host',
     it => {
-      it.scoped('fails before mutating the detected host', () =>
+      it.effect('fails before mutating the detected host', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
 
@@ -602,7 +605,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('explicit all-host setup with unsupported Codex', it => {
-    it.scoped('fails before mutating Claude', () =>
+    it.effect('fails before mutating Claude', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
 
@@ -625,7 +628,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('uninstall from both hosts', it => {
-    it.scoped('uses native removal commands and is idempotent', () =>
+    it.effect('uses native removal commands and is idempotent', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
         yield* cli(['setup', '--uninstall', '--target', 'all', '--yes']);
@@ -675,7 +678,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: uninstallMissing.runner }))(
     'uninstall when plugins are absent',
     it => {
-      it.scoped('reports the idempotent state without requiring approval', () =>
+      it.effect('reports the idempotent state without requiring approval', () =>
         Effect.gen(function* () {
           yield* cli(['setup', '--uninstall', '--target', 'all']);
 
@@ -694,7 +697,7 @@ describe('CLI: composio setup', () => {
   layer(
     TestLive({
       commandRunner: orphanedClaudeSkill.runner,
-      setupSkillInstaller: new SetupSkillInstaller({
+      setupSkillInstaller: SetupSkillInstaller.of({
         isClaudeSkillReady: Effect.sync(() => managedClaudeSkill),
         hasManagedClaudeSkill: Effect.sync(() => managedClaudeSkill),
         ensureClaudeSkill: Effect.succeed(false),
@@ -706,7 +709,7 @@ describe('CLI: composio setup', () => {
       }),
     })
   )('uninstall with an orphaned managed Claude skill', it => {
-    it.scoped('requires approval before removing the managed skill', () =>
+    it.effect('requires approval before removing the managed skill', () =>
       Effect.gen(function* () {
         const withoutApproval = yield* Effect.exit(
           cli(['setup', '--uninstall', '--target', 'claude'])
@@ -726,7 +729,7 @@ describe('CLI: composio setup', () => {
   layer(
     TestLive({
       commandRunner: uninstallWithUnmanagedClaudeSkill.runner,
-      setupSkillInstaller: new SetupSkillInstaller({
+      setupSkillInstaller: SetupSkillInstaller.of({
         isClaudeSkillReady: Effect.succeed(true),
         hasManagedClaudeSkill: Effect.succeed(false),
         ensureClaudeSkill: Effect.succeed(false),
@@ -734,7 +737,7 @@ describe('CLI: composio setup', () => {
       }),
     })
   )('uninstall with an unmanaged Claude skill', it => {
-    it.scoped('preserves the skill without treating plugin removal as a failure', () =>
+    it.effect('preserves the skill without treating plugin removal as a failure', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
 
@@ -754,7 +757,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('non-interactive uninstall approval', it => {
-    it.scoped('requires --yes before removing an installed plugin', () =>
+    it.effect('requires --yes before removing an installed plugin', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--uninstall', '--target', 'claude']));
 
@@ -775,7 +778,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('uninstall with a conflicting marketplace', it => {
-    it.scoped('removes the installed plugin without replacing the marketplace', () =>
+    it.effect('removes the installed plugin without replacing the marketplace', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--uninstall', '--target', 'claude', '--yes']);
 
@@ -795,7 +798,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('native uninstall failure', it => {
-    it.scoped('fails without reporting the plugin as removed', () =>
+    it.effect('fails without reporting the plugin as removed', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--uninstall', '--target', 'claude', '--yes'])
@@ -823,7 +826,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('project-scoped Claude plugin', it => {
-    it.scoped('installs the required user-scoped plugin', () =>
+    it.effect('installs the required user-scoped plugin', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'claude', '--yes']);
 
@@ -849,7 +852,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(true),
     })
   )('plugin from a removed marketplace', it => {
-    it.scoped('reinstalls after restoring the canonical marketplace', () =>
+    it.effect('reinstalls after restoring the canonical marketplace', () =>
       Effect.gen(function* () {
         yield* cli(['setup', '--target', 'claude', '--yes']);
 
@@ -867,14 +870,14 @@ describe('CLI: composio setup', () => {
 
   const unavailable = makeFakeHosts({});
   layer(TestLive({ commandRunner: unavailable.runner }))('no supported host', it => {
-    it.scoped('fails automatic setup', () =>
+    it.effect('fails automatic setup', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
       })
     );
 
-    it.scoped('can skip automatic setup for installer integration', () =>
+    it.effect('can skip automatic setup for installer integration', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -886,7 +889,7 @@ describe('CLI: composio setup', () => {
       })
     );
 
-    it.scoped('does not skip an explicitly requested missing host', () =>
+    it.effect('does not skip an explicitly requested missing host', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(
           cli(['setup', '--target', 'claude', '--yes', '--if-present'])
@@ -905,7 +908,7 @@ describe('CLI: composio setup', () => {
     claude: { available: true, marketplace: 'conflict' },
   });
   layer(TestLive({ commandRunner: conflict.runner }))('marketplace source conflict', it => {
-    it.scoped('fails safely instead of replacing the marketplace', () =>
+    it.effect('fails safely instead of replacing the marketplace', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
@@ -926,7 +929,7 @@ describe('CLI: composio setup', () => {
     layer(TestLive({ commandRunner: unsafeMarketplace.runner }))(
       `unsafe marketplace source: ${unsafeSource}`,
       it => {
-        it.scoped('rejects a non-canonical GitHub URL', () =>
+        it.effect('rejects a non-canonical GitHub URL', () =>
           Effect.gen(function* () {
             const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
 
@@ -947,7 +950,7 @@ describe('CLI: composio setup', () => {
     { failOn: 'plugin list --json' }
   );
   layer(TestLive({ commandRunner: failedInspection.runner }))('failed native inspection', it => {
-    it.scoped('fails before running setup mutations', () =>
+    it.effect('fails before running setup mutations', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
 
@@ -978,7 +981,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: legacyClaude.runner }))(
     'Claude without JSON plugin inspection',
     it => {
-      it.scoped('fails automatic setup with actionable update instructions', () =>
+      it.effect('fails automatic setup with actionable update instructions', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
 
@@ -1001,7 +1004,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: legacyCodex.runner }))(
     'Codex without JSON marketplace inspection',
     it => {
-      it.scoped('fails automatic setup when no supported host remains', () =>
+      it.effect('fails automatic setup when no supported host remains', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'auto', '--yes']));
 
@@ -1012,7 +1015,7 @@ describe('CLI: composio setup', () => {
         })
       );
 
-      it.scoped('skips cleanly for installer integration when no supported host remains', () =>
+      it.effect('skips cleanly for installer integration when no supported host remains', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(
             cli(['setup', '--target', 'auto', '--yes', '--if-present'])
@@ -1026,7 +1029,7 @@ describe('CLI: composio setup', () => {
         })
       );
 
-      it.scoped('fails with an actionable upgrade message before running setup mutations', () =>
+      it.effect('fails with an actionable upgrade message before running setup mutations', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
 
@@ -1050,7 +1053,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: malformedInspection.runner }))(
     'malformed native inspection',
     it => {
-      it.scoped('fails before running setup mutations', () =>
+      it.effect('fails before running setup mutations', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'codex', '--yes']));
 
@@ -1071,7 +1074,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('multi-host preflight', it => {
-    it.scoped('does not mutate an earlier host when a later host conflicts', () =>
+    it.effect('does not mutate an earlier host when a later host conflicts', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
 
@@ -1097,7 +1100,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(),
     })
   )('multi-host mutation failure', it => {
-    it.scoped('reports hosts completed before a later target fails', () =>
+    it.effect('reports hosts completed before a later target fails', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'all', '--yes']));
 
@@ -1117,7 +1120,7 @@ describe('CLI: composio setup', () => {
 
   const nonInteractive = makeFakeHosts({ claude: { available: true } });
   layer(TestLive({ commandRunner: nonInteractive.runner }))('non-interactive approval', it => {
-    it.scoped('inspects first but requires --yes before mutating hosts', () =>
+    it.effect('inspects first but requires --yes before mutating hosts', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude']));
 
@@ -1133,18 +1136,18 @@ describe('CLI: composio setup', () => {
     );
   });
 
-  const hangingRunner = new CommandRunner({
-    run: () => Effect.succeed(CommandExecutor.ExitCode(0)),
+  const hangingRunner = CommandRunner.of({
+    run: () => Effect.succeed(ChildProcessSpawner.ExitCode(0)),
     capture: () => Effect.never,
   });
   layer(TestLive({ commandRunner: hangingRunner }))('hung native host', it => {
-    it.scoped('times out instead of blocking setup forever', () =>
+    it.effect('times out instead of blocking setup forever', () =>
       Effect.gen(function* () {
         const fiber = yield* cli(['setup', '--target', 'claude', '--yes']).pipe(
           Effect.exit,
-          Effect.fork
+          Effect.forkChild
         );
-        yield* Effect.yieldNow();
+        yield* Effect.yieldNow;
         yield* TestClock.adjust('2 minutes');
         const exit = yield* Fiber.join(fiber);
 
@@ -1164,7 +1167,7 @@ describe('CLI: composio setup', () => {
   layer(TestLive({ commandRunner: noOp.runner, setupSkillInstaller: makeSkillInstaller() }))(
     'post-install verification',
     it => {
-      it.scoped('fails when successful commands do not change native state', () =>
+      it.effect('fails when successful commands do not change native state', () =>
         Effect.gen(function* () {
           const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
           expect(Exit.isFailure(exit)).toBe(true);
@@ -1178,7 +1181,7 @@ describe('CLI: composio setup', () => {
     { failOn: 'plugin install' }
   );
   layer(TestLive({ commandRunner: failedInstall.runner }))('native install failure', it => {
-    it.scoped('preserves the structured setup process failure as the command cause', () =>
+    it.effect('preserves the structured setup process failure as the command cause', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
@@ -1206,7 +1209,7 @@ describe('CLI: composio setup', () => {
       setupSkillInstaller: makeSkillInstaller(false, true),
     })
   )('skill install failure', it => {
-    it.scoped('fails instead of reporting readiness', () =>
+    it.effect('fails instead of reporting readiness', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);

@@ -63,15 +63,15 @@ const toolkitsData = {
   toolkits: testToolkits,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev toolkits search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] query "email"',
     it => {
-      it.scoped('shows matching toolkits', () =>
+      it.effect('shows matching toolkits', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'search', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -89,7 +89,7 @@ describe('CLI: composio dev toolkits search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] query with no results',
     it => {
-      it.scoped('shows "No toolkits found"', () =>
+      it.effect('shows "No toolkits found"', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'search', 'xyzzy']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -104,7 +104,7 @@ describe('CLI: composio dev toolkits search', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --limit 1',
     it => {
-      it.scoped('respects limit', () =>
+      it.effect('respects limit', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'search', 'email', '--limit', '1']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -117,7 +117,7 @@ describe('CLI: composio dev toolkits search', () => {
   );
 
   layer(TestLive())('[Given] no API key', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'toolkits', 'search', 'email']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

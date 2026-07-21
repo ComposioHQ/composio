@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from '@effect/vitest';
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { ConfigProvider, Effect, FileSystem, Layer, Path } from 'effect';
 import { execSync } from 'node:child_process';
 import * as tempy from 'tempy';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -14,7 +14,10 @@ const withConfigLayer = (map: Map<string, string>, homedir: string) =>
     BunFileSystem.layer,
     BunPath.layer,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir })),
-    Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)))
+    Layer.succeed(
+      ConfigProvider.ConfigProvider,
+      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+    )
   );
 
 const okResponse = () =>
@@ -84,7 +87,8 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     return Effect.gen(function* () {
-      const client = yield* ComposioClientSingleton.get();
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -131,7 +135,8 @@ describe('ComposioClientSingleton headers', () => {
         id: 'cli_s_current',
         expiresAt: '1970-01-01T00:01:00.000Z',
       });
-      const client = yield* ComposioClientSingleton.get();
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -164,7 +169,8 @@ describe('ComposioClientSingleton headers', () => {
         id: 'cli_s_expired',
         expiresAt: '1969-12-31T23:59:00.000Z',
       });
-      const client = yield* ComposioClientSingleton.get();
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
@@ -191,7 +197,8 @@ describe('ComposioClientSingleton headers', () => {
     ]);
 
     return Effect.gen(function* () {
-      const client = yield* ComposioClientSingleton.get();
+      const clientSingleton = yield* ComposioClientSingleton;
+      const client = yield* clientSingleton.get();
       yield* Effect.promise(() =>
         client.tools
           .list({ limit: 1, toolkit_versions: 'latest' })
