@@ -136,6 +136,15 @@ Effect.gen(function* () {
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
+### Effect safety and migration seams
+
+- Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Either`, `Exit`, `Cause`, `ValidationError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
+- Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
+- Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `Schema` or narrow them with `Predicate`; an `as` assertion is not validation.
+- Do not inspect private `@effect/cli` descriptor shapes. Use public `CommandDescriptor` operations or keep declarative command metadata that can move to Effect v4's public command tree.
+- Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `catchAll` blocks that flatten distinct failures into one message-only error.
+- Prefer Effect services over Node builtins for platform access in new code: `Path`/`FileSystem`/`Command` from `@effect/platform` instead of `node:path`/`node:fs`/`node:child_process`, and `effect/Config` instead of `process.env`. These rules are policy for new CLI code effective now; the matching ESLint rule groups are defined (commented out) in the root `eslint.config.mjs` and are activated group-by-group over the guardrails PR stack as existing code migrates.
+
 ## Vendor Reference Sources
 
 Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):

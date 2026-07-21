@@ -25,6 +25,18 @@ export const myCmd = Command.make('my-command', {}, () =>
 
 Follow existing local patterns before introducing new service abstractions.
 
+## Effect Platform Boundaries
+
+`node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are banned policy for new code in `src/` (ESLint rule groups are defined in the root `eslint.config.mjs` and activated group-by-group over the guardrails PR stack):
+
+- Path arithmetic → `Path` service from `@effect/platform` (`const path = yield* Path.Path`).
+- Filesystem I/O → `FileSystem` service from `@effect/platform`.
+- homedir/tmpdir/platform/arch → the `NodeOs` service; subprocesses → platform `Command`.
+- Environment reads → `effect/Config`; sync fallible ops (`JSON.parse`, `new URL`) → `Either.try` with a `Data.TaggedError`.
+- Helpers that cannot become Effects (sync callbacks, promise pipelines) take the resolved service instance as a plain parameter instead of importing Node builtins.
+
+Never add an `eslint-disable` for these rules in new code — thread the service instead. Full policy: `ts/packages/cli/AGENTS.md`.
+
 ## Required Checks
 
 For CLI source changes, run from the repo root:
