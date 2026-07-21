@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { authConfigsCmd$List } from './commands/auth-configs.list.cmd';
 import { authConfigsCmd$Info } from './commands/auth-configs.info.cmd';
 import { authConfigsCmd$Create } from './commands/auth-configs.create.cmd';

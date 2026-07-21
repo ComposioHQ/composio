@@ -1,7 +1,7 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
-import { Cause, Data, Effect, Either, Exit, Fiber, HashSet, Option, Predicate } from 'effect';
+import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Predicate, Result } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord } from 'src/utils/parse-json';
@@ -64,24 +64,24 @@ import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
 );
 
-const data = Options.text('data').pipe(
-  Options.withAlias('d'),
-  Options.withDescription('JSON arguments, @file, or - for stdin'),
-  Options.optional
+const data = Flag.string('data').pipe(
+  Flag.withAlias('d'),
+  Flag.withDescription('JSON arguments, @file, or - for stdin'),
+  Flag.optional
 );
-const file = Options.text('file').pipe(
-  Options.withDescription('Inject a local file path into the single file_uploadable input'),
-  Options.optional
+const file = Flag.string('file').pipe(
+  Flag.withDescription('Inject a local file path into the single file_uploadable input'),
+  Flag.optional
 );
-const accountOption = Options.text('account').pipe(
-  Options.withDescription(
+const accountOption = Flag.string('account').pipe(
+  Flag.withDescription(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
-  Options.optional
+  Flag.optional
 );
 
 export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
@@ -93,35 +93,35 @@ export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
   '--project-name'
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.optional,
-  Options.withDescription('Developer-project user ID override')
+const userId = Flag.string('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Options.text('project-name').pipe(
-  Options.optional,
-  Options.withDescription('Developer project name override for this command')
+const projectName = Flag.string('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project name override for this command')
 );
 
-const getSchema = Options.boolean('get-schema').pipe(
-  Options.withDescription('Fetch and print the CLI-facing input schema without executing'),
-  Options.withDefault(false)
+const getSchema = Flag.boolean('get-schema').pipe(
+  Flag.withDescription('Fetch and print the CLI-facing input schema without executing'),
+  Flag.withDefault(false)
 );
-const dryRun = Options.boolean('dry-run').pipe(
-  Options.withDescription('Validate and preview the tool call without executing'),
-  Options.withDefault(false)
+const dryRun = Flag.boolean('dry-run').pipe(
+  Flag.withDescription('Validate and preview the tool call without executing'),
+  Flag.withDefault(false)
 );
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDescription('Skip the connected-account check'),
-  Options.withDefault(false)
+const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+  Flag.withDescription('Skip the connected-account check'),
+  Flag.withDefault(false)
 );
-const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
-  Options.withDescription('Skip input validation against cached schema'),
-  Options.withDefault(false)
+const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+  Flag.withDescription('Skip input validation against cached schema'),
+  Flag.withDefault(false)
 );
-const skipChecks = Options.boolean('skip-checks').pipe(
-  Options.withDescription('Skip both connection and input validation checks'),
-  Options.withDefault(false)
+const skipChecks = Flag.boolean('skip-checks').pipe(
+  Flag.withDescription('Skip both connection and input validation checks'),
+  Flag.withDefault(false)
 );
 
 const resolveInput = (input: Option.Option<string>) =>
@@ -130,7 +130,19 @@ const resolveInput = (input: Option.Option<string>) =>
     missingValue: '{}',
   });
 
-const invalidArguments = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+/**
+ * Business-error type for the hand-rolled `--parallel` mini-parser
+ * (`parseParallelExecuteArgs` below), not a `Command`-level parse failure —
+ * v4's `CliError.InvalidValue` requires structured `option`/`kind` fields
+ * that don't fit this free-text validation.
+ */
+export class ParallelExecuteArgumentError extends Data.TaggedError(
+  'commands/ParallelExecuteArgumentError'
+)<{
+  readonly message: string;
+}> {}
+
+const invalidArguments = (message: string) => new ParallelExecuteArgumentError({ message });
 
 type ToolExecutionErrorFields = {
   readonly reason:
@@ -156,15 +168,24 @@ class ReportedToolExecutionError extends Data.TaggedError(
 )<ToolExecutionErrorFields> {}
 
 const parseArguments = (raw: string) =>
-  parseJsonRecord(raw).pipe(
-    Either.mapLeft(error =>
-      invalidArguments(
-        error.reason === 'not-a-record'
-          ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
-          : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
+  // Result (unlike v3's Either) does not implement the Effect protocol in v4,
+  // so it must be lifted explicitly to compose with `yield*` in Effect.gen.
+  Effect.fromResult(
+    parseJsonRecord(raw).pipe(
+      Result.mapError(error =>
+        invalidArguments(
+          error.reason === 'not-a-record'
+            ? 'Expected a JSON object for tool arguments, e.g. -d \'{ "key": "value" }\''
+            : 'Invalid JSON input. Provide JSON or a JS-style object literal, e.g. -d \'{ "key": "value" }\''
+        )
       )
     )
   );
+
+// Predicate.isRecord was removed in v4; Predicate.isObject also matches
+// arrays, so exclude those explicitly (mirrors src/utils/parse-json.ts).
+const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+  Predicate.isObject(value) && !Array.isArray(value);
 
 const hasNestedKey = (
   record: Record<string, unknown>,
@@ -172,7 +193,7 @@ const hasNestedKey = (
 ): boolean => {
   let current: unknown = record;
   for (const key of pathParts) {
-    if (!Predicate.isRecord(current)) {
+    if (!isPlainRecord(current)) {
       return false;
     }
     if (!(key in current)) {
@@ -200,7 +221,7 @@ const setNestedKey = (
     }
 
     const next = current[key];
-    const nextObject = Predicate.isRecord(next) ? { ...next } : {};
+    const nextObject = isPlainRecord(next) ? { ...next } : {};
     current[key] = nextObject;
     current = nextObject;
   }
@@ -281,8 +302,8 @@ const ciRedactReplacer = (_key: string, value: unknown): unknown => {
 // payloads; fall back to util.inspect so the formatter stays a plain string
 // function for its callers.
 const formatUnknownObject = (value: object): string =>
-  Either.getOrElse(
-    Either.try(() => JSON.stringify(value, null, 2)),
+  Result.getOrElse(
+    Result.try(() => JSON.stringify(value, null, 2)),
     () => util.inspect(value, { depth: 5, breakLength: 120 })
   );
 
@@ -290,7 +311,7 @@ const redactRequestId = (value: object): object => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return value;
   }
-  if (!Predicate.isRecord(value)) return value;
+  if (!isPlainRecord(value)) return value;
   const requestId = value.request_id;
   if (typeof requestId !== 'string') {
     return value;
@@ -732,13 +753,13 @@ type CachedDefinition = {
   readonly version: string | null;
 } | null;
 
-const validationGuardFromFiber = (validationFiber: Fiber.RuntimeFiber<unknown, unknown>) =>
+const validationGuardFromFiber = (validationFiber: Fiber.Fiber<unknown, unknown>) =>
   Fiber.await(validationFiber).pipe(
     Effect.flatMap(
       Exit.match({
         onFailure: cause => {
-          const defect = Cause.failureOption(cause);
-          if (Option.isSome(defect) && defect.value instanceof ToolInputValidationError) {
+          const fail = Cause.findFail(cause);
+          if (Result.isSuccess(fail) && fail.success.error instanceof ToolInputValidationError) {
             return Effect.failCause(cause);
           }
           return Effect.never;
@@ -761,7 +782,7 @@ const spawnBackgroundValidationGuard = (params: {
     const validationFiber = yield* validateToolInputArguments(params.slug, params.args, {
       orgId: params.resolvedProject.orgId,
       projectId: params.resolvedProject.projectId,
-    }).pipe(Effect.forkDaemon);
+    }).pipe(Effect.forkDetach);
     yield* perfDebugLog('execute.validation.background_spawned', { slug: params.slug });
     return validationGuardFromFiber(validationFiber);
   });
@@ -807,7 +828,7 @@ const initializeValidationState = (params: {
         })
       ),
       Effect.option,
-      Effect.forkDaemon
+      Effect.forkDetach
     );
     const cachedValidationDecisionFiber = yield* Effect.gen(function* () {
       yield* perfDebugLog('execute.validation.cached_start', { slug: params.slug });
@@ -838,7 +859,7 @@ const initializeValidationState = (params: {
       return isStale
         ? ({ status: 'stale' } satisfies CachedValidationDecision)
         : validationDecision;
-    }).pipe(Effect.forkDaemon);
+    }).pipe(Effect.forkDetach);
     const awaitCachedValidationDecision = Fiber.join(cachedValidationDecisionFiber);
 
     return {
@@ -1020,12 +1041,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
     const projectContext = yield* ProjectContext;
 
     const localProjectContext = yield* projectContext.resolve.pipe(
-      Effect.catchAll(() => Effect.succeed(Option.none()))
+      Effect.catch(() => Effect.succeed(Option.none()))
     );
     const localTestUserId = Option.flatMap(localProjectContext, keys => keys.testUserId);
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullable(resolvedProject.consumerUserId)
+        ? Option.fromNullishOr(resolvedProject.consumerUserId)
         : Option.match(params.userId, {
             onSome: value => Option.some(value),
             onNone: () => Option.orElse(localTestUserId, () => userContext.data.testUserId),
@@ -1161,7 +1182,7 @@ const runConnectedToolkitFailFast = (params: {
           successful: true,
         })
       ),
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         perfDebugLog('execute.connected_toolkits.refresh_end', {
           slug: params.slug,
           orgId: params.resolvedProject.orgId,
@@ -1169,7 +1190,7 @@ const runConnectedToolkitFailFast = (params: {
           successful: false,
         })
       ),
-      Effect.forkDaemon,
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -1337,7 +1358,7 @@ const runExecuteWithSpinner = (params: {
               slug: params.slug,
               arguments: params.args,
             },
-          }).pipe(Effect.catchAll(() => Effect.void));
+          }).pipe(Effect.catch(() => Effect.void));
           return;
         }
 
@@ -1353,7 +1374,7 @@ const runExecuteWithSpinner = (params: {
                   successful: false,
                 });
                 yield* invalidateToolInputDefinition(params.slug).pipe(
-                  Effect.catchAll(() => Effect.void)
+                  Effect.catch(() => Effect.void)
                 );
                 yield* spinner.error();
                 const summary = yield* handleExecutionError(params.ui, error, {
@@ -1376,7 +1397,7 @@ const runExecuteWithSpinner = (params: {
                     arguments: params.args,
                     error: summary.error,
                   },
-                }).pipe(Effect.catchAll(() => Effect.void));
+                }).pipe(Effect.catch(() => Effect.void));
                 return yield* new ReportedToolExecutionError({
                   reason: 'execution_failed',
                   toolSlug: params.slug,
@@ -1404,9 +1425,7 @@ const runExecuteWithSpinner = (params: {
         }
 
         if (!result.successful) {
-          yield* invalidateToolInputDefinition(params.slug).pipe(
-            Effect.catchAll(() => Effect.void)
-          );
+          yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId
             ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
             : '';
@@ -1453,7 +1472,7 @@ const runExecuteWithSpinner = (params: {
               tokenCount: output.summary.tokenCount,
               logId: result.logId,
             },
-          }).pipe(Effect.catchAll(() => Effect.void));
+          }).pipe(Effect.catch(() => Effect.void));
           return;
         }
 
@@ -1468,7 +1487,7 @@ const runExecuteWithSpinner = (params: {
             storedInFile: false,
             logId: result.logId,
           },
-        }).pipe(Effect.catchAll(() => Effect.void));
+        }).pipe(Effect.catch(() => Effect.void));
       })
     );
   });
@@ -1766,8 +1785,8 @@ const checkConnectedToolkitOrFail = (params: {
       orgId: params.resolvedProject.orgId,
       consumerUserId: params.resolvedUserId,
     }).pipe(
-      Effect.catchAll(() => Effect.void),
-      Effect.forkDaemon,
+      Effect.catch(() => Effect.void),
+      Effect.forkDetach,
       Effect.asVoid
     );
 
@@ -1832,7 +1851,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
             { readonly inputSchema: Record<string, unknown> }
           >;
         }).pipe(
-          Effect.catchAll(error => {
+          Effect.catch(error => {
             const mapped = mapComposioError({ error, toolSlug: spec.slug });
             return Effect.succeed({
               slug: spec.slug,
@@ -1980,7 +1999,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             ...result,
           };
         }).pipe(
-          Effect.catchAll(error => {
+          Effect.catch(error => {
             const mapped = mapComposioError({ error, toolSlug: spec.slug });
             return Effect.succeed({
               slug: spec.slug,

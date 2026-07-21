@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { toolsCmd$List } from './commands/tools.list.cmd';
 import { toolsCmd$Info } from './commands/tools.info.cmd';
 

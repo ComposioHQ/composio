@@ -1,4 +1,4 @@
-import { Args, Command } from '@effect/cli';
+import { Argument, Command } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -9,9 +9,9 @@ import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { bold } from 'src/ui/colors';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription('Tool slug (e.g. "GMAIL_SEND_EMAIL")'),
-  Args.optional
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription('Tool slug (e.g. "GMAIL_SEND_EMAIL")'),
+  Argument.optional
 );
 
 /**

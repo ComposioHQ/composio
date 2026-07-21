@@ -4,8 +4,9 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { Args, Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
 import { Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
@@ -26,42 +27,64 @@ import {
 import { USER_COMPOSIO_DIR } from 'src/constants';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const file = Options.text('file').pipe(
-  Options.withAlias('f'),
-  Options.withDescription('Run a TS/JS file instead of inline code'),
-  Options.optional
+const file = Flag.string('file').pipe(
+  Flag.withAlias('f'),
+  Flag.withDescription('Run a TS/JS file instead of inline code'),
+  Flag.optional
 );
 
-const dryRun = Options.boolean('dry-run').pipe(
-  Options.withDescription('Preview execute() calls without running them'),
-  Options.withDefault(false)
+const dryRun = Flag.boolean('dry-run').pipe(
+  Flag.withDescription('Preview execute() calls without running them'),
+  Flag.withDefault(false)
 );
-const debug = Options.boolean('debug').pipe(
-  Options.withDescription('Log helper steps while the script runs'),
-  Options.withDefault(false)
+const debug = Flag.boolean('debug').pipe(
+  Flag.withDescription('Log helper steps while the script runs'),
+  Flag.withDefault(false)
 );
-const logsOff = Options.boolean('logs-off').pipe(
-  Options.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
-  Options.withDefault(false)
+const logsOff = Flag.boolean('logs-off').pipe(
+  Flag.withDescription('Hide helper streaming logs; keep them only in the run log file.'),
+  Flag.withDefault(false)
 );
-const skipConnectionCheck = Options.boolean('skip-connection-check').pipe(
-  Options.withDescription('Skip the connected-account check'),
-  Options.withDefault(false)
+const skipConnectionCheck = Flag.boolean('skip-connection-check').pipe(
+  Flag.withDescription('Skip the connected-account check'),
+  Flag.withDefault(false)
 );
-const skipToolParamsCheck = Options.boolean('skip-tool-params-check').pipe(
-  Options.withDescription('Skip input validation against cached schema'),
-  Options.withDefault(false)
+const skipToolParamsCheck = Flag.boolean('skip-tool-params-check').pipe(
+  Flag.withDescription('Skip input validation against cached schema'),
+  Flag.withDefault(false)
 );
-const skipChecks = Options.boolean('skip-checks').pipe(
-  Options.withDescription('Skip both connection and input validation checks'),
-  Options.withDefault(false)
+const skipChecks = Flag.boolean('skip-checks').pipe(
+  Flag.withDescription('Skip both connection and input validation checks'),
+  Flag.withDefault(false)
 );
 
-const args = Args.repeated(Args.text({ name: 'arg' })).pipe(
-  Args.withDescription('Inline code followed by arguments, or just arguments when using --file')
+const args = Argument.string('arg').pipe(
+  Argument.variadic(),
+  Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')
 );
 
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
+
+/**
+ * v4's CLI lexer (`effect/unstable/cli/internal/lexer.ts`) treats every
+ * `-`-prefixed token as an option candidate unless it follows a literal
+ * `--`, and (see `internal/parser.ts`'s `parseArgs`) that `--` split is
+ * computed once for the whole argv and only reaches the *first* command
+ * level parsed — a subcommand's own recursive `parseArgs` call is always
+ * given `trailingOperands: []`, so trailing operands after `--` never reach
+ * a subcommand's `Argument.variadic()`. `composio run` needs arbitrary
+ * flag-looking tokens to reach the user's script untouched
+ * (`composio run 'code' --flag value`, or `--file s.ts -- --flag value`),
+ * so `normalizeRunPassthroughArgs` (in `src/commands/index.ts`) rewrites
+ * those tokens with this marker *before* the CLI parser ever tokenizes
+ * them, and the handler below strips it back off after parsing.
+ */
+export const RUN_PASSTHROUGH_ARG_MARKER = '@@composio-run-raw@@';
+
+export const unescapeRunPassthroughArg = (value: string): string =>
+  value.startsWith(RUN_PASSTHROUGH_ARG_MARKER)
+    ? value.slice(RUN_PASSTHROUGH_ARG_MARKER.length)
+    : value;
 
 export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<string> => {
   if (!source.trim()) {
@@ -150,7 +173,7 @@ export const wrapFileSourceForRun = (source: string): string => {
 };
 
 export const inferCliInvocationPrefix = (
-  path: Path.Path,
+  path: Path,
   argv: ReadonlyArray<string> = process.argv
 ): ReadonlyArray<string> => {
   const entrypoint = argv[1];
@@ -175,18 +198,15 @@ type RunHelperModuleUrls = {
   readonly helpersRuntimeModuleUrl: string;
 };
 
-const resolveRunHelperModuleUrls: Effect.Effect<
-  RunHelperModuleUrls,
-  never,
-  FileSystem.FileSystem | Path.Path
-> = Effect.map(
-  resolveRunCompanionModulePath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-  }),
-  modulePath => ({ helpersRuntimeModuleUrl: pathToFileURL(modulePath).href })
-);
+const resolveRunHelperModuleUrls: Effect.Effect<RunHelperModuleUrls, never, FileSystem | Path> =
+  Effect.map(
+    resolveRunCompanionModulePath({
+      callerImportMetaUrl: import.meta.url,
+      execPath: process.execPath,
+      relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
+    }),
+    modulePath => ({ helpersRuntimeModuleUrl: pathToFileURL(modulePath).href })
+  );
 export const buildRunHelpersSource = (
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext = {},
@@ -199,7 +219,7 @@ export const buildRunHelpersSource = (
   ].join('\n');
 
 const createRunHelpersPreloadFile = (
-  path: Path.Path,
+  path: Path,
   cliPrefix: ReadonlyArray<string>,
   context: RunHelperContext,
   moduleUrls: RunHelperModuleUrls
@@ -245,7 +265,7 @@ export const buildRunCommand = ({
   preloadPath,
   preloadDirectory,
 }: {
-  path: Path.Path;
+  path: Path;
   file: Option.Option<string>;
   args: ReadonlyArray<string>;
   preloadPath: string;
@@ -295,7 +315,7 @@ export const buildRunCommand = ({
 
 const resolveRunHelperContext = () =>
   Effect.gen(function* () {
-    const path = yield* Path.Path;
+    const path = yield* Path;
     const userContext = yield* ComposioUserContext;
     const apiKey = Option.getOrUndefined(userContext.data.apiKey);
     const orgId = Option.getOrUndefined(userContext.data.orgId);
@@ -426,10 +446,11 @@ export const runCmd = Command.make('run', {
       skipConnectionCheck,
       skipToolParamsCheck,
       skipChecks,
-      args,
+      args: rawArgs,
     }) =>
       Effect.gen(function* () {
-        const path = yield* Path.Path;
+        const args = rawArgs.map(unescapeRunPassthroughArg);
+        const path = yield* Path;
         // eslint-disable-next-line no-restricted-syntax -- reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity
         const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();
         const perfDebug = isPerfDebugEnabled();
@@ -441,8 +462,8 @@ export const runCmd = Command.make('run', {
           const preloadSlugs = extractInlineExecuteToolSlugs(inlineCode ?? '');
           if (preloadSlugs.length > 0) {
             yield* warmToolInputDefinitions(preloadSlugs).pipe(
-              Effect.catchAll(() => Effect.void),
-              Effect.forkDaemon
+              Effect.catch(() => Effect.void),
+              Effect.forkDetach
             );
           }
         }
@@ -489,7 +510,7 @@ export const runCmd = Command.make('run', {
               args,
               debug,
             },
-          }).pipe(Effect.catchAll(() => Effect.void));
+          }).pipe(Effect.catch(() => Effect.void));
           yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
           const runCommand = buildRunCommand({
             path,

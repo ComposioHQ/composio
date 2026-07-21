@@ -1,12 +1,6 @@
 import process from 'node:process';
 import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
-import { Command, HelpDoc, ValidationError } from '@effect/cli';
-import {
-  hasCommandName,
-  listSubcommandNames,
-  preflightParse,
-  type AnyCommandDescriptor,
-} from './command-introspection';
+import { Command } from 'effect/unstable/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
 import { versionCmd } from './version.cmd';
@@ -17,13 +11,13 @@ import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import { runCmd } from './run.cmd';
+import { RUN_PASSTHROUGH_ARG_MARKER, runCmd } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
 import { localToolsCmd } from './local-tools/local-tools.cmd';
 import { generateCmd } from './generate/generate.cmd';
-import { buildDevCommand, devSubcommands } from './dev.cmd';
+import { buildDevCommand } from './dev.cmd';
 import {
   runParallelToolsExecuteFromArgv,
   showToolsExecuteInputHelp,
@@ -163,57 +157,12 @@ export const parseRootInstallSkillRequest = (
     onSome: values => Effect.map(parseRootInstallSkillValues(values), Option.some),
   });
 
-const scopeCommandMismatch = (
-  commandPath: string,
-  descriptor: AnyCommandDescriptor,
-  error: unknown
-) => {
-  if (!ValidationError.isValidationError(error) || !ValidationError.isCommandMismatch(error)) {
-    return error;
-  }
-  const childNames = listSubcommandNames(descriptor).map(name => `'${name}'`);
-  if (childNames.length === 0) return error;
-
-  const oneOf = childNames.length === 1 ? '' : ' one of';
-  return ValidationError.commandMismatch(
-    HelpDoc.p(
-      `Invalid subcommand for composio ${commandPath} - use${oneOf} ${childNames.join(', ')}`
-    )
-  );
-};
-
-const refineRootCommandMismatch = (
-  argv: ReadonlyArray<string>,
-  visibility: CommandVisibility,
-  originalError: ValidationError.ValidationError
-) => {
-  const rootCommandName = argv[2];
-  if (!rootCommandName || !ValidationError.isCommandMismatch(originalError)) {
-    return Effect.fail(originalError);
-  }
-
-  const rootCommand = Arr.findFirst(getVisibleRootCommands(visibility), command =>
-    hasCommandName(command, rootCommandName)
-  );
-  if (Option.isNone(rootCommand)) {
-    return Effect.fail(originalError);
-  }
-
-  const nestedCommandName = argv[3];
-  const nestedDevCommand =
-    rootCommandName === 'dev' && visibility.isDevModeEnabled && nestedCommandName
-      ? Arr.findFirst(devSubcommands, command => hasCommandName(command, nestedCommandName))
-      : Option.none();
-  const descriptor = Option.match(nestedDevCommand, {
-    onNone: () => rootCommand.value.descriptor,
-    onSome: command => command.descriptor,
-  });
-  const commandPath = Option.isSome(nestedDevCommand)
-    ? `${rootCommandName} ${nestedCommandName}`
-    : rootCommandName;
-
-  return Effect.fail(scopeCommandMismatch(commandPath, descriptor, originalError));
-};
+// v4 note: v3 pre-flight parsed `argv` to rewrite `ValidationError.CommandMismatch` messages
+// (`scopeCommandMismatch` / `refineRootCommandMismatch`) before `Command.run` rendered them, using
+// the private `CommandDescriptor` tree (see `command-introspection.ts`). `effect/unstable/cli`'s
+// `Command.runWith` renders its own unknown-subcommand messaging (naming the resolved command's
+// actual subcommands) internally before re-failing with `CliError.ShowHelp`, so `routeRootCommand`
+// below now always delegates straight to `run` instead of pre-flight parsing and rewriting errors.
 
 export const parseExecuteInputHelpSlug = (argv: ReadonlyArray<string>): string | undefined => {
   const args = Arr.drop(argv, 2);
@@ -274,6 +223,74 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
         : token;
     })
   );
+};
+
+// `composio run` forwards arbitrary flag-looking tokens straight through to
+// the user's script (`composio run 'code' --flag value`), but v4's CLI
+// lexer treats every `-`-prefixed token as an option candidate, and its
+// subcommand parser drops the trailing operands after a literal `--`
+// instead of forwarding them to `run`'s own `Argument.variadic()` (see
+// `RUN_PASSTHROUGH_ARG_MARKER`'s doc comment in `run.cmd.ts` for the full
+// mechanism this works around). This rewrites every passthrough token that
+// would otherwise be misparsed as an option with a marker `run.cmd.ts`
+// strips back off after the CLI has parsed it as a plain positional value.
+const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
+  '--dry-run',
+  '--debug',
+  '--logs-off',
+  '--skip-connection-check',
+  '--skip-tool-params-check',
+  '--skip-checks',
+  '--help',
+  '-h',
+]);
+const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
+
+const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+  const args = Arr.drop(argv, 2);
+  if (args[0] !== 'run') {
+    return argv;
+  }
+
+  const normalized: Array<string> = [];
+  let sawPositional = false;
+  let index = 1;
+  while (index < args.length) {
+    const token = args[index];
+    if (!sawPositional) {
+      if (RUN_KNOWN_VALUE_FLAGS.has(token)) {
+        normalized.push(token);
+        const value = args[index + 1];
+        if (value !== undefined) {
+          normalized.push(value);
+        }
+        index += 2;
+        continue;
+      }
+      if (RUN_KNOWN_BOOLEAN_FLAGS.has(token)) {
+        normalized.push(token);
+        index += 1;
+        continue;
+      }
+      // First token that isn't a `run`-recognized flag: everything from here
+      // on is a passthrough positional, not a `run` option. A literal `--`
+      // here is just the (now unnecessary) boundary marker itself.
+      sawPositional = true;
+      if (token !== '--') {
+        normalized.push(token);
+      }
+      index += 1;
+      continue;
+    }
+    if (token === '--') {
+      index += 1;
+      continue;
+    }
+    normalized.push(token.startsWith('-') ? `${RUN_PASSTHROUGH_ARG_MARKER}${token}` : token);
+    index += 1;
+  }
+
+  return [...Arr.take(argv, 2), 'run', ...normalized];
 };
 
 const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean> => {
@@ -453,11 +470,10 @@ export const runWithConfig = Effect.gen(function* () {
   };
   const version = yield* getVersion;
   const rootCommand = buildRootCommand(visibility);
-  const run = Command.run(rootCommand, {
-    name: 'composio',
-    executable: 'composio',
-    version,
-  });
+  // v4's `Command.runWith` (unlike v3's `Command.run`) takes explicit arguments rather than
+  // pulling them from `Stdio`, and expects them *without* the node/bun executable + script path
+  // prefix — see `cli-main.ts` module docs for the full contract at this boundary.
+  const run = Command.runWith(rootCommand, { version });
 
   const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
     const args = normalizedArgv.slice(2);
@@ -504,25 +520,19 @@ export const runWithConfig = Effect.gen(function* () {
           yield* ui.log.step('Re-run the command with `--dangerously-allow`.');
           return;
         }
-        return yield* run(normalizedArgv);
+        return yield* run(args);
       });
     }
-    return preflightParse(rootCommand, normalizedArgv).pipe(
-      Effect.matchEffect({
-        onFailure: error =>
-          ValidationError.isCommandMismatch(error)
-            ? refineRootCommandMismatch(normalizedArgv, visibility, error)
-            : run(normalizedArgv),
-        onSuccess: () => run(normalizedArgv),
-      })
-    );
+    return run(args);
   };
 
   return (argv: ReadonlyArray<string>) => {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
-    const normalizedArgv = normalizeHiddenDebugFlags(
-      normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
+    const normalizedArgv = normalizeRunPassthroughArgs(
+      normalizeHiddenDebugFlags(
+        normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
+      )
     );
 
     return parseRootInstallSkillRequest(normalizedArgv).pipe(

@@ -1,5 +1,5 @@
-import { Args, Command } from '@effect/cli';
 import { Effect } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {
   ensureAgentSignupAllowed,
@@ -10,8 +10,8 @@ import {
 } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const composioAgentKey = Args.text({ name: 'composio_agent_key' }).pipe(
-  Args.withDescription('Composio agent key for an existing agent identity')
+const composioAgentKey = Argument.string('composio_agent_key').pipe(
+  Argument.withDescription('Composio agent key for an existing agent identity')
 );
 
 export const agentCmd$Login = Command.make('login', { composioAgentKey }).pipe(

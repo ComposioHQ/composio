@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -6,9 +6,9 @@ import { listOrganizations } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';
 import { clampLimit } from 'src/ui/clamp-limit';
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(50),
-  Options.withDescription('Max organizations to fetch from API (default: 50)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(50),
+  Flag.withDescription('Max organizations to fetch from API (default: 50)')
 );
 
 export const orgsCmd$List = Command.make('list', { limit }, ({ limit }) =>

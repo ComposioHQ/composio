@@ -1,7 +1,8 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
 import type { Composio as RawComposioClient } from '@composio/client';
-import { Data, Deferred, Effect, Either, Option, Predicate, Runtime } from 'effect';
+import { Data, Deferred, Effect, Result, Option, Predicate } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
@@ -42,53 +43,63 @@ export class ListenCommandError extends Data.TaggedError('commands/ListenCommand
   readonly cause?: unknown;
 }> {}
 
-const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+class ListenOptionError extends Data.TaggedError('commands/ListenOptionError')<{
+  readonly message: string;
+}> {}
+
+/**
+ * v4 migration note: see the equivalent note in `login.cmd.ts` — v3's freeform
+ * `ValidationError.invalidValue` has no v4 counterpart, so this now builds a plain typed domain
+ * error (matching `ListenCommandError` below) that flows through the CLI's normal top-level
+ * `effect-errors` renderer instead of being special-cased by the parser.
+ */
+const invalidOptionValue = (message: string) => new ListenOptionError({ message });
 
 const errorMessage = (error: unknown): string =>
   Predicate.isError(error) ? error.message : String(error);
 
-const slug = Args.text({ name: 'slug' }).pipe(
-  Args.withDescription(
+const slug = Argument.string('slug').pipe(
+  Argument.withDescription(
     'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE") or project event type (e.g. "composio.connected_account.expired")'
   )
 );
 
-const params = Options.text('params').pipe(
-  Options.withAlias('p'),
-  Options.withDescription(
+const params = Flag.string('params').pipe(
+  Flag.withAlias('p'),
+  Flag.withDescription(
     'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const maxEvents = Options.integer('max-events').pipe(
-  Options.withDescription('Stop after receiving N matching events'),
-  Options.optional
+const maxEvents = Flag.integer('max-events').pipe(
+  Flag.withDescription('Stop after receiving N matching events'),
+  Flag.optional
 );
 
-const timeout = Options.text('timeout').pipe(
-  Options.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
-  Options.optional
+const timeout = Flag.string('timeout').pipe(
+  Flag.withDescription('Stop after a duration such as "5m", "1hr", or "30s"'),
+  Flag.optional
 );
 
-const stream = Options.text('stream').pipe(
-  Options.withDescription(
+const stream = Flag.string('stream').pipe(
+  Flag.withDescription(
     'Also stream each event payload inline. Pass an optional jq-like path such as ".thread.id" or ".data[0].id".'
   ),
-  Options.optional
+  Flag.optional
 );
-const account = Options.text('account').pipe(
-  Options.withDescription(
+const account = Flag.string('account').pipe(
+  Flag.withDescription(
     'Connected account selector. Matches alias, word_id, or connected account id for the inferred toolkit.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const debug = Options.boolean('debug').pipe(
-  Options.withDescription(
+const debug = Flag.boolean('debug').pipe(
+  Flag.withDescription(
     'Print verbose debug information (raw events, filter results, Pusher state)'
   ),
-  Options.withDefault(false)
+  Flag.withDefault(false)
 );
 
 const sanitizePathPart = (value: string): string =>
@@ -122,7 +133,7 @@ const resolveParamsInput = (input: Option.Option<string>) =>
 
 const parseCreateParams = (raw: string) =>
   parseJsonRecord(raw).pipe(
-    Either.mapLeft(error =>
+    Result.mapError(error =>
       invalidOptionValue(
         error.reason === 'not-a-record'
           ? "Expected --params to be an object, e.g. -p '{ trigger_config: { ... } }'."
@@ -223,7 +234,7 @@ const eventTypeOf = (eventData: Record<string, unknown>): string | undefined =>
   typeof eventData.type === 'string' && eventData.type.length > 0 ? eventData.type : undefined;
 
 const extractEventFileId = (eventData: Record<string, unknown>): string => {
-  const metadata = Predicate.isRecord(eventData.metadata) ? eventData.metadata : undefined;
+  const metadata = Predicate.isObject(eventData.metadata) ? eventData.metadata : undefined;
   const candidates = [eventData.id, eventData.log_id, metadata?.id];
 
   for (const candidate of candidates) {
@@ -284,7 +295,7 @@ const applyStreamPath = (value: unknown, pathTokens: ReadonlyArray<string | numb
       continue;
     }
 
-    if (!Predicate.isRecord(current)) {
+    if (!Predicate.isObject(current)) {
       return undefined;
     }
 
@@ -387,7 +398,7 @@ const resolveListenSetup = (params: {
     const rawParams = Option.isSome(params.inputParams)
       ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
       : '{}';
-    const createParamsInput = yield* parseCreateParams(rawParams);
+    const createParamsInput = yield* Effect.fromResult(parseCreateParams(rawParams));
     yield* assertSupportedListenParams({
       listeningToProjectEvent,
       slug: params.slug,
@@ -438,9 +449,9 @@ export const listenCmd = Command.make(
       if (!(yield* requireAuth)) return;
 
       const ui = yield* TerminalUI;
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      const runtime = yield* Effect.runtime<never>();
+      const fs = yield* FileSystem;
+      const path = yield* Path;
+      const services = yield* Effect.context<never>();
       const clientSingleton = yield* ComposioClientSingleton;
       const realtime = yield* TriggersRealtime;
 
@@ -531,7 +542,7 @@ export const listenCmd = Command.make(
             }
 
             const onEvent = (eventData: Record<string, unknown>) => {
-              Runtime.runFork(runtime)(
+              Effect.runForkWith(services)(
                 Effect.gen(function* () {
                   if (debug) {
                     yield* emitStreamLine(

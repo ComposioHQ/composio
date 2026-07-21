@@ -1,6 +1,7 @@
-import { Command as CliCommand, Options } from '@effect/cli';
+import { Command as CliCommand, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
 import { ComposioUserContext } from 'src/services/user-context';
 import { NodeProcess } from 'src/services/node-process';
 import { projectKeysToJSON, type ProjectKeys } from 'src/models/project-keys';
@@ -29,10 +30,10 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
  * - `--yes` / `-y` — auto-select the first project from the list
  */
 
-const yesOpt = Options.boolean('yes').pipe(
-  Options.withAlias('y'),
-  Options.withDefault(false),
-  Options.withDescription('Auto-select the current org project, else first developer project')
+const yesOpt = Flag.boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Auto-select the current org project, else first developer project')
 );
 
 // ---------------------------------------------------------------------------
@@ -41,12 +42,10 @@ const yesOpt = Options.boolean('yes').pipe(
 /** Writes project keys to `<cwd>/.composio/` and creates a `.gitignore`. */
 const writeProjectConfig = (composioDir: string, selected: ProjectKeys) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
+    const fs = yield* FileSystem;
+    const path = yield* Path;
 
-    yield* fs
-      .makeDirectory(composioDir, { recursive: true })
-      .pipe(Effect.catchAll(() => Effect.void));
+    yield* fs.makeDirectory(composioDir, { recursive: true }).pipe(Effect.catch(() => Effect.void));
 
     const projectJson = yield* projectKeysToJSON(selected);
     yield* fs.writeFileString(
@@ -75,8 +74,8 @@ const makeOutputJson = (selected: ProjectKeys, composioDir: string) =>
 
 const getGlobalUserApiKey = () =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
+    const fs = yield* FileSystem;
+    const path = yield* Path;
     const cacheDir = yield* setupCacheDir;
     const userConfigPath = path.join(cacheDir, constants.USER_CONFIG_FILE_NAME);
     const exists = yield* fs.exists(userConfigPath);
@@ -103,8 +102,8 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
   Effect.gen(function* () {
     const { cwd, selected } = params;
     const ui = yield* TerminalUI;
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
+    const fs = yield* FileSystem;
+    const path = yield* Path;
     const ctx = yield* ComposioUserContext;
 
     const envPath = path.join(cwd, '.env.local');
@@ -231,7 +230,7 @@ export const initCmd = CliCommand.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const proc = yield* NodeProcess;
-      const path = yield* Path.Path;
+      const path = yield* Path;
 
       yield* ui.intro('composio dev init');
 

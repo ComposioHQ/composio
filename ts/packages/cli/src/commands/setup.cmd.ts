@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Predicate } from 'effect';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -21,25 +21,25 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 
-const target = Options.choice('target', SETUP_TARGETS).pipe(
-  Options.withDefault('auto'),
-  Options.withDescription('Agent host to configure: auto, claude, codex, or all')
+const target = Flag.choice('target', SETUP_TARGETS).pipe(
+  Flag.withDefault('auto'),
+  Flag.withDescription('Agent host to configure: auto, claude, codex, or all')
 );
 
-const yes = Options.boolean('yes').pipe(
-  Options.withAlias('y'),
-  Options.withDefault(false),
-  Options.withDescription('Accept setup changes without prompting')
+const yes = Flag.boolean('yes').pipe(
+  Flag.withAlias('y'),
+  Flag.withDefault(false),
+  Flag.withDescription('Accept setup changes without prompting')
 );
 
-const ifPresent = Options.boolean('if-present').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Exit successfully when automatic detection finds no supported host')
+const ifPresent = Flag.boolean('if-present').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Exit successfully when automatic detection finds no supported host')
 );
 
-const uninstall = Options.boolean('uninstall').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Uninstall Composio plugins instead of installing them')
+const uninstall = Flag.boolean('uninstall').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Uninstall Composio plugins instead of installing them')
 );
 
 const TARGET_LABELS: Readonly<Record<AgentHost, string>> = {
@@ -259,8 +259,9 @@ const setupBaseCmd = Command.make(
 
         const initial = pending.find(status => status.target === result.target);
         if (!initial) {
-          return yield* Effect.dieMessage(
-            `Setup invariant violated: missing initial state for ${result.target}`
+          // v4 dropped `Effect.dieMessage`; `Effect.die` takes the defect directly.
+          return yield* Effect.die(
+            new Error(`Setup invariant violated: missing initial state for ${result.target}`)
           );
         }
         let action = 'configured and enabled';

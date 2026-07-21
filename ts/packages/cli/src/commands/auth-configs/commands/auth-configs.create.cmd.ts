@@ -1,5 +1,5 @@
-import { Args, Command, Options } from '@effect/cli';
-import { Effect, Either, Option } from 'effect';
+import { Effect, Option, Result } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import { parseJsonRecord } from 'src/utils/parse-json';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -9,30 +9,28 @@ import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { redact } from 'src/ui/redact';
 import { formatAuthConfigCreated } from '../format';
 
-const name = Args.text({ name: 'name' }).pipe(
-  Args.withDescription('Display name for the auth config'),
-  Args.optional
+const name = Argument.string('name').pipe(
+  Argument.withDescription('Display name for the auth config'),
+  Argument.optional
 );
 
-const toolkit = Options.text('toolkit').pipe(
-  Options.withDescription('Toolkit slug (e.g. "gmail")')
-);
+const toolkit = Flag.string('toolkit').pipe(Flag.withDescription('Toolkit slug (e.g. "gmail")'));
 
-const authScheme = Options.text('auth-scheme').pipe(
-  Options.withDescription(
+const authScheme = Flag.string('auth-scheme').pipe(
+  Flag.withDescription(
     'Auth scheme (e.g. OAUTH2, API_KEY, BEARER_TOKEN). If omitted, uses Composio managed defaults.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const scopes = Options.text('scopes').pipe(
-  Options.withDescription('Comma-separated scopes (OAuth only, e.g. "send_email,read_email")'),
-  Options.optional
+const scopes = Flag.string('scopes').pipe(
+  Flag.withDescription('Comma-separated scopes (OAuth only, e.g. "send_email,read_email")'),
+  Flag.optional
 );
 
-const customCredentials = Options.text('custom-credentials').pipe(
-  Options.withDescription('Custom credentials as JSON string (for white-labeling)'),
-  Options.optional
+const customCredentials = Flag.string('custom-credentials').pipe(
+  Flag.withDescription('Custom credentials as JSON string (for white-labeling)'),
+  Flag.optional
 );
 
 /**
@@ -64,14 +62,14 @@ export const authConfigsCmd$Create = Command.make(
       let parsedCustomCredentials: Record<string, unknown> | undefined;
       if (Option.isSome(customCredentials)) {
         const parsed = parseJsonRecord(customCredentials.value);
-        if (Either.isLeft(parsed)) {
+        if (Result.isFailure(parsed)) {
           yield* ui.log.error('Invalid JSON in --custom-credentials. Please provide valid JSON.');
           yield* ui.log.step(
             'Example:\n> composio dev auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\''
           );
           return;
         }
-        parsedCustomCredentials = parsed.right;
+        parsedCustomCredentials = parsed.success;
       }
 
       // Parse scopes into array

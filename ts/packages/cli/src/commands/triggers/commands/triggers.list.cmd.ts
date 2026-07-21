@@ -1,4 +1,4 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Argument, CliError, Command, Flag } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
@@ -11,13 +11,13 @@ type TriggersListCommandConfig = {
   readonly infoCommand: string;
 };
 
-const toolkit = Args.text({ name: 'toolkit' }).pipe(
-  Args.withDescription('Toolkit slug to list trigger types for (e.g. "gmail")')
+const toolkit = Argument.string('toolkit').pipe(
+  Argument.withDescription('Toolkit slug to list trigger types for (e.g. "gmail")')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Maximum number of trigger types to show (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Maximum number of trigger types to show (1-1000)')
 );
 
 /**
@@ -47,9 +47,12 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
             );
             yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
             return yield* Effect.fail(
-              ValidationError.invalidValue(
-                HelpDoc.p(`Invalid toolkit slug "${toolkit}" for trigger listing.`)
-              )
+              new CliError.InvalidValue({
+                option: 'toolkit',
+                value: toolkit,
+                expected: 'a known toolkit slug',
+                kind: 'argument',
+              })
             );
           })
         )

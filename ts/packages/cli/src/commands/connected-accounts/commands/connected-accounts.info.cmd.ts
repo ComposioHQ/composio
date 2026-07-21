@@ -1,4 +1,4 @@
-import { Args, Command } from '@effect/cli';
+import { Argument, Command } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -6,9 +6,9 @@ import { requireAuth } from 'src/effects/require-auth';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { formatConnectedAccountInfo } from '../format';
 
-const id = Args.text({ name: 'id' }).pipe(
-  Args.withDescription('Connected account ID (nanoid)'),
-  Args.optional
+const id = Argument.string('id').pipe(
+  Argument.withDescription('Connected account ID (nanoid)'),
+  Argument.optional
 );
 
 /**

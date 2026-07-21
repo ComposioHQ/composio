@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolkitSlug } from '@composio/cli-local-tools';
 import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Data, Effect, Option } from 'effect';
@@ -24,40 +24,41 @@ import {
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 
-const query = Args.repeated(Args.text({ name: 'query' })).pipe(
-  Args.withDescription(
+const query = Argument.string('query').pipe(
+  Argument.variadic(),
+  Argument.withDescription(
     'One or more semantic use-case queries (e.g. "onboard a new GitHub repo", "notify Slack").'
   )
 );
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
-  Options.optional
+const toolkits = Flag.string('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail,outlook")'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.optional,
-  Options.withDescription('Developer-project user ID override')
+const userId = Flag.string('user-id').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer-project user ID override')
 );
 
-const projectName = Options.text('project-name').pipe(
-  Options.optional,
-  Options.withDescription('Developer project name override for this command')
+const projectName = Flag.string('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project name override for this command')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(10),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(10),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print the full search response as JSON (default behavior)')
+const json = Flag.boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Print the full search response as JSON (default behavior)')
 );
 
-const human = Options.boolean('human').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Show formatted human-readable search output')
+const human = Flag.boolean('human').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Show formatted human-readable search output')
 );
 
 type SearchToolSchema = SessionSearchResponse.ToolSchemas;
@@ -203,7 +204,7 @@ const buildSearchJsonPayload = (params: {
         orgId: params.cacheScope.orgId,
         consumerUserId: params.cacheScope.consumerUserId,
         toolkits: connectedToolkits,
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.catch(() => Effect.void));
     }
 
     return {
@@ -325,7 +326,7 @@ const runToolsSearch = (params: {
       }).pipe(Effect.mapError(formatResolveCommandProjectError));
       const resolvedUserId =
         resolvedProject.projectType === 'CONSUMER'
-          ? Option.fromNullable(resolvedProject.consumerUserId)
+          ? Option.fromNullishOr(resolvedProject.consumerUserId)
           : Option.match(params.userId, {
               onSome: value => Option.some(value),
               onNone: () => userContext.data.testUserId,
@@ -469,7 +470,7 @@ const runToolsSearch = (params: {
         toolRouterSessionId: searchResult.historyScope?.toolRouterSessionId,
         nextSteps: searchResponse.next_steps_guidance,
       },
-    }).pipe(Effect.catchAll(() => Effect.void));
+    }).pipe(Effect.catch(() => Effect.void));
 
     if (emitHuman) {
       yield* emitHumanSearchOutput({
