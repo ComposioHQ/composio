@@ -1,6 +1,4 @@
-import { AutoCorrect, CliConfig } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Option, ParseResult, Schema } from 'effect';
+import { Data, Effect, FileSystem, Option, Path, Schema, SchemaIssue } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
   jsonSchemaToEffectSchema,
@@ -26,7 +24,7 @@ const CachedToolInputDefinitionEnvelope = Schema.Struct({
 });
 const ObjectSchemaWithProperties = Schema.Struct({ properties: JsonRecordSchema });
 
-const decodeJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+const decodeJsonObject = Schema.decodeUnknownEffect(Schema.fromJsonString(JsonRecordSchema));
 const decodeCachedToolInputDefinitionEnvelope = Schema.decodeUnknownOption(
   CachedToolInputDefinitionEnvelope
 );
@@ -118,8 +116,8 @@ export const getCachedToolInputDefinition = (slug: string) =>
     const raw = yield* fs
       .readFileString(schemaPath, 'utf8')
       .pipe(
-        Effect.catchTag('SystemError', error =>
-          error.reason === 'NotFound' ? Effect.succeed(null) : Effect.fail(error)
+        Effect.catchTag('PlatformError', error =>
+          error.reason._tag === 'NotFound' ? Effect.succeed(null) : Effect.fail(error)
         )
       );
     if (raw === null) {
@@ -151,8 +149,8 @@ export const invalidateToolInputDefinition = (slug: string) =>
     yield* fs
       .remove(schemaPath)
       .pipe(
-        Effect.catchTag('SystemError', error =>
-          error.reason === 'NotFound' ? Effect.void : Effect.fail(error)
+        Effect.catchTag('PlatformError', error =>
+          error.reason._tag === 'NotFound' ? Effect.void : Effect.fail(error)
         )
       );
   });
@@ -215,9 +213,7 @@ const fetchAndCacheToolInputDefinition = (
     const [tool, latestVersion] = yield* Effect.all(
       [
         repo.getToolDetailed(slug),
-        fetchResolvedLatestToolVersion(slug, params).pipe(
-          Effect.catchAll(() => Effect.succeed(null))
-        ),
+        fetchResolvedLatestToolVersion(slug, params).pipe(Effect.catch(() => Effect.succeed(null))),
       ],
       { concurrency: 2 }
     );
@@ -263,7 +259,7 @@ export const getOrFetchToolInputDefinition = (
       cached.version,
       params
     ).pipe(
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         Effect.succeed({
           isStale: false,
           latestVersion: cached.version,
@@ -335,7 +331,21 @@ const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArr
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const schemaKeySuggestionConfig = CliConfig.defaultConfig;
+/** Simple Levenshtein distance (small N, no perf worries). */
+const levenshteinDistance = (a: string, b: string): number => {
+  const m = a.length;
+  const n = b.length;
+  const dp: Array<Array<number>> = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+};
 
 type SchemaKeyCandidate = {
   readonly key: string;
@@ -353,11 +363,7 @@ const findClosestSchemaKey = (
 
   const closest = allowedKeys.reduce<SchemaKeyCandidate | undefined>((best, key) => {
     const normalizedKey = normalizeKey(key);
-    const distance = AutoCorrect.levensteinDistance(
-      normalizedUnknownKey,
-      normalizedKey,
-      schemaKeySuggestionConfig
-    );
+    const distance = levenshteinDistance(normalizedUnknownKey, normalizedKey);
     const containsBonus =
       normalizedKey.includes(normalizedUnknownKey) || normalizedUnknownKey.includes(normalizedKey)
         ? -2
@@ -445,9 +451,9 @@ export const validateToolInputArgumentsWithDefinition = (
         }),
     });
 
-    yield* Schema.decodeUnknown(inputSchema, { errors: 'all' })(args).pipe(
+    yield* Schema.decodeUnknownEffect(inputSchema, { errors: 'all' })(args).pipe(
       Effect.mapError(error => {
-        const issues = ParseResult.ArrayFormatter.formatErrorSync(error).map(
+        const issues = SchemaIssue.makeFormatterStandardSchemaV1()(error.issue).issues.map(
           issue => issue.message
         );
         return new ToolInputValidationError({ toolSlug: slug, schemaPath, issues, cause: error });

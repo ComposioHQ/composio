@@ -1,75 +1,86 @@
 import { Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
-import { OptionFromNullishOr } from 'effect/Schema';
+import { OptionFromOptionalNullOr } from 'effect/Schema';
 
-export const UserData = Schema.Struct({
+// `OptionFromOptionalNullOr` (rather than `OptionFromNullishOr`) tolerates a
+// missing key in addition to an explicit `null`/`undefined` value: real
+// `user_data.json` files written by older CLI versions may predate a field
+// (e.g. `test_user_id`) and simply omit the key. Requiring the key to be
+// present would fail decoding and — via the load fallback in
+// `services/user-context.ts` — silently reset the whole file to defaults,
+// discarding an otherwise-valid `org_id` / `api_key`.
+const userDataFields = {
   /**
    * API key for the Composio API server.
    */
-  apiKey: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('api_key')
-  ),
+  apiKey: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
 
   /**
    * Base URL for the Composio API server (backend).
    */
-  baseURL: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('base_url')
-  ),
+  baseURL: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
 
   /**
    * Base URL for the Composio web app (frontend).
    */
-  webURL: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('web_url')
-  ),
+  webURL: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
 
   /**
    * Organization ID for the current user.
    */
-  orgId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('org_id')
-  ),
+  orgId: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
 
   /**
    * Legacy global project ID retained for backward-compatible reads.
    * New CLI versions no longer persist this field.
    */
-  projectId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('project_id')
-  ),
+  projectId: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
 
   /**
    * Optional global test user identifier used by CLI/e2e flows.
    */
-  testUserId: Schema.propertySignature(OptionFromNullishOr(Schema.String, null)).pipe(
-    Schema.fromKey('test_user_id')
-  ),
-}).annotations({
-  identifier: 'UserData',
-  description: 'User data storage for the Composio CLI',
-});
+  testUserId: OptionFromOptionalNullOr(Schema.String, { onNoneEncoding: null }),
+};
+
+const userDataKeyMapping = {
+  apiKey: 'api_key',
+  baseURL: 'base_url',
+  webURL: 'web_url',
+  orgId: 'org_id',
+  projectId: 'project_id',
+  testUserId: 'test_user_id',
+} as const;
+
+export const UserData = Schema.Struct(userDataFields).pipe(
+  Schema.encodeKeys(userDataKeyMapping),
+  Schema.annotate({
+    identifier: 'UserData',
+    description: 'User data storage for the Composio CLI',
+  })
+);
 
 export type UserData = Schema.Schema.Type<typeof UserData>;
 
 export const UserDataWithDefaults = Schema.Struct({
-  ...UserData.fields,
+  ...userDataFields,
 
-  baseURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('base_url')),
-  webURL: Schema.propertySignature(Schema.String).pipe(Schema.fromKey('web_url')),
+  baseURL: Schema.String,
+  webURL: Schema.String,
 
   // orgId and legacy projectId remain as Option<string> — they may not be set.
-}).annotations({
-  identifier: 'UserDataWithDefaults',
-  description: 'User data storage for the Composio CLI with defaults',
-});
+}).pipe(
+  Schema.encodeKeys(userDataKeyMapping),
+  Schema.annotate({
+    identifier: 'UserDataWithDefaults',
+    description: 'User data storage for the Composio CLI with defaults',
+  })
+);
 
 export type UserDataWithDefaults = Schema.Schema.Type<typeof UserDataWithDefaults>;
 
 export const UserDataJSON = JSONTransformSchema(UserData);
-export const userDataFromJSON = Schema.decode(UserDataJSON, {
+export const userDataFromJSON = Schema.decodeEffect(UserDataJSON, {
   propertyOrder: 'original',
   onExcessProperty: 'preserve',
-  exact: false,
 });
-export const userDataToJSON = Schema.encode(UserDataJSON);
+export const userDataToJSON = Schema.encodeEffect(UserDataJSON);

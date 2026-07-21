@@ -30,7 +30,7 @@ export const spawnDetached = (
     catch: cause => new DetachedProcessSpawnError({ command, cause }),
   }).pipe(
     Effect.flatMap(child =>
-      Effect.async<void, DetachedProcessSpawnError>(resume => {
+      Effect.callback<void, DetachedProcessSpawnError>(resume => {
         let settled = false;
 
         const cleanup = () => {

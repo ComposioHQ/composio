@@ -1,5 +1,4 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, FileSystem, Option, Path, Predicate, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -10,53 +9,68 @@ export const DEFAULT_AGENTS_BASE_URL = 'https://agents.composio.dev';
 
 export type AgentStatus = 'READY' | 'PENDING' | 'UNKNOWN';
 
-const UnknownFields = JsonRecordSchema;
+const UnknownFields = [JsonRecordSchema] as const;
 
-const AgentComposioCredentials = Schema.Struct({
-  member_id: Schema.optional(Schema.NullOr(Schema.String)),
-  org_id: Schema.optional(Schema.NullOr(Schema.String)),
-  project_id: Schema.optional(Schema.NullOr(Schema.String)),
-  api_key: Schema.optional(Schema.NullOr(Schema.String)),
-  user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentComposioCredentials = Schema.StructWithRest(
+  Schema.Struct({
+    member_id: Schema.optional(Schema.NullOr(Schema.String)),
+    org_id: Schema.optional(Schema.NullOr(Schema.String)),
+    project_id: Schema.optional(Schema.NullOr(Schema.String)),
+    api_key: Schema.optional(Schema.NullOr(Schema.String)),
+    user_api_key: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentComposioCredentials = Schema.Schema.Type<typeof AgentComposioCredentials>;
 
-const AgentIdentity = Schema.Struct({
-  status: Schema.optional(Schema.NullOr(Schema.String)),
-  request_id: Schema.optional(Schema.NullOr(Schema.String)),
-  slug: Schema.optional(Schema.NullOr(Schema.String)),
-  email: Schema.optional(Schema.NullOr(Schema.String)),
-  agent_key: Schema.optional(Schema.NullOr(Schema.String)),
-  composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
-  claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
-  claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
-  composio: Schema.optional(AgentComposioCredentials),
-}).pipe(Schema.extend(UnknownFields));
+const AgentIdentity = Schema.StructWithRest(
+  Schema.Struct({
+    status: Schema.optional(Schema.NullOr(Schema.String)),
+    request_id: Schema.optional(Schema.NullOr(Schema.String)),
+    slug: Schema.optional(Schema.NullOr(Schema.String)),
+    email: Schema.optional(Schema.NullOr(Schema.String)),
+    agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+    composio_agent_key: Schema.optional(Schema.NullOr(Schema.String)),
+    claimed_by: Schema.optional(Schema.NullOr(Schema.String)),
+    claimed_at: Schema.optional(Schema.NullOr(Schema.String)),
+    composio: Schema.optional(AgentComposioCredentials),
+  }),
+  UnknownFields
+);
 export type AgentIdentity = Schema.Schema.Type<typeof AgentIdentity>;
 
-const AgentMailMessage = Schema.Struct({
-  id: Schema.optional(Schema.NullOr(Schema.String)),
-  thread_id: Schema.optional(Schema.NullOr(Schema.String)),
-  from: Schema.optional(Schema.NullOr(Schema.String)),
-  to: Schema.optional(Schema.NullOr(Schema.String)),
-  subject: Schema.optional(Schema.NullOr(Schema.String)),
-  preview: Schema.optional(Schema.NullOr(Schema.String)),
-  received_at: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentMailMessage = Schema.StructWithRest(
+  Schema.Struct({
+    id: Schema.optional(Schema.NullOr(Schema.String)),
+    thread_id: Schema.optional(Schema.NullOr(Schema.String)),
+    from: Schema.optional(Schema.NullOr(Schema.String)),
+    to: Schema.optional(Schema.NullOr(Schema.String)),
+    subject: Schema.optional(Schema.NullOr(Schema.String)),
+    preview: Schema.optional(Schema.NullOr(Schema.String)),
+    received_at: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentMailMessage = Schema.Schema.Type<typeof AgentMailMessage>;
 
-const AgentMailResponse = Schema.Struct({
-  count: Schema.optional(Schema.Number),
-  messages: Schema.optional(Schema.Array(AgentMailMessage)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentMailResponse = Schema.StructWithRest(
+  Schema.Struct({
+    count: Schema.optional(Schema.Number),
+    messages: Schema.optional(Schema.Array(AgentMailMessage)),
+  }),
+  UnknownFields
+);
 export type AgentMailResponse = Schema.Schema.Type<typeof AgentMailResponse>;
 
-const AgentClaimResponse = Schema.Struct({
-  status: Schema.optional(Schema.NullOr(Schema.String)),
-  email: Schema.optional(Schema.NullOr(Schema.String)),
-  org_id: Schema.optional(Schema.NullOr(Schema.String)),
-  invite_code: Schema.optional(Schema.NullOr(Schema.String)),
-}).pipe(Schema.extend(UnknownFields));
+const AgentClaimResponse = Schema.StructWithRest(
+  Schema.Struct({
+    status: Schema.optional(Schema.NullOr(Schema.String)),
+    email: Schema.optional(Schema.NullOr(Schema.String)),
+    org_id: Schema.optional(Schema.NullOr(Schema.String)),
+    invite_code: Schema.optional(Schema.NullOr(Schema.String)),
+  }),
+  UnknownFields
+);
 export type AgentClaimResponse = Schema.Schema.Type<typeof AgentClaimResponse>;
 
 export class AgentAuthError extends Data.TaggedError('services/AgentAuthError')<{
@@ -84,9 +98,9 @@ const agentsBaseURL = (): string =>
   (process.env.COMPOSIO_AGENTS_BASE_URL ?? DEFAULT_AGENTS_BASE_URL).replace(/\/+$/, '');
 
 const decodeAgentResponse =
-  <A, I>(pathname: string, schema: Schema.Schema<A, I>) =>
+  <A, I>(pathname: string, schema: Schema.Codec<A, I>) =>
   (payload: unknown) =>
-    Schema.decodeUnknown(schema)(payload).pipe(
+    Schema.decodeUnknownEffect(schema)(payload).pipe(
       Effect.mapError(
         cause =>
           new AgentResponseDecodeError({
@@ -171,7 +185,7 @@ export const readStoredAgentIdentity = Effect.gen(function* () {
   if (!exists) return Option.none<AgentIdentity>();
 
   return yield* fs.readFileString(configPath, 'utf8').pipe(
-    Effect.flatMap(Schema.decodeUnknown(Schema.parseJson(AgentIdentity))),
+    Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(AgentIdentity))),
     Effect.map(normalizeDecodedAgentIdentity),
     Effect.tapError(error => Effect.logDebug('Failed to read agent identity:', error)),
     Effect.option
@@ -225,7 +239,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
         }),
     });
     const payload = text
-      ? yield* Schema.decodeUnknown(Schema.parseJson(Schema.Unknown))(text).pipe(
+      ? yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown))(text).pipe(
           Effect.mapError(
             cause =>
               new AgentResponseDecodeError({
@@ -239,7 +253,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
 
     if (!response.ok) {
       const message =
-        Predicate.isRecord(payload) && typeof payload.message === 'string'
+        Predicate.isObject(payload) && typeof payload.message === 'string'
           ? payload.message
           : `agents.composio.dev request failed with HTTP ${response.status}`;
       return yield* new AgentRequestError({

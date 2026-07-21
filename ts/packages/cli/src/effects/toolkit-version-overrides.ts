@@ -1,5 +1,5 @@
-import { Config, ConfigError, Effect, HashMap, Option, pipe, String } from 'effect';
-import { BaseConfigProviderLive } from 'src/services/config';
+import { Config, ConfigProvider, Effect, Option, Schema, String } from 'effect';
+import { getBaseConfigProvider } from 'src/services/config';
 
 /**
  * Represents a toolkit with its version specification.
@@ -12,19 +12,18 @@ export interface ToolkitVersionSpec {
 
 /**
  * Config that reads COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>=<version> env vars.
- * Uses Effect's Config.hashMap with Config.nested to read all env vars
- * `COMPOSIO_TOOLKIT_VERSION_${TOOLKIT}` with a wildcard suffix.
+ * Uses `Config.Record` scoped to the `COMPOSIO.TOOLKIT.VERSION` path to read
+ * all env vars matching `COMPOSIO_TOOLKIT_VERSION_${TOOLKIT}` as record keys.
  *
  * @example
  * // Given: COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00
- * // Returns: HashMap { "GMAIL" => "20250901_00" }
+ * // Returns: { "GMAIL": "20250901_00" }
  */
-export const TOOLKIT_VERSION_OVERRIDES_CONFIG = pipe(
-  Config.hashMap(Config.string()),
-  Config.nested('VERSION'),
-  Config.nested('TOOLKIT'),
-  Config.nested('COMPOSIO'),
-  Config.option // Optional, so missing env vars don't fail the config
+export const TOOLKIT_VERSION_OVERRIDES_CONFIG: Config.Config<
+  Option.Option<Readonly<Record<string, string>>>
+> = Config.option(
+  // Optional, so missing env vars don't fail the config
+  Config.schema(Config.Record(Schema.String, Schema.String), ['COMPOSIO', 'TOOLKIT', 'VERSION'])
 );
 
 /**
@@ -64,7 +63,7 @@ export const sanitizeVersionString = (version: string): string | null => {
  * Uses Effect's Config system to read env vars matching the pattern
  * COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>=<version>.
  *
- * This function uses `BaseConfigProviderLive` directly (bypassing `extendConfigProvider`)
+ * This function uses `getBaseConfigProvider()` directly (bypassing `extendConfigProvider`)
  * to correctly parse the nested path structure of the environment variable names.
  *
  * @returns Effect that yields a Map<Lowercase<string>, string> where keys are lowercase toolkit slugs
@@ -76,15 +75,15 @@ export const sanitizeVersionString = (version: string): string | null => {
  */
 export const getToolkitVersionOverrides: Effect.Effect<
   ToolkitVersionOverrides,
-  ConfigError.ConfigError
+  Config.ConfigError
 > = Effect.gen(function* () {
   const maybeOverrides = yield* TOOLKIT_VERSION_OVERRIDES_CONFIG;
 
   return Option.match(maybeOverrides, {
     onNone: () => new Map<Lowercase<string>, string>(),
-    onSome: hashMap => {
+    onSome: record => {
       const result = new Map<Lowercase<string>, string>();
-      for (const [key, value] of HashMap.toEntries(hashMap)) {
+      for (const [key, value] of Object.entries(record)) {
         // Normalize toolkit name to lowercase and skip 'latest' values
         if (value && value !== 'latest') {
           // Sanitize version string to only allow valid characters
@@ -97,7 +96,15 @@ export const getToolkitVersionOverrides: Effect.Effect<
       return result;
     },
   });
-}).pipe(Effect.withConfigProvider(BaseConfigProviderLive));
+}).pipe(
+  Effect.provideServiceEffect(
+    ConfigProvider.ConfigProvider,
+    // Deferred via `Effect.sync` so the provider (and the `process.env` snapshot
+    // it captures) is constructed when this Effect actually runs, not when this
+    // module-level Effect value is built at import time.
+    Effect.sync(() => getBaseConfigProvider())
+  )
+);
 
 /**
  * Builds an array of ToolkitVersionSpec from toolkit slugs and version overrides.

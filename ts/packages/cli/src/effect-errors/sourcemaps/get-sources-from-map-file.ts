@@ -1,6 +1,6 @@
-import type { PlatformError } from '@effect/platform/Error';
-import { FileSystem } from '@effect/platform/FileSystem';
-import { Path } from '@effect/platform/Path';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
+import type { PlatformError } from 'effect/PlatformError';
 import { Effect, pipe } from 'effect';
 import { type RawSourceMap, SourceMapConsumer } from 'source-map-js';
 

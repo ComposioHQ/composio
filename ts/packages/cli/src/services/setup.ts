@@ -1,5 +1,5 @@
-import { Command, Error as PlatformError } from '@effect/platform';
-import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, Option, PlatformError, Predicate, Schema } from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
 import {
@@ -152,14 +152,14 @@ const setupProcessError = (params: {
   });
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
-  Predicate.isRecord(value) ? value : undefined;
+  Predicate.isObject(value) ? value : undefined;
 
-const decodeJsonOption = Schema.decodeUnknownOption(Schema.parseJson());
+const decodeJsonOption = Schema.decodeUnknownOption(Schema.UnknownFromJsonString);
 
 const parseJson = (value: string): unknown | undefined =>
   Option.getOrUndefined(decodeJsonOption(value));
 
-const isRecord = Predicate.isRecord;
+const isRecord = Predicate.isObject;
 
 const recordsFrom = (
   value: unknown,
@@ -199,9 +199,9 @@ const normalizeGitHubRepository = (value: string): string | undefined => {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(repository)) {
     // new URL() throws on malformed input; an unparseable repository string
     // simply normalizes to undefined.
-    const parsedUrl = Either.try(() => new URL(repository));
-    if (Either.isLeft(parsedUrl)) return undefined;
-    const url = parsedUrl.right;
+    const parsedUrl = Option.liftThrowable((s: string) => new URL(s))(repository);
+    if (Option.isNone(parsedUrl)) return undefined;
+    const url = parsedUrl.value;
     const isCanonicalGitHubUrl =
       url.protocol === 'https:' &&
       url.hostname.toLowerCase() === 'github.com' &&
@@ -275,25 +275,30 @@ const capture = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    return yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
-      Effect.timeoutFail({
+    return yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+      Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () =>
-          setupProcessError({
-            adapter,
-            stage,
-            message: `The \`${commandText(adapter.executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`,
-          }),
+        orElse: () =>
+          Effect.fail(
+            setupProcessError({
+              adapter,
+              stage,
+              message: `The \`${commandText(adapter.executable, args)}\` command timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+            })
+          ),
       })
     );
   });
 
+const isCommandNotFoundError = (
+  error: PlatformError.PlatformError | SetupProcessError
+): error is PlatformError.PlatformError =>
+  error._tag === 'PlatformError' && error.reason._tag === 'NotFound';
+
 const captureOptional = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =>
   capture(adapter, args, 'detect').pipe(
-    Effect.catchIf(Schema.is(PlatformError.SystemError), error =>
-      error.reason === 'NotFound'
-        ? Effect.succeed<CommandResult | undefined>(undefined)
-        : Effect.fail(error)
+    Effect.catchIf(isCommandNotFoundError, () =>
+      Effect.succeed<CommandResult | undefined>(undefined)
     )
   );
 
@@ -615,15 +620,17 @@ const runRequired = (
 ) =>
   Effect.gen(function* () {
     const runner = yield* CommandRunner;
-    const result = yield* runner.capture(Command.make(adapter.executable, ...args)).pipe(
-      Effect.timeoutFail({
+    const result = yield* runner.capture(Command.make(adapter.executable, args)).pipe(
+      Effect.timeoutOrElse({
         duration: SETUP_COMMAND_TIMEOUT,
-        onTimeout: () =>
-          setupProcessError({
-            adapter,
-            stage: 'mutate',
-            message: `${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`,
-          }),
+        orElse: () =>
+          Effect.fail(
+            setupProcessError({
+              adapter,
+              stage: 'mutate',
+              message: `${operation} timed out after ${SETUP_COMMAND_TIMEOUT}.`,
+            })
+          ),
       }),
       Effect.mapError(cause =>
         setupProcessError({

@@ -1,7 +1,7 @@
-import { Config, LogLevel, Option } from 'effect';
+import { Config, ConfigProvider, Effect, LogLevel, Option } from 'effect';
 import * as constants from 'src/constants';
 
-type APP_CONFIG = Config.Config.Wrap<{
+type APP_CONFIG = Config.Wrap<{
   USER_API_KEY: Option.Option<string>;
   ENVIRONMENT: Option.Option<string>;
   BASE_URL: string;
@@ -12,6 +12,38 @@ type APP_CONFIG = Config.Config.Wrap<{
   PROJECT_ID: Option.Option<string>;
   DISABLE_CONNECTED_ACCOUNT_CACHE: boolean;
 }>;
+
+const LOG_LEVEL_VALUES: ReadonlySet<string> = new Set(LogLevel.values);
+
+/**
+ * Titlecases a raw log-level string (`"info"` -> `"Info"`, `"DEBUG"` -> `"Debug"`).
+ */
+const normalizeLogLevelCase = (value: string): string =>
+  value.length === 0 ? value : `${value[0]!.toUpperCase()}${value.slice(1).toLowerCase()}`;
+
+/**
+ * Case-insensitive counterpart to `Config.logLevel`.
+ *
+ * `effect/Config`'s built-in `Config.logLevel` is case-sensitive in v4 (it only
+ * accepts the exact `LogLevel.values` casing), whereas Composio has always
+ * accepted `COMPOSIO_LOG_LEVEL=info`/`INFO`/`Info` interchangeably. Normalize the
+ * casing before validating so that pre-existing behavior is preserved.
+ */
+const logLevelConfig = (name: string): Config.Config<LogLevel.LogLevel> =>
+  Config.string(name).pipe(
+    Config.mapOrFail(value => {
+      const normalized = normalizeLogLevelCase(value);
+      return LOG_LEVEL_VALUES.has(normalized)
+        ? Effect.succeed(normalized as LogLevel.LogLevel)
+        : Effect.fail(
+            new Config.ConfigError(
+              new ConfigProvider.SourceError({
+                message: `Expected a log level but received ${JSON.stringify(value)}`,
+              })
+            )
+          );
+    })
+  );
 
 /**
  * Derives a URL default based on the `COMPOSIO_ENVIRONMENT` config key.
@@ -59,7 +91,7 @@ export const APP_CONFIG = {
   CACHE_DIR: Config.option(Config.string('CACHE_DIR')),
 
   // The log level for the Composio CLI
-  LOG_LEVEL: Config.option(Config.logLevel('LOG_LEVEL')),
+  LOG_LEVEL: Config.option(logLevelConfig('LOG_LEVEL')),
 
   // The organization ID for multi-project auth (overrides file-based config)
   ORG_ID: Config.option(Config.string('ORG_ID')),

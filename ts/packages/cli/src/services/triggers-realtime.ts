@@ -1,4 +1,4 @@
-import { Data, Effect, Either, Option, Runtime, Schema } from 'effect';
+import { Context, Data, Effect, Layer, Option, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
@@ -35,13 +35,13 @@ const subscriptionError = (message: string) => (cause: unknown) =>
  * - `cli.realtime.credentials` to fetch Pusher credentials + project nano id
  * - `cli.realtime.auth` for private channel auth callbacks
  */
-export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
+export class TriggersRealtime extends Context.Service<TriggersRealtime>()(
   'services/TriggersRealtime',
   {
-    effect: Effect.gen(function* () {
+    make: Effect.gen(function* () {
       const sessionRepo = yield* ComposioSessionRepository;
       const clientSingleton = yield* ComposioClientSingleton;
-      const runtime = yield* Effect.runtime<never>();
+      const services = yield* Effect.context<never>();
 
       const listenWith = (params: {
         getRealtimeCredentials: () => Effect.Effect<
@@ -74,7 +74,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                   const socket_id = authOptions.socketId;
 
                   const doAuth = async () => {
-                    const response = await Runtime.runPromise(runtime)(
+                    const response = await Effect.runPromiseWith(services)(
                       params.authRealtimeChannel({
                         channel_name,
                         socket_id,
@@ -195,8 +195,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
                 chunkedEvents.delete(typed.id);
                 // Silently discard events that fail to parse after chunk
                 // reassembly; the buffer entry is already cleared either way.
-                const parsed = Either.try((): unknown => JSON.parse(reassembled)).pipe(
-                  Either.getRight,
+                const parsed = Option.liftThrowable(JSON.parse)(reassembled).pipe(
                   Option.flatMap(decodeRawRealtimeEvent)
                 );
                 if (Option.isSome(parsed)) {
@@ -219,7 +218,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
             Effect.tryPromise({
               try: () => resource.shutdown(),
               catch: subscriptionError('Failed to shut down the realtime subscription'),
-            }).pipe(Effect.catchAll(() => Effect.void))
+            }).pipe(Effect.catch(() => Effect.void))
         );
 
       const listen = (onEvent: (data: RawRealtimeEvent) => void) =>
@@ -262,6 +261,9 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
 
       return { listen, listenInProject };
     }),
-    dependencies: [ComposioSessionRepository.Default, ComposioClientSingleton.Default],
   }
-) {}
+) {
+  static readonly Default = Layer.effect(this, this.make).pipe(
+    Layer.provide([ComposioSessionRepository.Default, ComposioClientSingleton.Default])
+  );
+}

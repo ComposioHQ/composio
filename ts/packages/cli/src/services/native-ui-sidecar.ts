@@ -1,5 +1,4 @@
-import { Command, CommandExecutor, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import {
   Cause,
   Config,
@@ -8,11 +7,15 @@ import {
   Duration,
   Effect,
   Exit,
+  FileSystem,
   Option,
+  Path,
   Predicate,
   Schema,
+  SchemaTransformation,
   Stream,
 } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 import {
   detectCliPlatform,
   ensureBundledBinaryExecutable,
@@ -72,14 +75,15 @@ const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off']
 
 // Any other non-empty value counts as set (`CI=woohoo` still disables the UI)
 // rather than failing config decoding the way `Config.boolean` would.
-const EnvFlagFromString = Schema.transform(
-  Schema.compose(Schema.Trim, Schema.Lowercase),
-  Schema.Boolean,
-  {
-    decode: value => !FALSY_ENV_FLAG_VALUES.includes(value),
-    encode: enabled => (enabled ? '1' : '0'),
-    strict: true,
-  }
+const EnvFlagFromString = Schema.Trim.pipe(
+  Schema.decode(SchemaTransformation.toLowerCase()),
+  Schema.decodeTo(
+    Schema.Boolean,
+    SchemaTransformation.transform({
+      decode: value => !FALSY_ENV_FLAG_VALUES.includes(value),
+      encode: enabled => (enabled ? '1' : '0'),
+    })
+  )
 );
 const decodeEnvFlag = Schema.decodeOption(EnvFlagFromString);
 
@@ -116,9 +120,11 @@ export const interactivePermissionUiDisabledConfig: Config.Config<boolean> = Con
 // through a raw env provider rather than the CLI's COMPOSIO_-prefixed one.
 const environmentProvider = ConfigProvider.fromEnv();
 
-export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> = environmentProvider
-  .load(interactivePermissionUiDisabledConfig)
-  .pipe(Effect.orDie);
+export const isInteractivePermissionUiDisabled: Effect.Effect<boolean> =
+  interactivePermissionUiDisabledConfig.pipe(
+    Effect.provideService(ConfigProvider.ConfigProvider, environmentProvider),
+    Effect.orDie
+  );
 
 const normalizeCallerAgent = (value?: string): NativeUiCallerAgent | undefined => {
   const normalized = value?.toLowerCase().replace(/[^a-z]/g, '');
@@ -134,20 +140,31 @@ const PS_TREE_MAX_DEPTH = 8;
 // non-zero exit, which leaves stdout empty) resolves to undefined.
 const psParentEntry = (
   pid: number
-): Effect.Effect<string | undefined, never, CommandExecutor.CommandExecutor> =>
-  Command.make('ps', '-o', 'ppid=', '-o', 'comm=', '-p', String(pid)).pipe(
-    // The child never reads interactive input: hand it an immediately-closed
-    // stdin pipe (EOF), matching the previous `stdio: ['ignore', ...]` spawn.
-    Command.stdin(Stream.empty),
-    Command.string,
-    Effect.map(output => output.trim()),
-    Effect.orElseSucceed(() => undefined)
-  );
+): Effect.Effect<string | undefined, never, ChildProcessSpawner.ChildProcessSpawner> =>
+  Effect.scoped(
+    Effect.gen(function* () {
+      // The child never reads interactive input: hand it an immediately-closed
+      // stdin pipe (EOF), matching the previous `stdio: ['ignore', ...]` spawn.
+      const handle = yield* ChildProcess.make(
+        'ps',
+        ['-o', 'ppid=', '-o', 'comm=', '-p', String(pid)],
+        { stdin: Stream.empty }
+      );
+      const output = yield* handle.stdout.pipe(
+        Stream.decodeText(),
+        Stream.runFold(
+          () => '',
+          (acc, chunk) => acc + chunk
+        )
+      );
+      return output.trim();
+    })
+  ).pipe(Effect.orElseSucceed(() => undefined));
 
 const detectCallerAgentFromProcessTree: Effect.Effect<
   NativeUiCallerAgent | undefined,
   never,
-  CommandExecutor.CommandExecutor
+  ChildProcessSpawner.ChildProcessSpawner
 > = Effect.gen(function* () {
   if (process.platform === 'win32') return undefined;
 
@@ -183,7 +200,7 @@ const detectCallerAgentFromEnv = (env: NodeJS.ProcessEnv): NativeUiCallerAgent |
 
 export const detectNativeUiCallerAgentEffect = (
   env: NodeJS.ProcessEnv = rawProcessEnv
-): Effect.Effect<NativeUiCallerAgent, never, CommandExecutor.CommandExecutor> =>
+): Effect.Effect<NativeUiCallerAgent, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* () {
     const fromEnv = detectCallerAgentFromEnv(env);
     if (fromEnv !== undefined) return fromEnv;
@@ -194,7 +211,7 @@ export const detectNativeUiCallerAgentEffect = (
 export const detectNativeUiCallerAgent = (
   env: NodeJS.ProcessEnv = rawProcessEnv
 ): Promise<NativeUiCallerAgent> =>
-  Effect.runPromise(Effect.provide(detectNativeUiCallerAgentEffect(env), BunContext.layer));
+  Effect.runPromise(Effect.provide(detectNativeUiCallerAgentEffect(env), BunServices.layer));
 
 export const resolveNativeUiBinary: Effect.Effect<
   NativeUiBinaryResolution,
@@ -232,7 +249,9 @@ export const resolveNativeUiBinary: Effect.Effect<
   });
 });
 
-const NativeUiDecisionPayloadSchema = Schema.parseJson(Schema.Struct({ decision: Schema.String }));
+const NativeUiDecisionPayloadSchema = Schema.fromJsonString(
+  Schema.Struct({ decision: Schema.String })
+);
 
 const parseDecisionPayload = (raw: string): NativeUiPermissionDecision | undefined => {
   const decision = Option.getOrUndefined(
@@ -301,26 +320,23 @@ const requestNativeUiPermissionDecisionEffect = (params: {
       String(timeoutSeconds),
     ];
 
-    const child = yield* Command.start(
-      // The dialog never reads interactive input: hand it an immediately-closed
-      // stdin pipe (EOF), matching the previous `stdio: 'ignore'` spawn.
-      Command.make(resolved.binaryPath, ...args).pipe(Command.stdin(Stream.empty))
-    );
+    // The dialog never reads interactive input: hand it an immediately-closed
+    // stdin pipe (EOF), matching the previous `stdio: 'ignore'` spawn.
+    const child = yield* ChildProcess.make(resolved.binaryPath, args, { stdin: Stream.empty });
 
     // The previous spawn ignored the dialog's output entirely; drain the pipes
     // so the dialog can never block on a full pipe buffer.
-    yield* Effect.fork(Effect.ignore(Stream.runDrain(child.stdout)));
-    yield* Effect.fork(Effect.ignore(Stream.runDrain(child.stderr)));
+    yield* Effect.forkScoped(Effect.ignore(Stream.runDrain(child.stdout)));
+    yield* Effect.forkScoped(Effect.ignore(Stream.runDrain(child.stderr)));
 
     const dialogExit = yield* child.exitCode.pipe(
       Effect.map((exitCode): DialogExit => ({ _tag: 'exited', exitCode })),
       // exitCode fails when the dialog was terminated by a signal; fold it into
       // the signal-termination shape instead of surfacing a PlatformError.
       Effect.orElseSucceed((): DialogExit => ({ _tag: 'exited', exitCode: undefined })),
-      Effect.timeoutTo({
+      Effect.timeoutOrElse({
         duration: Duration.seconds(timeoutSeconds + 5),
-        onSuccess: (exit: DialogExit) => exit,
-        onTimeout: (): DialogExit => ({ _tag: 'timedOut' }),
+        orElse: (): Effect.Effect<DialogExit> => Effect.succeed({ _tag: 'timedOut' }),
       })
     );
 
@@ -328,7 +344,7 @@ const requestNativeUiPermissionDecisionEffect = (params: {
     // the finalizer awaits the child's exit, so a dialog that ignored SIGTERM
     // would stall this permission gate instead of resolving as dismissed.
     if (dialogExit._tag === 'timedOut') {
-      yield* Effect.ignore(child.kill('SIGKILL'));
+      yield* Effect.ignore(child.kill({ killSignal: 'SIGKILL' }));
       return 'dismissed';
     }
 
@@ -352,7 +368,7 @@ export const requestNativeUiPermissionDecision = async (params: {
   readonly timeoutSeconds?: number;
 }): Promise<NativeUiPermissionDecision | undefined> => {
   const exit = await Effect.runPromiseExit(
-    Effect.provide(requestNativeUiPermissionDecisionEffect(params), BunContext.layer)
+    Effect.provide(requestNativeUiPermissionDecisionEffect(params), BunServices.layer)
   );
   if (Exit.isSuccess(exit)) return exit.value;
 

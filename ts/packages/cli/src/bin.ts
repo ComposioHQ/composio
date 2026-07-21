@@ -1,7 +1,9 @@
 import process from 'node:process';
 import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from '@effect/platform';
-import { BunFileSystem, BunPath, BunRuntime } from '@effect/platform-bun';
+import { FetchHttpClient } from 'effect/unstable/http';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { isBackgroundWorkerInvocation, runBackgroundWorkerFromArgv } from 'src/analytics/dispatch';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUILive } from 'src/services/terminal-ui';

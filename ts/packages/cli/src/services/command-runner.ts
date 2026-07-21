@@ -1,5 +1,5 @@
-import { Command } from '@effect/platform';
-import { Effect, Stream, String } from 'effect';
+import { Context, Effect, Layer, PlatformError, Stream, String } from 'effect';
+import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 
 export interface CommandResult {
   readonly exitCode: number;
@@ -7,16 +7,43 @@ export interface CommandResult {
   readonly stderr: string;
 }
 
-const collectText = (stream: Stream.Stream<Uint8Array, unknown>) =>
-  stream.pipe(Stream.decodeText(), Stream.runFold(String.empty, String.concat));
+const collectText = (stream: Stream.Stream<Uint8Array, PlatformError.PlatformError>) =>
+  stream.pipe(
+    Stream.decodeText(),
+    Stream.runFold(() => String.empty, String.concat)
+  );
 
-export class CommandRunner extends Effect.Service<CommandRunner>()('services/CommandRunner', {
-  sync: () => ({
-    run: (command: Command.Command) => Command.exitCode(command),
-    capture: (command: Command.Command) =>
+export class CommandRunner extends Context.Service<
+  CommandRunner,
+  {
+    readonly run: (
+      command: ChildProcess.Command
+    ) => Effect.Effect<
+      number,
+      PlatformError.PlatformError,
+      ChildProcessSpawner.ChildProcessSpawner
+    >;
+    readonly capture: (
+      command: ChildProcess.Command
+    ) => Effect.Effect<
+      CommandResult,
+      PlatformError.PlatformError,
+      ChildProcessSpawner.ChildProcessSpawner
+    >;
+  }
+>()('services/CommandRunner') {
+  static readonly Default: Layer.Layer<CommandRunner> = Layer.succeed(CommandRunner, {
+    run: command =>
       Effect.scoped(
         Effect.gen(function* () {
-          const childProcess = yield* Command.start(command);
+          const childProcess = yield* command;
+          return Number(yield* childProcess.exitCode);
+        })
+      ),
+    capture: command =>
+      Effect.scoped(
+        Effect.gen(function* () {
+          const childProcess = yield* command;
           const [exitCode, stdout, stderr] = yield* Effect.all(
             [
               childProcess.exitCode,
@@ -28,6 +55,5 @@ export class CommandRunner extends Effect.Service<CommandRunner>()('services/Com
           return { exitCode: Number(exitCode), stdout, stderr } satisfies CommandResult;
         })
       ),
-  }),
-  dependencies: [],
-}) {}
+  });
+}

@@ -1,5 +1,4 @@
-import { Path } from '@effect/platform';
-import { Data, Effect } from 'effect';
+import { Data, Effect, Path } from 'effect';
 
 export class SafeOutputPathError extends Data.TaggedError('generation/SafeOutputPathError')<{
   readonly filename: string;

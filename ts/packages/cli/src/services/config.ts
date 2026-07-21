@@ -1,4 +1,4 @@
-import { Option, Effect, ConfigProvider, Layer, Logger } from 'effect';
+import { Option, Effect, ConfigProvider, Layer, References } from 'effect';
 import * as constants from 'src/constants';
 import { DEBUG_OVERRIDE_CONFIG } from 'src/effects/debug-config';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -21,16 +21,32 @@ import { APP_CONFIG } from 'src/effects/app-config';
  * Read via `yield* Config.string('USER_API_KEY')`.
  */
 
-export const BaseConfigProviderLive = ConfigProvider.fromEnv();
+/**
+ * Builds a fresh `ConfigProvider` backed by the current process environment.
+ *
+ * This MUST be constructed lazily (a function, not a memoized module-level
+ * constant): `ConfigProvider.fromEnv()` snapshots `process.env` into an
+ * internal trie at construction time, so a module-level constant would freeze
+ * the environment as of first import and never observe later env var changes
+ * (e.g. `vi.stubEnv` in tests, or any other in-process env mutation).
+ */
+export function getBaseConfigProvider(): ConfigProvider.ConfigProvider {
+  return ConfigProvider.fromEnv();
+}
 
 export function extendConfigProvider(baseConfigProvider: ConfigProvider.ConfigProvider) {
   return baseConfigProvider.pipe(
-    ConfigProvider.mapInputPath(key => {
-      if (key.startsWith('DEBUG_OVERRIDE_') || key.startsWith('FORCE_')) {
-        return key;
-      }
-      return `${constants.APP_ENV_CONFIG_KEY_PREFIX}${key}`;
-    })
+    ConfigProvider.mapInput(path =>
+      path.map(segment => {
+        if (typeof segment !== 'string') {
+          return segment;
+        }
+        if (segment.startsWith('DEBUG_OVERRIDE_') || segment.startsWith('FORCE_')) {
+          return segment;
+        }
+        return `${constants.APP_ENV_CONFIG_KEY_PREFIX}${segment}`;
+      })
+    )
   );
 }
 
@@ -41,9 +57,9 @@ const LoggerFromConfigLive = Effect.map(
   APP_CONFIG['LOG_LEVEL'],
   Option.match({
     onNone: () => Layer.empty,
-    onSome: logLevel => Logger.minimumLogLevel(logLevel),
+    onSome: logLevel => Layer.succeed(References.MinimumLogLevel, logLevel),
   })
-).pipe(Layer.unwrapEffect);
+).pipe(Layer.unwrap);
 
 /**
  * Print a debug message for each debug environment variable that overrides dynamic configuration values.

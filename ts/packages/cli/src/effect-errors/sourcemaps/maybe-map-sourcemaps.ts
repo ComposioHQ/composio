@@ -1,6 +1,6 @@
-import type { PlatformError } from '@effect/platform/Error';
-import type { FileSystem } from '@effect/platform/FileSystem';
-import type { Path } from '@effect/platform/Path';
+import type { FileSystem } from 'effect/FileSystem';
+import type { Path } from 'effect/Path';
+import type { PlatformError } from 'effect/PlatformError';
 import { Effect, Predicate, pipe } from 'effect';
 
 import type { JsonParsingError } from 'effect-errors/dependencies/fs';

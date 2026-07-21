@@ -198,7 +198,7 @@ export const createToolRouterSessionContext = (
           connectedAccounts: connectionContext.connectedAccounts,
           availableConnectedAccounts: connectionContext.availableConnectedAccounts,
         },
-      }).pipe(Effect.catchAll(() => Effect.void));
+      }).pipe(Effect.catch(() => Effect.void));
     }
 
     const connectedAccountIds = Object.values(connectionContext.connectedAccounts ?? {}).filter(

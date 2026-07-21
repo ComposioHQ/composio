@@ -1,5 +1,4 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Effect } from 'effect';
+import { Context, Effect, FileSystem, Layer, Path } from 'effect';
 import {
   installSkill,
   resolveInstalledSkillName,
@@ -32,12 +31,12 @@ const checkClaudeSkillCurrent = (
       .readFileString(path.join(target, SKILL_RELEASE_TAG_FILENAME), 'utf8')
       .pipe(
         Effect.map(value => value.trim()),
-        Effect.catchAll(() => Effect.succeed(undefined))
+        Effect.catch(() => Effect.succeed(undefined))
       );
     if (installedReleaseTag !== releaseTag) return false;
     return yield* fs.readFileString(path.join(target, 'SKILL.md'), 'utf8').pipe(
       Effect.as(true),
-      Effect.catchAll(() => Effect.succeed(false))
+      Effect.catch(() => Effect.succeed(false))
     );
   });
 
@@ -51,7 +50,7 @@ export const isClaudeSkillCurrent = (home: string, releaseTag: string) =>
 const isLinkedTo = (fs: FileSystem.FileSystem, path: Path.Path, source: string, target: string) =>
   fs.readLink(source).pipe(
     Effect.map(link => path.resolve(path.dirname(source), link) === target),
-    Effect.catchAll(() => Effect.succeed(false))
+    Effect.catch(() => Effect.succeed(false))
   );
 
 export const hasManagedClaudeSkill = (home: string) =>
@@ -106,10 +105,10 @@ export const removeManagedClaudeSkill = (home: string) =>
     return changed;
   }).pipe(Effect.uninterruptible);
 
-export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
+export class SetupSkillInstaller extends Context.Service<SetupSkillInstaller>()(
   'services/SetupSkillInstaller',
   {
-    effect: Effect.gen(function* () {
+    make: Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const os = yield* NodeOs;
@@ -137,6 +136,7 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
         removeClaudeSkill: removeManagedClaudeSkill(os.homedir),
       };
     }),
-    dependencies: [],
   }
-) {}
+) {
+  static readonly layer = Layer.effect(this, this.make);
+}

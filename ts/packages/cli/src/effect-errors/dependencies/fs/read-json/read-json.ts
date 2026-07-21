@@ -1,4 +1,4 @@
-import { FileSystem } from '@effect/platform/FileSystem';
+import { FileSystem } from 'effect/FileSystem';
 import { Effect, pipe } from 'effect';
 
 import { parseJsonRecord } from 'src/utils/parse-json';
@@ -13,7 +13,7 @@ export const readJsonEffect = <TJson>(filePath: string) =>
         return null;
       }
 
-      const json = yield* parseJsonRecord(data);
+      const json = yield* Effect.fromResult(parseJsonRecord(data));
 
       return json as TJson;
     }),

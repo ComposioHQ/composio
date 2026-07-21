@@ -1,4 +1,4 @@
-import { Schema } from 'effect';
+import { Effect, Schema } from 'effect';
 
 /**
  * A connected account item from the list or retrieve endpoints.
@@ -13,16 +13,18 @@ export const ConnectedAccountItem = Schema.Struct({
   id: Schema.String,
   word_id: Schema.optional(Schema.NullOr(Schema.String)),
   alias: Schema.optional(Schema.NullOr(Schema.String)),
-  status: Schema.Literal(
+  status: Schema.Literals([
     'INITIALIZING',
     'INITIATED',
     'ACTIVE',
     'FAILED',
     'EXPIRED',
     'INACTIVE',
-    'REVOKED'
+    'REVOKED',
+  ]),
+  status_reason: Schema.NullOr(Schema.String).pipe(
+    Schema.withDecodingDefaultType(Effect.succeed(null))
   ),
-  status_reason: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
   is_disabled: Schema.Boolean,
   user_id: Schema.String,
   toolkit: Schema.Struct({
@@ -36,8 +38,8 @@ export const ConnectedAccountItem = Schema.Struct({
   }),
   created_at: Schema.String,
   updated_at: Schema.String,
-  test_request_endpoint: Schema.optionalWith(Schema.String, { default: () => '' }),
-}).annotations({ identifier: 'ConnectedAccountItem' });
+  test_request_endpoint: Schema.String.pipe(Schema.withDecodingDefaultType(Effect.succeed(''))),
+}).annotate({ identifier: 'ConnectedAccountItem' });
 export type ConnectedAccountItem = Schema.Schema.Type<typeof ConnectedAccountItem>;
 
 export const ConnectedAccountItems = Schema.Array(ConnectedAccountItem);
@@ -51,6 +53,6 @@ export type ConnectedAccountItems = Schema.Schema.Type<typeof ConnectedAccountIt
 export const ConnectedAccountItemPermissive = Schema.Struct({
   ...ConnectedAccountItem.fields,
   status: Schema.String,
-}).annotations({ identifier: 'ConnectedAccountItemPermissive' });
+}).annotate({ identifier: 'ConnectedAccountItemPermissive' });
 
 export const ConnectedAccountItemsPermissive = Schema.Array(ConnectedAccountItemPermissive);

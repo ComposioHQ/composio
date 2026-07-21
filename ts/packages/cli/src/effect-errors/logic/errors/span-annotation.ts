@@ -10,7 +10,7 @@ import type { Span } from 'effect/Tracer';
 const spanSymbol = Symbol.for('effect/SpanAnnotation');
 
 const looksLikeSpan = (value: unknown): value is Span =>
-  isTagged(value, 'Span') &&
+  isTagged('Span')(value) &&
   hasProperty(value, 'name') &&
   isString(value.name) &&
   hasProperty(value, 'status') &&
