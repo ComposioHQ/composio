@@ -1,5 +1,7 @@
 import http from 'node:http';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import fs from 'node:fs/promises';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
@@ -958,7 +960,7 @@ const requestPermissionDecision = async (params: {
   const nativeDecision = await requestNativeUiPermissionDecision(params).catch(() => undefined);
   if (nativeDecision === 'allow_once' || nativeDecision === 'allow_session') return nativeDecision;
   if (nativeDecision === 'deny' || nativeDecision === 'dismissed') return 'deny';
-  return requestPermissionInBrowser({ ...params, agent: detectNativeUiCallerAgent() });
+  return requestPermissionInBrowser({ ...params, agent: await detectNativeUiCallerAgent() });
 };
 
 export const gateToolExecution = (params: GateParams) =>

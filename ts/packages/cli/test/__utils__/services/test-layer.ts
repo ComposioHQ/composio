@@ -787,11 +787,12 @@ export const TestLayer = (input?: TestLiveInput) =>
       })
     );
 
-    // Mock `node:os`
+    // Mock operating-system details
     const NodeOsTest = Layer.succeed(
       NodeOs,
       new NodeOs({
         homedir: cwd,
+        tmpdir: tempy.rootTemporaryDirectory,
         arch: 'arm64',
         platform: 'darwin',
       })
@@ -809,7 +810,7 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const ComposioUserContextTest = Layer.provideMerge(
       ComposioUserContextLive,
-      Layer.merge(BunFileSystem.layer, NodeOsTest)
+      Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest)
     );
 
     let rawCliUserConfig = CliUserConfig.make({
@@ -832,7 +833,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             developerModeEnabled: rawCliUserConfig.developer.enabled,
             developerDangerousCommandsEnabled: rawCliUserConfig.developer.destructiveActions,
             experimentalFeatures: rawCliUserConfig.experimentalFeatures,
-            artifactDirectory: undefined,
+            artifactDirectory: Option.getOrUndefined(rawCliUserConfig.artifactDirectory),
             experimentalSubagentTarget: 'auto' as const,
             security: 'auto' as const,
           };

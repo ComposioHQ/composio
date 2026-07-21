@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- standalone MCP stdio sidecar entrypoint runs outside the CLI's Effect runtime; sync fs reads the schema file and writes the structured result file
 import * as fs from 'node:fs';
 import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';

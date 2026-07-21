@@ -1,7 +1,11 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the terminal-streams slice (PR 5 of this stack)
 import fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- migrated with the terminal-streams slice (PR 5 of this stack)
 import os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- migrated with the terminal-streams slice (PR 5 of this stack)
 import path from 'node:path';
 import process from 'node:process';
+// eslint-disable-next-line no-restricted-imports -- migrated with the terminal-streams slice (PR 5 of this stack)
 import { spawn } from 'node:child_process';
 import { Effect } from 'effect';
 import type { AnalyticsEnvelope, TrackEvent } from './types';

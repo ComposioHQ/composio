@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the seam-rules slice (PR 6 of this stack)
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { Effect, Option } from 'effect';

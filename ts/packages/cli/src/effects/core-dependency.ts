@@ -1,5 +1,4 @@
-import path from 'node:path';
-import { Command, FileSystem } from '@effect/platform';
+import { Command, FileSystem, Path } from '@effect/platform';
 import { Effect, Match } from 'effect';
 import {
   ProjectEnvironmentDetector,
@@ -71,7 +70,7 @@ export const detectCoreDependencyPlan = (cwd: string) =>
     } satisfies CoreDependencyPlan;
   });
 
-const readPackageJson = (fs: FileSystem.FileSystem, dir: string) =>
+const readPackageJson = (fs: FileSystem.FileSystem, path: Path.Path, dir: string) =>
   fs.readFileString(path.join(dir, 'package.json')).pipe(
     Effect.andThen(content =>
       Effect.try({
@@ -96,7 +95,8 @@ const detectJsDependencyVersion = (
   plan: Extract<CoreDependencyPlan, { kind: 'js' }>
 ) =>
   Effect.gen(function* () {
-    const dirs = getAncestors(plan.rootDir);
+    const path = yield* Path.Path;
+    const dirs = yield* getAncestors(plan.rootDir);
 
     for (const dir of dirs) {
       const packageJsonPath = path.join(dir, 'node_modules', '@composio', 'core', 'package.json');
@@ -156,7 +156,7 @@ const detectJsDependencyVersion = (
     }
 
     for (const dir of dirs) {
-      const pkg = yield* readPackageJson(fs, dir);
+      const pkg = yield* readPackageJson(fs, path, dir);
       if (!pkg) {
         continue;
       }

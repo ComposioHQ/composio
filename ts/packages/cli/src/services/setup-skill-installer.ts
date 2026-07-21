@@ -13,7 +13,11 @@ import { NodeOs } from './node-os';
 export const resolveSetupSkillReleaseTag = (
   execPath = process.execPath,
   fallbackVersion = APP_VERSION
-): string => readInstalledReleaseTag(execPath) ?? `@composio/cli@${fallbackVersion}`;
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path> =>
+  Effect.map(
+    readInstalledReleaseTag(execPath),
+    releaseTag => releaseTag ?? `@composio/cli@${fallbackVersion}`
+  );
 
 const checkClaudeSkillCurrent = (
   fs: FileSystem.FileSystem,
@@ -111,12 +115,16 @@ export class SetupSkillInstaller extends Effect.Service<SetupSkillInstaller>()(
       const os = yield* NodeOs;
       const isCurrent = (releaseTag: string) =>
         checkClaudeSkillCurrent(fs, path, os.homedir, releaseTag);
+      const installedReleaseTag = resolveSetupSkillReleaseTag().pipe(
+        Effect.provideService(FileSystem.FileSystem, fs),
+        Effect.provideService(Path.Path, path)
+      );
 
       return {
-        isClaudeSkillReady: isCurrent(resolveSetupSkillReleaseTag()),
+        isClaudeSkillReady: Effect.flatMap(installedReleaseTag, isCurrent),
         hasManagedClaudeSkill: hasManagedClaudeSkill(os.homedir),
         ensureClaudeSkill: Effect.gen(function* () {
-          const releaseTag = resolveSetupSkillReleaseTag();
+          const releaseTag = yield* installedReleaseTag;
           if (yield* isCurrent(releaseTag)) return false;
 
           yield* installSkill({

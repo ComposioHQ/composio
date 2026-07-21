@@ -1,4 +1,4 @@
-import path from 'node:path';
+import type { Path } from '@effect/platform';
 import ts from 'typescript';
 
 /**
@@ -23,6 +23,9 @@ export function buildVirtualFileMap(
  * Overrides both `getSourceFile` and `fileExists` so that module resolution
  * can discover virtual files that don't exist on the real file system.
  *
+ * @param path     - `Path` service instance used for the synchronous
+ *                   normalize/resolve/relative lookups; the `ts.CompilerHost`
+ *                   callbacks are sync and cannot yield Effects.
  * @param fallback - `'throw'` raises when a file cannot be resolved by the
  *                   virtual file map, which keeps validation hosts isolated.
  *                   `'delegate'` falls back to the real file system without
@@ -31,6 +34,7 @@ export function buildVirtualFileMap(
 export function patchCompilerHostWithVirtualFiles(
   tsHost: ts.CompilerHost,
   virtualFileMap: Map<string, ts.SourceFile>,
+  path: Path.Path,
   fallback: 'throw' | 'delegate' = 'delegate'
 ): void {
   const currentDirectory = normalizeSlashes(tsHost.getCurrentDirectory());
@@ -40,7 +44,7 @@ export function patchCompilerHostWithVirtualFiles(
 
   const virtualFileLookupMap = new Map<string, ts.SourceFile>();
   for (const [filename, sourceFile] of virtualFileMap) {
-    for (const lookupKey of getVirtualFileLookupKeys(filename, currentDirectory)) {
+    for (const lookupKey of getVirtualFileLookupKeys(path, filename, currentDirectory)) {
       virtualFileLookupMap.set(canonicalizePath(lookupKey), sourceFile);
     }
   }
@@ -81,7 +85,11 @@ export function patchCompilerHostWithVirtualFiles(
   };
 }
 
-function getVirtualFileLookupKeys(filename: string, currentDirectory: string): string[] {
+function getVirtualFileLookupKeys(
+  path: Path.Path,
+  filename: string,
+  currentDirectory: string
+): string[] {
   const normalizedFilename = normalizeSlashes(path.normalize(filename));
 
   if (path.isAbsolute(normalizedFilename)) {

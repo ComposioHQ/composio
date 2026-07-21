@@ -1,5 +1,8 @@
+// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends, run-file writes, and CLI config reads in the child process, outside the Effect runtime
 import * as fs from 'node:fs';
+// eslint-disable-next-line no-restricted-imports -- os.tmpdir() locates the fallback run-files directory in the child process, outside the Effect runtime
 import * as os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import * as path from 'node:path';
 import process from 'node:process';
 import { z } from 'zod';

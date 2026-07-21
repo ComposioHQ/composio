@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { describe, expect, it, assert } from '@effect/vitest';
+import { BunPath } from '@effect/platform-bun';
 import { Effect, Either } from 'effect';
 import { safeOutputPath, SafeOutputPathError } from 'src/generation/safe-output-path';
 
@@ -12,7 +13,7 @@ describe('safeOutputPath', () => {
 
       expect(filePath).toBe(path.join(outputDir, 'gmail.ts'));
       expect(path.isAbsolute(filePath)).toBe(false);
-    })
+    }, Effect.provide(BunPath.layer))
   );
 
   it.effect(
@@ -25,7 +26,7 @@ describe('safeOutputPath', () => {
       assert(Either.isLeft(result));
       expect(result.left).toBeInstanceOf(SafeOutputPathError);
       expect(result.left.filename).toBe(path.resolve('gmail.ts'));
-    })
+    }, Effect.provide(BunPath.layer))
   );
 
   it.effect(
@@ -36,6 +37,6 @@ describe('safeOutputPath', () => {
       assert(Either.isLeft(result));
       expect(result.left).toBeInstanceOf(SafeOutputPathError);
       expect(result.left.filename).toBe('../gmail.ts');
-    })
+    }, Effect.provide(BunPath.layer))
   );
 });

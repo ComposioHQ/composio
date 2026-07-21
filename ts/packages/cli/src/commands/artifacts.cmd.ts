@@ -11,10 +11,9 @@ const cwdCmd = Command.make('cwd').pipe(
   Command.withHandler(() =>
     Effect.gen(function* () {
       const artifacts = yield* resolveCliSessionArtifacts();
-      const directoryPath = Option.match(artifacts, {
-        onNone: () => resolveArtifactsRoot(),
-        onSome: value => value.directoryPath,
-      });
+      const directoryPath = Option.isSome(artifacts)
+        ? artifacts.value.directoryPath
+        : yield* resolveArtifactsRoot;
       process.stdout.write(`${directoryPath}\n`);
     })
   )

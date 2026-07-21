@@ -1,6 +1,5 @@
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Context, Layer, Option } from 'effect';
-import path from 'path';
 import {
   type UserDataWithDefaults,
   UserData,
@@ -151,6 +150,7 @@ export const rawComposioUserContextLive = Layer.effect(
   ComposioUserContext,
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const apiKey = yield* APP_CONFIG['USER_API_KEY'];
     const baseURL = yield* APP_CONFIG['BASE_URL'];
     const webURL = yield* APP_CONFIG['WEB_URL'];
@@ -354,7 +354,7 @@ const resolveMacOSBackend = (
 
 /**
  * Public layer that pre-provides the keyring and CLI-config deps,
- * leaving only `FileSystem` as the external requirement. The keyring
+ * leaving only `FileSystem` and `Path` as external requirements. The keyring
  * backend is chosen dynamically from the user's `config.json`
  * `security` field — `"auto"` / `"keychain-subprocess"` select the
  * subprocess path (default); `"keychain"` opts into the experimental

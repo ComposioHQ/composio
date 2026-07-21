@@ -1,4 +1,6 @@
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import fs from 'node:fs/promises';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import type { Composio as RawComposioClient } from '@composio/client';
 import { assertSafeFileUploadPath } from '@composio/core';

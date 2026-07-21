@@ -2,7 +2,9 @@ import { FileSystem } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Context, Effect, Layer, Option } from 'effect';
 import type { ParseError } from 'effect/ParseResult';
+// eslint-disable-next-line no-restricted-imports -- os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable
 import os from 'node:os';
+// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
 import path from 'node:path';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { getVersion } from 'src/effects/version';

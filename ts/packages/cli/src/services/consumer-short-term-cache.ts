@@ -1,5 +1,4 @@
-import path from 'node:path';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { Effect, Option, Record as EffectRecord, Schema } from 'effect';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -76,7 +75,11 @@ export const decodeCacheStateTolerant = (raw: string): CacheState =>
 
 const cacheKey = (orgId: string, consumerUserId: string) => `${orgId}:${consumerUserId}`;
 
-const cachePath = (cacheDir: string) => path.join(cacheDir, CACHE_FILE);
+const cachePath = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const cacheDir = yield* setupCacheDir;
+  return path.join(cacheDir, CACHE_FILE);
+});
 
 const cwdHash = (cwd: string): string => {
   let hash = 5381;
@@ -131,8 +134,7 @@ const resolveSearchSessionMetadata = (params: {
 const readCache = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const cacheDir = yield* setupCacheDir;
-    const filePath = cachePath(cacheDir);
+    const filePath = yield* cachePath;
     if (!(yield* fs.exists(filePath))) {
       return {} satisfies CacheState;
     }
@@ -146,7 +148,7 @@ const writeCache = (state: CacheState) =>
     const cacheDir = yield* setupCacheDir;
     yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
     yield* fs
-      .writeFileString(cachePath(cacheDir), JSON.stringify(state, null, 2))
+      .writeFileString(yield* cachePath, JSON.stringify(state, null, 2))
       .pipe(Effect.catchAll(() => Effect.void));
   });
 
@@ -393,8 +395,7 @@ export const getFreshConsumerToolRouterConnectedAccountsFromCache = (params: {
 export const invalidateConsumerConnectedToolkitsCache = () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const cacheDir = yield* setupCacheDir;
-    const filePath = cachePath(cacheDir);
+    const filePath = yield* cachePath;
     if (yield* fs.exists(filePath)) {
       yield* fs.remove(filePath);
     }
