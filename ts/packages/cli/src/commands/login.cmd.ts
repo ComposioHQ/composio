@@ -21,7 +21,6 @@ import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/co
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import { APP_VERSION } from 'src/constants';
-import { isInteractiveTerminal } from 'src/utils/stdio';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
@@ -612,7 +611,7 @@ export const browserLogin = (params: {
       expiresAt,
     });
 
-    const canPrompt = isInteractiveTerminal();
+    const canPrompt = (yield* ui.capabilities).isInteractive;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
@@ -782,7 +781,7 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const canPrompt = isInteractiveTerminal();
+      const canPrompt = (yield* ui.capabilities).isInteractive;
 
       if (canPrompt) {
         yield* ui.intro('composio login');

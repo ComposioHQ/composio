@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
 import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
@@ -36,14 +36,14 @@ import {
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
-import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
-import { canRenderTerminalDecoration } from 'src/utils/stdio';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RequiredLayer = Layer.Layer<any, any, never>;
+// Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
+// produced context and error type while still pinning the requirements (RIn) to `never`.
+type RequiredLayer = Layer.Layer<never, unknown, never>;
 
 export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
 
@@ -74,7 +74,7 @@ export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
 
 export const UpgradeBinaryLive = Layer.provide(
   UpgradeBinary.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, FetchHttpClient.layer)
+  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
 ) satisfies RequiredLayer;
 
 export const TriggersRealtimeLive = Layer.provide(
@@ -94,7 +94,7 @@ export const ToolsExecutorLive = Layer.provide(
 
 export const ProjectContextLive = Layer.provide(
   ProjectContext.Default,
-  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, NodeProcess.Default)
+  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, NodeProcess.Default)
 ) satisfies RequiredLayer;
 
 export const SetupSkillInstallerLive = Layer.provide(
@@ -139,14 +139,6 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown,
   unknown
 >;
-
-const commandTelemetryContext = createCliCommandTelemetryContext(
-  process.argv,
-  constants.APP_VERSION
-);
-if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
-  process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
-}
 
 const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
   switch (usage._tag) {
@@ -195,23 +187,44 @@ const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand
   return names;
 };
 
-showUpdateNotice();
-checkForUpdateInBackground();
-trackCliEvent(getPrimaryLifecycleInvokedEvent(commandTelemetryContext));
+const runWithTelemetry = Effect.gen(function* () {
+  const ui = yield* TerminalUI;
+  const terminal = yield* ui.capabilities;
+  const commandTelemetryContext = createCliCommandTelemetryContext(
+    process.argv,
+    constants.APP_VERSION,
+    terminal
+  );
+  if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
+    // effect/Config is read-only; the run id must be written into the environment so the run
+    // command and the child processes it spawns observe the same telemetry run id.
+    process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
+  }
 
-runWithArgs.pipe(
-  Effect.scoped,
-  Effect.mapError(error =>
-    ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
-  ),
-  Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
-  Effect.tapErrorCause(cause =>
-    trackCliEventEffect(
-      getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+  return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
+    Effect.andThen(runWithArgs),
+    Effect.scoped,
+    Effect.mapError(error =>
+      ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
+    ),
+    Effect.tap(() =>
+      trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
+    ),
+    Effect.tapErrorCause(cause =>
+      trackCliEventEffect(
+        getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+      )
     )
-  ),
+  );
+});
+
+checkForUpdateInBackground();
+
+showUpdateNotice.pipe(
+  Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const cliUserConfig = yield* ComposioCliUserConfig;
       const visibility = {
         isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -220,15 +233,15 @@ runWithArgs.pipe(
       };
       const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
       const text = HelpDoc.toAnsiText(error.error).trim();
-      const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
+      const errorEffect = text.length > 0 ? ui.error(text) : Effect.void;
       const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
       const tipEffect =
         flagMatch && valueOptionNames.has(flagMatch[1])
-          ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+          ? ui.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
           : Effect.void;
       const cmdName = matchCommandFromArgv(process.argv, visibility);
       const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-      const helpEffect = helpText ? Console.error(helpText) : Effect.void;
+      const helpEffect = helpText ? ui.error(helpText) : Effect.void;
       return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
@@ -247,11 +260,11 @@ runWithArgs.pipe(
           error.operation === 'uninstall'
             ? 'Composio plugin uninstall was unsuccessful.'
             : 'Composio setup was unsuccessful.';
-        if (canRenderTerminalDecoration()) {
+        if ((yield* ui.capabilities).canDecorate) {
           yield* ui.log.error(error.message);
           yield* ui.outro(summary);
         } else {
-          yield* Console.error(`${summary} ${error.message}`);
+          yield* ui.error(`${summary} ${error.message}`);
         }
         process.exitCode = 1;
       })
@@ -281,7 +294,8 @@ runWithArgs.pipe(
           }
         ).trim();
         if (message.length > 0) {
-          yield* Console.error(message);
+          const ui = yield* TerminalUI;
+          yield* ui.error(message);
           const cliUserConfig = yield* ComposioCliUserConfig;
           const visibility = {
             isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -291,7 +305,7 @@ runWithArgs.pipe(
           const cmdName = matchCommandFromArgv(process.argv, visibility);
           const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
           if (helpText) {
-            yield* Console.error(helpText);
+            yield* ui.error(helpText);
           }
           process.exitCode = 1;
         }

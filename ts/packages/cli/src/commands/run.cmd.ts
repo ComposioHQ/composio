@@ -24,6 +24,7 @@ import {
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { USER_COMPOSIO_DIR } from 'src/constants';
+import { TerminalUI } from 'src/services/terminal-ui';
 
 const file = Options.text('file').pipe(
   Options.withAlias('f'),
@@ -471,6 +472,7 @@ export const runCmd = Command.make('run', {
           helperContext,
           runHelperModuleUrls
         );
+        const ui = yield* TerminalUI;
         let cleanupPaths: ReadonlyArray<string> = [];
         try {
           yield* appendCliSessionHistory({
@@ -484,7 +486,7 @@ export const runCmd = Command.make('run', {
               debug,
             },
           }).pipe(Effect.catchAll(() => Effect.void));
-          process.stderr.write(`RUN_LOG_FILE=${preload.runLogFilePath}\n`);
+          yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
           const runCommand = buildRunCommand({
             path,
             file,

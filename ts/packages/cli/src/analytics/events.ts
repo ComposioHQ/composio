@@ -338,12 +338,15 @@ const isGenericOnlyCommand = (commandPath: string): boolean =>
 
 export const createCliCommandTelemetryContext = (
   argv: ReadonlyArray<string>,
-  cliVersion: string
+  cliVersion: string,
+  terminal: { readonly stdoutIsTTY: boolean; readonly stderrIsTTY: boolean }
 ): CliCommandTelemetryContext => ({
   argv,
   cliVersion,
   commandPath: extractCommandPath(argv),
   flagNames: extractFlagNames(argv),
+  stdoutIsTTY: terminal.stdoutIsTTY,
+  stderrIsTTY: terminal.stderrIsTTY,
   startedAt: Date.now(),
   runId:
     extractCommandPath(argv) === 'run'
@@ -360,8 +363,8 @@ const getCliCommandInvokedEvent = (context: CliCommandTelemetryContext): TrackEv
     command_path: context.commandPath,
     flag_names: context.flagNames,
     arg_count: Math.max(0, context.argv.length - 2),
-    stdout_is_tty: Boolean(process.stdout.isTTY),
-    stderr_is_tty: Boolean(process.stderr.isTTY),
+    stdout_is_tty: context.stdoutIsTTY,
+    stderr_is_tty: context.stderrIsTTY,
   },
 });
 

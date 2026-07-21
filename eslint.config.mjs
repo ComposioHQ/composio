@@ -201,9 +201,12 @@ export default [
           ],
         },
       ],
-      // uncommented by the terminal-streams PR of this stack (the try/catch and
-      // process.env entries by the boundary-ratchet PR).
-      // 'no-restricted-syntax': ['error', ...cliRestrictedSyntax, ...cliProcessStreamRestrictions],
+      'no-restricted-syntax': [
+        'error',
+        // uncommented by the boundary-ratchet PR of this stack
+        // ...cliRestrictedSyntax,
+        ...cliProcessStreamRestrictions,
+      ],
     },
   },
   // uncommented by the test-rules PR of this stack.
@@ -262,14 +265,13 @@ export default [
   //     ],
   //   },
   // },
-  // uncommented by the terminal-streams PR of this stack.
-  // {
-  //   files: ['ts/packages/cli/src/services/terminal-ui.ts'],
-  //   rules: {
-  //     // TerminalUI is the sole CLI boundary for Node's stdout and stderr streams.
-  //     'no-restricted-syntax': ['error', ...cliRestrictedSyntax],
-  //   },
-  // },
+  {
+    files: ['ts/packages/cli/src/services/terminal-ui.ts'],
+    rules: {
+      // TerminalUI is the sole CLI boundary for Node's stdout and stderr streams.
+      'no-restricted-syntax': ['error', ...cliRestrictedSyntax],
+    },
+  },
   {
     // Examples are console-driven references. Keep type-safety rules
     // (no-explicit-any, unused-vars) but drop console noise. The Buffer/crypto

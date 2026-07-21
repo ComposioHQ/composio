@@ -110,8 +110,9 @@ describe('ComposioClientSingleton headers', () => {
     );
   });
 
-  // Fixed instants far in the future/past keep the expiry comparison
-  // deterministic regardless of the clock the session-id reader consults.
+  // The session-id reader compares expiresAt against Clock.currentTimeMillis;
+  // the TestClock sits at epoch 0, so fixed instants around it are
+  // deterministically in the future or the past.
   it.effect('includes the current cwd CLI session ID', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
     const homedir = tempy.temporaryDirectory();
@@ -128,7 +129,7 @@ describe('ComposioClientSingleton headers', () => {
       vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_current',
-        expiresAt: '2099-01-01T00:00:00.000Z',
+        expiresAt: '1970-01-01T00:01:00.000Z',
       });
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>
@@ -161,7 +162,7 @@ describe('ComposioClientSingleton headers', () => {
       vi.stubEnv('COMPOSIO_CACHE_DIR', path.join(homedir, '.composio'));
       yield* writeCliSessionCache(homedir, {
         id: 'cli_s_expired',
-        expiresAt: '1970-01-01T00:01:00.000Z',
+        expiresAt: '1969-12-31T23:59:00.000Z',
       });
       const client = yield* ComposioClientSingleton.get();
       yield* Effect.promise(() =>

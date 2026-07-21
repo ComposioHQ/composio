@@ -14,7 +14,6 @@ import {
 } from 'src/services/setup';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
-import { isInteractiveTerminal } from 'src/utils/stdio';
 
 const target = Options.choice('target', SETUP_TARGETS).pipe(
   Options.withDefault('auto' as SetupTarget),
@@ -146,7 +145,7 @@ const setupBaseCmd = Command.make(
         }
 
         if (!yes && removable.length > 0) {
-          if (!isInteractiveTerminal()) {
+          if (!(yield* ui.capabilities).isInteractive) {
             return yield* Effect.fail(
               new Error('Non-interactive uninstall requires `--yes` to approve local changes.')
             );
@@ -186,7 +185,7 @@ const setupBaseCmd = Command.make(
 
       const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
       if (!yes) {
-        if (!isInteractiveTerminal()) {
+        if (!(yield* ui.capabilities).isInteractive) {
           return yield* Effect.fail(
             new Error('Non-interactive setup requires `--yes` to approve local changes.')
           );

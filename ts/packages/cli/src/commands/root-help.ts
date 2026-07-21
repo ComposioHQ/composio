@@ -1,5 +1,6 @@
-import { Console, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
+import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, dim, gray } from 'src/ui/colors';
 import {
   type CommandVisibility,
@@ -1406,11 +1407,19 @@ export function printSubcommandHelp(
   cmd: string,
   visibility: CommandVisibility,
   helpLevel: HelpLevel = 'default'
-): Effect.Effect<void> {
-  if (cmd === 'dev') return Console.log(renderDevHelp(visibility, helpLevel));
+): Effect.Effect<void, never, TerminalUI> {
+  if (cmd === 'dev') {
+    return Effect.flatMap(TerminalUI, ui =>
+      ui.output(renderDevHelp(visibility, helpLevel), { force: true })
+    );
+  }
   const help = getVisibleSubcommandHelp(cmd, visibility, helpLevel);
-  if (Option.isNone(help)) return Console.log(`Unknown command: ${cmd}`);
-  return Console.log(renderSubcommandHelp(help.value, helpLevel));
+  if (Option.isNone(help)) {
+    return Effect.flatMap(TerminalUI, ui => ui.output(`Unknown command: ${cmd}`, { force: true }));
+  }
+  return Effect.flatMap(TerminalUI, ui =>
+    ui.output(renderSubcommandHelp(help.value, helpLevel), { force: true })
+  );
 }
 
 /**
@@ -1452,7 +1461,7 @@ export function getCommandHelpText(cmd: string, visibility: CommandVisibility): 
 export function printRootHelp(
   visibility: CommandVisibility,
   helpLevel: HelpLevel = 'default'
-): Effect.Effect<void> {
+): Effect.Effect<void, never, TerminalUI> {
   const name = 'composio';
   const developerCommands: ReadonlyArray<CompactCommand> = [
     {
@@ -1584,5 +1593,5 @@ export function printRootHelp(
     '',
   ];
 
-  return Console.log(lines.join('\n'));
+  return Effect.flatMap(TerminalUI, ui => ui.output(lines.join('\n'), { force: true }));
 }

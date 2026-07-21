@@ -1,9 +1,29 @@
-import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { describe, expect, it, layer } from '@effect/vitest';
+import { Data, Effect, Exit } from 'effect';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
+class TestFailure extends Data.TaggedError('test/TestFailure')<{
+  readonly message: string;
+}> {}
+
 describe('TerminalUI', () => {
+  it('classifies prompt and decoration capabilities independently', () => {
+    expect(
+      getTerminalCapabilities({
+        stdin: { isTTY: false },
+        stdout: { isTTY: true },
+        stderr: { isTTY: true },
+      })
+    ).toEqual({
+      stdinIsTTY: false,
+      stdoutIsTTY: true,
+      stderrIsTTY: true,
+      isInteractive: false,
+      canDecorate: true,
+    });
+  });
+
   layer(TestLive())(it => {
     // -----------------------------------------------------------------------
     // Data output
@@ -16,6 +36,16 @@ describe('TerminalUI', () => {
 
         const lines = yield* MockConsole.getLines();
         expect(lines).toContain('ak_test123');
+      })
+    );
+
+    it.scoped('error writes raw diagnostics capturable by MockConsole', () =>
+      Effect.gen(function* () {
+        const ui = yield* TerminalUI;
+        yield* ui.error('diagnostic');
+
+        const lines = yield* MockConsole.getLines();
+        expect(lines).toContain('diagnostic');
       })
     );
 
@@ -119,10 +149,10 @@ describe('TerminalUI', () => {
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         const exit = yield* Effect.exit(
-          ui.withSpinner('loading', Effect.fail(new Error('network error')))
+          ui.withSpinner('loading', Effect.fail(new TestFailure({ message: 'network error' })))
         );
 
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
       })
     );
 
@@ -135,10 +165,12 @@ describe('TerminalUI', () => {
         const ui = yield* TerminalUI;
 
         const exit = yield* Effect.exit(
-          ui.useMakeSpinner('fetching data', _spinner => Effect.fail(new Error('API returned 400')))
+          ui.useMakeSpinner('fetching data', _spinner =>
+            Effect.fail(new TestFailure({ message: 'API returned 400' }))
+          )
         );
 
-        expect(exit._tag).toBe('Failure');
+        expect(Exit.isFailure(exit)).toBe(true);
 
         // The spinner error message should be captured
         const lines = yield* MockConsole.getLines();
@@ -207,12 +239,12 @@ describe('TerminalUI', () => {
               Effect.gen(function* () {
                 // Simulate tapError pattern: callback calls spinner.error(), then the effect fails
                 yield* spinner.error('Login timed out. Please try again.');
-                return yield* Effect.fail(new Error('timed out'));
+                return yield* new TestFailure({ message: 'timed out' });
               })
             )
           );
 
-          expect(exit._tag).toBe('Failure');
+          expect(Exit.isFailure(exit)).toBe(true);
 
           const lines = yield* MockConsole.getLines();
           // Should see the user's error message

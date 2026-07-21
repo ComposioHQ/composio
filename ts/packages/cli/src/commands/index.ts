@@ -541,6 +541,7 @@ export const runWithConfig = Effect.gen(function* () {
     }
     if (isGenerateGraph(normalizedArgv)) {
       return Effect.sync(() => {
+        // eslint-disable-next-line no-restricted-syntax -- migrated with the seam-rules slice (PR 6 of this stack)
         process.stdout.write(`${JSON.stringify(renderCommandHintGraph(), null, 2)}\n`);
       });
     }
@@ -565,6 +566,7 @@ export const runWithConfig = Effect.gen(function* () {
           Effect.option
         );
         return yield* Effect.sync(() => {
+          // eslint-disable-next-line no-restricted-syntax -- migrated with the seam-rules slice (PR 6 of this stack)
           process.stdout.write(
             `${JSON.stringify(
               {
@@ -584,6 +586,7 @@ export const runWithConfig = Effect.gen(function* () {
     }
     if (isDebugWhoIsMyMaster(normalizedArgv)) {
       return Effect.sync(() => {
+        // eslint-disable-next-line no-restricted-syntax -- migrated with the seam-rules slice (PR 6 of this stack)
         process.stdout.write(`${JSON.stringify({ master: detectMaster() }, null, 2)}\n`);
       });
     }
