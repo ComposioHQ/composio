@@ -1,4 +1,4 @@
-import { Args, Command, Options } from '@effect/cli';
+import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
 import {
   getLocalToolsMetaPath,
   isLocalToolkitSlug,
@@ -7,7 +7,7 @@ import {
   updateLocalToolMeta,
   type LocalToolMetaEntry,
 } from '@composio/cli-local-tools';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option, Predicate } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
 
@@ -57,6 +57,19 @@ type ConfigureTarget =
       readonly label: string;
       readonly toolkitSlug: string;
     };
+
+export class LocalToolsConfigureError extends Data.TaggedError(
+  'commands/local-tools/LocalToolsConfigureError'
+)<{
+  readonly message: string;
+  readonly target: ConfigureTarget;
+  readonly cause: unknown;
+}> {}
+
+const errorMessage = (error: unknown): string =>
+  Predicate.isError(error) ? error.message : String(error);
+
+const invalidValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 const resolveTarget = (value: string): ConfigureTarget | null => {
   const localTool = resolveLocalTool(value, { includeUnsupported: true });
@@ -137,7 +150,7 @@ export const localToolsCmd$Configure = Command.make(
       const target = resolveTarget(selector);
       if (!target) {
         return yield* Effect.fail(
-          new Error(
+          invalidValue(
             `Unknown local toolkit/tool "${selector}". Run \`composio local-tools list --all-platforms\` to inspect valid selectors.`
           )
         );
@@ -145,16 +158,28 @@ export const localToolsCmd$Configure = Command.make(
 
       const patch = buildPatch({ command, disable, enable, authenticated, unauthenticated });
       if ('error' in patch) {
-        return yield* Effect.fail(new Error(patch.error));
+        return yield* Effect.fail(invalidValue(patch.error));
       }
 
-      const metadata = yield* Effect.tryPromise(() =>
-        target.kind === 'toolkit'
-          ? updateLocalToolkitMeta(target.key, patch)
-          : updateLocalToolMeta(target.key, patch)
-      );
+      const metadata = yield* Effect.tryPromise({
+        try: () =>
+          target.kind === 'toolkit'
+            ? updateLocalToolkitMeta(target.key, patch)
+            : updateLocalToolMeta(target.key, patch),
+        catch: cause =>
+          new LocalToolsConfigureError({
+            message: errorMessage(cause),
+            target,
+            cause,
+          }),
+      });
       const entry =
-        target.kind === 'toolkit' ? metadata.toolkits[target.key]! : metadata.tools[target.key]!;
+        target.kind === 'toolkit' ? metadata.toolkits[target.key] : metadata.tools[target.key];
+      if (!entry) {
+        return yield* Effect.dieMessage(
+          `Local tools metadata invariant violated: ${target.kind} ${target.key} was not updated`
+        );
+      }
       const metadataPath = getLocalToolsMetaPath();
       const payload = { metadataPath, target, entry };
 

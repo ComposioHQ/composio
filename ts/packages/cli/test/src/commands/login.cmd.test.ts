@@ -1,6 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
 import { Effect, Option } from 'effect';
+import { HelpDoc, ValidationError } from '@effect/cli';
 import path from 'node:path';
 import { FileSystem } from '@effect/platform';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
@@ -59,6 +60,27 @@ describe('CLI: composio login', () => {
         })
       );
     });
+  });
+
+  layer(TestLive())(it => {
+    it.scoped('[Given] conflicting login options [Then] fails with a CLI validation error', () =>
+      Effect.gen(function* () {
+        const error = yield* cli([
+          'login',
+          '--key',
+          'cli_session_key',
+          '--user-api-key',
+          'uak_direct_key',
+        ]).pipe(Effect.flip);
+
+        expect(ValidationError.isValidationError(error)).toBe(true);
+        if (!ValidationError.isValidationError(error)) return;
+        expect(ValidationError.isInvalidValue(error)).toBe(true);
+        expect(HelpDoc.toAnsiText(error.error)).toContain(
+          'Use either `--key` or `--user-api-key`, not both.'
+        );
+      })
+    );
   });
 
   layer(TestLive())(it => {

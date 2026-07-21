@@ -76,7 +76,7 @@ export const CliUserConfig = Schema.Struct({
    * no behavior change on upgrade).
    */
   security: Schema.optionalWith(SecurityBackend, {
-    default: () => 'auto' as const,
+    default: (): SecurityBackend => 'auto',
   }),
 }).annotations({
   identifier: 'CliUserConfig',

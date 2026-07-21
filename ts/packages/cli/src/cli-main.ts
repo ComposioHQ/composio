@@ -236,7 +236,7 @@ showUpdateNotice.pipe(
         stripCwd: true,
       });
       const filteredErrors = captured.errors.filter(
-        error => error.errorType !== 'ToolExecutionError'
+        error => error.errorType !== 'ReportedToolExecutionError'
       );
       if (captured.interrupted || filteredErrors.length > 0) {
         const message = prettyPrintFromCapturedErrors(

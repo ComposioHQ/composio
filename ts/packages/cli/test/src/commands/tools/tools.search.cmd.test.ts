@@ -8,6 +8,7 @@ import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Tools } from 'src/models/tools';
+import { ToolsSearchInputError } from 'src/commands/tools/commands/tools.search.cmd';
 
 const testTools: Tools = [
   {
@@ -97,6 +98,19 @@ const extractFirstJsonObject = (output: string): Record<string, unknown> | null 
 };
 
 describe('CLI: composio search', () => {
+  layer(TestLive(testLiveOptions))('[Given] a blank query [Then] typed validation fails', it => {
+    it.scoped('returns the structured missing-query error', () =>
+      Effect.gen(function* () {
+        const failure = yield* cli(['search', '   ']).pipe(Effect.flip);
+        expect(failure).toBeInstanceOf(ToolsSearchInputError);
+        if (failure instanceof ToolsSearchInputError) {
+          expect(failure.reason).toBe('missing_query');
+          expect(failure.message).toBe('At least one query is required.');
+        }
+      })
+    );
+  });
+
   layer(TestLive(testLiveOptions))('[Given] query "send" [Then] returns JSON by default', it => {
     it.scoped('returns JSON payload by default', () =>
       Effect.gen(function* () {

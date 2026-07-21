@@ -6,18 +6,21 @@ import {
   formatToolLogsTable,
   formatTriggerLogsTable,
 } from 'src/commands/logs-cmd/format';
+import {
+  decodeTriggerLogRecord,
+  type TriggerLogRecord,
+} from 'src/commands/logs-cmd/trigger-log-record';
 import { green, red } from 'src/ui/colors';
 
-type TriggerLog = Logs.TriggerListResponse.Data;
 type ToolLog = Logs.ToolListResponse.Data;
 type ToolLogDetailed = Logs.ToolRetrieveResponse;
 
-const makeTriggerLog = (createdAt: TriggerLog['createdAt'] | number): TriggerLog =>
-  ({
+const makeTriggerLog = (createdAt: string | number): TriggerLogRecord =>
+  decodeTriggerLogRecord({
     id: 'trigger_log_1',
     clientId: 'client_1',
     type: 'trigger',
-    createdAt: createdAt as TriggerLog['createdAt'],
+    createdAt,
     status: 'success',
     appName: 'gmail',
     meta: {
@@ -27,7 +30,7 @@ const makeTriggerLog = (createdAt: TriggerLog['createdAt'] | number): TriggerLog
     },
     entityId: 'entity_123',
     connectionId: 'conn_123',
-  }) as unknown as TriggerLog;
+  });
 
 const makeToolLog = (
   createdAt: ToolLog['createdAt'] | null,
@@ -156,19 +159,21 @@ describe('formatToolLogInfo', () => {
 
 describe('formatTriggerLogInfo', () => {
   it('[Given] trigger detailed log [Then] it renders key fields', () => {
-    const output = formatTriggerLogInfo({
-      id: 'trigger_log_1',
-      createdAt: 0,
-      status: 'success',
-      appName: 'gmail',
-      meta: {
-        triggerId: 'trigger_123',
-        triggerNanoId: 'ti_123',
-        triggerName: 'NEW_GMAIL_MESSAGE',
-      },
-      entityId: 'user_123',
-      connectionId: 'conn_123',
-    });
+    const output = formatTriggerLogInfo(
+      decodeTriggerLogRecord({
+        id: 'trigger_log_1',
+        createdAt: 0,
+        status: 'success',
+        appName: 'gmail',
+        meta: {
+          triggerId: 'trigger_123',
+          triggerNanoId: 'ti_123',
+          triggerName: 'NEW_GMAIL_MESSAGE',
+        },
+        entityId: 'user_123',
+        connectionId: 'conn_123',
+      })
+    );
 
     expect(output).toContain('logId:');
     expect(output).toContain('trigger_log_1');
@@ -183,7 +188,7 @@ describe('formatTriggerLogInfo', () => {
   });
 
   it('[Given] missing fields [Then] it renders fallback dashes', () => {
-    const output = formatTriggerLogInfo({});
+    const output = formatTriggerLogInfo(decodeTriggerLogRecord({}));
     const plain = output.replace(/\x1b\[[0-9;]*m/g, '');
     expect(plain).toContain('logId: -');
     expect(plain).toContain('triggerId: -');
@@ -193,21 +198,23 @@ describe('formatTriggerLogInfo', () => {
   });
 
   it('[Given] retrieve response wrapped under log [Then] it unwraps and renders values', () => {
-    const output = formatTriggerLogInfo({
-      log: {
-        id: 'log_QNzKGStH-ruD',
-        status: 'info',
-        appName: 'gmail',
-        createdAt: '2026-02-25T22:01:22.865Z',
-        entityId: 'pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b',
-        connectionId: 'ca_zkX9njO68E8A',
-        meta: {
-          triggerId: '77ac1dbf-6db0-4039-8dbe-e903b3f2057e',
-          triggerNanoId: 'ti_-nGUzD9N6JNf',
-          triggerName: 'GMAIL_NEW_GMAIL_MESSAGE',
+    const output = formatTriggerLogInfo(
+      decodeTriggerLogRecord({
+        log: {
+          id: 'log_QNzKGStH-ruD',
+          status: 'info',
+          appName: 'gmail',
+          createdAt: '2026-02-25T22:01:22.865Z',
+          entityId: 'pg-test-37ee710c-d5be-4775-91f2-a8e06b937d9b',
+          connectionId: 'ca_zkX9njO68E8A',
+          meta: {
+            triggerId: '77ac1dbf-6db0-4039-8dbe-e903b3f2057e',
+            triggerNanoId: 'ti_-nGUzD9N6JNf',
+            triggerName: 'GMAIL_NEW_GMAIL_MESSAGE',
+          },
         },
-      },
-    });
+      })
+    );
 
     expect(output).toContain('log_QNzKGStH-ruD');
     expect(output).toContain('77ac1dbf-6db0-4039-8dbe-e903b3f2057e');

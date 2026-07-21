@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- migrated with the typed-error slice (PR 8 of this stack)
-import path from 'node:path';
-import { Command, Options } from '@effect/cli';
-import { pipe, Effect, Option, Array } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Array, Data, Effect, Option, pipe, String } from 'effect';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import type { GetCmdParams } from 'src/type-utils';
@@ -17,6 +15,16 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI } from 'src/services/terminal-ui';
+
+export class PythonGenerationWriteError extends Data.TaggedError(
+  'commands/PythonGenerationWriteError'
+)<{
+  readonly cause: unknown;
+  readonly filePath: string;
+  readonly message: string;
+}> {}
+
+const invalidGenerateValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -54,6 +62,7 @@ export function generatePythonTypeStubs({
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const client = yield* ComposioToolkitsRepository;
 
     yield* ui.intro('composio generate py');
@@ -69,7 +78,7 @@ export function generatePythonTypeStubs({
           const normalizedPath = path.normalize(outputDir);
           if (normalizedPath.includes('node_modules')) {
             return Effect.fail(
-              new Error(
+              invalidGenerateValue(
                 'Output directory cannot be inside node_modules. Please specify a different directory.'
               )
             );
@@ -106,7 +115,7 @@ export function generatePythonTypeStubs({
               .pipe(
                 Effect.catchTag('services/InvalidToolkitsError', error =>
                   Effect.fail(
-                    new Error(
+                    invalidGenerateValue(
                       `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. ` +
                         `Available toolkits: ${error.availableToolkits.slice(0, 10).join(', ')}${error.availableToolkits.length > 10 ? '...' : ''}`
                     )
@@ -144,9 +153,10 @@ export function generatePythonTypeStubs({
         // Build version map for toolkits being generated (using validated overrides)
         const versionMap: ToolkitVersionOverrides = new Map();
         for (const toolkit of toolkits) {
-          const version = validatedOverrides.get(toolkit.slug.toLowerCase() as Lowercase<string>);
+          const normalizedSlug = String.toLowerCase(toolkit.slug);
+          const version = validatedOverrides.get(normalizedSlug);
           if (version && version !== 'latest') {
-            versionMap.set(toolkit.slug.toLowerCase() as Lowercase<string>, version);
+            versionMap.set(normalizedSlug, version);
           }
         }
 
@@ -167,15 +177,19 @@ export function generatePythonTypeStubs({
         yield* pipe(
           Effect.all(
             sources.map(([filePath, content]) =>
-              fs
-                .writeFileString(filePath, content)
-                .pipe(
-                  Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`))
+              fs.writeFileString(filePath, content).pipe(
+                Effect.mapError(
+                  cause =>
+                    new PythonGenerationWriteError({
+                      cause,
+                      filePath,
+                      message: `Failed to write file ${filePath}`,
+                    })
                 )
+              )
             ),
             { concurrency: 1 }
-          ),
-          Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
+          )
         );
 
         yield* spinner.stop('Type stubs generated successfully');

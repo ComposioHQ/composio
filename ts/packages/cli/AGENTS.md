@@ -67,7 +67,6 @@ Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.
 | `ComposioToolkitsRepository`       | API client — fetches toolkits, tools, trigger types; validates versions      |
 | `ComposioToolkitsRepositoryCached` | Decorator over base repository with file-based caching and graceful fallback |
 | `NodeOs`                           | OS abstraction (`homedir`, `platform`, `arch`)                               |
-| `EnvLangDetector`                  | Detects project language (TS/Python) from config / lock files                |
 | `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for install instructions                           |
 | `UpgradeBinary`                    | Fetches latest release from GitHub, downloads and replaces binary            |
 

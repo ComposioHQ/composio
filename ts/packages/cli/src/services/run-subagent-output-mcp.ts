@@ -4,10 +4,13 @@ import process from 'node:process';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { Effect } from 'effect';
 import {
   ACP_STRUCTURED_OUTPUT_TOOL_NAME,
   buildStructuredOutputToolSchema,
+  decodeStructuredSchemaJson,
 } from 'src/services/run-subagent-shared';
+import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 
 const readFlag = (name: string): string => {
   const index = process.argv.indexOf(name);
@@ -22,7 +25,7 @@ const main = async (): Promise<void> => {
   const schemaFilePath = readFlag('--schema-file');
   const resultFilePath = readFlag('--result-file');
   const schemaText = fs.readFileSync(schemaFilePath, 'utf8');
-  const structuredSchema = JSON.parse(schemaText) as Record<string, unknown>;
+  const structuredSchema = decodeStructuredSchemaJson(schemaText);
   const toolInputSchema = jsonSchemaToZod(buildStructuredOutputToolSchema(structuredSchema));
 
   const server = new McpServer({
@@ -57,7 +60,9 @@ const main = async (): Promise<void> => {
 
 void main().catch(error => {
   const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
-  // eslint-disable-next-line no-restricted-syntax -- migrated with the typed-error slice (PR 8 of this stack)
-  process.stderr.write(`${message}\n`);
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* ui.error(message);
+  }).pipe(Effect.provide(TerminalUILive), Effect.runSync);
   process.exit(1);
 });

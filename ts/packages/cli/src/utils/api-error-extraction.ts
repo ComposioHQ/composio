@@ -59,27 +59,27 @@ export const extractMessage = (value: unknown, seen?: Set<unknown>): string | un
   // stores the API response body in .error (which itself has .error.message).
   // We prefer the deepest message because outer wrappers often have generic
   // messages like "An unknown error occurred in Effect.tryPromise".
-  if (value && typeof value === 'object') {
+  if (Predicate.isObject(value)) {
     const visited = seen ?? new Set<unknown>();
     if (visited.has(value)) return undefined;
     visited.add(value);
 
     // Try .cause chain first (Effect's UnknownException → real SDK error)
-    if ('cause' in value) {
-      const causeMsg = extractMessage((value as { cause?: unknown }).cause, visited);
+    if (Predicate.hasProperty(value, 'cause')) {
+      const causeMsg = extractMessage(value.cause, visited);
       if (causeMsg) return causeMsg;
     }
 
     // Try .error chain (SDK error → API response body → nested .error.message)
-    if ('error' in value) {
-      const inner = (value as { error?: unknown }).error;
+    if (Predicate.hasProperty(value, 'error')) {
+      const inner = value.error;
       const innerMsg = extractMessage(inner, visited);
       if (innerMsg) return innerMsg;
     }
 
     // Fall back to the wrapper's own message
-    if ('message' in value && typeof (value as { message?: unknown }).message === 'string') {
-      return (value as { message: string }).message;
+    if (Predicate.hasProperty(value, 'message') && Predicate.isString(value.message)) {
+      return value.message;
     }
   }
 
@@ -95,20 +95,20 @@ export const extractSlug = (value: unknown): string | undefined => {
   let current: unknown = value;
   const seen = new Set<unknown>();
 
-  while (current && typeof current === 'object' && !seen.has(current)) {
+  while (Predicate.isObject(current) && !seen.has(current)) {
     seen.add(current);
 
-    if ('slug' in current && typeof (current as { slug?: unknown }).slug === 'string') {
-      return (current as { slug: string }).slug;
+    if (Predicate.hasProperty(current, 'slug') && Predicate.isString(current.slug)) {
+      return current.slug;
     }
 
-    if ('error' in current) {
-      current = (current as { error?: unknown }).error;
+    if (Predicate.hasProperty(current, 'error')) {
+      current = current.error;
       continue;
     }
 
-    if ('cause' in current) {
-      current = (current as { cause?: unknown }).cause;
+    if (Predicate.hasProperty(current, 'cause')) {
+      current = current.cause;
       continue;
     }
 
@@ -137,7 +137,7 @@ export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefi
 
   while (head < queue.length) {
     const current = queue[head++];
-    if (!current || typeof current !== 'object' || seen.has(current)) {
+    if (!Predicate.isObject(current) || seen.has(current)) {
       continue;
     }
     seen.add(current);
@@ -154,12 +154,12 @@ export const extractApiErrorDetails = (value: unknown): ApiErrorDetails | undefi
       }
     }
 
-    if ('error' in current) {
-      queue.push((current as { error?: unknown }).error);
+    if (Predicate.hasProperty(current, 'error')) {
+      queue.push(current.error);
     }
 
-    if ('cause' in current) {
-      queue.push((current as { cause?: unknown }).cause);
+    if (Predicate.hasProperty(current, 'cause')) {
+      queue.push(current.cause);
     }
   }
 

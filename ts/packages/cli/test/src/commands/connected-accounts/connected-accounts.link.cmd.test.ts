@@ -1,5 +1,6 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Console, Effect } from 'effect';
+import { HelpDoc, ValidationError } from '@effect/cli';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
@@ -44,6 +45,12 @@ const makeConnectedAccountsData = (
   items: [makeConnectedAccount()],
   ...overrides,
 });
+
+const connectedAccountWithCredentialFields = {
+  ...makeConnectedAccount(),
+  state: { access_token: 'must-not-leak' },
+  data: { refresh_token: 'must-not-leak' },
+};
 
 const testConfigProvider = ConfigProvider.fromMap(
   new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
@@ -267,6 +274,52 @@ describe('CLI: composio dev connected-accounts link', () => {
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
         expect(output).toContain('not logged in');
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData(),
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] a blank --alias [Then] fails with a CLI validation error', it => {
+    it.scoped('reports the invalid option value before making a link request', () =>
+      Effect.gen(function* () {
+        const error = yield* cli(['link', 'gmail', '--alias', '   ']).pipe(Effect.flip);
+
+        expect(ValidationError.isValidationError(error)).toBe(true);
+        if (!ValidationError.isValidationError(error)) return;
+        expect(ValidationError.isInvalidValue(error)).toBe(true);
+        expect(HelpDoc.toAnsiText(error.error)).toContain('`--alias` cannot be empty.');
+        expect(vi.mocked(open)).not.toHaveBeenCalled();
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: {
+        items: [connectedAccountWithCredentialFields],
+      },
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] raw credential fields [Then] --list emits only schema-approved fields', it => {
+    it.scoped('strips state and data at the response boundary', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--list']);
+
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+        expect(output).not.toContain('must-not-leak');
+        expect(output).not.toContain('access_token');
+        expect(output).not.toContain('refresh_token');
+        expect(extractJsonObject(output)).toStrictEqual({
+          toolkit: 'gmail',
+          total: 1,
+          items: [makeConnectedAccount()],
+        });
       })
     );
   });

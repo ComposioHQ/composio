@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { Record } from 'effect';
 import {
   COMMAND_HINTS,
   commandHintExample,
   commandHintLinks,
   renderCommandHintGraph,
-  type CommandHintId,
 } from 'src/services/command-hints';
 
 describe('command-hints', () => {
   it('has no dangling linked command ids', () => {
-    const ids = new Set(Object.keys(COMMAND_HINTS) as CommandHintId[]);
+    const ids = new Set(Record.keys(COMMAND_HINTS));
 
     for (const id of ids) {
       for (const linkedId of commandHintLinks(id)) {

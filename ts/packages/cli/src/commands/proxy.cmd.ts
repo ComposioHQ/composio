@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Either, Option } from 'effect';
+import { Data, Effect, Either, Option } from 'effect';
 import type {
   SessionProxyExecuteParams,
   SessionProxyExecuteResponse,
@@ -62,20 +62,33 @@ type ProxyMethod = Extract<
   'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 >;
 
-const SUPPORTED_PROXY_METHODS = [
+const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'GET',
   'POST',
   'PUT',
   'DELETE',
   'PATCH',
-] as const satisfies ReadonlyArray<ProxyMethod>;
+];
+
+export class ProxyCommandError extends Data.TaggedError('commands/ProxyCommandError')<{
+  readonly reason: 'missing_consumer_user' | 'toolkit_not_connected';
+  readonly message: string;
+  readonly toolkit?: string;
+  readonly endpoint?: string;
+}> {}
+
+class ProxyRequestError extends Data.TaggedError('commands/ProxyRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
-  if (!SUPPORTED_PROXY_METHODS.includes(normalized as ProxyMethod)) {
+  const supported = SUPPORTED_PROXY_METHODS.find(method => method === normalized);
+  if (!supported) {
     throw new Error('Unsupported method. Use one of GET, POST, PUT, DELETE, PATCH.');
   }
-  return normalized as ProxyMethod;
+  return supported;
 };
 
 export const parseProxyHeader = (value: string): { name: string; value: string } => {
@@ -162,17 +175,9 @@ const handleProxyExecutionError = (params: {
         ].join('\n'),
         'Tips'
       );
-      const output = formatProxyErrorOutput({
-        error: mapped.message,
-        toolkit: params.toolkit,
-        endpoint: params.endpoint,
-        slug: mapped.slugValue,
-      });
-      yield* params.ui.output(output);
-      return yield* Effect.fail(mapped.normalized);
+    } else {
+      yield* params.ui.log.error(mapped.message);
     }
-
-    yield* params.ui.log.error(mapped.message);
     const output = formatProxyErrorOutput({
       error: mapped.message,
       toolkit: params.toolkit,
@@ -234,7 +239,12 @@ const runProxyConnectedToolkitFailFast = (params: {
           2
         )
       );
-      return yield* Effect.fail(new Error(message));
+      return yield* new ProxyCommandError({
+        reason: 'toolkit_not_connected',
+        message,
+        toolkit: params.toolkit,
+        endpoint: params.endpoint,
+      });
     }
   });
 
@@ -272,9 +282,10 @@ export const proxyCmd = Command.make('proxy', {
       );
 
       if (resolvedProject.projectType !== 'CONSUMER' || !resolvedProject.consumerUserId) {
-        return yield* Effect.fail(
-          new Error('No consumer project user is available for proxy execution in this context.')
-        );
+        return yield* new ProxyCommandError({
+          reason: 'missing_consumer_user',
+          message: 'No consumer project user is available for proxy execution in this context.',
+        });
       }
       const consumerUserId = resolvedProject.consumerUserId;
       const normalizedToolkit = toolkit.toLowerCase();
@@ -289,14 +300,16 @@ export const proxyCmd = Command.make('proxy', {
       });
 
       const normalizedMethod = normalizeProxyMethod(method);
-      const headerParameters = headers.map(header => {
-        const parsed = parseProxyHeader(header);
-        return {
-          name: parsed.name,
-          type: 'header' as const,
-          value: parsed.value,
-        };
-      });
+      const headerParameters: NonNullable<SessionProxyExecuteParams['parameters']> = headers.map(
+        header => {
+          const parsed = parseProxyHeader(header);
+          return {
+            name: parsed.name,
+            type: 'header',
+            value: parsed.value,
+          };
+        }
+      );
       const rawBody = yield* resolveBodyInput(data);
       const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
@@ -316,26 +329,32 @@ export const proxyCmd = Command.make('proxy', {
             },
           });
 
-          const resultEither = yield* Effect.tryPromise(() =>
-            client.toolRouter.session.proxyExecute(sessionId, {
-              toolkit_slug: normalizedToolkit,
-              endpoint,
-              method: normalizedMethod,
-              ...(parsedBody !== undefined ? { body: parsedBody } : {}),
-              ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+          return yield* Effect.tryPromise({
+            try: () =>
+              client.toolRouter.session.proxyExecute(sessionId, {
+                toolkit_slug: normalizedToolkit,
+                endpoint,
+                method: normalizedMethod,
+                ...(parsedBody !== undefined ? { body: parsedBody } : {}),
+                ...(headerParameters.length > 0 ? { parameters: headerParameters } : {}),
+              }),
+            catch: cause =>
+              new ProxyRequestError({
+                message: `Failed to proxy ${normalizedMethod} ${endpoint} via "${normalizedToolkit}".`,
+                cause,
+              }),
+          }).pipe(
+            Effect.matchEffect({
+              onFailure: error =>
+                handleProxyExecutionError({
+                  ui,
+                  error,
+                  toolkit: normalizedToolkit,
+                  endpoint,
+                }),
+              onSuccess: Effect.succeed,
             })
-          ).pipe(Effect.either);
-
-          if (resultEither._tag === 'Left') {
-            return yield* handleProxyExecutionError({
-              ui,
-              error: resultEither.left,
-              toolkit: normalizedToolkit,
-              endpoint,
-            });
-          }
-
-          return resultEither.right;
+          );
         })
       );
 

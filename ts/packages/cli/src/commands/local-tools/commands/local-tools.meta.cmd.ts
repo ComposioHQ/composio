@@ -5,9 +5,14 @@ import {
   readLocalToolsMeta,
   writeLocalToolsMeta,
 } from '@composio/cli-local-tools';
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
+
+class LocalToolsMetaError extends Data.TaggedError('commands/LocalToolsMetaError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const json = Options.boolean('json').pipe(
   Options.withDefault(false),
@@ -24,16 +29,31 @@ export const localToolsCmd$Meta = Command.make('meta', { json, init }, ({ json, 
     const ui = yield* TerminalUI;
     const metadataPath = getLocalToolsMetaPath();
     const meta = init
-      ? yield* Effect.tryPromise(async () => {
-          const existing = await readLocalToolsMeta();
-          const next =
-            Object.keys(existing.tools).length === 0 && Object.keys(existing.toolkits).length === 0
-              ? createEmptyLocalToolsMeta()
-              : existing;
-          await writeLocalToolsMeta(next);
-          return next;
+      ? yield* Effect.tryPromise({
+          try: async () => {
+            const existing = await readLocalToolsMeta();
+            const next =
+              Object.keys(existing.tools).length === 0 &&
+              Object.keys(existing.toolkits).length === 0
+                ? createEmptyLocalToolsMeta()
+                : existing;
+            await writeLocalToolsMeta(next);
+            return next;
+          },
+          catch: cause =>
+            new LocalToolsMetaError({
+              message: `Failed to initialize the local tools metadata file at ${metadataPath}.`,
+              cause,
+            }),
         })
-      : yield* Effect.tryPromise(() => readLocalToolsMeta());
+      : yield* Effect.tryPromise({
+          try: () => readLocalToolsMeta(),
+          catch: cause =>
+            new LocalToolsMetaError({
+              message: `Failed to read the local tools metadata file at ${metadataPath}.`,
+              cause,
+            }),
+        });
 
     const payload = {
       metadataPath,

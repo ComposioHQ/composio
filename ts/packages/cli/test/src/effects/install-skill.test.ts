@@ -13,6 +13,7 @@ import {
   resolveSkillReleaseTag,
   resolveTargetSkillPath,
   SKILL_RELEASE_TAG_FILENAME,
+  SkillInstallError,
   type SkillReleaseChannel,
 } from 'src/effects/install-skill';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -277,11 +278,10 @@ describe('install-skill', () => {
       const home = tempy.temporaryDirectory();
       const error = yield* Effect.flip(makeInstallEffect(home, apiBaseUrl));
 
-      // The install pipeline still fails with a plain Error until the
-      // typed-error slice (PR 8 of this stack) introduces SkillInstallError.
-      expect(error).toBeInstanceOf(Error);
-      if (error instanceof Error) {
-        expect(error.message).toContain('Failed to download skill');
+      expect(error).toBeInstanceOf(SkillInstallError);
+      if (error instanceof SkillInstallError) {
+        expect(error.phase).toBe('release');
+        expect(error.cause).toBeDefined();
       }
     })
   );
