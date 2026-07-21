@@ -168,8 +168,6 @@ class ReportedToolExecutionError extends Data.TaggedError(
 )<ToolExecutionErrorFields> {}
 
 const parseArguments = (raw: string) =>
-  // Result (unlike v3's Either) does not implement the Effect protocol in v4,
-  // so it must be lifted explicitly to compose with `yield*` in Effect.gen.
   Effect.fromResult(
     parseJsonRecord(raw).pipe(
       Result.mapError(error =>

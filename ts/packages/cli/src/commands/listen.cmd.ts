@@ -47,12 +47,6 @@ class ListenOptionError extends Data.TaggedError('commands/ListenOptionError')<{
   readonly message: string;
 }> {}
 
-/**
- * v4 migration note: see the equivalent note in `login.cmd.ts` — v3's freeform
- * `ValidationError.invalidValue` has no v4 counterpart, so this now builds a plain typed domain
- * error (matching `ListenCommandError` below) that flows through the CLI's normal top-level
- * `effect-errors` renderer instead of being special-cased by the parser.
- */
 const invalidOptionValue = (message: string) => new ListenOptionError({ message });
 
 const errorMessage = (error: unknown): string =>

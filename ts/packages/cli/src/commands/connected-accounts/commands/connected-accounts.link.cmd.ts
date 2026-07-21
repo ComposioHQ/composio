@@ -188,12 +188,8 @@ const waitForActiveConnection = (
             status: account.status,
           });
         }),
-        // v4 dropped `Schedule.intersect` (AND semantics: recur only while every
-        // constituent schedule would, using the max delay). `Schedule.max` is the
-        // closest replacement for the delay-merging half (max of exponential/spaced
-        // delay), but unlike v3's `intersect` it keeps recurring until *all*
-        // constituents are done rather than stopping at the first one — so the
-        // 15-attempt cap has to be reapplied on top via `Schedule.upTo`.
+        // Retries with the max delay of a 0.3s exponential ramp and a flat 5s spacing,
+        // capped at 15 attempts.
         Schedule.max([Schedule.exponential('0.3 seconds'), Schedule.spaced('5 seconds')]).pipe(
           Schedule.upTo({ times: 15 })
         )

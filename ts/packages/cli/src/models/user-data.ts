@@ -2,13 +2,6 @@ import { Schema } from 'effect';
 import { JSONTransformSchema } from './utils/json-transform-schema';
 import { OptionFromOptionalNullOr } from 'effect/Schema';
 
-// `OptionFromOptionalNullOr` (rather than `OptionFromNullishOr`) tolerates a
-// missing key in addition to an explicit `null`/`undefined` value: real
-// `user_data.json` files written by older CLI versions may predate a field
-// (e.g. `test_user_id`) and simply omit the key. Requiring the key to be
-// present would fail decoding and — via the load fallback in
-// `services/user-context.ts` — silently reset the whole file to defaults,
-// discarding an otherwise-valid `org_id` / `api_key`.
 const userDataFields = {
   /**
    * API key for the Composio API server.
