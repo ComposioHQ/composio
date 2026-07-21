@@ -1,4 +1,4 @@
-import { ConfigProvider, Effect, FileSystem, PlatformError } from 'effect';
+import { ConfigProvider, Effect, FileSystem, PlatformError, Predicate } from 'effect';
 import { JSONParse, JSONParseError } from 'src/effects/json';
 
 /**
@@ -20,7 +20,7 @@ export const configProviderFromLazyJson = (
     const fs = yield* FileSystem.FileSystem;
 
     const isNotFound = (error: PlatformError.PlatformError): boolean =>
-      error.reason._tag === 'NotFound';
+      Predicate.isTagged(error.reason, 'NotFound');
 
     // Memoize the built provider so the file is read (and parsed) at most
     // once per process, no matter how many config paths are looked up.

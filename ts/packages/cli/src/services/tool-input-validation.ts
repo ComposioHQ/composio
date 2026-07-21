@@ -1,4 +1,4 @@
-import { Data, Effect, FileSystem, Option, Path, Schema, SchemaIssue } from 'effect';
+import { Data, Effect, FileSystem, Option, Path, Predicate, Schema, SchemaIssue } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
 import {
   jsonSchemaToEffectSchema,
@@ -117,7 +117,7 @@ export const getCachedToolInputDefinition = (slug: string) =>
       .readFileString(schemaPath, 'utf8')
       .pipe(
         Effect.catchTag('PlatformError', error =>
-          error.reason._tag === 'NotFound' ? Effect.succeed(null) : Effect.fail(error)
+          Predicate.isTagged(error.reason, 'NotFound') ? Effect.succeed(null) : Effect.fail(error)
         )
       );
     if (raw === null) {
@@ -150,7 +150,7 @@ export const invalidateToolInputDefinition = (slug: string) =>
       .remove(schemaPath)
       .pipe(
         Effect.catchTag('PlatformError', error =>
-          error.reason._tag === 'NotFound' ? Effect.void : Effect.fail(error)
+          Predicate.isTagged(error.reason, 'NotFound') ? Effect.void : Effect.fail(error)
         )
       );
   });

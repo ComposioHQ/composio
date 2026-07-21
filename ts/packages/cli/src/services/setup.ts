@@ -293,7 +293,7 @@ const capture = (
 const isCommandNotFoundError = (
   error: PlatformError.PlatformError | SetupProcessError
 ): error is PlatformError.PlatformError =>
-  error._tag === 'PlatformError' && error.reason._tag === 'NotFound';
+  Predicate.isTagged(error, 'PlatformError') && Predicate.isTagged(error.reason, 'NotFound');
 
 const captureOptional = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =>
   capture(adapter, args, 'detect').pipe(
