@@ -110,7 +110,9 @@ describe('CLI: composio', () => {
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        // Exact match: scripts and the setup-plugins e2e fixture parse this
+        // output as a bare semver (v3 contract; v4's default would prefix it).
+        expect(output.trim()).toBe(pkg.version);
       })
     );
   });
@@ -122,7 +124,7 @@ describe('CLI: composio', () => {
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        expect(output.trim()).toBe(pkg.version);
       })
     );
   });

@@ -68,5 +68,8 @@ export const ComposioCliOutputFormatter: CliOutput.Formatter = (() => {
     formatCliError: error => base.formatCliError(withoutSuggestions(error)),
     formatError: error => base.formatError(withoutSuggestions(error)),
     formatErrors: errors => base.formatErrors(errors.map(withoutSuggestions)),
+    // v4's default renders `<name> v<version>`; v3 printed the bare version,
+    // and scripts (including the setup-plugins e2e fixture) parse that output.
+    formatVersion: (_name, version) => version,
   };
 })();
