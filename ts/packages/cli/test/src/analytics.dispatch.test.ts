@@ -16,7 +16,8 @@ import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
 
 const childProcessMocks = vi.hoisted(() => ({
-  on: vi.fn(),
+  once: vi.fn(),
+  removeListener: vi.fn(),
   spawn: vi.fn(),
   unref: vi.fn(),
 }));
@@ -66,10 +67,19 @@ const encodeWorkerPayload = (payload: unknown): string =>
 describe('CLI analytics dispatch', () => {
   beforeEach(() => {
     const child = {
-      on: childProcessMocks.on,
+      once: childProcessMocks.once,
+      removeListener: childProcessMocks.removeListener,
       unref: childProcessMocks.unref,
     };
-    childProcessMocks.on.mockReset().mockReturnValue(child);
+    // spawnDetached resolves only after Node's 'spawn' confirmation event, so
+    // the mock child fires it synchronously on registration.
+    childProcessMocks.once.mockReset().mockImplementation((event: string, listener: () => void) => {
+      if (event === 'spawn') {
+        listener();
+      }
+      return child;
+    });
+    childProcessMocks.removeListener.mockReset().mockReturnValue(child);
     childProcessMocks.spawn.mockReset().mockReturnValue(child);
     childProcessMocks.unref.mockReset();
   });
@@ -219,7 +229,7 @@ describe('CLI analytics dispatch', () => {
         stdio: 'ignore',
       });
       expect(options).not.toHaveProperty('env');
-      expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(childProcessMocks.once).toHaveBeenCalledWith('error', expect.any(Function));
       expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
@@ -274,7 +284,7 @@ describe('CLI analytics dispatch', () => {
         stdio: 'ignore',
       });
       expect(options).not.toHaveProperty('env');
-      expect(childProcessMocks.on).toHaveBeenCalledWith('error', expect.any(Function));
+      expect(childProcessMocks.once).toHaveBeenCalledWith('error', expect.any(Function));
       expect(childProcessMocks.unref).toHaveBeenCalledTimes(1);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
