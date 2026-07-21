@@ -14,7 +14,7 @@ import { logoutCmd } from './logout.cmd';
 import {
   RUN_KNOWN_BOOLEAN_FLAGS,
   RUN_KNOWN_VALUE_FLAGS,
-  RUN_PASSTHROUGH_ARG_MARKER,
+  RunPassthroughArgs,
   runCmd,
 } from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
@@ -231,22 +231,39 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
 };
 
 // `composio run` forwards arbitrary flag-looking tokens straight through to
-// the user's script (`composio run 'code' --flag value`), but v4's CLI
-// lexer treats every `-`-prefixed token as an option candidate, and its
-// subcommand parser drops the trailing operands after a literal `--`
-// instead of forwarding them to `run`'s own `Argument.variadic()` (see
-// `RUN_PASSTHROUGH_ARG_MARKER`'s doc comment in `run.cmd.ts` for the full
-// mechanism this works around). This rewrites every passthrough token that
-// would otherwise be misparsed as an option with a marker `run.cmd.ts`
-// strips back off after the CLI has parsed it as a plain positional value.
+// the user's script (`composio run 'code' --flag value`, or
+// `--file s.ts -- --flag value`), but v4's CLI lexer
+// (`effect/unstable/cli/internal/lexer.ts`) treats every `-`-prefixed token
+// as an option candidate unless it follows a literal `--`, and (see
+// `internal/parser.ts`'s `parseArgs`) that `--` split is computed once for
+// the whole argv and only reaches the *first* command level parsed — a
+// subcommand's own recursive `parseArgs` call is always given
+// `trailingOperands: []`, so trailing operands after `--` never reach a
+// subcommand's `Argument.variadic()` no matter how the tokens are escaped.
+//
+// So rather than smuggle passthrough tokens through the parser, the split
+// below removes them from the argv handed to the CLI parser entirely and
+// returns them out-of-band as `tail`. `runWithConfig` provides `tail` to
+// `run.cmd.ts`'s `RunPassthroughArgs` reference for the scope of a single
+// invocation; the `run` handler reads it directly instead of relying on its
+// own `Argument.variadic()`, which never sees these tokens for a real CLI
+// invocation. Only direct programmatic/test invocations that bypass this
+// front door fall back to the parsed value (see `RunPassthroughArgs`'s doc
+// comment in `run.cmd.ts`).
 
-const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
+type RunPassthroughSplit = {
+  readonly argv: ReadonlyArray<string>;
+  readonly tail: ReadonlyArray<string> | undefined;
+};
+
+const splitRunPassthroughArgs = (argv: ReadonlyArray<string>): RunPassthroughSplit => {
   const args = Arr.drop(argv, 2);
   if (args[0] !== 'run') {
-    return argv;
+    return { argv, tail: undefined };
   }
 
   const normalized: Array<string> = [];
+  const tail: Array<string> = [];
   let sawPositional = false;
   let droppedSeparator = false;
   let index = 1;
@@ -256,7 +273,7 @@ const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray
       // A `--flag=value` token must be recognized by its name, not the whole
       // token: `--file=script.ts` is a `run` option, and treating it as the
       // first positional would demote every later flag (including safety
-      // flags like `--dry-run`) to passthrough script arguments.
+      // flags like `--dry-run`) to the passthrough tail.
       const equalsIndex = token.indexOf('=');
       const flagName = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
       if (RUN_KNOWN_VALUE_FLAGS.has(flagName)) {
@@ -278,35 +295,35 @@ const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray
         continue;
       }
       // First token that isn't a `run`-recognized flag: everything from here
-      // on is a passthrough positional, not a `run` option. A literal `--`
-      // here is just the (now unnecessary) boundary marker itself.
+      // on is the passthrough tail, not a `run` option. A literal `--` here
+      // is just the (now unnecessary) boundary marker itself.
       sawPositional = true;
-      if (token !== '--') {
-        normalized.push(token);
-      } else {
+      if (token === '--') {
         droppedSeparator = true;
+      } else {
+        tail.push(token);
       }
       index += 1;
       continue;
     }
     if (token === '--') {
       // Only the first `--` is the run/script boundary; later ones are script
-      // arguments and must reach the script verbatim (marker-escaped so the
-      // parser reads them as positionals, matching v3's forwarding behavior).
+      // arguments and must reach the script verbatim (matches v3's
+      // forwarding behavior).
       if (!droppedSeparator) {
         droppedSeparator = true;
         index += 1;
         continue;
       }
-      normalized.push(`${RUN_PASSTHROUGH_ARG_MARKER}--`);
+      tail.push('--');
       index += 1;
       continue;
     }
-    normalized.push(token.startsWith('-') ? `${RUN_PASSTHROUGH_ARG_MARKER}${token}` : token);
+    tail.push(token);
     index += 1;
   }
 
-  return [...Arr.take(argv, 2), 'run', ...normalized];
+  return { argv: [...Arr.take(argv, 2), 'run', ...normalized], tail };
 };
 
 const parseBooleanFlag = (argument: string, name: string): Option.Option<boolean> => {
@@ -493,13 +510,18 @@ export const runWithConfig = Effect.gen(function* () {
 
   // `Command.runWith` renders the help document for a failed parse through the
   // ambient Console's `log` (stdout) before re-failing with `ShowHelp` (see
-  // the vendored `Command.ts` `showHelp`). Composio's output contract reserves
-  // stdout for data: help belongs there only when the user explicitly asked
-  // for it (`--help`/`-h`/`--version`/`-v`). For every other invocation the
-  // framework's rendering is decoration, so the runner gets a Console whose
-  // `log` writes through `error`. No CLI code emits data via the Effect
-  // Console service (handlers write through `TerminalUI`), so this only
-  // affects the framework's own help/error rendering.
+  // the vendored `Command.ts` `showHelp`, ~line 1453). Verified this Console
+  // swap is the best available seam, not just the easiest: v4's
+  // `CliOutput.Formatter` only formats to strings and cannot choose a stream,
+  // and `showHelp` hardcodes `Console.log` with no parameter to override it,
+  // so the only alternative would be reimplementing `runWith` itself.
+  // Composio's output contract reserves stdout for data: help belongs there
+  // only when the user explicitly asked for it (`--help`/`-h`/`--version`/
+  // `-v`). For every other invocation the framework's rendering is
+  // decoration, so the runner gets a Console whose `log` writes through
+  // `error`. No CLI code emits data via the Effect Console service (handlers
+  // write through `TerminalUI`), so this only affects the framework's own
+  // help/error rendering.
   const runWithDecorationOnStderr = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const base = yield* Console.Console;
@@ -571,7 +593,7 @@ export const runWithConfig = Effect.gen(function* () {
   return (argv: ReadonlyArray<string>) => {
     const { argv: argvWithoutDangerouslyAllow, dangerouslyAllow } =
       normalizeDangerouslyAllowFlag(argv);
-    const normalizedArgv = normalizeRunPassthroughArgs(
+    const { argv: normalizedArgv, tail: runPassthroughTail } = splitRunPassthroughArgs(
       normalizeHiddenDebugFlags(
         normalizeListenStreamFlag(normalizeVersionShortFlag(argvWithoutDangerouslyAllow))
       )
@@ -583,7 +605,8 @@ export const runWithConfig = Effect.gen(function* () {
           onNone: () => routeRootCommand(normalizedArgv, dangerouslyAllow),
           onSome: installSkill,
         })
-      )
+      ),
+      Effect.provideService(RunPassthroughArgs, runPassthroughTail)
     );
   };
 });

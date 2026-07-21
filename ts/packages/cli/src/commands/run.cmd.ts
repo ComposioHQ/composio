@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { FileSystem } from 'effect/FileSystem';
 import { Path } from 'effect/Path';
-import { Effect, Option } from 'effect';
+import { Context, Effect, Option } from 'effect';
 import { ts } from 'ts-morph';
 import { APP_VERSION } from 'src/constants';
 import { resolveCommandProject } from 'src/services/command-project';
@@ -85,25 +85,18 @@ const args = Argument.string('arg').pipe(
 const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
 
 /**
- * v4's CLI lexer (`effect/unstable/cli/internal/lexer.ts`) treats every
- * `-`-prefixed token as an option candidate unless it follows a literal
- * `--`, and (see `internal/parser.ts`'s `parseArgs`) that `--` split is
- * computed once for the whole argv and only reaches the *first* command
- * level parsed — a subcommand's own recursive `parseArgs` call is always
- * given `trailingOperands: []`, so trailing operands after `--` never reach
- * a subcommand's `Argument.variadic()`. `composio run` needs arbitrary
- * flag-looking tokens to reach the user's script untouched
- * (`composio run 'code' --flag value`, or `--file s.ts -- --flag value`),
- * so `normalizeRunPassthroughArgs` (in `src/commands/index.ts`) rewrites
- * those tokens with this marker *before* the CLI parser ever tokenizes
- * them, and the handler below strips it back off after parsing.
+ * Out-of-band passthrough tail for `run`'s script arguments. See
+ * `splitRunPassthroughArgs` in `src/commands/index.ts` for the full
+ * mechanism this exists for (lexer/parser facts + the handoff); that
+ * function provides this reference for the scope of a single CLI
+ * invocation. `undefined` here means no front door provided it (direct
+ * programmatic/test invocations of this command), so the handler below
+ * falls back to the parsed `Argument.variadic()` value.
  */
-export const RUN_PASSTHROUGH_ARG_MARKER = '@@composio-run-raw@@';
-
-export const unescapeRunPassthroughArg = (value: string): string =>
-  value.startsWith(RUN_PASSTHROUGH_ARG_MARKER)
-    ? value.slice(RUN_PASSTHROUGH_ARG_MARKER.length)
-    : value;
+export const RunPassthroughArgs = Context.Reference<ReadonlyArray<string> | undefined>(
+  'composio/cli/run/RunPassthroughArgs',
+  { defaultValue: () => undefined }
+);
 
 export const extractInlineExecuteToolSlugs = (source: string): ReadonlyArray<string> => {
   if (!source.trim()) {
@@ -468,7 +461,8 @@ export const runCmd = Command.make('run', {
       args: rawArgs,
     }) =>
       Effect.gen(function* () {
-        const args = rawArgs.map(unescapeRunPassthroughArg);
+        const passthroughTail = yield* RunPassthroughArgs;
+        const args = passthroughTail ?? rawArgs;
         const path = yield* Path;
         // eslint-disable-next-line no-restricted-syntax -- reuses the run ID a parent `composio run` process passed via env so nested runs share one run identity
         const runId = process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID();

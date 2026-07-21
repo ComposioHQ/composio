@@ -263,6 +263,28 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
+    it.effect(
+      '[Given] a script arg literally starting with the old escape-marker string [Then] it reaches the script untouched',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          stubBunSpawn(spawn);
+
+          // The passthrough tail is now handed off out-of-band instead of being
+          // smuggled through the parser with a marker string, so a user token
+          // that happens to look like the old marker is never mangled.
+          yield* cli(['run', 'console.log("hi")', '@@composio-run-raw@@literal']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as { cmd: string[] };
+          expect(spawnConfig.cmd.slice(5)).toEqual(['--', '@@composio-run-raw@@literal']);
+          expect(exit).toHaveBeenCalledWith(0);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.effect('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
       Effect.gen(function* () {
         const exit = yield* cli(['run']).pipe(Effect.exit);
