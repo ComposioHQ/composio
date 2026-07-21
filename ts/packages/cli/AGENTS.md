@@ -142,7 +142,30 @@ Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel wor
 - Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `Schema` or narrow them with `Predicate`; an `as` assertion is not validation.
 - Do not inspect private `@effect/cli` descriptor shapes. Use public `CommandDescriptor` operations or keep declarative command metadata that can move to Effect v4's public command tree.
 - Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `catchAll` blocks that flatten distinct failures into one message-only error.
-- Prefer Effect services over Node builtins for platform access in new code: `Path`/`FileSystem`/`Command` from `@effect/platform` instead of `node:path`/`node:fs`/`node:child_process`, and `effect/Config` instead of `process.env`. These rules are policy for new CLI code effective now; the matching ESLint rule groups are defined (commented out) in the root `eslint.config.mjs` and are activated group-by-group over the guardrails PR stack as existing code migrates.
+
+### Effect Boundary Policy
+
+All platform access goes through Effect services. `node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are eslint-banned in `src/`. Use the sanctioned equivalents:
+
+| Need                                                          | Use                                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `@effect/platform` (`const path = yield* Path.Path`)                                                               |
+| Filesystem I/O                                                | `FileSystem` service from `@effect/platform`                                                                                           |
+| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                              |
+| Subprocesses                                                  | `Command` from `@effect/platform`; children that outlive the CLI via `src/services/detached-process.ts` (sole detached-spawn boundary) |
+| Environment reads                                             | `effect/Config`                                                                                                                        |
+| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Either.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                                 |
+
+Conversion patterns, in order of preference:
+
+1. Yield the service inside existing Effect code.
+2. Convert a plain helper into an Effect when its callers are Effect-hosted (`Either` is a subtype of `Effect`, so both compose with `yield*`).
+3. Pass the resolved service instance (e.g. `Path.Path`, `FileSystem.FileSystem`) as a plain parameter into sync callbacks or promise pipelines that cannot become Effects (see `tool-permissions.ts`, `generation/typescript/virtual-compiler-host.ts`).
+4. Modules that self-provide layers add `Path.layer` / `BunFileSystem.layer` / `NodeOs.Default` to their stack instead of reaching for Node builtins.
+
+The only code allowed to bypass services sits at declared runtime boundaries: the `bin.ts` bootstrap, the child-process companion runtime (`run-helpers-runtime.ts`, `run-subagent-*` — bundled into `.mjs` files that run in the user's spawned process), import-time UI setup (`ui/colors.ts`, `ui/redact.ts`), environment **writes** and whole-environment enumeration (which `effect/Config` cannot express), and spawn-time env handshakes between parent and child `composio run` processes. Every such boundary is an inline `// eslint-disable-next-line <rule> -- <reason>` comment registered in `eslint-boundaries.json`.
+
+**Enforcement**: `pnpm run validate:boundaries` (part of `pnpm test`, CI-blocking) fails when any eslint-disable in `src/` is missing from the manifest, lacks a `-- reason`, or uses a file-wide form. Do not add new disables — thread the service instead. If code genuinely cannot run inside the Effect runtime, that is a new boundary: regenerate the manifest with `pnpm run validate:boundaries -- --update` and justify the boundary in the PR. Never add entries to `eslint-suppressions.json`.
 
 ## Vendor Reference Sources
 

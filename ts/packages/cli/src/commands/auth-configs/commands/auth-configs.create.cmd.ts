@@ -1,6 +1,7 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Either, Option } from 'effect';
 import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
+import { parseJsonRecord } from 'src/utils/parse-json';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -62,15 +63,15 @@ export const authConfigsCmd$Create = Command.make(
       // Parse custom credentials JSON if provided
       let parsedCustomCredentials: Record<string, unknown> | undefined;
       if (Option.isSome(customCredentials)) {
-        try {
-          parsedCustomCredentials = JSON.parse(customCredentials.value) as Record<string, unknown>;
-        } catch {
+        const parsed = parseJsonRecord(customCredentials.value);
+        if (Either.isLeft(parsed)) {
           yield* ui.log.error('Invalid JSON in --custom-credentials. Please provide valid JSON.');
           yield* ui.log.step(
             'Example:\n> composio dev auth-configs create "name" --toolkit "gmail" --custom-credentials \'{"client_id":"...","client_secret":"..."}\''
           );
           return;
         }
+        parsedCustomCredentials = parsed.right;
       }
 
       // Parse scopes into array

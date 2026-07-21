@@ -152,6 +152,7 @@ const runWithTelemetry = Effect.gen(function* () {
   if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
     // effect/Config is read-only; the run id must be written into the environment so the run
     // command and the child processes it spawns observe the same telemetry run id.
+    // eslint-disable-next-line no-restricted-syntax -- env write propagates run id to children
     process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
   }
 

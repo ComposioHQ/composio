@@ -90,7 +90,9 @@ const TOOL_VALIDATION_CODES: ReadonlySet<number> = new Set([
 // A parent `composio run` process hands these values to child CLI invocations through the
 // environment at spawn time; the event builders below are plain synchronous functions that
 // run outside any Effect context, so effect/Config is not available here.
+// eslint-disable-next-line no-restricted-syntax -- spawn-time env handoff read outside Effect
 const getInvocationOrigin = (): string => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN ?? 'cli';
+// eslint-disable-next-line no-restricted-syntax -- spawn-time env handoff read outside Effect
 const getParentRunId = (): string | undefined => process.env.COMPOSIO_CLI_PARENT_RUN_ID;
 
 const extractCommandPath = (argv: ReadonlyArray<string>): string => {
@@ -353,7 +355,8 @@ export const createCliCommandTelemetryContext = (
   startedAt: Date.now(),
   runId:
     extractCommandPath(argv) === 'run'
-      ? (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
+      ? // eslint-disable-next-line no-restricted-syntax -- spawn-time env handoff from parent run
+        (process.env.COMPOSIO_CLI_PARENT_RUN_ID ?? crypto.randomUUID())
       : undefined,
 });
 

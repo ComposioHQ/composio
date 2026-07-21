@@ -54,6 +54,7 @@ const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema)
 const syncPath = Effect.runSync(Path.Path.pipe(Effect.provide(Path.layer)));
 
 export const resolveCliConfigDirectorySync = (): string =>
+  // eslint-disable-next-line no-restricted-syntax -- this resolver is called from synchronous non-Effect code, so the COMPOSIO_CACHE_DIR override cannot come from effect/Config here
   process.env.COMPOSIO_CACHE_DIR?.trim() ||
   syncPath.join(os.homedir(), constants.USER_COMPOSIO_DIR);
 

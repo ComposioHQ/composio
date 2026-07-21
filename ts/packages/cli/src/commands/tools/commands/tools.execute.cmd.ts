@@ -316,6 +316,7 @@ const getExecuteOutputEncoder = () => {
   return executeOutputEncoder;
 };
 
+// eslint-disable-next-line no-restricted-syntax -- COMPOSIO_CLI_INVOCATION_ORIGIN is a spawn-time handshake the parent `composio run` process injects into nested CLI invocations, not user configuration, and it must be read fresh at call time
 const shouldStoreLargeExecuteOutput = () => process.env.COMPOSIO_CLI_INVOCATION_ORIGIN !== 'run';
 
 type StoredExecuteOutputSummary = {
@@ -366,6 +367,7 @@ const persistLargeExecuteOutput = (toolSlug: string, json: string, sharedDirecto
       contents: json,
       name: `${toolSlug}_OUTPUT`,
       extension: 'json',
+      // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested executions share one output directory; it is inter-process plumbing, not user configuration
       directoryPath: sharedDirectory?.trim() || process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim(),
     });
 
@@ -1067,6 +1069,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         args: parsedArgs,
         resolvedUserId: 'local',
         selectedConnectedAccountId: undefined,
+        // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` so nested local-tool executions write into its shared output directory; inter-process plumbing, not user configuration
         executeOutputDir: process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() || undefined,
         executeParams: {
           userId: 'local',
@@ -1139,6 +1142,7 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
         )
       : parsedArgs;
     const executeOutputDir =
+      // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_RUN_OUTPUT_DIR is injected per-subprocess by the parent `composio run` and must take precedence over the session artifacts directory; inter-process plumbing, not user configuration
       process.env.COMPOSIO_RUN_OUTPUT_DIR?.trim() ||
       Option.getOrUndefined(
         yield* resolveCliSessionArtifacts({

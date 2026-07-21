@@ -65,6 +65,7 @@ export class NativeUiDecisionMissingError extends Data.TaggedError(
 // prefixes (OPENCLAW_*, CLAUDE_*, CODEX_*). effect/Config can only read named
 // keys, so this module keeps a single raw-env boundary, mirroring the
 // node-os.ts precedent.
+// eslint-disable-next-line no-restricted-syntax -- Sole raw-env boundary of this module: prefix scanning needs the full environment map, which effect/Config cannot enumerate.
 const rawProcessEnv: NodeJS.ProcessEnv = process.env;
 
 const FALSY_ENV_FLAG_VALUES: ReadonlyArray<string> = ['0', 'false', 'no', 'off'];
