@@ -22,7 +22,9 @@ export const readResponseBodyWithLimit = async (
   if (contentLength && /^\d+$/.test(contentLength)) {
     const declaredSize = Number(contentLength);
     if (!Number.isSafeInteger(declaredSize) || declaredSize > maxBytes) {
-      throw sizeLimitError(declaredSize, maxBytes);
+      const error = sizeLimitError(declaredSize, maxBytes);
+      await response.body?.cancel(error).catch(() => undefined);
+      throw error;
     }
   }
 

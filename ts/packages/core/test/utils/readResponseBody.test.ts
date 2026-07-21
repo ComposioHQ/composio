@@ -3,14 +3,16 @@ import { readResponseBodyWithLimit } from '../../src/utils/readResponseBody';
 
 describe('readResponseBodyWithLimit', () => {
   it('rejects an oversized Content-Length before reading the body', async () => {
-    const response = new Response(new ReadableStream(), {
+    const cancel = vi.fn();
+    const response = new Response(new ReadableStream({ cancel }), {
       headers: { 'content-length': '5' },
     });
 
     await expect(readResponseBodyWithLimit(response, 4)).rejects.toThrow(
       'exceeds maximum allowed size'
     );
-    expect(response.bodyUsed).toBe(false);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(response.bodyUsed).toBe(true);
   });
 
   it('rejects and cancels a stream that exceeds the limit without a size header', async () => {
