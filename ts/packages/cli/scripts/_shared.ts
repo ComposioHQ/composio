@@ -3,7 +3,7 @@ import { chmod, copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/pr
 import * as path from 'node:path';
 import process from 'node:process';
 import { Cause, Effect, Exit } from 'effect';
-import type { Teardown } from '@effect/platform/Runtime';
+import type { Teardown } from 'effect/Runtime';
 import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
 import { materializeAcpAdaptersCache } from './_acp-adapters';
 
@@ -302,7 +302,7 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
  * (unless the failure is an interrupt-only cause).
  */
 export const teardown: Teardown = <E, A>(exit: Exit.Exit<E, A>, onExit: (code: number) => void) => {
-  const shouldFail = Exit.isFailure(exit) && !Cause.isInterruptedOnly(exit.cause);
+  const shouldFail = Exit.isFailure(exit) && !Cause.hasInterruptsOnly(exit.cause);
   const errorCode = Number(process.exitCode ?? 1);
   onExit(shouldFail ? errorCode : 0);
 };

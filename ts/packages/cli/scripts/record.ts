@@ -17,9 +17,10 @@
 import process from 'node:process';
 import path from 'node:path';
 import os from 'node:os';
-import { Config, ConfigProvider, Effect, Logger, Layer, LogLevel, Ref } from 'effect';
-import { BunContext, BunFileSystem, BunRuntime } from '@effect/platform-bun';
-import { FileSystem } from '@effect/platform';
+import { Config, ConfigProvider, Effect, Logger, Layer, References, Ref } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunRuntime from '@effect/platform-bun/BunRuntime';
+import { FileSystem } from 'effect/FileSystem';
 import { teardown } from './_shared';
 import { $ } from 'bun';
 import * as p from '@clack/prompts';
@@ -245,7 +246,7 @@ function recordCommand(opts: {
   vhsHeight: number;
 }) {
   return Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+    const fs = yield* FileSystem;
     const {
       group,
       recording,
@@ -290,8 +291,8 @@ function recordCommand(opts: {
       yield* Effect.logDebug(`[probe] ${label}: maxY=${maxY} → height=${height}`);
 
       // Clean up probe artifacts.
-      yield* fs.remove(probeSvgPath).pipe(Effect.orElse(() => Effect.void));
-      yield* fs.remove(probeTapePath).pipe(Effect.orElse(() => Effect.void));
+      yield* fs.remove(probeSvgPath).pipe(Effect.orElseSucceed(() => undefined));
+      yield* fs.remove(probeTapePath).pipe(Effect.orElseSucceed(() => undefined));
     }
 
     // Final recording pass (or the only pass for fixed-height recordings).
@@ -315,7 +316,7 @@ function recordCommand(opts: {
 
 function recordAll() {
   return Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
+    const fs = yield* FileSystem;
 
     yield* Effect.sync(() => p.intro('composio record'));
 
@@ -432,7 +433,7 @@ function recordAll() {
       ]) {
         const stat = yield* fs
           .stat(filePath)
-          .pipe(Effect.orElse(() => Effect.succeed({ size: 0n } as { size: bigint })));
+          .pipe(Effect.orElseSucceed((): { size: bigint } => ({ size: 0n })));
         totalBytes += BigInt(stat.size);
       }
     }
@@ -457,18 +458,15 @@ function recordAll() {
 // --- Bootstrap ---
 
 const ConfigLive = Effect.gen(function* () {
-  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(
-    Config.withDefault(LogLevel.Info)
-  );
+  const logLevel = yield* Config.logLevel('COMPOSIO_LOG_LEVEL').pipe(Config.withDefault('Info'));
 
-  return Logger.minimumLogLevel(logLevel);
-}).pipe(Layer.unwrapEffect, Layer.merge(Layer.setConfigProvider(ConfigProvider.fromEnv())));
+  return Layer.succeed(References.MinimumLogLevel, logLevel);
+}).pipe(Layer.unwrap, Layer.merge(ConfigProvider.layer(ConfigProvider.fromEnv())));
 
 recordAll().pipe(
   Effect.provide(ConfigLive),
-  Effect.provide(Logger.pretty),
-  Effect.provide(BunContext.layer),
-  Effect.provide(BunFileSystem.layer),
+  Effect.provide(Logger.layer([Logger.consolePretty()])),
+  Effect.provide(BunServices.layer),
   Effect.map(() => ({ message: 'Process completed successfully.' })),
   BunRuntime.runMain({
     teardown,
