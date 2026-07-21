@@ -8,8 +8,7 @@
  * parse/validation failure and left rendering (help text, "did you mean"
  * tips) entirely to the caller. This module used to inspect
  * `ValidationError.error` (a `HelpDoc`), render it by hand, and separately
- * look up help text for the resolved command via `root-help.ts` /
- * `command-introspection.ts`.
+ * look up help text for the resolved command via `root-help.ts`.
  *
  * v4's `Command.runWith` (see
  * `ts/vendor/effect/packages/effect/src/unstable/cli/Command.ts`,

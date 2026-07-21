@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, PlatformError, Stream, String } from 'effect';
+import { Context, Effect, Layer, PlatformError, Stream } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 
 export interface CommandResult {
@@ -8,10 +8,7 @@ export interface CommandResult {
 }
 
 const collectText = (stream: Stream.Stream<Uint8Array, PlatformError.PlatformError>) =>
-  stream.pipe(
-    Stream.decodeText(),
-    Stream.runFold(() => String.empty, String.concat)
-  );
+  Stream.mkString(Stream.decodeText(stream));
 
 export class CommandRunner extends Context.Service<
   CommandRunner,

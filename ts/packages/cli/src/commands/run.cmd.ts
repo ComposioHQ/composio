@@ -58,6 +58,25 @@ const skipChecks = Flag.boolean('skip-checks').pipe(
   Flag.withDefault(false)
 );
 
+/**
+ * Flag surface of the `run` command as raw argv tokens, consumed by
+ * `commands/index.ts`'s passthrough normalizer. Kept adjacent to the `Flag`
+ * definitions above: adding, renaming, or aliasing a `run` flag MUST update
+ * these sets, or the normalizer will demote the new flag (and everything
+ * after it) to passthrough script arguments.
+ */
+export const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
+  '--dry-run',
+  '--debug',
+  '--logs-off',
+  '--skip-connection-check',
+  '--skip-tool-params-check',
+  '--skip-checks',
+  '--help',
+  '-h',
+]);
+export const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
+
 const args = Argument.string('arg').pipe(
   Argument.variadic(),
   Argument.withDescription('Inline code followed by arguments, or just arguments when using --file')

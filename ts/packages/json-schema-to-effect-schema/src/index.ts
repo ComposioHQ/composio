@@ -1,6 +1,6 @@
 import { Validator } from '@cfworker/json-schema';
 import type { OutputUnit, Schema as InterpreterSchema, SchemaDraft } from '@cfworker/json-schema';
-import { Schema } from 'effect';
+import { Schema, Result } from 'effect';
 
 export type JsonSchemaValidationIssue = {
   readonly code: string;
@@ -231,13 +231,12 @@ const propertyIsDeclared = (parent: JsonObject | null, key: string): boolean => 
     return false;
   }
 
-  return Object.keys(parent.patternProperties).some(pattern => {
-    try {
-      return new RegExp(pattern, 'u').test(key);
-    } catch {
-      return false;
-    }
-  });
+  return Object.keys(parent.patternProperties).some(pattern =>
+    Result.getOrElse(
+      Result.try(() => new RegExp(pattern, 'u').test(key)),
+      () => false
+    )
+  );
 };
 
 const hasSpecificChildError = (errors: ReadonlyArray<OutputUnit>, error: OutputUnit): boolean =>
@@ -339,12 +338,11 @@ export const jsonSchemaToEffectSchema = (
 
   return Schema.Unknown.check(
     Schema.makeFilter((input): Schema.FilterOutput => {
-      let validation: ReturnType<Validator['validate']>;
-      try {
-        validation = validator.validate(input);
-      } catch (error) {
-        return `JSON Schema validation failed: ${error}`;
+      const validationResult = Result.try(() => validator.validate(input));
+      if (Result.isFailure(validationResult)) {
+        return `JSON Schema validation failed: ${validationResult.failure}`;
       }
+      const validation = validationResult.success;
 
       if (validation.valid) {
         return undefined;

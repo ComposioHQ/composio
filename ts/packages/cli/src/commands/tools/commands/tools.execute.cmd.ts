@@ -1,10 +1,10 @@
 import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
-import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Predicate, Result } from 'effect';
+import { Cause, Data, Effect, Exit, Fiber, HashSet, Option, Result } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
-import { parseJsonRecord } from 'src/utils/parse-json';
+import { parseJsonRecord, isPlainRecord } from 'src/utils/parse-json';
 import { toolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { requireAuth } from 'src/effects/require-auth';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
@@ -181,11 +181,6 @@ const parseArguments = (raw: string) =>
       )
     )
   );
-
-// Predicate.isRecord was removed in v4; Predicate.isObject also matches
-// arrays, so exclude those explicitly (mirrors src/utils/parse-json.ts).
-const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
-  Predicate.isObject(value) && !Array.isArray(value);
 
 const hasNestedKey = (
   record: Record<string, unknown>,

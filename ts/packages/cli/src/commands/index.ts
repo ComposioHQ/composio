@@ -11,7 +11,12 @@ import { signupCmd } from './signup.cmd';
 import { setupCmd } from './setup.cmd';
 import { listenCmd } from './listen.cmd';
 import { logoutCmd } from './logout.cmd';
-import { RUN_PASSTHROUGH_ARG_MARKER, runCmd } from './run.cmd';
+import {
+  RUN_KNOWN_BOOLEAN_FLAGS,
+  RUN_KNOWN_VALUE_FLAGS,
+  RUN_PASSTHROUGH_ARG_MARKER,
+  runCmd,
+} from './run.cmd';
 import { proxyCmd } from './proxy.cmd';
 import { artifactsCmd } from './artifacts.cmd';
 import { installCmd } from './install.cmd';
@@ -159,7 +164,7 @@ export const parseRootInstallSkillRequest = (
 
 // v4 note: v3 pre-flight parsed `argv` to rewrite `ValidationError.CommandMismatch` messages
 // (`scopeCommandMismatch` / `refineRootCommandMismatch`) before `Command.run` rendered them, using
-// the private `CommandDescriptor` tree (see `command-introspection.ts`). `effect/unstable/cli`'s
+// the private `CommandDescriptor` tree. `effect/unstable/cli`'s
 // `Command.runWith` renders its own unknown-subcommand messaging (naming the resolved command's
 // actual subcommands) internally before re-failing with `CliError.ShowHelp`, so `routeRootCommand`
 // below now always delegates straight to `run` instead of pre-flight parsing and rewriting errors.
@@ -234,17 +239,6 @@ const normalizeListenStreamFlag = (argv: ReadonlyArray<string>): ReadonlyArray<s
 // mechanism this works around). This rewrites every passthrough token that
 // would otherwise be misparsed as an option with a marker `run.cmd.ts`
 // strips back off after the CLI has parsed it as a plain positional value.
-const RUN_KNOWN_BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
-  '--dry-run',
-  '--debug',
-  '--logs-off',
-  '--skip-connection-check',
-  '--skip-tool-params-check',
-  '--skip-checks',
-  '--help',
-  '-h',
-]);
-const RUN_KNOWN_VALUE_FLAGS: ReadonlySet<string> = new Set(['--file', '-f']);
 
 const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray<string> => {
   const args = Arr.drop(argv, 2);
@@ -509,27 +503,12 @@ export const runWithConfig = Effect.gen(function* () {
   const runWithDecorationOnStderr = (args: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const base = yield* Console.Console;
+      // Node/Bun consoles carry their methods as own (bound) properties and the
+      // test MockConsole is a plain object literal, so a spread copies every
+      // method; only `log` needs overriding.
       return yield* Effect.provideService(run(args), Console.Console, {
         ...base,
-        assert: (condition, ...rest) => base.assert(condition, ...rest),
-        clear: () => base.clear(),
-        count: label => base.count(label),
-        countReset: label => base.countReset(label),
-        debug: (...rest) => base.debug(...rest),
-        dir: (item, options) => base.dir(item, options),
-        dirxml: (...rest) => base.dirxml(...rest),
-        error: (...rest) => base.error(...rest),
-        group: (...rest) => base.group(...rest),
-        groupCollapsed: (...rest) => base.groupCollapsed(...rest),
-        groupEnd: () => base.groupEnd(),
-        info: (...rest) => base.info(...rest),
         log: (...rest) => base.error(...rest),
-        table: (tabularData, properties) => base.table(tabularData, properties),
-        time: label => base.time(label),
-        timeEnd: label => base.timeEnd(label),
-        timeLog: (label, ...rest) => base.timeLog(label, ...rest),
-        trace: (...rest) => base.trace(...rest),
-        warn: (...rest) => base.warn(...rest),
       });
     });
 

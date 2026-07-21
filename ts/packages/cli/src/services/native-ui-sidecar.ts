@@ -150,13 +150,7 @@ const psParentEntry = (
         ['-o', 'ppid=', '-o', 'comm=', '-p', String(pid)],
         { stdin: Stream.empty }
       );
-      const output = yield* handle.stdout.pipe(
-        Stream.decodeText(),
-        Stream.runFold(
-          () => '',
-          (acc, chunk) => acc + chunk
-        )
-      );
+      const output = yield* Stream.mkString(Stream.decodeText(handle.stdout));
       return output.trim();
     })
   ).pipe(Effect.orElseSucceed(() => undefined));

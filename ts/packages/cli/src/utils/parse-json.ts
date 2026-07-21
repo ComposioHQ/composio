@@ -10,7 +10,9 @@ export class JsonParsingError extends Data.TaggedError('JsonParsingError')<{
   cause: unknown;
 }> {}
 
-const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
+// Predicate.isRecord was removed in v4; Predicate.isObject also matches
+// arrays, so exclude those explicitly.
+export const isPlainRecord = (value: unknown): value is Record<string, unknown> =>
   Predicate.isObject(value) && !Array.isArray(value);
 
 /**

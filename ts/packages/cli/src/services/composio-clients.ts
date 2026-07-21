@@ -12,7 +12,6 @@ import {
   Order,
   String,
   Stream,
-  Sink,
   SynchronizedRef,
 } from 'effect';
 import type { Cause } from 'effect';
@@ -686,15 +685,12 @@ const streamResponseWithByteCount = (
     // Collect all chunks while counting bytes (mutate array in-place for O(N) instead of O(N^2))
     const [chunks, byteSize] = yield* pipe(
       byteStream,
-      Stream.run(
-        Sink.fold<[Uint8Array[], number], Uint8Array>(
-          () => [[], 0],
-          () => true,
-          ([chunks, size], chunk) => {
-            chunks.push(chunk);
-            return Effect.succeed([chunks, size + chunk.byteLength] as [Uint8Array[], number]);
-          }
-        )
+      Stream.runFold(
+        (): [Uint8Array[], number] => [[], 0],
+        ([chunks, size], chunk) => {
+          chunks.push(chunk);
+          return [chunks, size + chunk.byteLength] as [Uint8Array[], number];
+        }
       )
     );
 
