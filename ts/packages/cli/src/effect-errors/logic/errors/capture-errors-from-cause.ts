@@ -10,10 +10,10 @@ import { parseError } from './parse-error';
 export const captureErrorsFrom = <E>(cause: Cause<E>): readonly PrettyError[] =>
   cause.reasons.flatMap((reason): readonly PrettyError[] => {
     if (isFailReason(reason)) {
-      return [parseError(reason.error)];
+      return [parseError(reason.error, reason)];
     }
     if (isDieReason(reason)) {
-      return [parseError(reason.defect)];
+      return [parseError(reason.defect, reason)];
     }
     return [];
   });

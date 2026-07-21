@@ -19,7 +19,7 @@ export interface ErrorData {
   stack: string[] | undefined;
   sources: Omit<ErrorRelatedSources, '_tag'>[] | undefined;
   location: Omit<ErrorLocation, '_tag'>[] | undefined;
-  spans: ErrorSpan[] | undefined;
+  spans: ReadonlyArray<ErrorSpan> | undefined;
   isPlainString: boolean;
 }
 

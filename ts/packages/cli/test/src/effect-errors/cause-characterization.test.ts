@@ -115,11 +115,13 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
   });
 
   // Effect v4 dropped the `effect/SpanAnnotation` internal that let `Effect.fail`/
-  // `Effect.die` stamp the ambient span onto the raised error value (see the canary
-  // in `test/src/effect-errors/span-annotation.test.ts` for the full rationale).
-  // `captureErrorsFrom` can no longer recover a span from a bare failure value, so
-  // this is an intentional, unavoidable behavior change rather than a regression to
-  // chase here.
+  // `Effect.die` stamp the ambient span directly onto the raised error value. The
+  // analogous v4 mechanism recovers the span one level up, from the `Cause`
+  // `Reason`'s `Cause.StackTrace` annotation (see
+  // `src/effect-errors/logic/errors/span-annotation.ts` and the canaries in
+  // `test/src/effect-errors/span-annotation.test.ts`), so `captureErrorsFrom`
+  // still threads the ambient span into the captured error — just as a name
+  // chain rather than the old v3 `Span` object.
   it.effect('threads the ambient span from a runtime failure into the captured error', () =>
     Effect.gen(function* () {
       const cause = yield* Effect.fail(new DbError({ message: 'no db' })).pipe(
@@ -130,7 +132,7 @@ describe('captureErrorsFrom (structural Cause traversal)', () => {
 
       const [error] = captureErrorsFrom(cause);
 
-      expect(error?.span).toBeUndefined();
+      expect(error?.spans.map(span => span.name)).toEqual(['characterization-span']);
     })
   );
 });
@@ -159,10 +161,10 @@ describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
     })
   );
 
-  // Same v4 span-annotation loss as above: with no span recoverable from the raised
-  // error, rendering falls back to the "no spans" path (the usage hint) instead of
-  // a span timeline.
-  it.effect('renders a runtime failure without a span timeline (no span to recover in v4)', () =>
+  // Same v4 mechanism as above, exercised end to end: the span recovered from the
+  // `Cause.StackTrace` reason annotation now renders as a (duration-less) span
+  // timeline instead of falling back to the "consider using spans" hint.
+  it.effect('renders a runtime failure with a span timeline recovered from the Cause', () =>
     Effect.gen(function* () {
       const cause = yield* Effect.fail(new HttpError({ message: 'request failed' })).pipe(
         Effect.withSpan('characterization-span'),
@@ -173,9 +175,9 @@ describe('captureErrors + prettyPrintFromCapturedErrors (rendering)', () => {
       const output = render(yield* capture(cause));
 
       expect(output).toContain('💥  HttpError  • request failed');
-      expect(output).not.toContain('◯');
-      expect(output).not.toContain('characterization-span');
-      expect(output).toContain('Consider using spans to improve errors reporting');
+      expect(output).toContain('◯');
+      expect(output).toContain('characterization-span');
+      expect(output).not.toContain('Consider using spans to improve errors reporting');
     })
   );
 
