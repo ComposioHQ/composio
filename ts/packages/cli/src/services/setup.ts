@@ -1,6 +1,12 @@
 import { Command, Error as PlatformError } from '@effect/platform';
 import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import semver from 'semver';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
+import {
+  getPluginLifecycleFailedEvent,
+  getPluginLifecycleSucceededEvent,
+} from 'src/analytics/events';
+import { APP_VERSION } from 'src/constants';
 import { CommandRunner, type CommandResult } from './command-runner';
 import { SetupSkillInstaller } from './setup-skill-installer';
 
@@ -330,7 +336,11 @@ const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string)
     if (adapter.target === 'codex') {
       const version = versionOutput?.match(/\b\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\b/)?.[0];
       if (!version || !semver.valid(version) || semver.lt(version, MINIMUM_CODEX_SETUP_VERSION)) {
-        return { supported: false, reason: unsupportedInspectionMessage(adapter) };
+        return {
+          supported: false,
+          reason: unsupportedInspectionMessage(adapter),
+          reasonCode: 'codex_too_old',
+        } as const;
       }
     }
 
@@ -350,14 +360,19 @@ const supportsInspection = (adapter: SetupTargetAdapter, versionOutput?: string)
         return {
           supported: false,
           reason: capabilityCheckFailureMessage(adapter, command, commandResultDetail(result)),
-        };
+          reasonCode: 'host_command_failed',
+        } as const;
       }
       const help = `${result.stdout}\n${result.stderr}`;
       if (!/^\s*--json\b/m.test(help)) {
-        return { supported: false, reason: unsupportedInspectionMessage(adapter) };
+        return {
+          supported: false,
+          reason: unsupportedInspectionMessage(adapter),
+          reasonCode: 'no_json_inspection',
+        } as const;
       }
     }
-    return { supported: true };
+    return { supported: true } as const;
   });
 
 const detectAdapter = (adapter: SetupTargetAdapter) =>
@@ -375,6 +390,7 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
               versionCommand,
               errorMessage(cause)
             ),
+            unsupportedReasonCode: 'host_command_failed' as const,
           }),
         onSuccess: result => {
           if (!result || result.exitCode === 127) {
@@ -389,13 +405,18 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
                 versionCommand,
                 commandResultDetail(result)
               ),
+              unsupportedReasonCode: 'host_command_failed' as const,
             });
           }
 
           const version = result.stdout.trim() || result.stderr.trim();
           return supportsInspection(adapter, version).pipe(
             Effect.match({
-              onFailure: cause => ({ supported: false, reason: errorMessage(cause) }),
+              onFailure: cause => ({
+                supported: false as const,
+                reason: errorMessage(cause),
+                reasonCode: 'host_command_failed' as const,
+              }),
               onSuccess: support => support,
             }),
             Effect.map(support =>
@@ -404,12 +425,22 @@ const detectAdapter = (adapter: SetupTargetAdapter) =>
                     available: true,
                     supported: support.supported,
                     version,
-                    ...(support.supported ? {} : { unsupportedReason: support.reason }),
+                    ...(support.supported
+                      ? {}
+                      : {
+                          unsupportedReason: support.reason,
+                          unsupportedReasonCode: support.reasonCode,
+                        }),
                   }
                 : {
                     available: true,
                     supported: support.supported,
-                    ...(support.supported ? {} : { unsupportedReason: support.reason }),
+                    ...(support.supported
+                      ? {}
+                      : {
+                          unsupportedReason: support.reason,
+                          unsupportedReasonCode: support.reasonCode,
+                        }),
                   }
             )
           );
@@ -736,12 +767,16 @@ const FIXED_TARGETS: Readonly<Partial<Record<SetupTarget, ReadonlyArray<AgentHos
   all: ['claude', 'codex'],
 };
 
+export type SetupUnsupportedReasonCode =
+  'codex_too_old' | 'no_json_inspection' | 'host_command_failed' | 'unknown';
+
 export interface SetupTargetDetection {
   readonly target: AgentHost;
   readonly available: boolean;
   readonly supported: boolean;
   readonly version?: string;
   readonly unsupportedReason?: string;
+  readonly unsupportedReasonCode?: SetupUnsupportedReasonCode;
 }
 
 export const detectSetupTargets = (target: SetupTarget) =>
@@ -786,9 +821,22 @@ const runSetupTargets = <E, R>(
   verb: 'Setup' | 'Uninstall'
 ) =>
   Effect.gen(function* () {
+    const operation = verb === 'Uninstall' ? 'uninstall' : 'setup';
+    const phase = verb === 'Uninstall' ? 'uninstall' : 'install';
     const completed: SetupTargetResult[] = [];
     for (const status of inspected) {
       const result = yield* runAdapter(ADAPTERS[status.target], status).pipe(
+        Effect.tapError(error =>
+          trackCliEventEffect(
+            getPluginLifecycleFailedEvent({
+              operation,
+              target: status.target,
+              phase,
+              error,
+              cliVersion: APP_VERSION,
+            })
+          )
+        ),
         Effect.mapError(error => {
           if (completed.length === 0) return error;
           const targets = completed.map(item => item.target).join(', ');
@@ -800,6 +848,24 @@ const runSetupTargets = <E, R>(
           });
         })
       );
+      if (result.plugin_changed) {
+        const action =
+          operation === 'uninstall'
+            ? 'uninstalled'
+            : !status.plugin_installed
+              ? 'installed'
+              : !status.plugin_enabled
+                ? 'enabled'
+                : 'configured';
+        yield* trackCliEventEffect(
+          getPluginLifecycleSucceededEvent({
+            operation,
+            target: result.target,
+            action,
+            cliVersion: APP_VERSION,
+          })
+        );
+      }
       completed.push(result);
     }
     return completed;
