@@ -17,9 +17,9 @@ import {
   Schedule,
   String,
 } from 'effect';
-import { CliConfig, CliOutput, type Command as CliCommand } from 'effect/unstable/cli';
+import { CliConfig, type Command as CliCommand } from 'effect/unstable/cli';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
-import { ComposioCliConfig, ComposioCliOutputFormatter } from 'src/cli-config';
+import { ComposioCliConfig } from 'src/cli-config';
 import * as MockConsole from './mock-console';
 import * as MockTerminal from './mock-terminal';
 import { TerminalUITest } from './terminal-ui-test';
@@ -1273,9 +1273,10 @@ export const TestLayer = (input?: TestLiveInput) =>
     const layers = Layer.mergeAll(
       Layer.succeed(Console.Console, _console),
       CliConfigLive,
-      // Mirror cli-main: version/help/error rendering must go through
-      // Composio's formatter (bare version output, no "Did you mean?").
-      CliOutput.layer(ComposioCliOutputFormatter),
+      // Mirror cli-main: no custom `CliOutput.Formatter` is provided here either
+      // — `CliOutput.Formatter` is a `Context.Reference` that falls back to v4's
+      // own `CliOutput.defaultFormatter()`, so `Command.runWith` renders help,
+      // errors, and `--version` identically to production.
       NodeProcessTest,
       UpgradeBinaryTest,
       ComposioCliUserConfigTest,

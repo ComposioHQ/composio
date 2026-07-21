@@ -13,11 +13,15 @@ describe('CLI: composio', () => {
       Effect.gen(function* () {
         const args = ['version'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
-        const output = lines.join('\n');
-        // MockConsole merges the decoration and data channels; every line must
-        // still be the bare semver (scripts parse this output).
-        expect(new Set(output.trim().split('\n'))).toEqual(new Set([pkg.version]));
+        // `composio version` writes the bare semver to stdout via `ui.output()`
+        // (the data channel scripts parse). Assert the stdout stream directly
+        // instead of the merged buffer, so decoration written elsewhere can
+        // never leak into — or be mistaken for — this contract.
+        const stdoutLines = yield* MockConsole.getLines({ stream: 'stdout' });
+        expect(stdoutLines.length).toBeGreaterThan(0);
+        for (const line of stdoutLines) {
+          expect(line).toBe(pkg.version);
+        }
       })
     );
   });
@@ -28,9 +32,11 @@ describe('CLI: composio', () => {
         const args = ['version'];
         yield* cli(args);
 
-        const lines = yield* MockConsole.getLines();
-        const output = lines.join('\n');
-        expect(new Set(output.trim().split('\n'))).toEqual(new Set(['1.2.3-test']));
+        const stdoutLines = yield* MockConsole.getLines({ stream: 'stdout' });
+        expect(stdoutLines.length).toBeGreaterThan(0);
+        for (const line of stdoutLines) {
+          expect(line).toBe('1.2.3-test');
+        }
       })
     );
   });

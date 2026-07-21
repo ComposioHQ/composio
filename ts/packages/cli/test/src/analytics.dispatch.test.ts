@@ -37,19 +37,33 @@ const cwdHash = (cwd: string): string => {
   return Math.abs(hash >>> 0).toString(36);
 };
 
-// `FetchHttpClient.Fetch` is an `effect` `Context.Reference` whose default
-// value (`globalThis.fetch`) is memoized on first read (see the vendored
-// `effect` source, `Context.ts`'s `getOrCreateDefaultValue`). Once any test in
-// this process reads it, later `vi.spyOn(globalThis, 'fetch')` swaps go
-// unnoticed by `FetchHttpClient`. Tests that assert on fetch calls must
-// therefore provide the spy through the layer explicitly instead of relying
-// on the global being mutated.
-const makePlatformLayer = (home: string, fetchImpl?: typeof fetch) =>
+// Design contract: `FetchHttpClient.Fetch` is an `effect` `Context.Reference`
+// whose default value (`globalThis.fetch`) is memoized on first read (see the
+// vendored `effect` source, `Context.ts`'s `getOrCreateDefaultValue`) — once
+// any test in this process reads the reference, later `vi.spyOn(globalThis,
+// 'fetch')` swaps are invisible to `FetchHttpClient`. Mutating the global is
+// therefore never a reliable way to observe or stub fetch calls made through
+// this reference, in this file or any other. Every test that asserts on fetch
+// — including tests asserting fetch was *not* called — must inject its own
+// mock explicitly via `Layer.succeed(FetchHttpClient.Fetch, fetchImpl)`,
+// which `makePlatformLayerWithFetch` below wires up. Tests that never
+// exercise a fetch-reaching code path use the plain `makePlatformLayer` and
+// don't touch `globalThis.fetch` at all.
+const makePlatformLayer = (home: string) =>
   Layer.mergeAll(
     BunFileSystem.layer,
     BunPath.layer,
     FetchHttpClient.layer,
-    ...(fetchImpl ? [Layer.succeed(FetchHttpClient.Fetch, fetchImpl)] : []),
+    TerminalUITest,
+    Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
+  );
+
+const makePlatformLayerWithFetch = (home: string, fetchImpl: typeof fetch) =>
+  Layer.mergeAll(
+    BunFileSystem.layer,
+    BunPath.layer,
+    FetchHttpClient.layer,
+    Layer.succeed(FetchHttpClient.Fetch, fetchImpl),
     TerminalUITest,
     Layer.succeed(NodeOs, defaultNodeOs({ homedir: home }))
   );
@@ -178,9 +192,7 @@ describe('CLI analytics dispatch', () => {
     vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
     vi.stubEnv('TELEMETRY_DISABLED', 'false');
     vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -188,7 +200,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__analytics-worker',
         encodedPayload,
-      ]).pipe(Effect.provide(makePlatformLayer(home, fetchSpy as unknown as typeof fetch)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
@@ -352,9 +366,7 @@ describe('CLI analytics dispatch', () => {
       request_id: 'req_worker',
     };
     enableTelemetry('uak_worker');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -362,7 +374,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home, fetchSpy as unknown as typeof fetch)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
@@ -383,9 +397,7 @@ describe('CLI analytics dispatch', () => {
   it.effect('ignores malformed codact worker payloads', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry();
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -393,7 +405,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         'not-base64',
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });
@@ -402,9 +416,7 @@ describe('CLI analytics dispatch', () => {
   it.effect('skips codact worker delivery without a user key', () => {
     const home = tempy.temporaryDirectory();
     enableTelemetry('');
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchSpy = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     const failureBody = {
       failure_type: 'wrong_tool_slug',
       ctx: { slug: 'MISSING_TOOL' },
@@ -417,7 +429,9 @@ describe('CLI analytics dispatch', () => {
         'composio',
         '__codact-failure-worker',
         encodeWorkerPayload(failureBody),
-      ]).pipe(Effect.provide(makePlatformLayer(home)));
+      ]).pipe(
+        Effect.provide(makePlatformLayerWithFetch(home, fetchSpy as unknown as typeof fetch))
+      );
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });
