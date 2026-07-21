@@ -1,5 +1,4 @@
 import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
-import type { Composio } from '@composio/client';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
 import { Cause, Data, Effect, Either, Exit, Fiber, HashSet, Option, Predicate } from 'effect';
@@ -49,10 +48,7 @@ import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
-import {
-  formatConnectedAccountChoices,
-  resolveConnectedAccountSelection,
-} from 'src/services/connected-account-selection';
+import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
@@ -67,7 +63,6 @@ import {
 import * as constants from 'src/constants';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
-import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Tool slug (e.g. "GITHUB_CREATE_ISSUE")')
@@ -968,69 +963,6 @@ const emitCachedSchema = (
     );
   });
 
-const resolveExplicitConnectedAccount = (params: {
-  readonly client: Composio;
-  readonly toolkitSlug?: string;
-  readonly userId: string;
-  readonly selector: Option.Option<string>;
-}) =>
-  Effect.gen(function* () {
-    if (!params.toolkitSlug) return undefined;
-    const toolkitSlug = params.toolkitSlug;
-
-    const accounts = yield* Effect.tryPromise({
-      try: () =>
-        params.client.connectedAccounts.list({
-          toolkit_slugs: [toolkitSlug],
-          user_ids: [params.userId],
-          statuses: ['ACTIVE'],
-          limit: 100,
-        }),
-      catch: cause =>
-        new ToolExecutionError({
-          reason: 'connected_account',
-          toolSlug: params.toolkitSlug,
-          message: `Failed to load connected accounts for toolkit "${toolkitSlug}": ${String(cause)}`,
-          cause,
-        }),
-    });
-    const selectableAccounts = yield* decodeConnectedAccountItemsWithFallback(accounts.items).pipe(
-      Effect.mapError(
-        cause =>
-          new ToolExecutionError({
-            reason: 'connected_account',
-            toolSlug: toolkitSlug,
-            message: `Connected accounts for toolkit "${toolkitSlug}" did not match the expected response shape.`,
-            cause,
-          })
-      )
-    );
-
-    const selected = resolveConnectedAccountSelection(
-      selectableAccounts,
-      Option.getOrUndefined(params.selector)
-    );
-
-    if (selected) {
-      return selected.id;
-    }
-
-    if (Option.isNone(params.selector)) {
-      return undefined;
-    }
-
-    const choices = formatConnectedAccountChoices(selectableAccounts);
-    const hint =
-      choices.length > 0
-        ? ` Available accounts: ${choices.join(', ')}.`
-        : ' No active connected accounts were found for that toolkit.';
-    return yield* new ToolExecutionError({
-      reason: 'connected_account',
-      toolSlug: toolkitSlug,
-      message: `No connected account matched "${params.selector.value}" for toolkit "${toolkitSlug}".${hint}`,
-    });
-  });
-
 const resolveExecuteContext = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
@@ -1114,17 +1046,12 @@ const resolveExecuteContext = (params: RunToolsExecuteParams) =>
       orgId: resolvedProject.orgId,
       projectId: resolvedProject.projectId,
     });
-    const accountSelector = cliConfig.isExperimentalFeatureEnabled(
-      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-    )
-      ? params.account
-      : Option.none<string>();
     const toolkitSlug = isLocalToolSlug(params.slug) ? undefined : toolkitFromToolSlug(params.slug);
-    const selectedConnectedAccountId = yield* resolveExplicitConnectedAccount({
+    const selectedConnectedAccountId = yield* resolveConnectedAccountForToolkit({
       client,
       toolkitSlug,
       userId: resolvedUserId.value,
-      selector: accountSelector,
+      selector: params.account,
     });
     const args = Option.isSome(params.file)
       ? yield* getOrFetchToolInputDefinition(params.slug, {

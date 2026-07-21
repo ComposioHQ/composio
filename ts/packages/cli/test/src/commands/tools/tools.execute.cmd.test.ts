@@ -18,6 +18,7 @@ import {
   parseParallelExecuteArgs,
   showToolsExecuteInputHelp,
 } from 'src/commands/tools/commands/tools.execute.cmd';
+import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 
 const testConfigProvider = ConfigProvider.fromMap(
@@ -389,8 +390,13 @@ describe('CLI: composio execute', () => {
       },
     })
   )('[Given] --account selector [Then] execute pins the matched connected account', it => {
-    it.scoped('matches by alias, word_id, or id', () =>
+    it.scoped('matches even when a stale config disables the former experiment', () =>
       Effect.gen(function* () {
+        const cliConfig = yield* ComposioCliUserConfig;
+        yield* cliConfig.update({
+          experimentalFeatures: { multi_account: false },
+        });
+
         yield* cli([
           'execute',
           'GMAIL_SEND_EMAIL',
@@ -1964,10 +1970,11 @@ describe('CLI: composio execute', () => {
 
         expect(output).toContain('USAGE');
         expect(output).toContain(
-          'composio execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] [--parallel]'
+          'composio execute <slug> [-d, --data text] [--account selector] [--file path] [--dry-run] [--get-schema] [--parallel]'
         );
         expect(output).toContain('composio execute GMAIL_SEND_EMAIL --get-schema');
         expect(output).toContain('--parallel');
+        expect(output).toContain('--account <selector>');
         expect(output).toContain('GITHUB_CREATE_AN_ISSUE');
       })
     );

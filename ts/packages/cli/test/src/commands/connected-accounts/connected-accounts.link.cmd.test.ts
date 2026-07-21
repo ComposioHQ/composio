@@ -424,6 +424,7 @@ describe('CLI: composio dev connected-accounts link', () => {
       connectedAccountsData: makeConnectedAccountsData({
         items: [makeConnectedAccount({ status: 'INITIATED' })],
       }),
+      cliUserConfig: { experimentalFeatures: { multi_account: false } },
       toolRouter: {
         create: toolRouterCreateSpy,
         link: toolRouterLinkSpy,
@@ -483,4 +484,29 @@ describe('CLI: composio dev connected-accounts link', () => {
       );
     }
   );
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      connectedAccountsData: makeConnectedAccountsData({
+        items: [makeConnectedAccount({ alias: 'work' })],
+      }),
+      toolRouter: { create: toolRouterCreateSpy, link: toolRouterLinkSpy },
+      fixture: 'global-test-user-id',
+    })
+  )('[Given] a duplicate alias [Then] link explains how to use the existing account', it => {
+    it.scoped('detects the exact existing alias before creating a link', () =>
+      Effect.gen(function* () {
+        yield* cli(['link', 'gmail', '--alias', 'work']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
+
+        expect(output).toContain('Alias "work" is already in use');
+        expect(output).toContain('composio execute <TOOL_SLUG> --account work');
+        expect(output).toContain('composio connections list --toolkit gmail');
+        expect(toolRouterCreateSpy).not.toHaveBeenCalled();
+        expect(toolRouterLinkSpy).not.toHaveBeenCalled();
+      })
+    );
+  });
 });

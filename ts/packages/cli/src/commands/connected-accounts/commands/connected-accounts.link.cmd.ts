@@ -23,8 +23,6 @@ import {
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
 } from 'src/services/connected-account-selection';
-import { ComposioCliUserConfig } from 'src/services/cli-user-config';
-import { CLI_EXPERIMENTAL_FEATURES } from 'src/constants';
 import { decodeConnectedAccountItemsWithFallback } from 'src/effects/decode-connected-account-list';
 
 class ConnectionPollingError extends Data.TaggedError('commands/ConnectionPollingError')<{
@@ -339,6 +337,51 @@ const formatExistingAccountLabels = (
     })
     .join(', ');
 
+const showAliasConflictGuidance = (params: {
+  readonly ui: TerminalUI;
+  readonly alias: string;
+  readonly executeCommand: string;
+  readonly listCommand: string;
+}) =>
+  params.ui.note(
+    [
+      `Use the existing alias: ${params.executeCommand} <TOOL_SLUG> --account ${params.alias} -d '{ ... }'`,
+      `List connected accounts: ${params.listCommand}`,
+    ].join('\n'),
+    'Tips'
+  );
+
+const ensureAliasIsAvailable = (params: {
+  readonly ui: TerminalUI;
+  readonly alias: Option.Option<string>;
+  readonly existingAccounts: ReadonlyArray<{
+    readonly id: string;
+    readonly alias?: string | null;
+  }>;
+  readonly executeCommand: string;
+  readonly listCommand: string;
+}) =>
+  Effect.gen(function* () {
+    if (Option.isNone(params.alias)) return true as const;
+
+    const normalizedAlias = params.alias.value.toLowerCase();
+    const existing = params.existingAccounts.find(
+      item => item.alias?.trim().toLowerCase() === normalizedAlias
+    );
+    if (!existing) return true as const;
+
+    yield* params.ui.log.error(
+      `Alias "${params.alias.value}" is already in use by connected account "${existing.id}".`
+    );
+    yield* showAliasConflictGuidance({
+      ui: params.ui,
+      alias: params.alias.value,
+      executeCommand: params.executeCommand,
+      listCommand: params.listCommand,
+    });
+    return false as const;
+  });
+
 const ensureAliasForAdditionalAccount = (params: {
   readonly ui: TerminalUI;
   readonly alias: Option.Option<string>;
@@ -612,6 +655,15 @@ const handleLegacyAuthConfigLink = (params: {
       // failure must not abort the link flow.
       Effect.catchAll(() => Effect.succeed({ items: [] }))
     );
+    const aliasAvailable = yield* ensureAliasIsAvailable({
+      ui: params.ui,
+      alias: normalizedAlias,
+      existingAccounts: existingAccounts.items,
+      executeCommand: 'composio dev playground-execute',
+      listCommand: 'composio dev connected-accounts list',
+    });
+    if (!aliasAvailable) return;
+
     const linkOpt = yield* params.ui
       .withSpinner(
         'Creating link session...',
@@ -702,13 +754,7 @@ const runConnectedAccountsLink = (params: {
   Effect.gen(function* () {
     if (!(yield* requireAuth)) return;
 
-    const cliConfig = yield* ComposioCliUserConfig;
-    const aliasOption = cliConfig.isExperimentalFeatureEnabled(
-      CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT
-    )
-      ? params.alias
-      : Option.none<string>();
-    const normalizedAliasOption = yield* resolveNormalizedAliasOption(aliasOption);
+    const normalizedAliasOption = yield* resolveNormalizedAliasOption(params.alias);
 
     const ui = yield* TerminalUI;
     const clientSingleton = yield* ComposioClientSingleton;
@@ -767,7 +813,7 @@ const runConnectedAccountsLink = (params: {
         projectName: params.projectName,
         noWait: params.noWait,
         noBrowser: params.noBrowser,
-        alias: aliasOption,
+        alias: params.alias,
         ui,
         clientSingleton,
         projectContext,
@@ -809,6 +855,14 @@ const runConnectedAccountsLink = (params: {
       // failure must not abort the link flow.
       Effect.catchAll(() => Effect.succeed({ items: [] }))
     );
+    const aliasAvailable = yield* ensureAliasIsAvailable({
+      ui,
+      alias: normalizedAliasOption,
+      existingAccounts: existingAccounts.items,
+      executeCommand: 'composio execute',
+      listCommand: `composio connections list --toolkit ${toolkitSlug}`,
+    });
+    if (!aliasAvailable) return;
 
     const linkOpt = yield* ui
       .withSpinner(

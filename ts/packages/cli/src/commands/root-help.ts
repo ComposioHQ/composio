@@ -49,7 +49,7 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
     description:
       'Execute a tool. Validates inputs and connections automatically; use it aggressively.',
     usage:
-      'execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
+      'execute <slug> [-d, --data text] [--account selector] [--file path] [--dry-run] [--get-schema] | execute -p <slug> -d <text> <slug> -d <text> ...',
     options: [
       { name: '<slug>', description: 'Tool slug (e.g. "GITHUB_CREATE_ISSUE")' },
       {
@@ -62,6 +62,10 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
         description: 'Execute repeated <slug> -d <text> pairs concurrently',
       },
       {
+        name: '--account',
+        description: 'Select a connected account by alias, word_id, or account ID',
+      },
+      {
         name: '--file',
         description: 'Inject a local file path into the single file_uploadable input',
       },
@@ -72,8 +76,11 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
   simple({
     name: 'link',
     description: 'Connect your account for a toolkit/app.',
-    usage: 'link [<toolkit>]',
-    options: [{ name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' }],
+    usage: 'link [<toolkit>] [--alias text]',
+    options: [
+      { name: '<toolkit>', description: 'Toolkit slug to link (e.g. "github", "gmail")' },
+      { name: '--alias', description: 'Alias for this connected account' },
+    ],
   }),
   tagged({
     name: 'run',
@@ -91,13 +98,17 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
     description:
       'Create a temporary subscription for consumer-project events and persist each payload into the session artifact folder.',
     usage:
-      'listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+      'listen <slug> [-p, --params text] [--account selector] [--max-events integer] [--timeout text] [--stream [text]]',
     options: [
       { name: '<slug>', description: 'Trigger slug (e.g. "GMAIL_NEW_GMAIL_MESSAGE")' },
       {
         name: '-p, --params',
         description:
           "Trigger create params as JSON or JS-style object, e.g. -p '{ trigger_config: { ... } }'.",
+      },
+      {
+        name: '--account',
+        description: 'Select a connected account by alias, word_id, or account ID',
       },
       {
         name: '--max-events',
@@ -119,10 +130,11 @@ const CORE_COMMANDS: ReadonlyArray<TaggedValue<DetailedCommand>> = [
     name: 'proxy',
     description:
       'curl-like access to any toolkit API through Composio using your connected account.',
-    usage: 'proxy <url> --toolkit text [-X method] [-H header]... [-d data]',
+    usage: 'proxy <url> --toolkit text [--account selector] [-X method] [-H header]... [-d data]',
     options: [
       { name: '<url>', description: 'Full API endpoint URL' },
       { name: '--toolkit', description: 'Toolkit slug whose connected account should be used' },
+      { name: '--account', description: 'Connected account alias, word_id, or account ID' },
       { name: '-X, --method', description: 'HTTP method (GET, POST, PUT, DELETE, PATCH)' },
       { name: '-H, --header', description: 'Header in "Name: value" format. Repeat for multiple.' },
       { name: '-d, --data', description: 'Request body as raw text, JSON, @file, or - for stdin' },
@@ -421,7 +433,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   },
   execute: {
     usage:
-      'composio execute <slug> [-d, --data text] [--file path] [--dry-run] [--get-schema] [--parallel]',
+      'composio execute <slug> [-d, --data text] [--account selector] [--file path] [--dry-run] [--get-schema] [--parallel]',
     description:
       'Execute a tool by slug. Validates inputs against cached schemas and checks connections automatically — just try it and it will tell you what to fix.',
     args: [
@@ -440,6 +452,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       {
         name: '-p, --parallel',
         description: 'Execute repeated TOOL_SLUG -d <text> groups concurrently',
+      },
+      {
+        name: '--account <selector>',
+        description: 'Select a connected account by alias, word_id, or connected account ID',
       },
       {
         name: '--file <path>',
@@ -466,8 +482,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       '# Send an email',
       `composio execute GMAIL_SEND_EMAIL -d '{ recipient_email: "a@b.com", subject: "Hello", body: "World" }'`,
       '',
-      '# Create a GitHub issue',
-      `composio execute GITHUB_CREATE_ISSUE -d '{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }'`,
+      '# Create a GitHub issue with a named account',
+      `composio execute GITHUB_CREATE_ISSUE --account work -d '{ owner: "acme", repo: "app", title: "Bug report", body: "Steps to reproduce..." }'`,
       '',
       '# Preview what a tool call would send without executing',
       `composio execute SLACK_SEND_A_MESSAGE_TO_A_SLACK_CHANNEL --dry-run -d '{ channel: "general", text: "Hello team" }'`,
@@ -490,7 +506,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
   },
   listen: experimental(CLI_EXPERIMENTAL_FEATURES.LISTEN, {
     usage:
-      'composio listen <slug> [-p, --params text] [--max-events integer] [--timeout text] [--stream [text]]',
+      'composio listen <slug> [-p, --params text] [--account selector] [--max-events integer] [--timeout text] [--stream [text]]',
     description:
       'Create a temporary subscription for consumer-project events so background agents can easily consume new emails, Slack messages, and other trigger payloads from artifacts.',
     args: [{ name: '<slug>', description: 'Trigger slug to create and listen to' }],
@@ -499,6 +515,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
         name: '-p, --params <text>',
         description:
           'Trigger create params as JSON/JS object, @file, or - for stdin. Pass optional trigger config fields only.',
+      },
+      {
+        name: '--account <selector>',
+        description: 'Select a connected account by alias, word_id, or connected account ID',
       },
       {
         name: '--max-events <integer>',
@@ -517,7 +537,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     examples: [
       'composio listen GMAIL_NEW_GMAIL_MESSAGE',
       'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --max-events 5',
-      'composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 5m',
+      'composio listen GMAIL_NEW_GMAIL_MESSAGE --account work --timeout 5m',
       "composio listen GMAIL_NEW_GMAIL_MESSAGE --timeout 1hr --stream '.data.threadId'",
       'composio listen SLACK_RECEIVE_MESSAGE -p \'{ trigger_config: { channel: "C123" } }\'',
       'composio listen GMAIL_NEW_GMAIL_MESSAGE -p @trigger.json --stream',
@@ -538,7 +558,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       {
         name: '--alias <text>',
         description:
-          'Alias for the connected account. Required when creating an additional account for the same toolkit (requires multi_account experimental feature)',
+          'Alias for the connected account. Required when creating an additional account for the same toolkit',
       },
     ],
     flags: [
@@ -563,8 +583,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
     seeAlso: [
       'composio search "<query>"               Find tools to use after linking',
-      "composio execute <slug> -d '{ ... }'    Execute a tool with your connected account",
-      'composio config experimental             Manage experimental features',
+      "composio execute <slug> --account <alias> -d '{ ... }'   Use a named account",
+      'composio connections list --toolkit <toolkit>              List account selectors',
     ],
   },
   'connections list': {
@@ -800,7 +820,8 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
   },
   proxy: {
-    usage: 'composio proxy <url> --toolkit <text> [-X method] [-H header]... [-d data]',
+    usage:
+      'composio proxy <url> --toolkit <text> [--account <selector>] [-X method] [-H header]... [-d data]',
     description:
       'curl-like access to any toolkit API through Composio using your connected account. Composio handles authentication — just provide the full URL and toolkit.',
     args: [{ name: '<url>', description: 'Full API endpoint URL' }],
@@ -808,6 +829,10 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
       {
         name: '-t, --toolkit <text>',
         description: 'Toolkit slug whose connected account should be used',
+      },
+      {
+        name: '--account <selector>',
+        description: 'Select a connected account by alias, word_id, or connected account ID',
       },
       { name: '-X, --method <text>', description: 'HTTP method (GET, POST, PUT, DELETE, PATCH)' },
       {
@@ -821,7 +846,7 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     ],
     flags: [{ name: '--skip-connection-check', description: 'Skip the connected-account check' }],
     examples: [
-      'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail',
+      'composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail --account work',
       `composio proxy https://gmail.googleapis.com/gmail/v1/users/me/drafts --toolkit gmail \\`,
       `  -X POST -H 'content-type: application/json' -d '{"message":{"raw":"..."}}'`,
     ],
@@ -1259,14 +1284,13 @@ const SUBCOMMAND_HELP: Record<string, SubcommandHelp | TaggedValue<SubcommandHel
     usage: 'composio config experimental [<feature>] [on|off]',
     description: 'View or toggle experimental feature flags.',
     args: [
-      { name: '<feature>', description: 'Feature name (e.g., listen, local_tools, multi_account)' },
+      { name: '<feature>', description: 'Feature name (e.g., listen, local_tools)' },
       { name: 'on|off', description: 'Enable or disable the feature' },
     ],
     examples: [
       'composio config experimental                     # List all features',
       'composio config experimental listen              # Show current state',
       'composio config experimental local_tools on      # Enable local toolkits',
-      'composio config experimental multi_account on    # Enable multi_account',
     ],
   },
   'dev logs triggers': {
