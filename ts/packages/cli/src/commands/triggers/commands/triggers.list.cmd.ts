@@ -1,5 +1,5 @@
-import { Argument, CliError, Command, Flag } from 'effect/unstable/cli';
-import { Effect } from 'effect';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
+import { Data, Effect } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -10,6 +10,10 @@ type TriggersListCommandConfig = {
   readonly noResultsCommand: string;
   readonly infoCommand: string;
 };
+
+class TriggersListOptionError extends Data.TaggedError('commands/TriggersListOptionError')<{
+  readonly message: string;
+}> {}
 
 const toolkit = Argument.string('toolkit').pipe(
   Argument.withDescription('Toolkit slug to list trigger types for (e.g. "gmail")')
@@ -42,16 +46,10 @@ const makeTriggersListCommand = ({ noResultsCommand, infoCommand }: TriggersList
         Effect.catchTag('services/InvalidToolkitsError', error =>
           Effect.gen(function* () {
             const availableExample = error.availableToolkits.slice(0, 8).join(', ');
-            yield* ui.log.error(
-              `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`
-            );
             yield* ui.log.step(`List valid toolkits with:\n> ${noResultsCommand}`);
             return yield* Effect.fail(
-              new CliError.InvalidValue({
-                option: 'toolkit',
-                value: toolkit,
-                expected: 'a known toolkit slug',
-                kind: 'argument',
+              new TriggersListOptionError({
+                message: `Toolkit "${toolkit}" is not available. ${availableExample ? `Examples: ${availableExample}` : ''}`,
               })
             );
           })

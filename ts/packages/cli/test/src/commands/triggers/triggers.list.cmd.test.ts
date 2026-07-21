@@ -1,4 +1,3 @@
-import { CliError } from 'effect/unstable/cli';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, ConfigProvider, Effect, Exit } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
@@ -81,12 +80,14 @@ describe('CLI: composio dev triggers list', () => {
           expect(Exit.isFailure(exit)).toBe(true);
           if (Exit.isFailure(exit)) {
             const failure = Cause.squash(exit.cause);
-            expect(CliError.isCliError(failure) && failure._tag === 'InvalidValue').toBe(true);
+            expect(failure).toMatchObject({
+              _tag: 'commands/TriggersListOptionError',
+              message: expect.stringContaining('not available'),
+            });
           }
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('not available');
           expect(output).toContain('composio toolkits list');
           expect(output).not.toContain('composio dev toolkits list');
         })
@@ -206,11 +207,18 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.effect('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'triggers', 'list', 'nonexistent']).pipe(Effect.ignore);
+          const exit = yield* Effect.exit(cli(['dev', 'triggers', 'list', 'nonexistent']));
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            const failure = Cause.squash(exit.cause);
+            expect(failure).toMatchObject({
+              _tag: 'commands/TriggersListOptionError',
+              message: expect.stringContaining('not available'),
+            });
+          }
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
-          expect(output).toContain('not available');
           expect(output).toContain('composio dev toolkits list');
         })
       );

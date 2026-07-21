@@ -1,5 +1,5 @@
-import { Effect, Option } from 'effect';
-import { Argument, CliError, Command } from 'effect/unstable/cli';
+import { Data, Effect, Option } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
@@ -9,6 +9,10 @@ import { buildComposioCliSkill } from '../../../skills-src/composio-cli/index';
 import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/reference-schema';
 
 const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
+
+class ConfigOptionError extends Data.TaggedError('commands/ConfigOptionError')<{
+  readonly message: string;
+}> {}
 
 const featureArg = Argument.string('feature').pipe(
   Argument.withDescription(
@@ -99,13 +103,9 @@ export const configExperimentalCmd = Command.make(
 
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
-        yield* ui.log.error(`Invalid state "${state.value}". Use "on" or "off".`);
         return yield* Effect.fail(
-          new CliError.InvalidValue({
-            option: 'state',
-            value: state.value,
-            expected: '"on" or "off"',
-            kind: 'argument',
+          new ConfigOptionError({
+            message: `Invalid state "${state.value}". Use "on" or "off".`,
           })
         );
       }
