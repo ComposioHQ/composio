@@ -6,7 +6,7 @@ const logLevelEntries = [
   ['all', 'All'],
   ['fatal', 'Fatal'],
   ['error', 'Error'],
-  ['warning', 'Warn'],
+  ['warn', 'Warn'],
   ['info', 'Info'],
   ['debug', 'Debug'],
   ['trace', 'Trace'],

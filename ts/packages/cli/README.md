@@ -16,12 +16,12 @@ The CLI is built using:
 ## 🧑‍💻 Usage
 
 ```
-composio [--log-level all|trace|debug|info|warning|error|fatal|none]
+composio [--log-level all|trace|debug|info|warn|error|fatal|none]
 ```
 
 ### Optional Flags
 
-- `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warning, error, fatal, none
+- `--log-level`: Set the log verbosity level. Accepted values: all, trace, debug, info, warn, error, fatal, none
 - `--install-skill [skill-name] <claude|codex|openclaw>`: Manually install the composio skill for a supported agent when automatic installation fails. `--instal-skill` is still accepted as a backward-compatible alias.
 
 ## 🧭 Commands
@@ -55,16 +55,16 @@ Additionally, for storing and retrieving user session context, a `user_data.json
 
 By default, this file is stored in `~/.composio`, but you can specify a custom location using the `COMPOSIO_CACHE_DIR` environment variable.
 
-| Environment Variable   | User JSON config | Description                                                        | Default                         |
-| ---------------------- | ---------------- | ------------------------------------------------------------------ | ------------------------------- |
-| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                           | None                            |
-| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                           | https://backend.composio.dev    |
-| COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                               | https://dashboard.composio.dev/ |
-| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files            | ~/.composio                     |
-| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI                                 | None                            |
-| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging) | None                            |
-| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses       | None                            |
-| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)   | None                            |
+| Environment Variable   | User JSON config | Description                                                                                                                                | Default                         |
+| ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| COMPOSIO_API_KEY       | `api_key`        | Composio backend API key                                                                                                                   | None                            |
+| COMPOSIO_BASE_URL      | `base_url`       | The base URL of the Composio backend API                                                                                                   | https://backend.composio.dev    |
+| COMPOSIO_WEB_URL       | `web_url`        | The base URL of the Composio web app                                                                                                       | https://dashboard.composio.dev/ |
+| COMPOSIO_CACHE_DIR     | -                | The directory where the Composio CLI stores cache files                                                                                    | ~/.composio                     |
+| COMPOSIO_LOG_LEVEL     | -                | The log level for the Composio CLI. Accepts exact case-sensitive values: `All`, `Fatal`, `Error`, `Warn`, `Info`, `Debug`, `Trace`, `None` | None                            |
+| DEBUG_OVERRIDE_VERSION | -                | The version to use when upgrading the Composio CLI (for debugging)                                                                         | None                            |
+| FORCE_USE_CACHE        | -                | Whether to force the use of previously cached HTTP responses                                                                               | None                            |
+| NO_COLOR               | -                | If set, disables color output in the CLI (https://no-color.org/)                                                                           | None                            |
 
 Additionally, `composio upgrade` supports the following environment variables:
 

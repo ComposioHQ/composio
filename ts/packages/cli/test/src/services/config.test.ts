@@ -68,7 +68,7 @@ describe('Config', () => {
             ['COMPOSIO_BASE_URL', 'https://test.localhost'],
             ['COMPOSIO_WEB_URL', 'https://test.localhost'],
             ['COMPOSIO_CACHE_DIR', '~/.composio'],
-            ['COMPOSIO_LOG_LEVEL', 'info'],
+            ['COMPOSIO_LOG_LEVEL', 'Info'],
           ]) satisfies Map<string, string>;
 
           const actual = yield* withMapConfigProvider(map)(Config.all(APP_CONFIG));
@@ -363,7 +363,7 @@ describe('Config', () => {
           vi.stubEnv('COMPOSIO_BASE_URL', 'https://test.localhost');
           vi.stubEnv('COMPOSIO_WEB_URL', 'https://test.localhost');
           vi.stubEnv('COMPOSIO_CACHE_DIR', '~/.composio');
-          vi.stubEnv('COMPOSIO_LOG_LEVEL', 'info');
+          vi.stubEnv('COMPOSIO_LOG_LEVEL', 'Info');
 
           const actual = yield* withEnvConfigProvider(Config.all(APP_CONFIG));
 
