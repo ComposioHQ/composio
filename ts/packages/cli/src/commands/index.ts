@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Array as Arr, Data, Effect, HashSet, Option } from 'effect';
+import { Array as Arr, Console, Data, Effect, HashSet, Option } from 'effect';
 import { Command } from 'effect/unstable/cli';
 import { $defaultCmd } from './$default.cmd';
 import { getVersion } from 'src/effects/version';
@@ -254,20 +254,31 @@ const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray
 
   const normalized: Array<string> = [];
   let sawPositional = false;
+  let droppedSeparator = false;
   let index = 1;
   while (index < args.length) {
     const token = args[index];
     if (!sawPositional) {
-      if (RUN_KNOWN_VALUE_FLAGS.has(token)) {
+      // A `--flag=value` token must be recognized by its name, not the whole
+      // token: `--file=script.ts` is a `run` option, and treating it as the
+      // first positional would demote every later flag (including safety
+      // flags like `--dry-run`) to passthrough script arguments.
+      const equalsIndex = token.indexOf('=');
+      const flagName = equalsIndex === -1 ? token : token.slice(0, equalsIndex);
+      if (RUN_KNOWN_VALUE_FLAGS.has(flagName)) {
         normalized.push(token);
-        const value = args[index + 1];
-        if (value !== undefined) {
-          normalized.push(value);
+        if (equalsIndex === -1) {
+          const value = args[index + 1];
+          if (value !== undefined) {
+            normalized.push(value);
+          }
+          index += 2;
+          continue;
         }
-        index += 2;
+        index += 1;
         continue;
       }
-      if (RUN_KNOWN_BOOLEAN_FLAGS.has(token)) {
+      if (RUN_KNOWN_BOOLEAN_FLAGS.has(flagName)) {
         normalized.push(token);
         index += 1;
         continue;
@@ -278,11 +289,22 @@ const normalizeRunPassthroughArgs = (argv: ReadonlyArray<string>): ReadonlyArray
       sawPositional = true;
       if (token !== '--') {
         normalized.push(token);
+      } else {
+        droppedSeparator = true;
       }
       index += 1;
       continue;
     }
     if (token === '--') {
+      // Only the first `--` is the run/script boundary; later ones are script
+      // arguments and must reach the script verbatim (marker-escaped so the
+      // parser reads them as positionals, matching v3's forwarding behavior).
+      if (!droppedSeparator) {
+        droppedSeparator = true;
+        index += 1;
+        continue;
+      }
+      normalized.push(`${RUN_PASSTHROUGH_ARG_MARKER}--`);
       index += 1;
       continue;
     }
@@ -475,6 +497,47 @@ export const runWithConfig = Effect.gen(function* () {
   // prefix — see `cli-main.ts` module docs for the full contract at this boundary.
   const run = Command.runWith(rootCommand, { version });
 
+  // `Command.runWith` renders the help document for a failed parse through the
+  // ambient Console's `log` (stdout) before re-failing with `ShowHelp` (see
+  // the vendored `Command.ts` `showHelp`). Composio's output contract reserves
+  // stdout for data: help belongs there only when the user explicitly asked
+  // for it (`--help`/`-h`/`--version`/`-v`). For every other invocation the
+  // framework's rendering is decoration, so the runner gets a Console whose
+  // `log` writes through `error`. No CLI code emits data via the Effect
+  // Console service (handlers write through `TerminalUI`), so this only
+  // affects the framework's own help/error rendering.
+  const runWithDecorationOnStderr = (args: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const base = yield* Console.Console;
+      return yield* Effect.provideService(run(args), Console.Console, {
+        ...base,
+        assert: (condition, ...rest) => base.assert(condition, ...rest),
+        clear: () => base.clear(),
+        count: label => base.count(label),
+        countReset: label => base.countReset(label),
+        debug: (...rest) => base.debug(...rest),
+        dir: (item, options) => base.dir(item, options),
+        dirxml: (...rest) => base.dirxml(...rest),
+        error: (...rest) => base.error(...rest),
+        group: (...rest) => base.group(...rest),
+        groupCollapsed: (...rest) => base.groupCollapsed(...rest),
+        groupEnd: () => base.groupEnd(),
+        info: (...rest) => base.info(...rest),
+        log: (...rest) => base.error(...rest),
+        table: (tabularData, properties) => base.table(tabularData, properties),
+        time: label => base.time(label),
+        timeEnd: label => base.timeEnd(label),
+        timeLog: (label, ...rest) => base.timeLog(label, ...rest),
+        trace: (...rest) => base.trace(...rest),
+        warn: (...rest) => base.warn(...rest),
+      });
+    });
+
+  const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h', '--version', '-v']);
+
+  const runCli = (args: ReadonlyArray<string>) =>
+    args.some(arg => EXPLICIT_STDOUT_FLAGS.has(arg)) ? run(args) : runWithDecorationOnStderr(args);
+
   const routeRootCommand = (normalizedArgv: ReadonlyArray<string>, dangerouslyAllow: boolean) => {
     const args = normalizedArgv.slice(2);
     if (isRootHelp(normalizedArgv)) {
@@ -520,10 +583,10 @@ export const runWithConfig = Effect.gen(function* () {
           yield* ui.log.step('Re-run the command with `--dangerously-allow`.');
           return;
         }
-        return yield* run(args);
+        return yield* runCli(args);
       });
     }
-    return run(args);
+    return runCli(args);
   };
 
   return (argv: ReadonlyArray<string>) => {

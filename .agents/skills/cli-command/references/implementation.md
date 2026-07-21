@@ -10,7 +10,7 @@
 
 The CLI is on `effect@4.0.0-beta.99` (exact pin) plus `@effect/platform-bun`/`@effect/platform-node-shared`/`@effect/vitest` at the same beta. `@effect/cli` and `@effect/platform` no longer exist as separate deps — their functionality is consolidated into `effect`'s barrel and `effect/unstable/*` submodules.
 
-Common shape, from `ts/packages/cli/src/commands/toolkits/commands/toolkits.list.cmd.ts`:
+Common shape, from `ts/packages/cli/src/commands/tools/commands/tools.list.cmd.ts`:
 
 ```typescript
 import { Argument, Command, Flag } from 'effect/unstable/cli';

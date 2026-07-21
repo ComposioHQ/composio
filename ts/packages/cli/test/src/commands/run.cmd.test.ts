@@ -212,6 +212,57 @@ describe('CLI: composio run', () => {
   });
 
   layer(TestLive())(it => {
+    it.effect(
+      '[Given] --file=path inline form followed by --dry-run [Then] both parse as run flags',
+      () =>
+        Effect.gen(function* () {
+          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-test-'));
+          const scriptPath = path.join(tempDir, 'script.ts');
+          fs.writeFileSync(scriptPath, 'const value = 1 + 1;\nvalue * 2;\n', 'utf8');
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          stubBunSpawn(spawn);
+
+          try {
+            yield* cli(['run', `--file=${scriptPath}`, '--dry-run']);
+
+            expect(spawn).toHaveBeenCalledTimes(1);
+            const spawnConfig = (spawn as any).mock.calls[0][0] as { cmd: string[] };
+            // `--file=...` must be recognized as a run flag: file mode compiles a
+            // wrapper script (not `--eval` inline code), and `--dry-run` must not
+            // leak into the forwarded script arguments.
+            expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
+            expect(spawnConfig.cmd).not.toContain('--dry-run');
+            expect(exit).toHaveBeenCalledWith(0);
+          } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+          }
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.effect(
+      '[Given] a second literal -- in passthrough args [Then] it is forwarded to the script',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(0) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          stubBunSpawn(spawn);
+
+          yield* cli(['run', 'console.log("hi")', '--', 'alpha', '--', 'beta']);
+
+          expect(spawn).toHaveBeenCalledTimes(1);
+          const spawnConfig = (spawn as any).mock.calls[0][0] as { cmd: string[] };
+          // First `--` is the run/script boundary; the second is a script
+          // argument and must reach the script verbatim (v3 behavior).
+          expect(spawnConfig.cmd.slice(5)).toEqual(['--', 'alpha', '--', 'beta']);
+          expect(exit).toHaveBeenCalledWith(0);
+        })
+    );
+  });
+
+  layer(TestLive())(it => {
     it.effect('[Given] no inline code and no --file [Then] it fails with a clear error', () =>
       Effect.gen(function* () {
         const exit = yield* cli(['run']).pipe(Effect.exit);

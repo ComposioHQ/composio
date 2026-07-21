@@ -37,7 +37,7 @@ export class NodeOs extends Context.Service<NodeOs, NodeOsShape>()('services/Nod
 This repo's convention is a static layer field on the class — `Default` on most
 services (`NodeOs`, `NodeProcess`, `ComposioClientSingleton`, `ComposioToolkitsRepository`,
 `JsPackageManagerDetector`, `CommandRunner`, `ProjectEnvironmentDetector`), `layer` on a
-few (`UpgradeBinary`, `SetupSkillInstaller`, `TriggersRealtime`). **Check the service's
+few (`UpgradeBinary`, `SetupSkillInstaller`). **Check the service's
 own class before writing `.Default` or `.layer`** — the two names are not
 interchangeable and picking the wrong one is a real compile error, not a style nit.
 

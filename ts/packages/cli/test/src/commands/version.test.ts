@@ -15,7 +15,9 @@ describe('CLI: composio', () => {
         yield* cli(args);
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        // MockConsole merges the decoration and data channels; every line must
+        // still be the bare semver (scripts parse this output).
+        expect(new Set(output.trim().split('\n'))).toEqual(new Set([pkg.version]));
       })
     );
   });
@@ -28,7 +30,7 @@ describe('CLI: composio', () => {
 
         const lines = yield* MockConsole.getLines();
         const output = lines.join('\n');
-        expect(output).toContain('1.2.3-test');
+        expect(new Set(output.trim().split('\n'))).toEqual(new Set(['1.2.3-test']));
       })
     );
   });
