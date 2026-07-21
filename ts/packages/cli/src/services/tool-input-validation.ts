@@ -1,13 +1,15 @@
-// eslint-disable-next-line no-restricted-imports -- migrated with the seam-rules slice (PR 6 of this stack)
-import path from 'node:path';
-import { FileSystem } from '@effect/platform';
-import { Effect, Option } from 'effect';
-import { jsonSchemaToZodSchema } from '@composio/core';
+import { AutoCorrect, CliConfig } from '@effect/cli';
+import { FileSystem, Path } from '@effect/platform';
+import { Data, Effect, Option, ParseResult, Schema } from 'effect';
 import { getLocalToolInputDefinition } from '@composio/cli-local-tools';
-import { z } from 'zod/v3';
+import {
+  jsonSchemaToEffectSchema,
+  type JsonSchemaValidationIssue,
+} from '@composio/json-schema-to-effect-schema';
+import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioToolkitsRepository, getLatestToolVersion } from 'src/services/composio-clients';
-import { isToolDebugEnabled } from 'src/services/runtime-debug-flags';
+import { logToolDebug } from 'src/services/runtime-debug-logger';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import { ComposioUserContext } from 'src/services/user-context';
 
@@ -18,22 +20,32 @@ type CachedToolInputDefinition = {
   readonly inputSchema: Record<string, unknown>;
 };
 
+const CachedToolInputDefinitionEnvelope = Schema.Struct({
+  version: Schema.optional(Schema.Unknown),
+  inputSchema: JsonRecordSchema,
+});
+const ObjectSchemaWithProperties = Schema.Struct({ properties: JsonRecordSchema });
+
+const decodeJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+const decodeCachedToolInputDefinitionEnvelope = Schema.decodeUnknownOption(
+  CachedToolInputDefinitionEnvelope
+);
+const decodeObjectSchemaWithProperties = Schema.decodeUnknownOption(ObjectSchemaWithProperties);
+
 const sanitizeToolSlug = (slug: string) => slug.replace(/[^A-Za-z0-9_.-]/g, '_');
 
-const toolDefinitionPath = (cacheDir: string, slug: string) =>
+const toolDefinitionPath = (path: Path.Path, cacheDir: string, slug: string) =>
   path.join(cacheDir, TOOL_DEFINITIONS_DIR, `${sanitizeToolSlug(slug)}.json`);
 
-const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, cacheDir: string) =>
+const ensureToolDefinitionsDir = (fs: FileSystem.FileSystem, path: Path.Path, cacheDir: string) =>
   fs.makeDirectory(path.join(cacheDir, TOOL_DEFINITIONS_DIR), { recursive: true });
 
 const parseSchemaFile = (raw: string, schemaPath: string) =>
-  Effect.try({
-    try: () => JSON.parse(raw) as Record<string, unknown>,
-    catch: () => new Error(`Cached tool schema at ${schemaPath} is not valid JSON.`),
-  });
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  decodeJsonObject(raw).pipe(
+    Effect.mapError(
+      cause => new Error(`Cached tool schema at ${schemaPath} is not valid JSON.`, { cause })
+    )
+  );
 
 const PLACEHOLDER_TOOL_VERSION = '00000000_00';
 
@@ -70,17 +82,12 @@ const resolveLatestAvailableVersion = (params: {
   return params.toolkitLatestVersion;
 };
 
-const toolDebugLog = (label: string, details: Record<string, unknown>) => {
-  if (!isToolDebugEnabled()) return;
-  console.error(`[tool-debug] ${JSON.stringify({ label, ...details })}`);
-};
-
 const parseCachedToolDefinition = (parsed: Record<string, unknown>): CachedToolInputDefinition => {
-  const inputSchema = parsed.inputSchema;
-  if (isRecord(inputSchema)) {
+  const envelope = decodeCachedToolInputDefinitionEnvelope(parsed);
+  if (Option.isSome(envelope)) {
     return {
-      version: typeof parsed.version === 'string' ? parsed.version : null,
-      inputSchema,
+      version: typeof envelope.value.version === 'string' ? envelope.value.version : null,
+      inputSchema: envelope.value.inputSchema,
     };
   }
 
@@ -104,14 +111,21 @@ const serializeCachedToolDefinition = (definition: CachedToolInputDefinition): s
 export const getCachedToolInputDefinition = (slug: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
 
-    if (!(yield* fs.exists(schemaPath))) {
+    const raw = yield* fs
+      .readFileString(schemaPath, 'utf8')
+      .pipe(
+        Effect.catchTag('SystemError', error =>
+          error.reason === 'NotFound' ? Effect.succeed(null) : Effect.fail(error)
+        )
+      );
+    if (raw === null) {
       return null;
     }
 
-    const raw = yield* fs.readFileString(schemaPath, 'utf8');
     const parsed = yield* parseSchemaFile(raw, schemaPath);
     const cached = parseCachedToolDefinition(parsed);
     return {
@@ -123,18 +137,24 @@ export const getCachedToolInputDefinition = (slug: string) =>
 
 export const getToolDefinitionCachePath = (slug: string) =>
   Effect.gen(function* () {
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    return toolDefinitionPath(cacheDir, slug);
+    return toolDefinitionPath(path, cacheDir, slug);
   });
 
 export const invalidateToolInputDefinition = (slug: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const cacheDir = yield* setupCacheDir;
-    const schemaPath = toolDefinitionPath(cacheDir, slug);
-    if (yield* fs.exists(schemaPath)) {
-      yield* fs.remove(schemaPath);
-    }
+    const schemaPath = toolDefinitionPath(path, cacheDir, slug);
+    yield* fs
+      .remove(schemaPath)
+      .pipe(
+        Effect.catchTag('SystemError', error =>
+          error.reason === 'NotFound' ? Effect.void : Effect.fail(error)
+        )
+      );
   });
 
 const fetchResolvedLatestToolVersion = (
@@ -155,7 +175,7 @@ const fetchResolvedLatestToolVersion = (
       orgId: params?.orgId,
       projectId: params?.projectId,
     });
-    toolDebugLog('latest_tool_version', {
+    yield* logToolDebug('latest_tool_version', {
       slug,
       orgId: params?.orgId,
       projectId: params?.projectId,
@@ -170,11 +190,12 @@ const fetchAndCacheToolInputDefinition = (
 ) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const repo = yield* ComposioToolkitsRepository;
     const cacheDir = yield* setupCacheDir;
     const localDefinition = getLocalToolInputDefinition(slug);
-    const schemaPath = toolDefinitionPath(cacheDir, localDefinition?.finalSlug ?? slug);
-    yield* ensureToolDefinitionsDir(fs, cacheDir);
+    const schemaPath = toolDefinitionPath(path, cacheDir, localDefinition?.finalSlug ?? slug);
+    yield* ensureToolDefinitionsDir(fs, path, cacheDir);
 
     if (localDefinition) {
       yield* fs.writeFileString(
@@ -191,21 +212,27 @@ const fetchAndCacheToolInputDefinition = (
       };
     }
 
-    const tool = yield* repo.getToolDetailed(slug);
-    toolDebugLog('tool_detail', {
+    const [tool, latestVersion] = yield* Effect.all(
+      [
+        repo.getToolDetailed(slug),
+        fetchResolvedLatestToolVersion(slug, params).pipe(
+          Effect.catchAll(() => Effect.succeed(null))
+        ),
+      ],
+      { concurrency: 2 }
+    );
+    yield* logToolDebug('tool_detail', {
       slug,
       tool,
     });
-    const schema = (tool.input_parameters ?? {}) as Record<string, unknown>;
+    const schema = tool.input_parameters;
     const version =
-      (yield* fetchResolvedLatestToolVersion(slug, params).pipe(
-        Effect.catchAll(() => Effect.succeed(null))
-      )) ??
+      latestVersion ??
       resolveLatestAvailableVersion({
         toolLatestVersion: selectLatestVersion(tool.available_versions),
         toolkitLatestVersion: null,
       });
-    toolDebugLog('resolved_tool_version', {
+    yield* logToolDebug('resolved_tool_version', {
       slug,
       resolvedVersion: version,
       cachePath: schemaPath,
@@ -231,7 +258,7 @@ export const getOrFetchToolInputDefinition = (
       return yield* fetchAndCacheToolInputDefinition(slug, params);
     }
 
-    const freshness = yield* refreshToolInputDefinitionIfVersionChanged(
+    const freshness = yield* refreshAndFetchToolInputDefinitionIfVersionChanged(
       slug,
       cached.version,
       params
@@ -240,6 +267,7 @@ export const getOrFetchToolInputDefinition = (
         Effect.succeed({
           isStale: false,
           latestVersion: cached.version,
+          definition: null,
           skipped: false as const,
         })
       )
@@ -249,18 +277,20 @@ export const getOrFetchToolInputDefinition = (
       return cached;
     }
 
-    const refreshed = yield* getCachedToolInputDefinition(slug);
-    return refreshed ?? (yield* fetchAndCacheToolInputDefinition(slug, params));
+    return freshness.definition ?? cached;
   });
 
-export const refreshToolInputDefinitionIfVersionChanged = (
+// Returns the freshly fetched definition on the stale path so callers that
+// need it (getOrFetchToolInputDefinition) don't re-read the cache file that
+// fetchAndCacheToolInputDefinition just wrote.
+const refreshAndFetchToolInputDefinitionIfVersionChanged = (
   slug: string,
   cachedVersion: string | null,
   params?: { readonly orgId?: string; readonly projectId?: string }
 ) =>
   Effect.gen(function* () {
     const latestVersion = yield* fetchResolvedLatestToolVersion(slug, params);
-    toolDebugLog('resolved_tool_version', {
+    yield* logToolDebug('resolved_tool_version', {
       slug,
       mode: 'refresh',
       cachedVersion,
@@ -269,65 +299,47 @@ export const refreshToolInputDefinitionIfVersionChanged = (
       projectId: params?.projectId,
     });
     const isStale = latestVersion !== cachedVersion;
+    const definition = isStale ? yield* fetchAndCacheToolInputDefinition(slug, params) : null;
 
-    if (isStale) {
-      yield* fetchAndCacheToolInputDefinition(slug, params);
-    }
-
-    return { isStale, latestVersion, skipped: false as const };
+    return { isStale, latestVersion, definition, skipped: false as const };
   });
 
-export class ToolInputValidationError extends Error {
-  readonly _tag = 'ToolInputValidationError';
+export const refreshToolInputDefinitionIfVersionChanged = (
+  slug: string,
+  cachedVersion: string | null,
+  params?: { readonly orgId?: string; readonly projectId?: string }
+) =>
+  refreshAndFetchToolInputDefinitionIfVersionChanged(slug, cachedVersion, params).pipe(
+    Effect.map(({ isStale, latestVersion, skipped }) => ({ isStale, latestVersion, skipped }))
+  );
 
-  constructor(
-    readonly toolSlug: string,
-    readonly schemaPath: string,
-    readonly issues: ReadonlyArray<string>,
-    options?: ErrorOptions
-  ) {
-    super(
-      [
-        `Input validation failed for ${toolSlug}.`,
-        `Schema: ${schemaPath}`,
-        ...issues.map(issue => `- ${issue}`),
-      ].join('\n'),
-      options
-    );
+export class ToolInputValidationError extends Data.TaggedError('ToolInputValidationError')<{
+  readonly toolSlug: string;
+  readonly schemaPath: string;
+  readonly issues: ReadonlyArray<string>;
+  readonly cause?: unknown;
+}> {
+  override get message(): string {
+    return [
+      `Input validation failed for ${this.toolSlug}.`,
+      `Schema: ${this.schemaPath}`,
+      ...this.issues.map(issue => `- ${issue}`),
+    ].join('\n');
   }
 }
 
 const getObjectSchemaProperties = (schema: Record<string, unknown>): ReadonlyArray<string> => {
-  const properties = schema.properties;
-  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
-    return [];
-  }
-
-  return Object.keys(properties as Record<string, unknown>);
+  const objectSchema = decodeObjectSchemaWithProperties(schema);
+  return Option.isSome(objectSchema) ? Object.keys(objectSchema.value.properties) : [];
 };
 
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const levenshteinDistance = (left: string, right: string): number => {
-  if (left === right) return 0;
-  if (left.length === 0) return right.length;
-  if (right.length === 0) return left.length;
+const schemaKeySuggestionConfig = CliConfig.defaultConfig;
 
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  const current = new Array<number>(right.length + 1);
-
-  for (let i = 0; i < left.length; i += 1) {
-    current[0] = i + 1;
-    for (let j = 0; j < right.length; j += 1) {
-      const cost = left[i] === right[j] ? 0 : 1;
-      current[j + 1] = Math.min(current[j]! + 1, previous[j + 1]! + 1, previous[j]! + cost);
-    }
-    for (let j = 0; j <= right.length; j += 1) {
-      previous[j] = current[j]!;
-    }
-  }
-
-  return previous[right.length]!;
+type SchemaKeyCandidate = {
+  readonly key: string;
+  readonly score: number;
 };
 
 const findClosestSchemaKey = (
@@ -335,32 +347,39 @@ const findClosestSchemaKey = (
   allowedKeys: ReadonlyArray<string>
 ): string | undefined => {
   const normalizedUnknownKey = normalizeKey(unknownKey);
-  const candidates = allowedKeys
-    .map(key => ({
-      key,
-      normalized: normalizeKey(key),
-    }))
-    .map(candidate => {
-      const distance = levenshteinDistance(normalizedUnknownKey, candidate.normalized);
-      const containsBonus =
-        candidate.normalized.includes(normalizedUnknownKey) ||
-        normalizedUnknownKey.includes(candidate.normalized)
-          ? -2
-          : 0;
-      return {
-        key: candidate.key,
-        score: distance + containsBonus,
-      };
-    })
-    .sort((left, right) => left.score - right.score);
-
-  const best = candidates[0];
-  if (!best) {
+  if (!normalizedUnknownKey) {
     return undefined;
   }
 
+  const closest = allowedKeys.reduce<SchemaKeyCandidate | undefined>((best, key) => {
+    const normalizedKey = normalizeKey(key);
+    const distance = AutoCorrect.levensteinDistance(
+      normalizedUnknownKey,
+      normalizedKey,
+      schemaKeySuggestionConfig
+    );
+    const containsBonus =
+      normalizedKey.includes(normalizedUnknownKey) || normalizedUnknownKey.includes(normalizedKey)
+        ? -2
+        : 0;
+    const candidate = {
+      key,
+      score: distance + containsBonus,
+    };
+
+    if (!best || candidate.score < best.score) {
+      return candidate;
+    }
+
+    return best;
+  }, undefined);
+
   const threshold = Math.max(3, Math.ceil(normalizedUnknownKey.length * 0.6));
-  return best.score <= threshold ? best.key : undefined;
+  if (!closest || closest.score > threshold) {
+    return undefined;
+  }
+
+  return closest.key;
 };
 
 const formatUnknownKeyIssue = (
@@ -381,6 +400,27 @@ const formatUnknownKeyIssue = (
   });
 };
 
+const formatSchemaIssues = (
+  schemaIssues: ReadonlyArray<JsonSchemaValidationIssue>,
+  allowedKeys: ReadonlyArray<string>
+): ReadonlyArray<string> =>
+  schemaIssues.flatMap(issue => {
+    if (issue.code === 'unrecognized_keys' && issue.keys) {
+      return formatUnknownKeyIssue(issue.keys, allowedKeys);
+    }
+
+    const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
+    return [`${location}: ${issue.message}`];
+  });
+
+const compileToolInputSchema = (
+  jsonSchema: Record<string, unknown>,
+  allowedKeys: ReadonlyArray<string>
+) =>
+  jsonSchemaToEffectSchema(jsonSchema, {
+    formatIssues: issues => formatSchemaIssues(issues, allowedKeys),
+  });
+
 export const validateToolInputArgumentsWithDefinition = (
   slug: string,
   args: Record<string, unknown>,
@@ -394,31 +434,27 @@ export const validateToolInputArgumentsWithDefinition = (
     const allowedKeys = getObjectSchemaProperties(schema);
     const normalizedSchema = normalizeFileUploadSchema(schema);
 
-    const zodSchema = yield* Effect.try({
-      try: () => jsonSchemaToZodSchema<z.ZodTypeAny>(normalizedSchema),
+    const inputSchema = yield* Effect.try({
+      try: () => compileToolInputSchema(normalizedSchema, allowedKeys),
       catch: error =>
-        new ToolInputValidationError(
-          slug,
+        new ToolInputValidationError({
+          toolSlug: slug,
           schemaPath,
-          ['Could not compile the cached JSON schema into a Zod validator.'],
-          { cause: error }
-        ),
+          issues: ['Could not compile the cached JSON schema into a validator.'],
+          cause: error,
+        }),
     });
 
-    const parsed = zodSchema.safeParse(args);
-    if (parsed.success) {
-      return { schemaPath, schema };
-    }
+    yield* Schema.decodeUnknown(inputSchema, { errors: 'all' })(args).pipe(
+      Effect.mapError(error => {
+        const issues = ParseResult.ArrayFormatter.formatErrorSync(error).map(
+          issue => issue.message
+        );
+        return new ToolInputValidationError({ toolSlug: slug, schemaPath, issues, cause: error });
+      })
+    );
 
-    const issues = parsed.error.issues.flatMap(issue => {
-      if (issue.code === 'unrecognized_keys') {
-        return formatUnknownKeyIssue(issue.keys, allowedKeys);
-      }
-      const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
-      return [`${location}: ${issue.message}`];
-    });
-
-    return yield* Effect.fail(new ToolInputValidationError(slug, schemaPath, issues));
+    return { schemaPath, schema };
   });
 
 export const validateToolInputArgumentsIfCached = (slug: string, args: Record<string, unknown>) =>

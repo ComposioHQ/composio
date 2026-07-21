@@ -86,6 +86,7 @@
     "@composio/cli-local-tools": "workspace:*",
     "@composio/client": "catalog:",
     "@composio/core": "workspace:*",
+    "@composio/json-schema-to-effect-schema": "workspace:*",
     "@composio/json-schema-to-zod": "workspace:*",
     "@composio/ts-builders": "workspace:*",
     "@effect/cli": "catalog:",

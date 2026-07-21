@@ -2,7 +2,7 @@ import { Args, Command, Options } from '@effect/cli';
 import type { Composio } from '@composio/client';
 import { isLocalToolSlug } from '@composio/cli-local-tools';
 import util from 'node:util';
-import { Effect, Option, Either, Exit, Fiber, Cause } from 'effect';
+import { Effect, Option, Either, Exit, Fiber, Cause, HashSet } from 'effect';
 import { encodingForModel } from 'js-tiktoken';
 import { redact } from 'src/ui/redact';
 import { parseJsonRecord } from 'src/utils/parse-json';
@@ -82,6 +82,15 @@ const accountOption = Options.text('account').pipe(
     'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
   ),
   Options.optional
+);
+
+export const TOOLS_EXECUTE_VALUE_OPTIONS = HashSet.make(
+  '--data',
+  '-d',
+  '--file',
+  '--account',
+  '--user-id',
+  '--project-name'
 );
 
 const userId = Options.text('user-id').pipe(
@@ -458,7 +467,11 @@ const emitExecuteFailureTelemetry = (params: {
       ? getToolExecuteValidationFailedEvent({
           toolSlug: params.toolSlug,
           args: params.args,
-          error: new ToolInputValidationError(params.toolSlug, 'server', [message]),
+          error: new ToolInputValidationError({
+            toolSlug: params.toolSlug,
+            schemaPath: 'server',
+            issues: [message],
+          }),
           surface: params.surface,
           projectMode: params.projectMode,
           stage:

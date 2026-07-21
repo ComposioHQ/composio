@@ -9,6 +9,7 @@
     "ts/packages/core",
     "ts/packages/experimental",
     "ts/packages/slim",
+    "ts/packages/json-schema-to-effect-schema",
     "ts/packages/json-schema-to-zod",
     "ts/packages/cli",
     "ts/packages/cli-keyring",
