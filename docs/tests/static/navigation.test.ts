@@ -9,6 +9,7 @@ import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
+const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
 
 /** Separator entries in meta.json start with --- */
 function isSeparator(entry: string): boolean {
@@ -42,6 +43,17 @@ async function exists(path: string): Promise<boolean> {
 }
 
 describe("Navigation - meta.json validity", () => {
+  test("Knowledge Base appears between Docs and Examples", async () => {
+    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
+    const docsIndex = source.indexOf("text: 'Docs'");
+    const kbIndex = source.indexOf("text: 'Knowledge Base'");
+    const examplesIndex = source.indexOf("text: 'Examples'");
+
+    expect(docsIndex).toBeGreaterThan(-1);
+    expect(kbIndex).toBeGreaterThan(docsIndex);
+    expect(examplesIndex).toBeGreaterThan(kbIndex);
+  });
+
   test("root meta.json entries all resolve to files or directories", async () => {
     const metaPath = join(CONTENT_DIR, "meta.json");
     const meta = JSON.parse(await readFile(metaPath, "utf-8"));
