@@ -89,8 +89,11 @@ describe('workerd platform path helpers (js/polynomial-redos regression)', () =>
 
   it('rejects the backtracking slash regexes at the source level', () => {
     const source = readFileSync(WORKERD_SOURCE, 'utf8');
-    const withoutReferenceComment = source;
-    expect(withoutReferenceComment).not.toContain(String.raw`/\/+$/`);
-    expect(withoutReferenceComment).not.toContain(String.raw`/^\/+|\/+$/g`);
+    // This scans the raw file text, including comments, so quoting either
+    // pattern in a comment (e.g. to describe the old regex) would also fail
+    // this assertion. That's intentional: it's the only way to catch a silent
+    // revert to the regex form.
+    expect(source).not.toContain(String.raw`/\/+$/`);
+    expect(source).not.toContain(String.raw`/^\/+|\/+$/g`);
   });
 });
