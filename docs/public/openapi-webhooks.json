@@ -7380,7 +7380,7 @@
   "webhooks": {
     "composio.trigger.message": {
       "post": {
-        "operationId": "handle_composio_trigger_message",
+        "operationId": "composio_trigger_message",
         "tags": [
           "Webhook Events"
         ],
@@ -7530,7 +7530,7 @@
     },
     "composio.trigger.message.v2": {
       "post": {
-        "operationId": "handle_composio_trigger_message_v2",
+        "operationId": "composio_trigger_message_v2",
         "tags": [
           "Webhook Events"
         ],
@@ -7656,7 +7656,7 @@
     },
     "composio.trigger.message.v1": {
       "post": {
-        "operationId": "handle_composio_trigger_message_v1",
+        "operationId": "composio_trigger_message_v1",
         "tags": [
           "Webhook Events"
         ],
@@ -7751,7 +7751,7 @@
     },
     "composio.connected_account.expired": {
       "post": {
-        "operationId": "handle_composio_connected_account_expired",
+        "operationId": "composio_connected_account_expired",
         "tags": [
           "Webhook Events"
         ],
@@ -7858,7 +7858,7 @@
     },
     "composio.trigger.disabled": {
       "post": {
-        "operationId": "handle_composio_trigger_disabled",
+        "operationId": "composio_trigger_disabled",
         "tags": [
           "Webhook Events"
         ],
