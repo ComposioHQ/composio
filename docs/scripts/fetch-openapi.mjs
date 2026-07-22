@@ -1,8 +1,9 @@
 /**
  * Fetches and filters the OpenAPI specs for fumadocs.
- * Outputs two separate spec files:
- *   - public/openapi.json     (v3.1 — latest, clean operationIds)
- *   - public/openapi-v3.json  (v3.0)
+ * Outputs three spec files:
+ *   - public/openapi.json           (v3.1 — latest, clean operationIds)
+ *   - public/openapi-v3.json        (v3.0)
+ *   - public/openapi-webhooks.json  (standalone 3.1 webhook-events spec)
  *
  * Run: bun run scripts/fetch-openapi.mjs
  */
@@ -14,6 +15,7 @@ import { PRODUCTION_BASE_URL, PRODUCTION_API_V3_URL, PRODUCTION_API_V31_URL } fr
 
 const OPENAPI_V3_URL = process.env.OPENAPI_SPEC_URL || `${PRODUCTION_API_V3_URL}/openapi.json`;
 const OPENAPI_V31_URL = process.env.OPENAPI_V31_SPEC_URL || `${PRODUCTION_API_V31_URL}/openapi.json`;
+const OPENAPI_WEBHOOKS_URL = process.env.OPENAPI_WEBHOOKS_SPEC_URL || `${PRODUCTION_API_V31_URL}/openapi-webhooks.json`;
 
 // Tags to ignore (internal/admin)
 const IGNORED_TAGS = [
@@ -242,4 +244,30 @@ async function fetchAndFilterSpec() {
   console.log(`Written v3.0 spec to ${v3Path}`);
 }
 
-fetchAndFilterSpec().catch(console.error);
+/**
+ * Fetch the standalone webhook-events spec and write it verbatim.
+ *
+ * It's a separate OpenAPI 3.1 document keyed on `webhooks` (not `paths`), so it
+ * skips the path filtering, server pinning, and union normalization above — none
+ * of which apply. Fetched live from production like openapi.json.
+ *
+ * Resilient by design: until Apollo's /api/v3.1/openapi-webhooks.json endpoint is
+ * live in production, a fetch failure logs a warning and leaves the committed
+ * public/openapi-webhooks.json untouched, rather than failing the whole sync.
+ */
+async function fetchAndWriteWebhooksSpec() {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const outPath = join(__dirname, '../public/openapi-webhooks.json');
+  try {
+    const spec = await fetchSpec(OPENAPI_WEBHOOKS_URL);
+    writeFileSync(outPath, JSON.stringify(spec, null, 2));
+    console.log(`Written webhooks spec to ${outPath}`);
+  } catch (err) {
+    console.warn(
+      `WARN: could not fetch webhooks spec from ${OPENAPI_WEBHOOKS_URL}: ${err.message}. Keeping existing ${outPath}.`
+    );
+  }
+}
+
+await fetchAndFilterSpec().catch(console.error);
+await fetchAndWriteWebhooksSpec();
