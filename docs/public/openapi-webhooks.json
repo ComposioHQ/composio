@@ -7451,7 +7451,7 @@
                         "properties": {
                           "log_id": {
                             "type": "string",
-                            "description": "Unique identifier for the execution log."
+                            "description": "ID of the execution log."
                           },
                           "trigger_slug": {
                             "type": "string",
@@ -7459,22 +7459,22 @@
                           },
                           "trigger_id": {
                             "type": "string",
-                            "description": "Unique identifier for the trigger instance."
+                            "description": "ID of the trigger instance."
                           },
                           "connected_account_id": {
                             "type": "string",
-                            "description": "Unique identifier for the connected account the trigger belongs to."
+                            "description": "ID of the connected account the trigger belongs to."
                           },
                           "auth_config_id": {
                             "type": "string",
-                            "description": "Unique identifier for the auth config."
+                            "description": "ID of the auth config."
                           },
                           "user_id": {
                             "type": [
                               "string",
                               "null"
                             ],
-                            "description": "User identifier for this connection, or null if not set."
+                            "description": "ID of the user for this connection, or null if not set."
                           }
                         },
                         "required": [
@@ -7825,11 +7825,11 @@
                         "properties": {
                           "project_id": {
                             "type": "string",
-                            "description": "Unique identifier for the project."
+                            "description": "ID of the project."
                           },
                           "org_id": {
                             "type": "string",
-                            "description": "Identifier of the organization."
+                            "description": "ID of the organization."
                           }
                         },
                         "required": [
@@ -7929,11 +7929,11 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "description": "Unique identifier for the trigger instance that was disabled."
+                            "description": "ID of the trigger instance that was disabled."
                           },
                           "connected_account_id": {
                             "type": "string",
-                            "description": "Unique identifier for the connected account the trigger belonged to."
+                            "description": "ID of the connected account the trigger belonged to."
                           },
                           "trigger_name": {
                             "type": "string",
@@ -7944,7 +7944,7 @@
                               "string",
                               "null"
                             ],
-                            "description": "User identifier for this connection, or null if not set."
+                            "description": "ID of the user for this connection, or null if not set."
                           },
                           "trigger_config": {
                             "type": "object",
@@ -7976,7 +7976,7 @@
                         "properties": {
                           "project_id": {
                             "type": "string",
-                            "description": "Unique identifier for the project."
+                            "description": "ID of the project."
                           }
                         },
                         "required": [
