@@ -7587,14 +7587,17 @@
                 "type": "object",
                 "properties": {
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The trigger that fired (for example github_commit_event)."
                   },
                   "timestamp": {
                     "type": "string",
-                    "format": "date-time"
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp of when the event was created."
                   },
                   "log_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "ID of the execution log."
                   },
                   "data": {
                     "allOf": [
@@ -7607,23 +7610,28 @@
                         "properties": {
                           "connection_id": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "description": "UUID of the connected account."
                           },
                           "connection_nano_id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "ID of the connected account."
                           },
                           "trigger_nano_id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "ID of the trigger instance."
                           },
                           "trigger_id": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "description": "UUID of the trigger instance."
                           },
                           "user_id": {
                             "type": [
                               "string",
                               "null"
-                            ]
+                            ],
+                            "description": "ID of the user for this connection, or null if not set."
                           }
                         },
                         "required": [
@@ -7634,7 +7642,8 @@
                           "user_id"
                         ]
                       }
-                    ]
+                    ],
+                    "description": "The trigger event payload, plus connection identifiers."
                   }
                 },
                 "required": [
@@ -7643,6 +7652,21 @@
                   "log_id",
                   "data"
                 ]
+              },
+              "example": {
+                "type": "github_commit_event",
+                "timestamp": "2026-01-15T10:30:00Z",
+                "log_id": "log_abc123",
+                "data": {
+                  "commit_sha": "a1b2c3d",
+                  "message": "fix: resolve null pointer",
+                  "author": "jane",
+                  "connection_id": "d3547de1-d1f2-4344-b4c2-6d1e5a7b8c9d",
+                  "connection_nano_id": "ca_def456",
+                  "trigger_nano_id": "ti_xyz789",
+                  "trigger_id": "5727dbbb-3b26-4abe-aec6-181a7b2c3d4e",
+                  "user_id": "user-123"
+                }
               }
             }
           }
@@ -7713,22 +7737,27 @@
                 "type": "object",
                 "properties": {
                   "trigger_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "The trigger that fired (for example github_commit_event)."
                   },
                   "connection_id": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "description": "UUID of the connected account."
                   },
                   "trigger_id": {
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "description": "UUID of the trigger instance."
                   },
                   "payload": {
                     "type": "object",
-                    "additionalProperties": {}
+                    "additionalProperties": {},
+                    "description": "The trigger event payload."
                   },
                   "log_id": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "ID of the execution log."
                   }
                 },
                 "required": [
@@ -7738,6 +7767,17 @@
                   "payload",
                   "log_id"
                 ]
+              },
+              "example": {
+                "trigger_name": "github_commit_event",
+                "connection_id": "d3547de1-d1f2-4344-b4c2-6d1e5a7b8c9d",
+                "trigger_id": "5727dbbb-3b26-4abe-aec6-181a7b2c3d4e",
+                "payload": {
+                  "commit_sha": "a1b2c3d",
+                  "message": "fix: resolve null pointer",
+                  "author": "jane"
+                },
+                "log_id": "log_abc123"
               }
             }
           }
