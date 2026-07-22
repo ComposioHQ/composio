@@ -7460,15 +7460,15 @@
                           },
                           "trigger_id": {
                             "type": "string",
-                            "description": "Nano id of the trigger instance."
+                            "description": "ID of the trigger instance."
                           },
                           "connected_account_id": {
                             "type": "string",
-                            "description": "Nano id of the connected account the trigger belongs to."
+                            "description": "ID of the connected account the trigger belongs to."
                           },
                           "auth_config_id": {
                             "type": "string",
-                            "description": "Nano id of the auth config."
+                            "description": "ID of the auth config."
                           },
                           "user_id": {
                             "type": [
@@ -7603,11 +7603,11 @@
                         "properties": {
                           "project_id": {
                             "type": "string",
-                            "description": "Nano id of the project."
+                            "description": "ID of the project."
                           },
                           "org_id": {
                             "type": "string",
-                            "description": "Nano id of the organization."
+                            "description": "ID of the organization."
                           }
                         },
                         "required": [
@@ -7728,7 +7728,7 @@
                         "properties": {
                           "project_id": {
                             "type": "string",
-                            "description": "Nano id of the project."
+                            "description": "ID of the project."
                           }
                         },
                         "required": [
@@ -7740,11 +7740,11 @@
                         "properties": {
                           "id": {
                             "type": "string",
-                            "description": "Nano id of the trigger instance that was disabled."
+                            "description": "ID of the trigger instance that was disabled."
                           },
                           "connected_account_id": {
                             "type": "string",
-                            "description": "Nano id of the connected account the trigger belonged to."
+                            "description": "ID of the connected account the trigger belonged to."
                           },
                           "trigger_name": {
                             "type": "string",
