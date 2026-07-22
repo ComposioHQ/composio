@@ -8,8 +8,16 @@ import {
 } from '@/lib/kb/repository';
 import { knowledgeBaseSource } from '@/lib/source';
 
-const routeSource = readFileSync(
-  join(import.meta.dir, '../../app/(home)/kb/[[...slug]]/page.tsx'),
+const guideRouteSource = readFileSync(
+  join(import.meta.dir, '../../app/(home)/kb/guide/[slug]/page.tsx'),
+  'utf8',
+);
+const legacyRouteSource = readFileSync(
+  join(import.meta.dir, '../../app/(home)/kb/[...legacy]/page.tsx'),
+  'utf8',
+);
+const guideLayoutSource = readFileSync(
+  join(import.meta.dir, '../../app/(home)/kb/guide/layout.tsx'),
   'utf8',
 );
 
@@ -44,9 +52,16 @@ describe('public KB routes', () => {
   });
 
   test('renders verification and feedback controls and redirects aliases before notFound', () => {
-    expect(routeSource).toContain('Last verified');
-    expect(routeSource).toContain('<Feedback page={page.url} />');
-    expect(routeSource).toContain('resolveKbAlias');
-    expect(routeSource.indexOf('permanentRedirect')).toBeLessThan(routeSource.indexOf('notFound()'));
+    expect(guideRouteSource).toContain('Last verified');
+    expect(guideRouteSource).toContain('<Feedback page={page.url} />');
+    expect(legacyRouteSource).toContain('resolveKbAlias');
+    expect(legacyRouteSource.indexOf('permanentRedirect')).toBeLessThan(
+      legacyRouteSource.indexOf('notFound()'),
+    );
+  });
+
+  test('provides DocsPage context without exposing the generated guide tree', () => {
+    expect(guideLayoutSource).toContain('<DocsLayout');
+    expect(guideLayoutSource).toContain('enabled: false');
   });
 });

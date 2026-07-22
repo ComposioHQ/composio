@@ -4,30 +4,22 @@ import {
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { PageActions } from '@/components/page-actions';
 import { Feedback } from '@/components/feedback';
 import { RelatedLinks } from '@/components/related-links';
-import { resolveKbAlias } from '@/lib/kb/repository';
 import { knowledgeBaseSource } from '@/lib/source';
-import {
-  createGenerateMetadata,
-  createGenerateStaticParams,
-} from '@/lib/create-docs-page';
+import { createGenerateMetadata } from '@/lib/create-docs-page';
 
-interface KnowledgeBasePageProps {
-  params: Promise<{ slug?: string[] }>;
+interface KnowledgeBaseGuidePageProps {
+  params: Promise<{ slug: string }>;
 }
 
-export default async function KnowledgeBasePage({ params }: KnowledgeBasePageProps) {
+export default async function KnowledgeBaseGuidePage({ params }: KnowledgeBaseGuidePageProps) {
   const { slug } = await params;
-  const page = knowledgeBaseSource.getPage(slug);
-  if (!page) {
-    const canonical = resolveKbAlias((slug ?? []).join('/'));
-    if (canonical) permanentRedirect(canonical);
-    notFound();
-  }
+  const page = knowledgeBaseSource.getPage(['guide', slug]);
+  if (!page) notFound();
 
   const MDX = page.data.body;
   const lastVerifiedAt = page.data.lastVerifiedAt;
@@ -67,5 +59,17 @@ export default async function KnowledgeBasePage({ params }: KnowledgeBasePagePro
   );
 }
 
-export const generateStaticParams = createGenerateStaticParams(knowledgeBaseSource);
-export const generateMetadata = createGenerateMetadata(knowledgeBaseSource, 'kb');
+export function generateStaticParams() {
+  return knowledgeBaseSource.getPages().flatMap((page) =>
+    page.slugs.length === 2 && page.slugs[0] === 'guide'
+      ? [{ slug: page.slugs[1] }]
+      : [],
+  );
+}
+
+const generateKbMetadata = createGenerateMetadata(knowledgeBaseSource, 'kb');
+
+export async function generateMetadata({ params }: KnowledgeBaseGuidePageProps) {
+  const { slug } = await params;
+  return generateKbMetadata({ params: Promise.resolve({ slug: ['guide', slug] }) });
+}

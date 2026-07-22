@@ -1,5 +1,5 @@
-import { knowledgeBaseSource } from '@/lib/source';
-import { createDocsLayout } from '@/lib/create-docs-layout';
+import type { ReactNode } from 'react';
 
-export default createDocsLayout(knowledgeBaseSource);
-
+export default function KnowledgeBaseLayout({ children }: { children: ReactNode }) {
+  return <div className="min-h-dvh bg-fd-background text-fd-foreground">{children}</div>;
+}
