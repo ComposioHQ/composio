@@ -1,0 +1,66 @@
+export type KbFreshness = 'evergreen' | 'time-sensitive';
+export type KbPublicationState = 'published' | 'needs-review' | 'retired';
+
+export interface KbSourceMetadata {
+  type: string;
+  title: string;
+  description: string;
+  category: string;
+  visibility: string;
+  timestamp: string;
+  tags: string[];
+}
+
+export interface KbSourceDocument {
+  metadata: KbSourceMetadata;
+  body: string;
+}
+
+export interface KbTopic {
+  slug: string;
+  title: string;
+  description: string;
+  featuredRank: number | null;
+}
+
+export interface KbGuideDefinition {
+  slug: string;
+  title: string;
+  description: string;
+  sourcePath: string;
+  sourceHeading: string | null;
+  topics: string[];
+  tags: string[];
+  aliases: string[];
+  relatedGuides: string[];
+  externalResources: string[];
+  updatedAt: string;
+  lastVerifiedAt: string | null;
+  reviewAfter: string | null;
+  freshness: KbFreshness;
+  state: KbPublicationState;
+  featured: boolean;
+}
+
+export interface KbGuide extends KbGuideDefinition {
+  body: string;
+  sourceMetadata: KbSourceMetadata;
+}
+
+export interface KbManifest {
+  schemaVersion: 1;
+  source: {
+    repository: string;
+    commit: string;
+    capturedAt: string;
+  };
+  topics: KbTopic[];
+  guides: KbGuideDefinition[];
+}
+
+export interface KbCatalog {
+  manifest: KbManifest;
+  topics: KbTopic[];
+  guides: KbGuide[];
+}
+

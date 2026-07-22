@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "ComposioHQ/support-workflows",
+    "commit": "5eed614",
+    "capturedAt": "2026-07-21"
+  },
+  "topics": [
+    {
+      "slug": "toolkits",
+      "title": "Toolkits",
+      "description": "Setup and troubleshooting for apps connected through Composio.",
+      "featuredRank": 1
+    },
+    {
+      "slug": "authentication",
+      "title": "Authentication",
+      "description": "OAuth, auth configs, scopes, and connection setup.",
+      "featuredRank": 2
+    },
+    {
+      "slug": "connected-accounts",
+      "title": "Connected accounts",
+      "description": "Create, manage, and troubleshoot user connections.",
+      "featuredRank": 3
+    },
+    {
+      "slug": "tool-router-and-mcp",
+      "title": "Tool Router and MCP",
+      "description": "Sessions, files, MCP clients, and Tool Router behavior.",
+      "featuredRank": 4
+    },
+    {
+      "slug": "dashboard-and-projects",
+      "title": "Dashboard and projects",
+      "description": "Dashboard settings, organizations, projects, and logs.",
+      "featuredRank": 5
+    },
+    {
+      "slug": "sdk-and-api",
+      "title": "SDK and API",
+      "description": "SDK usage and platform API behavior.",
+      "featuredRank": 6
+    },
+    {
+      "slug": "billing-and-plans",
+      "title": "Billing and plans",
+      "description": "Plans, billing behavior, limits, and refunds.",
+      "featuredRank": null
+    },
+    {
+      "slug": "incidents-and-known-issues",
+      "title": "Incidents and known issues",
+      "description": "Verified temporary issues and recovery guidance.",
+      "featuredRank": null
+    },
+    {
+      "slug": "composio-for-you",
+      "title": "Composio For You",
+      "description": "Connect personal AI clients to apps through Composio For You.",
+      "featuredRank": null
+    }
+  ],
+  "guides": [
+    {
+      "slug": "use-tool-router-session-files-as-tool-inputs",
+      "title": "Use Tool Router session files as toolkit inputs",
+      "description": "Convert session file paths into fresh FileUploadable storage keys before calling toolkit actions.",
+      "sourcePath": "kb/mcp/tool-router-files/public.md",
+      "sourceHeading": "Session paths are not `FileUploadable` storage keys",
+      "topics": ["tool-router-and-mcp", "sdk-and-api"],
+      "tags": ["mcp", "tool-router", "files", "uploads"],
+      "aliases": [],
+      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
+      "externalResources": ["docs-sessions"],
+      "updatedAt": "2026-07-14",
+      "lastVerifiedAt": "2026-07-21",
+      "reviewAfter": "2027-01-17",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "pagination-limits-are-endpoint-specific",
+      "title": "Pagination limits are endpoint-specific",
+      "description": "Use each endpoint's schema and cursor behavior instead of assuming one global page-size limit.",
+      "sourcePath": "kb/platform/pagination/public.md",
+      "sourceHeading": "Pagination limits are endpoint-specific",
+      "topics": ["sdk-and-api"],
+      "tags": ["api", "pagination", "cursors"],
+      "aliases": [],
+      "relatedGuides": ["use-tool-router-session-files-as-tool-inputs"],
+      "externalResources": ["docs-api-reference"],
+      "updatedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-21",
+      "reviewAfter": "2027-01-17",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": true
+    },
+    {
+      "slug": "auth-config-list-pages-return-at-most-50-items",
+      "title": "Auth-config list pages return at most 50 items",
+      "description": "Follow next_cursor when listing auth configs and verify the deployed page-size limit.",
+      "sourcePath": "kb/platform/pagination/public.md",
+      "sourceHeading": "Auth-config list pages return at most 50 items",
+      "topics": ["authentication", "sdk-and-api"],
+      "tags": ["auth", "api", "pagination"],
+      "aliases": [],
+      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
+      "externalResources": ["docs-api-reference"],
+      "updatedAt": "2026-07-16",
+      "lastVerifiedAt": null,
+      "reviewAfter": null,
+      "freshness": "time-sensitive",
+      "state": "needs-review",
+      "featured": false
+    }
+  ]
+}
+
