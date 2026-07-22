@@ -7384,7 +7384,8 @@
         "tags": [
           "Webhook Events"
         ],
-        "summary": "Fired when a trigger receives data from an external service",
+        "summary": "Trigger message",
+        "description": "Fired when a trigger receives data from an external service.",
         "parameters": [
           {
             "schema": {
@@ -7429,7 +7430,6 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Composio POSTs this composio.trigger.message payload to your webhook URL.",
           "content": {
             "application/json": {
               "schema": {
@@ -7528,13 +7528,15 @@
         }
       }
     },
-    "composio.connected_account.expired": {
+    "composio.trigger.message.v2": {
       "post": {
-        "operationId": "handle_composio_connected_account_expired",
+        "operationId": "handle_composio_trigger_message_v2",
         "tags": [
           "Webhook Events"
         ],
-        "summary": "Fired when a connected account expires and needs re-authentication",
+        "summary": "Trigger message (V2)",
+        "description": "Legacy V2 trigger payload. Metadata fields are mixed into `data` rather than a separate `metadata` object. Superseded by V3 — new integrations should use V3.",
+        "deprecated": true,
         "parameters": [
           {
             "schema": {
@@ -7579,7 +7581,226 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Composio POSTs this composio.connected_account.expired payload to your webhook URL.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "log_id": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "connection_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "connection_nano_id": {
+                            "type": "string"
+                          },
+                          "trigger_nano_id": {
+                            "type": "string"
+                          },
+                          "trigger_id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "user_id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "connection_id",
+                          "connection_nano_id",
+                          "trigger_nano_id",
+                          "trigger_id",
+                          "user_id"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "timestamp",
+                  "log_id",
+                  "data"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return any 2xx status to acknowledge receipt. Non-2xx responses are retried."
+          }
+        }
+      }
+    },
+    "composio.trigger.message.v1": {
+      "post": {
+        "operationId": "handle_composio_trigger_message_v1",
+        "tags": [
+          "Webhook Events"
+        ],
+        "summary": "Trigger message (V1)",
+        "description": "Legacy V1 trigger payload. A flat structure without the event envelope. Superseded by V3 — new integrations should use V3.",
+        "deprecated": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+            },
+            "required": true,
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "name": "webhook-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unix timestamp (seconds) of this delivery attempt."
+            },
+            "required": true,
+            "description": "Unix timestamp (seconds) of this delivery attempt.",
+            "name": "webhook-timestamp",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Base64 HMAC-SHA256 signature, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`."
+            },
+            "required": true,
+            "description": "Base64 HMAC-SHA256 signature, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`.",
+            "name": "webhook-signature",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Payload version for this subscription (for example `V3`)."
+            },
+            "required": true,
+            "description": "Payload version for this subscription (for example `V3`).",
+            "name": "x-composio-webhook-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "trigger_name": {
+                    "type": "string"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "trigger_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "payload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "log_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "trigger_name",
+                  "connection_id",
+                  "trigger_id",
+                  "payload",
+                  "log_id"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return any 2xx status to acknowledge receipt. Non-2xx responses are retried."
+          }
+        }
+      }
+    },
+    "composio.connected_account.expired": {
+      "post": {
+        "operationId": "handle_composio_connected_account_expired",
+        "tags": [
+          "Webhook Events"
+        ],
+        "summary": "Connection expired",
+        "description": "Fired when a connected account expires and needs re-authentication.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+            },
+            "required": true,
+            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "name": "webhook-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unix timestamp (seconds) of this delivery attempt."
+            },
+            "required": true,
+            "description": "Unix timestamp (seconds) of this delivery attempt.",
+            "name": "webhook-timestamp",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Base64 HMAC-SHA256 signature, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`."
+            },
+            "required": true,
+            "description": "Base64 HMAC-SHA256 signature, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`.",
+            "name": "webhook-signature",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Payload version for this subscription (for example `V3`)."
+            },
+            "required": true,
+            "description": "Payload version for this subscription (for example `V3`).",
+            "name": "x-composio-webhook-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -7641,7 +7862,8 @@
         "tags": [
           "Webhook Events"
         ],
-        "summary": "Fired when Composio automatically disables a trigger (for example, auth expired or the webhook subscription can no longer be refreshed). Not fired when you disable the trigger or its connected account yourself.",
+        "summary": "Trigger disabled",
+        "description": "Fired when Composio automatically disables a trigger (for example, auth expired or the webhook subscription can no longer be refreshed). Not fired when you disable the trigger or its connected account yourself.",
         "parameters": [
           {
             "schema": {
@@ -7686,7 +7908,6 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Composio POSTs this composio.trigger.disabled payload to your webhook URL.",
           "content": {
             "application/json": {
               "schema": {

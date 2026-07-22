@@ -16,3 +16,12 @@ Configure your webhook subscriptions via the [Webhook Subscriptions API](/refere
 | `composio.trigger.message` | [Trigger message](/reference/api-reference/webhook-events/handle_composio_trigger_message) |
 | `composio.connected_account.expired` | [Connection expired](/reference/api-reference/webhook-events/handle_composio_connected_account_expired) |
 | `composio.trigger.disabled` | [Trigger disabled](/reference/api-reference/webhook-events/handle_composio_trigger_disabled) |
+
+## Legacy payloads (deprecated)
+
+Older subscriptions may still receive V1/V2 trigger payloads. New integrations should use V3.
+
+| Version | Description |
+|---------|-------------|
+| V2 | [Trigger message (V2)](/reference/api-reference/webhook-events/handle_composio_trigger_message_v2) |
+| V1 | [Trigger message (V1)](/reference/api-reference/webhook-events/handle_composio_trigger_message_v1) |
