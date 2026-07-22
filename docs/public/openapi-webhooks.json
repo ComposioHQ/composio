@@ -5,12 +5,6 @@
     "version": "1.0.0",
     "description": "Payloads Composio delivers to your registered webhook endpoints. Composio POSTs these to the URL on your webhook subscription. For signature verification and delivery headers, see the Verifying webhooks guide."
   },
-  "servers": [
-    {
-      "url": "https://backend.composio.dev",
-      "description": "PRODUCTION API"
-    }
-  ],
   "tags": [
     {
       "name": "Webhook Events",
