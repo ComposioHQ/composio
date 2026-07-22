@@ -4,6 +4,7 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
+  knowledgeBaseSource,
   changelogEntries,
   dateToChangelogUrl,
 } from '@/lib/source';
@@ -23,6 +24,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const examplesPages = examplesSource.getPages().map((page) => ({
+    url: `${baseUrl}${page.url}`,
+  }));
+
+  const knowledgeBasePages = knowledgeBaseSource.getPages().map((page) => ({
     url: `${baseUrl}${page.url}`,
   }));
 
@@ -48,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...docsPages,
     ...referencePages,
     ...examplesPages,
+    ...knowledgeBasePages,
     ...toolkitsMdxPages,
     ...toolkitsJsonPages,
     ...changelogPages,

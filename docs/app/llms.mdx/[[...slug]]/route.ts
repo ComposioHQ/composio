@@ -3,6 +3,7 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
+  knowledgeBaseSource,
   changelogEntries,
   slugToDate,
   formatDate,
@@ -506,6 +507,7 @@ async function openapiPageToMarkdown(
 // Note: 'reference' is handled specially below with async getReferenceSource()
 const sources = [
   { prefix: 'docs', source },
+  { prefix: 'kb', source: knowledgeBaseSource },
   { prefix: 'examples', source: examplesSource },
   { prefix: 'toolkits', source: toolkitsSource },
 ];

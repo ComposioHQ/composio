@@ -65,6 +65,20 @@ function relatedResources(guide: KbGuide, guides: KbGuide[]) {
   return [...internal, ...external];
 }
 
+function relatedFrontmatter(
+  resources: Array<{ title: string; href: string; description: string }>,
+): string[] {
+  if (resources.length === 0) return [];
+  return [
+    'related:',
+    ...resources.flatMap((resource) => [
+      `  - title: ${yamlString(resource.title)}`,
+      `    href: ${yamlString(resource.href)}`,
+      `    description: ${yamlString(resource.description)}`,
+    ]),
+  ];
+}
+
 function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): string {
   const related = relatedResources(guide, guides);
   const frontmatter = [
@@ -80,7 +94,7 @@ function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): stri
     `freshness: ${yamlString(guide.freshness)}`,
     `topics: ${yamlArray(guide.topics)}`,
     `aliases: ${yamlArray(guide.aliases)}`,
-    ...(related.length ? [`related: ${JSON.stringify(related)}`] : []),
+    ...relatedFrontmatter(related),
     '---',
     '',
   ];
@@ -213,4 +227,3 @@ export function generateKbContent(
   }
   return { published, held, files: expected.size };
 }
-

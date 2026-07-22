@@ -39,6 +39,10 @@ describe('public KB content generation', () => {
     expect(guide).toContain('sourceCommit: "5eed614"');
     expect(guide).toContain('lastVerifiedAt: "2026-07-21"');
     expect(guide).toContain('reviewAfter: "2027-01-17"');
+    expect(guide).toContain(
+      'related:\n  - title: "Use Tool Router session files as toolkit inputs"',
+    );
+    expect(guide).not.toContain('related: [{');
   });
 
   test('detects generated content drift in check mode', () => {

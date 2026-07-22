@@ -10,7 +10,13 @@ reviewAfter: "2027-01-17"
 freshness: "evergreen"
 topics: ["tool-router-and-mcp","sdk-and-api"]
 aliases: []
-related: [{"title":"Pagination limits are endpoint-specific","href":"/kb/sdk-and-api/pagination-limits-are-endpoint-specific","description":"Use each endpoint's schema and cursor behavior instead of assuming one global page-size limit."},{"title":"Configure Composio sessions","href":"/docs/configuring-sessions","description":"Create and configure Tool Router sessions."}]
+related:
+  - title: "Pagination limits are endpoint-specific"
+    href: "/kb/sdk-and-api/pagination-limits-are-endpoint-specific"
+    description: "Use each endpoint's schema and cursor behavior instead of assuming one global page-size limit."
+  - title: "Configure Composio sessions"
+    href: "/docs/configuring-sessions"
+    description: "Create and configure Tool Router sessions."
 ---
 Tool Router session files and toolkit `FileUploadable` inputs are different abstractions. Do not pass `/workspace/output/...`, `/mnt/files/...`, a local machine path, or an old/foreign `file_...` handle directly as `s3key`.
 

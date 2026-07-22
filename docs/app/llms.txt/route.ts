@@ -1,4 +1,10 @@
-import { source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import {
+  source,
+  examplesSource,
+  referenceSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+} from '@/lib/source';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -104,6 +110,7 @@ export async function GET() {
     const examplesPages = examplesSource.getPages();
     const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
+    const knowledgeBasePages = knowledgeBaseSource.getPages();
 
     const index = `# Composio Documentation
 
@@ -116,6 +123,10 @@ ${docsTree}
 ## Examples
 
 ${examplesPages.map(formatPage).join('\n')}
+
+## Knowledge Base
+
+${knowledgeBasePages.map(formatPage).join('\n')}
 
 ## API Reference
 

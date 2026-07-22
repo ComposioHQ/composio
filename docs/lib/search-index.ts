@@ -2,7 +2,13 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { docs, reference, examples, toolkits } from 'fumadocs-mdx:collections/server';
+import {
+  docs,
+  reference,
+  examples,
+  toolkits,
+  knowledgeBase,
+} from 'fumadocs-mdx:collections/server';
 import { loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
@@ -44,6 +50,12 @@ const examplesSource = loader({
 const toolkitsSource = loader({
   baseUrl: '/toolkits',
   source: toolkits.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+const knowledgeBaseSource = loader({
+  baseUrl: '/kb',
+  source: knowledgeBase.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
@@ -198,6 +210,9 @@ function urlFromContentPath(path: string): { url: string; type: string } | undef
     if (parts[0] === 'faq') return undefined;
     return { url: `/toolkits/${parts.join('/')}`.replace(/\/index$/, ''), type: 'toolkits' };
   }
+  if (collection === 'kb') {
+    return { url: `/kb/${parts.join('/')}`.replace(/\/index$/, ''), type: 'kb' };
+  }
   if (collection === 'changelog') return undefined;
 
   return undefined;
@@ -218,6 +233,7 @@ const typeLabels: Record<string, string> = {
   reference: 'Reference',
   'v3-reference': 'Legacy v3 Reference',
   toolkits: 'Toolkit',
+  kb: 'Knowledge Base',
   changelog: 'Changelog',
   'api-reference': 'API Reference',
 };
@@ -306,6 +322,7 @@ function pageRank(url: string, type: string): number {
   }
 
   if (type === 'examples') return 1_500;
+  if (type === 'kb') return 1_800;
   if (type === 'toolkits') return 1_250;
   // Current v3.1 reference should be available, but conceptual docs should
   // win whenever both match. Legacy v3 reference is only a last-resort result.
@@ -594,6 +611,7 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     ...docsSource.getPages(),
     ...examplesSource.getPages(),
     ...toolkitsSource.getPages(),
+    ...knowledgeBaseSource.getPages(),
     ...fullReferenceSource.getPages(),
   ].filter((page) => !isExcludedFromSearch(page.url)).map((page) => ({
     id: page.url,

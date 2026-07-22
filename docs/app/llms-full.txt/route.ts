@@ -1,4 +1,11 @@
-import { getLLMText, source, examplesSource, referenceSource, toolkitsSource } from '@/lib/source';
+import {
+  getLLMText,
+  source,
+  examplesSource,
+  referenceSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+} from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
 import type { ReactNode } from 'react';
 
@@ -137,8 +144,15 @@ export async function GET() {
       treeChildren
     );
 
-    const [docsResults, examplesResults, referenceResults, toolkitsResults] = await Promise.all([
+    const [
+      docsResults,
+      knowledgeBaseResults,
+      examplesResults,
+      referenceResults,
+      toolkitsResults,
+    ] = await Promise.all([
       getTextForPages(orderedDocsPages),
+      getTextForPages(knowledgeBaseSource.getPages() as PageLike[]),
       getTextForPages(examplesSource.getPages() as PageLike[]),
       getTextForPages(referenceSource.getPages() as PageLike[]),
       getTextForPages(toolkitsSource.getPages() as PageLike[]),
@@ -147,6 +161,8 @@ export async function GET() {
     const results = [
       `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
       ...docsResults,
+      '\n# Knowledge Base\n',
+      ...knowledgeBaseResults,
       '\n# Examples\n',
       ...examplesResults,
       '\n# API Reference\n',

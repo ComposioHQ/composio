@@ -13,13 +13,15 @@ import {
   getReferenceSource,
   examplesSource,
   toolkitsSource,
+  knowledgeBaseSource,
 } from '../lib/source';
 
 type AnySource =
   | typeof source
   | Awaited<ReturnType<typeof getReferenceSource>>
   | typeof examplesSource
-  | typeof toolkitsSource;
+  | typeof toolkitsSource
+  | typeof knowledgeBaseSource;
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
 
@@ -92,11 +94,19 @@ async function getDynamicToolkitEntries() {
 
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
-  const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] = await Promise.all([
+  const [
+    docsEntries,
+    refEntries,
+    exampleEntries,
+    toolkitEntries,
+    knowledgeBaseEntries,
+    dynamicToolkitEntries,
+  ] = await Promise.all([
     buildPopulateEntries(source),
     buildPopulateEntries(referenceSource),
     buildPopulateEntries(examplesSource),
     buildPopulateEntries(toolkitsSource),
+    buildPopulateEntries(knowledgeBaseSource),
     getDynamicToolkitEntries(),
   ]);
 
@@ -108,6 +118,7 @@ async function checkLinks() {
       '(home)/reference/[[...slug]]': refEntries,
       '(home)/examples/[[...slug]]': exampleEntries,
       '(home)/toolkits/[[...slug]]': [...toolkitEntries, ...dynamicToolkitEntries],
+      '(home)/kb/[[...slug]]': knowledgeBaseEntries,
     },
   });
 
@@ -139,7 +150,7 @@ async function checkLinks() {
 
 async function getFiles(): Promise<FileObject[]> {
   const referenceSource = await getReferenceSource();
-  const sources = [source, referenceSource, examplesSource, toolkitsSource];
+  const sources = [source, referenceSource, examplesSource, toolkitsSource, knowledgeBaseSource];
   const allFiles: FileObject[] = [];
 
   for (const src of sources) {
