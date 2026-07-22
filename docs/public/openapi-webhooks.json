@@ -7498,7 +7498,25 @@
                       "data"
                     ]
                   }
-                ]
+                ],
+                "example": {
+                  "id": "msg_2f1c9e4a-3b6d-4a1e-9c2f-7d8e5a6b4c31",
+                  "type": "composio.trigger.message",
+                  "timestamp": "2026-01-15T10:30:00Z",
+                  "metadata": {
+                    "log_id": "log_abc123",
+                    "trigger_slug": "GITHUB_COMMIT_EVENT",
+                    "trigger_id": "ti_xyz789",
+                    "connected_account_id": "ca_def456",
+                    "auth_config_id": "ac_xyz789",
+                    "user_id": "user-123"
+                  },
+                  "data": {
+                    "commit_sha": "a1b2c3d",
+                    "message": "fix: resolve null pointer",
+                    "author": "jane"
+                  }
+                }
               }
             }
           }
@@ -7751,7 +7769,26 @@
                       "metadata"
                     ]
                   }
-                ]
+                ],
+                "example": {
+                  "id": "msg_7b3a1c2d-4e5f-4a6b-8c9d-0e1f2a3b4c5d",
+                  "type": "composio.trigger.disabled",
+                  "timestamp": "2026-01-15T10:30:00Z",
+                  "metadata": {
+                    "project_id": "proj_abc123"
+                  },
+                  "data": {
+                    "id": "ti_xyz789",
+                    "connected_account_id": "ca_def456",
+                    "trigger_name": "GITHUB_COMMIT_EVENT",
+                    "user_id": "user-123",
+                    "trigger_config": {
+                      "repo": "composio"
+                    },
+                    "disabled_at": "2026-01-15T10:30:00Z",
+                    "disabled_reason": "Connected account authentication expired."
+                  }
+                }
               }
             }
           }
