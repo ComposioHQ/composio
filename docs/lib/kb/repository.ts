@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { buildKbCatalog } from './catalog';
 import type { KbCatalog, KbGuide, KbManifest } from './types';
 
-const KB_ROOT = fileURLToPath(new URL('../../kb', import.meta.url));
+const KB_ROOT = join(process.cwd(), 'kb');
 let cachedCatalog: KbCatalog | null = null;
 
 export function getKbCatalog(): KbCatalog {
@@ -35,4 +34,3 @@ export function resolveKbAlias(path: string, catalog = getKbCatalog()): string |
   );
   return guide ? getKbGuideUrl(guide) : null;
 }
-
