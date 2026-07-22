@@ -1,8 +1,17 @@
 import http from 'node:http';
-import { FileSystem, Path } from '@effect/platform';
 import open from 'open';
 import { detectCliPlatform } from '@composio/cli-local-tools';
-import { Data, Effect, Option, Record as EffectRecord, Schema } from 'effect';
+import {
+  Data,
+  Effect,
+  FileSystem,
+  Option,
+  Path,
+  Record as EffectRecord,
+  Schema,
+  SchemaTransformation,
+  Semaphore,
+} from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import { resolveCliConfigDirectorySync } from 'src/services/cli-user-config';
 import { collectDecodedEntries } from 'src/utils/collect-decoded-entries';
@@ -33,17 +42,17 @@ export type PermissionApprovalStatus =
 export type PermissionGateResult =
   { readonly approvalStatus: PermissionApprovalStatus } | undefined;
 
-const PermissionDefaultModeLiteralSchema = Schema.Literal(
+const PermissionDefaultModeLiteralSchema = Schema.Literals([
   'allow_all',
   'ask_every_call',
-  'ask_once_per_session'
-);
-const PermissionOverrideStateLiteralSchema = Schema.Literal(
+  'ask_once_per_session',
+]);
+const PermissionOverrideStateLiteralSchema = Schema.Literals([
   'always_allow',
   'always_deny',
   'ask_once',
-  'ask_always'
-);
+  'ask_always',
+]);
 const isPermissionDefaultMode = Schema.is(PermissionDefaultModeLiteralSchema);
 const isPermissionOverrideState = Schema.is(PermissionOverrideStateLiteralSchema);
 
@@ -51,24 +60,26 @@ const isPermissionOverrideState = Schema.is(PermissionOverrideStateLiteralSchema
 // Preserve validation without failing open during that version-skew window:
 // unknown defaults and overrides decode to their interactive safe equivalents.
 const PermissionDefaultModeSchema = Schema.String.pipe(
-  Schema.transform(PermissionDefaultModeLiteralSchema, {
-    decode: value => (isPermissionDefaultMode(value) ? value : 'ask_every_call'),
-    encode: value => value,
-    strict: true,
-  })
+  Schema.decodeTo(
+    PermissionDefaultModeLiteralSchema,
+    SchemaTransformation.transform({
+      decode: value => (isPermissionDefaultMode(value) ? value : 'ask_every_call'),
+      encode: value => value,
+    })
+  )
 );
 const PermissionOverrideStateSchema = Schema.String.pipe(
-  Schema.transform(PermissionOverrideStateLiteralSchema, {
-    decode: value => (isPermissionOverrideState(value) ? value : 'ask_always'),
-    encode: value => value,
-    strict: true,
-  })
+  Schema.decodeTo(
+    PermissionOverrideStateLiteralSchema,
+    SchemaTransformation.transform({
+      decode: value => (isPermissionOverrideState(value) ? value : 'ask_always'),
+      encode: value => value,
+    })
+  )
 );
 const ToolRouterPermissionsConfigSchema = Schema.Struct({
   default: PermissionDefaultModeSchema,
-  overrides: Schema.optional(
-    Schema.Record({ key: Schema.String, value: PermissionOverrideStateSchema })
-  ),
+  overrides: Schema.optional(Schema.Record(Schema.String, PermissionOverrideStateSchema)),
 });
 export const decodeToolRouterPermissionsConfig = Schema.decodeUnknownOption(
   ToolRouterPermissionsConfigSchema
@@ -106,7 +117,7 @@ type CacheFile = {
 };
 type ConsumerConfigResponse = typeof ConsumerConfigResponseSchema.Type;
 const decodeCacheShell = Schema.decodeUnknownOption(
-  Schema.parseJson(
+  Schema.fromJsonString(
     Schema.Struct({
       entries: Schema.optional(JsonRecordSchema),
       allowEntries: Schema.optional(JsonRecordSchema),
@@ -229,7 +240,7 @@ const writeCacheFile = (fs: FileSystem.FileSystem, path: Path.Path, cache: Cache
 // Serializes the read-modify-write cycles on the cache file so concurrent
 // writers cannot interleave (the same role the previous promise write queue
 // played for the plain async helpers).
-const cacheWriteSemaphore = Effect.unsafeMakeSemaphore(1);
+const cacheWriteSemaphore = Semaphore.makeUnsafe(1);
 
 const updateCacheFile = (
   fs: FileSystem.FileSystem,
@@ -279,8 +290,8 @@ const isFreshForAccounts = (
 const readEnhancedControlsFlag = (payload: ConsumerConfigResponse): boolean =>
   payload.enhanced_controls === true || payload.enhancedControls === true;
 
-const fetchJson = async <A, I>(
-  responseSchema: Schema.Schema<A, I, never>,
+const fetchJson = async <S extends Schema.ConstraintDecoder<unknown>>(
+  responseSchema: S,
   {
     baseURL,
     apiKey,
@@ -298,7 +309,7 @@ const fetchJson = async <A, I>(
     readonly method?: 'GET' | 'POST';
     readonly body?: unknown;
   }
-): Promise<A> => {
+): Promise<S['Type']> => {
   const response = await fetch(`${normalizeBaseUrl(baseURL)}${path}`, {
     method,
     redirect: 'error',
@@ -415,7 +426,7 @@ export const refreshConsumerPermissionSnapshot = (params: {
     // on the next command instead of pinning ask_every_call for the TTL.
     if (!resolved.resolveFailed) {
       yield* writeCacheEntry(fs, path, snapshot).pipe(
-        Effect.catchAll(cause =>
+        Effect.catch(cause =>
           Effect.logDebug(
             'Failed to write the tool permissions cache',
             new ToolPermissionsCacheError({
@@ -453,8 +464,8 @@ export const getConsumerPermissionSnapshot = (params: {
 
     if (isFreshForAccounts(cached, connectedAccountIds)) {
       yield* refreshConsumerPermissionSnapshot({ ...params, connectedAccountIds }).pipe(
-        Effect.forkDaemon,
-        Effect.catchAll(() => Effect.void)
+        Effect.forkDetach,
+        Effect.catch(() => Effect.void)
       );
       return cached;
     }
@@ -1101,7 +1112,7 @@ export const gateToolExecution = (params: GateParams) =>
     const cachesAllowOnce = state === 'ask_once' || state === 'ask_once_per_session';
     if (decision === 'allow_session' || (cachesAllowOnce && decision === 'allow_once')) {
       yield* cacheAllowDecision(fs, path, cacheKey).pipe(
-        Effect.catchAll(cause =>
+        Effect.catch(cause =>
           Effect.logDebug(
             'Failed to cache tool permission allow decision',
             new ToolPermissionsCacheError({

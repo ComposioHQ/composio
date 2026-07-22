@@ -1,7 +1,7 @@
 import { Config, LogLevel, Option } from 'effect';
 import * as constants from 'src/constants';
 
-type APP_CONFIG = Config.Config.Wrap<{
+type APP_CONFIG = Config.Wrap<{
   USER_API_KEY: Option.Option<string>;
   ENVIRONMENT: Option.Option<string>;
   BASE_URL: string;

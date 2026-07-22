@@ -1,5 +1,4 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Context, Data, Effect, Layer } from 'effect';
+import { Context, Data, Effect, FileSystem, Layer, Path } from 'effect';
 import type { Composio } from '@composio/client';
 import { executeLocalToolBySlug, resolveLocalTool } from '@composio/cli-local-tools';
 import type {
@@ -69,7 +68,7 @@ export interface ToolsExecutor {
   >;
 }
 
-export const ToolsExecutor = Context.GenericTag<ToolsExecutor>('services/ToolsExecutor');
+export const ToolsExecutor = Context.Service<ToolsExecutor>('services/ToolsExecutor');
 
 export class LocalToolsDisabledError extends Data.TaggedError('services/LocalToolsDisabledError')<{
   readonly toolSlug: string;
@@ -212,7 +211,7 @@ export const ToolsExecutorLive = Layer.effect(
           const normalizedArguments = isMetaToolSlug(slug)
             ? params.arguments
             : yield* getOrFetchToolInputDefinition(slug).pipe(
-                Effect.catchAll(() => Effect.succeed(null)),
+                Effect.catch(() => Effect.succeed(null)),
                 Effect.flatMap(definition => {
                   if (!definition) {
                     return Effect.succeed(params.arguments);

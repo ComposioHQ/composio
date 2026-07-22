@@ -1,6 +1,6 @@
 import { Validator } from '@cfworker/json-schema';
 import type { OutputUnit, Schema as InterpreterSchema, SchemaDraft } from '@cfworker/json-schema';
-import { Either, ParseResult, Schema } from 'effect';
+import { Schema, Result } from 'effect';
 
 export type JsonSchemaValidationIssue = {
   readonly code: string;
@@ -232,8 +232,8 @@ const propertyIsDeclared = (parent: JsonObject | null, key: string): boolean => 
   }
 
   return Object.keys(parent.patternProperties).some(pattern =>
-    Either.getOrElse(
-      Either.try(() => new RegExp(pattern, 'u').test(key)),
+    Result.getOrElse(
+      Result.try(() => new RegExp(pattern, 'u').test(key)),
       () => false
     )
   );
@@ -336,27 +336,21 @@ export const jsonSchemaToEffectSchema = (
   const validator = new Validator(normalizedSchema, options.draft ?? '7', false);
   const formatIssues = options.formatIssues ?? defaultFormatIssues;
 
-  return Schema.declare([Schema.Unknown], {
-    decode: () => (input, _parseOptions, ast) => {
-      const validation = Either.try(() => validator.validate(input));
-      if (Either.isLeft(validation)) {
-        return ParseResult.fail(
-          new ParseResult.Type(ast, input, `JSON Schema validation failed: ${validation.left}`)
-        );
+  return Schema.Unknown.check(
+    Schema.makeFilter((input): Schema.FilterOutput => {
+      const validationResult = Result.try(() => validator.validate(input));
+      if (Result.isFailure(validationResult)) {
+        return `JSON Schema validation failed: ${validationResult.failure}`;
       }
-      if (validation.right.valid) {
-        return ParseResult.succeed(input);
+      const validation = validationResult.success;
+
+      if (validation.valid) {
+        return undefined;
       }
 
-      const issues = mapValidationErrors(validation.right.errors, normalizedSchema);
+      const issues = mapValidationErrors(validation.errors, normalizedSchema);
       const messages = formatIssues(issues);
-      const [first, ...rest] = messages.map(message => new ParseResult.Type(ast, input, message));
-      return ParseResult.fail(
-        first
-          ? new ParseResult.Composite(ast, input, [first, ...rest])
-          : new ParseResult.Type(ast, input, 'Input does not match the JSON schema.')
-      );
-    },
-    encode: () => input => ParseResult.succeed(input),
-  });
+      return messages.length > 0 ? messages : 'Input does not match the JSON schema.';
+    })
+  );
 };

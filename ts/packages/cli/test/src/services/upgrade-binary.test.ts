@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from '@effect/vitest';
-import { ConfigProvider, Effect, Layer } from 'effect';
-import { FetchHttpClient, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { ConfigProvider, Effect, Layer, Path } from 'effect';
+import { FetchHttpClient } from 'effect/unstable/http';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import { existsSync, mkdirSync, readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -48,7 +48,7 @@ const TerminalUINoop = Layer.succeed(
 
 const NodeOsTest = Layer.succeed(
   NodeOs,
-  new NodeOs({
+  NodeOs.of({
     homedir: '/tmp',
     tmpdir: '/tmp',
     platform: 'darwin',
@@ -66,12 +66,15 @@ const makeUpgradeEffect = (
     const service = yield* UpgradeBinary;
     return yield* service.upgrade(options);
   }).pipe(
-    Effect.provide(UpgradeBinary.Default),
+    Effect.provide(UpgradeBinary.layer),
     Effect.provide(FetchHttpClient.layer),
     Effect.provide(BunFileSystem.layer),
     Effect.provide(TerminalUINoop),
     Effect.provide(NodeOsTest),
-    Effect.withConfigProvider(ConfigProvider.fromMap(new Map(configEntries))),
+    Effect.provideService(
+      ConfigProvider.ConfigProvider,
+      ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) })
+    ),
     Effect.scoped
   );
 
@@ -125,7 +128,7 @@ const restoreStubsAndMocks = Effect.sync(() => {
 });
 
 describe('UpgradeBinary', () => {
-  it.scoped('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
+  it.effect('wraps non-2xx releases fetch failures with fetch context (no tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -149,7 +152,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('wraps tagged release JSON parse failures with parse context (tag branch)', () => {
+  it.effect('wraps tagged release JSON parse failures with parse context (tag branch)', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -173,7 +176,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('rejects structurally invalid tagged release JSON', () => {
+  it.effect('rejects structurally invalid tagged release JSON', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -197,7 +200,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('URL-encodes slash-containing tags in tagged release request path', () => {
+  it.effect('URL-encodes slash-containing tags in tagged release request path', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
     let receivedPath = '';
 
@@ -226,7 +229,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('skips newer releases that do not contain a binary for the current platform', () => {
+  it.effect('skips newer releases that do not contain a binary for the current platform', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -270,7 +273,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('ignores prereleases when checking the stable channel', () => {
+  it.effect('ignores prereleases when checking the stable channel', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
     return Effect.gen(function* () {
@@ -314,7 +317,7 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.ensuring(restoreStubsAndMocks));
   });
 
-  it.scoped('selects the latest prerelease when beta upgrades are requested', () => {
+  it.effect('selects the latest prerelease when beta upgrades are requested', () => {
     const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-select-'));
     const fakeExecPath = path.join(installDir, 'composio');
     writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.1.0-beta.0\n');
@@ -436,7 +439,7 @@ describe('UpgradeBinary', () => {
     );
   });
 
-  it.scoped('uses the installed beta release tag when comparing beta updates', () => {
+  it.effect('uses the installed beta release tag when comparing beta updates', () => {
     const installDir = mkdtempSync(path.join(tmpdir(), 'composio-beta-upgrade-'));
     const fakeExecPath = path.join(installDir, 'composio');
     writeFileSync(path.join(installDir, 'release-tag.txt'), '@composio/cli@0.2.17-beta.1\n');

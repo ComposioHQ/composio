@@ -125,15 +125,15 @@ const toolkitsData = {
   detailedToolkits,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug "gmail"',
     it => {
-      it.scoped('shows detailed info with connection status', () =>
+      it.effect('shows detailed info with connection status', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'info', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -163,7 +163,7 @@ describe('CLI: composio dev toolkits info', () => {
   )(
     '[Given] no --user-id and no project test_user_id [Then] falls back to global test_user_id',
     it => {
-      it.scoped('uses global test user id for toolkit info', () =>
+      it.effect('uses global test user id for toolkit info', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'info', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -179,7 +179,7 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit with no_auth=true',
     it => {
-      it.scoped('shows "no auth"', () =>
+      it.effect('shows "no auth"', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'info', 'codeinterpreter']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -197,7 +197,7 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --all flag',
     it => {
-      it.scoped('shows full auth config setup fields', () =>
+      it.effect('shows full auth config setup fields', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'info', 'gmail', '--all']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -216,9 +216,9 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug',
     it => {
-      it.scoped('shows error', () =>
+      it.effect('shows error', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.either);
+          yield* cli(['dev', 'toolkits', 'info', 'gmal']).pipe(Effect.result);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -231,9 +231,9 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug with substring match',
     it => {
-      it.scoped('shows error with hint', () =>
+      it.effect('shows error with hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'info', 'gma']).pipe(Effect.either);
+          yield* cli(['dev', 'toolkits', 'info', 'gma']).pipe(Effect.result);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -247,7 +247,7 @@ describe('CLI: composio dev toolkits info', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] no slug argument',
     it => {
-      it.scoped('shows missing argument warning with tip', () =>
+      it.effect('shows missing argument warning with tip', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'info']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -261,7 +261,7 @@ describe('CLI: composio dev toolkits info', () => {
   );
 
   layer(TestLive())('[Given] no API key', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'toolkits', 'info', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

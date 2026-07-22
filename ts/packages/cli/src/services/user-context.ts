@@ -1,5 +1,14 @@
-import { FileSystem, Path } from '@effect/platform';
-import { Effect, Context, Layer, Option, Predicate, Schema } from 'effect';
+import {
+  Effect,
+  Context,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  PlatformError,
+  Predicate,
+  Schema,
+} from 'effect';
 import {
   type UserDataWithDefaults,
   UserData,
@@ -9,8 +18,6 @@ import {
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import * as constants from 'src/constants';
-import type { PlatformError } from '@effect/platform/Error';
-import type { ParseError } from 'effect/ParseResult';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { KeyringService, KeyringLiveWithBackend } from '@composio/cli-keyring/effect';
 import type { KeyringServiceShape } from '@composio/cli-keyring/effect';
@@ -26,7 +33,9 @@ import { ComposioCliUserConfig, ComposioCliUserConfigLive } from 'src/services/c
  */
 const KEYRING_SERVICE = 'com.composio.cli';
 const KEYRING_USER = 'default';
-const decodeUserDataJsonObject = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+const decodeUserDataJsonObject = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(JsonRecordSchema)
+);
 
 const normalizeEncodedUserData = (encoded: string, omitApiKey: boolean) =>
   Effect.gen(function* () {
@@ -59,7 +68,7 @@ const writeKeyring = (deps: KeyringDeps, password: string) =>
     if (deps.useLegacyStorage) return false;
     return yield* deps.keyring.setPassword(KEYRING_SERVICE, KEYRING_USER, password).pipe(
       Effect.map(() => true),
-      Effect.catchAll(err =>
+      Effect.catch(err =>
         Effect.gen(function* () {
           if (err instanceof KeyringError && err.kind === 'NoStorageAccess') {
             yield* Effect.logDebug(
@@ -88,7 +97,7 @@ const readKeyring = (deps: KeyringDeps) =>
     if (deps.useLegacyStorage) return Option.none<string>();
     return yield* deps.keyring.getPassword(KEYRING_SERVICE, KEYRING_USER).pipe(
       Effect.map(Option.some),
-      Effect.catchAll(err =>
+      Effect.catch(err =>
         Effect.gen(function* () {
           if (err instanceof KeyringError && err.kind === 'NoEntry') {
             yield* Effect.logDebug('No keyring entry found for Composio API key');
@@ -121,7 +130,7 @@ const deleteKeyring = (deps: KeyringDeps) =>
   Effect.gen(function* () {
     if (deps.useLegacyStorage) return;
     yield* deps.keyring.deleteCredential(KEYRING_SERVICE, KEYRING_USER).pipe(
-      Effect.catchAll(err =>
+      Effect.catch(err =>
         Effect.gen(function* () {
           if (
             err instanceof KeyringError &&
@@ -142,20 +151,22 @@ const deleteKeyring = (deps: KeyringDeps) =>
 // Service definition
 // -----------------------------------------------------------------------------
 
-export class ComposioUserContext extends Context.Tag('ComposioUserData')<
+export class ComposioUserContext extends Context.Service<
   ComposioUserContext,
   {
     readonly data: UserDataWithDefaults;
     isLoggedIn: () => boolean;
-    logout: Effect.Effect<void, ParseError | PlatformError, never>;
+    logout: Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
     login: (
       apiKey: string,
       orgId?: string,
       testUserId?: string
-    ) => Effect.Effect<void, ParseError | PlatformError, never>;
-    update: (data: UserData) => Effect.Effect<void, ParseError | PlatformError, never>;
+    ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
+    update: (
+      data: UserData
+    ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
   }
->() {}
+>()('ComposioUserData') {}
 
 export const rawComposioUserContextLive = Layer.effect(
   ComposioUserContext,
@@ -221,9 +232,9 @@ export const rawComposioUserContextLive = Layer.effect(
           apiKey: Option.some(apiKey),
           baseURL: Option.some(baseURL),
           webURL: Option.some(webURL),
-          orgId: Option.fromNullable(orgId),
+          orgId: Option.fromNullishOr(orgId),
           projectId: userData.projectId,
-          testUserId: Option.fromNullable(testUserId),
+          testUserId: Option.fromNullishOr(testUserId),
         };
         userData = next;
 
@@ -277,7 +288,7 @@ export const rawComposioUserContextLive = Layer.effect(
     if (yield* fs.exists(jsonUserConfigPath)) {
       yield* Effect.logDebug('User data file exists, loading it');
       yield* load.pipe(
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             yield* Effect.logDebug(
               'Failed to load user data file (empty or corrupted), resetting to defaults:',
@@ -358,7 +369,7 @@ const resolveMacOSBackend = (
  * subprocess path (default); `"keychain"` opts into the experimental
  * FFI path (requires Developer ID-signed binary to avoid dialogs).
  */
-export const ComposioUserContextLive = Layer.unwrapEffect(
+export const ComposioUserContextLive = Layer.unwrap(
   Effect.gen(function* () {
     const cliConfig = yield* ComposioCliUserConfig;
     const backend = resolveMacOSBackend(cliConfig.data.security);

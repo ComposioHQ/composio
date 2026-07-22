@@ -1,7 +1,8 @@
 import process from 'node:process';
-import { Command, Options } from '@effect/cli';
-import { FileSystem, Path } from '@effect/platform';
-import type { PlatformError } from '@effect/platform/Error';
+import { Command, Flag } from 'effect/unstable/cli';
+import { FileSystem } from 'effect/FileSystem';
+import { Path } from 'effect/Path';
+import type { PlatformError } from 'effect/PlatformError';
 import { Array as Arr, Effect } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { NodeOs } from 'src/services/node-os';
@@ -12,14 +13,14 @@ import { getCompletionScript } from 'src/effects/shell-completions';
 // Options
 // ---------------------------------------------------------------------------
 
-const completionsOpt = Options.boolean('completions').pipe(
-  Options.withDescription('Install shell completions.'),
-  Options.withDefault(false)
+const completionsOpt = Flag.boolean('completions').pipe(
+  Flag.withDescription('Install shell completions.'),
+  Flag.withDefault(false)
 );
 
-const noCompletionsOpt = Options.boolean('no-completions').pipe(
-  Options.withDescription('Deprecated: shell completions are skipped by default.'),
-  Options.withDefault(false)
+const noCompletionsOpt = Flag.boolean('no-completions').pipe(
+  Flag.withDescription('Deprecated: shell completions are skipped by default.'),
+  Flag.withDefault(false)
 );
 
 // ---------------------------------------------------------------------------
@@ -47,7 +48,7 @@ const COMPLETIONS_MARKER = '# Composio CLI completions';
 const UNSAFE_PATH_CHARS = /[;`$|&"'()\n\r\\]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
-const detectShell = (path: Path.Path): Shell | undefined => {
+const detectShell = (path: Path): Shell | undefined => {
   // eslint-disable-next-line no-restricted-syntax -- $SHELL is read inside a plain synchronous helper that mirrors install.sh's shell detection, outside any Effect context
   const shellEnv = process.env.SHELL ?? '';
   const base = path.basename(shellEnv);
@@ -61,7 +62,7 @@ const detectShell = (path: Path.Path): Shell | undefined => {
  * Return candidate rc file paths for a shell, ordered by preference.
  * For bash this mirrors the install.sh fallback: .bashrc then .bash_profile.
  */
-const rcFileCandidates = (path: Path.Path, shell: Shell, homedir: string): string[] => {
+const rcFileCandidates = (path: Path, shell: Shell, homedir: string): string[] => {
   switch (shell) {
     case 'zsh':
       return [path.join(homedir, '.zshrc')];
@@ -78,7 +79,7 @@ const rcFileCandidates = (path: Path.Path, shell: Shell, homedir: string): strin
  */
 const resolveRcFile = (
   candidates: string[],
-  fs: FileSystem.FileSystem
+  fs: FileSystem
 ): Effect.Effect<string, PlatformError> =>
   Effect.gen(function* () {
     for (const candidate of candidates) {
@@ -106,7 +107,7 @@ const pathBlockForShell = (shell: Shell, installDir: string): string => {
 };
 
 const buildShellConfig = (
-  path: Path.Path,
+  path: Path,
   shell: Shell,
   rcFile: string,
   installDir: string,
@@ -132,12 +133,12 @@ const tildify = (p: string, homedir: string): string =>
 
 const readMaybeMissingFile = (
   filePath: string,
-  fs: FileSystem.FileSystem
+  fs: FileSystem
 ): Effect.Effect<string, PlatformError> =>
   fs
     .readFileString(filePath)
     .pipe(
-      Effect.catchAll(e =>
+      Effect.catch(e =>
         Effect.logDebug('File does not exist yet, will create:', e).pipe(Effect.as(''))
       )
     );
@@ -151,13 +152,13 @@ export const installShellIntegration = (params: {
 }): Effect.Effect<
   void,
   PlatformError,
-  TerminalUI | NodeOs | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
+  TerminalUI | NodeOs | FileSystem | Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
+    const fs = yield* FileSystem;
+    const path = yield* Path;
 
     yield* ui.intro('composio install');
 
@@ -261,7 +262,7 @@ export const installShellIntegration = (params: {
         yield* fs
           .makeDirectory(path.dirname(filePath), { recursive: true })
           .pipe(
-            Effect.catchAll(e =>
+            Effect.catch(e =>
               Effect.logDebug('Could not create parent directory (may already exist):', e)
             )
           );

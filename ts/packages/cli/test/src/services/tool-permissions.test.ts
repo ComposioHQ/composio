@@ -1,7 +1,7 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, beforeEach, describe, expect, it, vi } from '@effect/vitest';
-import { Config, ConfigProvider, Effect, Layer, Option } from 'effect';
+import { Config, ConfigProvider, Effect, FileSystem, Layer, Option, Path } from 'effect';
 import {
   decodeCacheFileTolerant,
   decodeToolRouterPermissionsConfig,
@@ -188,7 +188,7 @@ describe('tool permissions', () => {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       // The shared vitest setup pins COMPOSIO_CACHE_DIR to a fresh temp directory.
-      const cacheDir = yield* ConfigProvider.fromEnv().load(Config.string('COMPOSIO_CACHE_DIR'));
+      const cacheDir = yield* Config.string('COMPOSIO_CACHE_DIR').parse(ConfigProvider.fromEnv());
       // Key shape: `${orgId}:${projectId}:${consumerUserId}:${toolSlug}:${accountId}`.
       const allowKey = 'org_cached_allow:project_test:user_test:GMAIL_SEND_EMAIL:__none__';
       yield* fs.writeFileString(

@@ -1,6 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { FileSystem } from '@effect/platform';
-import { ConfigProvider, Console, Effect, Option } from 'effect';
+import { ConfigProvider, Console, Effect, FileSystem, Option } from 'effect';
 import path from 'node:path';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -73,7 +72,7 @@ const setupLoggedInAgent = Effect.gen(function* () {
 describe('CLI: composio logout', () => {
   describe('[When] logged out', () => {
     layer(TestLive())(it => {
-      it.scoped('[Then] it is idempotent', () =>
+      it.effect('[Then] it is idempotent', () =>
         Effect.gen(function* () {
           const ctx = yield* ComposioUserContext;
 
@@ -105,12 +104,12 @@ describe('CLI: composio logout', () => {
   });
 
   describe('[When] logged in', () => {
-    const testConfigProvider = ConfigProvider.fromMap(
-      new Map([['COMPOSIO_USER_API_KEY', 'api_key_already_logged_in']])
-    ).pipe(extendConfigProvider);
+    const testConfigProvider = ConfigProvider.fromEnv({
+      env: { COMPOSIO_USER_API_KEY: 'api_key_already_logged_in' },
+    }).pipe(extendConfigProvider);
 
     layer(TestLive({ baseConfigProvider: testConfigProvider }))(it => {
-      it.scoped('[Then] it persists user data', () =>
+      it.effect('[Then] it persists user data', () =>
         Effect.gen(function* () {
           const ctx = yield* ComposioUserContext;
           expect(ctx.isLoggedIn()).toBeTruthy();
@@ -139,7 +138,7 @@ describe('CLI: composio logout', () => {
 
   describe('[When] logged in as an agent', () => {
     layer(TestLive({ terminalUI: terminalUIWithConfirm(false) }))(it => {
-      it.scoped('[Then] cancelling keeps user and agent credentials', () =>
+      it.effect('[Then] cancelling keeps user and agent credentials', () =>
         Effect.gen(function* () {
           const ctx = yield* setupLoggedInAgent;
 
@@ -160,7 +159,7 @@ describe('CLI: composio logout', () => {
     });
 
     layer(TestLive())(it => {
-      it.scoped('[Then] --force removes user and agent credentials', () =>
+      it.effect('[Then] --force removes user and agent credentials', () =>
         Effect.gen(function* () {
           const ctx = yield* setupLoggedInAgent;
 

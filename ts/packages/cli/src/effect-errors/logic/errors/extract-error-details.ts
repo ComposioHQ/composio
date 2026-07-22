@@ -1,5 +1,4 @@
-import { isFunction } from 'effect/Function';
-import { hasProperty } from 'effect/Predicate';
+import { hasProperty, isFunction } from 'effect/Predicate';
 
 interface ErrorDetails {
   isPlainString: boolean;

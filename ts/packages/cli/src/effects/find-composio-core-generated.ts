@@ -1,5 +1,6 @@
-import { Command, FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Match } from 'effect';
+import { Data, Effect, FileSystem, Match, Path } from 'effect';
+import { ChildProcess } from 'effect/unstable/process';
+import { ChildProcessSpawner } from 'effect/unstable/process/ChildProcessSpawner';
 import {
   JsPackageManagerDetector,
   type PackageManager,
@@ -26,9 +27,8 @@ export function pyFindComposioCoreGenerated(cwd: string) {
         yield* Effect.logDebug('Identifying JS package manager...');
         const pkgManagerDetector = yield* JsPackageManagerDetector;
         const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
-          Effect.andThen(pkgManager => pkgManager),
           Effect.tapError(e => Effect.logError(e)),
-          Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
+          Effect.catch(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
         );
 
         yield* Effect.logDebug({ pkgManager });
@@ -56,10 +56,16 @@ export function pyFindComposioCoreGenerated(cwd: string) {
       'import composio; print(composio.__file__)',
     ];
 
-    const stdout = yield* Command.make(cmd, ...args).pipe(
-      Command.string,
-      Effect.catchAll(e => onError('Failed to locate composio-core in uv environment')(e))
-    );
+    const spawner = yield* ChildProcessSpawner;
+    const stdout = yield* spawner
+      .string(ChildProcess.make(cmd, args))
+      .pipe(
+        Effect.catch((e: unknown) =>
+          onError('Failed to locate composio-core in uv environment')(
+            e instanceof Error ? e : String(e)
+          )
+        )
+      );
 
     yield* Effect.logDebug({ stdout, cmd: [cmd, ...args].join(' ') });
 
@@ -110,7 +116,7 @@ export function jsFindComposioCoreGenerated(cwd: string) {
     const pkgManagerDetector = yield* JsPackageManagerDetector;
     const pkgManager = yield* pkgManagerDetector.detectJsPackageManager(cwd).pipe(
       Effect.tapError(e => Effect.logError(e)),
-      Effect.catchAll(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
+      Effect.catch(() => Effect.succeed(DEFAULT_PACKAGE_MANAGER))
     );
     yield* Effect.logDebug({ pkgManager });
 
@@ -128,7 +134,7 @@ export function jsFindComposioCoreGenerated(cwd: string) {
 
         const exists = yield* fs
           .exists(nodeModulesPath)
-          .pipe(Effect.catchAll(() => Effect.succeed(false)));
+          .pipe(Effect.catch(() => Effect.succeed(false)));
 
         if (exists) {
           yield* Effect.logDebug({ foundComposioCoreIn: nodeModulesPath });
@@ -147,7 +153,7 @@ export function jsFindComposioCoreGenerated(cwd: string) {
           );
           const pnpmExists = yield* fs
             .exists(pnpmStorePath)
-            .pipe(Effect.catchAll(() => Effect.succeed(false)));
+            .pipe(Effect.catch(() => Effect.succeed(false)));
 
           if (pnpmExists) {
             yield* Effect.logDebug({ foundComposioCoreInPnpmStore: pnpmStorePath });

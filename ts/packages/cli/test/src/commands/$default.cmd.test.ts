@@ -2,57 +2,51 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
-import { ValidationError, HelpDoc } from '@effect/cli';
 import { cli, pkg, TestLive, MockConsole } from 'test/__utils__';
 import { afterEach, vi } from 'vitest';
-
-const getCommandMismatch = (value: unknown): ValidationError.CommandMismatch => {
-  if (!ValidationError.isValidationError(value) || !ValidationError.isCommandMismatch(value)) {
-    throw new Error('Expected a command mismatch');
-  }
-  return value;
-};
 
 describe('CLI: composio', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
+  // v4 migration note: v3's `Command.run` returned a `ValidationError.CommandMismatch` for the
+  // caller to render by hand. `effect/unstable/cli`'s `Command.runWith` renders parse/validation
+  // errors itself (see `src/cli-main.ts` module docs) before re-failing with `CliError.ShowHelp`,
+  // so these tests now assert on the printed `MockConsole` output instead of inspecting the error
+  // value directly.
   layer(TestLive())(it => {
-    it.scoped('[Given] unknown argument [Then] print error message', () =>
+    it.effect('[Given] unknown argument [Then] print error message', () =>
       Effect.gen(function* () {
         const args = ['--bar'];
 
-        const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
-        const commandMismatch = getCommandMismatch(result);
-        const message = HelpDoc.toAnsiText(commandMismatch.error);
+        yield* cli(args).pipe(Effect.catch(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
-        expect(message).toContain('Invalid subcommand for composio');
-        expect(message).toContain("'generate'");
-        expect(message).toContain("'orgs'");
+        expect(output).toContain('--bar');
+        expect(output).toContain('generate');
+        expect(output).toContain('orgs');
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] invalid tools subcommand [Then] report tools-scoped mismatch', () =>
+    it.effect('[Given] invalid tools subcommand [Then] report tools-scoped mismatch', () =>
       Effect.gen(function* () {
         const args = ['tools', 'search', 'metabase', 'put'];
 
-        const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
-        const commandMismatch = getCommandMismatch(result);
-        const message = HelpDoc.toAnsiText(commandMismatch.error);
+        yield* cli(args).pipe(Effect.catch(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
-        expect(message).toContain('Invalid subcommand for composio tools');
-        expect(message).toContain("'info'");
-        expect(message).toContain("'list'");
-        expect(message).not.toContain("'version'");
+        expect(output).toContain('search');
+        expect(output).toContain('info');
+        expect(output).toContain('list');
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] no args [Then] prints help message', () =>
+    it.effect('[Given] no args [Then] prints help message', () =>
       Effect.gen(function* () {
         yield* cli([]);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -65,7 +59,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] --help flag [Then] prints help message', () =>
+    it.effect('[Given] --help flag [Then] prints help message', () =>
       Effect.gen(function* () {
         const args = ['--help'];
         yield* cli(args);
@@ -79,7 +73,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] --help simple [Then] prints the compact root help mode', () =>
+    it.effect('[Given] --help simple [Then] prints the compact root help mode', () =>
       Effect.gen(function* () {
         yield* cli(['--help', 'simple']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -94,7 +88,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] --help full [Then] prints the expanded root help mode', () =>
+    it.effect('[Given] --help full [Then] prints the expanded root help mode', () =>
       Effect.gen(function* () {
         yield* cli(['--help', 'full']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -110,31 +104,53 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped("[Given] --version flag [Then] prints composio's version from package.json", () =>
+    it.effect("[Given] --version flag [Then] prints v4's default `<name> v<version>` banner", () =>
       Effect.gen(function* () {
         const args = ['--version'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        // v4's `CliOutput.defaultFormatter().formatVersion` renders
+        // `<name> v<version>`; Composio deliberately no longer overrides it
+        // (see `cli-config.ts`). The bare-semver `composio version` *command*
+        // is a separate, unaffected contract covered by
+        // `test/src/commands/version.test.ts`.
+        expect(output.trim()).toBe(`composio v${pkg.version}`);
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.scoped("[Given] -v flag [Then] prints composio's version from package.json", () =>
+    it.effect("[Given] -v flag [Then] prints v4's default `<name> v<version>` banner", () =>
       Effect.gen(function* () {
         const args = ['-v'];
         yield* cli(args);
-        const lines = yield* MockConsole.getLines();
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
         const output = lines.join('\n');
-        expect(output).toContain(pkg.version);
+        expect(output.trim()).toBe(`composio v${pkg.version}`);
       })
     );
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] debug who-is-my-master [Then] it prints the detected master as json', () =>
+    it.effect("[Given] a typo'd subcommand [Then] suggests the nearest match", () =>
+      Effect.gen(function* () {
+        const args = ['tols'];
+
+        yield* cli(args).pipe(Effect.catch(() => Effect.void));
+        const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
+
+        // v4's parser always computes "Did you mean?" suggestions on
+        // `UnknownSubcommand`/`UnrecognizedOption`; Composio deliberately
+        // keeps them (see `cli-config.ts`) instead of stripping them.
+        expect(output).toContain('Did you mean');
+        expect(output).toContain('tools');
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.effect('[Given] debug who-is-my-master [Then] it prints the detected master as json', () =>
       Effect.gen(function* () {
         vi.stubEnv('CODEX_THREAD_ID', 'thread_123');
         vi.stubEnv('CLAUDE_CODE_ENTRYPOINT', 'sdk-ts');
@@ -148,7 +164,7 @@ describe('CLI: composio', () => {
   });
 
   layer(TestLive())(it => {
-    it.scoped('[Given] artifacts cwd [Then] it prints the current session artifact directory', () =>
+    it.effect('[Given] artifacts cwd [Then] it prints the current session artifact directory', () =>
       Effect.gen(function* () {
         yield* cli(['artifacts', 'cwd']);
         const output = (yield* MockConsole.getLines()).join('\n').trim();

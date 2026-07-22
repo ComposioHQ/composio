@@ -1,7 +1,14 @@
-import { FileSystem, Path } from '@effect/platform';
-import type { PlatformError } from '@effect/platform/Error';
-import { Context, Effect, Layer, Option, Predicate, Schema } from 'effect';
-import type { ParseError } from 'effect/ParseResult';
+import {
+  Context,
+  Effect,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  PlatformError,
+  Predicate,
+  Schema,
+} from 'effect';
 // eslint-disable-next-line no-restricted-imports -- os.homedir feeds resolveCliConfigDirectorySync, which runs from synchronous non-Effect call sites (dev.cmd messages, run-helpers-runtime readFileSync) where the NodeOs service is unavailable
 import os from 'node:os';
 import { JsonRecordSchema } from 'src/effects/json';
@@ -46,7 +53,7 @@ const DEFAULT_CLI_USER_CONFIG = CliUserConfig.make({
   security: 'auto',
 });
 
-const decodeConfigJson = Schema.decodeUnknown(Schema.parseJson(JsonRecordSchema));
+const decodeConfigJson = Schema.decodeUnknownEffect(Schema.fromJsonString(JsonRecordSchema));
 
 // The sync resolvers below run from non-Effect call sites (the
 // run-helpers-runtime child process), so the Path service is materialized once
@@ -72,7 +79,7 @@ export const resolveCliConfigPath = Effect.gen(function* () {
   return path.join(configDir, constants.CLI_CONFIG_FILE_NAME);
 });
 
-export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
+export class ComposioCliUserConfig extends Context.Service<
   ComposioCliUserConfig,
   {
     readonly data: CliUserConfigResolved;
@@ -83,9 +90,9 @@ export class ComposioCliUserConfig extends Context.Tag('ComposioCliUserConfig')<
     readonly isExperimentalFeatureEnabled: (feature: string) => boolean;
     readonly update: (
       next: Partial<CliUserConfig>
-    ) => Effect.Effect<void, ParseError | PlatformError, never>;
+    ) => Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never>;
   }
->() {}
+>()('ComposioCliUserConfig') {}
 
 const resolveConfig = (raw: CliUserConfig, channel: CliReleaseChannel): CliUserConfigResolved => ({
   channel,
@@ -111,12 +118,12 @@ export const ComposioCliUserConfigLive = Layer.effect(
     let rawConfig = DEFAULT_CLI_USER_CONFIG;
 
     const normalizeRawConfigJson = (value: unknown): unknown => {
-      if (!Predicate.isRecord(value)) {
+      if (!Predicate.isObject(value)) {
         return value;
       }
 
       const record = { ...value };
-      const existingDeveloper = Predicate.isRecord(record.developer) ? { ...record.developer } : {};
+      const existingDeveloper = Predicate.isObject(record.developer) ? { ...record.developer } : {};
 
       if (!('enabled' in existingDeveloper) && 'developer_mode_enabled' in record) {
         existingDeveloper.enabled = record.developer_mode_enabled;
@@ -144,7 +151,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
 
     const update = (
       next: Partial<CliUserConfig>
-    ): Effect.Effect<void, ParseError | PlatformError, never> =>
+    ): Effect.Effect<void, Schema.SchemaError | PlatformError.PlatformError, never> =>
       persist(
         CliUserConfig.make({
           ...rawConfig,
@@ -160,7 +167,7 @@ export const ComposioCliUserConfigLive = Layer.effect(
     });
 
     if (yield* fs.exists(jsonConfigPath)) {
-      yield* load.pipe(Effect.catchAll(() => persist(DEFAULT_CLI_USER_CONFIG)));
+      yield* load.pipe(Effect.catch(() => persist(DEFAULT_CLI_USER_CONFIG)));
     } else {
       yield* persist(rawConfig);
     }

@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { getVersion } from 'src/effects/version';
 import { TerminalUI } from 'src/services/terminal-ui';

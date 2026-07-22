@@ -29,7 +29,7 @@ describe('TerminalUI', () => {
     // Data output
     // -----------------------------------------------------------------------
 
-    it.scoped('output writes raw data capturable by MockConsole', () =>
+    it.effect('output writes raw data capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.output('ak_test123');
@@ -39,7 +39,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('error writes raw diagnostics capturable by MockConsole', () =>
+    it.effect('error writes raw diagnostics capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.error('diagnostic');
@@ -53,7 +53,7 @@ describe('TerminalUI', () => {
     // Log text capture
     // -----------------------------------------------------------------------
 
-    it.scoped('log.info writes text capturable by MockConsole', () =>
+    it.effect('log.info writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.info('hello from info');
@@ -63,7 +63,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.success writes text capturable by MockConsole', () =>
+    it.effect('log.success writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.success('operation succeeded');
@@ -73,7 +73,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.warn writes text capturable by MockConsole', () =>
+    it.effect('log.warn writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.warn('something is off');
@@ -83,7 +83,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.error writes text capturable by MockConsole', () =>
+    it.effect('log.error writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.error('something broke');
@@ -93,7 +93,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('log.step writes text capturable by MockConsole', () =>
+    it.effect('log.step writes text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.log.step('step completed');
@@ -103,7 +103,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('note writes title and message capturable by MockConsole', () =>
+    it.effect('note writes title and message capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.note('api_key_123', 'API Key');
@@ -115,7 +115,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('intro and outro write text capturable by MockConsole', () =>
+    it.effect('intro and outro write text capturable by MockConsole', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* ui.intro('my command');
@@ -132,7 +132,7 @@ describe('TerminalUI', () => {
     // withSpinner lifecycle
     // -----------------------------------------------------------------------
 
-    it.scoped('withSpinner captures success message', () =>
+    it.effect('withSpinner captures success message', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         const result = yield* ui.withSpinner('loading', Effect.succeed(42), {
@@ -145,7 +145,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('withSpinner propagates errors', () =>
+    it.effect('withSpinner propagates errors', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         const exit = yield* Effect.exit(
@@ -160,7 +160,7 @@ describe('TerminalUI', () => {
     // useMakeSpinner — auto-cleanup on error
     // -----------------------------------------------------------------------
 
-    it.scoped('useMakeSpinner auto-stops spinner on error', () =>
+    it.effect('useMakeSpinner auto-stops spinner on error', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -178,7 +178,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner does NOT double-stop if user already stopped', () =>
+    it.effect('useMakeSpinner does NOT double-stop if user already stopped', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -196,7 +196,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner allows message updates before stop', () =>
+    it.effect('useMakeSpinner allows message updates before stop', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -213,7 +213,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped('useMakeSpinner returns the value from the use callback', () =>
+    it.effect('useMakeSpinner returns the value from the use callback', () =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
 
@@ -228,7 +228,7 @@ describe('TerminalUI', () => {
       })
     );
 
-    it.scoped(
+    it.effect(
       'useMakeSpinner does NOT double-error when callback calls spinner.error then fails',
       () =>
         Effect.gen(function* () {

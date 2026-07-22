@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { getSessionInfoByUserApiKey } from 'src/services/composio-clients';
 import { ComposioUserContext } from 'src/services/user-context';

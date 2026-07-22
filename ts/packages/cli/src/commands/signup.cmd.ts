@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect } from 'effect';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
 import {
@@ -10,22 +10,20 @@ import {
 } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-const noWait = Options.boolean('no-wait').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Start agent signup and exit without waiting for credentials')
+const noWait = Flag.boolean('no-wait').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Start agent signup and exit without waiting for credentials')
 );
 
-const noLogin = Options.boolean('no-login').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Create or verify the agent identity without logging the CLI in')
+const noLogin = Flag.boolean('no-login').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Create or verify the agent identity without logging the CLI in')
 );
 
-const force = Options.boolean('force').pipe(
-  Options.withAlias('f'),
-  Options.withDefault(false),
-  Options.withDescription(
-    'Create a new agent identity even if ~/.composio/agent.json already exists'
-  )
+const force = Flag.boolean('force').pipe(
+  Flag.withAlias('f'),
+  Flag.withDefault(false),
+  Flag.withDescription('Create a new agent identity even if ~/.composio/agent.json already exists')
 );
 
 export const runAgentSignup = (params: {

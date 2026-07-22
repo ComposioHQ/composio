@@ -51,15 +51,15 @@ const toolkitsData = {
   tools: testTools,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit "gmail" [Then] lists gmail tools',
     it => {
-      it.scoped('lists all tools', () =>
+      it.effect('lists all tools', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -77,7 +77,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit "gmail" [Then] lists only gmail tools',
     it => {
-      it.scoped('filters by toolkit', () =>
+      it.effect('filters by toolkit', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -95,7 +95,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --query "send" [Then] shows filtered results',
     it => {
-      it.scoped('filters by search query', () =>
+      it.effect('filters by search query', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail', '--query', 'send']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -111,7 +111,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --limit 2 [Then] respects limit',
     it => {
-      it.scoped('respects limit', () =>
+      it.effect('respects limit', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail', '--limit', '2']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -124,7 +124,7 @@ describe('CLI: composio tools list', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['tools', 'list', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -138,7 +138,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider }))(
     '[Given] empty results [Then] shows no tools found',
     it => {
-      it.scoped('shows no tools found', () =>
+      it.effect('shows no tools found', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -153,7 +153,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --tags "email" [Then] filters by tag',
     it => {
-      it.scoped('filters by tag', () =>
+      it.effect('filters by tag', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'gmail', '--tags', 'email']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -170,7 +170,7 @@ describe('CLI: composio tools list', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] toolkit "nonexistent" [Then] shows no tools found with hint',
     it => {
-      it.scoped('shows hint about verifying toolkit slug', () =>
+      it.effect('shows hint about verifying toolkit slug', () =>
         Effect.gen(function* () {
           yield* cli(['tools', 'list', 'nonexistent']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });

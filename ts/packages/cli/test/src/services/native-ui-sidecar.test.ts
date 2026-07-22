@@ -1,18 +1,18 @@
 import { describe, expect, it } from '@effect/vitest';
-import { CommandExecutor, Error as PlatformError } from '@effect/platform';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import { ConfigProvider, Effect, Layer, PlatformError } from 'effect';
+import { ChildProcessSpawner } from 'effect/unstable/process';
 import {
   detectNativeUiCallerAgentEffect,
   interactivePermissionUiDisabledConfig,
 } from 'src/services/native-ui-sidecar';
 
 const loadFlag = (entries: Record<string, string>) =>
-  ConfigProvider.fromMap(new Map(Object.entries(entries))).load(
-    interactivePermissionUiDisabledConfig
+  interactivePermissionUiDisabledConfig.pipe(
+    Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv({ env: entries }))
   );
 
-const executorLayer = (start: Parameters<typeof CommandExecutor.makeExecutor>[0]) =>
-  Layer.succeed(CommandExecutor.CommandExecutor, CommandExecutor.makeExecutor(start));
+const executorLayer = (spawn: Parameters<typeof ChildProcessSpawner.make>[0]) =>
+  Layer.succeed(ChildProcessSpawner.ChildProcessSpawner, ChildProcessSpawner.make(spawn));
 
 // Environment-based detection must resolve before `ps` is ever spawned.
 const processTreeMustNotRun = executorLayer(() =>
@@ -21,14 +21,12 @@ const processTreeMustNotRun = executorLayer(() =>
 
 // Spawn failures during the process-tree walk resolve to the default agent.
 const processTreeUnavailable = executorLayer(() =>
-  Effect.fail(
-    new PlatformError.SystemError({ reason: 'NotFound', module: 'Command', method: 'spawn' })
-  )
+  Effect.fail(PlatformError.systemError({ _tag: 'NotFound', module: 'Command', method: 'spawn' }))
 );
 
 const detectAgent = (
   env: Record<string, string>,
-  layer: Layer.Layer<CommandExecutor.CommandExecutor>
+  layer: Layer.Layer<ChildProcessSpawner.ChildProcessSpawner>
 ) => detectNativeUiCallerAgentEffect(env).pipe(Effect.provide(layer));
 
 describe('native UI sidecar', () => {

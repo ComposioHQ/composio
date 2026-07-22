@@ -1,13 +1,13 @@
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
-import { Either, Schema } from 'effect';
+import { Exit, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { jsonSchemaToEffectSchema, type JsonSchemaValidationIssue } from '../src/index';
 
 type JsonSchema = Record<string, unknown>;
 
 const effectAccepts = (schema: JsonSchema, input: unknown): boolean =>
-  Either.isRight(
-    Schema.decodeUnknownEither(jsonSchemaToEffectSchema(schema), { errors: 'all' })(input)
+  Exit.isSuccess(
+    Schema.decodeUnknownExit(jsonSchemaToEffectSchema(schema), { errors: 'all' })(input)
   );
 
 const zodAccepts = (schema: JsonSchema, input: unknown): boolean =>
@@ -99,13 +99,13 @@ describe('jsonSchemaToEffectSchema', () => {
       },
     });
 
-    const result = Schema.decodeUnknownEither(effectSchema, { errors: 'all' })({
+    const result = Schema.decodeUnknownExit(effectSchema, { errors: 'all' })({
       email: 42,
       profile: { age: 'old', extra: true },
       typo: true,
     });
 
-    expect(Either.isLeft(result)).toBe(true);
+    expect(Exit.isFailure(result)).toBe(true);
     expect(captured).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'type', path: ['email'] }),

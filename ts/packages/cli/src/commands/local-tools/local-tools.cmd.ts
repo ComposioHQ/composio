@@ -1,4 +1,4 @@
-import { Command } from '@effect/cli';
+import { Command } from 'effect/unstable/cli';
 import { localToolsCmd$Configure } from './commands/local-tools.configure.cmd';
 import { localToolsCmd$Doctor } from './commands/local-tools.doctor.cmd';
 import { localToolsCmd$List } from './commands/local-tools.list.cmd';

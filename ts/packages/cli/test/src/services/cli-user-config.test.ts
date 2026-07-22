@@ -3,9 +3,9 @@ import * as tempy from 'tempy';
 import fs from 'node:fs';
 import { describe, it, vi } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
-import { FileSystem } from '@effect/platform';
-import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { ConfigProvider, Effect, Layer } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import * as BunPath from '@effect/platform-bun/BunPath';
+import { ConfigProvider, Effect, FileSystem, Layer } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import {
@@ -16,9 +16,12 @@ import {
 
 describe('ComposioCliUserConfig', () => {
   const withMapConfigProvider = (map: Map<string, string>) =>
-    Layer.setConfigProvider(extendConfigProvider(ConfigProvider.fromMap(map)));
+    Layer.succeed(
+      ConfigProvider.ConfigProvider,
+      extendConfigProvider(ConfigProvider.fromEnv({ env: Object.fromEntries(map) }))
+    );
 
-  it.scoped('defaults experimental features off in stable releases', () => {
+  it.effect('defaults experimental features off in stable releases', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
@@ -42,7 +45,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('uses installed beta release metadata for experimental defaults', () => {
+  it.effect('uses installed beta release metadata for experimental defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const installDir = tempy.temporaryDirectory();
     const fakeExecPath = path.join(installDir, 'composio');
@@ -68,7 +71,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('defaults experimental features on in beta releases', () => {
+  it.effect('defaults experimental features on in beta releases', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
@@ -88,7 +91,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('respects explicit persisted cli settings from config.json', () => {
+  it.effect('respects explicit persisted cli settings from config.json', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
@@ -151,7 +154,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('loads legacy flat developer keys and persists nested developer config', () => {
+  it.effect('loads legacy flat developer keys and persists nested developer config', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3-beta.4']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });
@@ -202,7 +205,7 @@ describe('ComposioCliUserConfig', () => {
     }).pipe(Effect.provide(CliUserConfigTest));
   });
 
-  it.scoped('replaces malformed persisted config with safe defaults', () => {
+  it.effect('replaces malformed persisted config with safe defaults', () => {
     const cwd = tempy.temporaryDirectory();
     const map = new Map([['DEBUG_OVERRIDE_VERSION', '1.2.3']]) satisfies Map<string, string>;
     fs.mkdirSync(path.join(cwd, '.composio'), { recursive: true });

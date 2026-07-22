@@ -1,5 +1,4 @@
 import { Effect, Schema } from 'effect';
-import type { ParseResult } from 'effect';
 import {
   ConnectedAccountItems,
   ConnectedAccountItemsPermissive,
@@ -27,8 +26,8 @@ export const decodeConnectedAccountListWithFallback = (
 ): Effect.Effect<ConnectedAccountListResponseType, never, TerminalUI> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    return yield* Schema.decodeUnknown(ConnectedAccountListResponse)(rawResult).pipe(
-      Effect.catchTag('ParseError', error =>
+    return yield* Schema.decodeUnknownEffect(ConnectedAccountListResponse)(rawResult).pipe(
+      Effect.catchTag('SchemaError', error =>
         Effect.gen(function* () {
           yield* ui.log.warn(
             `Server returned a connection field this CLI does not recognize ` +
@@ -58,11 +57,11 @@ export const decodeConnectedAccountListWithFallback = (
  */
 export const decodeConnectedAccountItemsWithFallback = (
   rawItems: unknown
-): Effect.Effect<ConnectedAccountItems, ParseResult.ParseError, TerminalUI> =>
+): Effect.Effect<ConnectedAccountItems, Schema.SchemaError, TerminalUI> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    return yield* Schema.decodeUnknown(ConnectedAccountItems)(rawItems).pipe(
-      Effect.catchTag('ParseError', error =>
+    return yield* Schema.decodeUnknownEffect(ConnectedAccountItems)(rawItems).pipe(
+      Effect.catchTag('SchemaError', error =>
         Effect.gen(function* () {
           yield* ui.log.warn(
             `Server returned a connection field this CLI does not recognize ` +
@@ -70,7 +69,9 @@ export const decodeConnectedAccountItemsWithFallback = (
               `the latest schema. Continuing with a permissive schema.\n\n` +
               `Decode error: ${error.message}`
           );
-          const permissive = yield* Schema.decodeUnknown(ConnectedAccountItemsPermissive)(rawItems);
+          const permissive = yield* Schema.decodeUnknownEffect(ConnectedAccountItemsPermissive)(
+            rawItems
+          );
           // Identical shape modulo the widened `status`; callers render it as text.
           return permissive as ConnectedAccountItems;
         })

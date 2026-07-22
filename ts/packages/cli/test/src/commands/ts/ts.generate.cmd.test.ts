@@ -1,9 +1,7 @@
 import assert from 'node:assert';
 import path from 'node:path';
-import { HelpDoc, ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Effect, FileSystem } from 'effect';
 import { cli, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
@@ -12,6 +10,7 @@ import {
   assertTypeScriptIsValid,
 } from 'test/__utils__/typescript-compiler';
 import { ComposioCorePkgNotFound } from 'src/effects/find-composio-core-generated';
+import { TypeScriptGenerationInputError } from 'src/commands/ts/commands/ts.generate.cmd';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TOOLS_TYPES_GMAIL } from 'test/__mocks__/tools-types-gmail';
@@ -47,9 +46,7 @@ describe('CLI: composio generate ts', () => {
       const nodeModulesDir = path.join(nodeModulesRoot, '@composio', 'core');
 
       // Some fixtures may carry broken node_modules links after copying; reset to a real directory.
-      yield* fs
-        .remove(nodeModulesRoot, { recursive: true })
-        .pipe(Effect.catchAll(() => Effect.void));
+      yield* fs.remove(nodeModulesRoot, { recursive: true }).pipe(Effect.catch(() => Effect.void));
       yield* fs.makeDirectory(nodeModulesDir, { recursive: true });
 
       if (withGenerated) {
@@ -119,7 +116,7 @@ describe('CLI: composio generate ts', () => {
       })
     )(it => {
       describe('[Given] `@composio/core` already installed', () => {
-        it.scoped(
+        it.effect(
           '[Given] no args [Then] it generates types + JS in `node_modules/@composio/core/generated`',
           () =>
             Effect.gen(function* () {
@@ -326,7 +323,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped('[Given] --type-tools [Then] it generates types for tools as well', () =>
+        it.effect('[Given] --type-tools [Then] it generates types for tools as well', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -563,7 +560,7 @@ describe('CLI: composio generate ts', () => {
           })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --output-dir [Then] it generates type stubs relative to the given output directory',
           () =>
             Effect.gen(function* () {
@@ -752,7 +749,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped('[Given] --compact [Then] it generates type stubs in a single file', () =>
+        it.effect('[Given] --compact [Then] it generates type stubs in a single file', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -779,7 +776,7 @@ describe('CLI: composio generate ts', () => {
           })
         );
 
-        it.scoped('[Given] --transpiled [Then] it generates both .ts and .mjs files', () =>
+        it.effect('[Given] --transpiled [Then] it generates both .ts and .mjs files', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -811,7 +808,7 @@ describe('CLI: composio generate ts', () => {
           })
         );
 
-        it.scoped('[Given] no `--output-dir` [Then] it compiles by default', () =>
+        it.effect('[Given] no `--output-dir` [Then] it compiles by default', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -840,7 +837,7 @@ describe('CLI: composio generate ts', () => {
           })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] `--output-dir` with no `--transpiled` [Then] it does not generate .js files',
           () =>
             Effect.gen(function* () {
@@ -865,7 +862,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped('[Given] `--compact` [Then] it generates in the correct location', () =>
+        it.effect('[Given] `--compact` [Then] it generates in the correct location', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
@@ -922,7 +919,7 @@ describe('CLI: composio generate ts', () => {
           })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --toolkits gmail [Then] it generates type stubs only for the gmail toolkit',
           () =>
             Effect.gen(function* () {
@@ -952,7 +949,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --toolkits gmail --toolkits slack [Then] it generates type stubs for both toolkits',
           () =>
             Effect.gen(function* () {
@@ -991,22 +988,21 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped('[Given] --toolkits with invalid toolkit [Then] it fails with an error', () =>
+        it.effect('[Given] --toolkits with invalid toolkit [Then] it fails with an error', () =>
           Effect.gen(function* () {
             const process = yield* NodeProcess;
             const cwd = process.cwd;
             const outputDir = path.join(cwd, 'generated-invalid');
 
             const args = ['generate', 'ts', '--toolkits', 'nonexistent', '--output-dir', outputDir];
-            const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+            const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
 
-            assert.ok(ValidationError.isValidationError(result));
-            assert.ok(ValidationError.isInvalidValue(result));
-            expect(HelpDoc.toAnsiText(result.error)).toContain('Invalid toolkit(s): nonexistent');
+            assert.ok(result instanceof TypeScriptGenerationInputError);
+            expect(result.message).toContain('Invalid toolkit(s): nonexistent');
           })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --toolkits GMAIL (uppercase) [Then] it handles case-insensitive matching',
           () =>
             Effect.gen(function* () {
@@ -1036,7 +1032,7 @@ describe('CLI: composio generate ts', () => {
           toolkitsData: appClientData,
         })
       )(it => {
-        it.scoped(
+        it.effect(
           '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it adds version comment to generated file',
           () =>
             Effect.gen(function* () {
@@ -1063,7 +1059,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --type-tools and multiple COMPOSIO_TOOLKIT_VERSION_* env vars [Then] it adds version comments to both generated files',
           () =>
             Effect.gen(function* () {
@@ -1091,7 +1087,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL=latest [Then] it treats same as no override (no version comment)',
           () =>
             Effect.gen(function* () {
@@ -1114,7 +1110,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_SLACK env var [Then] it ignores env var for non-requested toolkit',
           () =>
             Effect.gen(function* () {
@@ -1153,7 +1149,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it applies version override to filtered toolkit',
           () =>
             Effect.gen(function* () {
@@ -1190,7 +1186,7 @@ describe('CLI: composio generate ts', () => {
             })
         );
 
-        it.scoped(
+        it.effect(
           '[Given] no --type-tools and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it still adds version comment for documentation purposes',
           () =>
             Effect.gen(function* () {
@@ -1224,11 +1220,11 @@ describe('CLI: composio generate ts', () => {
           toolkitsData: appClientData,
         })
       )(it => {
-        it.scoped('[Given] no custom output dir [Then] [Then] it raises an error', () =>
+        it.effect('[Given] no custom output dir [Then] [Then] it raises an error', () =>
           Effect.gen(function* () {
             const args = ['generate', 'ts'];
 
-            const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+            const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
 
             expect(result).toEqual(
               new ComposioCorePkgNotFound({

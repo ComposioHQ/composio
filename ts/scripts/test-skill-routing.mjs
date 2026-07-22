@@ -40,7 +40,7 @@ const probes = [
   {
     task: 'implement a new Effect CLI command and wire it into the command tree',
     expect: 'cli-command',
-    terms: ['@effect/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
+    terms: ['effect/unstable/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
   },
   {
     task: 'write a Docker-based end-to-end test for the composio CLI binary',
@@ -66,6 +66,16 @@ const probes = [
     task: 'record an ADR and update Fumadocs documentation',
     expect: 'docs-decisions',
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
+  },
+  {
+    task: 'define a new Context.Service with an explicit layer and a Schema.TaggedErrorClass, and bump the Effect beta pins',
+    expect: 'effect-v4',
+    terms: [
+      'Context.Service',
+      'Schema.TaggedErrorClass',
+      'vendored effect source',
+      'bumping the Effect beta pins',
+    ],
   },
   {
     task: 'build or debug a durable backend agent with eve channels and schedules',

@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import {
   AGENT_CONFIG_FILE_NAME,
@@ -16,10 +16,10 @@ import { TerminalUI } from 'src/services/terminal-ui';
  * composio logout <command>
  * ```
  */
-const force = Options.boolean('force').pipe(
-  Options.withAlias('f'),
-  Options.withDefault(false),
-  Options.withDescription('Skip confirmation prompts')
+const force = Flag.boolean('force').pipe(
+  Flag.withAlias('f'),
+  Flag.withDefault(false),
+  Flag.withDescription('Skip confirmation prompts')
 );
 
 export const logoutCmd = Command.make('logout', { force }, ({ force }) =>

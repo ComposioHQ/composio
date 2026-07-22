@@ -1,27 +1,38 @@
-import { hasProperty, isString, isTagged } from 'effect/Predicate';
-import type { Span } from 'effect/Tracer';
+import { type Reason, reasonAnnotations, StackTrace } from 'effect/Cause';
+import { getOrUndefined } from 'effect/Context';
 
-// Effect v3 internal: `Effect.fail`/`Effect.die` proxy object errors so the
-// fiber's current span is readable under this global registry symbol. There is
-// no public API for it, and `Symbol.for` succeeds even on Effect versions that
-// stop setting it, so keep every read behind this adapter — the canary test in
-// test/src/effect-errors/span-annotation.test.ts breaks loudly when an
-// `effect` upgrade drops the mechanism.
-const spanSymbol = Symbol.for('effect/SpanAnnotation');
+import type { ErrorSpan } from 'effect-errors/types';
 
-const looksLikeSpan = (value: unknown): value is Span =>
-  isTagged(value, 'Span') &&
-  hasProperty(value, 'name') &&
-  isString(value.name) &&
-  hasProperty(value, 'status') &&
-  hasProperty(value, 'attributes') &&
-  hasProperty(value, 'parent');
+// v3 internal: `Effect.fail`/`Effect.die` proxied object errors so the fiber's
+// current span was readable under a global `effect/SpanAnnotation` registry
+// symbol. v4 dropped that mechanism entirely (confirmed against
+// `ts/vendor/effect` — no such symbol, and no per-reason span stamped directly
+// onto the raised error value anywhere in the v4 source or the installed
+// `effect@4.0.0-beta.99` dist).
+//
+// The analogous v4 mechanism lives one level up, on the `Cause` `Reason`
+// rather than the bare error value: `Effect.withSpan` pushes a span-named
+// `StackFrame` onto the `CurrentStackFrame` fiber reference (vendored
+// `internal/effect.ts`'s `provideSpanStackFrame`, used by
+// `withParentSpan`/`withSpan`), and on failure the runtime annotates every
+// reason with that frame chain under the `Cause.StackTrace` context key —
+// `Context.get(Cause.reasonAnnotations(reason), Cause.StackTrace)`. Frames
+// form a linked list (`{ name, stack(), parent }`), innermost span first.
+//
+// Only names and call-site locations survive this way: the old v3 span
+// timeline's per-span duration/attributes lived on the `Span` object itself,
+// which no longer exists by the time a `Cause` is inspected, so timing cannot
+// be recovered — see the canary tests in
+// test/src/effect-errors/span-annotation.test.ts, which confirm this chain is
+// populated for both `Effect.fail` and `Effect.die`.
+export const extractSpanStackFrames = (reason: Reason<unknown>): ReadonlyArray<ErrorSpan> => {
+  const frames: ErrorSpan[] = [];
+  let frame = getOrUndefined(reasonAnnotations(reason), StackTrace);
 
-export const extractSpanAnnotation = (error: unknown): Span | undefined => {
-  if (!hasProperty(error, spanSymbol)) {
-    return undefined;
+  while (frame !== undefined) {
+    frames.push({ name: frame.name, location: frame.stack() });
+    frame = frame.parent;
   }
 
-  const value = error[spanSymbol];
-  return looksLikeSpan(value) ? value : undefined;
+  return frames;
 };

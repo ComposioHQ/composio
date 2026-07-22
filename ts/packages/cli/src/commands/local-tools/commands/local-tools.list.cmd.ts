@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import {
   detectCliPlatform,
   formatSupportedPlatforms,
@@ -13,19 +13,19 @@ import { TerminalUI } from 'src/services/terminal-ui';
 import { bold, gray } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print local tool declarations as JSON')
+const json = Flag.boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Print local tool declarations as JSON')
 );
 
-const allPlatforms = Options.boolean('all-platforms').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Include local toolkits that are not supported on this CLI platform')
+const allPlatforms = Flag.boolean('all-platforms').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Include local toolkits that are not supported on this CLI platform')
 );
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.optional,
-  Options.withDescription('Filter by local toolkit slugs, comma-separated')
+const toolkits = Flag.string('toolkits').pipe(
+  Flag.optional,
+  Flag.withDescription('Filter by local toolkit slugs, comma-separated')
 );
 
 const parseToolkitFilter = (value: Option.Option<string>): ReadonlyArray<string> | undefined => {

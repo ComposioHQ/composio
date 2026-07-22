@@ -1,9 +1,21 @@
 import { createRequire } from 'node:module';
 import type { Readable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
-import { Command, FileSystem, Path } from '@effect/platform';
-import { BunContext } from '@effect/platform-bun';
-import { Cause, Config, Effect, Exit, Layer, Option, Predicate, Queue, Stream } from 'effect';
+import * as BunServices from '@effect/platform-bun/BunServices';
+import {
+  Cause,
+  Config,
+  Effect,
+  Exit,
+  FileSystem,
+  Layer,
+  Option,
+  Path,
+  Predicate,
+  Queue,
+  Stream,
+} from 'effect';
+import { ChildProcess as Command } from 'effect/unstable/process';
 import type { MasterKind } from 'src/services/master-detector';
 import { NodeOs } from 'src/services/node-os';
 import {
@@ -42,7 +54,7 @@ type AcpAdapterCommand = {
 
 // This module is bundled as a standalone `composio run` companion module, so it
 // provides its own platform layers instead of assuming the CLI runtime.
-const RunSubAgentAcpLive = Layer.mergeAll(BunContext.layer, NodeOs.Default);
+const RunSubAgentAcpLive = Layer.mergeAll(BunServices.layer, NodeOs.Default);
 
 const getLegacySetSessionModel = (
   connection: unknown
@@ -101,8 +113,8 @@ export const readableStreamFromNode = (input: Readable): ReadableStream<Uint8Arr
 const writableStreamFromQueue = (queue: Queue.Queue<Uint8Array>): WritableStream<Uint8Array> =>
   new WritableStream<Uint8Array>({
     write: chunk => Effect.runPromise(Effect.asVoid(Queue.offer(queue, chunk))),
-    close: () => Effect.runPromise(Queue.shutdown(queue)),
-    abort: () => Effect.runPromise(Queue.shutdown(queue)),
+    close: () => Effect.runPromise(Effect.asVoid(Queue.shutdown(queue))),
+    abort: () => Effect.runPromise(Effect.asVoid(Queue.shutdown(queue))),
   });
 
 const resolveShippedAdapterAsset = (
@@ -564,7 +576,7 @@ export const createStructuredOutputMcpContext = ({
     });
 
     return yield* build.pipe(
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.sync(() => {
           helperDebugLog('subAgent.acp.structured_output_tool_failed', {
             error: error instanceof Error ? error.message : String(error),
@@ -616,7 +628,7 @@ const maybeReadStructuredOutputFromTool = ({
     );
 
     return yield* read.pipe(
-      Effect.catchAll(error =>
+      Effect.catch(error =>
         Effect.sync<unknown>(() => {
           helperDebugLog('subAgent.acp.structured_output_tool_result_failed', {
             resultFilePath: context.resultFilePath,
@@ -666,7 +678,7 @@ const finalizeWithStructuredRepair = ({
 
   return finalizeText.pipe(
     Effect.map(payload => toInvokeAgentResponse(master, target, payload)),
-    Effect.catchAll(error => {
+    Effect.catch(error => {
       const structuredSchema = options.structuredSchema;
       if (!structuredSchema) {
         return Effect.fail(error);
@@ -754,9 +766,9 @@ const invokeAcpSubAgentEffect = ({
 
     const stdinQueue = yield* Queue.bounded<Uint8Array>(16);
     const [executable, ...commandArgs] = resolved.cmd;
-    const command = Command.make(executable, ...commandArgs).pipe(Command.env(childEnv));
+    const command = Command.make(executable, commandArgs).pipe(Command.setEnv(childEnv));
 
-    const child = yield* Command.start(command).pipe(
+    const child = yield* command.pipe(
       Effect.mapError(error =>
         createFallbackError('spawn_failed', `Failed to spawn ${target} ACP adapter.`, error)
       )
@@ -768,13 +780,13 @@ const invokeAcpSubAgentEffect = ({
     // scope finalizer (which would otherwise await a stubborn child forever).
     yield* Effect.addFinalizer(() =>
       Effect.gen(function* () {
-        yield* Effect.interruptible(child.kill('SIGTERM')).pipe(
+        yield* Effect.interruptible(child.kill({ killSignal: 'SIGTERM' })).pipe(
           Effect.timeout('200 millis'),
           Effect.ignore
         );
         const stillRunning = yield* child.isRunning.pipe(Effect.orElseSucceed(() => false));
         if (stillRunning) {
-          yield* Effect.ignore(child.kill('SIGKILL'));
+          yield* Effect.ignore(child.kill({ killSignal: 'SIGKILL' }));
         }
       })
     );

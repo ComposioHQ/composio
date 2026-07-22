@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Match, Option } from 'effect';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { NodeProcess } from 'src/services/node-process';
@@ -8,22 +8,21 @@ import { generatePythonTypeStubs } from '../py/commands/py.generate.cmd';
 import { generateCmd$Py } from './generate.py.cmd';
 import { generateCmd$Ts } from './generate.ts.cmd';
 
-const outputOpt = Options.optional(
-  Options.directory('output-dir', {
-    exists: 'either',
-  })
-).pipe(Options.withAlias('o'), Options.withDescription('Output directory for type stubs'));
+const outputOpt = Flag.optional(Flag.directory('output-dir')).pipe(
+  Flag.withAlias('o'),
+  Flag.withDescription('Output directory for type stubs')
+);
 
-const typeTools = Options.boolean('type-tools').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const typeTools = Flag.boolean('type-tools').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'Generate typed input/output schemas for each tool (TypeScript only, slower)'
   )
 );
 
-const toolkitsOpt = Options.text('toolkits').pipe(
-  Options.repeated,
-  Options.withDescription(
+const toolkitsOpt = Flag.string('toolkits').pipe(
+  Flag.atLeast(0),
+  Flag.withDescription(
     'Only generate types for specific toolkits (e.g., --toolkits gmail --toolkits slack)'
   )
 );

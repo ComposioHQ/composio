@@ -15,7 +15,7 @@ export interface Stdin {
   readonly readAll: () => Effect.Effect<string, Error>;
 }
 
-export const Stdin = Context.GenericTag<Stdin>('services/Stdin');
+export const Stdin = Context.Service<Stdin>('services/Stdin');
 
 const readAll = (): Promise<string> =>
   new Promise((resolve, reject) => {

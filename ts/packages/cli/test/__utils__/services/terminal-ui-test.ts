@@ -15,7 +15,15 @@ export const terminalUITestImpl = TerminalUI.of({
     isInteractive: false,
     canDecorate: false,
   }),
-  output: data => Console.log(data),
+  // `output` is the real stdout *data* channel (`ui.output()`). It uses
+  // `Console.info` rather than `Console.log` deliberately: `src/commands/index.ts`'s
+  // `runWithConfig` provides a Console override for most invocations that
+  // redirects `.log` calls to `.error` (routing the framework's own decoration
+  // rendering to stderr — see its `runWithDecorationOnStderr`). That override
+  // only touches `.log`; using `.info` here keeps `ui.output()`'s test-visible
+  // channel immune to it, matching production, where `ui.output()` never goes
+  // through the Effect `Console` service at all and so is never affected.
+  output: data => Console.info(data),
   error: data => Console.error(data),
 
   intro: title => Console.log(`-- ${title} --`),

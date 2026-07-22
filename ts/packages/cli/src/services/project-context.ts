@@ -1,5 +1,4 @@
-import { Effect, Option } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import { Config, Context, Effect, FileSystem, Layer, Option, Path } from 'effect';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';
@@ -50,19 +49,21 @@ const parseEnvFile = (content: string): Map<string, string> => {
  * 2. Per-directory .composio/.env (only allowed keys)
  * 3. Per-directory .composio/project.json (walk up from CWD, stop at homedir)
  */
-export class ProjectContext extends Effect.Service<ProjectContext>()('services/ProjectContext', {
-  effect: Effect.gen(function* () {
+export interface ProjectContextShape {
+  readonly resolve: Effect.Effect<Option.Option<ProjectKeys>, Config.ConfigError>;
+}
+
+export class ProjectContext extends Context.Service<ProjectContext, ProjectContextShape>()(
+  'services/ProjectContext'
+) {
+  static readonly make = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const proc = yield* NodeProcess;
     const os = yield* NodeOs;
 
-    return {
-      /**
-       * Resolves the current org+project context.
-       * Returns Option.none() if no context is configured.
-       */
-      resolve: Effect.gen(function* () {
+    const resolve: Effect.Effect<Option.Option<ProjectKeys>, Config.ConfigError> = Effect.gen(
+      function* () {
         // 1. Check env vars (highest priority)
         const envOrgId = yield* APP_CONFIG.ORG_ID;
         const envProjectId = yield* APP_CONFIG.PROJECT_ID;
@@ -88,11 +89,11 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
           const envFilePath = path.join(composioDir, constants.PROJECT_ENV_FILE_NAME);
           const envExists = yield* fs
             .exists(envFilePath)
-            .pipe(Effect.catchAll(() => Effect.succeed(false)));
+            .pipe(Effect.catch(() => Effect.succeed(false)));
           if (envExists) {
             const envContent = yield* fs
               .readFileString(envFilePath)
-              .pipe(Effect.catchAll(() => Effect.succeed('')));
+              .pipe(Effect.catch(() => Effect.succeed('')));
             const envMap = parseEnvFile(envContent);
             const envFileOrgId = envMap.get('COMPOSIO_ORG_ID');
             const envFileProjectId = envMap.get('COMPOSIO_PROJECT_ID');
@@ -113,15 +114,15 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
           const projectJsonPath = path.join(composioDir, constants.PROJECT_CONFIG_FILE_NAME);
           const jsonExists = yield* fs
             .exists(projectJsonPath)
-            .pipe(Effect.catchAll(() => Effect.succeed(false)));
+            .pipe(Effect.catch(() => Effect.succeed(false)));
           if (jsonExists) {
             const content = yield* fs
               .readFileString(projectJsonPath)
-              .pipe(Effect.catchAll(() => Effect.succeed('')));
+              .pipe(Effect.catch(() => Effect.succeed('')));
             if (content) {
               const keysOpt = yield* projectKeysFromJSON(content).pipe(
                 Effect.map(Option.some),
-                Effect.catchAll(error =>
+                Effect.catch(error =>
                   Effect.gen(function* () {
                     yield* Effect.logDebug(
                       `ProjectContext: corrupt project.json at ${projectJsonPath}, skipping:`,
@@ -145,8 +146,13 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
         // 3. Nothing found
         yield* Effect.logDebug('ProjectContext: no context found');
         return Option.none<ProjectKeys>();
-      }).pipe(Effect.provideService(Path.Path, path)),
-    };
-  }),
-  dependencies: [Path.layer],
-}) {}
+      }
+    ).pipe(Effect.provideService(Path.Path, path));
+
+    return { resolve };
+  });
+
+  static readonly Default = Layer.effect(ProjectContext, ProjectContext.make).pipe(
+    Layer.provide(Path.layer)
+  );
+}

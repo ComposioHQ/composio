@@ -1,17 +1,23 @@
 // eslint-disable-next-line no-restricted-imports -- This Effect service is the sole node:os boundary for CLI source.
 import os from 'node:os';
-import { Effect } from 'effect';
+import { Context, Layer } from 'effect';
+
+export interface NodeOsShape {
+  readonly homedir: string;
+  readonly tmpdir: string;
+  readonly platform: NodeJS.Platform;
+  readonly arch: string;
+}
 
 // Injectable operating-system details for testing purposes.
-export class NodeOs extends Effect.Service<NodeOs>()('services/NodeOs', {
-  sync: () => ({
+export class NodeOs extends Context.Service<NodeOs, NodeOsShape>()('services/NodeOs') {
+  static readonly Default: Layer.Layer<NodeOs> = Layer.succeed(NodeOs, {
     homedir: os.homedir(),
     tmpdir: os.tmpdir(),
     platform: os.platform(),
     arch: os.arch(),
-  }),
-  dependencies: [],
-}) {}
+  });
+}
 
 export const defaultNodeOs = ({
   homedir,
@@ -19,4 +25,4 @@ export const defaultNodeOs = ({
 }: {
   homedir: string;
   tmpdir?: string;
-}) => new NodeOs({ homedir, tmpdir, platform: os.platform(), arch: os.arch() });
+}): NodeOsShape => NodeOs.of({ homedir, tmpdir, platform: os.platform(), arch: os.arch() });

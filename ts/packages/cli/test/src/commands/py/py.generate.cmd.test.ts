@@ -1,9 +1,7 @@
 import assert from 'node:assert';
 import path from 'node:path';
-import { HelpDoc, ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { Effect, FileSystem, Predicate } from 'effect';
 import { cli, TestLive } from 'test/__utils__';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import { NodeProcess } from 'src/services/node-process';
@@ -36,7 +34,7 @@ describe('CLI: composio generate py', () => {
     })
   )(it => {
     describe('[Given] valid fetched app data', () => {
-      it.scoped.skip(
+      it.effect.skip(
         '[Given] no arguments [Then] it generates type stubs relative the `composio` module if detectable by uv',
         () =>
           Effect.gen(function* () {
@@ -105,7 +103,7 @@ describe('CLI: composio generate py', () => {
           })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --output-dir [Then] it generates type stubs relative to the given output directory',
         Effect.fn(function* () {
           const process = yield* NodeProcess;
@@ -298,7 +296,7 @@ describe('CLI: composio generate py', () => {
         })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits gmail [Then] it generates type stubs only for the gmail toolkit',
         Effect.fn(function* () {
           const process = yield* NodeProcess;
@@ -322,7 +320,7 @@ describe('CLI: composio generate py', () => {
         })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits gmail --toolkits slack [Then] it generates type stubs for both toolkits',
         Effect.fn(function* () {
           const process = yield* NodeProcess;
@@ -357,7 +355,7 @@ describe('CLI: composio generate py', () => {
         })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits with invalid toolkit [Then] it fails with an error',
         Effect.fn(function* () {
           const process = yield* NodeProcess;
@@ -365,15 +363,18 @@ describe('CLI: composio generate py', () => {
           const outputDir = path.join(cwd, '.generated', 'composio-py-invalid');
 
           const args = ['generate', 'py', '--toolkits', 'nonexistent', '--output-dir', outputDir];
-          const result = yield* cli(args).pipe(Effect.catchAll(e => Effect.succeed(e)));
+          const result = yield* cli(args).pipe(Effect.catch(e => Effect.succeed(e)));
 
-          assert.ok(ValidationError.isValidationError(result));
-          assert.ok(ValidationError.isInvalidValue(result));
-          expect(HelpDoc.toAnsiText(result.error)).toContain('Invalid toolkit(s): nonexistent');
+          assert.ok(Predicate.isTagged(result, 'commands/GenerateInputError'));
+          if (Predicate.isTagged(result, 'commands/GenerateInputError')) {
+            expect((result as unknown as { message: string }).message).toContain(
+              'Invalid toolkit(s): nonexistent'
+            );
+          }
         })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits GMAIL (uppercase) [Then] it handles case-insensitive matching',
         Effect.fn(function* () {
           const process = yield* NodeProcess;
@@ -395,7 +396,7 @@ describe('CLI: composio generate py', () => {
     });
 
     describe('[Given] COMPOSIO_TOOLKIT_VERSION_* env vars', () => {
-      it.scoped(
+      it.effect(
         '[Given] COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it adds version comment to generated file',
         () =>
           Effect.gen(function* () {
@@ -422,7 +423,7 @@ describe('CLI: composio generate py', () => {
           })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] multiple COMPOSIO_TOOLKIT_VERSION_* env vars [Then] it adds version comments to both generated files',
         () =>
           Effect.gen(function* () {
@@ -448,7 +449,7 @@ describe('CLI: composio generate py', () => {
           })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] COMPOSIO_TOOLKIT_VERSION_GMAIL=latest [Then] it treats same as no override (no version comment)',
         () =>
           Effect.gen(function* () {
@@ -470,7 +471,7 @@ describe('CLI: composio generate py', () => {
           })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_SLACK env var [Then] it ignores env var for non-requested toolkit',
         () =>
           Effect.gen(function* () {
@@ -499,7 +500,7 @@ describe('CLI: composio generate py', () => {
           })
       );
 
-      it.scoped(
+      it.effect(
         '[Given] --toolkits gmail and COMPOSIO_TOOLKIT_VERSION_GMAIL env var [Then] it applies version override to filtered toolkit',
         () =>
           Effect.gen(function* () {

@@ -1,10 +1,9 @@
-import { FileSystem, Path } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
-import { Config, Data, Effect, Layer, Option, Predicate, Schema } from 'effect';
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
+import { Config, Data, Effect, FileSystem, Layer, Option, Path, Predicate, Schema } from 'effect';
 import semver from 'semver';
 import { bold, cyanBright, dim } from 'src/ui/colors';
 import { APP_VERSION, GITHUB_REPO } from '../constants';
-import { NodeOs } from './node-os';
+import { NodeOs, type NodeOsShape } from './node-os';
 import { resolveInstalledCliVersion } from './run-companion-modules';
 import { TerminalUI } from './terminal-ui';
 
@@ -33,7 +32,7 @@ export interface UpdateCheckState {
   latestVersion: string; // e.g. "0.3.0"
 }
 
-const UpdateCheckStateSchema = Schema.parseJson(
+const UpdateCheckStateSchema = Schema.fromJsonString(
   Schema.Struct({
     lastChecked: Schema.String,
     latestVersion: Schema.String,
@@ -64,7 +63,7 @@ const defaultStateFile = Effect.gen(function* () {
   return path.join(os.homedir, '.composio', 'update-check.json');
 });
 
-function getCurrentBinaryAssetName(os: Pick<NodeOs, 'platform' | 'arch'>): string | undefined {
+function getCurrentBinaryAssetName(os: Pick<NodeOsShape, 'platform' | 'arch'>): string | undefined {
   const { platform } = os;
   const rawArch: string = os.arch;
   if (platform !== 'darwin' && platform !== 'linux') return undefined;
@@ -106,7 +105,7 @@ export function parseLatestVersionFromReleases(
 
   let latest: string | undefined;
   for (const release of releases) {
-    if (!Predicate.isRecord(release)) continue;
+    if (!Predicate.isObject(release)) continue;
 
     const candidate = release;
     if (typeof candidate.tag_name !== 'string') continue;
@@ -136,7 +135,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawState = yield* fs.readFileString(config.stateFile);
-    return yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+    return yield* Schema.decodeUnknownEffect(UpdateCheckStateSchema)(rawState);
   });
 
   /**
@@ -228,7 +227,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       Effect.flatMap(writeState),
       // Silently ignore fetch/parse errors — never block the CLI.
       // Still update the timestamp to prevent unbounded retry loops.
-      Effect.catchAll(() => Effect.ignore(writeState()))
+      Effect.catch(() => Effect.ignore(writeState()))
     );
   });
 

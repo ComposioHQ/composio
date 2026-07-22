@@ -55,9 +55,9 @@ const toolkitsData = {
   detailedToolkits,
 } satisfies TestLiveInput['toolkitsData'];
 
-const testConfigProvider = ConfigProvider.fromMap(
-  new Map([['COMPOSIO_USER_API_KEY', 'test_api_key']])
-).pipe(extendConfigProvider);
+const testConfigProvider = ConfigProvider.fromEnv({
+  env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
+}).pipe(extendConfigProvider);
 
 const parseLastJson = (lines: ReadonlyArray<string>) => {
   for (let i = lines.length - 1; i >= 0; i -= 1) {
@@ -80,7 +80,7 @@ describe('CLI: composio dev toolkits version', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] valid slug [Then] shows latest and last 20 versions',
     it => {
-      it.scoped('prints latest version and truncates to last 20', () =>
+      it.effect('prints latest version and truncates to last 20', () =>
         Effect.gen(function* () {
           yield* cli(['dev', 'toolkits', 'version', 'gmail']);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
@@ -103,9 +103,9 @@ describe('CLI: composio dev toolkits version', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] invalid slug [Then] shows error and hint',
     it => {
-      it.scoped('prints fetch failure and browse hint', () =>
+      it.effect('prints fetch failure and browse hint', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.either);
+          yield* cli(['dev', 'toolkits', 'version', 'unknown']).pipe(Effect.result);
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 
@@ -117,7 +117,7 @@ describe('CLI: composio dev toolkits version', () => {
   );
 
   layer(TestLive())('[Given] no API key [Then] warns user to login', it => {
-    it.scoped('warns user to login', () =>
+    it.effect('warns user to login', () =>
       Effect.gen(function* () {
         yield* cli(['dev', 'toolkits', 'version', 'gmail']);
         const lines = yield* MockConsole.getLines({ stripAnsi: true });

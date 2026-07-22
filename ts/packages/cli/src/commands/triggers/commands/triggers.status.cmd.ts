@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import { Effect, Option } from 'effect';
 import { handleHttpServerError } from 'src/effects/handle-http-error';
 import { requireAuth } from 'src/effects/require-auth';
@@ -12,43 +12,41 @@ import {
 } from '../format';
 import { parseCsv } from '../parse-csv';
 
-const userIds = Options.text('user-ids').pipe(
-  Options.withDescription('Filter by user IDs, comma-separated'),
-  Options.optional
+const userIds = Flag.string('user-ids').pipe(
+  Flag.withDescription('Filter by user IDs, comma-separated'),
+  Flag.optional
 );
 
-const connectedAccountIds = Options.text('connected-account-ids').pipe(
-  Options.withDescription('Filter by connected account IDs, comma-separated'),
-  Options.optional
+const connectedAccountIds = Flag.string('connected-account-ids').pipe(
+  Flag.withDescription('Filter by connected account IDs, comma-separated'),
+  Flag.optional
 );
 
-const toolkits = Options.text('toolkits').pipe(
-  Options.withDescription(
-    'Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'
-  ),
-  Options.optional
+const toolkits = Flag.string('toolkits').pipe(
+  Flag.withDescription('Filter by toolkit slugs, comma-separated (e.g. "gmail" or "gmail,slack")'),
+  Flag.optional
 );
 
-const triggerIds = Options.text('trigger-ids').pipe(
-  Options.withDescription('Filter by trigger instance IDs, comma-separated'),
-  Options.optional
+const triggerIds = Flag.string('trigger-ids').pipe(
+  Flag.withDescription('Filter by trigger instance IDs, comma-separated'),
+  Flag.optional
 );
 
-const triggerNames = Options.text('trigger-names').pipe(
-  Options.withDescription(
+const triggerNames = Flag.string('trigger-names').pipe(
+  Flag.withDescription(
     'Filter by trigger names, comma-separated (case-insensitive; normalized to uppercase)'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const showDisabled = Options.boolean('show-disabled').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Include disabled triggers in the response')
+const showDisabled = Flag.boolean('show-disabled').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Include disabled triggers in the response')
 );
 
-const limit = Options.integer('limit').pipe(
-  Options.withDefault(30),
-  Options.withDescription('Number of results per page (1-1000)')
+const limit = Flag.integer('limit').pipe(
+  Flag.withDefault(30),
+  Flag.withDescription('Number of results per page (1-1000)')
 );
 
 const csvOption = (opt: Option.Option<string>): string[] | undefined =>

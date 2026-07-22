@@ -11,15 +11,12 @@ import { NodeOs } from 'src/services/node-os';
  * Mock NodeOs service with custom platform and architecture
  */
 const createMockNodeOs = <P extends NodeJS.Platform>(platform: P, arch: string) =>
-  Layer.succeed(
-    NodeOs,
-    NodeOs.make({
-      homedir: '/mock/home',
-      tmpdir: '/tmp',
-      platform: platform as NodeJS.Platform,
-      arch: arch as NodeJS.Architecture,
-    })
-  );
+  Layer.succeed(NodeOs, {
+    homedir: '/mock/home',
+    tmpdir: '/tmp',
+    platform: platform as NodeJS.Platform,
+    arch,
+  });
 
 describe('detect-platform.ts', () => {
   describe('detectPlatform', () => {

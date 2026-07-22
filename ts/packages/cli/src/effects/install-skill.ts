@@ -1,5 +1,5 @@
-import { Config, Data, Effect, Option } from 'effect';
-import { FileSystem, HttpClient, Path } from '@effect/platform';
+import { Config, Data, Effect, FileSystem, Option, Path } from 'effect';
+import { HttpClient } from 'effect/unstable/http';
 import { NodeOs } from 'src/services/node-os';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { GITHUB_CONFIG } from 'src/effects/github-config';
@@ -267,7 +267,7 @@ export const installSkillSafe = (options?: {
 }) =>
   installSkill(options).pipe(
     Effect.sandbox,
-    Effect.catchAll(cause =>
+    Effect.catch(cause =>
       Effect.gen(function* () {
         const ui = yield* TerminalUI;
         yield* Effect.logDebug('Skill install failed:', cause);

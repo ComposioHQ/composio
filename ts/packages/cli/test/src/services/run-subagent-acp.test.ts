@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { BunContext } from '@effect/platform-bun';
+import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect } from 'effect';
 import { afterEach, describe, expect, it, vi } from '@effect/vitest';
 import {
@@ -45,7 +45,7 @@ describe('run-subagent-acp', () => {
         expect(result.source).toBe('bundled');
         expect(result.cmd[0]).toBe(process.execPath);
         expect(result.cmd[1]).toMatch(/claude-code-acp/);
-      }).pipe(Effect.provide(BunContext.layer))
+      }).pipe(Effect.provide(BunServices.layer))
   );
 
   it.effect('[Given] bundled codex adapter [Then] it resolves to the bundled path', () =>
@@ -54,7 +54,7 @@ describe('run-subagent-acp', () => {
       expect(result.source).toBe('bundled');
       expect(result.cmd[0]).toBe(process.execPath);
       expect(result.cmd[1]).toMatch(/codex-acp/);
-    }).pipe(Effect.provide(BunContext.layer))
+    }).pipe(Effect.provide(BunServices.layer))
   );
 
   it('[Given] an ACP invoke error [Then] it is classified for fallback', () => {
@@ -285,6 +285,6 @@ describe('run-subagent-acp', () => {
         );
 
         yield* context!.cleanup;
-      }).pipe(Effect.provide(BunContext.layer))
+      }).pipe(Effect.provide(BunServices.layer))
   );
 });

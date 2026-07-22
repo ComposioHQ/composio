@@ -1,5 +1,4 @@
-import { Effect, pipe, Option } from 'effect';
-import { FileSystem, Path } from '@effect/platform';
+import { Effect, FileSystem, Option, Path, pipe } from 'effect';
 import * as constants from 'src/constants';
 import { APP_CONFIG } from 'src/effects/app-config';
 import { NodeOs } from 'src/services/node-os';
@@ -16,7 +15,7 @@ export const setupCacheDir = Effect.gen(function* () {
   );
 
   // Ensure cache directory exists
-  yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catchAll(() => Effect.void));
+  yield* fs.makeDirectory(cacheDir, { recursive: true }).pipe(Effect.catch(() => Effect.void));
 
   return cacheDir;
 });

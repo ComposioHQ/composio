@@ -148,7 +148,7 @@ export interface TerminalUI {
   ) => Effect.Effect<A, E, R>;
 }
 
-export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
+export const TerminalUI = Context.Service<TerminalUI>('services/TerminalUI');
 
 // ---------------------------------------------------------------------------
 // TerminalUILive — production layer using @clack/prompts

@@ -1,4 +1,4 @@
-import { Args, Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Argument, Command, Flag } from 'effect/unstable/cli';
 import { Data, Effect, Option, Schedule } from 'effect';
 import type { Composio as RawComposioClient } from '@composio/client';
 import open from 'open';
@@ -55,48 +55,64 @@ class BrowserOpenError extends Data.TaggedError('commands/BrowserOpenError')<{
   readonly cause: unknown;
 }> {}
 
-const invalidOptionValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
+/**
+ * Business-level validation failure for `link` inputs that are only
+ * knowable after parsing (e.g. an `--alias` that is empty after trimming,
+ * or an option combination that's invalid for this command variant).
+ *
+ * v3 raised these via `ValidationError.invalidValue`, which piggybacked on
+ * `@effect/cli`'s parse-error rendering. v4's `CliError.InvalidValue` always
+ * renders a fixed, option-specific template (see `CliError.ts`) that can't
+ * carry a free-form message, so these are modeled as an ordinary typed
+ * domain error instead and rendered through the same `effect-errors` path
+ * as this file's other business errors (`ConnectionPollingError`, etc.).
+ */
+class LinkInputError extends Data.TaggedError('commands/LinkInputError')<{
+  readonly message: string;
+}> {}
 
-const toolkit = Args.text({ name: 'toolkit' }).pipe(
-  Args.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
-  Args.optional
+const invalidOptionValue = (message: string) => new LinkInputError({ message });
+
+const toolkit = Argument.string('toolkit').pipe(
+  Argument.withDescription('Toolkit slug to link (e.g. "github", "gmail")'),
+  Argument.optional
 );
 
-const authConfig = Options.text('auth-config').pipe(
-  Options.withDescription('Auth config ID (e.g. "ac_..."). Uses legacy flow (no Tool Router).'),
-  Options.optional
+const authConfig = Flag.string('auth-config').pipe(
+  Flag.withDescription('Auth config ID (e.g. "ac_..."). Uses legacy flow (no Tool Router).'),
+  Flag.optional
 );
 
-const userId = Options.text('user-id').pipe(
-  Options.withDescription('Developer-project user ID override'),
-  Options.optional
+const userId = Flag.string('user-id').pipe(
+  Flag.withDescription('Developer-project user ID override'),
+  Flag.optional
 );
 
-const projectName = Options.text('project-name').pipe(
-  Options.optional,
-  Options.withDescription('Developer project name override for this command')
+const projectName = Flag.string('project-name').pipe(
+  Flag.optional,
+  Flag.withDescription('Developer project name override for this command')
 );
 
-const noWait = Options.boolean('no-wait').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Do not wait for authorization; only print link info')
+const noWait = Flag.boolean('no-wait').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Do not wait for authorization; only print link info')
 );
 
-const noBrowser = Options.boolean('no-browser').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Do not open the browser automatically; print the URL to open manually')
+const noBrowser = Flag.boolean('no-browser').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Do not open the browser automatically; print the URL to open manually')
 );
 
-const alias = Options.text('alias').pipe(
-  Options.withDescription(
+const alias = Flag.string('alias').pipe(
+  Flag.withDescription(
     'Alias to assign to the connected account. Required when creating an additional account for the same toolkit/auth config.'
   ),
-  Options.optional
+  Flag.optional
 );
 
-const list = Options.boolean('list').pipe(
-  Options.withDefault(false),
-  Options.withDescription(
+const list = Flag.boolean('list').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
     'List existing connected accounts for the toolkit instead of creating a new link'
   )
 );
@@ -172,9 +188,10 @@ const waitForActiveConnection = (
             status: account.status,
           });
         }),
-        Schedule.exponential('0.3 seconds').pipe(
-          Schedule.intersect(Schedule.recurs(15)),
-          Schedule.intersect(Schedule.spaced('5 seconds'))
+        // Retries with the max delay of a 0.3s exponential ramp and a flat 5s spacing,
+        // capped at 15 attempts.
+        Schedule.max([Schedule.exponential('0.3 seconds'), Schedule.spaced('5 seconds')]).pipe(
+          Schedule.upTo({ times: 15 })
         )
       ).pipe(
         Effect.tap(account => {
@@ -238,7 +255,7 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
       const sessionInfo = yield* getSessionInfoByUserApiKey({
         baseURL: userContext.data.baseURL,
         userApiKey: apiKey,
-      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+      }).pipe(Effect.catch(() => Effect.succeed(null)));
 
       if (sessionInfo?.project.org.name) {
         orgName = sessionInfo.project.org.name;
@@ -442,7 +459,7 @@ const resolveLinkUserId = (params: {
 
     const resolvedUserId =
       params.resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullable(params.resolvedProject.consumerUserId)
+        ? Option.fromNullishOr(params.resolvedProject.consumerUserId)
         : Option.match(params.requestedUserId, {
             onSome: value => Option.some(value),
             onNone: () => Option.orElse(localTestUserId, () => params.userContext.data.testUserId),
@@ -653,7 +670,7 @@ const handleLegacyAuthConfigLink = (params: {
     }).pipe(
       // Auxiliary fetch powering the --alias hint only: a transient list
       // failure must not abort the link flow.
-      Effect.catchAll(() => Effect.succeed({ items: [] }))
+      Effect.catch(() => Effect.succeed({ items: [] }))
     );
     const aliasAvailable = yield* ensureAliasIsAvailable({
       ui: params.ui,
@@ -683,7 +700,7 @@ const handleLegacyAuthConfigLink = (params: {
       )
       .pipe(
         Effect.asSome,
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             const message =
               extractMessage(error) ??
@@ -830,7 +847,7 @@ const runConnectedAccountsLink = (params: {
     }).pipe(Effect.mapError(formatResolveCommandProjectError));
     const resolvedUserId =
       resolvedProject.projectType === 'CONSUMER'
-        ? Option.fromNullable(resolvedProject.consumerUserId)
+        ? Option.fromNullishOr(resolvedProject.consumerUserId)
         : Option.match(params.userId, {
             onSome: value => Option.some(value),
             onNone: () => userContext.data.testUserId,
@@ -853,7 +870,7 @@ const runConnectedAccountsLink = (params: {
     }).pipe(
       // Auxiliary fetch powering the --alias hint only: a transient list
       // failure must not abort the link flow.
-      Effect.catchAll(() => Effect.succeed({ items: [] }))
+      Effect.catch(() => Effect.succeed({ items: [] }))
     );
     const aliasAvailable = yield* ensureAliasIsAvailable({
       ui,
@@ -896,7 +913,7 @@ const runConnectedAccountsLink = (params: {
       )
       .pipe(
         Effect.asSome,
-        Effect.catchAll(error =>
+        Effect.catch(error =>
           Effect.gen(function* () {
             const slug = extractSlug(error);
 

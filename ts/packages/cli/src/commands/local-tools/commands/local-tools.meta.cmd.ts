@@ -1,4 +1,4 @@
-import { Command, Options } from '@effect/cli';
+import { Command, Flag } from 'effect/unstable/cli';
 import {
   createEmptyLocalToolsMeta,
   getLocalToolsMetaPath,
@@ -14,14 +14,14 @@ class LocalToolsMetaError extends Data.TaggedError('commands/LocalToolsMetaError
   readonly cause: unknown;
 }> {}
 
-const json = Options.boolean('json').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Print the metadata file contents as JSON')
+const json = Flag.boolean('json').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Print the metadata file contents as JSON')
 );
 
-const init = Options.boolean('init').pipe(
-  Options.withDefault(false),
-  Options.withDescription('Create ~/composio/local_tools.json if it does not exist')
+const init = Flag.boolean('init').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription('Create ~/composio/local_tools.json if it does not exist')
 );
 
 export const localToolsCmd$Meta = Command.make('meta', { json, init }, ({ json, init }) =>

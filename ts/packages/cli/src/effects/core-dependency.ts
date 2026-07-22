@@ -1,5 +1,6 @@
-import { Command, FileSystem, Path } from '@effect/platform';
-import { Effect, Match } from 'effect';
+import { FileSystem, Path, Effect, Match } from 'effect';
+import { ChildProcess } from 'effect/unstable/process';
+import { ChildProcessSpawner } from 'effect/unstable/process/ChildProcessSpawner';
 import {
   ProjectEnvironmentDetector,
   type JsLanguage,
@@ -78,7 +79,7 @@ const readPackageJson = (fs: FileSystem.FileSystem, path: Path.Path, dir: string
         catch: () => null,
       })
     ),
-    Effect.catchAll(() => Effect.succeed(null))
+    Effect.catch(() => Effect.succeed(null))
   );
 
 const findDependencySpec = (pkg: Record<string, unknown>, name: string) => {
@@ -102,13 +103,13 @@ const detectJsDependencyVersion = (
       const packageJsonPath = path.join(dir, 'node_modules', '@composio', 'core', 'package.json');
       const content = yield* fs
         .readFileString(packageJsonPath)
-        .pipe(Effect.catchAll(() => Effect.succeed<string | null>(null)));
+        .pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
       if (content) {
         const parsed = yield* Effect.try({
           try: () => JSON.parse(content) as { version?: string },
           catch: () => null,
-        }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+        }).pipe(Effect.catch(() => Effect.succeed(null)));
 
         if (parsed?.version) {
           return {
@@ -122,7 +123,7 @@ const detectJsDependencyVersion = (
         const pnpmStore = path.join(dir, 'node_modules', '.pnpm');
         const entries = yield* fs
           .readDirectory(pnpmStore)
-          .pipe(Effect.catchAll(() => Effect.succeed<string[]>([])));
+          .pipe(Effect.catch(() => Effect.succeed<string[]>([])));
         const match = entries.find(entry => entry.startsWith('@composio+core@'));
         if (!match) {
           continue;
@@ -137,13 +138,13 @@ const detectJsDependencyVersion = (
         );
         const pnpmContent = yield* fs
           .readFileString(pnpmPkgPath)
-          .pipe(Effect.catchAll(() => Effect.succeed<string | null>(null)));
+          .pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
         if (pnpmContent) {
           const pnpmParsed = yield* Effect.try({
             try: () => JSON.parse(pnpmContent) as { version?: string },
             catch: () => null,
-          }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+          }).pipe(Effect.catch(() => Effect.succeed(null)));
 
           if (pnpmParsed?.version) {
             return {
@@ -185,10 +186,10 @@ const detectPythonDependencyVersion = (plan: Extract<CoreDependencyPlan, { kind:
           ]
         : ['python', '-c', "import importlib.metadata as m; print(m.version('composio'))"];
 
-    const stdout = yield* Command.make(cmd, ...args).pipe(
-      Command.string,
-      Effect.catchAll(() => Effect.succeed<string | null>(null))
-    );
+    const spawner = yield* ChildProcessSpawner;
+    const stdout = yield* spawner
+      .string(ChildProcess.make(cmd, args))
+      .pipe(Effect.catch(() => Effect.succeed<string | null>(null)));
 
     if (!stdout) {
       return null;

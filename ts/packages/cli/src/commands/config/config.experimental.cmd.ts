@@ -1,5 +1,5 @@
-import { Args, Command, HelpDoc, ValidationError } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
+import { Argument, Command } from 'effect/unstable/cli';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
@@ -10,14 +10,20 @@ import type { SkillFeatureFlag } from '../../../skills-src/composio-cli/referenc
 
 const knownFeatures: ReadonlyArray<SkillFeatureFlag> = Object.values(CLI_EXPERIMENTAL_FEATURES);
 
-const featureArg = Args.text({ name: 'feature' }).pipe(
-  Args.withDescription(`Experimental feature name. Known features: ${knownFeatures.join(', ')}`),
-  Args.optional
+class ConfigOptionError extends Data.TaggedError('commands/ConfigOptionError')<{
+  readonly message: string;
+}> {}
+
+const featureArg = Argument.string('feature').pipe(
+  Argument.withDescription(
+    `Experimental feature name. Known features: ${knownFeatures.join(', ')}`
+  ),
+  Argument.optional
 );
 
-const stateArg = Args.text({ name: 'state' }).pipe(
-  Args.withDescription('Set to "on" or "off"'),
-  Args.optional
+const stateArg = Argument.string('state').pipe(
+  Argument.withDescription('Set to "on" or "off"'),
+  Argument.optional
 );
 
 const rebuildSkill = Effect.gen(function* () {
@@ -97,9 +103,10 @@ export const configExperimentalCmd = Command.make(
 
       const stateValue = state.value.toLowerCase();
       if (stateValue !== 'on' && stateValue !== 'off') {
-        yield* ui.log.error(`Invalid state "${state.value}". Use "on" or "off".`);
         return yield* Effect.fail(
-          ValidationError.invalidValue(HelpDoc.p(`Invalid state: ${state.value}`))
+          new ConfigOptionError({
+            message: `Invalid state "${state.value}". Use "on" or "off".`,
+          })
         );
       }
 

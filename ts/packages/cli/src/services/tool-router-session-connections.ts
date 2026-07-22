@@ -171,7 +171,7 @@ export const resolveToolRouterSessionConnections = (
         : Effect.void
     ),
     Effect.map(({ context }) => context),
-    Effect.catchAll(() =>
+    Effect.catch(() =>
       Effect.succeed({
         connectedToolkits: [],
         authConfigs: undefined,
