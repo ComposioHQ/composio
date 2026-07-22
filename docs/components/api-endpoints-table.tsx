@@ -1,7 +1,7 @@
 'use client';
 
 import { useApiVersion } from '@/lib/use-api-version';
-import { LegacyBadge } from '@/components/legacy-badge';
+import { DeprecatedApiLegacyBadge } from '@/components/legacy-badge';
 
 interface Endpoint {
   method: string;
@@ -39,9 +39,7 @@ export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
                 <a href={ep.href}>{ep.summary}</a>
                 {ep.legacy && (
                   <span className="ml-2 inline-flex align-middle">
-                    <LegacyBadge
-                      title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"
-                    />
+                    <DeprecatedApiLegacyBadge />
                   </span>
                 )}
               </td>
