@@ -64,6 +64,17 @@ const docsSchema = frontmatterSchema.extend({
     .optional(),
 });
 
+const knowledgeBaseSchema = docsSchema.extend({
+  sourcePath: z.string().optional(),
+  sourceHeading: z.string().optional(),
+  sourceCommit: z.string().optional(),
+  lastVerifiedAt: z.string().optional(),
+  reviewAfter: z.string().optional(),
+  freshness: z.enum(['evergreen', 'time-sensitive']).optional(),
+  topics: z.array(z.string()).optional(),
+  aliases: z.array(z.string()).optional(),
+});
+
 export const docs = defineDocs({
   dir: 'content/docs',
   docs: {
@@ -122,6 +133,19 @@ export const toolkits = defineDocs({
   docs: {
     schema: docsSchema,
     files: ['**/*', '!faq/**'],
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
+export const knowledgeBase = defineDocs({
+  dir: 'content/kb',
+  docs: {
+    schema: knowledgeBaseSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },

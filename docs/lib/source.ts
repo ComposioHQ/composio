@@ -1,4 +1,11 @@
-import { docs, reference, examples, toolkits, changelog } from 'fumadocs-mdx:collections/server';
+import {
+  docs,
+  reference,
+  examples,
+  toolkits,
+  knowledgeBase,
+  changelog,
+} from 'fumadocs-mdx:collections/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
@@ -118,6 +125,12 @@ export const examplesSource = loader({
 export const toolkitsSource = loader({
   baseUrl: '/toolkits',
   source: toolkits.toFumadocsSource(),
+  plugins: [lucideIconsPlugin()],
+});
+
+export const knowledgeBaseSource = loader({
+  baseUrl: '/kb',
+  source: knowledgeBase.toFumadocsSource(),
   plugins: [lucideIconsPlugin()],
 });
 
