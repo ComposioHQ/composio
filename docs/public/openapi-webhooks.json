@@ -7385,7 +7385,6 @@
           "Webhook Events"
         ],
         "summary": "Fired when a trigger receives data from an external service",
-        "description": "Delivered when a trigger you enabled receives data from an external service. `data` is the trigger-specific event payload.",
         "parameters": [
           {
             "schema": {
@@ -7452,11 +7451,11 @@
                         "properties": {
                           "log_id": {
                             "type": "string",
-                            "description": "Execution log id for this delivery."
+                            "description": "Execution log ID for this delivery."
                           },
                           "trigger_slug": {
                             "type": "string",
-                            "description": "Slug of the trigger that fired (for example `GITHUB_COMMIT_EVENT`)."
+                            "description": "The trigger that fired (for example GITHUB_COMMIT_EVENT)."
                           },
                           "trigger_id": {
                             "type": "string",
@@ -7475,7 +7474,7 @@
                               "string",
                               "null"
                             ],
-                            "description": "Your end-user id for this connection, or null if unset."
+                            "description": "End-user ID associated with this connection, or null if unset."
                           }
                         },
                         "required": [
@@ -7490,7 +7489,7 @@
                       "data": {
                         "type": "object",
                         "additionalProperties": {},
-                        "description": "The trigger event payload. Its shape depends on the specific trigger — see that trigger's documentation."
+                        "description": "The trigger event payload. Its shape depends on the trigger — see that trigger's documentation."
                       }
                     },
                     "required": [
@@ -7500,24 +7499,6 @@
                     ]
                   }
                 ]
-              },
-              "example": {
-                "id": "msg_2f1c9e4a-3b6d-4a1e-9c2f-7d8e5a6b4c31",
-                "type": "composio.trigger.message",
-                "timestamp": "2026-01-15T10:30:00Z",
-                "metadata": {
-                  "log_id": "log_abc123",
-                  "trigger_slug": "GITHUB_COMMIT_EVENT",
-                  "trigger_id": "ti_xyz789",
-                  "connected_account_id": "ca_def456",
-                  "auth_config_id": "ac_xyz789",
-                  "user_id": "user-123"
-                },
-                "data": {
-                  "commit_sha": "a1b2c3d",
-                  "message": "fix: resolve null pointer",
-                  "author": "jane"
-                }
               }
             }
           }
@@ -7536,7 +7517,6 @@
           "Webhook Events"
         ],
         "summary": "Fired when a connected account expires and needs re-authentication",
-        "description": "Delivered when a connected account expires and needs re-authentication. `data` is the connected account, matching the GET connected account response.",
         "parameters": [
           {
             "schema": {
@@ -7598,6 +7578,9 @@
                           "composio.connected_account.expired"
                         ]
                       },
+                      "data": {
+                        "$ref": "#/components/schemas/ConnectedAccountDetailed"
+                      },
                       "metadata": {
                         "type": "object",
                         "properties": {
@@ -7614,35 +7597,15 @@
                           "project_id",
                           "org_id"
                         ]
-                      },
-                      "data": {
-                        "$ref": "#/components/schemas/ConnectedAccountDetailed"
                       }
                     },
                     "required": [
                       "type",
-                      "metadata",
-                      "data"
+                      "data",
+                      "metadata"
                     ]
                   }
                 ]
-              },
-              "example": {
-                "id": "msg_9c8b7a6d-5e4f-4a3b-2c1d-0e9f8a7b6c5d",
-                "type": "composio.connected_account.expired",
-                "timestamp": "2026-01-15T10:30:00Z",
-                "metadata": {
-                  "project_id": "proj_abc123",
-                  "org_id": "org_abc123"
-                },
-                "data": {
-                  "id": "ca_def456",
-                  "toolkit": {
-                    "slug": "github"
-                  },
-                  "status": "EXPIRED",
-                  "user_id": "user-123"
-                }
               }
             }
           }
@@ -7661,7 +7624,6 @@
           "Webhook Events"
         ],
         "summary": "Fired when Composio automatically disables a trigger (for example, auth expired or the webhook subscription can no longer be refreshed). Not fired when you disable the trigger or its connected account yourself.",
-        "description": "Delivered when Composio automatically disables a trigger (for example, auth expired). Not delivered when you disable a trigger or connected account yourself.",
         "parameters": [
           {
             "schema": {
@@ -7723,18 +7685,6 @@
                           "composio.trigger.disabled"
                         ]
                       },
-                      "metadata": {
-                        "type": "object",
-                        "properties": {
-                          "project_id": {
-                            "type": "string",
-                            "description": "ID of the project."
-                          }
-                        },
-                        "required": [
-                          "project_id"
-                        ]
-                      },
                       "data": {
                         "type": "object",
                         "properties": {
@@ -7748,19 +7698,19 @@
                           },
                           "trigger_name": {
                             "type": "string",
-                            "description": "Slug of the disabled trigger."
+                            "description": "The trigger that was disabled (for example GITHUB_COMMIT_EVENT)."
                           },
                           "user_id": {
                             "type": [
                               "string",
                               "null"
                             ],
-                            "description": "Your end-user id for this connection, or null if unset."
+                            "description": "End-user ID associated with this connection, or null if unset."
                           },
                           "trigger_config": {
                             "type": "object",
                             "additionalProperties": {},
-                            "description": "The trigger configuration that was active when it was disabled."
+                            "description": "The trigger configuration that was active."
                           },
                           "disabled_at": {
                             "type": "string",
@@ -7781,34 +7731,27 @@
                           "disabled_at",
                           "disabled_reason"
                         ]
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "properties": {
+                          "project_id": {
+                            "type": "string",
+                            "description": "ID of the project."
+                          }
+                        },
+                        "required": [
+                          "project_id"
+                        ]
                       }
                     },
                     "required": [
                       "type",
-                      "metadata",
-                      "data"
+                      "data",
+                      "metadata"
                     ]
                   }
                 ]
-              },
-              "example": {
-                "id": "msg_7b3a1c2d-4e5f-4a6b-8c9d-0e1f2a3b4c5d",
-                "type": "composio.trigger.disabled",
-                "timestamp": "2026-01-15T10:30:00Z",
-                "metadata": {
-                  "project_id": "proj_abc123"
-                },
-                "data": {
-                  "id": "ti_xyz789",
-                  "connected_account_id": "ca_def456",
-                  "trigger_name": "GITHUB_COMMIT_EVENT",
-                  "user_id": "user-123",
-                  "trigger_config": {
-                    "repo": "composio"
-                  },
-                  "disabled_at": "2026-01-15T10:30:00Z",
-                  "disabled_reason": "Connected account authentication expired."
-                }
               }
             }
           }
