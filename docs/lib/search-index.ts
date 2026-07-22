@@ -21,6 +21,7 @@ import {
   classifyKnowledgeRecord,
   normalizeKnowledgeKeywords,
 } from '@/lib/knowledge/metadata';
+import { getAuthGuideSearchRecords } from '@/lib/knowledge/auth-guides';
 import type {
   KnowledgeIntent,
   KnowledgeMetadata,
@@ -723,6 +724,7 @@ export async function getAlgoliaSearchDocuments(): Promise<AlgoliaDocsRecord[]> 
     ...getFilesystemRecords(),
     ...getDynamicToolkitRecords(),
     ...getChangelogRecords(),
+    ...getAuthGuideSearchRecords(),
     ...await getOpenApiRecords(),
   ];
 
