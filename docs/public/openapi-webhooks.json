@@ -7535,7 +7535,7 @@
           "Webhook Events"
         ],
         "summary": "Trigger message (V2)",
-        "description": "Legacy V2 trigger payload. Metadata fields are mixed into `data` rather than a separate `metadata` object. Superseded by V3 — new integrations should use V3.",
+        "description": "The V2 trigger payload format. New integrations should use V3.",
         "deprecated": true,
         "parameters": [
           {
@@ -7661,7 +7661,7 @@
           "Webhook Events"
         ],
         "summary": "Trigger message (V1)",
-        "description": "Legacy V1 trigger payload. A flat structure without the event envelope. Superseded by V3 — new integrations should use V3.",
+        "description": "The V1 trigger payload format. New integrations should use V3.",
         "deprecated": true,
         "parameters": [
           {
