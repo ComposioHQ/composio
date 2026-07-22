@@ -68,8 +68,22 @@ describe('public KB catalog', () => {
     expect(catalog.guides[0]?.body).toBe('This is safe public guidance.');
   });
 
-  test('loads two published guides and one held guide from the pinned snapshot', () => {
-    expect(getPublishedKbGuides()).toHaveLength(2);
+  test('loads the first ten published guides and one held guide from the pinned snapshot', () => {
+    const published = getPublishedKbGuides();
+
+    expect(published).toHaveLength(10);
+    expect(published.map((guide) => guide.slug)).toEqual(
+      expect.arrayContaining([
+        'deduplicate-trigger-webhook-deliveries',
+        'custom-connection-data-fields-are-toolkit-specific',
+        'ahrefs-actions-use-the-api-host',
+        'use-calendly-post-invitee',
+        'use-canva-autofill-jobs-for-design-content',
+        'granola-mcp-metadata-comes-from-the-upstream-server',
+        'inspect-odoo-json-rpc-errors-inside-http-200-responses',
+        'strava-athlete-limits-belong-to-the-oauth-app',
+      ]),
+    );
     expect(getKbCatalog().guides.filter((guide) => guide.state === 'needs-review')).toHaveLength(1);
   });
 

@@ -27,9 +27,25 @@ describe('public KB content generation', () => {
     const summary = generateKbContent({ outputDir });
     const files = listFiles(outputDir);
 
-    expect(summary).toEqual({ published: 2, held: 1, files: files.length });
+    expect(summary).toEqual({ published: 10, held: 1, files: files.length });
     expect(files).toContain('tool-router-and-mcp/use-tool-router-session-files-as-tool-inputs.mdx');
     expect(files).toContain('sdk-and-api/pagination-limits-are-endpoint-specific.mdx');
+    expect(files).toContain('triggers-and-webhooks/deduplicate-trigger-webhook-deliveries.mdx');
+    expect(files).toContain(
+      'authentication/custom-connection-data-fields-are-toolkit-specific.mdx',
+    );
+    expect(files).toContain('toolkits/ahrefs-actions-use-the-api-host.mdx');
+    expect(files).toContain('toolkits/use-calendly-post-invitee.mdx');
+    expect(files).toContain('toolkits/use-canva-autofill-jobs-for-design-content.mdx');
+    expect(files).toContain(
+      'toolkits/granola-mcp-metadata-comes-from-the-upstream-server.mdx',
+    );
+    expect(files).toContain(
+      'toolkits/inspect-odoo-json-rpc-errors-inside-http-200-responses.mdx',
+    );
+    expect(files).toContain(
+      'toolkits/strava-athlete-limits-belong-to-the-oauth-app.mdx',
+    );
     expect(files.some((file) => file.includes('auth-config-list-pages'))).toBe(false);
 
     const guide = readFileSync(
@@ -43,6 +59,14 @@ describe('public KB content generation', () => {
       'related:\n  - title: "Use Tool Router session files as toolkit inputs"',
     );
     expect(guide).not.toContain('related: [{');
+
+    const ahrefsGuide = readFileSync(
+      join(outputDir, 'toolkits/ahrefs-actions-use-the-api-host.mdx'),
+      'utf8',
+    );
+    expect(ahrefsGuide).toContain('lastVerifiedAt: "2026-07-22"');
+    expect(ahrefsGuide).toContain('reviewAfter: "2026-10-20"');
+    expect(ahrefsGuide).not.toContain('route the case to a human');
   });
 
   test('detects generated content drift in check mode', () => {

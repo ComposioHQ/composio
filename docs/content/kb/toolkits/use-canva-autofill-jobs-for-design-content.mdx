@@ -1,0 +1,16 @@
+---
+title: "Use Canva autofill jobs for design content"
+description: "Populate a Canva design with an autofill job instead of a blank create-design action."
+keywords: ["canva","actions","autofill","designs","toolkits"]
+sourcePath: "kb/toolkits/canva/public.md"
+sourceHeading: "Use Canva autofill jobs when content must be populated into a design"
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["toolkits"]
+aliases: []
+---
+Use `CANVA_INITIATE_CANVA_DESIGN_AUTOFILL_JOB` when a Canva workflow must insert content into a generated design. The autofill workflow accepts a brand template and its input data, then creates the populated design asynchronously.
+
+`CANVA_CREATE_CANVA_DESIGN_WITH_OPTIONAL_ASSET` is deprecated in favor of `CANVA_POST_DESIGNS`, but both create-design flows create a blank design by default and do not accept arbitrary design content. Use `CANVA_POST_DESIGNS` only when a blank design is the intended result.

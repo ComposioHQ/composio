@@ -1,0 +1,22 @@
+---
+title: "Strava athlete limits belong to the OAuth app"
+description: "Connected-athlete capacity is attached to the Strava developer application behind the auth config."
+keywords: ["strava","oauth","athlete-limit","auth-configs","toolkits","authentication","connected-accounts"]
+sourcePath: "kb/toolkits/strava/public.md"
+sourceHeading: "Athlete-limit errors belong to the OAuth application"
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["toolkits","authentication","connected-accounts"]
+aliases: []
+related:
+  - title: "Custom connection-data fields are toolkit-specific"
+    href: "/kb/authentication/custom-connection-data-fields-are-toolkit-specific"
+    description: "Read each toolkit's auth metadata instead of assuming every API key uses the same field name."
+---
+Strava applies connected-athlete capacity per developer application. When OAuth shows `Athlete limit exceeded`, check whether the Composio auth config uses Composio-managed Strava credentials or a customer-owned Strava app. The capacity belongs to the underlying app, so it is not necessarily controlled by the owner of the connected account.
+
+For dedicated production capacity, create a customer-owned Strava developer app, configure it as a custom Composio auth config, and request any capacity increase from Strava for that app. The app owner can see the current capacity in Strava's API settings. Because that capacity can change, confirm it in Strava instead of relying on a fixed number.
+
+See the [Strava custom OAuth setup guide](https://composio.dev/auth/strava) for credential setup.

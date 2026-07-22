@@ -3,7 +3,7 @@
   "source": {
     "repository": "ComposioHQ/support-workflows",
     "commit": "5eed614",
-    "capturedAt": "2026-07-21"
+    "capturedAt": "2026-07-22"
   },
   "topics": [
     {
@@ -25,22 +25,28 @@
       "featuredRank": 3
     },
     {
+      "slug": "triggers-and-webhooks",
+      "title": "Triggers and webhooks",
+      "description": "Event delivery, webhook handling, and trigger troubleshooting.",
+      "featuredRank": 4
+    },
+    {
       "slug": "tool-router-and-mcp",
       "title": "Tool Router and MCP",
       "description": "Sessions, files, MCP clients, and Tool Router behavior.",
-      "featuredRank": 4
+      "featuredRank": 5
     },
     {
       "slug": "dashboard-and-projects",
       "title": "Dashboard and projects",
       "description": "Dashboard settings, organizations, projects, and logs.",
-      "featuredRank": 5
+      "featuredRank": 6
     },
     {
       "slug": "sdk-and-api",
       "title": "SDK and API",
       "description": "SDK usage and platform API behavior.",
-      "featuredRank": 6
+      "featuredRank": 7
     },
     {
       "slug": "billing-and-plans",
@@ -99,6 +105,150 @@
       "featured": true
     },
     {
+      "slug": "deduplicate-trigger-webhook-deliveries",
+      "title": "Deduplicate trigger webhook deliveries",
+      "description": "Build idempotent trigger handlers because outbound webhook delivery is at-least-once.",
+      "sourcePath": "kb/platform/triggers/public.md",
+      "sourceHeading": "Trigger webhook delivery is at-least-once",
+      "topics": ["triggers-and-webhooks", "sdk-and-api"],
+      "tags": ["triggers", "webhooks", "retries", "idempotency"],
+      "aliases": [],
+      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
+      "externalResources": [],
+      "updatedAt": "2026-07-14",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2027-01-18",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": true
+    },
+    {
+      "slug": "custom-connection-data-fields-are-toolkit-specific",
+      "title": "Custom connection-data fields are toolkit-specific",
+      "description": "Read each toolkit's auth metadata instead of assuming every API key uses the same field name.",
+      "sourcePath": "kb/platform/custom-connection-data-fields/public.md",
+      "sourceHeading": "Field names are toolkit-specific",
+      "topics": ["authentication", "connected-accounts", "toolkits"],
+      "tags": ["authentication", "custom-connections", "api-keys"],
+      "aliases": [],
+      "relatedGuides": ["strava-athlete-limits-belong-to-the-oauth-app"],
+      "externalResources": [],
+      "updatedAt": "2026-06-24",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2026-10-20",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": true
+    },
+    {
+      "slug": "ahrefs-actions-use-the-api-host",
+      "title": "Ahrefs actions must use the API host",
+      "description": "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host.",
+      "sourcePath": "kb/toolkits/ahrefs/public.md",
+      "sourceHeading": "Ahrefs actions must call api.ahrefs.com, not ahrefs.com",
+      "topics": ["toolkits"],
+      "tags": ["ahrefs", "api", "configuration", "404"],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-06-24",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2026-10-20",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "use-calendly-post-invitee",
+      "title": "Use CALENDLY_POST_INVITEE for invitee creation",
+      "description": "Replace the deprecated Calendly invitee action with CALENDLY_POST_INVITEE.",
+      "sourcePath": "kb/toolkits/calendly/public.md",
+      "sourceHeading": "Use CALENDLY_POST_INVITEE instead of deprecated CALENDLY_CREATE_EVENT_INVITEE",
+      "topics": ["toolkits"],
+      "tags": ["calendly", "actions", "deprecation"],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-06-24",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2026-10-20",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "use-canva-autofill-jobs-for-design-content",
+      "title": "Use Canva autofill jobs for design content",
+      "description": "Populate a Canva design with an autofill job instead of a blank create-design action.",
+      "sourcePath": "kb/toolkits/canva/public.md",
+      "sourceHeading": "Use Canva autofill jobs when content must be populated into a design",
+      "topics": ["toolkits"],
+      "tags": ["canva", "actions", "autofill", "designs"],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-06-24",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2026-10-20",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "granola-mcp-metadata-comes-from-the-upstream-server",
+      "title": "Granola MCP metadata comes from the upstream server",
+      "description": "Composio can expose only the tools and schemas declared by Granola's official MCP server.",
+      "sourcePath": "kb/toolkits/granola_mcp/public.md",
+      "sourceHeading": "Composio mirrors Granola's official MCP server",
+      "topics": ["toolkits", "tool-router-and-mcp"],
+      "tags": ["granola", "mcp", "schemas", "metadata"],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-14",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2027-01-18",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "inspect-odoo-json-rpc-errors-inside-http-200-responses",
+      "title": "Inspect Odoo JSON-RPC errors inside HTTP 200 responses",
+      "description": "Check the JSON-RPC envelope because transport success does not guarantee Odoo method success.",
+      "sourcePath": "kb/toolkits/odoo/public.md",
+      "sourceHeading": "JSON-RPC access errors can arrive inside HTTP 200 responses",
+      "topics": ["toolkits", "sdk-and-api"],
+      "tags": ["odoo", "json-rpc", "errors", "troubleshooting"],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2027-01-18",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "strava-athlete-limits-belong-to-the-oauth-app",
+      "title": "Strava athlete limits belong to the OAuth app",
+      "description": "Connected-athlete capacity is attached to the Strava developer application behind the auth config.",
+      "sourcePath": "kb/toolkits/strava/public.md",
+      "sourceHeading": "Athlete-limit errors belong to the OAuth application",
+      "topics": ["toolkits", "authentication", "connected-accounts"],
+      "tags": ["strava", "oauth", "athlete-limit", "auth-configs"],
+      "aliases": [],
+      "relatedGuides": ["custom-connection-data-fields-are-toolkit-specific"],
+      "externalResources": [],
+      "updatedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-22",
+      "reviewAfter": "2026-10-20",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
       "slug": "auth-config-list-pages-return-at-most-50-items",
       "title": "Auth-config list pages return at most 50 items",
       "description": "Follow next_cursor when listing auth configs and verify the deployed page-size limit.",
@@ -118,4 +268,3 @@
     }
   ]
 }
-

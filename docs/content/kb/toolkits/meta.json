@@ -1,0 +1,12 @@
+{
+  "title": "Toolkits",
+  "pages": [
+    "index",
+    "ahrefs-actions-use-the-api-host",
+    "use-calendly-post-invitee",
+    "use-canva-autofill-jobs-for-design-content",
+    "granola-mcp-metadata-comes-from-the-upstream-server",
+    "inspect-odoo-json-rpc-errors-inside-http-200-responses",
+    "strava-athlete-limits-belong-to-the-oauth-app"
+  ]
+}

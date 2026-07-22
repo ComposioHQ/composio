@@ -1,0 +1,20 @@
+---
+title: "Deduplicate trigger webhook deliveries"
+description: "Build idempotent trigger handlers because outbound webhook delivery is at-least-once."
+keywords: ["triggers","webhooks","retries","idempotency","triggers-and-webhooks","sdk-and-api"]
+sourcePath: "kb/platform/triggers/public.md"
+sourceHeading: "Trigger webhook delivery is at-least-once"
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2027-01-18"
+freshness: "evergreen"
+topics: ["triggers-and-webhooks","sdk-and-api"]
+aliases: []
+related:
+  - title: "Pagination limits are endpoint-specific"
+    href: "/kb/sdk-and-api/pagination-limits-are-endpoint-specific"
+    description: "Use each endpoint's schema and cursor behavior instead of assuming one global page-size limit."
+---
+Composio can retry an outbound trigger webhook delivery, so your endpoint may receive the same event more than once. Duplicate deliveries can include the same `log_id`, provider event or message ID, or webhook event ID. This does not necessarily mean Composio ingested the provider event twice.
+
+Make your webhook handler idempotent and deduplicate each event on a stable identifier. Good choices include `log_id`, the provider event or message ID, or the webhook event ID. If duplicates continue beyond normal retry behavior, contact Composio support with the relevant IDs and receipt timestamps.
