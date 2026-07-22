@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { basename, dirname, join, parse, relative, resolve } from 'node:path';
 import { getKbCatalog, getKbGuideUrl, getPublishedKbGuides } from './repository';
-import type { KbGuide, KbTopic } from './types';
+import type { KbGuide } from './types';
 
 export interface KbGenerationSummary {
   published: number;
@@ -101,81 +101,34 @@ function guideMdx(guide: KbGuide, guides: KbGuide[], sourceCommit: string): stri
   return `${frontmatter.join('\n')}${guide.body.trim()}\n`;
 }
 
-function topicIndex(topic: KbTopic, guides: KbGuide[]): string {
-  const cards = guides
-    .map(
-      (guide) =>
-        `  <Card title=${JSON.stringify(guide.title)} href=${JSON.stringify(getKbGuideUrl(guide))} description=${JSON.stringify(guide.description)} />`,
-    )
-    .join('\n');
-  return `---
-title: ${yamlString(topic.title)}
-description: ${yamlString(topic.description)}
----
-
-${topic.description}
-
-<Cards>
-${cards}
-</Cards>
-`;
-}
-
-function rootIndex(topics: Array<{ topic: KbTopic; guides: KbGuide[] }>): string {
-  const cards = topics
-    .map(
-      ({ topic, guides }) =>
-        `  <Card title=${JSON.stringify(topic.title)} href=${JSON.stringify(`/kb/${topic.slug}`)} description=${JSON.stringify(`${topic.description} ${guides.length} ${guides.length === 1 ? 'guide' : 'guides'}.`)} />`,
-    )
-    .join('\n');
+function rootIndex(): string {
   return `---
 title: "Knowledge Base"
 description: "Verified troubleshooting guides and answers for building with Composio."
 ---
 
 Verified troubleshooting guides, operational answers, and known-good patterns from Composio support.
-
-<Cards>
-${cards}
-</Cards>
 `;
 }
 
 function buildExpectedFiles(): Map<string, string> {
   const catalog = getKbCatalog();
   const guides = getPublishedKbGuides(catalog);
-  const primaryTopics = new Map<string, KbGuide[]>();
-
-  for (const guide of guides) {
-    const topic = guide.topics[0];
-    if (!topic) throw new Error(`${guide.slug} requires at least one topic`);
-    const current = primaryTopics.get(topic) ?? [];
-    current.push(guide);
-    primaryTopics.set(topic, current);
-  }
-
-  const topics = catalog.topics
-    .filter((topic) => primaryTopics.has(topic.slug))
-    .map((topic) => ({ topic, guides: primaryTopics.get(topic.slug) ?? [] }));
   const files = new Map<string, string>();
-  files.set('index.mdx', rootIndex(topics));
+  files.set('index.mdx', rootIndex());
   files.set(
     'meta.json',
-    `${JSON.stringify({ title: 'Knowledge Base', root: true, pages: ['index', ...topics.map(({ topic }) => topic.slug)] }, null, 2)}\n`,
+    `${JSON.stringify({ title: 'Knowledge Base', root: true, pages: ['index', 'guide'] }, null, 2)}\n`,
   );
-
-  for (const { topic, guides: topicGuides } of topics) {
-    files.set(`${topic.slug}/index.mdx`, topicIndex(topic, topicGuides));
+  files.set(
+    'guide/meta.json',
+    `${JSON.stringify({ title: 'Guides', pages: guides.map((guide) => guide.slug) }, null, 2)}\n`,
+  );
+  for (const guide of guides) {
     files.set(
-      `${topic.slug}/meta.json`,
-      `${JSON.stringify({ title: topic.title, pages: ['index', ...topicGuides.map((guide) => guide.slug)] }, null, 2)}\n`,
+      `guide/${guide.slug}.mdx`,
+      guideMdx(guide, guides, catalog.manifest.source.commit),
     );
-    for (const guide of topicGuides) {
-      files.set(
-        `${topic.slug}/${guide.slug}.mdx`,
-        guideMdx(guide, guides, catalog.manifest.source.commit),
-      );
-    }
   }
   return files;
 }

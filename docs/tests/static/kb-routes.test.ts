@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  getKbGuideUrl,
+  getPublishedKbGuides,
+  resolveKbAlias,
+} from '@/lib/kb/repository';
 import { knowledgeBaseSource } from '@/lib/source';
 
 const routeSource = readFileSync(
@@ -9,15 +14,25 @@ const routeSource = readFileSync(
 );
 
 describe('public KB routes', () => {
-  test('loads the generated root, topic, and guide through Fumadocs', () => {
+  test('loads the generated root and flat guide through Fumadocs', () => {
     expect(knowledgeBaseSource.getPage([])?.url).toBe('/kb');
-    expect(knowledgeBaseSource.getPage(['sdk-and-api'])?.url).toBe('/kb/sdk-and-api');
     expect(
       knowledgeBaseSource.getPage([
-        'sdk-and-api',
+        'guide',
         'pagination-limits-are-endpoint-specific',
       ])?.url,
-    ).toBe('/kb/sdk-and-api/pagination-limits-are-endpoint-specific');
+    ).toBe('/kb/guide/pagination-limits-are-endpoint-specific');
+    expect(knowledgeBaseSource.getPage(['sdk-and-api'])).toBeUndefined();
+  });
+
+  test('builds flat canonical URLs and resolves former topic routes', () => {
+    const guide = getPublishedKbGuides().find(
+      (candidate) => candidate.slug === 'pagination-limits-are-endpoint-specific',
+    );
+    expect(guide).toBeDefined();
+    expect(getKbGuideUrl(guide!)).toBe('/kb/guide/pagination-limits-are-endpoint-specific');
+    expect(resolveKbAlias('/kb/sdk-and-api/pagination-limits-are-endpoint-specific'))
+      .toBe('/kb/guide/pagination-limits-are-endpoint-specific');
   });
 
   test('does not expose held content as a Fumadocs page', () => {

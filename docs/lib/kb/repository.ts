@@ -22,15 +22,22 @@ export function getPublishedKbGuides(catalog = getKbCatalog()): KbGuide[] {
 }
 
 export function getKbGuideUrl(guide: KbGuide): string {
-  const primaryTopic = guide.topics[0];
-  if (!primaryTopic) throw new Error(`${guide.slug} requires at least one topic`);
-  return `/kb/${primaryTopic}/${guide.slug}`;
+  return `/kb/guide/${guide.slug}`;
 }
 
 export function resolveKbAlias(path: string, catalog = getKbCatalog()): string | null {
   const normalized = path.replace(/^\/+|\/+$/g, '').toLowerCase();
-  const guide = getPublishedKbGuides(catalog).find((candidate) =>
-    candidate.aliases.some((alias) => alias.toLowerCase() === normalized),
-  );
+  const guide = getPublishedKbGuides(catalog).find((candidate) => {
+    const primaryTopic = candidate.topics[0];
+    const legacyPath = primaryTopic ? `kb/${primaryTopic}/${candidate.slug}` : null;
+    const canonicalPath = getKbGuideUrl(candidate).replace(/^\//, '');
+    return (
+      normalized === legacyPath ||
+      normalized === canonicalPath ||
+      candidate.aliases.some(
+        (alias) => alias.replace(/^\/+|\/+$/g, '').toLowerCase() === normalized,
+      )
+    );
+  });
   return guide ? getKbGuideUrl(guide) : null;
 }

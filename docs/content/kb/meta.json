@@ -3,10 +3,6 @@
   "root": true,
   "pages": [
     "index",
-    "toolkits",
-    "authentication",
-    "triggers-and-webhooks",
-    "tool-router-and-mcp",
-    "sdk-and-api"
+    "guide"
   ]
 }

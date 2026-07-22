@@ -28,28 +28,47 @@ describe('public KB content generation', () => {
     const files = listFiles(outputDir);
 
     expect(summary).toEqual({ published: 10, held: 1, files: files.length });
-    expect(files).toContain('tool-router-and-mcp/use-tool-router-session-files-as-tool-inputs.mdx');
-    expect(files).toContain('sdk-and-api/pagination-limits-are-endpoint-specific.mdx');
-    expect(files).toContain('triggers-and-webhooks/deduplicate-trigger-webhook-deliveries.mdx');
-    expect(files).toContain(
-      'authentication/custom-connection-data-fields-are-toolkit-specific.mdx',
-    );
-    expect(files).toContain('toolkits/ahrefs-actions-use-the-api-host.mdx');
-    expect(files).toContain('toolkits/use-calendly-post-invitee.mdx');
-    expect(files).toContain('toolkits/use-canva-autofill-jobs-for-design-content.mdx');
-    expect(files).toContain(
-      'toolkits/granola-mcp-metadata-comes-from-the-upstream-server.mdx',
-    );
-    expect(files).toContain(
-      'toolkits/inspect-odoo-json-rpc-errors-inside-http-200-responses.mdx',
-    );
-    expect(files).toContain(
-      'toolkits/strava-athlete-limits-belong-to-the-oauth-app.mdx',
-    );
+    expect(files).toHaveLength(13);
+    expect(files).toContain('index.mdx');
+    expect(files).toContain('meta.json');
+    expect(files).toContain('guide/meta.json');
+    expect(files).toContain('guide/use-tool-router-session-files-as-tool-inputs.mdx');
+    expect(files).toContain('guide/pagination-limits-are-endpoint-specific.mdx');
+    expect(files).toContain('guide/deduplicate-trigger-webhook-deliveries.mdx');
+    expect(files).toContain('guide/custom-connection-data-fields-are-toolkit-specific.mdx');
+    expect(files).toContain('guide/ahrefs-actions-use-the-api-host.mdx');
+    expect(files).toContain('guide/use-calendly-post-invitee.mdx');
+    expect(files).toContain('guide/use-canva-autofill-jobs-for-design-content.mdx');
+    expect(files).toContain('guide/granola-mcp-metadata-comes-from-the-upstream-server.mdx');
+    expect(files).toContain('guide/inspect-odoo-json-rpc-errors-inside-http-200-responses.mdx');
+    expect(files).toContain('guide/strava-athlete-limits-belong-to-the-oauth-app.mdx');
+    expect(files.some((file) => file.startsWith('toolkits/'))).toBe(false);
+    expect(files.some((file) => file.startsWith('sdk-and-api/'))).toBe(false);
     expect(files.some((file) => file.includes('auth-config-list-pages'))).toBe(false);
 
+    expect(JSON.parse(readFileSync(join(outputDir, 'meta.json'), 'utf8'))).toEqual({
+      title: 'Knowledge Base',
+      root: true,
+      pages: ['index', 'guide'],
+    });
+    expect(JSON.parse(readFileSync(join(outputDir, 'guide/meta.json'), 'utf8'))).toEqual({
+      title: 'Guides',
+      pages: [
+        'use-tool-router-session-files-as-tool-inputs',
+        'pagination-limits-are-endpoint-specific',
+        'deduplicate-trigger-webhook-deliveries',
+        'custom-connection-data-fields-are-toolkit-specific',
+        'ahrefs-actions-use-the-api-host',
+        'use-calendly-post-invitee',
+        'use-canva-autofill-jobs-for-design-content',
+        'granola-mcp-metadata-comes-from-the-upstream-server',
+        'inspect-odoo-json-rpc-errors-inside-http-200-responses',
+        'strava-athlete-limits-belong-to-the-oauth-app',
+      ],
+    });
+
     const guide = readFileSync(
-      join(outputDir, 'sdk-and-api/pagination-limits-are-endpoint-specific.mdx'),
+      join(outputDir, 'guide/pagination-limits-are-endpoint-specific.mdx'),
       'utf8',
     );
     expect(guide).toContain('sourceCommit: "5eed614"');
@@ -61,7 +80,7 @@ describe('public KB content generation', () => {
     expect(guide).not.toContain('related: [{');
 
     const ahrefsGuide = readFileSync(
-      join(outputDir, 'toolkits/ahrefs-actions-use-the-api-host.mdx'),
+      join(outputDir, 'guide/ahrefs-actions-use-the-api-host.mdx'),
       'utf8',
     );
     expect(ahrefsGuide).toContain('lastVerifiedAt: "2026-07-22"');

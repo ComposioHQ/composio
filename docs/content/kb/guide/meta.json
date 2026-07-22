@@ -1,7 +1,10 @@
 {
-  "title": "Toolkits",
+  "title": "Guides",
   "pages": [
-    "index",
+    "use-tool-router-session-files-as-tool-inputs",
+    "pagination-limits-are-endpoint-specific",
+    "deduplicate-trigger-webhook-deliveries",
+    "custom-connection-data-fields-are-toolkit-specific",
     "ahrefs-actions-use-the-api-host",
     "use-calendly-post-invitee",
     "use-canva-autofill-jobs-for-design-content",

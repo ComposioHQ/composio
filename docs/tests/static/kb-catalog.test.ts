@@ -107,8 +107,8 @@ describe('public KB catalog', () => {
     ).toThrow('Plain thread reference');
   });
 
-  test('resolves published aliases to canonical topic routes', () => {
+  test('resolves published aliases to canonical flat guide routes', () => {
     const catalog = buildKbCatalog(manifest(), () => source, new Date('2026-07-21'));
-    expect(resolveKbAlias('old-answer', catalog)).toBe('/kb/platform/stable-answer');
+    expect(resolveKbAlias('old-answer', catalog)).toBe('/kb/guide/stable-answer');
   });
 });
