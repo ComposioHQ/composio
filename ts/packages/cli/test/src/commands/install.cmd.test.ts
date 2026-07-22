@@ -57,6 +57,28 @@ describe('CLI: composio install', () => {
           expect(output).toContain('source ~/.zshrc');
         })
       );
+
+      it.scoped('[Then] preserves a symlinked .zshrc', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          process.env.SHELL = '/bin/zsh';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          const rcPath = path.join(os.homedir, '.zshrc');
+          const managedPath = path.join(os.homedir, '.managed-zshrc');
+          const linkTarget = path.basename(managedPath);
+          yield* fs.remove(rcPath, { force: true });
+          yield* fs.writeFileString(managedPath, '# managed shell config\n');
+          yield* fs.symlink(linkTarget, rcPath);
+
+          yield* cli(['install']);
+
+          expect(yield* fs.readLink(rcPath)).toBe(linkTarget);
+          expect(yield* fs.readFileString(managedPath)).toContain('# Composio CLI');
+          expect(yield* fs.exists(`${rcPath}.composio-tmp`)).toBe(false);
+        })
+      );
     });
   });
 

@@ -142,6 +142,16 @@ const readMaybeMissingFile = (
       )
     );
 
+/** Resolve valid symlink chains so atomic writes update the target instead of replacing the link. */
+const resolveWriteTarget = (
+  filePath: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<string, PlatformError> =>
+  fs.readLink(filePath).pipe(
+    Effect.flatMap(() => fs.realPath(filePath)),
+    Effect.catchAll(() => Effect.succeed(filePath))
+  );
+
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
 // ---------------------------------------------------------------------------
@@ -257,9 +267,10 @@ export const installShellIntegration = (params: {
     if (blocksByFile.size > 0) {
       for (const [filePath, blocks] of blocksByFile.entries()) {
         const existingContents = existingByFile.get(filePath) ?? '';
+        const writeTarget = yield* resolveWriteTarget(filePath, fs);
 
         yield* fs
-          .makeDirectory(path.dirname(filePath), { recursive: true })
+          .makeDirectory(path.dirname(writeTarget), { recursive: true })
           .pipe(
             Effect.catchAll(e =>
               Effect.logDebug('Could not create parent directory (may already exist):', e)
@@ -267,10 +278,10 @@ export const installShellIntegration = (params: {
           );
 
         const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        const tmpPath = `${filePath}.composio-tmp`;
+        const tmpPath = `${writeTarget}.composio-tmp`;
 
         yield* fs.writeFileString(tmpPath, existingContents + appendContent);
-        yield* fs.rename(tmpPath, filePath);
+        yield* fs.rename(tmpPath, writeTarget);
 
         yield* ui.log.success(`Updated ${tildify(filePath, os.homedir)}`);
       }
