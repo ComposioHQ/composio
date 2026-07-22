@@ -10,10 +10,10 @@ function source(path: string): string {
 describe('public KB discovery', () => {
   test('indexes published KB pages below conceptual docs and above examples', async () => {
     const records = await getAlgoliaSearchDocuments();
-    const kbRecords = records.filter((record) => record.type === 'kb');
+    const kbRecords = records.filter((record) => record.source_type === 'kb');
 
     expect(kbRecords.length).toBeGreaterThan(0);
-    expect(kbRecords.every((record) => record.page_rank === 1_800)).toBe(true);
+    expect(kbRecords.every((record) => record.page_rank === 1_900)).toBe(true);
     expect(
       kbRecords.some((record) =>
         record.url.includes('auth-config-list-pages-return-at-most-50-items'),

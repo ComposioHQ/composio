@@ -14,7 +14,7 @@
     "predev": "bun run generate:kb && bun scripts/build-agent-index.ts",
     "dev": "next dev",
     "start": "next start",
-    "types:check": "bun run generate:kb && bun scripts/build-agent-index.ts && fumadocs-mdx && next typegen && tsc --noEmit",
+    "types:check": "bun run generate:kb && bun scripts/build-agent-index.ts && next typegen && fumadocs-mdx && tsc --noEmit",
     "postinstall": "bun scripts/generate-kb.ts && fumadocs-mdx",
     "lint": "eslint",
     "lint:links": "bun scripts/validate-links.ts",

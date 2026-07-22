@@ -17,6 +17,16 @@ import type { BaseIndex } from 'fumadocs-core/search/algolia';
 import { openapi } from '@/lib/openapi';
 import { mdxToCleanMarkdown } from '@/lib/source';
 import { getAllToolkitsSync } from '@/lib/toolkit-data';
+import {
+  classifyKnowledgeRecord,
+  normalizeKnowledgeKeywords,
+} from '@/lib/knowledge/metadata';
+import type {
+  KnowledgeIntent,
+  KnowledgeMetadata,
+  KnowledgeSourceType,
+  ProductAreaSlug,
+} from '@/lib/knowledge/types';
 
 export const ALGOLIA_DEFAULT_APP_ID = '62HI9PQZ1L';
 export const ALGOLIA_DEFAULT_INDEX_NAME = 'docs_composio';
@@ -25,12 +35,6 @@ const MAX_CHUNK_CHARS = 3_800;
 const MAX_CHUNK_BYTES = 9_000;
 const MAX_TOOL_ALIAS_ITEMS = 80;
 const MAX_TOOL_ALIAS_BYTES = 2_500;
-
-// Pages flagged `legacy: true` or `deprecated: true` in frontmatter are pushed to
-// the bottom of custom ranking so current content always wins on close matches.
-// They stay indexed (an exact-term query still finds them) but never outrank live
-// docs. Sits below changelog (300), just above the legacy v3 reference (25).
-const LEGACY_PAGE_RANK = 50;
 
 // Create loaders directly here to avoid the problematic lib/source.ts import in the
 // fallback route. This route is intentionally still Fumadocs/Orama-backed for local
@@ -63,7 +67,7 @@ type SearchIndex = AdvancedIndex & {
   keywords?: string[];
 };
 
-export type AlgoliaDocsRecord = BaseIndex & {
+export type AlgoliaDocsRecord = BaseIndex & KnowledgeMetadata & {
   objectID: string;
   description?: string;
   keywords?: string[];
@@ -300,7 +304,7 @@ function toolkitPopularity(url: string, type: string): number {
   return override + managedAuthBoost + authBoost + triggerBoost + toolCountBoost;
 }
 
-function pageRank(url: string, type: string): number {
+function pageRank(url: string, sourceType: KnowledgeSourceType): number {
   // Prefer conceptual docs over generated/reference material when textual
   // relevance is otherwise close. Toolkit aliases can still win earlier via
   // searchableAttributes when the query matches a tool name/slug exactly.
@@ -308,7 +312,7 @@ function pageRank(url: string, type: string): number {
   // Hints use precise path matches against the current (nested) docs structure.
   // When pages move, update these — a stale `.includes()` hint silently boosts
   // nothing. See content/docs/ for the canonical layout.
-  if (type === 'docs') {
+  if (sourceType === 'docs') {
     const path = url.replace(/\/$/, '');
     if (path === '/docs') return 2_400;
     if (path === '/docs/quickstart') return 2_300;
@@ -321,16 +325,25 @@ function pageRank(url: string, type: string): number {
     return 2_000;
   }
 
-  if (type === 'examples') return 1_500;
-  if (type === 'kb') return 1_800;
-  if (type === 'toolkits') return 1_250;
-  // Current v3.1 reference should be available, but conceptual docs should
-  // win whenever both match. Legacy v3 reference is only a last-resort result.
-  if (type === 'reference') return 650;
-  if (type === 'api-reference') return 560;
-  if (type === 'v3-reference') return 25;
-  if (type === 'changelog') return 300;
+  if (sourceType === 'kb') return 1_900;
+  if (sourceType === 'oauth-guide') return 1_700;
+  if (sourceType === 'toolkit') return 1_500;
+  if (sourceType === 'example') return 1_300;
+  if (sourceType === 'reference') return 700;
+  if (sourceType === 'changelog') return 350;
+  if (sourceType === 'legacy') return 25;
   return 400;
+}
+
+function knowledgeSourceType(type: string, legacy: boolean): KnowledgeSourceType {
+  if (legacy || type === 'v3-reference') return 'legacy';
+  if (type === 'docs') return 'docs';
+  if (type === 'kb') return 'kb';
+  if (type === 'toolkits') return 'toolkit';
+  if (type === 'examples') return 'example';
+  if (type === 'reference' || type === 'api-reference') return 'reference';
+  if (type === 'changelog') return 'changelog';
+  throw new Error(`Unsupported search source type: ${type}`);
 }
 
 function recordsFromMarkdownPage(input: {
@@ -345,10 +358,26 @@ function recordsFromMarkdownPage(input: {
   toolNames?: string[];
   toolSlugs?: string[];
   legacy?: boolean;
+  topics?: string[];
+  productAreas?: ProductAreaSlug[];
+  toolkitSlugs?: string[];
+  intents?: KnowledgeIntent[];
+  lastVerifiedAt?: string | null;
 }): AlgoliaDocsRecord[] {
   const isLegacy = input.legacy === true;
-  const resolvedPageRank = isLegacy ? LEGACY_PAGE_RANK : pageRank(input.url, input.type);
+  const sourceType = knowledgeSourceType(input.type, isLegacy);
+  const metadata = classifyKnowledgeRecord({
+    sourceType,
+    canonicalUrl: input.url,
+    productAreas: input.productAreas,
+    topics: input.topics,
+    toolkitSlugs: input.toolkitSlugs,
+    intents: input.intents,
+    lastVerifiedAt: input.lastVerifiedAt,
+  });
+  const resolvedPageRank = pageRank(input.url, sourceType);
   const resolvedTags = isLegacy ? [...(input.tags ?? []), 'legacy'] : input.tags;
+  const resolvedKeywords = normalizeKnowledgeKeywords(input.keywords ?? []);
   const clean = mdxToCleanMarkdown(input.markdown);
   const lines = clean.split('\n');
   const headingSlugs = new Map<string, number>();
@@ -391,7 +420,7 @@ function recordsFromMarkdownPage(input: {
   }
   flush();
 
-  const fallbackText = clean.trim() || [input.title, input.description, ...(input.keywords ?? [])].filter(Boolean).join('\n');
+  const fallbackText = clean.trim() || [input.title, input.description, ...resolvedKeywords].filter(Boolean).join('\n');
   if (sections.length === 0 && fallbackText) {
     sections.push({ text: fallbackText, position: 0, depth: 0 });
   }
@@ -417,7 +446,7 @@ function recordsFromMarkdownPage(input: {
         section: section.heading,
         section_id: section.section_id,
         content: chunk,
-        keywords: input.keywords,
+        keywords: resolvedKeywords,
         slug: slugTokens(input.url),
         headings,
         tool_names: includeToolkitAliases ? input.toolNames : undefined,
@@ -426,10 +455,14 @@ function recordsFromMarkdownPage(input: {
         lang: 'en',
         tags: resolvedTags,
         page_rank: resolvedPageRank,
-        toolkit_popularity: toolkitPopularity(input.url, input.type),
+        toolkit_popularity: toolkitPopularity(
+          input.url,
+          sourceType === 'toolkit' ? 'toolkits' : input.type,
+        ),
         section_rank: sectionRank,
         position,
         depth: section.depth,
+        ...metadata,
       } satisfies AlgoliaDocsRecord;
     });
   });
@@ -478,6 +511,16 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
     const title = getFrontmatterValue(frontmatter, 'title');
     if (!title) return [];
 
+    const keywords = getFrontmatterList(frontmatter, 'keywords');
+    const topics = getFrontmatterList(frontmatter, 'topics');
+    const explicitToolkitSlugs = getFrontmatterList(frontmatter, 'toolkitSlugs');
+    const taggedToolkitSlugs = route.type === 'kb' && topics.includes('toolkits')
+      ? keywords.filter((keyword) => toolkitBySlug.has(keyword))
+      : [];
+    const routeToolkitSlug = route.type === 'toolkits'
+      ? route.url.replace(/^\/toolkits\//, '').split('/')[0]
+      : null;
+
     const toolkitFields = route.type === 'toolkits'
       ? getToolkitSearchFields(route.url.replace(/^\/toolkits\//, ''))
       : {};
@@ -491,10 +534,29 @@ function getFilesystemRecords(): AlgoliaDocsRecord[] {
       type: route.type,
       title,
       description: getFrontmatterValue(frontmatter, 'description'),
-      keywords: getFrontmatterList(frontmatter, 'keywords'),
+      keywords,
       markdown: source,
       breadcrumbs: breadcrumbsForUrl(route.url, route.type),
       legacy,
+      topics,
+      productAreas: getFrontmatterList(frontmatter, 'productAreas').filter(
+        (area): area is ProductAreaSlug => [
+          'authentication-and-connected-accounts',
+          'tools-and-actions',
+          'triggers-and-webhooks',
+          'tool-router-mcp-and-workbench',
+          'sdk-and-api',
+          'projects-dashboard-and-billing',
+          'composio-for-you',
+        ].includes(area),
+      ),
+      toolkitSlugs: [
+        ...explicitToolkitSlugs,
+        ...taggedToolkitSlugs,
+        ...(routeToolkitSlug ? [routeToolkitSlug] : []),
+      ],
+      intents: getFrontmatterList(frontmatter, 'intents') as KnowledgeIntent[],
+      lastVerifiedAt: getFrontmatterValue(frontmatter, 'lastVerifiedAt'),
       ...toolkitFields,
     });
   });
@@ -535,6 +597,7 @@ function getDynamicToolkitRecords(): AlgoliaDocsRecord[] {
         keywords: [toolkit.slug, toolkit.category].filter(Boolean) as string[],
         markdown: `# ${toolkit.name}\n\n${toolkit.description ?? ''}\n\n## Available tools\n\n${toolsText}`,
         breadcrumbs: breadcrumbsForUrl(`/toolkits/${toolkit.slug}`, 'toolkits'),
+        toolkitSlugs: [toolkit.slug],
         ...getToolkitSearchFields(toolkit.slug),
       });
     });

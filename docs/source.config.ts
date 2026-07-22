@@ -17,6 +17,32 @@ import { z } from 'zod';
 // Extended schema with keywords for search
 const docsSchema = frontmatterSchema.extend({
   keywords: z.array(z.string()).optional(),
+  productAreas: z
+    .array(
+      z.enum([
+        'authentication-and-connected-accounts',
+        'tools-and-actions',
+        'triggers-and-webhooks',
+        'tool-router-mcp-and-workbench',
+        'sdk-and-api',
+        'projects-dashboard-and-billing',
+        'composio-for-you',
+      ]),
+    )
+    .optional(),
+  toolkitSlugs: z.array(z.string()).optional(),
+  intents: z
+    .array(
+      z.enum([
+        'setup',
+        'how-to',
+        'troubleshooting',
+        'limits-policy',
+        'known-issue',
+        'reference',
+      ]),
+    )
+    .optional(),
   /** When true, the page shows an "Experimental" badge in the sidebar. */
   experimental: z.boolean().optional(),
   /** When true, the page shows a "New" badge in the sidebar. */
