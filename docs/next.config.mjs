@@ -28,11 +28,31 @@ const config = {
   // (it works at build time only because `public/` exists at the project root).
   // Explicitly trace the specs into every route that may resolve them at runtime.
   outputFileTracingIncludes: {
-    '/reference/**': ['./public/openapi.json', './public/openapi-v3.json'],
-    '/reference/v3/**': ['./public/openapi.json', './public/openapi-v3.json'],
-    '/llms.mdx/**': ['./public/openapi.json', './public/openapi-v3.json'],
-    '/llms-full.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
-    '/llms.txt/**': ['./public/openapi.json', './public/openapi-v3.json'],
+    '/reference/**': [
+      './public/openapi.json',
+      './public/openapi-v3.json',
+      './public/openapi-webhooks.json',
+    ],
+    '/reference/v3/**': [
+      './public/openapi.json',
+      './public/openapi-v3.json',
+      './public/openapi-webhooks.json',
+    ],
+    '/llms.mdx/**': [
+      './public/openapi.json',
+      './public/openapi-v3.json',
+      './public/openapi-webhooks.json',
+    ],
+    '/llms-full.txt/**': [
+      './public/openapi.json',
+      './public/openapi-v3.json',
+      './public/openapi-webhooks.json',
+    ],
+    '/llms.txt/**': [
+      './public/openapi.json',
+      './public/openapi-v3.json',
+      './public/openapi-webhooks.json',
+    ],
   },
   images: {
     // Enable modern image formats for better compression

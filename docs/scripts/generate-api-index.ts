@@ -108,6 +108,30 @@ function activeTagSlugs(opsByTag: Record<string, OperationEntry[]>): Set<string>
   return active;
 }
 
+/**
+ * Tag slugs contributed by the separate webhook-events spec (PLEN-2793). Its
+ * operations live under the OpenAPI 3.1 `webhooks` block (not `paths`) and its
+ * tag ("Webhook Events") is absent from openapi.json — so without folding these
+ * into the active set, `removeStaleTagIndexes` would recursively delete the
+ * hand-authored `webhook-events` overview folder on the next docs data run.
+ */
+function webhookTagSlugs(): Set<string> {
+  const slugs = new Set<string>();
+  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
+  if (!existsSync(specPath)) return slugs;
+
+  const spec: { webhooks?: Record<string, Record<string, OpenAPIOperation>> } =
+    JSON.parse(readFileSync(specPath, 'utf-8'));
+  for (const item of Object.values(spec.webhooks ?? {})) {
+    for (const operation of Object.values(item)) {
+      for (const tag of operation.tags ?? []) {
+        slugs.add(slugify(tag));
+      }
+    }
+  }
+  return slugs;
+}
+
 function removeStaleTagIndexes(baseDir: string, activeSlugs: Set<string>) {
   if (!existsSync(baseDir)) return;
 
@@ -147,7 +171,12 @@ function generateIndexPages() {
 
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
 
-  removeStaleTagIndexes(outputDir, activeTagSlugs(v31Ops));
+  // Fold in the webhook-events tag so its hand-authored overview isn't treated
+  // as stale (its operations come from openapi-webhooks.json, not openapi.json).
+  removeStaleTagIndexes(
+    outputDir,
+    new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs()]),
+  );
   removeStaleTagIndexes(
     join(process.cwd(), 'content/reference/v3/api-reference'),
     activeTagSlugs(v3Ops),
