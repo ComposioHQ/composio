@@ -9,9 +9,6 @@ interface LegacyBadgeProps {
   title?: string;
 }
 
-export const DEPRECATED_API_LEGACY_TITLE =
-  'Deprecated API endpoint; kept for existing integrations and may be removed in a future release';
-
 export function LegacyBadge({
   title = 'Legacy: superseded by sessions; kept for existing integrations',
 }: LegacyBadgeProps) {
@@ -23,8 +20,4 @@ export function LegacyBadge({
       Legacy
     </span>
   );
-}
-
-export function DeprecatedApiLegacyBadge() {
-  return <LegacyBadge title={DEPRECATED_API_LEGACY_TITLE} />;
 }

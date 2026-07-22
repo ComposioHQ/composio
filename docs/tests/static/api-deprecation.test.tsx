@@ -9,8 +9,6 @@ mock.module("next/navigation", () => ({
 }));
 
 const { ApiEndpointsTable } = await import("../../components/api-endpoints-table");
-const { ApiPageTitle } = await import("../../components/api-page-title");
-const { isApiPageDeprecated } = await import("../../lib/api-deprecation");
 
 const DOCS_DIR = join(import.meta.dir, "../..");
 const GENERATOR_PATH = join(DOCS_DIR, "scripts/generate-api-index.ts");
@@ -117,69 +115,6 @@ afterEach(async () => {
 });
 
 describe("deprecated API endpoints", () => {
-  test("renders Legacy on a deprecated API endpoint detail title", () => {
-    const operation = {
-      method: "get",
-      path: "/v3.1/tasks/deprecated",
-    };
-    const pageData = {
-      getSchema: () => ({
-        dereferenced: {
-          paths: {
-            [operation.path]: {
-              [operation.method]: { deprecated: true },
-            },
-          },
-        },
-      }),
-    };
-
-    const deprecated = isApiPageDeprecated(pageData, [operation]);
-    const html = renderToStaticMarkup(
-      <ApiPageTitle
-        title="Deprecated task endpoint"
-        version="3.1"
-        deprecated={deprecated}
-      />,
-    );
-
-    expect(deprecated).toBe(true);
-    expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
-    expect(html).toContain(
-      'title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"',
-    );
-  });
-
-  test("omits Legacy from an active API endpoint detail title", () => {
-    const operation = {
-      method: "post",
-      path: "/v3.1/tasks/active",
-    };
-    const pageData = {
-      getSchema: () => ({
-        dereferenced: {
-          paths: {
-            [operation.path]: {
-              [operation.method]: {},
-            },
-          },
-        },
-      }),
-    };
-
-    const deprecated = isApiPageDeprecated(pageData, [operation]);
-    const html = renderToStaticMarkup(
-      <ApiPageTitle
-        title="Active task endpoint"
-        version="3.1"
-        deprecated={deprecated}
-      />,
-    );
-
-    expect(deprecated).toBe(false);
-    expect(html).not.toContain(">Legacy</span>");
-  });
-
   test("serializes legacy only for deprecated v3.1 and v3 operations", async () => {
     const fixtureDir = await generateFixture();
     const v31Content = await readFile(
