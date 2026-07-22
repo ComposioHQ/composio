@@ -1,0 +1,18 @@
+---
+title: Webhook Events
+description: "Events delivered by Composio to your registered webhook endpoints"
+---
+
+{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+
+Webhook events delivered by the Composio platform to your registered endpoints.
+
+Configure your webhook subscriptions via the [Webhook Subscriptions API](/reference/api-reference/webhooks/postWebhookSubscriptions), and verify signatures as described in [Verifying signatures](/docs/setting-up-triggers/subscribing-to-events#verifying-signatures).
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+| `composio.trigger.message` | [Trigger message](/reference/api-reference/webhook-events/handle_composio_trigger_message) |
+| `composio.connected_account.expired` | [Connection expired](/reference/api-reference/webhook-events/handle_composio_connected_account_expired) |
+| `composio.trigger.disabled` | [Trigger disabled](/reference/api-reference/webhook-events/handle_composio_trigger_disabled) |
