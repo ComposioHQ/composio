@@ -7,6 +7,7 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { PageActions } from '@/components/page-actions';
+import { Feedback } from '@/components/feedback';
 import { RelatedLinks } from '@/components/related-links';
 import { resolveKbAlias } from '@/lib/kb/repository';
 import { knowledgeBaseSource } from '@/lib/source';
@@ -56,6 +57,11 @@ export default async function KnowledgeBasePage({ params }: KnowledgeBasePagePro
             a: createRelativeLink(knowledgeBaseSource, page),
           })}
         />
+        {lastVerifiedAt && (
+          <div className="not-prose mt-10 border-t border-fd-border pt-6">
+            <Feedback page={page.url} />
+          </div>
+        )}
       </DocsBody>
     </DocsPage>
   );

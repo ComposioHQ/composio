@@ -28,8 +28,9 @@ describe('public KB routes', () => {
     ).toBe(false);
   });
 
-  test('renders verification metadata and redirects aliases before notFound', () => {
+  test('renders verification and feedback controls and redirects aliases before notFound', () => {
     expect(routeSource).toContain('Last verified');
+    expect(routeSource).toContain('<Feedback page={page.url} />');
     expect(routeSource).toContain('resolveKbAlias');
     expect(routeSource.indexOf('permanentRedirect')).toBeLessThan(routeSource.indexOf('notFound()'));
   });
