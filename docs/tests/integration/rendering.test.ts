@@ -19,6 +19,21 @@ const CRITICAL_PAGES = [
   { path: "/reference", name: "Reference index" },
 ];
 
+const DEPRECATED_API_LEGACY_TITLE =
+  "Deprecated API endpoint; kept for existing integrations and may be removed in a future release";
+
+const DEPRECATED_API_PAGES = [
+  "/reference/api-reference/connected-accounts/postConnectedAccountsByNanoidRefresh",
+  "/reference/api-reference/files/getFilesList",
+  "/reference/v3/api-reference/connected-accounts/postConnectedAccountsByNanoidRefresh",
+  "/reference/v3/api-reference/files/getFilesList",
+];
+
+const ACTIVE_API_PAGES = [
+  "/reference/api-reference/files/postFilesUploadRequest",
+  "/reference/v3/api-reference/files/postFilesUploadRequest",
+];
+
 describe("Page rendering - critical pages", () => {
   for (const { path, name } of CRITICAL_PAGES) {
     test(`${name} (${path}) returns 200`, async () => {
@@ -54,6 +69,28 @@ describe("Page rendering - content markers", () => {
     // Should contain at least one well-known toolkit
     expect(html.toLowerCase()).toContain("github");
   });
+});
+
+describe("Page rendering - deprecated API endpoints", () => {
+  for (const path of DEPRECATED_API_PAGES) {
+    test(`${path} renders the Legacy badge`, async () => {
+      const res = await fetchPage(path);
+      const html = await res.text();
+
+      expect(res.status).toBe(200);
+      expect(html).toContain(DEPRECATED_API_LEGACY_TITLE);
+    });
+  }
+
+  for (const path of ACTIVE_API_PAGES) {
+    test(`${path} omits the Legacy badge`, async () => {
+      const res = await fetchPage(path);
+      const html = await res.text();
+
+      expect(res.status).toBe(200);
+      expect(html).not.toContain(DEPRECATED_API_LEGACY_TITLE);
+    });
+  }
 });
 
 describe("Page rendering - error handling", () => {
