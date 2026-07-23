@@ -30,6 +30,16 @@ describe('resolvePusherConstructor', () => {
     expect(resolvePusherConstructor(FakePusher)).toEqual(Option.some(FakePusher));
   });
 
+  it('resolves a named `Pusher` export on the default namespace (bun-linux-x64 compiled interop, issue #3918)', () => {
+    expect(
+      resolvePusherConstructor({ default: { Pusher: FakePusher }, Pusher: FakePusher })
+    ).toEqual(Option.some(FakePusher));
+  });
+
+  it('resolves a named `Pusher` export on the module itself', () => {
+    expect(resolvePusherConstructor({ Pusher: FakePusher })).toEqual(Option.some(FakePusher));
+  });
+
   it('returns none when no interop shape exposes a callable constructor', () => {
     expect(resolvePusherConstructor({ default: { default: 'not-a-function' } })).toEqual(
       Option.none()

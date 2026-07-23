@@ -34,25 +34,30 @@ type PusherConstructor = (typeof import('pusher-js'))['default'];
 const isPusherConstructor = (value: unknown): value is PusherConstructor =>
   Predicate.isFunction(value);
 
+const propertyOf = (value: unknown, property: string): unknown =>
+  Predicate.hasProperty(value, property) ? value[property] : undefined;
+
 /**
  * Resolves the Pusher constructor across ESM/CJS interop shapes. pusher-js
- * ships CJS, and bundler interop differs by runtime: under Node from source
- * the constructor is `module.default`, while the Bun-compiled binary wraps it
- * one level deeper at `module.default.default` (see issue #3918).
+ * ships CJS, and bundler interop differs by runtime and build target: under
+ * Node from source the constructor is `module.default`, while Bun-compiled
+ * binaries have exposed it wrapped one level deeper (`module.default.default`)
+ * or as a named export on a namespace object (`module.default.Pusher`,
+ * observed on the bun-linux-x64 target). See issue #3918.
  *
  * Exported for tests.
  */
 export const resolvePusherConstructor = (
   pusherModule: unknown
 ): Option.Option<PusherConstructor> => {
-  const moduleDefault = Predicate.hasProperty(pusherModule, 'default')
-    ? pusherModule.default
-    : undefined;
+  const moduleDefault = propertyOf(pusherModule, 'default');
   return Option.fromNullable(
     [
-      Predicate.hasProperty(moduleDefault, 'default') ? moduleDefault.default : undefined,
+      propertyOf(moduleDefault, 'default'),
       moduleDefault,
       pusherModule,
+      propertyOf(moduleDefault, 'Pusher'),
+      propertyOf(pusherModule, 'Pusher'),
     ].find(isPusherConstructor)
   );
 };
