@@ -20,6 +20,16 @@ function listFiles(directory: string): string[] {
 }
 
 describe('public KB content generation', () => {
+  test('defines multi-source provenance in the KB frontmatter schema', () => {
+    const sourceConfig = readFileSync(join(process.cwd(), 'source.config.ts'), 'utf8');
+
+    expect(sourceConfig).toMatch(/sources:\s*z\s*\.\s*array\(/);
+    expect(sourceConfig).toContain('sourcePath: z.string(),');
+    expect(sourceConfig).toContain('sourceHeading: z.string().nullable(),');
+    expect(sourceConfig).not.toContain('sourcePath: z.string().optional()');
+    expect(sourceConfig).not.toContain('sourceHeading: z.string().optional()');
+  });
+
   test('generates native Fumadocs pages for published guides only', () => {
     const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
     temporaryDirectories.push(outputDir);

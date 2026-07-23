@@ -91,8 +91,14 @@ const docsSchema = frontmatterSchema.extend({
 });
 
 const knowledgeBaseSchema = docsSchema.extend({
-  sourcePath: z.string().optional(),
-  sourceHeading: z.string().optional(),
+  sources: z
+    .array(
+      z.object({
+        sourcePath: z.string(),
+        sourceHeading: z.string().nullable(),
+      }),
+    )
+    .optional(),
   sourceCommit: z.string().optional(),
   lastVerifiedAt: z.string().optional(),
   reviewAfter: z.string().optional(),
