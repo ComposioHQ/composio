@@ -87,7 +87,7 @@
     },
     {
       "rule": "no-restricted-syntax",
-      "reason": "try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit",
+      "reason": "try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block",
       "target": "try {"
     }
   ],

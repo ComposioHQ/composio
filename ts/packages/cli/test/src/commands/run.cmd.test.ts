@@ -35,6 +35,7 @@ describe('CLI: composio run', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    process.exitCode = undefined;
   });
 
   layer(TestLive())(it => {
@@ -71,7 +72,8 @@ describe('CLI: composio run', () => {
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
           expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
-          expect(exit).toHaveBeenCalledWith(7);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(7);
         })
     );
   });
@@ -92,7 +94,8 @@ describe('CLI: composio run', () => {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -113,7 +116,8 @@ describe('CLI: composio run', () => {
             cmd: string[];
           };
           expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -160,7 +164,8 @@ describe('CLI: composio run', () => {
             'return (console.log(JSON.stringify(brief.structuredOutput)));'
           );
           expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(0);
         })
     );
   });
@@ -197,11 +202,32 @@ describe('CLI: composio run', () => {
             })
           );
           expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-          expect(exit).toHaveBeenCalledWith(0);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(0);
         } finally {
           fs.rmSync(tempDir, { recursive: true, force: true });
         }
       })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.scoped(
+      '[Given] a non-zero child exit [Then] the handler completes without process.exit, preserves the code, and removes the preload directory',
+      () =>
+        Effect.gen(function* () {
+          const spawn = vi.fn(() => ({ exited: Promise.resolve(3) }));
+          const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+          vi.stubGlobal('Bun', { spawn });
+
+          yield* cli(['run', 'console.log("hi")']);
+
+          const spawnConfig = (spawn as any).mock.calls[0][0] as { cmd: string[] };
+          const preloadDir = path.dirname(spawnConfig.cmd[2]!);
+          expect(exit).not.toHaveBeenCalled();
+          expect(process.exitCode).toBe(3);
+          expect(fs.existsSync(preloadDir)).toBe(false);
+        })
     );
   });
 

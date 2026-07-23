@@ -477,7 +477,7 @@ export const runCmd = Command.make('run', {
         );
         const ui = yield* TerminalUI;
         let cleanupPaths: ReadonlyArray<string> = [];
-        // eslint-disable-next-line no-restricted-syntax -- try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block, whose success path ends in process.exit
+        // eslint-disable-next-line no-restricted-syntax -- try/finally removes the temp preload and wrapper files around the imperative Bun.spawn block
         try {
           yield* appendCliSessionHistory({
             orgId: helperContext.orgId,
@@ -512,8 +512,7 @@ export const runCmd = Command.make('run', {
             stdio: ['inherit', 'inherit', 'inherit'],
           });
 
-          const exitCode = yield* Effect.promise(() => child.exited);
-          process.exit(exitCode);
+          process.exitCode = yield* Effect.promise(() => child.exited);
         } finally {
           for (const cleanupPath of cleanupPaths) {
             fs.rmSync(cleanupPath, { force: true });
