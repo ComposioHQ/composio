@@ -1,0 +1,21 @@
+---
+title: "Fix LinkedIn 426 NONEXISTENT_VERSION with a current toolkit version"
+description: "Use latest only to diagnose a stale LinkedIn toolkit version, then pin the dated version your application validated."
+keywords: ["linkedin","versions","426","nonexistent-version","toolkits","sdk-and-api"]
+sources: [{"sourcePath":"kb/toolkits/linkedin/public.md","sourceHeading":"Fix LinkedIn 426 NONEXISTENT_VERSION by using the latest toolkit version"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["toolkits","sdk-and-api"]
+aliases: []
+---
+A LinkedIn 426 `NONEXISTENT_VERSION` response usually means a stale LinkedIn API version header. Use `latest` only to diagnose that version resolution is the cause, then pin the dated version validated by your application.
+
+## Prove the diagnosis, then pin
+
+1. Fetch the current LinkedIn tools with `latest` from the [LinkedIn toolkit](/toolkits/linkedin) to test whether the error is caused by an older base or pinned toolkit version.
+2. If the test succeeds, replace `latest` with the dated version you validated.
+3. If 426 persists on a current pin, retain the Composio tool-call log ID or request ID so the provider header can be inspected.
+
+Do not publish `latest` as a production setting or treat today's dated version as timeless. LinkedIn defines 426 as a deprecated version header in its [API error guide](https://learn.microsoft.com/en-us/linkedin/shared/api-guide/concepts/error-handling).

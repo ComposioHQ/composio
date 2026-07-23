@@ -19,6 +19,14 @@
     "use-primary-for-google-calendar-id",
     "google-sheets-auth-configs-require-full-scope-uris",
     "stripe-api-key-connections-require-a-secret-key",
-    "snowflake-account-id-uses-org-account-format"
+    "snowflake-account-id-uses-org-account-format",
+    "stage-local-instagram-media-before-publishing",
+    "resolve-canvas-account-endpoint-access-errors",
+    "paginate-canvas-list-results",
+    "slack-private-conversations-require-separate-history-scopes",
+    "slack-admin-conversation-writes-require-enterprise",
+    "linkedin-company-actions-require-organization-scopes",
+    "fix-linkedin-426-nonexistent-version",
+    "batch-airtable-record-updates-in-groups-of-10"
   ]
 }

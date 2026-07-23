@@ -229,7 +229,7 @@ describe('public KB audit', () => {
       '`publish` means selected and prepared for publication, not proof of live deployment.',
     );
     expect(auditMarkdown).toContain('This branch is undeployed.');
-    expect(auditMarkdown).toContain('Publish: 21');
+    expect(auditMarkdown).toContain('Publish: 29');
     expect(auditMarkdown.match(/Choose DiscordBot for bot-token operations and Discord for user-OAuth operations/g)).toHaveLength(1);
   });
 
@@ -257,6 +257,31 @@ describe('public KB audit', () => {
       expect(decision?.state).toBe('publish');
       expect(Number(decision?.priorityScore)).toBe(priority);
       expect(Number(decision?.priorityScore)).toBeGreaterThan(0);
+      expect(String(decision?.verificationSource)).toContain('docs/public/data/toolkits.json');
+      expect(String(decision?.verificationSource)).toContain('https://');
+    }
+  });
+
+  test('records the eight Task 5 toolkit decisions with current provider evidence', () => {
+    const decisions = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'kb/audits/2026-07-22-decisions.json'), 'utf8'),
+    ) as Record<string, Record<string, string | number>>;
+    const expected = new Map([
+      ['kb/toolkits/instagram/public.md#publish-local-media-with-image-file-or-video-file', 80],
+      ['kb/toolkits/canvas/public.md#canvas-get-accounts-and-other-account-level-canvas-endpoints-require-admin-permissions', 75],
+      ['kb/toolkits/canvas/public.md#canvas-list-fetch-endpoints-follow-canvas-pagination-behavior-and-may-need-per-page', 71],
+      ['kb/toolkits/slackbot/public.md#private-slack-channels-and-dms-require-extra-history-scopes', 89],
+      ['kb/toolkits/slack/public.md#admin-conversations-write-requires-slack-enterprise', 87],
+      ['kb/toolkits/linkedin/public.md#linkedin-organization-scopes-depend-on-the-toolkit-and-auth-config', 92],
+      ['kb/toolkits/linkedin/public.md#fix-linkedin-426-nonexistent-version-by-using-the-latest-toolkit-version', 88],
+      ['kb/toolkits/airtable/public.md#airtable-update-multiple-records-updates-at-most-10-records-per-call', 90],
+    ]);
+
+    for (const [id, priority] of expected) {
+      const decision = decisions[id];
+      expect(decision?.state).toBe('publish');
+      expect(Number(decision?.priorityScore)).toBe(priority);
+      expect(decision?.existingUrl).toMatch(/^\/kb\/guide\//);
       expect(String(decision?.verificationSource)).toContain('docs/public/data/toolkits.json');
       expect(String(decision?.verificationSource)).toContain('https://');
     }

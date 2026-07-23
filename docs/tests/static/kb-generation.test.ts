@@ -40,8 +40,8 @@ describe('public KB content generation', () => {
     const summary = generateKbContent({ outputDir });
     const files = listFiles(outputDir);
 
-    expect(summary).toEqual({ published: 19, held: 1, files: files.length });
-    expect(files).toHaveLength(22);
+    expect(summary).toEqual({ published: 27, held: 1, files: files.length });
+    expect(files).toHaveLength(30);
     expect(files).toContain('index.mdx');
     expect(files).toContain('meta.json');
     expect(files).toContain('guide/meta.json');
@@ -64,6 +64,14 @@ describe('public KB content generation', () => {
     expect(files).toContain('guide/google-sheets-auth-configs-require-full-scope-uris.mdx');
     expect(files).toContain('guide/stripe-api-key-connections-require-a-secret-key.mdx');
     expect(files).toContain('guide/snowflake-account-id-uses-org-account-format.mdx');
+    expect(files).toContain('guide/stage-local-instagram-media-before-publishing.mdx');
+    expect(files).toContain('guide/resolve-canvas-account-endpoint-access-errors.mdx');
+    expect(files).toContain('guide/paginate-canvas-list-results.mdx');
+    expect(files).toContain('guide/slack-private-conversations-require-separate-history-scopes.mdx');
+    expect(files).toContain('guide/slack-admin-conversation-writes-require-enterprise.mdx');
+    expect(files).toContain('guide/linkedin-company-actions-require-organization-scopes.mdx');
+    expect(files).toContain('guide/fix-linkedin-426-nonexistent-version.mdx');
+    expect(files).toContain('guide/batch-airtable-record-updates-in-groups-of-10.mdx');
     expect(files.some(file => file.startsWith('toolkits/'))).toBe(false);
     expect(files.some(file => file.startsWith('sdk-and-api/'))).toBe(false);
     expect(files.some(file => file.includes('auth-config-list-pages'))).toBe(false);
@@ -95,6 +103,14 @@ describe('public KB content generation', () => {
         'google-sheets-auth-configs-require-full-scope-uris',
         'stripe-api-key-connections-require-a-secret-key',
         'snowflake-account-id-uses-org-account-format',
+        'stage-local-instagram-media-before-publishing',
+        'resolve-canvas-account-endpoint-access-errors',
+        'paginate-canvas-list-results',
+        'slack-private-conversations-require-separate-history-scopes',
+        'slack-admin-conversation-writes-require-enterprise',
+        'linkedin-company-actions-require-organization-scopes',
+        'fix-linkedin-426-nonexistent-version',
+        'batch-airtable-record-updates-in-groups-of-10',
       ],
     });
 
@@ -202,6 +218,57 @@ describe('public KB content generation', () => {
     expect(stripe).not.toContain('Stripe Connect');
     expect(discord).toContain('](/toolkits/discord)');
     expect(discord).toContain('](/toolkits/discordbot)');
+  });
+
+  test('publishes the eight verified toolkit answers with authored current guidance', () => {
+    const manifest = JSON.parse(
+      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
+    ) as KbManifest;
+    const expected = [
+      ['stage-local-instagram-media-before-publishing', 'Instagram', 'uploadable-file'],
+      ['resolve-canvas-account-endpoint-access-errors', 'Canvas', 'account-level'],
+      ['paginate-canvas-list-results', 'Canvas', 'per_page'],
+      ['slack-private-conversations-require-separate-history-scopes', 'Slack', 'membership'],
+      ['slack-admin-conversation-writes-require-enterprise', 'Slack', 'Enterprise'],
+      ['linkedin-company-actions-require-organization-scopes', 'LinkedIn', 'Page role'],
+      ['fix-linkedin-426-nonexistent-version', 'LinkedIn', 'dated version'],
+      ['batch-airtable-record-updates-in-groups-of-10', 'Airtable', 'not atomic'],
+    ] as const;
+
+    for (const [slug, provider, narrowing] of expected) {
+      const guide = manifest.guides.find(candidate => candidate.slug === slug);
+      expect(guide).toBeDefined();
+      expect(guide?.articlePath).toBe(`${slug}.md`);
+      expect(guide?.sources).toHaveLength(1);
+      expect(guide?.freshness).toBe('time-sensitive');
+      expect(guide?.lastVerifiedAt).toBe('2026-07-22');
+      expect(guide?.reviewAfter).toBe('2026-10-20');
+      expect(guide?.state).toBe('published');
+
+      const article = readFileSync(join(process.cwd(), 'kb/articles', `${slug}.md`), 'utf8');
+      expect(article).toContain(provider);
+      expect(article).toContain(narrowing);
+      expect(article).toMatch(/\]\(\/toolkits\//);
+      expect(article).toMatch(/\]\(https:\/\//);
+      expect(article).not.toMatch(/route the case to a human|contact support/i);
+    }
+  });
+
+  test('keeps the toolkit batch balanced at no more than three guides per toolkit', () => {
+    const manifest = JSON.parse(
+      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
+    ) as KbManifest;
+    const counts = new Map<string, number>();
+    for (const guide of manifest.guides) {
+      const toolkit = guide.tags.find(tag =>
+        ['instagram', 'canvas', 'slackbot', 'slack', 'linkedin', 'airtable'].includes(tag),
+      );
+      if (toolkit) counts.set(toolkit, (counts.get(toolkit) ?? 0) + 1);
+    }
+
+    expect([...counts.values()].every(count => count <= 3)).toBe(true);
+    expect(counts.get('canvas')).toBe(2);
+    expect(counts.get('linkedin')).toBe(2);
   });
 
   test('detects generated content drift in check mode', () => {

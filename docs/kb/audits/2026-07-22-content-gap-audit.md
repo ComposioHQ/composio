@@ -5,9 +5,9 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 
 ## Classification counts
 
-- Publish: 21
+- Publish: 29
 - Link only: 4
-- Needs verification: 644
+- Needs verification: 636
 - Exclude: 5
 
 ## Publication meaning
@@ -17,14 +17,22 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 
 ## Selected first batch
 
+- Reconnect LinkedIn with organization scopes before company-page actions — `kb/toolkits/linkedin/public.md#linkedin-organization-scopes-depend-on-the-toolkit-and-auth-config`
 - Target an Outlook shared mailbox by its address — `kb/toolkits/outlook/public.md#for-outlook-shared-mailboxes-pass-the-shared-mailbox-address-as-user-id-mailbox-target`
+- Batch Airtable multi-record updates in groups of 10 — `kb/toolkits/airtable/public.md#airtable-update-multiple-records-updates-at-most-10-records-per-call`
+- Add the Slack history scope for each private conversation type — `kb/toolkits/slackbot/public.md#private-slack-channels-and-dms-require-extra-history-scopes`
+- Fix LinkedIn 426 NONEXISTENT_VERSION with a current toolkit version — `kb/toolkits/linkedin/public.md#fix-linkedin-426-nonexistent-version-by-using-the-latest-toolkit-version`
+- Slack admin conversation writes require an Enterprise org installation — `kb/toolkits/slack/public.md#admin-conversations-write-requires-slack-enterprise`
 - Use a Stripe secret key for Composio API-key connections — `kb/toolkits/stripe/public.md#for-stripe-api-key-auth-use-the-stripe-secret-key-from-developers-api-keys-standard-keys`
 - Google OAuth cannot scope Sheets access to one Drive folder — `kb/toolkits/googlesheets/public.md#google-sheets-access-cannot-be-restricted-at-folder-level-through-composio`
 - Fix a HubSpot OAuth token-exchange 400 by checking the client secret and scope category — `kb/toolkits/hubspot/public.md#hubspot-oauth-token-fetch-400-check-client-secret-and-required-scope-alignment`
 - Enter the Snowflake Account ID as org-account — `kb/toolkits/snowflake/public.md#fetch-connected-account-fields-or-toolkit-metadata-to-discover-snowflake-account-details`, `kb/toolkits/snowflake/public.md#use-one-snowflake-auth-config-per-customer-account-for-multi-tenant-saas-oauth`
 - Use primary for the signed-in user's Google Calendar ID — `kb/toolkits/google_calendar/public.md#use-primary-as-calendar-id-me-is-not-valid-for-calendar-id`
+- Stage local Instagram media before creating a post — `kb/toolkits/instagram/public.md#publish-local-media-with-image-file-or-video-file`
 - Use full Google OAuth scope URIs in Google Sheets auth configs — `kb/toolkits/googlesheets/public.md#use-full-google-scope-urls-such-as-https-www-googleapis-com-auth-drive-not-shorthand-drive`
 - Choose a current Shopify app-auth flow instead of copying an admin token — `kb/toolkits/shopify/public.md#shopify-api-key-admin-token-auth-is-deprecated-use-oauth2-or-s2s-auth-instead`
+- Resolve Canvas account-endpoint access errors by checking the account-level role — `kb/toolkits/canvas/public.md#canvas-get-accounts-and-other-account-level-canvas-endpoints-require-admin-permissions`
+- Paginate Canvas list results instead of assuming one response is complete — `kb/toolkits/canvas/public.md#canvas-list-fetch-endpoints-follow-canvas-pagination-behavior-and-may-need-per-page`
 - Choose DiscordBot for bot-token operations and Discord for user-OAuth operations — `kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth-but-discord-oauth-trigger-support-has-been-limited`, `kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types`
 - Use Tool Router session files as toolkit inputs — `kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys`
 - Custom connection-data fields are toolkit-specific — `kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific`

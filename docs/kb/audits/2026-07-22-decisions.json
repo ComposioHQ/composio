@@ -230,5 +230,85 @@
     "verificationSource": "docs/public/data/toolkits.json; https://docs.snowflake.com/en/user-guide/organizations-connect; https://docs.snowflake.com/en/user-guide/admin-account-identifier",
     "supportSignal": "Verified connection-parameter recovery",
     "priorityScore": 83
+  },
+  "kb/toolkits/instagram/public.md#publish-local-media-with-image-file-or-video-file": {
+    "proposedTitle": "Stage local Instagram media before creating a post",
+    "state": "publish",
+    "reason": "Current uploadable-file action metadata verifies that local media is staged during container creation and published in a separate step.",
+    "existingUrl": "/kb/guide/stage-local-instagram-media-before-publishing",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/content-publishing/",
+    "supportSignal": "Verified media staging and publishing recovery",
+    "priorityScore": 80
+  },
+  "kb/toolkits/canvas/public.md#canvas-get-accounts-and-other-account-level-canvas-endpoints-require-admin-permissions": {
+    "proposedTitle": "Resolve Canvas account-endpoint access errors by checking the account-level role",
+    "state": "publish",
+    "reason": "Current account action metadata and Canvas account permissions documentation limit this diagnosis to account-level endpoints.",
+    "existingUrl": "/kb/guide/resolve-canvas-account-endpoint-access-errors",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://canvas.instructure.com/doc/api/accounts.html; https://canvas.instructure.com/doc/api/file.permissions.html",
+    "supportSignal": "Verified account-level authorization recovery",
+    "priorityScore": 75
+  },
+  "kb/toolkits/canvas/public.md#canvas-list-fetch-endpoints-follow-canvas-pagination-behavior-and-may-need-per-page": {
+    "proposedTitle": "Paginate Canvas list results instead of assuming one response is complete",
+    "state": "publish",
+    "reason": "Current Canvas action metadata exposes pagination only on selected actions, consistent with the provider pagination contract.",
+    "existingUrl": "/kb/guide/paginate-canvas-list-results",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://canvas.instructure.com/doc/api/file.pagination.html",
+    "supportSignal": "Verified action-schema pagination recovery",
+    "priorityScore": 71
+  },
+  "kb/toolkits/slackbot/public.md#private-slack-channels-and-dms-require-extra-history-scopes": {
+    "proposedTitle": "Add the Slack history scope for each private conversation type",
+    "state": "publish",
+    "reason": "Current Slackbot default scopes omit private-conversation history scopes, and Slack maps each conversation type to a distinct scope without bypassing membership.",
+    "existingUrl": "/kb/guide/slack-private-conversations-require-separate-history-scopes",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.slack.dev/reference/scopes/groups.history/; https://docs.slack.dev/reference/scopes/im.history/; https://docs.slack.dev/reference/scopes/mpim.history/",
+    "supportSignal": "Verified private-conversation scope recovery",
+    "priorityScore": 89
+  },
+  "kb/toolkits/slack/public.md#admin-conversations-write-requires-slack-enterprise": {
+    "proposedTitle": "Slack admin conversation writes require an Enterprise org installation",
+    "state": "publish",
+    "reason": "Current Slack Enterprise action metadata and provider documentation require plan, organization-wide installation, administrator role, and token scope.",
+    "existingUrl": "/kb/guide/slack-admin-conversation-writes-require-enterprise",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.slack.dev/reference/methods/admin.conversations.delete/; https://docs.slack.dev/reference/methods/admin.conversations.create/",
+    "supportSignal": "Verified Enterprise administration recovery",
+    "priorityScore": 87
+  },
+  "kb/toolkits/linkedin/public.md#linkedin-organization-scopes-depend-on-the-toolkit-and-auth-config": {
+    "proposedTitle": "Reconnect LinkedIn with organization scopes before company-page actions",
+    "state": "publish",
+    "reason": "Current LinkedIn auth metadata, action requirements, and provider role rules require a product-enabled app, scoped token, and eligible Page role.",
+    "existingUrl": "/kb/guide/linkedin-company-actions-require-organization-scopes",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api?view=li-lms-2026-02; https://learn.microsoft.com/en-us/linkedin/marketing/community-management/organizations/organization-access-control-by-role?view=li-lms-2026-01",
+    "supportSignal": "Verified organization-scope authorization recovery",
+    "priorityScore": 92
+  },
+  "kb/toolkits/linkedin/public.md#fix-linkedin-426-nonexistent-version-by-using-the-latest-toolkit-version": {
+    "proposedTitle": "Fix LinkedIn 426 NONEXISTENT_VERSION with a current toolkit version",
+    "state": "publish",
+    "reason": "Current toolkit versioning behavior and LinkedIn's 426 definition verify latest as a diagnostic only before pinning a dated version.",
+    "existingUrl": "/kb/guide/fix-linkedin-426-nonexistent-version",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://learn.microsoft.com/en-us/linkedin/shared/api-guide/concepts/error-handling",
+    "supportSignal": "Verified stale-version recovery",
+    "priorityScore": 88
+  },
+  "kb/toolkits/airtable/public.md#airtable-update-multiple-records-updates-at-most-10-records-per-call": {
+    "proposedTitle": "Batch Airtable multi-record updates in groups of 10",
+    "state": "publish",
+    "reason": "Current Airtable action metadata and provider Web API batching limits both require no more than 10 records and independent batch handling.",
+    "existingUrl": "/kb/guide/batch-airtable-record-updates-in-groups-of-10",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/data/toolkits.json; https://support.airtable.com/v1/docs/managing-api-call-limits-in-airtable",
+    "supportSignal": "Verified multi-record batch-limit recovery",
+    "priorityScore": 90
   }
 }

@@ -1,0 +1,25 @@
+---
+title: "Resolve Canvas account-endpoint access errors by checking the account-level role"
+description: "Verify the connected identity has the provider's account-level role before diagnosing an account endpoint as a Composio failure."
+keywords: ["canvas","permissions","account-admin","authorization","toolkits","authentication","connected-accounts"]
+sources: [{"sourcePath":"kb/toolkits/canvas/public.md","sourceHeading":"`CANVAS_GET_ACCOUNTS` and other account-level Canvas endpoints require admin permissions"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["toolkits","authentication","connected-accounts"]
+aliases: []
+---
+Canvas account-level endpoints require an account-level administrator role; course-level teacher access does not imply account administration.
+
+## Check the same identity
+
+This guidance applies to `CANVAS_GET_ACCOUNTS` and other account-level paths, not to every Canvas course action. Test with the same bearer identity that Composio uses, then confirm that identity has the required role for the target account.
+
+## Recover from an empty or unauthorized result
+
+1. Verify the account ID and the connected Canvas identity.
+2. Ask a Canvas administrator to confirm that identity's account-level permissions.
+3. Retry the current action from the [Canvas toolkit](/toolkits/canvas) after the provider role changes.
+
+An empty or unauthorized response can be a provider permission boundary, not a Composio failure. Canvas documents account endpoints in its [Accounts API](https://canvas.instructure.com/doc/api/accounts.html) and provider-controlled roles in its [permissions documentation](https://canvas.instructure.com/doc/api/file.permissions.html).

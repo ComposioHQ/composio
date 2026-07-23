@@ -257,7 +257,7 @@ This is the second safe answer.`);
   test('loads the published authentication answers from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 
-    expect(published).toHaveLength(19);
+    expect(published).toHaveLength(27);
     expect(published.map(guide => guide.slug)).toEqual(
       expect.arrayContaining([
         'deduplicate-trigger-webhook-deliveries',
@@ -277,6 +277,14 @@ This is the second safe answer.`);
         'google-sheets-auth-configs-require-full-scope-uris',
         'stripe-api-key-connections-require-a-secret-key',
         'snowflake-account-id-uses-org-account-format',
+        'stage-local-instagram-media-before-publishing',
+        'resolve-canvas-account-endpoint-access-errors',
+        'paginate-canvas-list-results',
+        'slack-private-conversations-require-separate-history-scopes',
+        'slack-admin-conversation-writes-require-enterprise',
+        'linkedin-company-actions-require-organization-scopes',
+        'fix-linkedin-426-nonexistent-version',
+        'batch-airtable-record-updates-in-groups-of-10',
       ])
     );
     expect(getKbCatalog().guides.filter(guide => guide.state === 'needs-review')).toHaveLength(1);
