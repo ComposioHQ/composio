@@ -1,4 +1,4 @@
-import { Data, Effect, Either, Option, Runtime, Schema } from 'effect';
+import { Data, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
@@ -28,6 +28,11 @@ export class TriggerRealtimeSubscriptionError extends Data.TaggedError(
 
 const subscriptionError = (message: string) => (cause: unknown) =>
   new TriggerRealtimeSubscriptionError({ message, cause });
+
+type PusherConstructor = (typeof import('pusher-js'))['default'];
+
+const isPusherConstructor = (value: unknown): value is PusherConstructor =>
+  Predicate.isFunction(value);
 
 /**
  * Service for listening to trigger events over Composio CLI realtime channels.
@@ -64,7 +69,22 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               catch: subscriptionError('Failed to load the realtime client'),
             });
 
-            const Pusher = pusherModule.default;
+            // pusher-js ships CJS, and bundler interop differs by runtime: under
+            // Node from source the constructor is `module.default`, while the
+            // Bun-compiled binary wraps it one level deeper at
+            // `module.default.default` (see issue #3918).
+            const moduleDefault: unknown = pusherModule.default;
+            const Pusher = yield* Effect.fromNullable(
+              [
+                Predicate.hasProperty(moduleDefault, 'default') ? moduleDefault.default : undefined,
+                moduleDefault,
+                pusherModule,
+              ].find(isPusherConstructor)
+            ).pipe(
+              Effect.mapError(
+                subscriptionError('Realtime client module does not expose a constructor')
+              )
+            );
 
             const pusher = new Pusher(creds.pusher_key, {
               cluster: creds.pusher_cluster,
