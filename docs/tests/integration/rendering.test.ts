@@ -19,6 +19,25 @@ const CRITICAL_PAGES = [
   { path: "/reference", name: "Reference index" },
 ];
 
+const DEPRECATED_API_LEGACY_TITLE =
+  "Deprecated API endpoint; kept for existing integrations and may be removed in a future release";
+
+const DEPRECATED_API_PAGES = [
+  "/reference/api-reference/connected-accounts/postConnectedAccountsByNanoidRefresh",
+  "/reference/api-reference/files/getFilesList",
+  "/reference/v3/api-reference/connected-accounts/postConnectedAccountsByNanoidRefresh",
+  "/reference/v3/api-reference/files/getFilesList",
+];
+
+const ACTIVE_API_PAGES = [
+  "/reference/api-reference/files/postFilesUploadRequest",
+  "/reference/v3/api-reference/files/postFilesUploadRequest",
+];
+
+function getPageHeading(html: string): string | undefined {
+  return html.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0];
+}
+
 describe("Page rendering - critical pages", () => {
   for (const { path, name } of CRITICAL_PAGES) {
     test(`${name} (${path}) returns 200`, async () => {
@@ -53,6 +72,48 @@ describe("Page rendering - content markers", () => {
     const html = await res.text();
     // Should contain at least one well-known toolkit
     expect(html.toLowerCase()).toContain("github");
+  });
+});
+
+describe("Page rendering - deprecated API endpoints", () => {
+  for (const path of DEPRECATED_API_PAGES) {
+    test(`${path} renders the Legacy badge`, async () => {
+      const res = await fetchPage(path);
+      const html = await res.text();
+      const heading = getPageHeading(html);
+
+      expect(res.status).toBe(200);
+      expect(heading).toBeDefined();
+      expect(heading).toContain(DEPRECATED_API_LEGACY_TITLE);
+    });
+  }
+
+  for (const path of ACTIVE_API_PAGES) {
+    test(`${path} omits the Legacy badge`, async () => {
+      const res = await fetchPage(path);
+      const html = await res.text();
+      const heading = getPageHeading(html);
+
+      expect(res.status).toBe(200);
+      expect(heading).toBeDefined();
+      expect(heading).not.toContain(DEPRECATED_API_LEGACY_TITLE);
+    });
+  }
+
+  test("deprecated endpoint sidebar links replace the title marker with Legacy", async () => {
+    const path = DEPRECATED_API_PAGES[0];
+    const res = await fetchPage(path);
+    const html = await res.text();
+    const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const sidebarLink = html.match(
+      new RegExp(`<a[^>]*href="${escapedPath}"[^>]*>[\\s\\S]*?<\\/a>`),
+    )?.[0];
+
+    expect(res.status).toBe(200);
+    expect(sidebarLink).toBeDefined();
+    expect(sidebarLink).toContain(">Legacy</span>");
+    expect(sidebarLink).not.toContain("(DEPRECATED)");
+    expect(sidebarLink).toContain(">POST</span>");
   });
 });
 

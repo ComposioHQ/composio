@@ -9,6 +9,10 @@ mock.module("next/navigation", () => ({
 }));
 
 const { ApiEndpointsTable } = await import("../../components/api-endpoints-table");
+const { ApiPageTitle } = await import("../../components/api-page-title");
+const { DEPRECATED_API_LEGACY_TITLE } = await import("../../components/legacy-badge");
+const { getDeprecatedApiSidebarName } = await import("../../lib/deprecated-api-sidebar");
+const { getApiDisplayTitle, isApiPageDeprecated } = await import("../../lib/api-deprecation");
 
 const DOCS_DIR = join(import.meta.dir, "../..");
 const GENERATOR_PATH = join(DOCS_DIR, "scripts/generate-api-index.ts");
@@ -115,6 +119,149 @@ afterEach(async () => {
 });
 
 describe("deprecated API endpoints", () => {
+  test("removes only a trailing deprecation marker from deprecated display titles", () => {
+    expect(getApiDisplayTitle("Deprecated task endpoint (DEPRECATED)", true)).toBe(
+      "Deprecated task endpoint",
+    );
+    expect(getApiDisplayTitle("Deprecated task endpoint (deprecated)", true)).toBe(
+      "Deprecated task endpoint",
+    );
+    expect(getApiDisplayTitle("Active task endpoint (DEPRECATED)", false)).toBe(
+      "Active task endpoint (DEPRECATED)",
+    );
+    expect(getApiDisplayTitle("Deprecated endpoint details", true)).toBe(
+      "Deprecated endpoint details",
+    );
+  });
+
+  test("renders Legacy on a deprecated API endpoint detail title", () => {
+    const operation = {
+      method: "get",
+      path: "/v3.1/tasks/deprecated",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: { deprecated: true },
+            },
+          },
+        },
+      }),
+    };
+
+    const deprecated = isApiPageDeprecated(pageData, [operation]);
+    const html = renderToStaticMarkup(
+      <ApiPageTitle
+        title="Deprecated task endpoint (DEPRECATED)"
+        version="3.1"
+        deprecated={deprecated}
+      />,
+    );
+
+    expect(deprecated).toBe(true);
+    expect(html).toContain("<span>Deprecated task endpoint</span>");
+    expect(html).not.toContain("Deprecated task endpoint (DEPRECATED)");
+    expect(html).toContain(
+      'class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-semibold"',
+    );
+    expect(html).toContain('class="inline-flex shrink-0 items-center gap-2"');
+    expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
+    expect(html).toContain(
+      'title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"',
+    );
+  });
+
+  test("omits Legacy from an active API endpoint detail title", () => {
+    const operation = {
+      method: "post",
+      path: "/v3.1/tasks/active",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: {},
+            },
+          },
+        },
+      }),
+    };
+
+    const deprecated = isApiPageDeprecated(pageData, [operation]);
+    const html = renderToStaticMarkup(
+      <ApiPageTitle
+        title="Active task endpoint"
+        version="3.1"
+        deprecated={deprecated}
+      />,
+    );
+
+    expect(deprecated).toBe(false);
+    expect(html).not.toContain(">Legacy</span>");
+  });
+
+  test("replaces the sidebar title marker with a compact Legacy badge", () => {
+    const operation = {
+      method: "get",
+      path: "/v3.1/tasks/deprecated",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: { deprecated: true },
+            },
+          },
+        },
+      }),
+    };
+
+    const html = renderToStaticMarkup(
+      <>
+        {getDeprecatedApiSidebarName("Deprecated task endpoint (DEPRECATED)", pageData, [
+          operation,
+        ])}
+      </>,
+    );
+
+    expect(html).toContain("Deprecated task endpoint");
+    expect(html).not.toContain("(DEPRECATED)");
+    expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
+    expect(html).toContain("text-[10px]");
+    expect(html).toContain(DEPRECATED_API_LEGACY_TITLE);
+  });
+
+  test("keeps an unflagged sidebar title unchanged", () => {
+    const operation = {
+      method: "post",
+      path: "/v3.1/tasks/active",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: {},
+            },
+          },
+        },
+      }),
+    };
+
+    const html = renderToStaticMarkup(
+      <>
+        {getDeprecatedApiSidebarName("Active task endpoint (DEPRECATED)", pageData, [operation])}
+      </>,
+    );
+
+    expect(html).toBe("Active task endpoint (DEPRECATED)");
+    expect(html).not.toContain(">Legacy</span>");
+  });
+
   test("serializes legacy only for deprecated v3.1 and v3 operations", async () => {
     const fixtureDir = await generateFixture();
     const v31Content = await readFile(
@@ -147,7 +294,7 @@ describe("deprecated API endpoints", () => {
             method: "GET",
             pathV31: "/v3.1/tasks/deprecated",
             pathV3: "/v3/tasks/deprecated",
-            summary: "Deprecated task endpoint",
+            summary: "Deprecated task endpoint (DEPRECATED)",
             href: "/reference/api-reference/tasks/getDeprecatedTask",
             legacy: true,
           },
@@ -162,6 +309,10 @@ describe("deprecated API endpoints", () => {
       />,
     );
 
+    expect(html).toContain(
+      '<a href="/reference/api-reference/tasks/getDeprecatedTask">Deprecated task endpoint</a>',
+    );
+    expect(html).not.toContain("Deprecated task endpoint (DEPRECATED)");
     expect(
       html.match(
         /title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"/g,
