@@ -35,6 +35,29 @@ const isPusherConstructor = (value: unknown): value is PusherConstructor =>
   Predicate.isFunction(value);
 
 /**
+ * Resolves the Pusher constructor across ESM/CJS interop shapes. pusher-js
+ * ships CJS, and bundler interop differs by runtime: under Node from source
+ * the constructor is `module.default`, while the Bun-compiled binary wraps it
+ * one level deeper at `module.default.default` (see issue #3918).
+ *
+ * Exported for tests.
+ */
+export const resolvePusherConstructor = (
+  pusherModule: unknown
+): Option.Option<PusherConstructor> => {
+  const moduleDefault = Predicate.hasProperty(pusherModule, 'default')
+    ? pusherModule.default
+    : undefined;
+  return Option.fromNullable(
+    [
+      Predicate.hasProperty(moduleDefault, 'default') ? moduleDefault.default : undefined,
+      moduleDefault,
+      pusherModule,
+    ].find(isPusherConstructor)
+  );
+};
+
+/**
  * Service for listening to trigger events over Composio CLI realtime channels.
  * Uses:
  * - `cli.realtime.credentials` to fetch Pusher credentials + project nano id
@@ -69,18 +92,7 @@ export class TriggersRealtime extends Effect.Service<TriggersRealtime>()(
               catch: subscriptionError('Failed to load the realtime client'),
             });
 
-            // pusher-js ships CJS, and bundler interop differs by runtime: under
-            // Node from source the constructor is `module.default`, while the
-            // Bun-compiled binary wraps it one level deeper at
-            // `module.default.default` (see issue #3918).
-            const moduleDefault: unknown = pusherModule.default;
-            const Pusher = yield* Effect.fromNullable(
-              [
-                Predicate.hasProperty(moduleDefault, 'default') ? moduleDefault.default : undefined,
-                moduleDefault,
-                pusherModule,
-              ].find(isPusherConstructor)
-            ).pipe(
+            const Pusher = yield* resolvePusherConstructor(pusherModule).pipe(
               Effect.mapError(
                 subscriptionError('Realtime client module does not expose a constructor')
               )
