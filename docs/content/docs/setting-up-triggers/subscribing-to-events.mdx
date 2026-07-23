@@ -118,6 +118,24 @@ console.log(`Delivering events to ${subscription.webhookUrl}`);
 
 Your webhook endpoint must be publicly reachable. Composio's outbound IPs are dynamic, so IP allowlists and VPN-only endpoints won't work. Authenticate payloads with [signature verification](#verifying-signatures) instead.
 
+### Subscribe to trigger disable events
+
+To be notified when Composio disables a trigger because of an expired connection, a webhook subscription refresh failure, or unhealthy polling, add `composio.trigger.disabled` to the webhook subscription's `enabled_events`:
+
+```bash
+curl -X PATCH https://backend.composio.dev/api/v3/webhook_subscriptions/ws_your-subscription-id \
+  -H "X-API-KEY: <your-composio-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled_events": [
+      "composio.trigger.message",
+      "composio.trigger.disabled"
+    ]
+  }'
+```
+
+You can also enable the event in the [dashboard webhook settings](https://dashboard.composio.dev/~/project/settings/webhook?utm_source=docs&utm_medium=content&utm_campaign=subscribing-to-events). The event is available only for V3 webhook subscriptions and is not emitted when you disable a trigger yourself.
+
 ## Handling events
 
 In your handler, pass the incoming request to `parse()`. It returns the typed, normalized payload. Pass `verifySecret` and it verifies the signature first, so one call both authenticates and parses.
@@ -260,6 +278,37 @@ Every trigger event arrives in the same envelope. `metadata` tells you where the
 <Callout>
 This is the V3 payload, the default for new organizations. See [webhook payload versions](#webhook-payload-versions) for V2 and V1.
 </Callout>
+
+### Disabled trigger payload
+
+The opt-in `composio.trigger.disabled` event uses the V3 envelope. Its `data.disabled_reason` explains why Composio disabled the trigger:
+
+| `disabled_reason` | Meaning |
+|---|---|
+| `connection_expired` | The connected account expired. The trigger is automatically re-enabled when the account becomes active again. |
+| `subscription_auth_failure` | The provider rejected the credentials while Composio refreshed the webhook subscription. Re-authenticate the connection. |
+| `subscription_refresh_failure` | Composio could not reach the provider to refresh the webhook subscription. Re-enable the trigger after the provider recovers. |
+| `polling_failure_in_composio_infra` | Composio could not fetch events after repeated polling retries. |
+
+```json
+{
+  "id": "msg_abc123",
+  "type": "composio.trigger.disabled",
+  "metadata": {
+    "project_id": "pr_your-project-id"
+  },
+  "data": {
+    "id": "ti_your-trigger-id",
+    "connected_account_id": "ca_your-connected-account-id",
+    "trigger_name": "GITHUB_COMMIT_EVENT",
+    "user_id": "your-user-id",
+    "trigger_config": { "owner": "composio", "repo": "hermes" },
+    "disabled_at": "2026-04-23T11:59:59.000Z",
+    "disabled_reason": "connection_expired"
+  },
+  "timestamp": "2026-04-23T12:00:00.000Z"
+}
+```
 
 ## Verifying signatures
 
