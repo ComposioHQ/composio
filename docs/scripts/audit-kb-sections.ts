@@ -175,6 +175,15 @@ function defaultRow(candidate: KbAuditCandidate): KbAuditRow {
 }
 
 function buildRows(candidates: KbAuditCandidate[], decisions: Map<string, AuditDecision>): KbAuditRow[] {
+  const candidateIds = new Set(candidates.map((candidate) => candidate.id));
+  const unknownDecisionIds = [...decisions.keys()]
+    .filter((id) => !candidateIds.has(id))
+    .sort();
+  if (unknownDecisionIds.length) {
+    throw new Error(
+      `Decision IDs not present in the public inventory: ${unknownDecisionIds.join(', ')}`,
+    );
+  }
   return candidates.map((candidate) => ({ ...defaultRow(candidate), ...decisions.get(candidate.id) }));
 }
 

@@ -172,10 +172,43 @@ describe('public KB audit', () => {
 
     const rows = parseCsvRecords(readFileSync(auditCsv, 'utf8'));
     expect(rows).toHaveLength(674);
+    expect(
+      rows.map((row) => ({
+        sourcePath: row.source_paths,
+        heading: row.source_headings,
+      })),
+    ).toEqual(
+      inventory.candidates.map((candidate) => ({
+        sourcePath: candidate.sourcePath,
+        heading: candidate.heading ?? '',
+      })),
+    );
     for (const row of rows) {
       expect(ALLOWED_AUDIT_STATES.has(row.state)).toBe(true);
       expect(row.reason.trim()).not.toBe('');
     }
+
+    const decisions = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'kb/audits/2026-07-22-decisions.json'), 'utf8'),
+    ) as Record<string, Record<string, string>>;
+    const pilotDecisions = Object.values(decisions).filter((decision) => decision.state === 'publish');
+    expect(pilotDecisions).toHaveLength(10);
+    for (const decision of pilotDecisions) {
+      expect(decision.existingUrl.startsWith('/kb/guide/')).toBe(true);
+      expect(decision.reason).toContain('verified local pilot guide selected for publication');
+      expect(decision.reason).toContain('not yet deployed');
+      expect(decision.verificationSource).toBe('Verified local pilot guide on this undeployed branch');
+      expect(decision.supportSignal).toBe('Selected local pilot publication');
+    }
+
+    const auditMarkdown = readFileSync(
+      resolve(process.cwd(), 'kb/audits/2026-07-22-content-gap-audit.md'),
+      'utf8',
+    );
+    expect(auditMarkdown).toContain(
+      '`publish` means selected and prepared for publication, not proof of live deployment.',
+    );
+    expect(auditMarkdown).toContain('This branch is undeployed.');
   });
 
   test('inventories only public documents and preserves section order', () => {
@@ -234,6 +267,9 @@ describe('public KB audit', () => {
     expect(markdown).toContain('Risk themes');
     expect(markdown).toContain('Noncanonical archive findings');
     expect(markdown).toContain(
+      '`publish` means selected and prepared for publication, not proof of live deployment.',
+    );
+    expect(markdown).toContain(
       '`platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear exist only in `public-kb` relative to current canonical public pages and require canonical proposals plus verification.',
     );
   });
@@ -247,6 +283,40 @@ describe('public KB audit', () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('--source-root must be an absolute path');
+  });
+
+  test('CLI rejects decision IDs that are absent from the public inventory', () => {
+    if (!existsSync(REAL_SUPPORT_WORKFLOWS_ROOT)) return;
+
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-audit-decisions-'));
+    temporaryDirectories.push(root);
+    const decisions = join(root, 'decisions.json');
+    const outputDir = join(root, 'output');
+    writeFileSync(
+      decisions,
+      JSON.stringify({
+        'kb/platform/misspelled/public.md#missing': { state: 'exclude' },
+      }),
+    );
+
+    const result = spawnSync(
+      'bun',
+      [
+        'scripts/audit-kb-sections.ts',
+        '--source-root',
+        REAL_SUPPORT_WORKFLOWS_ROOT,
+        '--decisions',
+        decisions,
+        '--output-dir',
+        outputDir,
+      ],
+      { cwd: process.cwd(), encoding: 'utf8' },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Decision IDs not present in the public inventory: kb/platform/misspelled/public.md#missing',
+    );
   });
 
   test('rejects an output symlink that resolves inside the source checkout before writing', () => {

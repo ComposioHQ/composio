@@ -2,92 +2,92 @@
   "kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys": {
     "proposedTitle": "Use Tool Router session files as toolkit inputs",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/use-tool-router-session-files-as-tool-inputs",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/use-tool-router-session-files-as-tool-inputs",
     "freshness": "evergreen",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/platform/pagination/public.md#pagination-limits-are-endpoint-specific": {
     "proposedTitle": "Pagination limits are endpoint-specific",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/pagination-limits-are-endpoint-specific",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/pagination-limits-are-endpoint-specific",
     "freshness": "evergreen",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/platform/triggers/public.md#trigger-webhook-delivery-is-at-least-once": {
     "proposedTitle": "Deduplicate trigger webhook deliveries",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/deduplicate-trigger-webhook-deliveries",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/deduplicate-trigger-webhook-deliveries",
     "freshness": "evergreen",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific": {
     "proposedTitle": "Custom connection-data fields are toolkit-specific",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/custom-connection-data-fields-are-toolkit-specific",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/custom-connection-data-fields-are-toolkit-specific",
     "freshness": "time-sensitive",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/ahrefs/public.md#ahrefs-actions-must-call-api-ahrefs-com-not-ahrefs-com": {
     "proposedTitle": "Ahrefs actions must use the API host",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/ahrefs-actions-use-the-api-host",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/ahrefs-actions-use-the-api-host",
     "freshness": "time-sensitive",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/calendly/public.md#use-calendly-post-invitee-instead-of-deprecated-calendly-create-event-invitee": {
     "proposedTitle": "Use CALENDLY_POST_INVITEE for invitee creation",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/use-calendly-post-invitee",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/use-calendly-post-invitee",
     "freshness": "time-sensitive",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/canva/public.md#use-canva-autofill-jobs-when-content-must-be-populated-into-a-design": {
     "proposedTitle": "Use Canva autofill jobs for design content",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/use-canva-autofill-jobs-for-design-content",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/use-canva-autofill-jobs-for-design-content",
     "freshness": "time-sensitive",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/granola_mcp/public.md#composio-mirrors-granola-s-official-mcp-server": {
     "proposedTitle": "Granola MCP metadata comes from the upstream server",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/granola-mcp-metadata-comes-from-the-upstream-server",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/granola-mcp-metadata-comes-from-the-upstream-server",
     "freshness": "evergreen",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/odoo/public.md#json-rpc-access-errors-can-arrive-inside-http-200-responses": {
     "proposedTitle": "Inspect Odoo JSON-RPC errors inside HTTP 200 responses",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/inspect-odoo-json-rpc-errors-inside-http-200-responses",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/inspect-odoo-json-rpc-errors-inside-http-200-responses",
     "freshness": "evergreen",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/toolkits/strava/public.md#athlete-limit-errors-belong-to-the-oauth-application": {
     "proposedTitle": "Strava athlete limits belong to the OAuth app",
     "state": "publish",
-    "reason": "Published canonical KB guide; retain the existing verified answer.",
-    "existingUrl": "https://docs.composio.dev/kb/guide/strava-athlete-limits-belong-to-the-oauth-app",
+    "reason": "This is a verified local pilot guide selected for publication and not yet deployed from this branch.",
+    "existingUrl": "/kb/guide/strava-athlete-limits-belong-to-the-oauth-app",
     "freshness": "time-sensitive",
-    "verificationSource": "Existing canonical KB guide",
-    "supportSignal": "Published pilot guide"
+    "verificationSource": "Verified local pilot guide on this undeployed branch",
+    "supportSignal": "Selected local pilot publication"
   },
   "kb/mcp/tool-router-sessions/public.md#select-among-multiple-accounts-with-an-alias-or-account-id": {
     "state": "link-only",

@@ -10,6 +10,11 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 - Needs verification: 655
 - Exclude: 5
 
+## Publication meaning
+
+- `publish` means selected and prepared for publication, not proof of live deployment.
+- This branch is undeployed.
+
 ## Selected first batch
 
 - Use Tool Router session files as toolkit inputs — `kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys`
