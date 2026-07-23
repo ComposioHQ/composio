@@ -1,7 +1,23 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildKbCatalog } from '@/lib/kb/catalog';
-import { getKbCatalog, getPublishedKbGuides, resolveKbAlias } from '@/lib/kb/repository';
+import {
+  createKbArticleReader,
+  getKbCatalog,
+  getPublishedKbGuides,
+  resolveKbAlias,
+} from '@/lib/kb/repository';
 import type { KbManifest } from '@/lib/kb/types';
+
+const temporaryDirectories: string[] = [];
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 const source = `---
 type: reference
@@ -85,7 +101,7 @@ This is the second safe answer.`);
       manifest({ articlePath: 'stable-answer.md' }),
       () => source,
       new Date('2026-07-21'),
-      (articlePath) => {
+      articlePath => {
         expect(articlePath).toBe('stable-answer.md');
         return article;
       }
@@ -164,6 +180,53 @@ This is the second safe answer.`);
         () => '---\ntitle: Private metadata\n---\nSafe body.'
       )
     ).toThrow('stable-answer.md must not contain YAML frontmatter');
+  });
+
+  test('rejects YAML frontmatter after leading whitespace in an authored article', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => '\n  \n---\ntitle: Private metadata\n---\nSafe body.'
+      )
+    ).toThrow('stable-answer.md must not contain YAML frontmatter');
+  });
+
+  test('rejects an empty string article path instead of treating it as omitted', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: '' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => 'Safe body.'
+      )
+    ).toThrow('articlePath must equal stable-answer.md');
+  });
+
+  test('rejects a null article path at runtime', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: null } as unknown as Partial<KbManifest['guides'][number]>),
+        () => source,
+        new Date('2026-07-21'),
+        () => 'Safe body.'
+      )
+    ).toThrow('articlePath must equal stable-answer.md');
+  });
+
+  test('rejects a symlinked article that escapes the articles root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-articles-'));
+    temporaryDirectories.push(root);
+    const articlesRoot = join(root, 'articles');
+    const benignFile = join(root, 'benign.md');
+    mkdirSync(articlesRoot);
+    writeFileSync(benignFile, 'Benign fixture content.', 'utf8');
+    symlinkSync(benignFile, join(articlesRoot, 'stable-answer.md'));
+
+    expect(() => createKbArticleReader(articlesRoot)('stable-answer.md')).toThrow(
+      'must not be a symbolic link'
+    );
   });
 
   test('rejects private markers in authored articles', () => {

@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { generateKbContent } from '@/lib/kb/generate';
-import { getKbCatalog } from '@/lib/kb/repository';
+import { buildKbCatalog } from '@/lib/kb/catalog';
+import { createKbArticleReader } from '@/lib/kb/repository';
+import type { KbManifest } from '@/lib/kb/types';
 
 const temporaryDirectories: string[] = [];
 
@@ -105,33 +107,64 @@ describe('public KB content generation', () => {
     expect(ahrefsGuide).not.toContain('route the case to a human');
   });
 
-  test('renders an editorial body without exposing its repository-only path', () => {
+  test('renders an editorial body read from a temporary articles root without exposing its path', () => {
     const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
     temporaryDirectories.push(outputDir);
-    const guide = getKbCatalog().guides.find(
-      candidate => candidate.slug === 'pagination-limits-are-endpoint-specific'
-    );
-    if (!guide) throw new Error('Expected pagination guide');
-
-    const originalBody = guide.body;
-    const originalArticlePath = guide.articlePath;
-    guide.body = 'This is the authored editorial body.';
-    guide.articlePath = 'pagination-limits-are-endpoint-specific.md';
-    try {
-      generateKbContent({ outputDir });
-    } finally {
-      guide.body = originalBody;
-      if (originalArticlePath === undefined) delete guide.articlePath;
-      else guide.articlePath = originalArticlePath;
-    }
-
-    const generated = readFileSync(
-      join(outputDir, 'guide/pagination-limits-are-endpoint-specific.mdx'),
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-articles-'));
+    temporaryDirectories.push(root);
+    const articlesRoot = join(root, 'articles');
+    mkdirSync(articlesRoot);
+    writeFileSync(
+      join(articlesRoot, 'editorial-guide.md'),
+      'This is the authored editorial body.',
       'utf8'
     );
+    const manifest: KbManifest = {
+      schemaVersion: 2,
+      source: {
+        repository: 'ComposioHQ/support-workflows',
+        commit: '5eed614',
+        capturedAt: '2026-07-21',
+      },
+      topics: [
+        { slug: 'platform', title: 'Platform', description: 'Platform guidance.', featuredRank: 1 },
+      ],
+      guides: [
+        {
+          slug: 'editorial-guide',
+          title: 'Editorial guide',
+          description: 'A guide with an authored body.',
+          articlePath: 'editorial-guide.md',
+          sources: [
+            { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Stable answer' },
+          ],
+          topics: ['platform'],
+          tags: [],
+          aliases: [],
+          relatedGuides: [],
+          externalResources: [],
+          updatedAt: '2026-07-20',
+          lastVerifiedAt: '2026-07-21',
+          reviewAfter: '2027-01-17',
+          freshness: 'evergreen',
+          state: 'published',
+          featured: false,
+        },
+      ],
+    };
+    const source = `---\ntype: reference\ntitle: Example\ndescription: Public example.\ncategory: platform/example\nvisibility: public\ntimestamp: 2026-07-20T00:00:00Z\ntags:\n  - example\n---\n# Example\n\n## Stable answer\n\nPublic source provenance.\n`;
+    const catalog = buildKbCatalog(
+      manifest,
+      () => source,
+      new Date('2026-07-21'),
+      createKbArticleReader(articlesRoot)
+    );
+    generateKbContent({ outputDir, catalog });
+
+    const generated = readFileSync(join(outputDir, 'guide/editorial-guide.mdx'), 'utf8');
     expect(generated).toContain('This is the authored editorial body.');
     expect(generated).toContain(
-      'sources: [{"sourcePath":"kb/platform/pagination/public.md","sourceHeading":"Pagination limits are endpoint-specific"}]'
+      'sources: [{"sourcePath":"kb/platform/example/public.md","sourceHeading":"Stable answer"}]'
     );
     expect(generated).not.toContain('articlePath');
   });

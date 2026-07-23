@@ -32,11 +32,14 @@ function assertNoPrivateMarkers(content: string, path: string): void {
 
 function articleBodyFor(
   slug: string,
-  articlePath: string | undefined,
+  articlePath: unknown,
   readArticle: ((articlePath: string) => string) | undefined
 ): string | null {
-  if (!articlePath) return null;
+  if (articlePath === undefined) return null;
 
+  if (typeof articlePath !== 'string') {
+    throw new Error(`${slug} articlePath must equal ${slug}.md`);
+  }
   if (articlePath.includes('/') || articlePath.includes('\\')) {
     throw new Error(`${slug} articlePath must be a flat filename`);
   }
@@ -49,7 +52,7 @@ function articleBodyFor(
 
   const body = readArticle(articlePath);
   if (!body.trim()) throw new Error(`${articlePath} must not be empty`);
-  if (/^(?:\uFEFF)?---(?:\r?\n|$)/.test(body)) {
+  if (/^(?:\uFEFF)?---(?:\r?\n|$)/.test(body.trimStart())) {
     throw new Error(`${articlePath} must not contain YAML frontmatter`);
   }
   assertNoPrivateMarkers(body, articlePath);

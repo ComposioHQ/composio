@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, parse, relative, resolve } from 'node:path';
 import { getKbCatalog, getKbGuideUrl, getPublishedKbGuides } from './repository';
-import type { KbGuide } from './types';
+import type { KbCatalog, KbGuide } from './types';
 
 export interface KbGenerationSummary {
   published: number;
@@ -12,6 +12,7 @@ export interface KbGenerationSummary {
 export interface GenerateKbContentOptions {
   outputDir?: string;
   check?: boolean;
+  catalog?: KbCatalog;
 }
 
 const EXTERNAL_RESOURCES: Record<string, { title: string; href: string; description: string }> = {
@@ -100,8 +101,7 @@ Verified troubleshooting guides, operational answers, and known-good patterns fr
 `;
 }
 
-function buildExpectedFiles(): Map<string, string> {
-  const catalog = getKbCatalog();
+function buildExpectedFiles(catalog: KbCatalog): Map<string, string> {
   const guides = getPublishedKbGuides(catalog);
   const files = new Map<string, string>();
   files.set('index.mdx', rootIndex());
@@ -137,8 +137,8 @@ function assertSafeOutputDirectory(outputDir: string): void {
 export function generateKbContent(options: GenerateKbContentOptions = {}): KbGenerationSummary {
   const outputDir = resolve(options.outputDir ?? join(process.cwd(), 'content', 'kb'));
   assertSafeOutputDirectory(outputDir);
-  const expected = buildExpectedFiles();
-  const catalog = getKbCatalog();
+  const catalog = options.catalog ?? getKbCatalog();
+  const expected = buildExpectedFiles(catalog);
   const published = getPublishedKbGuides(catalog).length;
   const held = catalog.guides.filter(guide => guide.state === 'needs-review').length;
 

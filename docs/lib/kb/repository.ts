@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { lstatSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { buildKbCatalog } from './catalog';
 import type { KbCatalog, KbGuide, KbManifest } from './types';
 
@@ -7,18 +7,31 @@ const KB_ROOT = join(process.cwd(), 'kb');
 const KB_ARTICLES_ROOT = resolve(KB_ROOT, 'articles');
 let cachedCatalog: KbCatalog | null = null;
 
-function readKbArticle(articlePath: string): string {
-  const target = resolve(KB_ARTICLES_ROOT, articlePath);
-  const pathFromRoot = relative(KB_ARTICLES_ROOT, target);
-  if (
-    pathFromRoot === '' ||
-    pathFromRoot === '..' ||
-    pathFromRoot.startsWith(`..${sep}`) ||
-    isAbsolute(pathFromRoot)
-  ) {
-    throw new Error(`KB article path escapes articles directory: ${articlePath}`);
-  }
-  return readFileSync(target, 'utf8');
+export function createKbArticleReader(articlesRoot: string): (articlePath: string) => string {
+  return articlePath => {
+    const realArticlesRoot = realpathSync(articlesRoot);
+    const target = resolve(realArticlesRoot, articlePath);
+    const pathFromRoot = relative(realArticlesRoot, target);
+    if (
+      pathFromRoot === '' ||
+      pathFromRoot === '..' ||
+      pathFromRoot.startsWith(`..${sep}`) ||
+      isAbsolute(pathFromRoot)
+    ) {
+      throw new Error(`KB article path escapes articles directory: ${articlePath}`);
+    }
+    if (lstatSync(target).isSymbolicLink()) {
+      throw new Error(`KB article must not be a symbolic link: ${articlePath}`);
+    }
+
+    const realTarget = realpathSync(target);
+    if (dirname(realTarget) !== realArticlesRoot || !statSync(realTarget).isFile()) {
+      throw new Error(
+        `KB article must be a regular file directly under articles directory: ${articlePath}`
+      );
+    }
+    return readFileSync(realTarget, 'utf8');
+  };
 }
 
 export function getKbCatalog(): KbCatalog {
@@ -28,7 +41,7 @@ export function getKbCatalog(): KbCatalog {
     manifest,
     (sourcePath) => readFileSync(join(KB_ROOT, 'source', sourcePath), 'utf8'),
     new Date(),
-    readKbArticle,
+    createKbArticleReader(KB_ARTICLES_ROOT)
   );
   return cachedCatalog;
 }
