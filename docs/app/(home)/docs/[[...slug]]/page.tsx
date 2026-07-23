@@ -46,7 +46,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
               )}
             </div>
           )}
-          {data.experimental && <ExperimentalBadge />}
+          {data.experimental && <ExperimentalBadge className="mb-3" />}
           <DocsTitle>{data.title}</DocsTitle>
           <PageActions path={page.url} />
         </>
