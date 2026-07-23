@@ -1,0 +1,124 @@
+{
+  "kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys": {
+    "proposedTitle": "Use Tool Router session files as toolkit inputs",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/use-tool-router-session-files-as-tool-inputs",
+    "freshness": "evergreen",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/platform/pagination/public.md#pagination-limits-are-endpoint-specific": {
+    "proposedTitle": "Pagination limits are endpoint-specific",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/pagination-limits-are-endpoint-specific",
+    "freshness": "evergreen",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/platform/triggers/public.md#trigger-webhook-delivery-is-at-least-once": {
+    "proposedTitle": "Deduplicate trigger webhook deliveries",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/deduplicate-trigger-webhook-deliveries",
+    "freshness": "evergreen",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific": {
+    "proposedTitle": "Custom connection-data fields are toolkit-specific",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/custom-connection-data-fields-are-toolkit-specific",
+    "freshness": "time-sensitive",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/ahrefs/public.md#ahrefs-actions-must-call-api-ahrefs-com-not-ahrefs-com": {
+    "proposedTitle": "Ahrefs actions must use the API host",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/ahrefs-actions-use-the-api-host",
+    "freshness": "time-sensitive",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/calendly/public.md#use-calendly-post-invitee-instead-of-deprecated-calendly-create-event-invitee": {
+    "proposedTitle": "Use CALENDLY_POST_INVITEE for invitee creation",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/use-calendly-post-invitee",
+    "freshness": "time-sensitive",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/canva/public.md#use-canva-autofill-jobs-when-content-must-be-populated-into-a-design": {
+    "proposedTitle": "Use Canva autofill jobs for design content",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/use-canva-autofill-jobs-for-design-content",
+    "freshness": "time-sensitive",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/granola_mcp/public.md#composio-mirrors-granola-s-official-mcp-server": {
+    "proposedTitle": "Granola MCP metadata comes from the upstream server",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/granola-mcp-metadata-comes-from-the-upstream-server",
+    "freshness": "evergreen",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/odoo/public.md#json-rpc-access-errors-can-arrive-inside-http-200-responses": {
+    "proposedTitle": "Inspect Odoo JSON-RPC errors inside HTTP 200 responses",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/inspect-odoo-json-rpc-errors-inside-http-200-responses",
+    "freshness": "evergreen",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/toolkits/strava/public.md#athlete-limit-errors-belong-to-the-oauth-application": {
+    "proposedTitle": "Strava athlete limits belong to the OAuth app",
+    "state": "publish",
+    "reason": "Published canonical KB guide; retain the existing verified answer.",
+    "existingUrl": "https://docs.composio.dev/kb/guide/strava-athlete-limits-belong-to-the-oauth-app",
+    "freshness": "time-sensitive",
+    "verificationSource": "Existing canonical KB guide",
+    "supportSignal": "Published pilot guide"
+  },
+  "kb/mcp/tool-router-sessions/public.md#select-among-multiple-accounts-with-an-alias-or-account-id": {
+    "state": "link-only",
+    "reason": "Current canonical guidance already covers account aliases, IDs, selection, and user scoping.",
+    "existingUrl": "https://docs.composio.dev/docs/managing-multiple-connected-accounts",
+    "freshness": "time-sensitive",
+    "verificationSource": "Cross-cutting KB verification report",
+    "supportSignal": "Canonical Docs duplicate"
+  },
+  "kb/platform/project-api-key-permissions/public.md#tool-router-session-creation-requires-sessions-write-access": {
+    "state": "link-only",
+    "reason": "Current scoped-project-key reference already documents Sessions Write access for session creation.",
+    "existingUrl": "https://docs.composio.dev/reference/authenticating-to-composio/project-api-key-permissions",
+    "freshness": "time-sensitive",
+    "verificationSource": "Cross-cutting KB verification report",
+    "supportSignal": "Canonical reference duplicate"
+  },
+  "kb/platform/project-api-key-permissions/public.md#tool-execution-requires-tool-execution-write-access": {
+    "state": "link-only",
+    "reason": "Current scoped-project-key reference already documents Tool execution Write access.",
+    "existingUrl": "https://docs.composio.dev/reference/authenticating-to-composio/project-api-key-permissions",
+    "freshness": "time-sensitive",
+    "verificationSource": "Cross-cutting KB verification report",
+    "supportSignal": "Canonical reference duplicate"
+  },
+  "kb/platform/file-storage/public.md#composio-file-urls-are-short-lived-staged-downloads": {
+    "state": "link-only",
+    "reason": "Current canonical file-TTL guidance already documents presigned URL expiry and configuration.",
+    "existingUrl": "https://docs.composio.dev/docs/changelog/2026/01/20",
+    "freshness": "time-sensitive",
+    "verificationSource": "Cross-cutting KB verification report",
+    "supportSignal": "Canonical Docs duplicate"
+  }
+}

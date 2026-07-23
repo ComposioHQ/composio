@@ -14,7 +14,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
   inventoryPublicKb,
   renderAuditCsv,
@@ -28,6 +28,14 @@ import {
 } from '@/scripts/audit-kb-sections';
 
 const temporaryDirectories: string[] = [];
+const REAL_SUPPORT_WORKFLOWS_ROOT =
+  '/Users/sohambasu/Documents/composio/support/kb-exploration/support-workflows';
+const ALLOWED_AUDIT_STATES = new Set([
+  'publish',
+  'link-only',
+  'needs-verification',
+  'exclude',
+]);
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -110,7 +118,66 @@ function auditRow(overrides: Partial<KbAuditRow> = {}): KbAuditRow {
   };
 }
 
+function parseCsvRecords(csv: string): Array<Record<string, string>> {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let cell = '';
+  let quoted = false;
+
+  for (let index = 0; index < csv.length; index += 1) {
+    const character = csv[index];
+    if (quoted) {
+      if (character === '"' && csv[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      } else {
+        cell += character;
+      }
+    } else if (character === '"') {
+      quoted = true;
+    } else if (character === ',') {
+      record.push(cell);
+      cell = '';
+    } else if (character === '\n') {
+      record.push(cell);
+      records.push(record);
+      record = [];
+      cell = '';
+    } else if (character !== '\r') {
+      cell += character;
+    }
+  }
+
+  const headers = records.shift();
+  if (!headers) return [];
+  return records
+    .filter((row) => row.length > 1)
+    .map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ''])));
+}
+
 describe('public KB audit', () => {
+  test('classifies every candidate in the pinned public support inventory', () => {
+    if (!existsSync(REAL_SUPPORT_WORKFLOWS_ROOT)) return;
+
+    const inventory = inventoryPublicKb(REAL_SUPPORT_WORKFLOWS_ROOT);
+
+    expect(inventory.fileCount).toBe(115);
+    expect(inventory.levelTwoSectionCount).toBe(670);
+    expect(inventory.bodyOnlyFileCount).toBe(4);
+
+    const auditCsv = resolve(process.cwd(), 'kb/audits/2026-07-22-section-audit.csv');
+    expect(existsSync(auditCsv)).toBe(true);
+
+    const rows = parseCsvRecords(readFileSync(auditCsv, 'utf8'));
+    expect(rows).toHaveLength(674);
+    for (const row of rows) {
+      expect(ALLOWED_AUDIT_STATES.has(row.state)).toBe(true);
+      expect(row.reason.trim()).not.toBe('');
+    }
+  });
+
   test('inventories only public documents and preserves section order', () => {
     const root = createFixture();
 
@@ -166,6 +233,9 @@ describe('public KB audit', () => {
     expect(markdown).toContain('Selected first batch');
     expect(markdown).toContain('Risk themes');
     expect(markdown).toContain('Noncanonical archive findings');
+    expect(markdown).toContain(
+      '`platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear exist only in `public-kb` relative to current canonical public pages and require canonical proposals plus verification.',
+    );
   });
 
   test('CLI rejects a relative source checkout path', () => {

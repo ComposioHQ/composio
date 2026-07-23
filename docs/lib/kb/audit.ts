@@ -205,9 +205,10 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
     '',
     '## Noncanonical archive findings',
     '',
-    '- `platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear are archive-only gaps that require canonical proposals and verification.',
-    '- `routing` is internal and excluded. `toolkits/rube` uses obsolete naming and is excluded; durable facts must be rewritten for Composio For You.',
-    '- README and index files are navigation, not article candidates.',
+    '- `platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear exist only in `public-kb` relative to current canonical public pages and require canonical proposals plus verification.',
+    '- `routing` is internal and excluded.',
+    '- `toolkits/rube` is obsolete naming and excluded; any durable consumer fact must be rewritten for Composio For You in canonical support knowledge.',
+    '- `README` and `index` are navigation, not article candidates.',
     '',
   ].join('\n');
 }
