@@ -103,6 +103,8 @@ export const CLI_EVENT_JOURNEY_STAGES = {
   CLI_TOOL_INVOCATION_FAILED: 'execute',
 } as const satisfies Record<CliAnalyticsEventName, CliJourneyStage>;
 
+const CLI_CHANNEL = inferSkillReleaseChannel(APP_VERSION);
+
 const buildEvent = (
   name: CliAnalyticsEventName,
   properties: Record<string, unknown>
@@ -111,7 +113,7 @@ const buildEvent = (
   properties: {
     ...properties,
     journey_stage: CLI_EVENT_JOURNEY_STAGES[name],
-    cli_channel: inferSkillReleaseChannel(APP_VERSION),
+    cli_channel: CLI_CHANNEL,
   },
 });
 
