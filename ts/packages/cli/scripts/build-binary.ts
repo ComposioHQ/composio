@@ -18,8 +18,6 @@ export function buildBinary() {
     const cwd = process.cwd();
     yield* Effect.logDebug(`Building binary in ${cwd}`);
 
-    // `--env DEBUG_OVERRIDE_*` inlines matching env vars; the PostHog key is
-    // baked via `--define` instead (Bun honors only the last `--env`).
     const args: ReadonlyArray<string> = [
       'build',
       './src/bin.ts',

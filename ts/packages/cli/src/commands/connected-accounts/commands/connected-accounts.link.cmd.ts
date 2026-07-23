@@ -9,6 +9,7 @@ import { resolveToolRouterSession } from 'src/effects/create-tool-router-session
 import { extractMessage, extractSlug } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioClientSingleton, getSessionInfoByUserApiKey } from 'src/services/composio-clients';
+import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import {
   formatResolveCommandProjectError,
   resolveCommandProject,
@@ -239,6 +240,10 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
         baseURL: userContext.data.baseURL,
         userApiKey: apiKey,
       }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+      if (sessionInfo) {
+        yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
+      }
 
       if (sessionInfo?.project.org.name) {
         orgName = sessionInfo.project.org.name;

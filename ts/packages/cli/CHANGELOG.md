@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Telemetry now delivers directly to PostHog instead of through the Apollo analytics endpoint. This fixes the dark top-of-funnel: pre-login `install`/`setup`/`plugin-setup` events no longer require a logged-in API base URL, so they are captured under the anonymous `install_id`. At login the CLI persists the Apollo `org_member.id` and fires a single `$create_alias`, so post-login events (and all later CLI activity) resolve to the same PostHog person as web onboarding. Existing opt-outs (`COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, `CI`, `NODE_ENV=test`) are unchanged, and no secrets or tool-argument values are ever sent.
+- Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
 
 ## 0.3.0
 

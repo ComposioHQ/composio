@@ -133,9 +133,6 @@ jobs:
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
         env:
-          # Public, write-only PostHog project key (project 196278), baked into
-          # the released binary via `--define`. Not a secret — an Actions
-          # *variable* so only official builds carry it and forks stay no-op.
           COMPOSIO_POSTHOG_KEY: ${{ vars.COMPOSIO_POSTHOG_KEY }}
         run: pnpm build:binary:cross --target ${{ matrix.target }}
 

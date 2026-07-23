@@ -891,6 +891,17 @@ export const loginCmd = Command.make(
             yield* ensureAgentSignupAllowed;
             const identity = yield* getOrSignupReadyAgent();
             yield* loginWithAgentIdentity(identity);
+            const agentUserApiKey = identity.composio?.user_api_key;
+            if (agentUserApiKey) {
+              const agentSessionInfo = yield* getSessionInfoByUserApiKey({
+                baseURL: ctx.data.baseURL,
+                userApiKey: agentUserApiKey,
+                orgId: identity.composio?.org_id ?? undefined,
+              }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+              if (agentSessionInfo) {
+                yield* linkApolloIdentityForAnalytics(agentSessionInfo.org_member.id);
+              }
+            }
             const summary = safeAgentSummary(identity);
             yield* ui.log.success(
               `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`

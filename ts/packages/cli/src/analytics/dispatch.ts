@@ -100,8 +100,6 @@ const analyticsDisabled = environmentProvider.load(
   )
 );
 
-// Direct-to-PostHog target; env overrides fall back to the embedded constants.
-// No dependency on the API base URL, so pre-login events can send.
 const getPostHogConfig = environmentProvider
   .load(
     Config.all({
@@ -171,11 +169,12 @@ const readOptionalJson = <A>(filePath: string) =>
     return (yield* decodeJson(raw)) as A;
   }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
 
-// `install_id` = anonymous device UUID; `apollo_user_id` = Apollo `org_member.id`
-// persisted at login, used as the PostHog identity post-login.
 type AnalyticsState = {
   readonly install_id?: string;
   readonly apollo_user_id?: string;
+  // Tracked separately from apollo_user_id so an alias that was never enqueued
+  // (no project key, telemetry off) is retried instead of blocked forever.
+  readonly aliased_apollo_user_id?: string;
   readonly created_at?: string;
 };
 
@@ -216,8 +215,7 @@ const readApolloUserId = Effect.map(readAnalyticsState, state =>
     : null
 );
 
-// Persists the Apollo `org_member.id`, preserving `install_id`/`created_at`.
-const persistApolloUserId = (installId: string, apolloUserId: string) =>
+const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const paths = yield* getAnalyticsPaths;
@@ -227,12 +225,11 @@ const persistApolloUserId = (installId: string, apolloUserId: string) =>
       .pipe(Effect.catchAll(() => Effect.void));
 
     const state = yield* readOptionalJson<AnalyticsState>(paths.analyticsStatePath);
-    const createdAt = state?.created_at ?? DateTime.formatIso(yield* DateTime.now);
     const contents = yield* encodeJson({
       ...(state ?? {}),
       install_id: state?.install_id ?? installId,
-      apollo_user_id: apolloUserId,
-      created_at: createdAt,
+      created_at: state?.created_at ?? DateTime.formatIso(yield* DateTime.now),
+      ...patch,
     });
     yield* fs.writeFileString(paths.analyticsStatePath, contents);
   }).pipe(Effect.catchAll(() => Effect.void));
@@ -256,8 +253,6 @@ const getUserApiKey = Effect.gen(function* () {
     : null;
 });
 
-// Post-login: the Apollo `org_member.id`. Pre-login: the raw `install_id` (the
-// login-time `$create_alias` merges this exact value into the Apollo person).
 const getDistinctId = (installId: string) =>
   Effect.map(readApolloUserId, apolloUserId => apolloUserId ?? installId);
 
@@ -351,8 +346,6 @@ const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
     );
   });
 
-// Shapes an envelope into a PostHog capture body; the public project key
-// authenticates the ingest in-band (no user API key attached).
 const buildPostHogBody = (envelope: AnalyticsEnvelope, projectKey: string) => ({
   api_key: projectKey,
   event: envelope.event,
@@ -492,9 +485,6 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     });
   });
 
-// Hands an envelope to the detached best-effort worker for PostHog delivery.
-// Short-circuits when no project key is configured (the default for OSS forks /
-// local builds) so we never spawn a worker that would only no-op.
 const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
     const { projectKey } = yield* getPostHogConfig;
@@ -503,7 +493,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
         reason: 'missing_project_key',
         eventName: envelope.event,
       });
-      return;
+      return false;
     }
 
     yield* telemetryDebugLog('enqueue', { envelope });
@@ -514,6 +504,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
       encodedPayload
     );
     yield* spawnWorker(command, args);
+    return true;
   });
 
 export const trackCliEventEffect = (event: TrackEvent) =>
@@ -548,13 +539,12 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     yield* enqueuePostHogEnvelope(envelope);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-// Fires one `$create_alias` merging the `install_id` device into the Apollo person.
 export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
     const disabled = yield* analyticsDisabled;
     if (disabled) {
       yield* telemetryDebugLog('alias_skip', { reason: 'disabled', installId });
-      return;
+      return false;
     }
 
     const sentAt = DateTime.formatIso(yield* DateTime.now);
@@ -571,11 +561,14 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
       distinctId: apolloUserId,
       installId,
     };
-    yield* enqueuePostHogEnvelope(envelope);
-  }).pipe(Effect.catchAllCause(() => Effect.void));
+    return yield* enqueuePostHogEnvelope(envelope);
+  }).pipe(Effect.catchAllCause(() => Effect.succeed(false)));
 
-// Called at login: persist the Apollo identity and, on first association, alias
-// the anonymous install into it. Non-fatal so login never fails on telemetry.
+/**
+ * Records the Apollo `org_member.id` as the analytics identity and stitches the
+ * anonymous install into it. Safe to call from any command that already resolved
+ * a session, which is how already-authenticated installs get backfilled.
+ */
 export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
   Effect.gen(function* () {
     const resolved = typeof apolloUserId === 'string' ? apolloUserId.trim() : '';
@@ -583,23 +576,31 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
       return;
     }
 
-    // Disabled telemetry writes nothing — not even the local identity file.
     const disabled = yield* analyticsDisabled;
     if (disabled) {
       yield* telemetryDebugLog('alias_skip', { reason: 'disabled' });
       return;
     }
 
-    const existing = yield* readApolloUserId;
+    const state = yield* readAnalyticsState;
     const installId = yield* getOrCreateInstallId;
-    yield* persistApolloUserId(installId, resolved);
-    // Alias only the first time this install is tied to an Apollo user: a repeat
-    // login is redundant, and PostHog rejects re-aliasing one install into a
-    // second account, so skip once an id has already been persisted.
-    if (existing === null) {
-      yield* emitPostHogAlias(installId, resolved);
+    if (state?.apollo_user_id !== resolved) {
+      yield* mergeAnalyticsState(installId, { apollo_user_id: resolved });
+    }
+
+    if (state?.aliased_apollo_user_id === resolved) {
+      return;
+    }
+    if (yield* emitPostHogAlias(installId, resolved)) {
+      yield* mergeAnalyticsState(installId, { aliased_apollo_user_id: resolved });
     }
   }).pipe(Effect.catchAllCause(() => Effect.void));
+
+/** Drops the Apollo identity on logout so later events revert to `install_id`. */
+export const clearApolloIdentityForAnalytics = Effect.gen(function* () {
+  const installId = yield* getOrCreateInstallId;
+  yield* mergeAnalyticsState(installId, { apollo_user_id: undefined });
+}).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {

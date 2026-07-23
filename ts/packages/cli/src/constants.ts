@@ -78,21 +78,14 @@ export const PROJECT_ENV_FILE_NAME = '.env';
 export const PROJECT_COMPOSIO_DIR = '.composio';
 
 /**
- * PostHog single-event capture endpoint for direct CLI telemetry. Overridable
- * via `COMPOSIO_POSTHOG_INGEST_URL` (tests / staging).
+ * PostHog capture endpoint for CLI telemetry.
  */
 export const COMPOSIO_POSTHOG_INGEST_URL = 'https://us.i.posthog.com/i/v0/e/';
 
-// Injected at build time from the COMPOSIO_POSTHOG_KEY env var via `--define`
-// (see scripts/_shared.ts `posthogBakeArgs`); undefined in dev/test.
 declare const COMPOSIO_POSTHOG_KEY_BAKED: string | undefined;
 
 /**
- * Public, write-only PostHog project write key (project 196278). Client-
- * embeddable by design — it can only ingest events, never read them — same as
- * the dashboard's `NEXT_PUBLIC_POSTHOG_TOKEN`. Sourced from the build-time
- * bake, overridable at runtime via `COMPOSIO_POSTHOG_KEY`. Empty -> telemetry
- * is a no-op.
+ * Public write-only PostHog project key, baked at build from `COMPOSIO_POSTHOG_KEY`.
  */
 export const COMPOSIO_POSTHOG_PROJECT_KEY =
   typeof COMPOSIO_POSTHOG_KEY_BAKED === 'string' ? COMPOSIO_POSTHOG_KEY_BAKED : '';

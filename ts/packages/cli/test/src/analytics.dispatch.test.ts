@@ -5,6 +5,7 @@ import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
+  clearApolloIdentityForAnalytics,
   emitPostHogAlias,
   getCurrentCwdSessionId,
   linkApolloIdentityForAnalytics,
@@ -499,6 +500,71 @@ describe('CLI analytics dispatch', () => {
       // A repeat login with the same Apollo id does not re-emit the alias.
       yield* linkApolloIdentityForAnalytics('om_apollo_login');
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('retries the alias when the first attempt could not be enqueued', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry();
+    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+
+      // No key -> nothing enqueued, so the alias must not be marked as sent.
+      yield* linkApolloIdentityForAnalytics('om_apollo_retry');
+      expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+      const afterSkip = JSON.parse(
+        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+      ) as { apollo_user_id?: string; aliased_apollo_user_id?: string };
+      expect(afterSkip.apollo_user_id).toBe('om_apollo_retry');
+      expect(afterSkip.aliased_apollo_user_id).toBeUndefined();
+
+      // Once a key is configured the alias is attempted again.
+      vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+      yield* linkApolloIdentityForAnalytics('om_apollo_retry');
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const afterRetry = JSON.parse(
+        yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+      ) as { aliased_apollo_user_id?: string };
+      expect(afterRetry.aliased_apollo_user_id).toBe('om_apollo_retry');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('clears the Apollo identity on logout so events revert to install_id', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+      const composioDir = path.join(home, '.composio');
+      yield* fs.makeDirectory(composioDir, { recursive: true });
+      yield* fs.writeFileString(
+        path.join(composioDir, 'analytics.json'),
+        JSON.stringify({ install_id: 'install_logout', apollo_user_id: 'om_apollo_gone' })
+      );
+
+      yield* clearApolloIdentityForAnalytics;
+
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string; apollo_user_id?: string };
+      expect(persisted.install_id).toBe('install_logout');
+      expect(persisted.apollo_user_id).toBeUndefined();
+
+      // Later events fall back to the anonymous install identity.
+      yield* trackCliEventEffect({ name: 'producer_event' });
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+      expect(payload.distinctId).toBe('install_logout');
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
