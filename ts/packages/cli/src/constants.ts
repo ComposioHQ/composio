@@ -78,6 +78,30 @@ export const PROJECT_ENV_FILE_NAME = '.env';
 export const PROJECT_COMPOSIO_DIR = '.composio';
 
 /**
+ * PostHog ingest endpoint the CLI sends telemetry directly to.
+ *
+ * This is the public single-event capture API. It does not depend on the
+ * Composio API base URL, so pre-login install/setup events can be delivered
+ * before the user has ever authenticated. Overridable via the
+ * `COMPOSIO_POSTHOG_INGEST_URL` environment variable (used by tests / staging).
+ */
+export const COMPOSIO_POSTHOG_INGEST_URL = 'https://us.i.posthog.com/i/v0/e/';
+
+/**
+ * Public, write-only PostHog project write key for project 196278
+ * ("Composio Platform"). This is client-embeddable by design (same trust model
+ * as the dashboard JS bundle): it can only ingest events, never read them.
+ *
+ * Overridable via the `COMPOSIO_POSTHOG_KEY` environment variable.
+ *
+ * TODO(kj): fill in the real public `phc_*` project-196278 write key from the
+ * PostHog project settings. While this is empty, direct PostHog delivery is a
+ * safe no-op (the transport skips when no key is configured). Do NOT commit a
+ * real token into tests or fixtures.
+ */
+export const COMPOSIO_POSTHOG_PROJECT_KEY = '';
+
+/**
  * GitHub repository information for release fetching
  */
 export const GITHUB_REPO = {

@@ -5,12 +5,15 @@ import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Layer } from 'effect';
 import * as tempy from 'tempy';
 import {
+  emitPostHogAlias,
   getCurrentCwdSessionId,
+  linkApolloIdentityForAnalytics,
   readApiBaseUrl,
   runBackgroundWorkerFromArgv,
   trackCliCodactFailureEffect,
   trackCliEventEffect,
 } from 'src/analytics/dispatch';
+import { CLI_ANALYTICS_EVENTS } from 'src/analytics/events';
 import { APP_VERSION, USER_CONFIG_FILE_NAME } from 'src/constants';
 import { defaultNodeOs, NodeOs } from 'src/services/node-os';
 import { TerminalUITest } from 'test/__utils__/services/terminal-ui-test';
@@ -149,29 +152,29 @@ describe('CLI analytics dispatch', () => {
     ]).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
-  it.effect('delivers analytics worker payloads to the configured endpoint', () => {
+  it.effect('delivers analytics worker payloads directly to PostHog', () => {
     const home = tempy.temporaryDirectory();
     const envelope = {
       event: 'cli_command_invoked',
+      properties: { cli_version: '9.9.9' },
       sentAt: '2026-07-16T00:00:00.000Z',
       source: 'cli' as const,
-      distinctId: 'anon_test',
+      distinctId: 'install_test',
       installId: 'install_test',
     };
     const encodedPayload = btoa(JSON.stringify(envelope))
       .replace(/\+/gu, '-')
       .replace(/\//gu, '_')
       .replace(/=+$/u, '');
-    vi.stubEnv('COMPOSIO_BASE_URL', 'https://backend.example.test');
-    vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_test');
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('CI', 'false');
-    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
-    vi.stubEnv('TELEMETRY_DISABLED', 'false');
-    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
+    enableTelemetry();
+    // Direct-to-PostHog transport does NOT read the Composio base URL. Overriding
+    // the ingest URL + a fake public key keeps the test off the real project.
+    vi.stubEnv('COMPOSIO_BASE_URL', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
+    vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(null, { status: 204 }));
+      .mockResolvedValue(new Response(null, { status: 200 }));
 
     return Effect.gen(function* () {
       yield* runBackgroundWorkerFromArgv([
@@ -183,16 +186,60 @@ describe('CLI analytics dispatch', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [endpoint, request] = fetchSpy.mock.calls[0]!;
-      expect(String(endpoint)).toBe('https://backend.example.test/api/v3/cli/analytics');
+      expect(String(endpoint)).toBe('https://posthog.example.test/i/v0/e/');
       expect(request).toMatchObject({
         method: 'POST',
         headers: expect.objectContaining({
           'content-type': 'application/json',
           'x-composio-analytics-source': 'cli',
-          'x-user-api-key': 'uak_test',
         }),
       });
-      expect(JSON.parse(new TextDecoder().decode(request?.body as Uint8Array))).toEqual(envelope);
+      // The public write key authenticates in-band; no user API key is attached.
+      expect((request?.headers as Record<string, string>)['x-user-api-key']).toBeUndefined();
+      const body = JSON.parse(new TextDecoder().decode(request?.body as Uint8Array));
+      expect(body).toMatchObject({
+        api_key: 'phc_test_key',
+        event: 'cli_command_invoked',
+        distinct_id: 'install_test',
+        timestamp: '2026-07-16T00:00:00.000Z',
+        properties: expect.objectContaining({
+          cli_version: '9.9.9',
+          install_id: 'install_test',
+          $lib: 'composio-cli',
+        }),
+      });
+    });
+  });
+
+  it.effect('skips PostHog delivery when no project key is configured', () => {
+    const home = tempy.temporaryDirectory();
+    const envelope = {
+      event: 'cli_command_invoked',
+      sentAt: '2026-07-16T00:00:00.000Z',
+      source: 'cli' as const,
+      distinctId: 'install_test',
+      installId: 'install_test',
+    };
+    const encodedPayload = btoa(JSON.stringify(envelope))
+      .replace(/\+/gu, '-')
+      .replace(/\//gu, '_')
+      .replace(/=+$/u, '');
+    enableTelemetry();
+    // No COMPOSIO_POSTHOG_KEY override -> falls back to the empty embedded
+    // placeholder, so delivery is a safe no-op until the real key is filled in.
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 200 }));
+
+    return Effect.gen(function* () {
+      yield* runBackgroundWorkerFromArgv([
+        process.execPath,
+        'composio',
+        '__analytics-worker',
+        encodedPayload,
+      ]).pipe(Effect.provide(makePlatformLayer(home)));
+
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -319,8 +366,107 @@ describe('CLI analytics dispatch', () => {
         failureType: 'wrong_tool_slug',
         ctx: { slug: 'MISSING_TOOL' },
       });
+      yield* emitPostHogAlias('install_disabled', 'apollo_user_disabled');
+      yield* linkApolloIdentityForAnalytics('apollo_user_disabled');
 
       expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('keys pre-login events on the bare install_id', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    // No persisted apollo_user_id and no user API key -> anonymous device identity.
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_SETUP_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+      // Pre-login, distinct_id is the raw install_id (not `anon_<id>`), so the
+      // login-time alias can merge this exact person into the Apollo user.
+      expect(payload.installId.length).toBeGreaterThan(0);
+      expect(payload.distinctId).toBe(payload.installId);
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('keys post-login events on the persisted apollo_user_id', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+      const composioDir = path.join(home, '.composio');
+      yield* fs.makeDirectory(composioDir, { recursive: true });
+      yield* fs.writeFileString(
+        path.join(composioDir, 'analytics.json'),
+        JSON.stringify({ install_id: 'install_persisted', apollo_user_id: 'om_apollo_123' })
+      );
+
+      yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED });
+
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+      expect(payload.distinctId).toBe('om_apollo_123');
+      expect(payload.installId).toBe('install_persisted');
+    }).pipe(Effect.provide(makePlatformLayer(home)));
+  });
+
+  it.effect('persists apollo_user_id and emits exactly one $create_alias at login', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry('');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      yield* fs.writeFileString(scriptPath, '');
+      const composioDir = path.join(home, '.composio');
+      yield* fs.makeDirectory(composioDir, { recursive: true });
+      yield* fs.writeFileString(
+        path.join(composioDir, 'analytics.json'),
+        JSON.stringify({ install_id: 'install_login', created_at: '2026-01-01T00:00:00.000Z' })
+      );
+
+      yield* linkApolloIdentityForAnalytics('om_apollo_login');
+
+      // Exactly one alias event is spawned.
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+      const payload = decodeWorkerPayload<{
+        event: string;
+        distinctId: string;
+        installId: string;
+        properties: { distinct_id: string; alias: string };
+      }>(args[2]!);
+      expect(payload.event).toBe('$create_alias');
+      expect(payload.distinctId).toBe('om_apollo_login');
+      expect(payload.installId).toBe('install_login');
+      expect(payload.properties).toMatchObject({
+        distinct_id: 'om_apollo_login',
+        alias: 'install_login',
+      });
+
+      // The Apollo id is persisted while keeping the original install_id/created_at.
+      const persisted = JSON.parse(
+        yield* fs.readFileString(path.join(composioDir, 'analytics.json'), 'utf8')
+      ) as { install_id: string; apollo_user_id: string; created_at: string };
+      expect(persisted).toMatchObject({
+        install_id: 'install_login',
+        apollo_user_id: 'om_apollo_login',
+        created_at: '2026-01-01T00:00:00.000Z',
+      });
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 

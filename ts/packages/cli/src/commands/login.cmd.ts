@@ -18,6 +18,7 @@ import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
 import { inferSkillReleaseChannel, installSkillSafe } from 'src/effects/install-skill';
 import { handleAgentAuthError } from 'src/effects/handle-agent-auth-error';
+import { linkApolloIdentityForAnalytics } from 'src/analytics/dispatch';
 import { APP_VERSION } from 'src/constants';
 import {
   ensureAgentSignupAllowed,
@@ -323,6 +324,9 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       userApiKey: params.userApiKey,
     });
 
+    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
+
     const selectedOrg = yield* resolveDirectLoginOrganization({
       apiKey: params.userApiKey,
       baseURL: ctx.data.baseURL,
@@ -505,6 +509,9 @@ const loginWithKey = (params: {
       baseURL: ctx.data.baseURL,
       userApiKey: uakApiKey,
     });
+
+    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
+    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
 
     const organizations = params.defaultToFirstOrg
       ? yield* listOrganizations({
@@ -711,6 +718,9 @@ export const browserLogin = (params: {
       baseURL: ctx.data.baseURL,
       userApiKey: uakApiKey,
     });
+
+    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
+    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
 
     // e.g., "pr_xlSR6oN5jIlk"
     const xProjectId = uakSessionInfo.project.nano_id;
