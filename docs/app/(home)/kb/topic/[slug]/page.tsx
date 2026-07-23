@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowLeft, Search } from 'lucide-react';
 import { BrowseResults } from '@/components/kb/browse-results';
 import { getKnowledgeByProductArea } from '@/lib/knowledge/catalog';
@@ -13,6 +13,9 @@ interface TopicPageProps {
 
 export default async function KnowledgeTopicPage({ params }: TopicPageProps) {
   const { slug } = await params;
+  if (slug === 'authentication') {
+    permanentRedirect('/kb/topic/authentication-and-connected-accounts');
+  }
   if (!isProductAreaSlug(slug)) notFound();
   const area = getProductArea(slug);
   const links = await getKnowledgeByProductArea(slug);

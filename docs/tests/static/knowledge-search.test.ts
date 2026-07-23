@@ -9,6 +9,7 @@ import {
   searchKnowledgeRecords,
 } from '@/lib/knowledge/search';
 import { GET } from '@/app/api/knowledge-search/route';
+import { getAlgoliaSearchDocuments } from '@/lib/search-index';
 import type { KnowledgeSourceType } from '@/lib/knowledge/types';
 
 function record(input: {
@@ -114,6 +115,23 @@ describe('unified knowledge search', () => {
     expect(searchKnowledgeRecords(records, {
       query: 'Create a connected account', filter: 'all', limit: 10,
     }).results[0]?.objectID).toBe('exact-reference');
+  });
+
+  test('ranks precise new KB answers ahead of generic documentation', async () => {
+    const records = await getAlgoliaSearchDocuments();
+    const expected = [
+      ['NONEXISTENT_VERSION', 'fix-linkedin-426-nonexistent-version'],
+      ['admin.conversations:write', 'slack-admin-conversation-writes-require-enterprise'],
+      ['Snowflake org-account', 'snowflake-account-id-uses-org-account-format'],
+      ['Stripe sk_test secret key', 'stripe-api-key-connections-require-a-secret-key'],
+      ['Google Calendar primary not me', 'use-primary-for-google-calendar-id'],
+    ] as const;
+
+    for (const [query, slug] of expected) {
+      const result = searchKnowledgeRecords(records, { query, filter: 'all', limit: 10 }).results[0];
+      expect(result?.sourceType).toBe('kb');
+      expect(result?.canonicalUrl).toBe(`/kb/guide/${slug}`);
+    }
   });
 
   test('maps every source filter and keeps examples and changelog in All', () => {

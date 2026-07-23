@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import sitemap from '@/app/sitemap';
 import { GET as getLlmsIndex } from '@/app/llms.txt/route';
 import { getAlgoliaSearchDocuments, getDocsSearchIndexes } from '@/lib/search-index';
@@ -14,6 +16,16 @@ const REQUIRED_PUBLIC_SOURCES: KnowledgeSourceType[] = [
   'reference',
   'changelog',
 ];
+
+function readTree(root: string): string {
+  return readdirSync(root, { withFileTypes: true })
+    .flatMap((entry) => {
+      const file = join(root, entry.name);
+      if (entry.isDirectory()) return [readTree(file)];
+      return entry.isFile() ? [readFileSync(file, 'utf8')] : [];
+    })
+    .join('\n');
+}
 
 describe('unified public knowledge corpus', () => {
   test('contains every public source with normalized canonical metadata', async () => {
@@ -66,5 +78,37 @@ describe('unified public knowledge corpus', () => {
     expect(body).toContain('https://docs.composio.dev/kb/guide/pagination-limits-are-endpoint-specific.md');
     expect(body).not.toContain('/kb/sdk-and-api/pagination-limits-are-endpoint-specific');
     expect(body).not.toContain('https://composio.dev/auth/');
+  });
+
+  test('keeps generated and searchable KB content free of private, obsolete, and held material', async () => {
+    const records = await getAlgoliaSearchDocuments();
+    const searchableKb = records
+      .filter((record) => record.source_type === 'kb')
+      .map((record) => [
+        record.title,
+        record.description,
+        record.canonical_url,
+        record.content,
+        ...(record.keywords ?? []),
+        ...(record.headings ?? []),
+      ].filter(Boolean).join('\n'))
+      .join('\n');
+    const generatedKb = readTree(join(process.cwd(), 'content/kb'));
+    const forbidden = [
+      /\brube\b/i,
+      /\bT-\d{2,}\b/,
+      /app\.plain\.com/i,
+      /slack\.com\/archives\//i,
+      /linear\.app\/composio/i,
+      /X-Amz-(?:Signature|Credential)/i,
+      /(?:\/Users\/|\/home\/|[A-Za-z]:\\Users\\)/,
+      /(?:draft )?response (?:shape|template)/i,
+      /auth-config-list-pages-return-at-most-50-items/i,
+    ];
+
+    for (const pattern of forbidden) {
+      expect(searchableKb).not.toMatch(pattern);
+      expect(generatedKb).not.toMatch(pattern);
+    }
   });
 });

@@ -28,6 +28,7 @@ describe('knowledge browse pages', () => {
     const topicRoute = source('app/(home)/kb/topic/[slug]/page.tsx');
     expect(topicRoute).toContain('isProductAreaSlug');
     expect(topicRoute).toContain('notFound()');
+    expect(topicRoute).toContain("permanentRedirect('/kb/topic/authentication-and-connected-accounts')");
   });
 
   test('combines OAuth and verified support answers on toolkit pages', async () => {
@@ -47,16 +48,26 @@ describe('knowledge browse pages', () => {
     expect(toolkitRoute).toContain('notFound()');
   });
 
-  test('aggregates each verified authentication answer under its toolkit', async () => {
+  test('aggregates every newly authored toolkit answer under its relevant toolkit', async () => {
     const expectedGuides = [
       ['hubspot', 'fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes'],
       ['shopify', 'choose-current-shopify-app-auth-flow'],
+      ['discord', 'choose-discordbot-for-bot-token-operations'],
       ['discordbot', 'choose-discordbot-for-bot-token-operations'],
       ['outlook', 'target-outlook-shared-mailboxes-by-address'],
       ['googlesheets', 'google-sheets-oauth-cannot-be-scoped-to-a-drive-folder'],
+      ['googlesheets', 'google-sheets-auth-configs-require-full-scope-uris'],
       ['googlecalendar', 'use-primary-for-google-calendar-id'],
       ['stripe', 'stripe-api-key-connections-require-a-secret-key'],
       ['snowflake', 'snowflake-account-id-uses-org-account-format'],
+      ['instagram', 'stage-local-instagram-media-before-publishing'],
+      ['canvas', 'resolve-canvas-account-endpoint-access-errors'],
+      ['canvas', 'paginate-canvas-list-results'],
+      ['slack', 'slack-admin-conversation-writes-require-enterprise'],
+      ['slackbot', 'slack-private-conversations-require-separate-history-scopes'],
+      ['linkedin', 'linkedin-company-actions-require-organization-scopes'],
+      ['linkedin', 'fix-linkedin-426-nonexistent-version'],
+      ['airtable', 'batch-airtable-record-updates-in-groups-of-10'],
     ] as const;
 
     for (const [toolkit, slug] of expectedGuides) {
@@ -64,9 +75,6 @@ describe('knowledge browse pages', () => {
         `/kb/guide/${slug}`,
       );
     }
-    expect((await getKnowledgeByToolkit('googlesheets')).map((item) => item.href)).toContain(
-      '/kb/guide/google-sheets-auth-configs-require-full-scope-uris',
-    );
   });
 
   test('keeps featured links canonical and present in the corpus', async () => {

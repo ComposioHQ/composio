@@ -26,6 +26,10 @@ type AnySource =
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
 
+function withoutFrontmatter(content: string): string {
+  return content.replace(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+}
+
 /**
  * Extract heading anchors from raw MDX/markdown content.
  * Falls back to this when data.toc is unavailable (outside Next.js runtime).
@@ -182,7 +186,9 @@ async function getFiles(): Promise<FileObject[]> {
 
       allFiles.push({
         path: page.absolutePath,
-        content: await (page.data as { getText: (mode: string) => Promise<string> }).getText('raw'),
+        content: withoutFrontmatter(
+          await (page.data as { getText: (mode: string) => Promise<string> }).getText('raw'),
+        ),
         url: page.url,
         data: page.data,
       });
@@ -194,7 +200,7 @@ async function getFiles(): Promise<FileObject[]> {
   const extraMdFiles = await Array.fromAsync(glob('content/**/*.md'));
   for (const filePath of extraMdFiles) {
     if (coveredPaths.has(resolve(filePath))) continue;
-    const content = await readFile(filePath, 'utf-8');
+    const content = withoutFrontmatter(await readFile(filePath, 'utf-8'));
     allFiles.push({ path: filePath, content });
   }
 
