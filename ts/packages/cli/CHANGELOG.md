@@ -1,9 +1,5 @@
 # @composio/cli
 
-## Unreleased
-
-- Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
-
 ## 0.3.0
 
 ### Security
@@ -14,6 +10,7 @@
 
 ### Minor Changes
 
+- Telemetry now delivers directly to PostHog, so pre-login `install`/`setup` events are captured. Opt-outs are unchanged.
 - a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
 - 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
 
