@@ -427,27 +427,24 @@ describe('CLI analytics dispatch', () => {
   it.effect('keys post-login events on the persisted apollo_user_id', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
-    enableTelemetry('');
+    enableTelemetry('uak_persisted');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
       yield* fs.writeFileString(scriptPath, '');
-      const composioDir = path.join(home, '.composio');
-      yield* fs.makeDirectory(composioDir, { recursive: true });
-      yield* fs.writeFileString(
-        path.join(composioDir, 'analytics.json'),
-        JSON.stringify({ install_id: 'install_persisted', apollo_user_id: 'om_apollo_123' })
-      );
+
+      // Establish the identity under this credential; the id is only trusted
+      // while that same credential is active.
+      yield* linkApolloIdentityForAnalytics('om_apollo_123');
+      childProcessMocks.spawn.mockClear();
 
       yield* trackCliEventEffect({ name: CLI_ANALYTICS_EVENTS.CLI_EXECUTE_SUCCEEDED });
 
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
       const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
-      const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+      const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
       expect(payload.distinctId).toBe('om_apollo_123');
-      expect(payload.installId).toBe('install_persisted');
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -655,6 +652,66 @@ describe('CLI analytics dispatch', () => {
       ]).pipe(Effect.provide(makePlatformLayer(home)));
 
       expect(fetchSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CLI analytics identity safety', () => {
+    it.effect('does not attribute events to a stale identity when the active key differs', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_user_a');
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+        yield* linkApolloIdentityForAnalytics('om_user_a');
+        childProcessMocks.spawn.mockClear();
+
+        // A script running under a different credential must not inherit user A.
+        vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_user_b');
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+        expect(payload.distinctId).not.toBe('om_user_a');
+        expect(payload.distinctId).toBe(payload.installId);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('does not create the identity file when logging out with telemetry disabled', () => {
+      const home = tempy.temporaryDirectory();
+      enableTelemetry();
+      vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'true');
+
+      return Effect.gen(function* () {
+        yield* clearApolloIdentityForAnalytics;
+
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const exists = yield* fs.exists(path.join(home, '.composio', 'analytics.json'));
+        expect(exists).toBe(false);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('never re-aliases one install onto a second Apollo user', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* linkApolloIdentityForAnalytics('om_first_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+
+        // Logout, then log in as a different user on the same device.
+        yield* clearApolloIdentityForAnalytics;
+        yield* linkApolloIdentityForAnalytics('om_second_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
     });
   });
 });
