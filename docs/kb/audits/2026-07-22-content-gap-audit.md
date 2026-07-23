@@ -17,6 +17,21 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 
 ## Selected first batch
 
+## Existing undeployed pilot articles (10)
+
+- Use Tool Router session files as toolkit inputs — `kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys`
+- Custom connection-data fields are toolkit-specific — `kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific`
+- Pagination limits are endpoint-specific — `kb/platform/pagination/public.md#pagination-limits-are-endpoint-specific`
+- Deduplicate trigger webhook deliveries — `kb/platform/triggers/public.md#trigger-webhook-delivery-is-at-least-once`
+- Ahrefs actions must use the API host — `kb/toolkits/ahrefs/public.md#ahrefs-actions-must-call-api-ahrefs-com-not-ahrefs-com`
+- Use CALENDLY_POST_INVITEE for invitee creation — `kb/toolkits/calendly/public.md#use-calendly-post-invitee-instead-of-deprecated-calendly-create-event-invitee`
+- Use Canva autofill jobs for design content — `kb/toolkits/canva/public.md#use-canva-autofill-jobs-when-content-must-be-populated-into-a-design`
+- Granola MCP metadata comes from the upstream server — `kb/toolkits/granola_mcp/public.md#composio-mirrors-granola-s-official-mcp-server`
+- Inspect Odoo JSON-RPC errors inside HTTP 200 responses — `kb/toolkits/odoo/public.md#json-rpc-access-errors-can-arrive-inside-http-200-responses`
+- Strava athlete limits belong to the OAuth app — `kb/toolkits/strava/public.md#athlete-limit-errors-belong-to-the-oauth-application`
+
+## Newly verified articles (17)
+
 - Reconnect LinkedIn with organization scopes before company-page actions — `kb/toolkits/linkedin/public.md#linkedin-organization-scopes-depend-on-the-toolkit-and-auth-config`
 - Target an Outlook shared mailbox by its address — `kb/toolkits/outlook/public.md#for-outlook-shared-mailboxes-pass-the-shared-mailbox-address-as-user-id-mailbox-target`
 - Batch Airtable multi-record updates in groups of 10 — `kb/toolkits/airtable/public.md#airtable-update-multiple-records-updates-at-most-10-records-per-call`
@@ -34,16 +49,6 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 - Resolve Canvas account-endpoint access errors by checking the account-level role — `kb/toolkits/canvas/public.md#canvas-get-accounts-and-other-account-level-canvas-endpoints-require-admin-permissions`
 - Paginate Canvas list results instead of assuming one response is complete — `kb/toolkits/canvas/public.md#canvas-list-fetch-endpoints-follow-canvas-pagination-behavior-and-may-need-per-page`
 - Choose DiscordBot for bot-token operations and Discord for user-OAuth operations — `kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth-but-discord-oauth-trigger-support-has-been-limited`, `kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types`
-- Use Tool Router session files as toolkit inputs — `kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys`
-- Custom connection-data fields are toolkit-specific — `kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific`
-- Pagination limits are endpoint-specific — `kb/platform/pagination/public.md#pagination-limits-are-endpoint-specific`
-- Deduplicate trigger webhook deliveries — `kb/platform/triggers/public.md#trigger-webhook-delivery-is-at-least-once`
-- Ahrefs actions must use the API host — `kb/toolkits/ahrefs/public.md#ahrefs-actions-must-call-api-ahrefs-com-not-ahrefs-com`
-- Use CALENDLY_POST_INVITEE for invitee creation — `kb/toolkits/calendly/public.md#use-calendly-post-invitee-instead-of-deprecated-calendly-create-event-invitee`
-- Use Canva autofill jobs for design content — `kb/toolkits/canva/public.md#use-canva-autofill-jobs-when-content-must-be-populated-into-a-design`
-- Granola MCP metadata comes from the upstream server — `kb/toolkits/granola_mcp/public.md#composio-mirrors-granola-s-official-mcp-server`
-- Inspect Odoo JSON-RPC errors inside HTTP 200 responses — `kb/toolkits/odoo/public.md#json-rpc-access-errors-can-arrive-inside-http-200-responses`
-- Strava athlete limits belong to the OAuth app — `kb/toolkits/strava/public.md#athlete-limit-errors-belong-to-the-oauth-application`
 
 ## Risk themes
 

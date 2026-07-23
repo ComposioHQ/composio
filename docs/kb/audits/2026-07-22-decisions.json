@@ -17,6 +17,16 @@
     "verificationSource": "Verified local pilot guide on this undeployed branch",
     "supportSignal": "Selected local pilot publication"
   },
+  "kb/platform/pagination/public.md#auth-config-list-pages-return-at-most-50-items": {
+    "proposedTitle": "Auth-config list pages return at most 50 items",
+    "state": "needs-verification",
+    "reason": "Current v3 and v3.1 auth-config list schemas permit limit values up to 1000 and return nullable next_cursor, which conflicts with the public source claim of a deployed maximum of 50 items. Keep this guide held until runtime behavior is confirmed.",
+    "existingUrl": "",
+    "freshness": "time-sensitive",
+    "verificationSource": "docs/public/openapi-v3.json: GET /api/v3/auth_configs parameters[name=limit].description (max allowed is 1000) and responses[200].content[application/json].schema.properties.next_cursor (nullable); docs/public/openapi.json: GET /api/v3.1/auth_configs parameters[name=limit].description (max allowed is 1000) and responses[200].content[application/json].schema.properties.next_cursor (nullable)",
+    "supportSignal": "Held pending schema/runtime reconciliation",
+    "priorityScore": 0
+  },
   "kb/platform/triggers/public.md#trigger-webhook-delivery-is-at-least-once": {
     "proposedTitle": "Deduplicate trigger webhook deliveries",
     "state": "publish",

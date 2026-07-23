@@ -187,6 +187,19 @@ describe('public KB audit', () => {
       expect(ALLOWED_AUDIT_STATES.has(row.state)).toBe(true);
       expect(row.reason.trim()).not.toBe('');
     }
+    expect(
+      Object.fromEntries(
+        [...ALLOWED_AUDIT_STATES].map((state) => [
+          state,
+          rows.filter((row) => row.state === state).length,
+        ]),
+      ),
+    ).toEqual({
+      publish: 29,
+      'link-only': 4,
+      'needs-verification': 636,
+      exclude: 5,
+    });
 
     const decisions = JSON.parse(
       readFileSync(resolve(process.cwd(), 'kb/audits/2026-07-22-decisions.json'), 'utf8'),
@@ -202,6 +215,33 @@ describe('public KB audit', () => {
       expect(decision.verificationSource).toBe('Verified local pilot guide on this undeployed branch');
       expect(decision.supportSignal).toBe('Selected local pilot publication');
     }
+
+    const heldId =
+      'kb/platform/pagination/public.md#auth-config-list-pages-return-at-most-50-items';
+    const heldDecision = decisions[heldId];
+    const heldRow = rows.find(
+      (row) =>
+        row.source_paths === 'kb/platform/pagination/public.md' &&
+        row.source_headings === 'Auth-config list pages return at most 50 items',
+    );
+    expect(heldDecision).toEqual({
+      proposedTitle: 'Auth-config list pages return at most 50 items',
+      state: 'needs-verification',
+      reason:
+        'Current v3 and v3.1 auth-config list schemas permit limit values up to 1000 and return nullable next_cursor, which conflicts with the public source claim of a deployed maximum of 50 items. Keep this guide held until runtime behavior is confirmed.',
+      existingUrl: '',
+      freshness: 'time-sensitive',
+      verificationSource:
+        'docs/public/openapi-v3.json: GET /api/v3/auth_configs parameters[name=limit].description (max allowed is 1000) and responses[200].content[application/json].schema.properties.next_cursor (nullable); docs/public/openapi.json: GET /api/v3.1/auth_configs parameters[name=limit].description (max allowed is 1000) and responses[200].content[application/json].schema.properties.next_cursor (nullable)',
+      supportSignal: 'Held pending schema/runtime reconciliation',
+      priorityScore: 0,
+    });
+    expect(heldRow).toMatchObject({
+      state: 'needs-verification',
+      existing_url: '',
+      freshness: 'time-sensitive',
+      priority_score: '0',
+    });
 
     const verifiedAuthRows = Object.values(decisions).filter(
       (decision) => decision.existingUrl === '/kb/guide/choose-discordbot-for-bot-token-operations' ||
@@ -230,6 +270,8 @@ describe('public KB audit', () => {
     );
     expect(auditMarkdown).toContain('This branch is undeployed.');
     expect(auditMarkdown).toContain('Publish: 29');
+    expect(auditMarkdown).toContain('## Existing undeployed pilot articles (10)');
+    expect(auditMarkdown).toContain('## Newly verified articles (17)');
     expect(auditMarkdown.match(/Choose DiscordBot for bot-token operations and Discord for user-OAuth operations/g)).toHaveLength(1);
   });
 
@@ -388,6 +430,48 @@ describe('public KB audit', () => {
       '`kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types`',
     );
     expect(markdown).toContain('Publish: 2');
+  });
+
+  test('separates priority-zero pilots from newly verified routes while grouping source rows', () => {
+    const rows = [
+      auditRow({
+        id: 'kb/platform/pilot/public.md#pilot',
+        sourcePath: 'kb/platform/pilot/public.md',
+        proposedTitle: 'Existing pilot',
+        existingUrl: '/kb/guide/existing-pilot',
+        priorityScore: 0,
+      }),
+      auditRow({
+        id: 'kb/toolkits/example/public.md#first',
+        sourcePath: 'kb/toolkits/example/public.md',
+        proposedTitle: 'New verified route',
+        existingUrl: '/kb/guide/new-verified-route',
+        priorityScore: 80,
+      }),
+      auditRow({
+        id: 'kb/toolkits/example/public.md#second',
+        sourcePath: 'kb/toolkits/example/public.md',
+        heading: 'Second example',
+        proposedTitle: 'New verified route',
+        existingUrl: '/kb/guide/new-verified-route',
+        priorityScore: 80,
+      }),
+    ];
+    const inventory = {
+      fileCount: 2,
+      levelTwoSectionCount: 3,
+      bodyOnlyFileCount: 0,
+      candidates: rows,
+    };
+
+    const markdown = renderAuditMarkdown(inventory, rows);
+
+    expect(markdown).toContain('## Existing undeployed pilot articles (1)');
+    expect(markdown).toContain('## Newly verified articles (1)');
+    expect(markdown.match(/Existing pilot/g)).toHaveLength(1);
+    expect(markdown.match(/New verified route/g)).toHaveLength(1);
+    expect(markdown).toContain('`kb/toolkits/example/public.md#first`');
+    expect(markdown).toContain('`kb/toolkits/example/public.md#second`');
   });
 
   test('CLI rejects a relative source checkout path', () => {

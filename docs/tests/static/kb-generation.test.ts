@@ -76,6 +76,34 @@ describe('public KB content generation', () => {
     expect(files.some(file => file.startsWith('sdk-and-api/'))).toBe(false);
     expect(files.some(file => file.includes('auth-config-list-pages'))).toBe(false);
 
+    const manifest = JSON.parse(
+      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
+    ) as KbManifest;
+    const published = manifest.guides.filter(guide => guide.state === 'published');
+    const newlyAuthored = published.filter(guide => guide.articlePath !== undefined);
+    const held = manifest.guides.filter(guide => guide.state === 'needs-review');
+    expect(published).toHaveLength(27);
+    expect(newlyAuthored).toHaveLength(17);
+    expect(new Set(newlyAuthored.map(guide => guide.articlePath)).size).toBe(17);
+    expect(new Set(newlyAuthored.map(guide => `/kb/guide/${guide.slug}`)).size).toBe(17);
+    expect(held).toHaveLength(1);
+    expect(held[0]).toMatchObject({
+      slug: 'auth-config-list-pages-return-at-most-50-items',
+      lastVerifiedAt: null,
+      reviewAfter: null,
+    });
+    expect(held[0]?.articlePath).toBeUndefined();
+
+    const toolkitCounts = new Map<string, number>();
+    for (const guide of newlyAuthored) {
+      const toolkit = guide.sources
+        .map(source => source.sourcePath.match(/^kb\/toolkits\/([^/]+)\/public\.md$/)?.[1])
+        .find((slug): slug is string => slug !== undefined);
+      expect(toolkit).toBeDefined();
+      toolkitCounts.set(toolkit, (toolkitCounts.get(toolkit) ?? 0) + 1);
+    }
+    expect([...toolkitCounts.values()].every(count => count <= 3)).toBe(true);
+
     expect(JSON.parse(readFileSync(join(outputDir, 'meta.json'), 'utf8'))).toEqual({
       title: 'Knowledge Base',
       root: true,

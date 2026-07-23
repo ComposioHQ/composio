@@ -164,6 +164,26 @@ function titleCaseState(state: KbAuditState): string {
     : state.slice(0, 1).toUpperCase() + state.slice(1).replace('-', ' ');
 }
 
+function groupSelectedRows(rows: KbAuditRow[]): KbAuditRow[][] {
+  const groups = new Map<string, KbAuditRow[]>();
+  for (const row of rows) {
+    const route = row.existingUrl || row.id;
+    const group = groups.get(route) ?? [];
+    group.push(row);
+    groups.set(route, group);
+  }
+  return [...groups.values()];
+}
+
+function renderSelectedGroups(groups: KbAuditRow[][], emptyMessage: string): string[] {
+  return groups.length
+    ? groups.map((group) => {
+        const [first] = group;
+        return `- ${first?.proposedTitle} — ${group.map((row) => `\`${row.id}\``).join(', ')}`;
+      })
+    : [emptyMessage];
+}
+
 export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRow[]): string {
   const counts = new Map<KbAuditState, number>();
   for (const state of ['publish', 'link-only', 'needs-verification', 'exclude'] as const) {
@@ -177,20 +197,8 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
         left.sourcePath.localeCompare(right.sourcePath) ||
         left.id.localeCompare(right.id),
     );
-  const firstBatchGroups = new Map<string, KbAuditRow[]>();
-  for (const row of firstBatch) {
-    const route = row.existingUrl || row.id;
-    const group = firstBatchGroups.get(route) ?? [];
-    group.push(row);
-    firstBatchGroups.set(route, group);
-  }
-
-  const firstBatchLines = firstBatchGroups.size
-    ? [...firstBatchGroups.values()].map((group) => {
-        const [first] = group;
-        return `- ${first?.proposedTitle} — ${group.map((row) => `\`${row.id}\``).join(', ')}`;
-      })
-    : ['- No candidates have passed the publish gate.'];
+  const pilotGroups = groupSelectedRows(firstBatch.filter((row) => row.priorityScore === 0));
+  const newlyVerifiedGroups = groupSelectedRows(firstBatch.filter((row) => row.priorityScore > 0));
 
   return [
     '# Public KB content-gap audit',
@@ -211,7 +219,13 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
     '',
     '## Selected first batch',
     '',
-    ...firstBatchLines,
+    `## Existing undeployed pilot articles (${pilotGroups.length})`,
+    '',
+    ...renderSelectedGroups(pilotGroups, '- No existing undeployed pilot articles are selected.'),
+    '',
+    `## Newly verified articles (${newlyVerifiedGroups.length})`,
+    '',
+    ...renderSelectedGroups(newlyVerifiedGroups, '- No newly verified articles are selected.'),
     '',
     '## Risk themes',
     '',
