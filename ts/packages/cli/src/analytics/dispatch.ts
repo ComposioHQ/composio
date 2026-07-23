@@ -574,21 +574,31 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
     yield* enqueuePostHogEnvelope(envelope);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-// Called at login: persist the Apollo identity and alias the device into it.
-// Non-fatal so login never fails on telemetry.
+// Called at login: persist the Apollo identity and, on first association, alias
+// the anonymous install into it. Non-fatal so login never fails on telemetry.
 export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
   Effect.gen(function* () {
-    if (typeof apolloUserId !== 'string' || apolloUserId.trim().length === 0) {
+    const resolved = typeof apolloUserId === 'string' ? apolloUserId.trim() : '';
+    if (resolved.length === 0) {
       return;
     }
 
+    // Disabled telemetry writes nothing — not even the local identity file.
     const disabled = yield* analyticsDisabled;
-    const installId = yield* getOrCreateInstallId;
-    yield* persistApolloUserId(installId, apolloUserId);
     if (disabled) {
+      yield* telemetryDebugLog('alias_skip', { reason: 'disabled' });
       return;
     }
-    yield* emitPostHogAlias(installId, apolloUserId);
+
+    const existing = yield* readApolloUserId;
+    const installId = yield* getOrCreateInstallId;
+    yield* persistApolloUserId(installId, resolved);
+    // Alias only the first time this install is tied to an Apollo user: a repeat
+    // login is redundant, and PostHog rejects re-aliasing one install into a
+    // second account, so skip once an id has already been persisted.
+    if (existing === null) {
+      yield* emitPostHogAlias(installId, resolved);
+    }
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>

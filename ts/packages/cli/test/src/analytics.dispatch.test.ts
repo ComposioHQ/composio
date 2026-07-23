@@ -392,6 +392,12 @@ describe('CLI analytics dispatch', () => {
       yield* linkApolloIdentityForAnalytics('apollo_user_disabled');
 
       expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+
+      // Disabled telemetry must not even create the local identity file.
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const exists = yield* fs.exists(path.join(home, '.composio', 'analytics.json'));
+      expect(exists).toBe(false);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
@@ -489,6 +495,10 @@ describe('CLI analytics dispatch', () => {
         apollo_user_id: 'om_apollo_login',
         created_at: '2026-01-01T00:00:00.000Z',
       });
+
+      // A repeat login with the same Apollo id does not re-emit the alias.
+      yield* linkApolloIdentityForAnalytics('om_apollo_login');
+      expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
     }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
