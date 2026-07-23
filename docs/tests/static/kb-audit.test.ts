@@ -233,6 +233,35 @@ describe('public KB audit', () => {
     expect(auditMarkdown.match(/Choose DiscordBot for bot-token operations and Discord for user-OAuth operations/g)).toHaveLength(1);
   });
 
+  test('records priorities and concrete schema-plus-provider evidence for every Task 4 publish row', () => {
+    const decisions = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'kb/audits/2026-07-22-decisions.json'), 'utf8'),
+    ) as Record<string, Record<string, string | number>>;
+    const expected = new Map([
+      ['kb/toolkits/hubspot/public.md#hubspot-oauth-token-fetch-400-check-client-secret-and-required-scope-alignment', 84],
+      ['kb/toolkits/shopify/public.md#shopify-api-key-admin-token-auth-is-deprecated-use-oauth2-or-s2s-auth-instead', 77],
+      ['kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth-but-discord-oauth-trigger-support-has-been-limited', 68],
+      ['kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types', 68],
+      ['kb/toolkits/outlook/public.md#for-outlook-shared-mailboxes-pass-the-shared-mailbox-address-as-user-id-mailbox-target', 91],
+      ['kb/toolkits/googlesheets/public.md#google-sheets-access-cannot-be-restricted-at-folder-level-through-composio', 84],
+      ['kb/toolkits/google_calendar/public.md#use-primary-as-calendar-id-me-is-not-valid-for-calendar-id', 82],
+      ['kb/toolkits/googlesheets/public.md#use-full-google-scope-urls-such-as-https-www-googleapis-com-auth-drive-not-shorthand-drive', 77],
+      ['kb/toolkits/stripe/public.md#for-stripe-api-key-auth-use-the-stripe-secret-key-from-developers-api-keys-standard-keys', 86],
+      ['kb/toolkits/snowflake/public.md#use-one-snowflake-auth-config-per-customer-account-for-multi-tenant-saas-oauth', 83],
+      ['kb/toolkits/snowflake/public.md#fetch-connected-account-fields-or-toolkit-metadata-to-discover-snowflake-account-details', 83],
+    ]);
+
+    expect(expected.size).toBe(11);
+    for (const [id, priority] of expected) {
+      const decision = decisions[id];
+      expect(decision?.state).toBe('publish');
+      expect(Number(decision?.priorityScore)).toBe(priority);
+      expect(Number(decision?.priorityScore)).toBeGreaterThan(0);
+      expect(String(decision?.verificationSource)).toContain('docs/public/data/toolkits.json');
+      expect(String(decision?.verificationSource)).toContain('https://');
+    }
+  });
+
   test('inventories only public documents and preserves section order', () => {
     const root = createFixture();
 

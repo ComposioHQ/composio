@@ -127,8 +127,9 @@
     "reason": "Current HubSpot OAuth requirements and Composio custom-auth guidance verify the narrowed customer-owned-app recovery path.",
     "existingUrl": "/kb/guide/fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes",
     "freshness": "time-sensitive",
-    "verificationSource": "HubSpot OAuth token documentation and current Composio custom-auth guide",
-    "supportSignal": "Verified OAuth token-exchange recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://developers.hubspot.com/docs/api-reference/latest/authentication/manage-oauth-tokens",
+    "supportSignal": "Verified OAuth token-exchange recovery",
+    "priorityScore": 84
   },
   "kb/toolkits/shopify/public.md#shopify-api-key-admin-token-auth-is-deprecated-use-oauth2-or-s2s-auth-instead": {
     "proposedTitle": "Choose a current Shopify app-auth flow instead of copying an admin token",
@@ -136,8 +137,9 @@
     "reason": "Current Shopify authorization-code and client-credentials documentation verifies the selection guidance for new integrations.",
     "existingUrl": "/kb/guide/choose-current-shopify-app-auth-flow",
     "freshness": "time-sensitive",
-    "verificationSource": "Shopify authorization-code and client-credentials documentation",
-    "supportSignal": "Verified provider auth-flow change"
+    "verificationSource": "docs/public/data/toolkits.json; https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/authorization-code-grant; https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/client-credentials-grant",
+    "supportSignal": "Verified provider auth-flow change",
+    "priorityScore": 77
   },
   "kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth-but-discord-oauth-trigger-support-has-been-limited": {
     "proposedTitle": "Choose DiscordBot for bot-token operations and Discord for user-OAuth operations",
@@ -145,8 +147,9 @@
     "reason": "Current toolkit schema evidence and Discord's token model support the narrowed credential-selection guide without making a blanket trigger-availability claim.",
     "existingUrl": "/kb/guide/choose-discordbot-for-bot-token-operations",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Discord and DiscordBot toolkit schema plus Discord developer reference",
-    "supportSignal": "Verified bot-token versus OAuth selection"
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.discord.com/developers/reference",
+    "supportSignal": "Verified bot-token versus OAuth selection",
+    "priorityScore": 68
   },
   "kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types": {
     "proposedTitle": "Choose DiscordBot for bot-token operations and Discord for user-OAuth operations",
@@ -154,8 +157,9 @@
     "reason": "Current toolkit schema evidence and Discord's token model support the narrowed credential-selection guide without making a blanket trigger-availability claim.",
     "existingUrl": "/kb/guide/choose-discordbot-for-bot-token-operations",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Discord and DiscordBot toolkit schema plus Discord developer reference",
-    "supportSignal": "Verified bot-token versus OAuth selection"
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.discord.com/developers/reference",
+    "supportSignal": "Verified bot-token versus OAuth selection",
+    "priorityScore": 68
   },
   "kb/toolkits/outlook/public.md#for-outlook-shared-mailboxes-pass-the-shared-mailbox-address-as-user-id-mailbox-target": {
     "proposedTitle": "Target an Outlook shared mailbox by its address",
@@ -163,8 +167,9 @@
     "reason": "Current Outlook action metadata and Microsoft Graph permission guidance verify the mailbox-target parameter and its access prerequisites.",
     "existingUrl": "/kb/guide/target-outlook-shared-mailboxes-by-address",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Outlook toolkit metadata and Microsoft Graph shared-mailbox documentation",
-    "supportSignal": "Verified mailbox-target parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://learn.microsoft.com/en-us/graph/outlook-share-messages-folders",
+    "supportSignal": "Verified mailbox-target parameter recovery",
+    "priorityScore": 91
   },
   "kb/toolkits/googlesheets/public.md#google-sheets-access-cannot-be-restricted-at-folder-level-through-composio": {
     "proposedTitle": "Google OAuth cannot scope Sheets access to one Drive folder",
@@ -172,8 +177,9 @@
     "reason": "Current Google Drive scope documentation and Google Sheets auth metadata verify that folders are not OAuth authorization boundaries.",
     "existingUrl": "/kb/guide/google-sheets-oauth-cannot-be-scoped-to-a-drive-folder",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Google Sheets auth metadata and Google Drive API scope documentation",
-    "supportSignal": "Verified OAuth scope limitation"
+    "verificationSource": "docs/public/data/toolkits.json; https://developers.google.com/workspace/drive/api/guides/api-specific-auth; https://developers.google.com/identity/protocols/oauth2/scopes",
+    "supportSignal": "Verified OAuth scope limitation",
+    "priorityScore": 84
   },
   "kb/toolkits/google_calendar/public.md#use-primary-as-calendar-id-me-is-not-valid-for-calendar-id": {
     "proposedTitle": "Use primary for the signed-in user's Google Calendar ID",
@@ -181,8 +187,9 @@
     "reason": "Current Google Calendar action metadata and provider calendar-ID documentation verify primary for Calendar ID parameters.",
     "existingUrl": "/kb/guide/use-primary-for-google-calendar-id",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Google Calendar toolkit metadata and Google Calendar API reference",
-    "supportSignal": "Verified calendar-ID parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://developers.google.com/workspace/calendar/api/v3/reference/calendars/get",
+    "supportSignal": "Verified calendar-ID parameter recovery",
+    "priorityScore": 82
   },
   "kb/toolkits/googlesheets/public.md#use-full-google-scope-urls-such-as-https-www-googleapis-com-auth-drive-not-shorthand-drive": {
     "proposedTitle": "Use full Google OAuth scope URIs in Google Sheets auth configs",
@@ -190,8 +197,9 @@
     "reason": "Current Google Sheets auth metadata and Google's published OAuth identifiers verify the full-URI requirement.",
     "existingUrl": "/kb/guide/google-sheets-auth-configs-require-full-scope-uris",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Google Sheets auth metadata and Google OAuth scope catalog",
-    "supportSignal": "Verified scope-parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://developers.google.com/workspace/drive/api/guides/api-specific-auth; https://developers.google.com/identity/protocols/oauth2/scopes",
+    "supportSignal": "Verified scope-parameter recovery",
+    "priorityScore": 77
   },
   "kb/toolkits/stripe/public.md#for-stripe-api-key-auth-use-the-stripe-secret-key-from-developers-api-keys-standard-keys": {
     "proposedTitle": "Use a Stripe secret key for Composio API-key connections",
@@ -199,8 +207,9 @@
     "reason": "Current Composio connection metadata and Stripe's key taxonomy verify the required secret-key value.",
     "existingUrl": "/kb/guide/stripe-api-key-connections-require-a-secret-key",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Stripe toolkit metadata and Stripe API keys documentation",
-    "supportSignal": "Verified credential parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.stripe.com/keys",
+    "supportSignal": "Verified credential parameter recovery",
+    "priorityScore": 86
   },
   "kb/toolkits/snowflake/public.md#use-one-snowflake-auth-config-per-customer-account-for-multi-tenant-saas-oauth": {
     "proposedTitle": "Enter the Snowflake Account ID as org-account",
@@ -208,8 +217,9 @@
     "reason": "Current Snowflake connection metadata and provider account-identifier documentation verify the narrowed hostname-label format.",
     "existingUrl": "/kb/guide/snowflake-account-id-uses-org-account-format",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Snowflake toolkit metadata and Snowflake account identifier documentation",
-    "supportSignal": "Verified connection-parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.snowflake.com/en/user-guide/organizations-connect; https://docs.snowflake.com/en/user-guide/admin-account-identifier",
+    "supportSignal": "Verified connection-parameter recovery",
+    "priorityScore": 83
   },
   "kb/toolkits/snowflake/public.md#fetch-connected-account-fields-or-toolkit-metadata-to-discover-snowflake-account-details": {
     "proposedTitle": "Enter the Snowflake Account ID as org-account",
@@ -217,7 +227,8 @@
     "reason": "Current Snowflake connection metadata and provider account-identifier documentation verify the narrowed hostname-label format.",
     "existingUrl": "/kb/guide/snowflake-account-id-uses-org-account-format",
     "freshness": "time-sensitive",
-    "verificationSource": "Current Snowflake toolkit metadata and Snowflake account identifier documentation",
-    "supportSignal": "Verified connection-parameter recovery"
+    "verificationSource": "docs/public/data/toolkits.json; https://docs.snowflake.com/en/user-guide/organizations-connect; https://docs.snowflake.com/en/user-guide/admin-account-identifier",
+    "supportSignal": "Verified connection-parameter recovery",
+    "priorityScore": 83
   }
 }

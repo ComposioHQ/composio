@@ -187,6 +187,23 @@ describe('public KB content generation', () => {
     expect(generated).not.toContain('articlePath');
   });
 
+  test('publishes the narrowed Stripe guidance and toolkit-specific Discord references', () => {
+    const stripe = readFileSync(
+      join(process.cwd(), 'content/kb/guide/stripe-api-key-connections-require-a-secret-key.mdx'),
+      'utf8',
+    );
+    const discord = readFileSync(
+      join(process.cwd(), 'content/kb/guide/choose-discordbot-for-bot-token-operations.mdx'),
+      'utf8',
+    );
+
+    expect(stripe).toContain('`sk_test_`');
+    expect(stripe).toContain('`sk_live_`');
+    expect(stripe).not.toContain('Stripe Connect');
+    expect(discord).toContain('](/toolkits/discord)');
+    expect(discord).toContain('](/toolkits/discordbot)');
+  });
+
   test('detects generated content drift in check mode', () => {
     const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
     temporaryDirectories.push(outputDir);
