@@ -271,6 +271,22 @@ describe('public KB content generation', () => {
     expect(counts.get('linkedin')).toBe(2);
   });
 
+  test('requires a Slack user token for Enterprise admin conversation writes', () => {
+    const article = readFileSync(
+      join(process.cwd(), 'kb/articles/slack-admin-conversation-writes-require-enterprise.md'),
+      'utf8',
+    );
+    const generated = readFileSync(
+      join(process.cwd(), 'content/kb/guide/slack-admin-conversation-writes-require-enterprise.mdx'),
+      'utf8',
+    );
+
+    for (const body of [article, generated]) {
+      expect(body).toContain('user token with `admin.conversations:write`');
+      expect(body).toContain('A bot token with that scope is insufficient');
+    }
+  });
+
   test('detects generated content drift in check mode', () => {
     const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
     temporaryDirectories.push(outputDir);
