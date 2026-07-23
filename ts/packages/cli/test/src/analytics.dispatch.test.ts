@@ -56,6 +56,9 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
   vi.stubEnv('TELEMETRY_DISABLED', 'false');
   vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
+  // A configured project key is what gates delivery/worker spawning; enabled
+  // telemetry implies a target. The no-key path is covered explicitly below.
+  vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
 };
 
 const decodeWorkerPayload = <A>(encodedPayload: string): A => {
@@ -225,8 +228,9 @@ describe('CLI analytics dispatch', () => {
       .replace(/\//gu, '_')
       .replace(/=+$/u, '');
     enableTelemetry();
-    // No COMPOSIO_POSTHOG_KEY override -> falls back to the empty embedded
-    // placeholder, so delivery is a safe no-op until the real key is filled in.
+    // No project key -> the empty embedded placeholder, so the worker's delivery
+    // is a safe no-op until the real key is baked in.
+    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -241,6 +245,24 @@ describe('CLI analytics dispatch', () => {
 
       expect(fetchSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it.effect('does not spawn a worker when no project key is configured', () => {
+    const home = tempy.temporaryDirectory();
+    const scriptPath = `${home}/composio.ts`;
+    enableTelemetry();
+    // Empty key: forks / local builds without a baked key must not spawn a
+    // detached worker on every command just to have it no-op.
+    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    process.argv[1] = scriptPath;
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      yield* fs.writeFileString(scriptPath, '');
+      yield* trackCliEventEffect({ name: 'producer_event', properties: { sample: 'value' } });
+
+      expect(childProcessMocks.spawn).not.toHaveBeenCalled();
+    }).pipe(Effect.provide(makePlatformLayer(home)));
   });
 
   it.effect('spawns a detached analytics worker with a decodable envelope', () => {

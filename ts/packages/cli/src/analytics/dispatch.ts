@@ -351,8 +351,8 @@ const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
     );
   });
 
-// Shapes an envelope into a PostHog capture body. The public project key
-// authenticates the ingest in-band — no user API key, so pre-login events send.
+// Shapes an envelope into a PostHog capture body; the public project key
+// authenticates the ingest in-band (no user API key attached).
 const buildPostHogBody = (envelope: AnalyticsEnvelope, projectKey: string) => ({
   api_key: projectKey,
   event: envelope.event,
@@ -493,8 +493,19 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   });
 
 // Hands an envelope to the detached best-effort worker for PostHog delivery.
+// Short-circuits when no project key is configured (the default for OSS forks /
+// local builds) so we never spawn a worker that would only no-op.
 const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
+    const { projectKey } = yield* getPostHogConfig;
+    if (projectKey.length === 0) {
+      yield* telemetryDebugLog('enqueue_skipped', {
+        reason: 'missing_project_key',
+        eventName: envelope.event,
+      });
+      return;
+    }
+
     yield* telemetryDebugLog('enqueue', { envelope });
     const serializedEnvelope = yield* encodeJson(envelope);
     const encodedPayload = Encoding.encodeBase64Url(serializedEnvelope);

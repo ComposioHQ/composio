@@ -324,7 +324,6 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       userApiKey: params.userApiKey,
     });
 
-    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
     yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
 
     const selectedOrg = yield* resolveDirectLoginOrganization({
@@ -510,7 +509,6 @@ const loginWithKey = (params: {
       userApiKey: uakApiKey,
     });
 
-    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
     yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
 
     const organizations = params.defaultToFirstOrg
@@ -719,7 +717,6 @@ export const browserLogin = (params: {
       userApiKey: uakApiKey,
     });
 
-    // Stitch the anonymous pre-login install into the Apollo person (non-fatal).
     yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
 
     // e.g., "pr_xlSR6oN5jIlk"
