@@ -177,9 +177,19 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
         left.sourcePath.localeCompare(right.sourcePath) ||
         left.id.localeCompare(right.id),
     );
+  const firstBatchGroups = new Map<string, KbAuditRow[]>();
+  for (const row of firstBatch) {
+    const route = row.existingUrl || row.id;
+    const group = firstBatchGroups.get(route) ?? [];
+    group.push(row);
+    firstBatchGroups.set(route, group);
+  }
 
-  const firstBatchLines = firstBatch.length
-    ? firstBatch.map((row) => `- ${row.proposedTitle} — \`${row.id}\``)
+  const firstBatchLines = firstBatchGroups.size
+    ? [...firstBatchGroups.values()].map((group) => {
+        const [first] = group;
+        return `- ${first?.proposedTitle} — ${group.map((row) => `\`${row.id}\``).join(', ')}`;
+      })
     : ['- No candidates have passed the publish gate.'];
 
   return [
@@ -212,7 +222,7 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
     '',
     '- `platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear exist only in `public-kb` relative to current canonical public pages and require canonical proposals plus verification.',
     '- `routing` is internal and excluded.',
-    '- `toolkits/rube` is obsolete naming and excluded; any durable consumer fact must be rewritten for Composio For You in canonical support knowledge.',
+    '- Obsolete consumer-product naming is excluded; any durable consumer fact must be rewritten for Composio For You in canonical support knowledge.',
     '- `README` and `index` are navigation, not article candidates.',
     '',
   ].join('\n');

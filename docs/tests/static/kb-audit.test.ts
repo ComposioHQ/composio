@@ -191,7 +191,9 @@ describe('public KB audit', () => {
     const decisions = JSON.parse(
       readFileSync(resolve(process.cwd(), 'kb/audits/2026-07-22-decisions.json'), 'utf8'),
     ) as Record<string, Record<string, string>>;
-    const pilotDecisions = Object.values(decisions).filter((decision) => decision.state === 'publish');
+    const pilotDecisions = Object.values(decisions).filter(
+      (decision) => decision.reason === 'This is a verified local pilot guide selected for publication and not yet deployed from this branch.',
+    );
     expect(pilotDecisions).toHaveLength(10);
     for (const decision of pilotDecisions) {
       expect(decision.existingUrl.startsWith('/kb/guide/')).toBe(true);
@@ -199,6 +201,24 @@ describe('public KB audit', () => {
       expect(decision.reason).toContain('not yet deployed');
       expect(decision.verificationSource).toBe('Verified local pilot guide on this undeployed branch');
       expect(decision.supportSignal).toBe('Selected local pilot publication');
+    }
+
+    const verifiedAuthRows = Object.values(decisions).filter(
+      (decision) => decision.existingUrl === '/kb/guide/choose-discordbot-for-bot-token-operations' ||
+        decision.existingUrl === '/kb/guide/snowflake-account-id-uses-org-account-format' ||
+        decision.existingUrl?.startsWith('/kb/guide/fix-hubspot-') ||
+        decision.existingUrl?.startsWith('/kb/guide/choose-current-shopify-') ||
+        decision.existingUrl?.startsWith('/kb/guide/target-outlook-') ||
+        decision.existingUrl?.startsWith('/kb/guide/google-sheets-') ||
+        decision.existingUrl === '/kb/guide/use-primary-for-google-calendar-id' ||
+        decision.existingUrl === '/kb/guide/stripe-api-key-connections-require-a-secret-key',
+    );
+    expect(verifiedAuthRows).toHaveLength(11);
+    for (const decision of verifiedAuthRows) {
+      expect(decision.state).toBe('publish');
+      expect(decision.freshness).toBe('time-sensitive');
+      expect(decision.reason).toContain('Current');
+      expect(decision.verificationSource).toMatch(/toolkit|documentation|reference|catalog/i);
     }
 
     const auditMarkdown = readFileSync(
@@ -209,6 +229,8 @@ describe('public KB audit', () => {
       '`publish` means selected and prepared for publication, not proof of live deployment.',
     );
     expect(auditMarkdown).toContain('This branch is undeployed.');
+    expect(auditMarkdown).toContain('Publish: 21');
+    expect(auditMarkdown.match(/Choose DiscordBot for bot-token operations and Discord for user-OAuth operations/g)).toHaveLength(1);
   });
 
   test('inventories only public documents and preserves section order', () => {
@@ -272,6 +294,46 @@ describe('public KB audit', () => {
     expect(markdown).toContain(
       '`platform/compliance-data-handling`, Google Classroom, Google Tasks, Kommo, and Linear exist only in `public-kb` relative to current canonical public pages and require canonical proposals plus verification.',
     );
+    expect(markdown).toContain(
+      'Obsolete consumer-product naming is excluded; any durable consumer fact must be rewritten for Composio For You in canonical support knowledge.',
+    );
+  });
+
+  test('groups selected source rows that share one guide route', () => {
+    const rows = [
+      auditRow({
+        id: 'kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth',
+        sourcePath: 'kb/toolkits/discord/public.md',
+        heading: 'Discord message triggers require bot-token auth',
+        proposedTitle: 'Choose Discordbot for bot-token operations',
+        existingUrl: '/kb/guide/choose-discordbot-for-bot-token-operations',
+      }),
+      auditRow({
+        id: 'kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types',
+        sourcePath: 'kb/toolkits/discordbot/public.md',
+        heading: 'Discord and DiscordBot use different token types',
+        proposedTitle: 'Choose Discordbot for bot-token operations',
+        existingUrl: '/kb/guide/choose-discordbot-for-bot-token-operations',
+      }),
+    ];
+    const inventory = {
+      fileCount: 2,
+      levelTwoSectionCount: 2,
+      bodyOnlyFileCount: 0,
+      candidates: rows,
+    };
+
+    const markdown = renderAuditMarkdown(inventory, rows);
+    const selected = markdown.slice(markdown.indexOf('## Selected first batch'));
+
+    expect(selected.match(/Choose Discordbot for bot-token operations/g)).toHaveLength(1);
+    expect(selected).toContain(
+      '`kb/toolkits/discord/public.md#discord-message-triggers-require-bot-token-auth`',
+    );
+    expect(selected).toContain(
+      '`kb/toolkits/discordbot/public.md#discord-and-discordbot-use-different-token-types`',
+    );
+    expect(markdown).toContain('Publish: 2');
   });
 
   test('CLI rejects a relative source checkout path', () => {

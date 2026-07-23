@@ -1,0 +1,22 @@
+---
+title: "Use primary for the signed-in user's Google Calendar ID"
+description: "Use primary for a primary calendar parameter and a returned ID for secondary or shared calendars."
+keywords: ["googlecalendar","calendar-id","oauth","parameters","authentication","connected-accounts","toolkits"]
+sources: [{"sourcePath":"kb/toolkits/google_calendar/public.md","sourceHeading":"Use `primary` as calendar ID; `me` is not valid for calendar ID"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["authentication","connected-accounts","toolkits"]
+aliases: []
+---
+Use `primary` when a Google Calendar parameter expects the signed-in user's primary calendar ID. Do not use `me` as a calendar ID.
+
+## Select the correct value
+
+- Use `primary` for the authenticated user's primary calendar.
+- For a secondary or shared calendar, first list calendars and pass the returned calendar ID.
+
+This rule is only for parameters that expect a Google Calendar ID. Gmail `userId` parameters can legitimately use `me`, so do not carry that alias across Google toolkits.
+
+Connect the account through [Composio authentication](/docs/authentication) and consult Google's [Calendars: get reference](https://developers.google.com/workspace/calendar/api/v3/reference/calendars/get) for the current Calendar ID contract.

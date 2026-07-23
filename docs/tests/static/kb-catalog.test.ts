@@ -254,10 +254,10 @@ This is the second safe answer.`);
     ).toThrow('stable-answer.md contains Plain thread reference');
   });
 
-  test('loads the first ten published guides and one held guide from the pinned snapshot', () => {
+  test('loads the published authentication answers from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 
-    expect(published).toHaveLength(10);
+    expect(published).toHaveLength(19);
     expect(published.map(guide => guide.slug)).toEqual(
       expect.arrayContaining([
         'deduplicate-trigger-webhook-deliveries',
@@ -268,6 +268,15 @@ This is the second safe answer.`);
         'granola-mcp-metadata-comes-from-the-upstream-server',
         'inspect-odoo-json-rpc-errors-inside-http-200-responses',
         'strava-athlete-limits-belong-to-the-oauth-app',
+        'fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes',
+        'choose-current-shopify-app-auth-flow',
+        'choose-discordbot-for-bot-token-operations',
+        'target-outlook-shared-mailboxes-by-address',
+        'google-sheets-oauth-cannot-be-scoped-to-a-drive-folder',
+        'use-primary-for-google-calendar-id',
+        'google-sheets-auth-configs-require-full-scope-uris',
+        'stripe-api-key-connections-require-a-secret-key',
+        'snowflake-account-id-uses-org-account-format',
       ])
     );
     expect(getKbCatalog().guides.filter(guide => guide.state === 'needs-review')).toHaveLength(1);

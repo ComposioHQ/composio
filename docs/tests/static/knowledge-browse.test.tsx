@@ -47,6 +47,28 @@ describe('knowledge browse pages', () => {
     expect(toolkitRoute).toContain('notFound()');
   });
 
+  test('aggregates each verified authentication answer under its toolkit', async () => {
+    const expectedGuides = [
+      ['hubspot', 'fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes'],
+      ['shopify', 'choose-current-shopify-app-auth-flow'],
+      ['discordbot', 'choose-discordbot-for-bot-token-operations'],
+      ['outlook', 'target-outlook-shared-mailboxes-by-address'],
+      ['googlesheets', 'google-sheets-oauth-cannot-be-scoped-to-a-drive-folder'],
+      ['googlecalendar', 'use-primary-for-google-calendar-id'],
+      ['stripe', 'stripe-api-key-connections-require-a-secret-key'],
+      ['snowflake', 'snowflake-account-id-uses-org-account-format'],
+    ] as const;
+
+    for (const [toolkit, slug] of expectedGuides) {
+      expect((await getKnowledgeByToolkit(toolkit)).map((item) => item.href)).toContain(
+        `/kb/guide/${slug}`,
+      );
+    }
+    expect((await getKnowledgeByToolkit('googlesheets')).map((item) => item.href)).toContain(
+      '/kb/guide/google-sheets-auth-configs-require-full-scope-uris',
+    );
+  });
+
   test('keeps featured links canonical and present in the corpus', async () => {
     expect((await getFeaturedKnowledgeLinks()).map((item) => item.href)).toEqual([
       '/kb/guide/pagination-limits-are-endpoint-specific',

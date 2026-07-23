@@ -1,0 +1,21 @@
+---
+title: "Google OAuth cannot scope Sheets access to one Drive folder"
+description: "Use scopes, sharing, and application controls because a Drive folder is not an OAuth authorization boundary."
+keywords: ["googlesheets","google-drive","oauth","scopes","authentication","connected-accounts","toolkits"]
+sources: [{"sourcePath":"kb/toolkits/googlesheets/public.md","sourceHeading":"Google Sheets access cannot be restricted at folder level through Composio"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["authentication","connected-accounts","toolkits"]
+aliases: []
+---
+A Drive folder is not an OAuth authorization boundary. You cannot restrict a Google Sheets connection to one folder merely by choosing that folder in Composio or relying on its membership.
+
+## Choose a narrower design when needed
+
+Use the narrowest Google scope that supports the workflow. Where it fits, `drive.file` can limit access to files the user explicitly opens with or shares with the app. For stronger product-specific restrictions, maintain an application-level allowlist of spreadsheet IDs.
+
+Folder membership alone does not constrain the OAuth token, and broad Drive scopes may still be appropriate for workflows that need them. Configure the connection through [Composio authentication](/docs/authentication), then apply file sharing and your own application controls deliberately.
+
+Google documents the available choices in its [Drive API scope guide](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).

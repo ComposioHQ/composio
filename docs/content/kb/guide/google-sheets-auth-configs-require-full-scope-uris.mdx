@@ -1,0 +1,19 @@
+---
+title: "Use full Google OAuth scope URIs in Google Sheets auth configs"
+description: "Enter provider-published full OAuth scope URIs rather than shorthand path values."
+keywords: ["googlesheets","oauth","scopes","auth-configs","authentication","connected-accounts","toolkits"]
+sources: [{"sourcePath":"kb/toolkits/googlesheets/public.md","sourceHeading":"Use full Google scope URLs such as `https://www.googleapis.com/auth/drive`, not shorthand `/drive`"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["authentication","connected-accounts","toolkits"]
+aliases: []
+---
+In a Google Sheets auth config, enter full OAuth scope URIs such as `https://www.googleapis.com/auth/drive`, not shorthand such as `/drive`.
+
+## Configure scopes precisely
+
+Use the provider-published URI values in the current comma-separated `scopes` field. Choose the narrowest URI that supports the workflow; a broad Drive scope is not automatically appropriate.
+
+After changing scopes, reconnect so the user grants the updated set. [Composio authentication](/docs/authentication) explains the connection flow, and Google's [OAuth scope catalog](https://developers.google.com/identity/protocols/oauth2/scopes) is the source of valid scope identifiers.

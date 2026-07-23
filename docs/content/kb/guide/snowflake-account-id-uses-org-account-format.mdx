@@ -1,0 +1,21 @@
+---
+title: "Enter the Snowflake Account ID as org-account"
+description: "Use the current Composio connection field's hostname-label form without a URL prefix or Snowflake domain suffix."
+keywords: ["snowflake","oauth","account-id","auth-configs","authentication","connected-accounts","toolkits"]
+sources: [{"sourcePath":"kb/toolkits/snowflake/public.md","sourceHeading":"Use one Snowflake auth config per customer account for multi-tenant SaaS OAuth"},{"sourcePath":"kb/toolkits/snowflake/public.md","sourceHeading":"Fetch connected-account fields or toolkit metadata to discover Snowflake account details"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["authentication","connected-accounts","toolkits"]
+aliases: []
+---
+For Composio's current Snowflake OAuth connection-initiation field, enter the Account ID as the hostname label `org-account`, for example `myorg-myaccount`.
+
+## Format the connection value
+
+Use the organization and account names joined with a hyphen. Do not include `https://` or the `.snowflakecomputing.com` suffix. Store the auth-config ID with the customer so each tenant connects through that customer's Snowflake OAuth configuration.
+
+This hyphenated value is specific to the current Composio connection field. Do not assume every Snowflake API or SQL surface uses the same format; some provider surfaces use `org.account`. If the connection field changes, treat the current toolkit metadata as the final authority.
+
+Use [Composio authentication](/docs/authentication) for the connection workflow and Snowflake's [account identifier documentation](https://docs.snowflake.com/en/user-guide/admin-account-identifier) for provider identifier formats.

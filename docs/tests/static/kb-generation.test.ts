@@ -40,8 +40,8 @@ describe('public KB content generation', () => {
     const summary = generateKbContent({ outputDir });
     const files = listFiles(outputDir);
 
-    expect(summary).toEqual({ published: 10, held: 1, files: files.length });
-    expect(files).toHaveLength(13);
+    expect(summary).toEqual({ published: 19, held: 1, files: files.length });
+    expect(files).toHaveLength(22);
     expect(files).toContain('index.mdx');
     expect(files).toContain('meta.json');
     expect(files).toContain('guide/meta.json');
@@ -55,6 +55,15 @@ describe('public KB content generation', () => {
     expect(files).toContain('guide/granola-mcp-metadata-comes-from-the-upstream-server.mdx');
     expect(files).toContain('guide/inspect-odoo-json-rpc-errors-inside-http-200-responses.mdx');
     expect(files).toContain('guide/strava-athlete-limits-belong-to-the-oauth-app.mdx');
+    expect(files).toContain('guide/fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes.mdx');
+    expect(files).toContain('guide/choose-current-shopify-app-auth-flow.mdx');
+    expect(files).toContain('guide/choose-discordbot-for-bot-token-operations.mdx');
+    expect(files).toContain('guide/target-outlook-shared-mailboxes-by-address.mdx');
+    expect(files).toContain('guide/google-sheets-oauth-cannot-be-scoped-to-a-drive-folder.mdx');
+    expect(files).toContain('guide/use-primary-for-google-calendar-id.mdx');
+    expect(files).toContain('guide/google-sheets-auth-configs-require-full-scope-uris.mdx');
+    expect(files).toContain('guide/stripe-api-key-connections-require-a-secret-key.mdx');
+    expect(files).toContain('guide/snowflake-account-id-uses-org-account-format.mdx');
     expect(files.some(file => file.startsWith('toolkits/'))).toBe(false);
     expect(files.some(file => file.startsWith('sdk-and-api/'))).toBe(false);
     expect(files.some(file => file.includes('auth-config-list-pages'))).toBe(false);
@@ -77,6 +86,15 @@ describe('public KB content generation', () => {
         'granola-mcp-metadata-comes-from-the-upstream-server',
         'inspect-odoo-json-rpc-errors-inside-http-200-responses',
         'strava-athlete-limits-belong-to-the-oauth-app',
+        'fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes',
+        'choose-current-shopify-app-auth-flow',
+        'choose-discordbot-for-bot-token-operations',
+        'target-outlook-shared-mailboxes-by-address',
+        'google-sheets-oauth-cannot-be-scoped-to-a-drive-folder',
+        'use-primary-for-google-calendar-id',
+        'google-sheets-auth-configs-require-full-scope-uris',
+        'stripe-api-key-connections-require-a-secret-key',
+        'snowflake-account-id-uses-org-account-format',
       ],
     });
 

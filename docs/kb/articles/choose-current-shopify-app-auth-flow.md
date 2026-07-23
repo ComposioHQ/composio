@@ -1,0 +1,14 @@
+For a new Shopify integration, choose a provider-supported OAuth flow for user-facing access or a server-to-server/client-credentials flow for an app-owned backend. Do not start a new integration by copying an Admin API token from Shopify admin.
+
+## Choose the right model
+
+- Use OAuth when a merchant authorizes access through your app.
+- Use Shopify's client-credentials path only when the integration is genuinely server-to-server and your app owns that relationship.
+
+Existing admin-created tokens are not automatically invalid. The change is about the supported path for new work, so keep an existing integration only while its provider-supported configuration remains appropriate.
+
+## Connect it through Composio
+
+Create or bring a Shopify app with the scopes and redirect setup your flow needs, then configure its credentials through [Composio authentication](/docs/authentication). If an auth screen asks for an Admin API key, check that the auth config has not selected a deprecated API-key mode.
+
+See Shopify's [authorization-code grant](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/authorization-code-grant) and [client-credentials grant](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/client-credentials-grant) for the current provider requirements.

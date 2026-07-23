@@ -1,0 +1,26 @@
+---
+title: "Target an Outlook shared mailbox by its address"
+description: "Pass the shared mailbox address only after the authentication model has been granted the necessary access."
+keywords: ["outlook","shared-mailboxes","oauth","microsoft-graph","authentication","connected-accounts","toolkits"]
+sources: [{"sourcePath":"kb/toolkits/outlook/public.md","sourceHeading":"For Outlook shared mailboxes, pass the shared mailbox address as `user_id`/mailbox target"}]
+sourceCommit: "5eed614"
+lastVerifiedAt: "2026-07-22"
+reviewAfter: "2026-10-20"
+freshness: "time-sensitive"
+topics: ["authentication","connected-accounts","toolkits"]
+aliases: []
+---
+For an Outlook action that exposes `user_id` or a mailbox target, pass the shared mailbox's address (UPN) to select that mailbox. The address selects the target; it does not grant access.
+
+## Confirm access first
+
+The caller must already have the tenant and Graph permissions needed for the chosen authentication model:
+
+- Delegated access requires tenant delegation and the applicable `Mail.*.Shared` OAuth permission.
+- Application or server-to-server access requires the applicable Graph application permission and tenant admin consent.
+
+## Target the mailbox
+
+After those prerequisites are in place, set the action's mailbox or `user_id` field to the shared mailbox address and retry the action. Apply this only to Outlook actions that actually expose such a target field.
+
+Use [Composio authentication](/docs/authentication) to reconnect after changing access, and see Microsoft Graph's [shared and delegated mail folders guidance](https://learn.microsoft.com/en-us/graph/outlook-share-messages-folders) for provider permission details.
