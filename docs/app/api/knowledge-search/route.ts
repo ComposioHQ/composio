@@ -7,6 +7,7 @@ import {
 } from '@/lib/search-index';
 import {
   algoliaFacetFilters,
+  filterLegacyReferenceRecords,
   isKnowledgeFilter,
   knowledgeSearchResultFromRecord,
   searchKnowledgeRecords,
@@ -51,16 +52,23 @@ async function searchAlgolia(
   });
   const result = response.results[0];
   const hits = result.hits ?? [];
-  const mapped = hits
-    .filter((hit) => hit.source_type && hit.canonical_url)
-    .filter((hit) => filter !== 'reference' || hit.source_type !== 'legacy' ||
-      hit.title.toLowerCase() === query.toLowerCase())
+  const visibleHits = filterLegacyReferenceRecords(
+    hits.filter((hit) => hit.source_type && hit.canonical_url),
+    query,
+    filter,
+  );
+  const mapped = visibleHits
     .map((hit) => knowledgeSearchResultFromRecord(
       hit,
       hit._snippetResult?.content?.value ?? hit._highlightResult?.description?.value,
     ));
 
-  return { query, filter, results: mapped, total: result.nbHits ?? mapped.length };
+  return {
+    query,
+    filter,
+    results: mapped,
+    total: filter === 'reference' ? mapped.length : (result.nbHits ?? mapped.length),
+  };
 }
 
 export async function GET(request: Request): Promise<Response> {

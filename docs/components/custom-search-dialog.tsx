@@ -225,7 +225,10 @@ export default function CustomSearchDialog({
   const trackAlgoliaClick = useCallback((href: string) => {
     const url = new URL(href, window.location.origin);
     const path = `${url.pathname}${url.hash}`;
-    const hit = algoliaHitMetaRef.current.get(path) ?? algoliaHitMetaRef.current.get(url.pathname);
+    const hit = algoliaHitMetaRef.current.get(href) ??
+      algoliaHitMetaRef.current.get(url.href) ??
+      algoliaHitMetaRef.current.get(path) ??
+      algoliaHitMetaRef.current.get(url.pathname);
     const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME ?? 'docs_composio';
 
     if (!hit) return;

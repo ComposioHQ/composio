@@ -110,6 +110,53 @@ function textualTier(record: AlgoliaDocsRecord, normalizedQuery: string): number
   return null;
 }
 
+export function filterLegacyReferenceRecords<T extends AlgoliaDocsRecord>(
+  records: T[],
+  query: string,
+  filter: KnowledgeFilter,
+): T[] {
+  if (filter !== 'reference') return records;
+
+  const normalizedQuery = normalize(query);
+  const hasCurrentExactMatch = records.some((record) => {
+    if (record.source_type !== 'reference') return false;
+    return (textualTier(record, normalizedQuery) ?? -1) >= 5;
+  });
+
+  return records.filter((record) => {
+    if (record.source_type !== 'legacy') return true;
+    return !hasCurrentExactMatch && (textualTier(record, normalizedQuery) ?? -1) >= 5;
+  });
+}
+
+function decodeHtmlEntities(value: string): string {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    apos: "'",
+    gt: '>',
+    lt: '<',
+    nbsp: ' ',
+    quot: '"',
+  };
+
+  return value.replace(/&(#x[\da-f]+|#\d+|amp|apos|gt|lt|nbsp|quot);/gi, (match, entity: string) => {
+    if (entity.startsWith('#')) {
+      const hexadecimal = entity[1]?.toLowerCase() === 'x';
+      const codePoint = Number.parseInt(entity.slice(hexadecimal ? 2 : 1), hexadecimal ? 16 : 10);
+      if (Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff) {
+        return String.fromCodePoint(codePoint);
+      }
+      return match;
+    }
+
+    return namedEntities[entity.toLowerCase()] ?? match;
+  });
+}
+
+function plainKnowledgeExcerpt(value: string): string {
+  return decodeHtmlEntities(value.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim();
+}
+
 function excerpt(record: AlgoliaDocsRecord): string {
   const value = (record.description || record.content || record.title).replace(/\s+/g, ' ').trim();
   return value.length > 260 ? `${value.slice(0, 257).trimEnd()}…` : value;
@@ -126,7 +173,9 @@ export function knowledgeSearchResultFromRecord(
   return {
     objectID: record.objectID,
     title: record.title,
-    excerpt: matchingExcerpt?.trim() || excerpt(record),
+    excerpt: matchingExcerpt?.trim()
+      ? plainKnowledgeExcerpt(matchingExcerpt)
+      : excerpt(record),
     canonicalUrl: record.canonical_url || record.url,
     sourceType: record.source_type,
     sourceLabel,
@@ -146,11 +195,15 @@ export function searchKnowledgeRecords(
   if (!normalizedQuery) return { query: '', filter: request.filter, results: [], total: 0 };
 
   const filter = FILTER_BY_VALUE.get(request.filter) ?? FILTER_BY_VALUE.get('all')!;
-  const scored = records.flatMap((record) => {
-    if (filter.sourceTypes.length > 0 && !filter.sourceTypes.includes(record.source_type)) return [];
+  const candidates = filterLegacyReferenceRecords(
+    records.filter((record) =>
+      filter.sourceTypes.length === 0 || filter.sourceTypes.includes(record.source_type)),
+    query,
+    request.filter,
+  );
+  const scored = candidates.flatMap((record) => {
     const tier = textualTier(record, normalizedQuery);
     if (tier === null) return [];
-    if (request.filter === 'reference' && record.source_type === 'legacy' && tier < 5) return [];
     return [{ record, tier }];
   });
 

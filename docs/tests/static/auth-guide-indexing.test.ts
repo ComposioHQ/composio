@@ -19,6 +19,12 @@ const expectedSlugs = [
   'hubspot', 'airtable', 'daytona',
 ];
 
+function responseAt(url: string, status = 200): Response {
+  const response = new Response(null, { status });
+  Object.defineProperty(response, 'url', { value: url });
+  return response;
+}
+
 describe('OAuth guide indexing', () => {
   test('pins the exact 43-guide public inventory', () => {
     const entries = getAuthGuideRegistry();
@@ -48,7 +54,7 @@ describe('OAuth guide indexing', () => {
     const entries = getAuthGuideRegistry().slice(0, 2);
     const fetchImpl = async (input: string | URL | Request) => {
       const url = String(input);
-      return new Response(null, { status: url.endsWith('/gong') ? 503 : 200 });
+      return responseAt(url, url.endsWith('/gong') ? 503 : 200);
     };
 
     await expect(validateAuthGuideUrls(entries, fetchImpl as typeof fetch))
@@ -58,8 +64,9 @@ describe('OAuth guide indexing', () => {
   test('builds the full replacement only after all 43 URLs validate', async () => {
     const visited: string[] = [];
     const fetchImpl = async (input: string | URL | Request) => {
-      visited.push(String(input));
-      return new Response(null, { status: 200 });
+      const url = String(input);
+      visited.push(url);
+      return responseAt(url);
     };
 
     const records = await buildCompleteSearchReplacement({ fetchImpl: fetchImpl as typeof fetch });
@@ -75,13 +82,22 @@ describe('OAuth guide indexing', () => {
         replacementCalls += 1;
       },
     };
-    const fetchImpl = async (input: string | URL | Request) => new Response(null, {
-      status: String(input).endsWith('/github') ? 503 : 200,
-    });
+    const fetchImpl = async (input: string | URL | Request) => {
+      const url = String(input);
+      return responseAt(url, url.endsWith('/github') ? 503 : 200);
+    };
 
     await expect(replaceSearchDocuments(client, 'docs_composio', {
       fetchImpl: fetchImpl as typeof fetch,
     })).rejects.toThrow('https://composio.dev/auth/github');
     expect(replacementCalls).toBe(0);
+  });
+
+  test('rejects a registered guide that redirects to a generic auth page', async () => {
+    const [entry] = getAuthGuideRegistry();
+    const fetchImpl = async () => responseAt('https://composio.dev/auth');
+
+    await expect(validateAuthGuideUrls([entry], fetchImpl as typeof fetch))
+      .rejects.toThrow(entry.canonicalUrl);
   });
 });

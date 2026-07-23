@@ -110,5 +110,22 @@ export async function validateAuthGuideUrls(
         `Failed to validate OAuth guide ${entry.canonicalUrl}: HTTP ${response.status}`,
       );
     }
+
+    let finalUrl: string;
+    try {
+      const resolved = new URL(response.url);
+      finalUrl = `${resolved.origin}${resolved.pathname.replace(/\/+$/, '')}`;
+    } catch {
+      throw new Error(
+        `Failed to validate OAuth guide ${entry.canonicalUrl}: missing final response URL`,
+      );
+    }
+    const expected = new URL(entry.canonicalUrl);
+    const expectedUrl = `${expected.origin}${expected.pathname.replace(/\/+$/, '')}`;
+    if (finalUrl !== expectedUrl) {
+      throw new Error(
+        `Failed to validate OAuth guide ${entry.canonicalUrl}: redirected to ${response.url}`,
+      );
+    }
   }));
 }

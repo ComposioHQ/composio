@@ -60,6 +60,7 @@ describe("Navigation - meta.json validity", () => {
     expect(source).toContain("KNOWLEDGE_SOURCE_LABELS");
     expect(source).toContain("canonical_url");
     expect(source).toContain("source_type");
+    expect(source).toContain("algoliaHitMetaRef.current.get(href)");
   });
 
   test("root meta.json entries all resolve to files or directories", async () => {

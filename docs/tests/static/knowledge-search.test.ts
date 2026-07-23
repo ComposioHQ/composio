@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { AlgoliaDocsRecord } from '@/lib/search-index';
 import {
   algoliaFacetFilters,
+  filterLegacyReferenceRecords,
   knowledgeSearchResultFromRecord,
   searchKnowledgeRecords,
 } from '@/lib/knowledge/search';
@@ -151,6 +152,21 @@ describe('unified knowledge search', () => {
     expect(searchKnowledgeRecords(records, {
       query: 'Old token endpoint foo_unique', filter: 'reference', limit: 20,
     }).results.map((item) => item.objectID)).toEqual(['legacy-token']);
+
+    const currentExact = record({
+      id: 'current-exact', title: 'Create connected account', sourceType: 'reference', pageRank: 700,
+    });
+    const legacyExact = record({
+      id: 'legacy-exact', title: 'Create connected account', sourceType: 'legacy', pageRank: 25,
+    });
+    expect(filterLegacyReferenceRecords(
+      [legacyExact, currentExact],
+      'Create connected account',
+      'reference',
+    ).map((item) => item.objectID)).toEqual(['current-exact']);
+    expect(searchKnowledgeRecords([legacyExact, currentExact], {
+      query: 'Create connected account', filter: 'reference', limit: 20,
+    }).results.map((item) => item.objectID)).toEqual(['current-exact']);
   });
 
   test('returns no documents for an empty query', () => {
@@ -167,6 +183,16 @@ describe('unified knowledge search', () => {
     expect(knowledgeSearchResultFromRecord(toolkit).breadcrumbs).toEqual(['Authentication']);
   });
 
+  test('returns plain-text excerpts from Algolia highlight markup', () => {
+    const docs = record({
+      id: 'auth', title: 'Authentication', sourceType: 'docs', pageRank: 2_000,
+    });
+    expect(knowledgeSearchResultFromRecord(
+      docs,
+      'Use &lt;managed&gt; <mark>OAuth</mark> &amp; API keys.',
+    ).excerpt).toBe('Use <managed> OAuth & API keys.');
+  });
+
   test('rejects invalid API filters', async () => {
     const response = await GET(new Request(
       'http://localhost/api/knowledge-search?q=github&filter=invalid',
@@ -179,12 +205,16 @@ describe('unified knowledge search', () => {
       join(import.meta.dir, '../../scripts/sync-algolia-search.ts'),
       'utf8',
     );
+    const retrievalFields = syncSource.slice(
+      syncSource.indexOf('attributesToRetrieve:'),
+      syncSource.indexOf('searchableAttributes:'),
+    );
 
     for (const field of [
       'source_type', 'canonical_url', 'product_areas', 'toolkit_slugs', 'intents',
-      'last_verified_at',
+      'last_verified_at', 'keywords', 'slug', 'tool_names', 'tool_slugs',
     ]) {
-      expect(syncSource).toContain(`'${field}'`);
+      expect(retrievalFields).toContain(`'${field}'`);
     }
     expect(syncSource).toContain("customRanking: [\n            'desc(page_rank)',\n            'desc(section_rank)',\n          ]");
   });
