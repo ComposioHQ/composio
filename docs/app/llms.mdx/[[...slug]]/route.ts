@@ -19,6 +19,13 @@ import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
+import {
+  getKnowledgeByProductArea,
+  getKnowledgeByToolkit,
+  getKnowledgeToolkitSummaries,
+  type KnowledgeLink,
+} from '@/lib/knowledge/catalog';
+import { getProductArea, isProductAreaSlug, PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
 
 export const revalidate = false;
 
@@ -828,6 +835,50 @@ async function generateToolkitsIndex(): Promise<string> {
 
 const LLM_FOOTER = '\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)';
 
+function knowledgeLinksToMarkdown(links: KnowledgeLink[]): string {
+  return links
+    .map((link) => `- [${link.title}](${link.href}) — ${link.description} (${link.sourceLabel})`)
+    .join('\n');
+}
+
+async function knowledgeBrowseToMarkdown(rest: string[]): Promise<string | null> {
+  if (rest.length === 0) {
+    const areas = PRODUCT_AREAS.filter((area) => area.defaultBrowse)
+      .map((area) => `- [${area.title}](https://docs.composio.dev/kb/topic/${area.slug}) — ${area.description}`)
+      .join('\n');
+    return `# Composio Knowledge Base\n\nSearch and browse public Composio knowledge across docs, verified support answers, OAuth guides, toolkits, examples, reference, and changelog.\n\n- [Search all knowledge](https://docs.composio.dev/kb/search)\n- [Browse all toolkits](https://docs.composio.dev/kb/toolkits)\n\n## Product areas\n\n${areas}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'search') {
+    return `# Search Composio knowledge\n\nUse the [Knowledge Base search](https://docs.composio.dev/kb/search) to find canonical public answers across every indexed Composio source.${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 1 && rest[0] === 'toolkits') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const rows = toolkits
+      .map((toolkit) => `- [${toolkit.name}](https://docs.composio.dev/kb/toolkit/${toolkit.slug}) — ${toolkit.knowledgeCount} public page${toolkit.knowledgeCount === 1 ? '' : 's'}`)
+      .join('\n');
+    return `# Toolkit knowledge\n\nBrowse canonical public knowledge by provider.\n\n${rows}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'topic' && isProductAreaSlug(rest[1])) {
+    const area = getProductArea(rest[1]);
+    const links = await getKnowledgeByProductArea(rest[1]);
+    if (!area.defaultBrowse && links.length === 0) return null;
+    return `# ${area.title}\n\n${area.description}\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  if (rest.length === 2 && rest[0] === 'toolkit') {
+    const toolkits = await getKnowledgeToolkitSummaries();
+    const toolkit = toolkits.find((candidate) => candidate.slug === rest[1]);
+    if (!toolkit) return null;
+    const links = await getKnowledgeByToolkit(toolkit.slug);
+    return `# ${toolkit.name} knowledge\n\nCanonical public Composio information for ${toolkit.name}.\n\n${knowledgeLinksToMarkdown(links)}${LLM_FOOTER}`;
+  }
+
+  return null;
+}
+
 // Render meta tool parameters as markdown
 function renderMetaToolParams(properties: Record<string, MetaToolParameter>, requiredFields: string[] = [], indent = 0): string[] {
   const lines: string[] = [];
@@ -923,6 +974,15 @@ export async function GET(
   try {
     const { slug = [] } = await params;
     const [prefix, ...rest] = slug;
+
+    if (prefix === 'kb') {
+      const browseMarkdown = await knowledgeBrowseToMarkdown(rest);
+      if (browseMarkdown) {
+        return new Response(browseMarkdown, {
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+        });
+      }
+    }
 
     // Special handling for toolkits index - generate comprehensive list
     if (prefix === 'toolkits' && rest.length === 0) {

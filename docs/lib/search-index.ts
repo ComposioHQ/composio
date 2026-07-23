@@ -686,7 +686,19 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     keywords: 'keywords' in page.data ? (page.data.keywords as string[]) : undefined,
   } satisfies SearchIndex));
 
-  return [...mdxIndexes, ...dynamicToolkitIndexes, ...getChangelogIndexes()];
+  const oauthIndexes = getAuthGuideSearchRecords().map((record) => ({
+    id: record.page_id,
+    title: record.title,
+    description: record.description,
+    url: record.canonical_url,
+    structuredData: {
+      headings: [],
+      contents: [{ heading: undefined, content: record.content }],
+    },
+    keywords: record.keywords,
+  } satisfies SearchIndex));
+
+  return [...mdxIndexes, ...dynamicToolkitIndexes, ...getChangelogIndexes(), ...oauthIndexes];
 }
 
 async function getOpenApiRecords(): Promise<AlgoliaDocsRecord[]> {

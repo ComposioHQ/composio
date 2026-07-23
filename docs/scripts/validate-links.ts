@@ -15,6 +15,7 @@ import {
   toolkitsSource,
   knowledgeBaseSource,
 } from '../lib/source';
+import { getLocalKnowledgeDiscoveryPaths } from '../lib/knowledge/discovery';
 
 type AnySource =
   | typeof source
@@ -94,6 +95,13 @@ async function getDynamicToolkitEntries() {
 
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
+  const knowledgeDiscoveryPaths = await getLocalKnowledgeDiscoveryPaths();
+  const knowledgeTopicEntries = knowledgeDiscoveryPaths
+    .filter((path) => path.startsWith('/kb/topic/'))
+    .map((path) => ({ value: path.slice('/kb/topic/'.length), hashes: [] as string[] }));
+  const knowledgeToolkitEntries = knowledgeDiscoveryPaths
+    .filter((path) => path.startsWith('/kb/toolkit/'))
+    .map((path) => ({ value: path.slice('/kb/toolkit/'.length), hashes: [] as string[] }));
   const [
     docsEntries,
     refEntries,
@@ -109,6 +117,15 @@ async function checkLinks() {
     buildPopulateEntries(knowledgeBaseSource),
     getDynamicToolkitEntries(),
   ]);
+  const knowledgeGuideEntries = knowledgeBaseEntries.flatMap((entry) => {
+    const value = entry.value;
+    if (!value || Array.isArray(value) || typeof value === 'string' || !('slug' in value)) return [];
+    const slug = value.slug;
+    const segments = Array.isArray(slug) ? slug : [slug];
+    return segments.length === 2 && segments[0] === 'guide'
+      ? [{ ...entry, value: segments[1] }]
+      : [];
+  });
 
   const scanned = await scanURLs({
     preset: 'next',
@@ -118,7 +135,9 @@ async function checkLinks() {
       '(home)/reference/[[...slug]]': refEntries,
       '(home)/examples/[[...slug]]': exampleEntries,
       '(home)/toolkits/[[...slug]]': [...toolkitEntries, ...dynamicToolkitEntries],
-      '(home)/kb/[[...slug]]': knowledgeBaseEntries,
+      '(home)/kb/guide/[slug]': knowledgeGuideEntries,
+      '(home)/kb/topic/[slug]': knowledgeTopicEntries,
+      '(home)/kb/toolkit/[slug]': knowledgeToolkitEntries,
     },
   });
 

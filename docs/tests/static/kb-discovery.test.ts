@@ -23,9 +23,14 @@ describe('public KB discovery', () => {
 
   test('registers the KB source with sitemap, links, and LLM endpoints', () => {
     expect(source('app/sitemap.ts')).toContain('knowledgeBaseSource');
+    expect(source('app/sitemap.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('scripts/validate-links.ts')).toContain('knowledgeBaseSource');
+    expect(source('scripts/validate-links.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms.txt/route.ts')).toContain('knowledgeBaseSource');
+    expect(source('app/llms.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms-full.txt/route.ts')).toContain('knowledgeBaseSource');
+    expect(source('app/llms-full.txt/route.ts')).toContain('getLocalKnowledgeDiscoveryPaths');
     expect(source('app/llms.mdx/[[...slug]]/route.ts')).toContain("prefix: 'kb'");
+    expect(source('app/llms.mdx/[[...slug]]/route.ts')).toContain('knowledgeBrowseToMarkdown');
   });
 });

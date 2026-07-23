@@ -5,6 +5,10 @@ import {
   toolkitsSource,
   knowledgeBaseSource,
 } from '@/lib/source';
+import {
+  formatKnowledgeDiscoveryLinks,
+  getLocalKnowledgeDiscoveryPaths,
+} from '@/lib/knowledge/discovery';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -111,6 +115,11 @@ export async function GET() {
     const referencePages = referenceSource.getPages();
     const toolkitsPages = toolkitsSource.getPages();
     const knowledgeBasePages = knowledgeBaseSource.getPages();
+    const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
+      (await getLocalKnowledgeDiscoveryPaths()).filter(
+        (path) => !path.startsWith('/kb/guide/'),
+      ),
+    );
 
     const index = `# Composio Documentation
 
@@ -125,6 +134,8 @@ ${docsTree}
 ${examplesPages.map(formatPage).join('\n')}
 
 ## Knowledge Base
+
+${knowledgeDiscoveryLinks}
 
 ${knowledgeBasePages.map(formatPage).join('\n')}
 

@@ -7,6 +7,10 @@ import {
   knowledgeBaseSource,
 } from '@/lib/source';
 import { SESSION_GUARDRAILS } from '@/lib/llm-guardrails';
+import {
+  formatKnowledgeDiscoveryLinks,
+  getLocalKnowledgeDiscoveryPaths,
+} from '@/lib/knowledge/discovery';
 import type { ReactNode } from 'react';
 
 export const revalidate = false;
@@ -143,6 +147,11 @@ export async function GET() {
       (source.getPages() as PageLike[]).filter((page) => !legacyUrls.has(page.url)),
       treeChildren
     );
+    const knowledgeDiscoveryLinks = formatKnowledgeDiscoveryLinks(
+      (await getLocalKnowledgeDiscoveryPaths()).filter(
+        (path) => !path.startsWith('/kb/guide/'),
+      ),
+    );
 
     const [
       docsResults,
@@ -161,6 +170,8 @@ export async function GET() {
     const results = [
       `# Composio Documentation\n\n> Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.${SESSION_GUARDRAILS}\n# Documentation\n`,
       ...docsResults,
+      '\n# Knowledge Hub navigation\n',
+      knowledgeDiscoveryLinks,
       '\n# Knowledge Base\n',
       ...knowledgeBaseResults,
       '\n# Examples\n',

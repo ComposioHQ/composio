@@ -119,14 +119,18 @@ export function knowledgeSearchResultFromRecord(
   record: AlgoliaDocsRecord,
   matchingExcerpt?: string,
 ): KnowledgeSearchResult {
+  const sourceLabel = KNOWLEDGE_SOURCE_LABELS[record.source_type];
+  const breadcrumbs = (record.breadcrumbs ?? []).filter(
+    (breadcrumb, index) => index > 0 || breadcrumb.toLowerCase() !== sourceLabel.toLowerCase(),
+  );
   return {
     objectID: record.objectID,
     title: record.title,
     excerpt: matchingExcerpt?.trim() || excerpt(record),
     canonicalUrl: record.canonical_url || record.url,
     sourceType: record.source_type,
-    sourceLabel: KNOWLEDGE_SOURCE_LABELS[record.source_type],
-    breadcrumbs: record.breadcrumbs ?? [],
+    sourceLabel,
+    breadcrumbs,
     productAreas: record.product_areas,
     toolkitSlugs: record.toolkit_slugs,
     lastVerifiedAt: record.last_verified_at,

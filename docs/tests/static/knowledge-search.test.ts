@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { AlgoliaDocsRecord } from '@/lib/search-index';
 import {
   algoliaFacetFilters,
+  knowledgeSearchResultFromRecord,
   searchKnowledgeRecords,
 } from '@/lib/knowledge/search';
 import { GET } from '@/app/api/knowledge-search/route';
@@ -156,6 +157,14 @@ describe('unified knowledge search', () => {
     expect(searchKnowledgeRecords(closeMatchRecords, {
       query: '   ', filter: 'all', limit: 20,
     })).toEqual({ query: '', filter: 'all', results: [], total: 0 });
+  });
+
+  test('does not repeat the source badge as the first breadcrumb', () => {
+    const toolkit = record({
+      id: 'github', title: 'GitHub', sourceType: 'toolkit', pageRank: 1_500,
+    });
+    toolkit.breadcrumbs = ['Toolkit', 'Authentication'];
+    expect(knowledgeSearchResultFromRecord(toolkit).breadcrumbs).toEqual(['Authentication']);
   });
 
   test('rejects invalid API filters', async () => {

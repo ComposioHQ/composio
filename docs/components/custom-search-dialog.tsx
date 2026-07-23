@@ -19,6 +19,10 @@ import { useI18n } from 'fumadocs-ui/contexts/i18n';
 import { useDocsSearch } from 'fumadocs-core/search/client';
 import type { BaseIndex } from 'fumadocs-core/search/algolia';
 import { BotMessageSquare } from 'lucide-react';
+import {
+  KNOWLEDGE_SOURCE_LABELS,
+  type KnowledgeSourceType,
+} from '@/lib/knowledge/types';
 import { detectMac } from './ask-ai-button';
 import { toggleEveChat } from './eve-chat-store';
 
@@ -46,9 +50,9 @@ interface CustomSearchDialogProps extends SharedProps {
   api?: string;
 }
 
-type AlgoliaHit = {
-  objectID: string;
-  url?: string;
+type AlgoliaHit = BaseIndex & {
+  canonical_url?: string;
+  source_type?: KnowledgeSourceType;
 };
 
 type AlgoliaSearchResponse = {
@@ -73,6 +77,11 @@ const SEARCH_BREADCRUMB_LABELS: Record<string, string> = {
   examples: 'Example',
   example: 'Example',
   docs: 'Docs',
+  kb: 'Knowledge Base',
+  guide: 'Knowledge Base',
+  auth: 'OAuth',
+  oauth: 'OAuth',
+  'oauth-guide': 'OAuth',
   reference: 'Reference',
   'api-reference': 'API Reference',
   changelog: 'Changelog',
@@ -140,7 +149,7 @@ export default function CustomSearchDialog({
         onSearch: async (query: string, tag?: string) => {
           ensureAlgoliaInsights(appId, searchApiKey);
 
-          const result = await client.searchForHits<BaseIndex>({
+          const result = await client.searchForHits<AlgoliaHit>({
             requests: [
               {
                 type: 'default',
@@ -156,8 +165,24 @@ export default function CustomSearchDialog({
           const response = result.results[0] as AlgoliaSearchResponse;
           const metadata = new Map<string, AlgoliaHitMeta>();
 
+          response.hits = response.hits.map((hit) => {
+            const canonicalUrl = hit.canonical_url || hit.url;
+            const sourceLabel = hit.source_type
+              ? KNOWLEDGE_SOURCE_LABELS[hit.source_type]
+              : null;
+            const breadcrumbs = sourceLabel
+              ? [
+                  sourceLabel,
+                  ...(hit.breadcrumbs ?? []).filter(
+                    (breadcrumb) => breadcrumb.toLowerCase() !== sourceLabel.toLowerCase(),
+                  ),
+                ]
+              : hit.breadcrumbs;
+            return { ...hit, url: canonicalUrl, breadcrumbs };
+          });
+
           response.hits.forEach((hit, index) => {
-            if (!hit.url || metadata.has(hit.url)) return;
+            if (metadata.has(hit.url)) return;
             metadata.set(hit.url, {
               objectID: hit.objectID,
               position: index + 1,
