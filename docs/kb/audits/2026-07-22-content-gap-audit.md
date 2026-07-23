@@ -17,7 +17,7 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 
 ## Selected first batch
 
-## Existing undeployed pilot articles (10)
+### Existing undeployed pilot articles (10)
 
 - Use Tool Router session files as toolkit inputs — `kb/mcp/tool-router-files/public.md#session-paths-are-not-fileuploadable-storage-keys`
 - Custom connection-data fields are toolkit-specific — `kb/platform/custom-connection-data-fields/public.md#field-names-are-toolkit-specific`
@@ -30,7 +30,7 @@ Inventory totals: 115 public files, 670 level-two sections, and 4 body-only cand
 - Inspect Odoo JSON-RPC errors inside HTTP 200 responses — `kb/toolkits/odoo/public.md#json-rpc-access-errors-can-arrive-inside-http-200-responses`
 - Strava athlete limits belong to the OAuth app — `kb/toolkits/strava/public.md#athlete-limit-errors-belong-to-the-oauth-application`
 
-## Newly verified articles (17)
+### Newly verified articles (17)
 
 - Reconnect LinkedIn with organization scopes before company-page actions — `kb/toolkits/linkedin/public.md#linkedin-organization-scopes-depend-on-the-toolkit-and-auth-config`
 - Target an Outlook shared mailbox by its address — `kb/toolkits/outlook/public.md#for-outlook-shared-mailboxes-pass-the-shared-mailbox-address-as-user-id-mailbox-target`

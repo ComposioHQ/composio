@@ -197,8 +197,13 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
         left.sourcePath.localeCompare(right.sourcePath) ||
         left.id.localeCompare(right.id),
     );
-  const pilotGroups = groupSelectedRows(firstBatch.filter((row) => row.priorityScore === 0));
-  const newlyVerifiedGroups = groupSelectedRows(firstBatch.filter((row) => row.priorityScore > 0));
+  const firstBatchGroups = groupSelectedRows(firstBatch);
+  const newlyVerifiedGroups = firstBatchGroups.filter((group) =>
+    group.some((row) => row.priorityScore > 0),
+  );
+  const pilotGroups = firstBatchGroups.filter((group) =>
+    group.every((row) => row.priorityScore === 0),
+  );
 
   return [
     '# Public KB content-gap audit',
@@ -219,11 +224,11 @@ export function renderAuditMarkdown(inventory: KbAuditInventory, rows: KbAuditRo
     '',
     '## Selected first batch',
     '',
-    `## Existing undeployed pilot articles (${pilotGroups.length})`,
+    `### Existing undeployed pilot articles (${pilotGroups.length})`,
     '',
     ...renderSelectedGroups(pilotGroups, '- No existing undeployed pilot articles are selected.'),
     '',
-    `## Newly verified articles (${newlyVerifiedGroups.length})`,
+    `### Newly verified articles (${newlyVerifiedGroups.length})`,
     '',
     ...renderSelectedGroups(newlyVerifiedGroups, '- No newly verified articles are selected.'),
     '',

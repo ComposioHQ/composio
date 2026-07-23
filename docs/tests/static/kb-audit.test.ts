@@ -270,8 +270,8 @@ describe('public KB audit', () => {
     );
     expect(auditMarkdown).toContain('This branch is undeployed.');
     expect(auditMarkdown).toContain('Publish: 29');
-    expect(auditMarkdown).toContain('## Existing undeployed pilot articles (10)');
-    expect(auditMarkdown).toContain('## Newly verified articles (17)');
+    expect(auditMarkdown).toContain('### Existing undeployed pilot articles (10)');
+    expect(auditMarkdown).toContain('### Newly verified articles (17)');
     expect(auditMarkdown.match(/Choose DiscordBot for bot-token operations and Discord for user-OAuth operations/g)).toHaveLength(1);
   });
 
@@ -432,7 +432,7 @@ describe('public KB audit', () => {
     expect(markdown).toContain('Publish: 2');
   });
 
-  test('separates priority-zero pilots from newly verified routes while grouping source rows', () => {
+  test('classifies a shared route once as newly verified when any source row has positive priority', () => {
     const rows = [
       auditRow({
         id: 'kb/platform/pilot/public.md#pilot',
@@ -454,7 +454,7 @@ describe('public KB audit', () => {
         heading: 'Second example',
         proposedTitle: 'New verified route',
         existingUrl: '/kb/guide/new-verified-route',
-        priorityScore: 80,
+        priorityScore: 0,
       }),
     ];
     const inventory = {
@@ -466,8 +466,8 @@ describe('public KB audit', () => {
 
     const markdown = renderAuditMarkdown(inventory, rows);
 
-    expect(markdown).toContain('## Existing undeployed pilot articles (1)');
-    expect(markdown).toContain('## Newly verified articles (1)');
+    expect(markdown).toContain('### Existing undeployed pilot articles (1)');
+    expect(markdown).toContain('### Newly verified articles (1)');
     expect(markdown.match(/Existing pilot/g)).toHaveLength(1);
     expect(markdown.match(/New verified route/g)).toHaveLength(1);
     expect(markdown).toContain('`kb/toolkits/example/public.md#first`');
