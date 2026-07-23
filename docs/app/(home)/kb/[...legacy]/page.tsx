@@ -1,5 +1,5 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { resolveKbAlias } from '@/lib/kb/repository';
+import { getKbLegacySegments, resolveKbAlias } from '@/lib/kb/repository';
 
 interface LegacyKnowledgeBasePageProps {
   params: Promise<{ legacy: string[] }>;
@@ -11,4 +11,8 @@ export default async function LegacyKnowledgeBasePage({ params }: LegacyKnowledg
   const canonical = resolveKbAlias(requestedPath);
   if (canonical && canonical !== requestedPath) permanentRedirect(canonical);
   notFound();
+}
+
+export function generateStaticParams() {
+  return getKbLegacySegments().map((legacy) => ({ legacy }));
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  getKbLegacySegments,
   getKbGuideUrl,
   getPublishedKbGuides,
   resolveKbAlias,
@@ -18,6 +19,10 @@ const legacyRouteSource = readFileSync(
 );
 const guideLayoutSource = readFileSync(
   join(import.meta.dir, '../../app/(home)/kb/guide/layout.tsx'),
+  'utf8',
+);
+const articleShellSource = readFileSync(
+  join(import.meta.dir, '../../components/kb/kb-article-shell.tsx'),
   'utf8',
 );
 
@@ -63,5 +68,29 @@ describe('public KB routes', () => {
   test('provides DocsPage context without exposing the generated guide tree', () => {
     expect(guideLayoutSource).toContain('<DocsLayout');
     expect(guideLayoutSource).toContain('enabled: false');
+  });
+
+  test('uses a curated article navigation instead of listing every guide', () => {
+    expect(guideLayoutSource).toContain('<KbArticleShell>');
+    expect(articleShellSource).toContain('Knowledge Base home');
+    expect(articleShellSource).toContain('Browse all toolkits');
+    expect(articleShellSource).toContain('PRODUCT_AREAS');
+    expect(articleShellSource).toContain('[grid-area:sidebar]');
+    expect(articleShellSource).toContain('md:layout:[--fd-sidebar-width:268px]');
+    expect(guideRouteSource).toContain('<KbMobileArticleNavigation />');
+    for (const guide of getPublishedKbGuides()) {
+      expect(articleShellSource).not.toContain(guide.title);
+    }
+  });
+
+  test('prebuilds every published legacy path for permanent redirects', () => {
+    const legacySegments = getKbLegacySegments();
+    expect(legacySegments.length).toBeGreaterThanOrEqual(getPublishedKbGuides().length);
+    expect(legacySegments).toContainEqual([
+      'sdk-and-api',
+      'pagination-limits-are-endpoint-specific',
+    ]);
+    expect(legacyRouteSource).toContain('generateStaticParams');
+    expect(legacyRouteSource).toContain('getKbLegacySegments');
   });
 });

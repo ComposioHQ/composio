@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { PageActions } from '@/components/page-actions';
 import { Feedback } from '@/components/feedback';
+import { KbMobileArticleNavigation } from '@/components/kb/kb-article-shell';
 import { RelatedLinks } from '@/components/related-links';
 import { knowledgeBaseSource } from '@/lib/source';
 import { createGenerateMetadata } from '@/lib/create-docs-page';
@@ -36,6 +37,7 @@ export default async function KnowledgeBaseGuidePage({ params }: KnowledgeBaseGu
           : undefined
       }
     >
+      <KbMobileArticleNavigation />
       <DocsTitle>{page.data.title}</DocsTitle>
       {lastVerifiedAt && (
         <p className="not-prose mt-2 text-xs font-medium text-fd-muted-foreground">

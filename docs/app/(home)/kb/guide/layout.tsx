@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
+import { KbArticleShell } from '@/components/kb/kb-article-shell';
 import { knowledgeBaseSource } from '@/lib/source';
 
 export default function KnowledgeBaseGuideLayout({ children }: { children: ReactNode }) {
@@ -11,7 +12,7 @@ export default function KnowledgeBaseGuideLayout({ children }: { children: React
       sidebar={{ enabled: false, tabs: false, footer: null }}
       themeSwitch={{ enabled: false }}
     >
-      {children}
+      <KbArticleShell>{children}</KbArticleShell>
     </DocsLayout>
   );
 }
