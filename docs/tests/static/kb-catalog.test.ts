@@ -229,6 +229,20 @@ This is the second safe answer.`);
     );
   });
 
+  test('rejects an articles root that is itself a symlink', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-articles-'));
+    temporaryDirectories.push(root);
+    const outsideArticlesRoot = join(root, 'outside-articles');
+    const symlinkedArticlesRoot = join(root, 'articles');
+    mkdirSync(outsideArticlesRoot);
+    writeFileSync(join(outsideArticlesRoot, 'stable-answer.md'), 'Benign fixture content.', 'utf8');
+    symlinkSync(outsideArticlesRoot, symlinkedArticlesRoot);
+
+    expect(() => createKbArticleReader(symlinkedArticlesRoot)('stable-answer.md')).toThrow(
+      'KB articles root must not be a symbolic link'
+    );
+  });
+
   test('rejects private markers in authored articles', () => {
     expect(() =>
       buildKbCatalog(

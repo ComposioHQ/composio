@@ -9,6 +9,14 @@ let cachedCatalog: KbCatalog | null = null;
 
 export function createKbArticleReader(articlesRoot: string): (articlePath: string) => string {
   return articlePath => {
+    const articlesRootStats = lstatSync(articlesRoot);
+    if (articlesRootStats.isSymbolicLink()) {
+      throw new Error(`KB articles root must not be a symbolic link: ${articlesRoot}`);
+    }
+    if (!articlesRootStats.isDirectory()) {
+      throw new Error(`KB articles root must be a directory: ${articlesRoot}`);
+    }
+
     const realArticlesRoot = realpathSync(articlesRoot);
     const target = resolve(realArticlesRoot, articlePath);
     const pathFromRoot = relative(realArticlesRoot, target);
