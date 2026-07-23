@@ -79,6 +79,104 @@ This is the second safe answer.`);
     expect(catalog.guides[0]?.sourceMetadata).toHaveLength(2);
   });
 
+  test('uses an authored article body while retaining exact public source provenance', () => {
+    const article = `Start with the verified answer.\n\nThen follow the narrowed guidance.`;
+    const catalog = buildKbCatalog(
+      manifest({ articlePath: 'stable-answer.md' }),
+      () => source,
+      new Date('2026-07-21'),
+      (articlePath) => {
+        expect(articlePath).toBe('stable-answer.md');
+        return article;
+      }
+    );
+
+    expect(catalog.guides[0]?.body).toBe(article);
+    expect(catalog.guides[0]?.sources).toEqual([
+      { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Stable answer' },
+      { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Second answer' },
+    ]);
+    expect(catalog.guides[0]?.sourceMetadata).toHaveLength(2);
+  });
+
+  test('requires an article reader for authored articles', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21')
+      )
+    ).toThrow('requires an article reader');
+  });
+
+  test('propagates a missing authored article file', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => {
+          throw new Error('ENOENT: no such file or directory');
+        }
+      )
+    ).toThrow('ENOENT: no such file or directory');
+  });
+
+  test('rejects an authored article whose path does not match its slug', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'another-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => 'Safe body.'
+      )
+    ).toThrow('articlePath must equal stable-answer.md');
+  });
+
+  test('rejects an authored article path with traversal', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: '../stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => 'Safe body.'
+      )
+    ).toThrow('articlePath must be a flat filename');
+  });
+
+  test('rejects an empty authored article', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => ' \n\t '
+      )
+    ).toThrow('stable-answer.md must not be empty');
+  });
+
+  test('rejects YAML frontmatter in an authored article', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => '---\ntitle: Private metadata\n---\nSafe body.'
+      )
+    ).toThrow('stable-answer.md must not contain YAML frontmatter');
+  });
+
+  test('rejects private markers in authored articles', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => 'See Plain T-12345 for details.'
+      )
+    ).toThrow('stable-answer.md contains Plain thread reference');
+  });
+
   test('loads the first ten published guides and one held guide from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 

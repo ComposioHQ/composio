@@ -32,6 +32,7 @@ export interface KbGuideDefinition {
   slug: string;
   title: string;
   description: string;
+  articlePath?: string;
   sources: KbSourceReference[];
   topics: string[];
   tags: string[];

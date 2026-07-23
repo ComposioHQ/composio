@@ -1,10 +1,25 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { buildKbCatalog } from './catalog';
 import type { KbCatalog, KbGuide, KbManifest } from './types';
 
 const KB_ROOT = join(process.cwd(), 'kb');
+const KB_ARTICLES_ROOT = resolve(KB_ROOT, 'articles');
 let cachedCatalog: KbCatalog | null = null;
+
+function readKbArticle(articlePath: string): string {
+  const target = resolve(KB_ARTICLES_ROOT, articlePath);
+  const pathFromRoot = relative(KB_ARTICLES_ROOT, target);
+  if (
+    pathFromRoot === '' ||
+    pathFromRoot === '..' ||
+    pathFromRoot.startsWith(`..${sep}`) ||
+    isAbsolute(pathFromRoot)
+  ) {
+    throw new Error(`KB article path escapes articles directory: ${articlePath}`);
+  }
+  return readFileSync(target, 'utf8');
+}
 
 export function getKbCatalog(): KbCatalog {
   if (cachedCatalog) return cachedCatalog;
@@ -13,6 +28,7 @@ export function getKbCatalog(): KbCatalog {
     manifest,
     (sourcePath) => readFileSync(join(KB_ROOT, 'source', sourcePath), 'utf8'),
     new Date(),
+    readKbArticle,
   );
   return cachedCatalog;
 }

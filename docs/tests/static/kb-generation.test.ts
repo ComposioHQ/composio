@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { generateKbContent } from '@/lib/kb/generate';
+import { getKbCatalog } from '@/lib/kb/repository';
 
 const temporaryDirectories: string[] = [];
 
@@ -87,6 +88,7 @@ describe('public KB content generation', () => {
     );
     expect(guide).not.toContain('sourcePath:');
     expect(guide).not.toContain('sourceHeading:');
+    expect(guide).not.toContain('articlePath:');
     expect(guide).toContain('lastVerifiedAt: "2026-07-21"');
     expect(guide).toContain('reviewAfter: "2027-01-17"');
     expect(guide).toContain(
@@ -101,6 +103,37 @@ describe('public KB content generation', () => {
     expect(ahrefsGuide).toContain('lastVerifiedAt: "2026-07-22"');
     expect(ahrefsGuide).toContain('reviewAfter: "2026-10-20"');
     expect(ahrefsGuide).not.toContain('route the case to a human');
+  });
+
+  test('renders an editorial body without exposing its repository-only path', () => {
+    const outputDir = mkdtempSync(join(tmpdir(), 'composio-kb-'));
+    temporaryDirectories.push(outputDir);
+    const guide = getKbCatalog().guides.find(
+      candidate => candidate.slug === 'pagination-limits-are-endpoint-specific'
+    );
+    if (!guide) throw new Error('Expected pagination guide');
+
+    const originalBody = guide.body;
+    const originalArticlePath = guide.articlePath;
+    guide.body = 'This is the authored editorial body.';
+    guide.articlePath = 'pagination-limits-are-endpoint-specific.md';
+    try {
+      generateKbContent({ outputDir });
+    } finally {
+      guide.body = originalBody;
+      if (originalArticlePath === undefined) delete guide.articlePath;
+      else guide.articlePath = originalArticlePath;
+    }
+
+    const generated = readFileSync(
+      join(outputDir, 'guide/pagination-limits-are-endpoint-specific.mdx'),
+      'utf8'
+    );
+    expect(generated).toContain('This is the authored editorial body.');
+    expect(generated).toContain(
+      'sources: [{"sourcePath":"kb/platform/pagination/public.md","sourceHeading":"Pagination limits are endpoint-specific"}]'
+    );
+    expect(generated).not.toContain('articlePath');
   });
 
   test('detects generated content drift in check mode', () => {

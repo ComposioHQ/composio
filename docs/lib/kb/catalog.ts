@@ -22,10 +22,45 @@ function validDate(value: string | null): Date | null {
   return Number.isNaN(date.valueOf()) ? null : date;
 }
 
+function assertNoPrivateMarkers(content: string, path: string): void {
+  for (const marker of PRIVATE_MARKERS) {
+    if (marker.pattern.test(content)) {
+      throw new Error(`${path} contains ${marker.label}`);
+    }
+  }
+}
+
+function articleBodyFor(
+  slug: string,
+  articlePath: string | undefined,
+  readArticle: ((articlePath: string) => string) | undefined
+): string | null {
+  if (!articlePath) return null;
+
+  if (articlePath.includes('/') || articlePath.includes('\\')) {
+    throw new Error(`${slug} articlePath must be a flat filename`);
+  }
+  if (articlePath !== `${slug}.md`) {
+    throw new Error(`${slug} articlePath must equal ${slug}.md`);
+  }
+  if (!readArticle) {
+    throw new Error(`${slug} requires an article reader`);
+  }
+
+  const body = readArticle(articlePath);
+  if (!body.trim()) throw new Error(`${articlePath} must not be empty`);
+  if (/^(?:\uFEFF)?---(?:\r?\n|$)/.test(body)) {
+    throw new Error(`${articlePath} must not contain YAML frontmatter`);
+  }
+  assertNoPrivateMarkers(body, articlePath);
+  return body;
+}
+
 export function buildKbCatalog(
   manifest: KbManifest,
   readSource: (sourcePath: string) => string,
-  now = new Date()
+  now = new Date(),
+  readArticle?: (articlePath: string) => string
 ): KbCatalog {
   if (manifest.schemaVersion !== 2) throw new Error('Unsupported KB manifest schema');
 
@@ -56,11 +91,7 @@ export function buildKbCatalog(
     if (document.metadata.visibility !== 'public') {
       throw new Error(`${sourcePath} is not visibility: public`);
     }
-    for (const marker of PRIVATE_MARKERS) {
-      if (marker.pattern.test(document.body)) {
-        throw new Error(`${sourcePath} contains ${marker.label}`);
-      }
-    }
+    assertNoPrivateMarkers(document.body, sourcePath);
     documents.set(sourcePath, document);
     return document;
   };
@@ -91,9 +122,12 @@ export function buildKbCatalog(
       }
     }
 
+    const sourceBody = extractGuideSections(documentFor, definition.sources);
+    const articleBody = articleBodyFor(definition.slug, definition.articlePath, readArticle);
+
     return {
       ...definition,
-      body: extractGuideSections(documentFor, definition.sources),
+      body: articleBody ?? sourceBody,
       sourceMetadata,
     };
   });
