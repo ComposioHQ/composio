@@ -254,6 +254,35 @@ This is the second safe answer.`);
     ).toThrow('stable-answer.md contains Plain thread reference');
   });
 
+  test.each([
+    ['email address', 'Contact owner@example.com before proceeding.'],
+    ['candidate-only knowledge', 'This candidate-only answer must not be published.'],
+    ['internal-only heading', '## Support checks\n\nDo not publish these checks.'],
+  ])('rejects %s in authored articles', (_marker, article) => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({ articlePath: 'stable-answer.md' }),
+        () => source,
+        new Date('2026-07-21'),
+        () => article,
+      )
+    ).toThrow('stable-answer.md contains');
+  });
+
+  test.each([
+    ['email address', 'Contact owner@example.com before proceeding.'],
+    ['candidate-only knowledge', 'This candidate-only answer must not be published.'],
+    ['internal-only heading', '## Debug checklist\n\nDo not publish these checks.'],
+  ])('rejects %s in referenced public source content', (_marker, replacement) => {
+    expect(() =>
+      buildKbCatalog(
+        manifest(),
+        () => source.replace('This is safe public guidance.', replacement),
+        new Date('2026-07-21'),
+      )
+    ).toThrow('kb/platform/example/public.md contains');
+  });
+
   test('loads the published authentication answers from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 

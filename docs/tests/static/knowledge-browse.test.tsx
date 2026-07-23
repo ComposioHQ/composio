@@ -12,6 +12,7 @@ import { PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
 import { BrowseResults } from '@/components/kb/browse-results';
 import { ToolkitGrid } from '@/components/kb/toolkit-grid';
 import { KnowledgeHub } from '@/components/kb/knowledge-hub';
+import KnowledgeTopicPage from '@/app/(home)/kb/topic/[slug]/page';
 
 function source(path: string): string {
   return readFileSync(join(import.meta.dir, '../..', path), 'utf8');
@@ -28,7 +29,14 @@ describe('knowledge browse pages', () => {
     const topicRoute = source('app/(home)/kb/topic/[slug]/page.tsx');
     expect(topicRoute).toContain('isProductAreaSlug');
     expect(topicRoute).toContain('notFound()');
-    expect(topicRoute).toContain("permanentRedirect('/kb/topic/authentication-and-connected-accounts')");
+  });
+
+  test('permanently redirects the short authentication topic to its canonical route', async () => {
+    await expect(KnowledgeTopicPage({
+      params: Promise.resolve({ slug: 'authentication' }),
+    })).rejects.toMatchObject({
+      digest: 'NEXT_REDIRECT;replace;/kb/topic/authentication-and-connected-accounts;308;',
+    });
   });
 
   test('combines OAuth and verified support answers on toolkit pages', async () => {

@@ -17,6 +17,36 @@ const REQUIRED_PUBLIC_SOURCES: KnowledgeSourceType[] = [
   'changelog',
 ];
 
+function parseCsv(content: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index]!;
+    if (quoted && character === '"' && content[index + 1] === '"') {
+      cell += character;
+      index += 1;
+    } else if (character === '"') {
+      quoted = !quoted;
+    } else if (!quoted && character === ',') {
+      row.push(cell);
+      cell = '';
+    } else if (!quoted && (character === '\n' || character === '\r')) {
+      if (character === '\r' && content[index + 1] === '\n') index += 1;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += character;
+    }
+  }
+  if (cell || row.length > 0) rows.push([...row, cell]);
+  return rows;
+}
+
 function readTree(root: string): string {
   return readdirSync(root, { withFileTypes: true })
     .flatMap((entry) => {
@@ -102,6 +132,9 @@ describe('unified public knowledge corpus', () => {
       /linear\.app\/composio/i,
       /X-Amz-(?:Signature|Credential)/i,
       /(?:\/Users\/|\/home\/|[A-Za-z]:\\Users\\)/,
+      /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i,
+      /\bcandidate-only\b/i,
+      /^#{2,6}\s+(?:Internal|Support checks|Debug checklist|Related Plain refs)\b/im,
       /(?:draft )?response (?:shape|template)/i,
       /auth-config-list-pages-return-at-most-50-items/i,
     ];
@@ -109,6 +142,36 @@ describe('unified public knowledge corpus', () => {
     for (const pattern of forbidden) {
       expect(searchableKb).not.toMatch(pattern);
       expect(generatedKb).not.toMatch(pattern);
+    }
+  });
+
+  test('keeps every excluded audit candidate out of public KB provenance and search', async () => {
+    const auditRows = parseCsv(readFileSync(
+      join(process.cwd(), 'kb/audits/2026-07-22-section-audit.csv'),
+      'utf8',
+    ));
+    const [headers, ...rows] = auditRows;
+    const indexByHeader = new Map(headers?.map((header, index) => [header, index]));
+    const column = (row: string[], header: string) => row[indexByHeader.get(header) ?? -1] ?? '';
+    const excluded = rows.filter((row) => column(row, 'state') === 'exclude').map((row) => ({
+      sourcePath: column(row, 'source_paths'),
+      sourceHeading: column(row, 'source_headings'),
+      title: column(row, 'proposed_title'),
+    }));
+    const records = await getAlgoliaSearchDocuments();
+    const kbRecords = records.filter((record) => record.source_type === 'kb');
+    const generatedKb = readTree(join(process.cwd(), 'content/kb'));
+
+    expect(excluded).toHaveLength(5);
+    for (const candidate of excluded) {
+      const provenance = JSON.stringify({
+        sourcePath: candidate.sourcePath,
+        sourceHeading: candidate.sourceHeading,
+      });
+      const routeFragment = candidate.sourcePath.split('/').at(-2)!;
+      expect(generatedKb).not.toContain(provenance);
+      expect(kbRecords.some((record) => record.title === candidate.title)).toBe(false);
+      expect(kbRecords.some((record) => record.canonical_url.includes(routeFragment))).toBe(false);
     }
   });
 });

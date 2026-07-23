@@ -26,7 +26,7 @@ type AnySource =
 
 type PageOf = ReturnType<AnySource['getPages']>[number];
 
-function withoutFrontmatter(content: string): string {
+export function withoutFrontmatter(content: string): string {
   return content.replace(/^(?:\uFEFF)?---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
 }
 
@@ -207,4 +207,4 @@ async function getFiles(): Promise<FileObject[]> {
   return allFiles;
 }
 
-void checkLinks();
+if (import.meta.main) void checkLinks();

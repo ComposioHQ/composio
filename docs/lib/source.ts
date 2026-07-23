@@ -6,6 +6,7 @@ import {
   knowledgeBase,
   changelog,
 } from 'fumadocs-mdx:collections/server';
+import type { DocCollectionEntry } from 'fumadocs-mdx/runtime/server';
 import { type InferPageType, loader, multiple } from 'fumadocs-core/source';
 import { lucideIconsPlugin } from 'fumadocs-core/source/lucide-icons';
 import { openapi, openapiV3 } from './openapi';
@@ -134,7 +135,20 @@ export const knowledgeBaseSource = loader({
   plugins: [lucideIconsPlugin()],
 });
 
-export const changelogEntries = changelog;
+export type ChangelogEntry = DocCollectionEntry<
+  'changelog',
+  {
+    date: string;
+    title: string;
+    description?: string;
+    icon?: string;
+    full?: boolean;
+  }
+>;
+
+// The generated Fumadocs virtual module is untyped in Next's production
+// checker. Preserve the collection's public shape for all route consumers.
+export const changelogEntries = changelog as ChangelogEntry[];
 
 export function getOgImageUrl(_section: string, _slugs: string[], title?: string, _description?: string): string {
   const encodedTitle = encodeURIComponent(title ?? 'Composio Docs');
