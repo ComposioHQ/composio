@@ -10,6 +10,8 @@ mock.module("next/navigation", () => ({
 
 const { ApiEndpointsTable } = await import("../../components/api-endpoints-table");
 const { ApiPageTitle } = await import("../../components/api-page-title");
+const { DEPRECATED_API_LEGACY_TITLE } = await import("../../components/legacy-badge");
+const { getDeprecatedApiSidebarName } = await import("../../lib/deprecated-api-sidebar");
 const { getApiDisplayTitle, isApiPageDeprecated } = await import("../../lib/api-deprecation");
 
 const DOCS_DIR = join(import.meta.dir, "../..");
@@ -198,6 +200,65 @@ describe("deprecated API endpoints", () => {
     );
 
     expect(deprecated).toBe(false);
+    expect(html).not.toContain(">Legacy</span>");
+  });
+
+  test("replaces the sidebar title marker with a compact Legacy badge", () => {
+    const operation = {
+      method: "get",
+      path: "/v3.1/tasks/deprecated",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: { deprecated: true },
+            },
+          },
+        },
+      }),
+    };
+
+    const html = renderToStaticMarkup(
+      <>
+        {getDeprecatedApiSidebarName("Deprecated task endpoint (DEPRECATED)", pageData, [
+          operation,
+        ])}
+      </>,
+    );
+
+    expect(html).toContain("Deprecated task endpoint");
+    expect(html).not.toContain("(DEPRECATED)");
+    expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
+    expect(html).toContain("text-[10px]");
+    expect(html).toContain(DEPRECATED_API_LEGACY_TITLE);
+  });
+
+  test("keeps an unflagged sidebar title unchanged", () => {
+    const operation = {
+      method: "post",
+      path: "/v3.1/tasks/active",
+    };
+    const pageData = {
+      getSchema: () => ({
+        dereferenced: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: {},
+            },
+          },
+        },
+      }),
+    };
+
+    const html = renderToStaticMarkup(
+      <>
+        {getDeprecatedApiSidebarName("Active task endpoint (DEPRECATED)", pageData, [operation])}
+      </>,
+    );
+
+    expect(html).toBe("Active task endpoint (DEPRECATED)");
     expect(html).not.toContain(">Legacy</span>");
   });
 

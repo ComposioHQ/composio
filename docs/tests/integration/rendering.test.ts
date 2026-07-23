@@ -34,6 +34,10 @@ const ACTIVE_API_PAGES = [
   "/reference/v3/api-reference/files/postFilesUploadRequest",
 ];
 
+function getPageHeading(html: string): string | undefined {
+  return html.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0];
+}
+
 describe("Page rendering - critical pages", () => {
   for (const { path, name } of CRITICAL_PAGES) {
     test(`${name} (${path}) returns 200`, async () => {
@@ -76,9 +80,11 @@ describe("Page rendering - deprecated API endpoints", () => {
     test(`${path} renders the Legacy badge`, async () => {
       const res = await fetchPage(path);
       const html = await res.text();
+      const heading = getPageHeading(html);
 
       expect(res.status).toBe(200);
-      expect(html).toContain(DEPRECATED_API_LEGACY_TITLE);
+      expect(heading).toBeDefined();
+      expect(heading).toContain(DEPRECATED_API_LEGACY_TITLE);
     });
   }
 
@@ -86,11 +92,29 @@ describe("Page rendering - deprecated API endpoints", () => {
     test(`${path} omits the Legacy badge`, async () => {
       const res = await fetchPage(path);
       const html = await res.text();
+      const heading = getPageHeading(html);
 
       expect(res.status).toBe(200);
-      expect(html).not.toContain(DEPRECATED_API_LEGACY_TITLE);
+      expect(heading).toBeDefined();
+      expect(heading).not.toContain(DEPRECATED_API_LEGACY_TITLE);
     });
   }
+
+  test("deprecated endpoint sidebar links replace the title marker with Legacy", async () => {
+    const path = DEPRECATED_API_PAGES[0];
+    const res = await fetchPage(path);
+    const html = await res.text();
+    const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const sidebarLink = html.match(
+      new RegExp(`<a[^>]*href="${escapedPath}"[^>]*>[\\s\\S]*?<\\/a>`),
+    )?.[0];
+
+    expect(res.status).toBe(200);
+    expect(sidebarLink).toBeDefined();
+    expect(sidebarLink).toContain(">Legacy</span>");
+    expect(sidebarLink).not.toContain("(DEPRECATED)");
+    expect(sidebarLink).toContain(">POST</span>");
+  });
 });
 
 describe("Page rendering - error handling", () => {

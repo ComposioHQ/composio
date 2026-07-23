@@ -1,4 +1,4 @@
-interface ApiPageOperation {
+export interface ApiPageOperation {
   method: string;
   path: string;
 }
