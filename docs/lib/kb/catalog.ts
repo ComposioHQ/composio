@@ -1,5 +1,5 @@
-import { extractGuideBody, parsePublicKbDocument } from './source-document';
-import type { KbCatalog, KbGuide, KbManifest } from './types';
+import { extractGuideSections, parsePublicKbDocument } from './source-document';
+import type { KbCatalog, KbGuide, KbManifest, KbSourceDocument } from './types';
 
 const PRIVATE_MARKERS = [
   { label: 'Plain thread reference', pattern: /\bT-\d{2,}\b/ },
@@ -25,11 +25,11 @@ function validDate(value: string | null): Date | null {
 export function buildKbCatalog(
   manifest: KbManifest,
   readSource: (sourcePath: string) => string,
-  now = new Date(),
+  now = new Date()
 ): KbCatalog {
-  if (manifest.schemaVersion !== 1) throw new Error('Unsupported KB manifest schema');
+  if (manifest.schemaVersion !== 2) throw new Error('Unsupported KB manifest schema');
 
-  const topicSlugs = new Set(manifest.topics.map((topic) => topic.slug));
+  const topicSlugs = new Set(manifest.topics.map(topic => topic.slug));
   if (topicSlugs.size !== manifest.topics.length) throw new Error('Duplicate KB topic slug');
 
   const claimed = new Set<string>();
@@ -46,23 +46,37 @@ export function buildKbCatalog(
     }
   }
 
-  const definitionSlugs = new Set(manifest.guides.map((guide) => guide.slug));
-  const guides: KbGuide[] = manifest.guides.map((definition) => {
+  const definitionSlugs = new Set(manifest.guides.map(guide => guide.slug));
+  const documents = new Map<string, KbSourceDocument>();
+  const documentFor = (sourcePath: string): KbSourceDocument => {
+    const cached = documents.get(sourcePath);
+    if (cached) return cached;
+
+    const document = parsePublicKbDocument(readSource(sourcePath));
+    if (document.metadata.visibility !== 'public') {
+      throw new Error(`${sourcePath} is not visibility: public`);
+    }
+    for (const marker of PRIVATE_MARKERS) {
+      if (marker.pattern.test(document.body)) {
+        throw new Error(`${sourcePath} contains ${marker.label}`);
+      }
+    }
+    documents.set(sourcePath, document);
+    return document;
+  };
+  const guides: KbGuide[] = manifest.guides.map(definition => {
     for (const related of definition.relatedGuides) {
       if (!definitionSlugs.has(related)) {
         throw new Error(`${definition.slug} has unknown related guide: ${related}`);
       }
     }
 
-    const document = parsePublicKbDocument(readSource(definition.sourcePath));
-    if (document.metadata.visibility !== 'public') {
-      throw new Error(`${definition.sourcePath} is not visibility: public`);
+    if (definition.sources.length === 0) {
+      throw new Error(`${definition.slug} requires at least one source`);
     }
-    for (const marker of PRIVATE_MARKERS) {
-      if (marker.pattern.test(document.body)) {
-        throw new Error(`${definition.sourcePath} contains ${marker.label}`);
-      }
-    }
+    const sourceMetadata = definition.sources.map(
+      source => documentFor(source.sourcePath).metadata
+    );
 
     if (definition.state === 'published') {
       if (!validDate(definition.lastVerifiedAt)) {
@@ -79,11 +93,10 @@ export function buildKbCatalog(
 
     return {
       ...definition,
-      body: extractGuideBody(document, definition.sourceHeading),
-      sourceMetadata: document.metadata,
+      body: extractGuideSections(documentFor, definition.sources),
+      sourceMetadata,
     };
   });
 
   return { manifest, topics: manifest.topics, guides };
 }
-

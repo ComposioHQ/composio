@@ -23,12 +23,16 @@ export interface KbTopic {
   featuredRank: number | null;
 }
 
+export interface KbSourceReference {
+  sourcePath: string;
+  sourceHeading: string | null;
+}
+
 export interface KbGuideDefinition {
   slug: string;
   title: string;
   description: string;
-  sourcePath: string;
-  sourceHeading: string | null;
+  sources: KbSourceReference[];
   topics: string[];
   tags: string[];
   aliases: string[];
@@ -44,11 +48,11 @@ export interface KbGuideDefinition {
 
 export interface KbGuide extends KbGuideDefinition {
   body: string;
-  sourceMetadata: KbSourceMetadata;
+  sourceMetadata: KbSourceMetadata[];
 }
 
 export interface KbManifest {
-  schemaVersion: 1;
+  schemaVersion: 2;
   source: {
     repository: string;
     commit: string;
@@ -63,4 +67,3 @@ export interface KbCatalog {
   topics: KbTopic[];
   guides: KbGuide[];
 }
-

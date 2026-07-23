@@ -18,13 +18,15 @@ tags:
 ## Stable answer
 
 This is safe public guidance.
+
+## Second answer
+
+This is the second safe answer.
 `;
 
-function manifest(
-  overrides: Partial<KbManifest['guides'][number]> = {},
-): KbManifest {
+function manifest(overrides: Partial<KbManifest['guides'][number]> = {}): KbManifest {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     source: {
       repository: 'ComposioHQ/support-workflows',
       commit: '5eed614',
@@ -43,8 +45,10 @@ function manifest(
         slug: 'stable-answer',
         title: 'Stable answer',
         description: 'A stable answer.',
-        sourcePath: 'kb/platform/example/public.md',
-        sourceHeading: 'Stable answer',
+        sources: [
+          { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Stable answer' },
+          { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Second answer' },
+        ],
         topics: ['platform'],
         tags: ['example'],
         aliases: ['old-answer'],
@@ -63,16 +67,23 @@ function manifest(
 }
 
 describe('public KB catalog', () => {
-  test('extracts a selected public section', () => {
+  test('assembles multiple selected public sections with their headings', () => {
     const catalog = buildKbCatalog(manifest(), () => source, new Date('2026-07-21'));
-    expect(catalog.guides[0]?.body).toBe('This is safe public guidance.');
+    expect(catalog.guides[0]?.body).toBe(`## Stable answer
+
+This is safe public guidance.
+
+## Second answer
+
+This is the second safe answer.`);
+    expect(catalog.guides[0]?.sourceMetadata).toHaveLength(2);
   });
 
   test('loads the first ten published guides and one held guide from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 
     expect(published).toHaveLength(10);
-    expect(published.map((guide) => guide.slug)).toEqual(
+    expect(published.map(guide => guide.slug)).toEqual(
       expect.arrayContaining([
         'deduplicate-trigger-webhook-deliveries',
         'custom-connection-data-fields-are-toolkit-specific',
@@ -82,18 +93,14 @@ describe('public KB catalog', () => {
         'granola-mcp-metadata-comes-from-the-upstream-server',
         'inspect-odoo-json-rpc-errors-inside-http-200-responses',
         'strava-athlete-limits-belong-to-the-oauth-app',
-      ]),
+      ])
     );
-    expect(getKbCatalog().guides.filter((guide) => guide.state === 'needs-review')).toHaveLength(1);
+    expect(getKbCatalog().guides.filter(guide => guide.state === 'needs-review')).toHaveLength(1);
   });
 
   test('rejects an expired published review window', () => {
     expect(() =>
-      buildKbCatalog(
-        manifest({ reviewAfter: '2026-07-20' }),
-        () => source,
-        new Date('2026-07-21'),
-      ),
+      buildKbCatalog(manifest({ reviewAfter: '2026-07-20' }), () => source, new Date('2026-07-21'))
     ).toThrow('review window expired');
   });
 
@@ -102,9 +109,73 @@ describe('public KB catalog', () => {
       buildKbCatalog(
         manifest({ state: 'needs-review', lastVerifiedAt: null, reviewAfter: null }),
         () => source.replace('safe public guidance', 'See Plain T-12345'),
-        new Date('2026-07-21'),
-      ),
+        new Date('2026-07-21')
+      )
     ).toThrow('Plain thread reference');
+  });
+
+  test('rejects a guide without source references', () => {
+    expect(() =>
+      buildKbCatalog(manifest({ sources: [] }), () => source, new Date('2026-07-21'))
+    ).toThrow('requires at least one source');
+  });
+
+  test('rejects a missing referenced heading', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({
+          sources: [
+            { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Missing answer' },
+          ],
+        }),
+        () => source,
+        new Date('2026-07-21')
+      )
+    ).toThrow('Heading "Missing answer" was not found');
+  });
+
+  test('rejects a whole-document reference when level-two sections are present', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({
+          sources: [{ sourcePath: 'kb/platform/example/public.md', sourceHeading: null }],
+        }),
+        () => source,
+        new Date('2026-07-21')
+      )
+    ).toThrow('A source without a heading cannot contain level-two sections');
+  });
+
+  test('rejects a nonpublic referenced source', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({
+          sources: [
+            { sourcePath: 'kb/platform/example/private.md', sourceHeading: 'Stable answer' },
+          ],
+        }),
+        () => source.replace('visibility: public', 'visibility: internal'),
+        new Date('2026-07-21')
+      )
+    ).toThrow('kb/platform/example/private.md is not visibility: public');
+  });
+
+  test('rejects private markers in every referenced public source', () => {
+    expect(() =>
+      buildKbCatalog(
+        manifest({
+          sources: [
+            { sourcePath: 'kb/platform/example/public.md', sourceHeading: 'Stable answer' },
+            { sourcePath: 'kb/platform/example/other-public.md', sourceHeading: 'Second answer' },
+          ],
+        }),
+        sourcePath =>
+          sourcePath.endsWith('other-public.md')
+            ? source.replace('second safe answer', 'See Plain T-12345')
+            : source,
+        new Date('2026-07-21')
+      )
+    ).toThrow('kb/platform/example/other-public.md contains Plain thread reference');
   });
 
   test('resolves published aliases to canonical flat guide routes', () => {

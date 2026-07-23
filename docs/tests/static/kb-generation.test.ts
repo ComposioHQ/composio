@@ -14,8 +14,8 @@ afterEach(() => {
 
 function listFiles(directory: string): string[] {
   return readdirSync(directory, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => relative(directory, join(entry.parentPath, entry.name)))
+    .filter(entry => entry.isFile())
+    .map(entry => relative(directory, join(entry.parentPath, entry.name)))
     .sort();
 }
 
@@ -42,9 +42,9 @@ describe('public KB content generation', () => {
     expect(files).toContain('guide/granola-mcp-metadata-comes-from-the-upstream-server.mdx');
     expect(files).toContain('guide/inspect-odoo-json-rpc-errors-inside-http-200-responses.mdx');
     expect(files).toContain('guide/strava-athlete-limits-belong-to-the-oauth-app.mdx');
-    expect(files.some((file) => file.startsWith('toolkits/'))).toBe(false);
-    expect(files.some((file) => file.startsWith('sdk-and-api/'))).toBe(false);
-    expect(files.some((file) => file.includes('auth-config-list-pages'))).toBe(false);
+    expect(files.some(file => file.startsWith('toolkits/'))).toBe(false);
+    expect(files.some(file => file.startsWith('sdk-and-api/'))).toBe(false);
+    expect(files.some(file => file.includes('auth-config-list-pages'))).toBe(false);
 
     expect(JSON.parse(readFileSync(join(outputDir, 'meta.json'), 'utf8'))).toEqual({
       title: 'Knowledge Base',
@@ -69,19 +69,24 @@ describe('public KB content generation', () => {
 
     const guide = readFileSync(
       join(outputDir, 'guide/pagination-limits-are-endpoint-specific.mdx'),
-      'utf8',
+      'utf8'
     );
     expect(guide).toContain('sourceCommit: "5eed614"');
+    expect(guide).toContain(
+      'sources: [{"sourcePath":"kb/platform/pagination/public.md","sourceHeading":"Pagination limits are endpoint-specific"}]'
+    );
+    expect(guide).not.toContain('sourcePath:');
+    expect(guide).not.toContain('sourceHeading:');
     expect(guide).toContain('lastVerifiedAt: "2026-07-21"');
     expect(guide).toContain('reviewAfter: "2027-01-17"');
     expect(guide).toContain(
-      'related:\n  - title: "Use Tool Router session files as toolkit inputs"',
+      'related:\n  - title: "Use Tool Router session files as toolkit inputs"'
     );
     expect(guide).not.toContain('related: [{');
 
     const ahrefsGuide = readFileSync(
       join(outputDir, 'guide/ahrefs-actions-use-the-api-host.mdx'),
-      'utf8',
+      'utf8'
     );
     expect(ahrefsGuide).toContain('lastVerifiedAt: "2026-07-22"');
     expect(ahrefsGuide).toContain('reviewAfter: "2026-10-20"');
@@ -93,7 +98,7 @@ describe('public KB content generation', () => {
     temporaryDirectories.push(outputDir);
 
     expect(() => generateKbContent({ outputDir, check: true })).toThrow(
-      'Generated KB content is out of date',
+      'Generated KB content is out of date'
     );
   });
 });

@@ -1,4 +1,4 @@
-import type { KbSourceDocument, KbSourceMetadata } from './types';
+import type { KbSourceDocument, KbSourceMetadata, KbSourceReference } from './types';
 
 const REQUIRED_KEYS = [
   'type',
@@ -90,28 +90,32 @@ function normalizedHeading(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-export function extractGuideBody(
+function guideSection(
   document: KbSourceDocument,
-  sourceHeading: string | null,
-): string {
+  sourceHeading: string | null
+): { heading: string | null; body: string } {
   const lines = document.body.split('\n');
   if (!sourceHeading) {
-    const firstContent = lines.findIndex((line) => line.trim().length > 0);
+    if (lines.some(line => /^##\s+/.test(line))) {
+      throw new Error('A source without a heading cannot contain level-two sections');
+    }
+    const firstContent = lines.findIndex(line => line.trim().length > 0);
     if (firstContent >= 0 && /^#\s+/.test(lines[firstContent] ?? '')) {
       lines.splice(firstContent, 1);
     }
-    return lines.join('\n').trim();
+    return { heading: null, body: lines.join('\n').trim() };
   }
 
   const target = normalizedHeading(sourceHeading);
   const matches = lines
     .map((line, index) => ({ index, match: line.match(/^##\s+(.+?)\s*$/) }))
-    .filter((item) => item.match && normalizedHeading(item.match[1] ?? '') === target);
+    .filter(item => item.match && normalizedHeading(item.match[1] ?? '') === target);
 
   if (matches.length === 0) throw new Error(`Heading "${sourceHeading}" was not found`);
   if (matches.length > 1) throw new Error(`Heading "${sourceHeading}" is duplicated`);
 
-  const start = (matches[0]?.index ?? 0) + 1;
+  const match = matches[0];
+  const start = (match?.index ?? 0) + 1;
   let end = lines.length;
   for (let index = start; index < lines.length; index++) {
     if (/^##\s+/.test(lines[index] ?? '')) {
@@ -119,6 +123,27 @@ export function extractGuideBody(
       break;
     }
   }
-  return lines.slice(start, end).join('\n').trim();
+  return { heading: match?.match?.[1] ?? null, body: lines.slice(start, end).join('\n').trim() };
 }
 
+export function extractGuideBody(document: KbSourceDocument, sourceHeading: string | null): string {
+  return guideSection(document, sourceHeading).body;
+}
+
+export function extractGuideSections(
+  document: KbSourceDocument | ((sourcePath: string) => KbSourceDocument),
+  references: KbSourceReference[]
+): string {
+  const resolveDocument =
+    typeof document === 'function' ? document : (_sourcePath: string) => document;
+  const includeHeadings = references.length > 1;
+
+  return references
+    .map(reference => {
+      const section = guideSection(resolveDocument(reference.sourcePath), reference.sourceHeading);
+      return includeHeadings && section.heading
+        ? `## ${section.heading}\n\n${section.body}`
+        : section.body;
+    })
+    .join('\n\n');
+}
