@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -9,6 +9,7 @@ import {
   renderAuditMarkdown,
   type KbAuditRow,
 } from '@/lib/kb/audit';
+import { assertExactRevision, resolveAuditRoots } from '@/scripts/audit-kb-sections';
 
 const temporaryDirectories: string[] = [];
 
@@ -160,5 +161,36 @@ describe('public KB audit', () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('--source-root must be an absolute path');
+  });
+
+  test('rejects an output symlink that resolves inside the source checkout before writing', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-audit-paths-'));
+    temporaryDirectories.push(root);
+    const sourceRoot = join(root, 'support-workflows');
+    const sourceOutputTarget = join(sourceRoot, 'audit-output');
+    const outputAlias = join(root, 'output-alias');
+    mkdirSync(sourceOutputTarget, { recursive: true });
+    symlinkSync(sourceOutputTarget, outputAlias, 'dir');
+    const requestedOutput = join(outputAlias, 'not-created');
+
+    expect(() => resolveAuditRoots(sourceRoot, requestedOutput)).toThrow(
+      '--output-dir must not overlap --source-root',
+    );
+    expect(existsSync(join(sourceOutputTarget, 'not-created'))).toBe(false);
+  });
+
+  test('requires the resolved HEAD and pinned commit to match exactly', () => {
+    expect(() =>
+      assertExactRevision(
+        '5eed614000000000000000000000000000000000',
+        '5eed614fffffffffffffffffffffffffffffffff',
+      ),
+    ).toThrow('--source-root must be checked out at 5eed614');
+    expect(() =>
+      assertExactRevision(
+        '5eed614fffffffffffffffffffffffffffffffff',
+        '5eed614fffffffffffffffffffffffffffffffff',
+      ),
+    ).not.toThrow();
   });
 });

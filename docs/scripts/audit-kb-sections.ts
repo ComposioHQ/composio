@@ -1,6 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { basename, isAbsolute, relative, resolve } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
 import {
   inventoryPublicKb,
   renderAuditCsv,
@@ -63,21 +70,68 @@ function isInside(directory: string, possibleChild: string): boolean {
   return path === '' || (!path.startsWith('..') && !isAbsolute(path));
 }
 
-function verifySourceCheckout(sourceRoot: string, outputDir: string): void {
-  if (!statSync(sourceRoot).isDirectory()) throw new Error('--source-root must be a directory');
-  if (isInside(sourceRoot, outputDir)) {
-    throw new Error('--output-dir must not be inside --source-root');
+function resolveWithExistingAncestor(path: string): string {
+  let ancestor = resolve(path);
+  const missingSegments: string[] = [];
+  while (!existsSync(ancestor)) {
+    const parent = dirname(ancestor);
+    if (parent === ancestor) throw new Error(`Cannot resolve path: ${path}`);
+    missingSegments.unshift(basename(ancestor));
+    ancestor = parent;
   }
-  const commit = execFileSync('git', ['-C', sourceRoot, 'rev-parse', 'HEAD'], {
-    encoding: 'utf8',
-  }).trim();
-  if (!commit.startsWith(REQUIRED_COMMIT)) {
+  return resolve(realpathSync(ancestor), ...missingSegments);
+}
+
+export function resolveAuditRoots(
+  sourceRoot: string,
+  outputDir: string,
+): { sourceRoot: string; outputDir: string } {
+  const resolvedSourceRoot = realpathSync(sourceRoot);
+  const resolvedOutputDir = resolveWithExistingAncestor(outputDir);
+  if (
+    isInside(resolvedSourceRoot, resolvedOutputDir) ||
+    isInside(resolvedOutputDir, resolvedSourceRoot)
+  ) {
+    throw new Error('--output-dir must not overlap --source-root');
+  }
+  return { sourceRoot: resolvedSourceRoot, outputDir: resolvedOutputDir };
+}
+
+export function assertExactRevision(head: string, required: string): void {
+  if (head.trim() !== required.trim()) {
     throw new Error(`--source-root must be checked out at ${REQUIRED_COMMIT}`);
   }
 }
 
+function verifySourceCheckout(
+  sourceRoot: string,
+  outputDir: string,
+): { sourceRoot: string; outputDir: string } {
+  const roots = resolveAuditRoots(sourceRoot, outputDir);
+  if (!statSync(roots.sourceRoot).isDirectory()) {
+    throw new Error('--source-root must be a directory');
+  }
+  const head = execFileSync('git', ['-C', roots.sourceRoot, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+  });
+  const required = execFileSync(
+    'git',
+    ['-C', roots.sourceRoot, 'rev-parse', `${REQUIRED_COMMIT}^{commit}`],
+    {
+      encoding: 'utf8',
+    },
+  );
+  assertExactRevision(head, required);
+  return roots;
+}
+
 function isState(value: unknown): value is KbAuditState {
-  return value === 'publish' || value === 'link-only' || value === 'needs-verification' || value === 'exclude';
+  return (
+    value === 'publish' ||
+    value === 'link-only' ||
+    value === 'needs-verification' ||
+    value === 'exclude'
+  );
 }
 
 function readDecisions(decisionsPath: string): Map<string, AuditDecision> {
@@ -126,14 +180,14 @@ function auditFilePrefix(decisionsPath: string): string {
 }
 
 export function runAudit(options: CliOptions): void {
-  verifySourceCheckout(options.sourceRoot, options.outputDir);
-  const inventory = inventoryPublicKb(options.sourceRoot);
+  const roots = verifySourceCheckout(options.sourceRoot, options.outputDir);
+  const inventory = inventoryPublicKb(roots.sourceRoot);
   const rows = buildRows(inventory.candidates, readDecisions(options.decisions));
   const prefix = auditFilePrefix(options.decisions);
-  mkdirSync(options.outputDir, { recursive: true });
-  writeFileSync(resolve(options.outputDir, `${prefix}-section-audit.csv`), renderAuditCsv(rows));
+  mkdirSync(roots.outputDir, { recursive: true });
+  writeFileSync(resolve(roots.outputDir, `${prefix}-section-audit.csv`), renderAuditCsv(rows));
   writeFileSync(
-    resolve(options.outputDir, `${prefix}-content-gap-audit.md`),
+    resolve(roots.outputDir, `${prefix}-content-gap-audit.md`),
     renderAuditMarkdown(inventory, rows),
   );
   console.log(
@@ -141,9 +195,11 @@ export function runAudit(options: CliOptions): void {
   );
 }
 
-try {
-  runAudit(parseOptions(process.argv.slice(2)));
-} catch (error) {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
+if (import.meta.main) {
+  try {
+    runAudit(parseOptions(process.argv.slice(2)));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  }
 }
