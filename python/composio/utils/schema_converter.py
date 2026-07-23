@@ -89,6 +89,13 @@ def _filter_boolean_schemas(
     result = {}
     for key, value in schema.items():
         if key in ("anyOf", "allOf", "oneOf"):
+            # allOf is a conjunction: a `false` member forces the whole
+            # combiner (and thus this schema) to reject every value, unlike
+            # anyOf/oneOf where a `false` branch is simply inert.
+            if key == "allOf" and isinstance(value, list) and any(
+                member is False for member in value
+            ):
+                return None
             # Filter boolean schemas from combiner arrays
             filtered_value = _filter_boolean_schemas(value)
             if filtered_value is None or (
@@ -146,7 +153,10 @@ def json_schema_to_pydantic_type(
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
     if filtered_schema is None:
-        return str  # Fallback if all schemas were false
+        # Unsatisfiable schema (e.g. allOf containing `false`). Mirror the
+        # bare-`false`-schema case above instead of falling back to `str`,
+        # which would wrongly accept any string value.
+        return None
 
     # Handle simple primitive types without complex combiners
     if _is_simple_primitive(filtered_schema):
