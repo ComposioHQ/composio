@@ -1,5 +1,6 @@
 import { DeprecatedApiLegacyBadge } from '@/components/legacy-badge';
 import { VersionBadge } from '@/components/version-badge';
+import { getApiDisplayTitle } from '@/lib/api-deprecation';
 
 interface ApiPageTitleProps {
   title: string;
@@ -12,17 +13,15 @@ export function ApiPageTitle({
   version,
   deprecated,
 }: ApiPageTitleProps) {
+  const displayTitle = getApiDisplayTitle(title, deprecated);
+
   return (
-    <h1 className="text-2xl font-semibold">
-      {title}
-      {version && (
-        <span className="ml-2 align-middle">
-          <VersionBadge version={version} />
-        </span>
-      )}
-      {deprecated && (
-        <span className="ml-2 inline-flex align-middle">
-          <DeprecatedApiLegacyBadge />
+    <h1 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-semibold">
+      <span>{displayTitle}</span>
+      {(version || deprecated) && (
+        <span className="inline-flex shrink-0 items-center gap-2">
+          {version && <VersionBadge version={version} />}
+          {deprecated && <DeprecatedApiLegacyBadge />}
         </span>
       )}
     </h1>

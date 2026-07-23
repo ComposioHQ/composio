@@ -10,7 +10,7 @@ mock.module("next/navigation", () => ({
 
 const { ApiEndpointsTable } = await import("../../components/api-endpoints-table");
 const { ApiPageTitle } = await import("../../components/api-page-title");
-const { isApiPageDeprecated } = await import("../../lib/api-deprecation");
+const { getApiDisplayTitle, isApiPageDeprecated } = await import("../../lib/api-deprecation");
 
 const DOCS_DIR = join(import.meta.dir, "../..");
 const GENERATOR_PATH = join(DOCS_DIR, "scripts/generate-api-index.ts");
@@ -117,6 +117,21 @@ afterEach(async () => {
 });
 
 describe("deprecated API endpoints", () => {
+  test("removes only a trailing deprecation marker from deprecated display titles", () => {
+    expect(getApiDisplayTitle("Deprecated task endpoint (DEPRECATED)", true)).toBe(
+      "Deprecated task endpoint",
+    );
+    expect(getApiDisplayTitle("Deprecated task endpoint (deprecated)", true)).toBe(
+      "Deprecated task endpoint",
+    );
+    expect(getApiDisplayTitle("Active task endpoint (DEPRECATED)", false)).toBe(
+      "Active task endpoint (DEPRECATED)",
+    );
+    expect(getApiDisplayTitle("Deprecated endpoint details", true)).toBe(
+      "Deprecated endpoint details",
+    );
+  });
+
   test("renders Legacy on a deprecated API endpoint detail title", () => {
     const operation = {
       method: "get",
@@ -137,13 +152,19 @@ describe("deprecated API endpoints", () => {
     const deprecated = isApiPageDeprecated(pageData, [operation]);
     const html = renderToStaticMarkup(
       <ApiPageTitle
-        title="Deprecated task endpoint"
+        title="Deprecated task endpoint (DEPRECATED)"
         version="3.1"
         deprecated={deprecated}
       />,
     );
 
     expect(deprecated).toBe(true);
+    expect(html).toContain("<span>Deprecated task endpoint</span>");
+    expect(html).not.toContain("Deprecated task endpoint (DEPRECATED)");
+    expect(html).toContain(
+      'class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-semibold"',
+    );
+    expect(html).toContain('class="inline-flex shrink-0 items-center gap-2"');
     expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
     expect(html).toContain(
       'title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"',
@@ -212,7 +233,7 @@ describe("deprecated API endpoints", () => {
             method: "GET",
             pathV31: "/v3.1/tasks/deprecated",
             pathV3: "/v3/tasks/deprecated",
-            summary: "Deprecated task endpoint",
+            summary: "Deprecated task endpoint (DEPRECATED)",
             href: "/reference/api-reference/tasks/getDeprecatedTask",
             legacy: true,
           },
@@ -227,6 +248,10 @@ describe("deprecated API endpoints", () => {
       />,
     );
 
+    expect(html).toContain(
+      '<a href="/reference/api-reference/tasks/getDeprecatedTask">Deprecated task endpoint</a>',
+    );
+    expect(html).not.toContain("Deprecated task endpoint (DEPRECATED)");
     expect(
       html.match(
         /title="Deprecated API endpoint; kept for existing integrations and may be removed in a future release"/g,
