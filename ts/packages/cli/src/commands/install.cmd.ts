@@ -266,7 +266,10 @@ export const installShellIntegration = (params: {
 
     if (blocksByFile.size > 0) {
       for (const [filePath, blocks] of blocksByFile.entries()) {
-        const existingContents = existingByFile.get(filePath) ?? '';
+        // Re-read instead of reusing the pre-check snapshot: two configured paths
+        // can alias the same physical file through symlinks, and this write must
+        // not discard a previous iteration's append.
+        const existingContents = yield* readMaybeMissingFile(filePath, fs);
         const writeTarget = yield* resolveWriteTarget(filePath, fs);
 
         yield* fs

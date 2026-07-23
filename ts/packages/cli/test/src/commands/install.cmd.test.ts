@@ -195,6 +195,43 @@ describe('CLI: composio install', () => {
     });
   });
 
+  describe('[When] fish config and completions are symlinked to the same file', () => {
+    layer(TestLive())(it => {
+      it.scoped('[Then] keeps both PATH and completions blocks', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          const fs = yield* FileSystem.FileSystem;
+          process.env.SHELL = '/usr/bin/fish';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          const configPath = path.join(os.homedir, '.config', 'fish', 'config.fish');
+          const completionPath = path.join(
+            os.homedir,
+            '.config',
+            'fish',
+            'completions',
+            'composio.fish'
+          );
+          const managedPath = path.join(os.homedir, '.managed-fish-config');
+          yield* fs.makeDirectory(path.dirname(completionPath), { recursive: true });
+          yield* fs.remove(configPath, { force: true });
+          yield* fs.writeFileString(managedPath, '# managed fish config\n');
+          yield* fs.symlink(managedPath, configPath);
+          yield* fs.symlink(managedPath, completionPath);
+
+          yield* cli(['install', '--completions']);
+
+          const contents = yield* fs.readFileString(managedPath);
+          const pathMarkerCount = contents.match(/^# Composio CLI$/gm)?.length ?? 0;
+          const completionsMarkerCount =
+            contents.match(/^# Composio CLI completions$/gm)?.length ?? 0;
+          expect(pathMarkerCount).toBe(1);
+          expect(completionsMarkerCount).toBe(1);
+        })
+      );
+    });
+  });
+
   describe('[When] fish shell installs completions twice', () => {
     layer(TestLive())(it => {
       it.scoped('[Then] keeps config.fish and composio.fish idempotent', () =>
