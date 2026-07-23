@@ -25,8 +25,6 @@ const ANALYTICS_STATE_FILE_NAME = 'analytics.json';
 const CONSUMER_SHORT_TERM_CACHE_FILE_NAME = 'consumer-short-term-cache.json';
 const CLI_CODACT_FAILURES_PATH = '/api/v3/cli/codact_failures';
 
-// PostHog's single-event capture endpoint expects `$create_alias` to merge an
-// anonymous person into an identified one (`properties.alias` -> `distinct_id`).
 const POSTHOG_ALIAS_EVENT = '$create_alias';
 const POSTHOG_LIB = 'composio-cli';
 
@@ -102,10 +100,8 @@ const analyticsDisabled = environmentProvider.load(
   )
 );
 
-// Resolves the direct-to-PostHog transport target. Both fields fall back to the
-// embedded constants; env overrides exist for tests and staging. Crucially this
-// does NOT depend on the Composio API base URL (which is only written at login),
-// so pre-login install/setup events can be delivered.
+// Direct-to-PostHog target; env overrides fall back to the embedded constants.
+// No dependency on the API base URL, so pre-login events can send.
 const getPostHogConfig = environmentProvider
   .load(
     Config.all({
@@ -175,9 +171,8 @@ const readOptionalJson = <A>(filePath: string) =>
     return (yield* decodeJson(raw)) as A;
   }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
 
-// Persisted `~/.composio/analytics.json`. `install_id` is the anonymous device
-// UUID; `apollo_user_id` (the Apollo `org_member.id`, persisted at login) becomes
-// the PostHog identity so CLI events join the same person as web onboarding.
+// `install_id` = anonymous device UUID; `apollo_user_id` = Apollo `org_member.id`
+// persisted at login, used as the PostHog identity post-login.
 type AnalyticsState = {
   readonly install_id?: string;
   readonly apollo_user_id?: string;
@@ -221,9 +216,7 @@ const readApolloUserId = Effect.map(readAnalyticsState, state =>
     : null
 );
 
-// Persists the Apollo `org_member.id` into the analytics state, preserving the
-// existing `install_id`/`created_at` so the anonymous device identity is kept
-// for the login-time alias. Best-effort: never surfaces or throws.
+// Persists the Apollo `org_member.id`, preserving `install_id`/`created_at`.
 const persistApolloUserId = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -263,10 +256,8 @@ const getUserApiKey = Effect.gen(function* () {
     : null;
 });
 
-// Post-login events key on the Apollo `org_member.id` (persisted at login) so
-// they resolve to the same PostHog person as web onboarding. Pre-login, the raw
-// `install_id` is the distinct id (NOT wrapped as `anon_<id>` — the login-time
-// `$create_alias` merges this exact value into the Apollo person).
+// Post-login: the Apollo `org_member.id`. Pre-login: the raw `install_id` (the
+// login-time `$create_alias` merges this exact value into the Apollo person).
 const getDistinctId = (installId: string) =>
   Effect.map(readApolloUserId, apolloUserId => apolloUserId ?? installId);
 
@@ -360,11 +351,8 @@ const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
     );
   });
 
-// Shapes an analytics envelope into a PostHog single-event capture body. The
-// public project write key authenticates the ingest in-band (no user API key),
-// which is what lets pre-login events send. Only allowlisted, already-shaped
-// properties from the event builders flow through here — no secrets or tool-arg
-// values (see events.ts).
+// Shapes an envelope into a PostHog capture body. The public project key
+// authenticates the ingest in-band — no user API key, so pre-login events send.
 const buildPostHogBody = (envelope: AnalyticsEnvelope, projectKey: string) => ({
   api_key: projectKey,
   event: envelope.event,
@@ -504,8 +492,7 @@ const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
     });
   });
 
-// Encodes an envelope and hands it to the detached best-effort worker, which
-// delivers it directly to PostHog. Shared by event tracking and login aliasing.
+// Hands an envelope to the detached best-effort worker for PostHog delivery.
 const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
     yield* telemetryDebugLog('enqueue', { envelope });
@@ -524,9 +511,6 @@ export const trackCliEventEffect = (event: TrackEvent) =>
       return;
     }
 
-    // The direct PostHog transport carries a fixed endpoint + embedded public
-    // key, so — unlike the old Apollo path — there is no base-URL gate here and
-    // pre-login install/setup events are delivered.
     const disabled = yield* analyticsDisabled;
     if (disabled) {
       yield* telemetryDebugLog('skip', { reason: 'disabled', eventName: event.name });
@@ -553,8 +537,7 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     yield* enqueuePostHogEnvelope(envelope);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-// Fires a single PostHog `$create_alias` merging the anonymous `install_id`
-// device person into the identified Apollo `org_member.id` person. Best-effort.
+// Fires one `$create_alias` merging the `install_id` device into the Apollo person.
 export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
   Effect.gen(function* () {
     const disabled = yield* analyticsDisabled;
@@ -567,7 +550,7 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
     const envelope: AnalyticsEnvelope = {
       event: POSTHOG_ALIAS_EVENT,
       properties: {
-        // PostHog merges `properties.alias` into the event's `distinct_id`.
+        // PostHog merges `alias` into `distinct_id`.
         distinct_id: apolloUserId,
         alias: installId,
         cli_version: constants.APP_VERSION,
@@ -580,9 +563,8 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
     yield* enqueuePostHogEnvelope(envelope);
   }).pipe(Effect.catchAllCause(() => Effect.void));
 
-// Called at login: persists the Apollo `org_member.id` as the analytics identity
-// and stitches the pre-login anonymous device into that person via one alias.
-// Fully non-fatal so login never fails on telemetry.
+// Called at login: persist the Apollo identity and alias the device into it.
+// Non-fatal so login never fails on telemetry.
 export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
   Effect.gen(function* () {
     if (typeof apolloUserId !== 'string' || apolloUserId.trim().length === 0) {

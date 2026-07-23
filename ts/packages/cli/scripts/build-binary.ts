@@ -2,7 +2,12 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import {
+  buildCompanionModules,
+  copyLocalToolBinaryAssets,
+  posthogBakeArgs,
+  teardown,
+} from './_shared';
 import { BinaryBuildError } from './build-error';
 
 /**
@@ -13,34 +18,21 @@ export function buildBinary() {
     const cwd = process.cwd();
     yield* Effect.logDebug(`Building binary in ${cwd}`);
 
-    const args = [
-      'bun',
-      /**
-       * Transpile and bundle the CLI app.
-       */
+    // `--env DEBUG_OVERRIDE_*` inlines matching env vars; the PostHog key is
+    // baked via `--define` instead (Bun honors only the last `--env`).
+    const args: ReadonlyArray<string> = [
       'build',
       './src/bin.ts',
-
-      /**
-       * Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
-       */
       '--env',
       'DEBUG_OVERRIDE_*',
-
-      /**
-       * Generate a standalone Bun executable containing your bundled code.
-       */
+      ...posthogBakeArgs(),
       '--compile',
       '--production',
-
-      /**
-       * Output file destination.
-       */
       '--outfile',
       './dist/composio',
-    ] as const satisfies ReadonlyArray<string>;
+    ];
 
-    const cmd = Command.make(...args);
+    const cmd = Command.make('bun', ...args);
 
     yield* Effect.logDebug('Running build command with', args.join(' '), '');
 

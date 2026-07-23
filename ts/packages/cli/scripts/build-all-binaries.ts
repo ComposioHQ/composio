@@ -15,7 +15,12 @@
 import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, LogLevel } from 'effect';
 import { Command } from '@effect/platform';
 import { BunContext, BunRuntime } from '@effect/platform-bun';
-import { buildCompanionModules, copyLocalToolBinaryAssets, teardown } from './_shared';
+import {
+  buildCompanionModules,
+  copyLocalToolBinaryAssets,
+  posthogBakeArgs,
+  teardown,
+} from './_shared';
 import { BinaryBuildError } from './build-error';
 
 /**
@@ -30,21 +35,21 @@ const TARGETS = [
 
 function runBunBuild(target: string, outfile: string) {
   return Effect.gen(function* () {
-    const args = [
-      'bun',
+    const args: ReadonlyArray<string> = [
       'build',
       './src/bin.ts',
       '--env',
       'DEBUG_OVERRIDE_*',
+      ...posthogBakeArgs(),
       '--compile',
       '--production',
       '--target',
       target,
       '--outfile',
       outfile,
-    ] as const satisfies ReadonlyArray<string>;
+    ];
 
-    const cmd = Command.make(...args);
+    const cmd = Command.make('bun', ...args);
 
     const { exitCode } = yield* cmd.pipe(
       Command.start,
