@@ -1,10 +1,16 @@
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
+  closeSync,
   existsSync,
+  fsyncSync,
   mkdirSync,
+  openSync,
   readFileSync,
   realpathSync,
+  renameSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
@@ -179,15 +185,48 @@ function auditFilePrefix(decisionsPath: string): string {
     : 'kb-audit';
 }
 
+export function atomicWriteAuditFile(
+  outputDir: string,
+  filename: string,
+  contents: string,
+): void {
+  if (basename(filename) !== filename) throw new Error('Audit filename must be a basename');
+  const destination = resolve(outputDir, filename);
+  const temporaryPath = resolve(
+    outputDir,
+    `.${filename}.${process.pid}.${randomUUID()}.tmp`,
+  );
+  let descriptor: number | undefined;
+  let temporaryFileExists = false;
+
+  try {
+    descriptor = openSync(temporaryPath, 'wx', 0o600);
+    temporaryFileExists = true;
+    writeFileSync(descriptor, contents, 'utf8');
+    fsyncSync(descriptor);
+    closeSync(descriptor);
+    descriptor = undefined;
+    renameSync(temporaryPath, destination);
+    temporaryFileExists = false;
+  } finally {
+    try {
+      if (descriptor !== undefined) closeSync(descriptor);
+    } finally {
+      if (temporaryFileExists) unlinkSync(temporaryPath);
+    }
+  }
+}
+
 export function runAudit(options: CliOptions): void {
   const roots = verifySourceCheckout(options.sourceRoot, options.outputDir);
   const inventory = inventoryPublicKb(roots.sourceRoot);
   const rows = buildRows(inventory.candidates, readDecisions(options.decisions));
   const prefix = auditFilePrefix(options.decisions);
   mkdirSync(roots.outputDir, { recursive: true });
-  writeFileSync(resolve(roots.outputDir, `${prefix}-section-audit.csv`), renderAuditCsv(rows));
-  writeFileSync(
-    resolve(roots.outputDir, `${prefix}-content-gap-audit.md`),
+  atomicWriteAuditFile(roots.outputDir, `${prefix}-section-audit.csv`, renderAuditCsv(rows));
+  atomicWriteAuditFile(
+    roots.outputDir,
+    `${prefix}-content-gap-audit.md`,
     renderAuditMarkdown(inventory, rows),
   );
   console.log(

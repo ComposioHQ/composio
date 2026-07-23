@@ -1,6 +1,18 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -9,7 +21,11 @@ import {
   renderAuditMarkdown,
   type KbAuditRow,
 } from '@/lib/kb/audit';
-import { assertExactRevision, resolveAuditRoots } from '@/scripts/audit-kb-sections';
+import {
+  assertExactRevision,
+  atomicWriteAuditFile,
+  resolveAuditRoots,
+} from '@/scripts/audit-kb-sections';
 
 const temporaryDirectories: string[] = [];
 
@@ -192,5 +208,52 @@ describe('public KB audit', () => {
         '5eed614fffffffffffffffffffffffffffffffff',
       ),
     ).not.toThrow();
+  });
+
+  test('atomically replaces a destination symlink without changing its source target', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-audit-write-'));
+    temporaryDirectories.push(root);
+    const outputDir = join(root, 'output');
+    const sourceTarget = join(root, 'canonical-public.md');
+    const outputPath = join(outputDir, 'section-audit.csv');
+    mkdirSync(outputDir);
+    writeFileSync(sourceTarget, 'canonical source content');
+    symlinkSync(sourceTarget, outputPath);
+
+    atomicWriteAuditFile(outputDir, 'section-audit.csv', 'audit output');
+
+    expect(readFileSync(sourceTarget, 'utf8')).toBe('canonical source content');
+    expect(lstatSync(outputPath).isSymbolicLink()).toBe(false);
+    expect(lstatSync(outputPath).isFile()).toBe(true);
+    expect(readFileSync(outputPath, 'utf8')).toBe('audit output');
+  });
+
+  test('atomically replaces a destination hard link without changing its source inode', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-audit-write-'));
+    temporaryDirectories.push(root);
+    const outputDir = join(root, 'output');
+    const sourceTarget = join(root, 'canonical-public.md');
+    const outputPath = join(outputDir, 'content-gap-audit.md');
+    mkdirSync(outputDir);
+    writeFileSync(sourceTarget, 'canonical source content');
+    linkSync(sourceTarget, outputPath);
+    const sourceInode = statSync(sourceTarget).ino;
+
+    atomicWriteAuditFile(outputDir, 'content-gap-audit.md', 'audit output');
+
+    expect(readFileSync(sourceTarget, 'utf8')).toBe('canonical source content');
+    expect(statSync(outputPath).ino).not.toBe(sourceInode);
+    expect(lstatSync(outputPath).isFile()).toBe(true);
+    expect(readFileSync(outputPath, 'utf8')).toBe('audit output');
+  });
+
+  test('removes the exclusive temporary file when the final rename fails', () => {
+    const root = mkdtempSync(join(tmpdir(), 'composio-kb-audit-write-'));
+    temporaryDirectories.push(root);
+    const outputDir = join(root, 'output');
+    mkdirSync(join(outputDir, 'occupied'), { recursive: true });
+
+    expect(() => atomicWriteAuditFile(outputDir, 'occupied', 'audit output')).toThrow();
+    expect(readdirSync(outputDir)).toEqual(['occupied']);
   });
 });
