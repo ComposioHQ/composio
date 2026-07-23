@@ -14,8 +14,8 @@ function source(path: string): string {
 }
 
 describe('knowledge hub', () => {
-  test('renders a search-first landing page with curated recovery paths', () => {
-    const html = renderToStaticMarkup(<KnowledgeHub />);
+  test('renders a search-first landing page with curated recovery paths', async () => {
+    const html = renderToStaticMarkup(await KnowledgeHub());
 
     expect(html).toContain('Search all Composio knowledge');
     expect(html).toContain('Search product docs and support answers');

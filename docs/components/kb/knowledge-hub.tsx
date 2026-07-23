@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { ArrowRight, BookOpen, KeyRound, Layers3, Search, Wrench } from 'lucide-react';
+import { ArrowRight, Layers3, Search, Wrench } from 'lucide-react';
 import toolkitsData from '@/public/data/toolkits-list.json';
 import type { ToolkitSummary } from '@/types/toolkit';
 import { PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
+import {
+  getFeaturedKnowledgeLinks,
+  getKnowledgeByProductArea,
+} from '@/lib/knowledge/catalog';
 import { KnowledgeSearchForm } from './knowledge-search-form';
 
 const toolkits = toolkitsData as ToolkitSummary[];
@@ -12,31 +16,16 @@ const popularToolkits = POPULAR_TOOLKIT_SLUGS.flatMap((slug) => {
   return toolkit ? [toolkit] : [];
 });
 
-const FEATURED_LINKS = [
-  {
-    title: 'Pagination limits are endpoint-specific',
-    description: 'Use each endpoint schema and cursor behavior instead of assuming one global limit.',
-    href: '/kb/guide/pagination-limits-are-endpoint-specific',
-    type: 'Knowledge Base',
-  },
-  {
-    title: 'Deduplicate trigger webhook deliveries',
-    description: 'Build idempotent handlers for at-least-once webhook delivery.',
-    href: '/kb/guide/deduplicate-trigger-webhook-deliveries',
-    type: 'Knowledge Base',
-  },
-  {
-    title: 'Configure GitHub OAuth credentials',
-    description: 'Create a GitHub OAuth app and connect it through Composio.',
-    href: 'https://composio.dev/auth/github',
-    type: 'OAuth',
-  },
-] as const;
-
 const SOURCE_LABELS = ['Docs', 'Knowledge Base', 'OAuth', 'Toolkits', 'Examples', 'Reference', 'Changelog'];
 
-export function KnowledgeHub() {
-  const browseAreas = PRODUCT_AREAS.filter((area) => area.defaultBrowse);
+export async function KnowledgeHub() {
+  const [featuredLinks, composioForYouLinks] = await Promise.all([
+    getFeaturedKnowledgeLinks(),
+    getKnowledgeByProductArea('composio-for-you'),
+  ]);
+  const browseAreas = PRODUCT_AREAS.filter((area) =>
+    area.defaultBrowse || (area.slug === 'composio-for-you' && composioForYouLinks.length > 0),
+  );
 
   return (
     <main>
@@ -103,9 +92,9 @@ export function KnowledgeHub() {
           <p className="text-sm font-medium text-fd-primary">Common starting points</p>
           <h2 id="featured-title" className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Featured answers and guides</h2>
           <div className="mt-7 grid gap-4 lg:grid-cols-3">
-            {FEATURED_LINKS.map((item) => (
+            {featuredLinks.map((item) => (
               <a key={item.href} href={item.href} className="group border border-fd-border p-5 transition-colors hover:bg-fd-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-ring">
-                <span className="text-xs font-medium text-fd-primary">{item.type}</span>
+                <span className="text-xs font-medium text-fd-primary">{item.sourceLabel}</span>
                 <h3 className="mt-2 font-semibold group-hover:text-fd-primary">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-fd-muted-foreground">{item.description}</p>
               </a>
@@ -124,7 +113,6 @@ export function KnowledgeHub() {
               {SOURCE_LABELS.map((label) => <li key={label} className="border border-fd-border bg-fd-background px-3 py-2 text-sm">{label}</li>)}
             </ul>
           </div>
-          <div className="sr-only"><BookOpen /> <KeyRound /></div>
         </section>
       </div>
     </main>
