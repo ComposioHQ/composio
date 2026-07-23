@@ -7,6 +7,7 @@ interface FieldBase {
   typeName: string;
   aliasName: string;
   deprecated?: boolean;
+  experimental?: boolean;
   enumValues?: string[];
 }
 
@@ -42,6 +43,20 @@ interface SchemaUIOptions {
   root: SimpleSchema;
   readOnly?: boolean;
   writeOnly?: boolean;
+}
+
+/**
+ * Removes the source-level marker when the schema provides a structured
+ * experimental flag. Unflagged descriptions keep their original text so they
+ * do not lose their only lifecycle signal.
+ */
+export function getSchemaDisplayDescription(
+  description: string,
+  experimental: boolean,
+): string {
+  if (!experimental) return description;
+
+  return description.replace(/^\s*\[experimental\]\s*/i, '');
 }
 
 export function generateSchemaData(
@@ -119,14 +134,18 @@ export function generateSchemaData(
         ? getTypeName(schema.items)
         : getTypeName(schema);
 
+    const experimental = schema['x-experimental'] === true;
     const base: FieldBase = {
       description: schema.description
-        ? ctx.renderMarkdown(schema.description)
+        ? ctx.renderMarkdown(
+            getSchemaDisplayDescription(schema.description, experimental),
+          )
         : undefined,
       infoTags: generateInfoTags(schema),
       typeName: getTypeName(schema),
       aliasName,
       deprecated: schema.deprecated,
+      experimental,
       enumValues: schema.enum
         ? schema.enum.map((v: unknown) => String(v))
         : undefined,
