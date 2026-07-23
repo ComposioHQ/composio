@@ -310,7 +310,7 @@ success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")
 echo
 
 install_err=$(mktemp)
-if COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" "$exe" install 2>"$install_err"; then
+if COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" install 2>"$install_err"; then
     cat "$install_err" >&2  # Show CLI's TerminalUI output on success
 else
     info "Setting up shell integration..."
