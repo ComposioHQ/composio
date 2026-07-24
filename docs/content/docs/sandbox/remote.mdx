@@ -11,7 +11,7 @@ This feature used to be called the **workbench**. The preferred session config k
 </Callout>
 
 <Callout title="Composio doesn't run or replace your agent">
-Your agent and its model stay entirely yours — Composio never proxies your LLM or runs an agent on your behalf. It discovers, authenticates, and executes tools. The one place Composio itself calls a model is *inside the sandbox*, and only when your code opts in: the [`invoke_llm`](#built-in-helpers) helper and AI-assisted conveniences like [error correction](#error-correction). That optional, sandbox-only usage is the sole source of any Composio-side **LLM tokens**. The sandbox is opt-in per [session](/docs/configuring-sessions) via `sandbox: { enable: true }` — don't enable it (or simply never call `invoke_llm`) and Composio uses no LLM tokens at all.
+Your agent and its model stay entirely yours — Composio never proxies your LLM or runs an agent on your behalf. It discovers, authenticates, and executes tools. The one place Composio itself can call a model is *inside the sandbox*, and only when your code opts in — most directly through the [`invoke_llm`](#built-in-helpers) helper. That optional, sandbox-only usage is the sole source of any Composio-side **LLM tokens**. The sandbox is opt-in per [session](/docs/configuring-sessions) via `sandbox: { enable: true }` — don't enable it (or simply never call `invoke_llm`) and Composio uses no LLM tokens at all.
 </Callout>
 
 ## Where it fits
