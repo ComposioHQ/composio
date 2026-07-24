@@ -47,7 +47,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

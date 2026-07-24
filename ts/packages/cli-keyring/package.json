@@ -51,7 +51,7 @@
   "author": "Composio",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "bun-types": "^1.3.14",
     "effect": "^3.21.4",
     "tsdown": "catalog:",
