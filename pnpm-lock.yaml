@@ -25,8 +25,8 @@ catalogs:
       specifier: ^4.20260702.1
       version: 4.20260702.1
     '@composio/client':
-      specifier: 0.1.0-alpha.75
-      version: 0.1.0-alpha.75
+      specifier: 0.1.0-alpha.76
+      version: 0.1.0-alpha.76
     '@effect/cli':
       specifier: ^0.75.2
       version: 0.75.2
@@ -1138,7 +1138,7 @@ importers:
         version: link:../cli-local-tools
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.75
+        version: 0.1.0-alpha.76
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1329,7 +1329,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.75
+        version: 0.1.0-alpha.76
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1668,7 +1668,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 0.1.0-alpha.75
+        version: 0.1.0-alpha.76
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2223,8 +2223,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@0.1.0-alpha.75':
-    resolution: {integrity: sha512-bS2yYAkgieeVGxqmkBUmtRKa6bojLhLnA/OJM8BdYvlsR0HST57aCCg9NCqYIvYQd3L08ZKzOWeGqIqzHu/2tQ==}
+  '@composio/client@0.1.0-alpha.76':
+    resolution: {integrity: sha512-MXC5JGRVdiQ4EgLricy9o/mqBa1+1T7wHFZ6Q4ZJkrjzZqOMvxTgy21Zlb5J/1oGkB2bg9UDzpH8PkXCp/D4zA==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -7934,7 +7934,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@0.1.0-alpha.75': {}
+  '@composio/client@0.1.0-alpha.76': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
