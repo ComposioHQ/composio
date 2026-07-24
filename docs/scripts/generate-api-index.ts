@@ -184,7 +184,7 @@ function generateWebhookEventsIndex(outputDir: string) {
 
 ## Legacy payloads (deprecated)
 
-Older subscriptions may still receive these payload formats. New integrations should use the current events above.
+Older subscriptions may still receive these payload formats. You can upgrade an existing subscription to the current version at any time by updating its \`version\` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
 
 | Event | Description |
 |-------|-------------|
