@@ -234,8 +234,14 @@ const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) 
 
 const readUserConfig = Effect.gen(function* () {
   const paths = yield* getAnalyticsPaths;
-  return yield* readOptionalJson<{ api_key?: unknown; base_url?: unknown }>(paths.userConfigPath);
+  return yield* readOptionalJson<{ api_key?: unknown; base_url?: unknown; org_id?: unknown }>(
+    paths.userConfigPath
+  );
 });
+
+const getOrgId = Effect.map(readUserConfig, config =>
+  typeof config?.org_id === 'string' && config.org_id.length > 0 ? config.org_id : null
+);
 
 const getUserApiKey = Effect.gen(function* () {
   const envApiKey = configuredString(
@@ -554,10 +560,15 @@ export const trackCliEventEffect = (event: TrackEvent) =>
 
     const installId = yield* getOrCreateInstallId;
     const distinctId = yield* getDistinctId(installId);
+    const orgId = yield* getOrgId;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
+    const properties = {
+      ...(enrichedEvent.properties ?? {}),
+      ...(orgId ? { org_id: orgId } : {}),
+    };
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
-      ...(enrichedEvent.properties ? { properties: enrichedEvent.properties } : {}),
+      ...(Object.keys(properties).length > 0 ? { properties } : {}),
       sentAt,
       source: 'cli',
       distinctId,

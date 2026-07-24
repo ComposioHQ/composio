@@ -734,6 +734,31 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
+    it.effect('attaches org_id from user config to events', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ api_key: 'uak_test', org_id: 'org_acme' })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ properties?: { org_id?: string } }>(args[2]!);
+        expect(payload.properties?.org_id).toBe('org_acme');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
     it.effect('does not create the identity file when logging out with telemetry disabled', () => {
       const home = tempy.temporaryDirectory();
       enableTelemetry();
