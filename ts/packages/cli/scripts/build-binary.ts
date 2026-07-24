@@ -18,19 +18,35 @@ export function buildBinary() {
     const cwd = process.cwd();
     yield* Effect.logDebug(`Building binary in ${cwd}`);
 
-    const args: ReadonlyArray<string> = [
+    const args = [
+      'bun',
+      /**
+       * Transpile and bundle the CLI app.
+       */
       'build',
       './src/bin.ts',
+
+      /**
+       * Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
+       */
       '--env',
       'DEBUG_OVERRIDE_*',
       ...posthogBakeArgs(),
+
+      /**
+       * Generate a standalone Bun executable containing your bundled code.
+       */
       '--compile',
       '--production',
+
+      /**
+       * Output file destination.
+       */
       '--outfile',
       './dist/composio',
-    ];
+    ] as const satisfies ReadonlyArray<string>;
 
-    const cmd = Command.make('bun', ...args);
+    const cmd = Command.make(...args);
 
     yield* Effect.logDebug('Running build command with', args.join(' '), '');
 

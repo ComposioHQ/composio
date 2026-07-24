@@ -66,7 +66,8 @@ export function buildBinaryCross() {
 
     const outfile = `./dist/binaries/${artifact}`;
 
-    const args: ReadonlyArray<string> = [
+    const args = [
+      'bun',
       'build',
       './src/bin.ts',
       '--env',
@@ -78,9 +79,9 @@ export function buildBinaryCross() {
       target,
       '--outfile',
       outfile,
-    ];
+    ] as const satisfies ReadonlyArray<string>;
 
-    const cmd = Command.make('bun', ...args);
+    const cmd = Command.make(...args);
 
     yield* Effect.logDebug('Running build command with', args.join(' '), '');
 

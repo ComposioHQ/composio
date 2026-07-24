@@ -35,7 +35,8 @@ const TARGETS = [
 
 function runBunBuild(target: string, outfile: string) {
   return Effect.gen(function* () {
-    const args: ReadonlyArray<string> = [
+    const args = [
+      'bun',
       'build',
       './src/bin.ts',
       '--env',
@@ -47,9 +48,9 @@ function runBunBuild(target: string, outfile: string) {
       target,
       '--outfile',
       outfile,
-    ];
+    ] as const satisfies ReadonlyArray<string>;
 
-    const cmd = Command.make('bun', ...args);
+    const cmd = Command.make(...args);
 
     const { exitCode } = yield* cmd.pipe(
       Command.start,
