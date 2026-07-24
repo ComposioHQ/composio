@@ -242,7 +242,7 @@ const handleNoManagedAuth = (ui: TerminalUI, toolkitSlug: string, noBrowser: boo
       }).pipe(Effect.catchAll(() => Effect.succeed(null)));
 
       if (sessionInfo) {
-        yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
+        yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, apiKey);
       }
 
       if (sessionInfo?.project.org.name) {

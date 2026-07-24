@@ -1,4 +1,5 @@
 import { toolkitsSource, getOgImageUrl } from '@/lib/source';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { ToolkitDetail } from '@/components/toolkits/toolkit-detail';
@@ -209,7 +210,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     const MDXContent = page.data.body;
     return (
       <div>
-        <a href="/toolkits" className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline">← All Toolkits</a>
+        <Link href="/toolkits" className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline">← All Toolkits</Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold text-fd-foreground">{page.data.title}</h1>
           <PageActions path={page.url} variant="inline" />

@@ -175,6 +175,10 @@ type AnalyticsState = {
   // Tracked separately from apollo_user_id so an alias that was never enqueued
   // (no project key, telemetry off) is retried instead of blocked forever.
   readonly aliased_apollo_user_id?: string;
+  // Fingerprint of the credential that apollo_user_id was resolved from. The id
+  // is only trusted while the active credential still matches, so an env-var key
+  // override can never attribute one user's events to another.
+  readonly api_key_fingerprint?: string;
   readonly created_at?: string;
 };
 
@@ -208,12 +212,6 @@ const getOrCreateInstallId = Effect.gen(function* () {
   yield* fs.writeFileString(paths.analyticsStatePath, contents);
   return installId;
 }).pipe(Effect.catchAll(() => makeInstallId));
-
-const readApolloUserId = Effect.map(readAnalyticsState, state =>
-  typeof state?.apollo_user_id === 'string' && state.apollo_user_id.length > 0
-    ? state.apollo_user_id
-    : null
-);
 
 const mergeAnalyticsState = (installId: string, patch: Partial<AnalyticsState>) =>
   Effect.gen(function* () {
@@ -253,8 +251,37 @@ const getUserApiKey = Effect.gen(function* () {
     : null;
 });
 
+const fingerprintApiKey = (apiKey: string): string =>
+  `${djb2Hash(apiKey).toString(36)}.${apiKey.length.toString(36)}`;
+
+const getApiKeyFingerprint = Effect.map(getUserApiKey, apiKey =>
+  apiKey ? fingerprintApiKey(apiKey) : null
+);
+
 const getDistinctId = (installId: string) =>
-  Effect.map(readApolloUserId, apolloUserId => apolloUserId ?? installId);
+  Effect.gen(function* () {
+    const state = yield* readAnalyticsState;
+    const apolloUserId = state?.apollo_user_id;
+    const fingerprint = yield* getApiKeyFingerprint;
+
+    if (
+      typeof apolloUserId === 'string' &&
+      apolloUserId.length > 0 &&
+      fingerprint !== null &&
+      fingerprint === state?.api_key_fingerprint
+    ) {
+      return apolloUserId;
+    }
+
+    // Once the install has been aliased, PostHog has permanently merged the bare
+    // install_id into that Apollo person — reusing it here would attribute these
+    // events to the previous user rather than to nobody. Fall back to an id that
+    // was never merged: pseudonymous per credential, or per device when signed out.
+    if (typeof state?.aliased_apollo_user_id !== 'string') {
+      return installId;
+    }
+    return fingerprint !== null ? `user_${fingerprint}` : `anon_${installId}`;
+  });
 
 const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);
 
@@ -341,8 +368,9 @@ const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const debugEnabled = yield* telemetryDebugEnabled;
-    yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
-      Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.void)
+    return yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
+      Effect.as(true),
+      Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.succeed(false))
     );
   });
 
@@ -503,8 +531,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
     );
-    yield* spawnWorker(command, args);
-    return true;
+    return yield* spawnWorker(command, args);
   });
 
 export const trackCliEventEffect = (event: TrackEvent) =>
@@ -569,7 +596,7 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
  * anonymous install into it. Safe to call from any command that already resolved
  * a session, which is how already-authenticated installs get backfilled.
  */
-export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
+export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: string) =>
   Effect.gen(function* () {
     const resolved = typeof apolloUserId === 'string' ? apolloUserId.trim() : '';
     if (resolved.length === 0) {
@@ -584,11 +611,23 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
 
     const state = yield* readAnalyticsState;
     const installId = yield* getOrCreateInstallId;
-    if (state?.apollo_user_id !== resolved) {
-      yield* mergeAnalyticsState(installId, { apollo_user_id: resolved });
+    // Callers pass the credential they just validated: login resolves identity
+    // before persisting it, so reading it back here would fingerprint the
+    // previous key and never match.
+    const fingerprint =
+      typeof apiKey === 'string' && apiKey.length > 0
+        ? fingerprintApiKey(apiKey)
+        : yield* getApiKeyFingerprint;
+    if (state?.apollo_user_id !== resolved || state?.api_key_fingerprint !== fingerprint) {
+      yield* mergeAnalyticsState(installId, {
+        apollo_user_id: resolved,
+        ...(fingerprint === null ? {} : { api_key_fingerprint: fingerprint }),
+      });
     }
 
-    if (state?.aliased_apollo_user_id === resolved) {
+    // PostHog refuses to merge an install that is already identified, so alias
+    // an install at most once — a second user on this device stays unaliased.
+    if (typeof state?.aliased_apollo_user_id === 'string') {
       return;
     }
     if (yield* emitPostHogAlias(installId, resolved)) {
@@ -598,8 +637,14 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
 
 /** Drops the Apollo identity on logout so later events revert to `install_id`. */
 export const clearApolloIdentityForAnalytics = Effect.gen(function* () {
-  const installId = yield* getOrCreateInstallId;
-  yield* mergeAnalyticsState(installId, { apollo_user_id: undefined });
+  const state = yield* readAnalyticsState;
+  if (!state?.install_id || !state.apollo_user_id) {
+    return;
+  }
+  yield* mergeAnalyticsState(state.install_id, {
+    apollo_user_id: undefined,
+    api_key_fingerprint: undefined,
+  });
 }).pipe(Effect.catchAllCause(() => Effect.void));
 
 export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>

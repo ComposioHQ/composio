@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Plus, X } from 'lucide-react';
 import type { SchemaData, SchemaUIGeneratedData } from './schema-generator';
+import { ExperimentalBadge } from './experimental-badge';
 
 interface SchemaUIProps {
   name: string;
@@ -148,6 +149,7 @@ function SchemaProperty({
             Deprecated
           </span>
         )}
+        {schema.experimental && <ExperimentalBadge />}
       </div>
 
       {/* Description */}
