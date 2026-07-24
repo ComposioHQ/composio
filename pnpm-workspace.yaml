@@ -57,7 +57,7 @@ catalog:
   publint: ^0.3.21
   tsdown: ^0.22.3
   tsx: ^4.23.0
-  typescript: ^6.0.3
+  typescript: ^7.0.2
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
   wrangler: ^4.107.0
