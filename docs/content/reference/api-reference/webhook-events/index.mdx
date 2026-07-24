@@ -19,9 +19,9 @@ Configure your webhook subscriptions via the [Webhook Subscriptions API](/refere
 
 ## Legacy payloads (deprecated)
 
-Older subscriptions may still receive these payload formats. You can upgrade an existing subscription to the current version at any time by updating its `version` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
+Older subscriptions may still receive these payload formats. The event type is unchanged — only the payload shape differs, selected by the subscription's version. You can upgrade an existing subscription at any time by updating its `version` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
 
-| Event | Description |
-|-------|-------------|
-| `composio.trigger.message.v2` | [Trigger message (V2)](/reference/api-reference/webhook-events/composio_trigger_message_v2) |
-| `composio.trigger.message.v1` | [Trigger message (V1)](/reference/api-reference/webhook-events/composio_trigger_message_v1) |
+| Event | Version | Description |
+|-------|---------|-------------|
+| `composio.trigger.message` | V2 | [Trigger message (V2)](/reference/api-reference/webhook-events/composio_trigger_message_v2) |
+| `composio.trigger.message` | V1 | [Trigger message (V1)](/reference/api-reference/webhook-events/composio_trigger_message_v1) |

@@ -161,18 +161,26 @@ function generateWebhookEventsIndex(outputDir: string) {
   const current: string[] = [];
   const legacy: string[] = [];
 
-  for (const [eventType, item] of entries) {
+  for (const [key, item] of entries) {
     const operation = item.post;
     if (!operation?.operationId) continue;
 
     const href = `/reference/api-reference/${tagSlug}/${operation.operationId}`;
-    const label = operation.summary ?? eventType;
-    const row = `| \`${eventType}\` | [${label}](${href}) |`;
-    if (operation.deprecated === true) {
-      legacy.push(row);
-    } else {
-      current.push(row);
+    const label = operation.summary ?? key;
+
+    if (operation.deprecated !== true) {
+      current.push(`| \`${key}\` | [${label}](${href}) |`);
+      continue;
     }
+
+    // Legacy payloads are keyed `<event>.<version>` so each format gets its own
+    // page — but `composio.trigger.message.v2` is NOT an event type anyone ever
+    // receives. Split the synthetic key back apart so the table shows the real
+    // event plus the payload version it applies to.
+    const versioned = /^(.*)\.(v\d+)$/.exec(key);
+    const event = versioned ? versioned[1] : key;
+    const version = versioned ? versioned[2].toUpperCase() : '—';
+    legacy.push(`| \`${event}\` | ${version} | [${label}](${href}) |`);
   }
 
   const overview = readOverview(tagSlug);
@@ -184,10 +192,10 @@ function generateWebhookEventsIndex(outputDir: string) {
 
 ## Legacy payloads (deprecated)
 
-Older subscriptions may still receive these payload formats. You can upgrade an existing subscription to the current version at any time by updating its \`version\` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
+Older subscriptions may still receive these payload formats. The event type is unchanged — only the payload shape differs, selected by the subscription's version. You can upgrade an existing subscription at any time by updating its \`version\` — see [Update a webhook subscription](/reference/api-reference/webhook-subscriptions/patchWebhookSubscriptionsById). New integrations should use the current events above.
 
-| Event | Description |
-|-------|-------------|
+| Event | Version | Description |
+|-------|---------|-------------|
 ${legacy.join('\n')}`
       : '';
 

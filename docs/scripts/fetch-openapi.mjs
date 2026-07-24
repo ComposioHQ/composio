@@ -1,9 +1,19 @@
 /**
  * Fetches and filters the OpenAPI specs for fumadocs.
+ *
+ * Heads-up: "3.1" is overloaded below. The first two are OpenAPI 3.0.0
+ * DOCUMENTS that happen to describe different COMPOSIO API versions; the third
+ * is an OpenAPI 3.1.0 document (a format version, not an API version).
+ *
  * Outputs three spec files:
- *   - public/openapi.json           (v3.1 — latest, clean operationIds)
- *   - public/openapi-v3.json        (v3.0)
- *   - public/openapi-webhooks.json  (standalone 3.1 webhook-events spec)
+ *   - public/openapi.json           Composio API v3.1, as an OpenAPI 3.0.0 doc
+ *                                   (latest; operationIds cleaned)
+ *   - public/openapi-v3.json        Composio API v3.0, as an OpenAPI 3.0.0 doc
+ *   - public/openapi-webhooks.json  webhook event payloads, as an OpenAPI 3.1.0
+ *                                   doc. The format bump is the whole reason
+ *                                   this is a separate file: the top-level
+ *                                   `webhooks` object does not exist in 3.0, so
+ *                                   these cannot live in openapi.json.
  *
  * Run: bun run scripts/fetch-openapi.mjs
  */
