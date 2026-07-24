@@ -132,6 +132,87 @@ function webhookTagSlugs(): Set<string> {
   return slugs;
 }
 
+/**
+ * Generates the Webhook Events overview page from the webhooks spec.
+ *
+ * The event list MUST be derived, not hand-maintained: adding an event to the
+ * Apollo registry would otherwise leave it off this page, and removing one would
+ * leave a link to a page Fumadocs no longer builds (a 404). Prose lives in
+ * `api-overviews/webhook-events.mdx`; everything below it is generated.
+ *
+ * Individual event pages are rendered by Fumadocs straight from the spec, so
+ * this page only needs the index tables.
+ */
+function generateWebhookEventsIndex(outputDir: string) {
+  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
+  if (!existsSync(specPath)) return;
+
+  const spec: {
+    tags?: { name: string; description?: string }[];
+    webhooks?: Record<string, Record<string, OpenAPIOperation>>;
+  } = JSON.parse(readFileSync(specPath, 'utf-8'));
+
+  const entries = Object.entries(spec.webhooks ?? {});
+  if (entries.length === 0) return;
+
+  const tag = spec.tags?.[0];
+  const tagSlug = slugify(tag?.name ?? 'Webhook Events');
+
+  const current: string[] = [];
+  const legacy: string[] = [];
+
+  for (const [eventType, item] of entries) {
+    const operation = item.post;
+    if (!operation?.operationId) continue;
+
+    const href = `/reference/api-reference/${tagSlug}/${operation.operationId}`;
+    const label = operation.summary ?? eventType;
+    const row = `| \`${eventType}\` | [${label}](${href}) |`;
+    if (operation.deprecated === true) {
+      legacy.push(row);
+    } else {
+      current.push(row);
+    }
+  }
+
+  const overview = readOverview(tagSlug);
+  const body = overview ?? tag?.description ?? '';
+
+  const legacySection =
+    legacy.length > 0
+      ? `
+
+## Legacy payloads (deprecated)
+
+Older subscriptions may still receive these payload formats. New integrations should use the current events above.
+
+| Event | Description |
+|-------|-------------|
+${legacy.join('\n')}`
+      : '';
+
+  const content = `---
+title: ${tag?.name ?? 'Webhook Events'}
+description: "${tag?.description ?? ''}"
+---
+
+{/* Auto-generated from openapi-webhooks.json. Edit the overview at api-overviews/${tagSlug}.mdx, not this file. */}
+
+${body}
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+${current.join('\n')}${legacySection}
+`;
+
+  const folderPath = join(outputDir, tagSlug);
+  mkdirSync(folderPath, { recursive: true });
+  writeFileSync(join(folderPath, 'index.mdx'), content);
+  console.log(`Generated: ${tagSlug}/index.mdx (${current.length} events, ${legacy.length} legacy)`);
+}
+
 function removeStaleTagIndexes(baseDir: string, activeSlugs: Set<string>) {
   if (!existsSync(baseDir)) return;
 
@@ -181,6 +262,10 @@ function generateIndexPages() {
     join(process.cwd(), 'content/reference/v3/api-reference'),
     activeTagSlugs(v3Ops),
   );
+
+  // Webhook events come from a separate 3.1 spec, so they're generated here
+  // rather than in the tag loop below (which iterates openapi.json operations).
+  generateWebhookEventsIndex(outputDir);
 
   // Get all unique tag names
   const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);

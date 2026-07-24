@@ -260,8 +260,21 @@ async function fetchAndWriteWebhooksSpec() {
   const outPath = join(__dirname, '../public/openapi-webhooks.json');
   try {
     const spec = await fetchSpec(OPENAPI_WEBHOOKS_URL);
+
+    // Sanity-guard the overwrite. A deploy serving an empty/!3.1 document would
+    // otherwise wipe the committed spec, and generate-api-index would then treat
+    // `webhook-events` as a stale tag and recursively delete the whole section.
+    // Treat that like a fetch failure: warn and keep what we have.
+    const eventCount = Object.keys(spec?.webhooks ?? {}).length;
+    if (!String(spec?.openapi ?? '').startsWith('3.1') || eventCount === 0) {
+      console.warn(
+        `WARN: refusing to write webhooks spec from ${OPENAPI_WEBHOOKS_URL} — got openapi=${spec?.openapi}, ${eventCount} webhooks. Keeping existing ${outPath}.`
+      );
+      return;
+    }
+
     writeFileSync(outPath, JSON.stringify(spec, null, 2));
-    console.log(`Written webhooks spec to ${outPath}`);
+    console.log(`Written webhooks spec to ${outPath} (${eventCount} events)`);
   } catch (err) {
     console.warn(
       `WARN: could not fetch webhooks spec from ${OPENAPI_WEBHOOKS_URL}: ${err.message}. Keeping existing ${outPath}.`

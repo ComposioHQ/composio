@@ -3,7 +3,7 @@ title: Webhook Events
 description: "Events delivered by Composio to your registered webhook endpoints"
 ---
 
-{/* Auto-generated from OpenAPI spec. Do not edit directly. */}
+{/* Auto-generated from openapi-webhooks.json. Edit the overview at api-overviews/webhook-events.mdx, not this file. */}
 
 Webhook events delivered by the Composio platform to your registered endpoints.
 
@@ -19,9 +19,9 @@ Configure your webhook subscriptions via the [Webhook Subscriptions API](/refere
 
 ## Legacy payloads (deprecated)
 
-Older subscriptions may still receive V1/V2 trigger payloads. New integrations should use V3.
+Older subscriptions may still receive these payload formats. New integrations should use the current events above.
 
-| Version | Description |
-|---------|-------------|
-| V2 | [Trigger message (V2)](/reference/api-reference/webhook-events/composio_trigger_message_v2) |
-| V1 | [Trigger message (V1)](/reference/api-reference/webhook-events/composio_trigger_message_v1) |
+| Event | Description |
+|-------|-------------|
+| `composio.trigger.message.v2` | [Trigger message (V2)](/reference/api-reference/webhook-events/composio_trigger_message_v2) |
+| `composio.trigger.message.v1` | [Trigger message (V1)](/reference/api-reference/webhook-events/composio_trigger_message_v1) |
