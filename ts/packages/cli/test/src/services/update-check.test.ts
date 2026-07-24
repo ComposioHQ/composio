@@ -244,6 +244,81 @@ describe('showUpdateNotice', () => {
   );
 });
 
+// ── getUpdateStatus ─────────────────────────────────────────────────────
+
+describe('getUpdateStatus', () => {
+  it.effect('reports an available update for a stale stable install', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        currentVersion: '0.2.0',
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
+        }) as unknown as typeof fetch,
+      });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status).toEqual({
+        current: '0.2.0',
+        latestStable: '0.3.0',
+        updateAvailable: true,
+        lastChecked: expect.any(String),
+      });
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('reports no update when the fetch fails and no cache exists', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        currentVersion: '0.2.0',
+        fetchFn: vi.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch,
+      });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status.updateAvailable).toBe(false);
+      expect(status.lastChecked).toEqual(expect.any(String));
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('does not report a cached prerelease as latestStable', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.32-beta.289' });
+      writeState(config, {
+        lastChecked: new Date().toISOString(),
+        latestVersion: '0.2.32-beta.289',
+      });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status.latestStable).toBeNull();
+      expect(status.updateAvailable).toBe(false);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('uses the fresh cache without fetching', () =>
+    Effect.gen(function* () {
+      const fetchFn = vi.fn();
+      const config = makeConfig({
+        currentVersion: '0.2.0',
+        fetchFn: fetchFn as unknown as typeof fetch,
+      });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.2.1' });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(fetchFn).not.toHaveBeenCalled();
+      expect(status.latestStable).toBe('0.2.1');
+      expect(status.updateAvailable).toBe(true);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+});
+
 // ── checkForUpdate ──────────────────────────────────────────────────────
 
 describe('checkForUpdate', () => {
