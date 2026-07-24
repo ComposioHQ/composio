@@ -252,8 +252,10 @@ function generateIndexPages() {
 
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
 
-  // Fold in the webhook-events tag so its hand-authored overview isn't treated
-  // as stale (its operations come from openapi-webhooks.json, not openapi.json).
+  // `Webhook Events` is tagged only in openapi-webhooks.json, so it never appears
+  // in the openapi.json-derived active set. Without folding it in, the section is
+  // recursively deleted on every run (and immediately regenerated below) — and if
+  // that ordering ever changed, the docs would silently lose the whole section.
   removeStaleTagIndexes(
     outputDir,
     new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs()]),
