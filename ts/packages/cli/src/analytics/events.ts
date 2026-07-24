@@ -48,8 +48,6 @@ export const CLI_ANALYTICS_EVENTS = {
 
 type CliAnalyticsEventName = (typeof CLI_ANALYTICS_EVENTS)[keyof typeof CLI_ANALYTICS_EVENTS];
 
-// Contract with the downstream metrics flow page: stage values group the
-// adoption funnel, so renaming or removing one is a breaking change there.
 export const CLI_JOURNEY_STAGES = [
   'install',
   'setup',
