@@ -262,14 +262,25 @@ const getDistinctId = (installId: string) =>
   Effect.gen(function* () {
     const state = yield* readAnalyticsState;
     const apolloUserId = state?.apollo_user_id;
-    if (typeof apolloUserId !== 'string' || apolloUserId.length === 0) {
-      return installId;
+    const fingerprint = yield* getApiKeyFingerprint;
+
+    if (
+      typeof apolloUserId === 'string' &&
+      apolloUserId.length > 0 &&
+      fingerprint !== null &&
+      fingerprint === state?.api_key_fingerprint
+    ) {
+      return apolloUserId;
     }
 
-    const fingerprint = yield* getApiKeyFingerprint;
-    return fingerprint !== null && fingerprint === state?.api_key_fingerprint
-      ? apolloUserId
-      : installId;
+    // Once the install has been aliased, PostHog has permanently merged the bare
+    // install_id into that Apollo person — reusing it here would attribute these
+    // events to the previous user rather than to nobody. Fall back to an id that
+    // was never merged: pseudonymous per credential, or per device when signed out.
+    if (typeof state?.aliased_apollo_user_id !== 'string') {
+      return installId;
+    }
+    return fingerprint !== null ? `user_${fingerprint}` : `anon_${installId}`;
   });
 
 const cwdHash = (cwd: string): string => djb2Hash(cwd).toString(36);

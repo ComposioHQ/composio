@@ -675,7 +675,10 @@ describe('CLI analytics dispatch', () => {
         const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
         const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
         expect(payload.distinctId).not.toBe('om_user_a');
-        expect(payload.distinctId).toBe(payload.installId);
+        // The install_id is already merged into user A's PostHog person, so
+        // reusing it would still attribute to A. Must be a never-merged id.
+        expect(payload.distinctId).not.toBe(payload.installId);
+        expect(payload.distinctId.startsWith('user_')).toBe(true);
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
@@ -701,6 +704,33 @@ describe('CLI analytics dispatch', () => {
         const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
         const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
         expect(payload.distinctId).toBe('om_login_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('does not reuse the aliased install_id after logout', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_logged_in');
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* linkApolloIdentityForAnalytics('om_logged_in', 'uak_logged_in');
+        yield* clearApolloIdentityForAnalytics;
+        childProcessMocks.spawn.mockClear();
+
+        // Signed out: no credential at all.
+        vi.stubEnv('COMPOSIO_USER_API_KEY', '');
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string; installId: string }>(args[2]!);
+        expect(payload.distinctId).not.toBe('om_logged_in');
+        // Bare install_id now resolves to the logged-out user's person.
+        expect(payload.distinctId).not.toBe(payload.installId);
+        expect(payload.distinctId).toBe(`anon_${payload.installId}`);
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
