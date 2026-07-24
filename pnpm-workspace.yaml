@@ -46,7 +46,7 @@ catalog:
   '@mastra/core': ^1.50.1
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
-  '@typescript/native-preview': 7.0.0-dev.20260703.1
+  '@typescript/native-preview': 7.0.0-dev.20260707.2
   ai: ^7.0.14
   dotenv: ^17.4.2
   effect: ^3.21.4
