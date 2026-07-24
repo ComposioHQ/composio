@@ -357,8 +357,9 @@ const getWorkerSpawnArgs = (workerFlag: string, encodedPayload: string) =>
 const spawnWorker = (command: string, args: ReadonlyArray<string>) =>
   Effect.gen(function* () {
     const debugEnabled = yield* telemetryDebugEnabled;
-    yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
-      Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.void)
+    return yield* spawnDetached(command, args, { inheritStderr: debugEnabled }).pipe(
+      Effect.as(true),
+      Effect.catchTag('services/DetachedProcessSpawnError', () => Effect.succeed(false))
     );
   });
 
@@ -519,8 +520,7 @@ const enqueuePostHogEnvelope = (envelope: AnalyticsEnvelope) =>
       INTERNAL_ANALYTICS_WORKER_FLAG,
       encodedPayload
     );
-    yield* spawnWorker(command, args);
-    return true;
+    return yield* spawnWorker(command, args);
   });
 
 export const trackCliEventEffect = (event: TrackEvent) =>
@@ -585,7 +585,7 @@ export const emitPostHogAlias = (installId: string, apolloUserId: string) =>
  * anonymous install into it. Safe to call from any command that already resolved
  * a session, which is how already-authenticated installs get backfilled.
  */
-export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
+export const linkApolloIdentityForAnalytics = (apolloUserId: string, apiKey?: string) =>
   Effect.gen(function* () {
     const resolved = typeof apolloUserId === 'string' ? apolloUserId.trim() : '';
     if (resolved.length === 0) {
@@ -600,7 +600,13 @@ export const linkApolloIdentityForAnalytics = (apolloUserId: string) =>
 
     const state = yield* readAnalyticsState;
     const installId = yield* getOrCreateInstallId;
-    const fingerprint = yield* getApiKeyFingerprint;
+    // Callers pass the credential they just validated: login resolves identity
+    // before persisting it, so reading it back here would fingerprint the
+    // previous key and never match.
+    const fingerprint =
+      typeof apiKey === 'string' && apiKey.length > 0
+        ? fingerprintApiKey(apiKey)
+        : yield* getApiKeyFingerprint;
     if (state?.apollo_user_id !== resolved || state?.api_key_fingerprint !== fingerprint) {
       yield* mergeAnalyticsState(installId, {
         apollo_user_id: resolved,

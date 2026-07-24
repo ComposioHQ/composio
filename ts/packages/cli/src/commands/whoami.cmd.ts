@@ -37,7 +37,7 @@ export const whoamiCmd = Command.make('whoami', {}).pipe(
               }).pipe(Effect.option);
               yield* Option.match(sessionInfo, {
                 onNone: () => Effect.void,
-                onSome: info => linkApolloIdentityForAnalytics(info.org_member.id),
+                onSome: info => linkApolloIdentityForAnalytics(info.org_member.id, apiKey),
               });
               const email = Option.map(sessionInfo, info => info.org_member.email).pipe(
                 Option.getOrUndefined

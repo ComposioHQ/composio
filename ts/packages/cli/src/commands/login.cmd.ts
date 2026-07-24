@@ -324,7 +324,7 @@ const directLogin = (params: { userApiKey: string; org?: string }) =>
       userApiKey: params.userApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, params.userApiKey);
 
     const selectedOrg = yield* resolveDirectLoginOrganization({
       apiKey: params.userApiKey,
@@ -509,7 +509,7 @@ const loginWithKey = (params: {
       userApiKey: uakApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
+    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id, uakApiKey);
 
     const organizations = params.defaultToFirstOrg
       ? yield* listOrganizations({
@@ -717,7 +717,7 @@ export const browserLogin = (params: {
       userApiKey: uakApiKey,
     });
 
-    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id);
+    yield* linkApolloIdentityForAnalytics(uakSessionInfo.org_member.id, uakApiKey);
 
     // e.g., "pr_xlSR6oN5jIlk"
     const xProjectId = uakSessionInfo.project.nano_id;
@@ -899,7 +899,10 @@ export const loginCmd = Command.make(
                 orgId: identity.composio?.org_id ?? undefined,
               }).pipe(Effect.catchAll(() => Effect.succeed(null)));
               if (agentSessionInfo) {
-                yield* linkApolloIdentityForAnalytics(agentSessionInfo.org_member.id);
+                yield* linkApolloIdentityForAnalytics(
+                  agentSessionInfo.org_member.id,
+                  agentUserApiKey
+                );
               }
             }
             const summary = safeAgentSummary(identity);

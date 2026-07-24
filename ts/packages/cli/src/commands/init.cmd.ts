@@ -126,7 +126,7 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       orgId: selected.orgId,
       projectId: selected.projectId,
     });
-    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id);
+    yield* linkApolloIdentityForAnalytics(sessionInfo.org_member.id, uakApiKey);
 
     let projectApiKey = sessionInfo.api_key?.api_key ?? sessionInfo.api_key?.key ?? null;
     if (!projectApiKey && !hasProjectApiKey) {

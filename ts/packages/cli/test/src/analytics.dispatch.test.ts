@@ -679,6 +679,31 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
+    it.effect('binds identity to the credential the caller passes, not one read back', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      // Mirrors real login: identity is resolved BEFORE the credential is persisted,
+      // so nothing readable from disk/env identifies the user yet.
+      enableTelemetry('');
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* linkApolloIdentityForAnalytics('om_login_user', 'uak_fresh');
+        childProcessMocks.spawn.mockClear();
+
+        // The credential is active from here on.
+        vi.stubEnv('COMPOSIO_USER_API_KEY', 'uak_fresh');
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+        expect(payload.distinctId).toBe('om_login_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
     it.effect('does not create the identity file when logging out with telemetry disabled', () => {
       const home = tempy.temporaryDirectory();
       enableTelemetry();
