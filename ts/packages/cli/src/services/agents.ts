@@ -365,6 +365,30 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
   return agentKey;
 });
 
+/**
+ * Reuse-only counterpart of {@link getOrSignupReadyAgent}: refreshes and
+ * returns a stored READY identity but never signs up a new agent.
+ */
+export const getStoredReadyAgent = Effect.gen(function* () {
+  const stored = yield* readStoredAgentIdentity;
+  if (Option.isNone(stored)) return Option.none<AgentIdentity>();
+
+  const agentKey = getAgentKey(stored.value);
+  if (!agentKey) return Option.none<AgentIdentity>();
+
+  const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.option);
+  const identity = Option.isSome(remote)
+    ? yield* writeStoredAgentIdentity(remote.value)
+    : stored.value;
+
+  const ready =
+    normalizeAgentStatus(identity.status) === 'READY' &&
+    Boolean(identity.composio?.user_api_key) &&
+    Boolean(identity.composio?.org_id);
+
+  return ready ? Option.some(identity) : Option.none<AgentIdentity>();
+});
+
 export const getOrSignupReadyAgent = (params: { force?: boolean } = {}) =>
   Effect.gen(function* () {
     if (!params.force) {

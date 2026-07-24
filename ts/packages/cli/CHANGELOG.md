@@ -10,6 +10,7 @@
 
 ### Minor Changes
 
+- Make headless `composio login` agent-friendly (PRDE-1138): the non-interactive instructions now offer the unattended `composio login --agent` path, and a machine with a stored READY agent identity (`~/.composio/agent.json`) completes plain headless `composio login` unattended by reusing it. Reuse only — a human piping `composio login` still gets the URL + poll instructions and never has an account auto-created.
 - a0bef5d: Bump `@composio/client` to `0.1.0-alpha.74`.
 - 025a657: Drop CommonJS entrypoints and publish the TypeScript SDK packages as ESM-only packages. This is a breaking change within the existing 0.x release line: consumers must use Node.js 22.22.3 or newer. CommonJS callers can only rely on Node's native `require(esm)` interop, and the SDK no longer ships custom CommonJS compatibility machinery or `.cjs` artifacts.
 
