@@ -14,6 +14,7 @@ import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
+import { deprecatedApiSidebarTransformer } from './deprecated-api-sidebar';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -90,7 +91,10 @@ export async function getReferenceSource() {
       plugins: [lucideIconsPlugin(), openapiPlugin()],
       pageTree: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transformers: [defaultOpenTransformer as any],
+        transformers: [
+          defaultOpenTransformer as any,
+          deprecatedApiSidebarTransformer as any,
+        ],
       },
     });
 
