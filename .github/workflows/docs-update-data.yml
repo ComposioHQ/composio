@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     env:
       COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
@@ -131,3 +132,47 @@ jobs:
         run: |
           gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR" || \
           gh pr edit "$PR_NUMBER" --add-reviewer "Sushmithamallesh"
+
+      # A silent failure here is invisible: the workflow stops refreshing
+      # public/data/toolkits.json, the docs site keeps building from the last
+      # good commit, and nothing 500s — new toolkits simply 404. That is how a
+      # credential failure went unnoticed for 60 consecutive runs. File one
+      # tracking issue and leave it open until someone fixes the cause.
+      - name: Open tracking issue on failure
+        if: failure()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled docs data sync is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Docs data sync is failing" \
+            --label "$LABEL" \
+            --body "The scheduled \`Docs - Update Data\` workflow failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+
+          **Impact:** while this is red, \`docs/public/data/toolkits.json\` stops being
+          refreshed. docs.composio.dev/toolkits is statically generated from that file, so
+          toolkits added to production after the last successful run have no page and
+          return 404. The site stays up, which is why this fails silently.
+
+          **First thing to check:** the \`COMPOSIO_API_KEY\` secret must have **production**
+          read access against \`backend.composio.dev\`. A staging-only key returns 401 here.
+
+          This issue is filed once and left open until the cause is fixed; it will not be
+          re-filed on every run."
