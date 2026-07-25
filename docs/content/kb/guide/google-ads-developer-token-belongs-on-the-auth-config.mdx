@@ -9,6 +9,16 @@ reviewAfter: "2026-10-25"
 freshness: "time-sensitive"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Fix Google Ads 429 RESOURCE_EXHAUSTED errors"
+    href: "/kb/guide/google-ads-resource-exhausted-errors"
+    description: "Google Ads rate limits can come from Google's own quota or from shared managed-OAuth capacity, not from your Composio plan."
+  - title: "Target a Google Ads sub-account under an MCC"
+    href: "/kb/guide/target-a-google-ads-sub-account"
+    description: "Pass customer_id per call to target a child account, and let the connection supply the manager context."
+  - title: "Fix Google Ads campaign mutate INVALID_ARGUMENT errors"
+    href: "/kb/guide/google-ads-campaign-mutate-invalid-argument"
+    description: "Budget and location fields sent inline on a Campaign mutate are rejected by Google; they belong to separate resources."
 ---
 Google Ads API requests need both an OAuth access token and a Google Ads developer token. The developer token now belongs on the auth config itself rather than on each connection initiation request.
 

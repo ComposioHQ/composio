@@ -9,6 +9,16 @@ reviewAfter: "2026-10-26"
 freshness: "time-sensitive"
 topics: ["authentication","connected-accounts","toolkits"]
 aliases: []
+related:
+  - title: "Why Google Sheets access cannot be limited to one Drive folder"
+    href: "/kb/guide/google-sheets-oauth-cannot-be-scoped-to-a-drive-folder"
+    description: "A Drive folder is not an OAuth boundary. Narrow access with drive.file or an application-level allowlist instead."
+  - title: "Custom connection-data fields are toolkit-specific"
+    href: "/kb/guide/custom-connection-data-fields-are-toolkit-specific"
+    description: "Read each toolkit's auth metadata instead of assuming every API key uses the same field name."
+  - title: "Fix HubSpot OAuth token exchange 400 errors"
+    href: "/kb/guide/fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes"
+    description: "Check a customer-owned HubSpot OAuth app's secret, redirect URI, and required or optional scope alignment."
 ---
 In a Google Sheets auth config, enter full OAuth scope URIs such as `https://www.googleapis.com/auth/drive`, not shorthand such as `/drive`.
 

@@ -12,7 +12,6 @@ import { PRODUCT_AREAS } from '@/lib/knowledge/taxonomy';
 import { BrowseResults } from '@/components/kb/browse-results';
 import { ToolkitGrid } from '@/components/kb/toolkit-grid';
 import { KnowledgeHub } from '@/components/kb/knowledge-hub';
-import KnowledgeTopicPage from '@/app/(home)/kb/topic/[slug]/page';
 
 function source(path: string): string {
   return readFileSync(join(import.meta.dir, '../..', path), 'utf8');
@@ -31,12 +30,23 @@ describe('knowledge browse pages', () => {
     expect(topicRoute).toContain('notFound()');
   });
 
-  test('permanently redirects the short authentication topic to its canonical route', async () => {
-    await expect(KnowledgeTopicPage({
-      params: Promise.resolve({ slug: 'authentication' }),
-    })).rejects.toMatchObject({
-      digest: 'NEXT_REDIRECT;replace;/kb/topic/authentication-and-connected-accounts;308;',
-    });
+  // Asserted against the route source rather than by invoking the page. Importing
+  // an App Router page pulls in `next/navigation`, which is an opaque CJS
+  // re-export (`module.exports = require('./dist/client/components/navigation')`);
+  // bun has to execute Next's client internals to discover its named exports, and
+  // that fails on CI Linux with "Export named 'notFound' not found". A test that
+  // cannot run in CI guards nothing, so this pins the same contract — the short
+  // slug redirects permanently to the canonical topic — without the fragile import.
+  test('permanently redirects the short authentication topic to its canonical route', () => {
+    const topicRoute = source('app/(home)/kb/topic/[slug]/page.tsx');
+    expect(topicRoute).toContain("if (slug === 'authentication')");
+    expect(topicRoute).toContain(
+      "permanentRedirect('/kb/topic/authentication-and-connected-accounts')"
+    );
+    expect(PRODUCT_AREAS.map((area) => area.slug)).toContain(
+      'authentication-and-connected-accounts'
+    );
+    expect(PRODUCT_AREAS.map((area) => area.slug)).not.toContain('authentication');
   });
 
   test('combines OAuth and verified support answers on toolkit pages', async () => {

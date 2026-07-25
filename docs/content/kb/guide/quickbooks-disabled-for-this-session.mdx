@@ -9,6 +9,16 @@ reviewAfter: "2026-10-27"
 freshness: "time-sensitive"
 topics: ["toolkits","tool-router-and-mcp"]
 aliases: []
+related:
+  - title: "Fix QuickBooks requests that resolve to /v3/company/None/"
+    href: "/kb/guide/quickbooks-requests-resolve-to-company-none"
+    description: "QuickBooks company IDs arrive as OAuth connection metadata rather than a per-tool argument, so a missing realm ID shows up in the request path."
+  - title: "Connect a QuickBooks sandbox company"
+    href: "/kb/guide/connect-a-quickbooks-sandbox-company"
+    description: "Sandbox QuickBooks connections need Intuit's sandbox API base URL passed at connection initiation."
+  - title: "Connect multiple QuickBooks companies to one project"
+    href: "/kb/guide/connect-multiple-quickbooks-companies"
+    description: "Give each QuickBooks company its own connected account and target it explicitly from MCP clients."
 ---
 QuickBooks is categorized under both Accounting and Payment Processing. When an MCP session is created with Payment Processing excluded, the session policy disables the entire [QuickBooks toolkit](/toolkits/quickbooks) — including read-only accounting and reporting tools. Execution then returns `[Session Restriction] Toolkit 'quickbooks' is disabled for this session`.
 

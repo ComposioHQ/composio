@@ -9,6 +9,16 @@ reviewAfter: "2027-01-22"
 freshness: "evergreen"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Connect TikTok with your own developer app"
+    href: "/kb/guide/connect-tiktok-with-your-own-developer-app"
+    description: "TikTok connections generally require your own TikTok developer app, with URL-prefix verification on a domain you control."
+  - title: "Request only the TikTok scopes your app is approved for"
+    href: "/kb/guide/request-only-approved-tiktok-scopes"
+    description: "A custom TikTok auth config that falls back to the full default scope set fails when the app is approved for a subset."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
 ---
 A TikTok `client_key` error is returned by TikTok during its authorize step, not by Composio. TikTok names the field `client_key` where most providers use `client_id`.
 

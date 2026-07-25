@@ -9,6 +9,16 @@ reviewAfter: "2027-01-24"
 freshness: "evergreen"
 topics: ["toolkits","sdk-and-api"]
 aliases: []
+related:
+  - title: "Fix Google \"app is blocked\" errors on sensitive Gmail scopes"
+    href: "/kb/guide/google-blocks-sensitive-gmail-scopes"
+    description: "Composio's managed Gmail OAuth app is not verified for every sensitive Gmail scope; verified scopes need your own Google OAuth app."
+  - title: "Create Gmail filters with the gmail.settings.basic scope"
+    href: "/kb/guide/create-gmail-filters-scope"
+    description: "GMAIL_CREATE_FILTER requires gmail.settings.basic; broader mailbox scopes do not substitute for it."
+  - title: "Reduce Gmail fetch payload size"
+    href: "/kb/guide/reduce-gmail-fetch-payload-size"
+    description: "Trim Gmail list and fetch responses with include_payload, verbose, only_ids, queries, and result limits."
 ---
 Pass `from_email` on `GMAIL_SEND_EMAIL` to choose which Gmail send-as alias the message is sent from. The alias must already be configured on the Gmail account.
 

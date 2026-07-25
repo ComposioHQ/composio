@@ -9,6 +9,16 @@ reviewAfter: "2026-10-25"
 freshness: "time-sensitive"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Add the Google Ads developer token to the auth config"
+    href: "/kb/guide/google-ads-developer-token-belongs-on-the-auth-config"
+    description: "The Google Ads developer token now lives on the auth config, so connections made through older auth configs fail."
+  - title: "Target a Google Ads sub-account under an MCC"
+    href: "/kb/guide/target-a-google-ads-sub-account"
+    description: "Pass customer_id per call to target a child account, and let the connection supply the manager context."
+  - title: "Fix Google Ads campaign mutate INVALID_ARGUMENT errors"
+    href: "/kb/guide/google-ads-campaign-mutate-invalid-argument"
+    description: "Budget and location fields sent inline on a Campaign mutate are rejected by Google; they belong to separate resources."
 ---
 A Google Ads `429` or `RESOURCE_EXHAUSTED` response comes from Google, not from a Composio billing or tool-call quota. There are two separate sources for it.
 

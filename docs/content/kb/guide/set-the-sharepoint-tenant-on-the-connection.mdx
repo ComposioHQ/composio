@@ -9,6 +9,16 @@ reviewAfter: "2027-01-24"
 freshness: "evergreen"
 topics: ["toolkits","connected-accounts"]
 aliases: []
+related:
+  - title: "SharePoint REST and SharePoint Graph need separate connections"
+    href: "/kb/guide/sharepoint-rest-and-graph-need-separate-connections"
+    description: "The two SharePoint toolkits call different Microsoft APIs, so their tokens and scopes are not interchangeable."
+  - title: "Fix SharePoint 404s on /teams/ sites"
+    href: "/kb/guide/sharepoint-teams-site-returns-404"
+    description: "A bare subsite value resolves to /sites/, so team sites need the full server-relative path."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
 ---
 The SharePoint tenant or subdomain is an explicit connection field. Composio does not derive it from the OAuth token, so it has to be supplied when the connection is initiated.
 

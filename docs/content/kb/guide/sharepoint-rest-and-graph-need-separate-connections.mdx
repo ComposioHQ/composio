@@ -9,6 +9,16 @@ reviewAfter: "2027-01-24"
 freshness: "evergreen"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Fix SharePoint 404s on /teams/ sites"
+    href: "/kb/guide/sharepoint-teams-site-returns-404"
+    description: "A bare subsite value resolves to /sites/, so team sites need the full server-relative path."
+  - title: "Set the SharePoint tenant when creating a connection"
+    href: "/kb/guide/set-the-sharepoint-tenant-on-the-connection"
+    description: "Composio does not derive the SharePoint tenant from the OAuth token, so it must be passed at connection initiation."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
 ---
 The SharePoint toolkit and the SharePoint Graph toolkit are separate API families, not interchangeable variants of one connection.
 

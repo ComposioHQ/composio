@@ -9,6 +9,16 @@ reviewAfter: "2026-10-29"
 freshness: "time-sensitive"
 topics: ["toolkits","sdk-and-api"]
 aliases: []
+related:
+  - title: "Add the Google Ads developer token to the auth config"
+    href: "/kb/guide/google-ads-developer-token-belongs-on-the-auth-config"
+    description: "The Google Ads developer token now lives on the auth config, so connections made through older auth configs fail."
+  - title: "Fix Google Ads 429 RESOURCE_EXHAUSTED errors"
+    href: "/kb/guide/google-ads-resource-exhausted-errors"
+    description: "Google Ads rate limits can come from Google's own quota or from shared managed-OAuth capacity, not from your Composio plan."
+  - title: "Fix Google Ads campaign mutate INVALID_ARGUMENT errors"
+    href: "/kb/guide/google-ads-campaign-mutate-invalid-argument"
+    description: "Budget and location fields sent inline on a Campaign mutate are rejected by Google; they belong to separate resources."
 ---
 Customer-scoped Google Ads tools accept an optional per-call `customer_id`. Pass the child or sub-account customer ID and it becomes the target account in the Google Ads request path.
 

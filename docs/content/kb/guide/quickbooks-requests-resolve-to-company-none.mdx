@@ -9,6 +9,16 @@ reviewAfter: "2026-10-27"
 freshness: "time-sensitive"
 topics: ["toolkits","connected-accounts"]
 aliases: []
+related:
+  - title: "Fix \"Toolkit 'quickbooks' is disabled for this session\""
+    href: "/kb/guide/quickbooks-disabled-for-this-session"
+    description: "QuickBooks is categorized under Payment Processing, so a session that excludes payment tools disables the whole toolkit, including read-only accounting tools."
+  - title: "Connect a QuickBooks sandbox company"
+    href: "/kb/guide/connect-a-quickbooks-sandbox-company"
+    description: "Sandbox QuickBooks connections need Intuit's sandbox API base URL passed at connection initiation."
+  - title: "Connect multiple QuickBooks companies to one project"
+    href: "/kb/guide/connect-multiple-quickbooks-companies"
+    description: "Give each QuickBooks company its own connected account and target it explicitly from MCP clients."
 ---
 QuickBooks API paths include Intuit's company ID, called the `realmId`. Composio reads it from OAuth connection metadata rather than accepting it as a normal per-tool argument, so you will not always find a manual `realm_id` field on the auth scheme you are using.
 

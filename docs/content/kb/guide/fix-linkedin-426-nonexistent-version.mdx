@@ -9,6 +9,16 @@ reviewAfter: "2026-10-24"
 freshness: "time-sensitive"
 topics: ["toolkits","sdk-and-api"]
 aliases: []
+related:
+  - title: "Fix LinkedIn 403 errors on company page actions"
+    href: "/kb/guide/linkedin-company-actions-require-organization-scopes"
+    description: "Company-page actions need the organization scope on the token, an eligible Page role, and the matching app permission."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
+  - title: "Use CALENDLY_POST_INVITEE for invitee creation"
+    href: "/kb/guide/use-calendly-post-invitee"
+    description: "Replace the deprecated Calendly invitee action with CALENDLY_POST_INVITEE."
 ---
 A LinkedIn 426 `NONEXISTENT_VERSION` response usually means a stale LinkedIn API version header. Use `latest` only to diagnose that version resolution is the cause, then pin the dated version validated by your application.
 

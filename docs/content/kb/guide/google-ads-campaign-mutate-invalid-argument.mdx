@@ -9,6 +9,16 @@ reviewAfter: "2026-10-25"
 freshness: "time-sensitive"
 topics: ["toolkits","sdk-and-api"]
 aliases: []
+related:
+  - title: "Add the Google Ads developer token to the auth config"
+    href: "/kb/guide/google-ads-developer-token-belongs-on-the-auth-config"
+    description: "The Google Ads developer token now lives on the auth config, so connections made through older auth configs fail."
+  - title: "Fix Google Ads 429 RESOURCE_EXHAUSTED errors"
+    href: "/kb/guide/google-ads-resource-exhausted-errors"
+    description: "Google Ads rate limits can come from Google's own quota or from shared managed-OAuth capacity, not from your Composio plan."
+  - title: "Target a Google Ads sub-account under an MCC"
+    href: "/kb/guide/target-a-google-ads-sub-account"
+    description: "Pass customer_id per call to target a child account, and let the connection supply the manager context."
 ---
 `GOOGLEADS_MUTATE_CAMPAIGNS` can fail with a Google Ads `400 INVALID_ARGUMENT` such as `Unknown name "dailyBudget" at operations[0].update` or `Unknown name "targetedLocations" ... Cannot find field`. This is a request-shape problem, not an OAuth failure — the payload includes fields that are not valid inline Campaign resource fields.
 

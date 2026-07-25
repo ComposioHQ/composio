@@ -9,6 +9,16 @@ reviewAfter: "2027-01-25"
 freshness: "evergreen"
 topics: ["tool-router-and-mcp"]
 aliases: []
+related:
+  - title: "Use Tool Router session files as toolkit inputs"
+    href: "/kb/guide/use-tool-router-session-files-as-tool-inputs"
+    description: "Convert session file paths into fresh FileUploadable storage keys before calling toolkit actions."
+  - title: "Choose which connected account a Tool Router session uses"
+    href: "/kb/guide/choose-a-connected-account-for-a-session"
+    description: "Assign account aliases and pass one explicitly, or a session with several eligible accounts picks its default."
+  - title: "Tool Router session lifetime and deletion"
+    href: "/kb/guide/tool-router-session-lifetime-and-deletion"
+    description: "Sessions are long-lived records without time-based expiry, and deleting one does not remove its connections."
 ---
 A non-empty `toolkits.enabled` list on a session blocks every toolkit that is not on it. A `toolkits.disabled` list does the inverse — the listed toolkits are blocked and the rest stay eligible.
 

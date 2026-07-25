@@ -9,6 +9,16 @@ reviewAfter: "2027-01-25"
 freshness: "evergreen"
 topics: ["tool-router-and-mcp"]
 aliases: []
+related:
+  - title: "Use Tool Router session files as toolkit inputs"
+    href: "/kb/guide/use-tool-router-session-files-as-tool-inputs"
+    description: "Convert session file paths into fresh FileUploadable storage keys before calling toolkit actions."
+  - title: "Choose which connected account a Tool Router session uses"
+    href: "/kb/guide/choose-a-connected-account-for-a-session"
+    description: "Assign account aliases and pass one explicitly, or a session with several eligible accounts picks its default."
+  - title: "Fix \"Toolkit '<name>' is not allowed\" in a session"
+    href: "/kb/guide/toolkit-is-not-allowed-for-this-session"
+    description: "Session toolkit allowlists are checked before auth configs and connected accounts."
 ---
 Tool Router sessions are long-lived records and do not currently have a time-based expiration. That is separate from temporary workbench files, live sandbox retention, and short response-cache lifetimes, each of which has its own clock.
 
@@ -17,6 +27,7 @@ Reuse an existing TypeScript session with `toolRouter.use(sessionId)`.
 ## Deleting a session
 
 ```ts
+// @noErrors
 await session.delete();
 await composio.sessions.delete(sessionId);
 ```

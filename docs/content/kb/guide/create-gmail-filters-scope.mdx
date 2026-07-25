@@ -9,6 +9,16 @@ reviewAfter: "2026-10-23"
 freshness: "time-sensitive"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Fix Google \"app is blocked\" errors on sensitive Gmail scopes"
+    href: "/kb/guide/google-blocks-sensitive-gmail-scopes"
+    description: "Composio's managed Gmail OAuth app is not verified for every sensitive Gmail scope; verified scopes need your own Google OAuth app."
+  - title: "Send Gmail from a send-as alias"
+    href: "/kb/guide/send-gmail-from-a-send-as-alias"
+    description: "Use from_email on GMAIL_SEND_EMAIL to pick a configured send-as alias."
+  - title: "Reduce Gmail fetch payload size"
+    href: "/kb/guide/reduce-gmail-fetch-payload-size"
+    description: "Trim Gmail list and fetch responses with include_payload, verbose, only_ids, queries, and result limits."
 ---
 Gmail filter creation maps to the Gmail API `users.settings.filters.create` endpoint. Google lists `https://www.googleapis.com/auth/gmail.settings.basic` as the required OAuth scope, and `GMAIL_CREATE_FILTER` declares that same single required scope.
 

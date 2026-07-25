@@ -9,6 +9,16 @@ reviewAfter: "2027-01-20"
 freshness: "evergreen"
 topics: ["tool-router-and-mcp","connected-accounts"]
 aliases: []
+related:
+  - title: "Use Tool Router session files as toolkit inputs"
+    href: "/kb/guide/use-tool-router-session-files-as-tool-inputs"
+    description: "Convert session file paths into fresh FileUploadable storage keys before calling toolkit actions."
+  - title: "Fix \"Toolkit '<name>' is not allowed\" in a session"
+    href: "/kb/guide/toolkit-is-not-allowed-for-this-session"
+    description: "Session toolkit allowlists are checked before auth configs and connected accounts."
+  - title: "Tool Router session lifetime and deletion"
+    href: "/kb/guide/tool-router-session-lifetime-and-deletion"
+    description: "Sessions are long-lived records without time-based expiry, and deleting one does not remove its connections."
 ---
 When a toolkit has more than one connected account, give each a clear alias such as `work`, `personal`, or `primary`, then pass the alias as the execution `account`. Without an alias, pass the generated account ID returned by connection discovery.
 

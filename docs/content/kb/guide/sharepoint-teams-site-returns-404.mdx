@@ -9,6 +9,16 @@ reviewAfter: "2027-01-25"
 freshness: "evergreen"
 topics: ["toolkits","connected-accounts"]
 aliases: []
+related:
+  - title: "SharePoint REST and SharePoint Graph need separate connections"
+    href: "/kb/guide/sharepoint-rest-and-graph-need-separate-connections"
+    description: "The two SharePoint toolkits call different Microsoft APIs, so their tokens and scopes are not interchangeable."
+  - title: "Set the SharePoint tenant when creating a connection"
+    href: "/kb/guide/set-the-sharepoint-tenant-on-the-connection"
+    description: "Composio does not derive the SharePoint tenant from the OAuth token, so it must be passed at connection initiation."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
 ---
 If your SharePoint site lives under `/teams/<site>` rather than `/sites/<site>`, do not pass a bare `<site>` value in the Subsite field. The toolkit interprets a bare value as `/sites/<site>`, and SharePoint returns `404 FILE NOT FOUND` for a path that does not exist.
 

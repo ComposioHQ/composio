@@ -9,6 +9,16 @@ reviewAfter: "2027-01-23"
 freshness: "evergreen"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Fix \"Toolkit 'quickbooks' is disabled for this session\""
+    href: "/kb/guide/quickbooks-disabled-for-this-session"
+    description: "QuickBooks is categorized under Payment Processing, so a session that excludes payment tools disables the whole toolkit, including read-only accounting tools."
+  - title: "Fix QuickBooks requests that resolve to /v3/company/None/"
+    href: "/kb/guide/quickbooks-requests-resolve-to-company-none"
+    description: "QuickBooks company IDs arrive as OAuth connection metadata rather than a per-tool argument, so a missing realm ID shows up in the request path."
+  - title: "Connect a QuickBooks sandbox company"
+    href: "/kb/guide/connect-a-quickbooks-sandbox-company"
+    description: "Sandbox QuickBooks connections need Intuit's sandbox API base URL passed at connection initiation."
 ---
 If your QuickBooks OAuth flow requests `com.intuit.quickbooks.payment`, the QuickBooks payment module must be enabled for that Intuit account and app. Without it, the authorization flow fails even though the credentials are correct.
 

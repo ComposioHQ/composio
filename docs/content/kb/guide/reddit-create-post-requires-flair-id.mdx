@@ -9,6 +9,16 @@ reviewAfter: "2026-10-27"
 freshness: "time-sensitive"
 topics: ["toolkits","sdk-and-api"]
 aliases: []
+related:
+  - title: "Connect Reddit with your own OAuth credentials"
+    href: "/kb/guide/connect-reddit-with-your-own-oauth-credentials"
+    description: "Reddit connections are most reliable with your own client ID and secret, which also insulates you from shared-app enforcement."
+  - title: "Ahrefs actions must use the API host"
+    href: "/kb/guide/ahrefs-actions-use-the-api-host"
+    description: "Ahrefs API v3 requests must use api.ahrefs.com rather than the Ahrefs website host."
+  - title: "Use CALENDLY_POST_INVITEE for invitee creation"
+    href: "/kb/guide/use-calendly-post-invitee"
+    description: "Replace the deprecated Calendly invitee action with CALENDLY_POST_INVITEE."
 ---
 If `REDDIT_CREATE_REDDIT_POST` fails on tool version `00000000_00`, check whether the request is missing `flair_id`. That version requires it. Current Reddit tool versions do not.
 

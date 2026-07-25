@@ -9,6 +9,16 @@ reviewAfter: "2026-10-25"
 freshness: "time-sensitive"
 topics: ["toolkits","authentication"]
 aliases: []
+related:
+  - title: "Create Gmail filters with the gmail.settings.basic scope"
+    href: "/kb/guide/create-gmail-filters-scope"
+    description: "GMAIL_CREATE_FILTER requires gmail.settings.basic; broader mailbox scopes do not substitute for it."
+  - title: "Send Gmail from a send-as alias"
+    href: "/kb/guide/send-gmail-from-a-send-as-alias"
+    description: "Use from_email on GMAIL_SEND_EMAIL to pick a configured send-as alias."
+  - title: "Reduce Gmail fetch payload size"
+    href: "/kb/guide/reduce-gmail-fetch-payload-size"
+    description: "Trim Gmail list and fetch responses with include_payload, verbose, only_ids, queries, and result limits."
 ---
 Composio's managed Gmail OAuth app is not verified for every sensitive Gmail scope. When you request a granular sensitive scope that is not verified on the managed app, Google stops the flow with an "app is blocked" or unverified-app screen.
 

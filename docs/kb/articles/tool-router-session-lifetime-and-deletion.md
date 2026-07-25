@@ -5,6 +5,7 @@ Reuse an existing TypeScript session with `toolRouter.use(sessionId)`.
 ## Deleting a session
 
 ```ts
+// @noErrors
 await session.delete();
 await composio.sessions.delete(sessionId);
 ```
