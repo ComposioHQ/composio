@@ -147,6 +147,11 @@ jobs:
       - name: Open tracking issue on failure
         if: failure()
         continue-on-error: true
+        # Override the job-level `./docs` default. That path only exists after
+        # checkout, so a failure before it (e.g. the app-token step) would leave
+        # the runner unable to start this shell — and continue-on-error would
+        # swallow that, losing the alert for precisely the earliest failures.
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
