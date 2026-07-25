@@ -286,7 +286,13 @@ This is the second safe answer.`);
   test('loads the published authentication answers from the pinned snapshot', () => {
     const published = getPublishedKbGuides();
 
-    expect(published).toHaveLength(27);
+    // The corpus grows batch by batch, so assert the invariant — the catalog
+    // exposes exactly the manifest's published guides — rather than a count
+    // that has to be edited on every publication.
+    expect(published).toHaveLength(
+      getKbCatalog().manifest.guides.filter(guide => guide.state === 'published').length
+    );
+    expect(published.length).toBeGreaterThanOrEqual(27);
     expect(published.map(guide => guide.slug)).toEqual(
       expect.arrayContaining([
         'deduplicate-trigger-webhook-deliveries',

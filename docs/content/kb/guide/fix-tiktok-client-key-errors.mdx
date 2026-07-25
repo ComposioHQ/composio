@@ -1,0 +1,23 @@
+---
+title: "Fix TikTok client_key errors during OAuth"
+description: "TikTok returns client_key errors for credential mismatches and redirect URI problems in its own authorize step."
+keywords: ["tiktok","oauth","client-key","credentials","toolkits","authentication"]
+sources: [{"sourcePath":"kb/toolkits/tiktok/public.md","sourceHeading":"TikTok OAuth uses `client_key`; credential mismatch or old `client_id` handling causes `client_key` errors"},{"sourcePath":"kb/toolkits/tiktok/public.md","sourceHeading":"TikTok app status, scopes, and sandbox/production mode determine who can complete OAuth"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-22"
+freshness: "evergreen"
+topics: ["toolkits","authentication"]
+aliases: []
+---
+A TikTok `client_key` error is returned by TikTok during its authorize step, not by Composio. TikTok names the field `client_key` where most providers use `client_id`.
+
+## Check the credentials first
+
+1. Re-copy the Client Key and Client Secret from your TikTok developer app, watching for swapped values and trailing spaces.
+2. Confirm the registered redirect URI matches exactly what TikTok expects — static and parameter-free.
+3. If an older flow is involved, unshorten the redirect URL and check which parameter shape is actually being sent.
+
+## Check who is allowed to authorize
+
+App status decides who can complete OAuth at all. If your TikTok app is in sandbox mode or under review, only authorized testers can finish the flow — a correctly configured app still fails for everyone else. Confirm the app type and status, sandbox versus production mode, the enabled APIs and scopes, and the registered redirect URI before treating this as a credential problem.

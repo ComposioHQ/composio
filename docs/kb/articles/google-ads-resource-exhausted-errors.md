@@ -1,0 +1,12 @@
+A Google Ads `429` or `RESOURCE_EXHAUSTED` response comes from Google, not from a Composio billing or tool-call quota. There are two separate sources for it.
+
+## Identify which quota you hit
+
+- **Google's own API limits** on your Google Ads account or developer token.
+- **Shared managed-OAuth capacity**, when the Composio-managed app and developer token are shared across users. Low usage on your own account can still exhaust the shared pool.
+
+First confirm whether your connection uses Composio-managed OAuth or your own credentials. If it uses the managed app, the ceiling you are hitting is not yours.
+
+## Move to your own credentials
+
+Create an auth config with your own Google Ads OAuth credentials and developer token, then create a fresh connection through it. That gives you isolated quota and is the supported path for production-scale usage.

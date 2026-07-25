@@ -1,0 +1,23 @@
+---
+title: "Connect X (Twitter) with your own developer app"
+description: "X connections require your own developer app credentials and a Platform auth config rather than Connect."
+keywords: ["twitter","x","oauth","developer-app","toolkits","authentication"]
+sources: [{"sourcePath":"kb/toolkits/twitter/public.md","sourceHeading":"Twitter/X no longer supports Composio managed OAuth; customers must use their own developer app credentials"},{"sourcePath":"kb/toolkits/twitter/public.md","sourceHeading":"Twitter/X cannot be used through Connect when it requires custom OAuth credentials"},{"sourcePath":"kb/toolkits/twitter/public.md","sourceHeading":"`client-not-enrolled` and `App not linked to project` usually point to Twitter developer app/project setup issues"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2026-10-23"
+freshness: "time-sensitive"
+topics: ["toolkits","authentication"]
+aliases: []
+---
+Composio does not offer a managed OAuth app for X (Twitter). Create your own X developer app and configure a custom auth config with those credentials.
+
+Before retrying a connection, verify the app settings, callback and redirect URLs, scopes, and project linkage against X's current setup requirements.
+
+## Use the Platform, not Connect
+
+Connect does not support custom OAuth credentials. Because X requires your own developer credentials, set the integration up from the main Composio Platform with a custom auth config — the Connect flow is not the right surface for it.
+
+## Common setup errors
+
+`client-not-enrolled` and `App not linked to project` almost always mean the X developer app is not attached to an X developer project, or that its OAuth configuration is incomplete. Both are fixed in the X developer portal rather than in Composio.

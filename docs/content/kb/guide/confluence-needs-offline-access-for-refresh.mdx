@@ -1,0 +1,19 @@
+---
+title: "Add offline_access to Confluence auth configs"
+description: "Confluence token refresh requires the offline_access scope, and it only applies to connections made after the change."
+keywords: ["confluence","atlassian","offline-access","refresh-token","toolkits","authentication"]
+sources: [{"sourcePath":"kb/toolkits/confluence/public.md","sourceHeading":"Add `offline_access` to Confluence auth configs when refresh tokens are needed"},{"sourcePath":"kb/toolkits/confluence/public.md","sourceHeading":"Use connected account ID, not auth config ID, when executing Confluence tools"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-20"
+freshness: "evergreen"
+topics: ["toolkits","authentication"]
+aliases: []
+---
+Include the `offline_access` scope in the Confluence auth config, then create a new connected account. `offline_access` is what enables token refresh.
+
+Adding it to an existing auth config only affects connections created afterwards — users on connections made before the change have to reconnect before their tokens can refresh.
+
+## Pass the connected account ID at execution
+
+When executing Confluence tools, pass the connected account ID. Passing the auth config or integration ID in the connected-account field is a common mix-up that fails in ways that look like an auth problem rather than a wrong identifier.

@@ -1,0 +1,21 @@
+---
+title: "Change which Facebook or Instagram account is connected"
+description: "Meta connections bind to the account chosen in Meta's picker and cannot be repointed from Composio."
+keywords: ["facebook","instagram","meta","connected-accounts","toolkits","connected-accounts"]
+sources: [{"sourcePath":"kb/toolkits/facebook/public.md","sourceHeading":"Facebook or Instagram connections authenticate the account selected in Meta's picker and cannot be repointed server-side"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-20"
+freshness: "evergreen"
+topics: ["toolkits","connected-accounts"]
+aliases: []
+---
+A Facebook, Page, or Instagram connection authenticates whichever account was selected in Meta's own account picker during authorization. That choice is recorded by Meta, so it cannot be changed from the Composio side afterwards.
+
+To connect a different account, the authorization has to be redone from Meta:
+
+1. Remove the existing Composio/Meta app authorization from Facebook's Business Integrations settings.
+2. Start the connection flow again.
+3. Select the intended account, Page, or Instagram profile in Meta's picker.
+
+Deleting and recreating the Composio connected account without clearing the authorization on Meta's side will usually reconnect the same account, because Meta reuses the prior grant.

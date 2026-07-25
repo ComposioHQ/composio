@@ -45,6 +45,12 @@ export interface KbGuideDefinition {
   freshness: KbFreshness;
   state: KbPublicationState;
   featured: boolean;
+  /**
+   * Tool slugs this guide may cite even though they are absent from the production
+   * catalog — for guides whose subject is that an identifier was removed or renamed.
+   * Declared here so `verify:kb` exemptions are reviewable rather than silent.
+   */
+  verifyIgnoreToolSlugs?: string[];
 }
 
 export interface KbGuide extends KbGuideDefinition {

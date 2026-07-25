@@ -1,0 +1,1 @@
+Composio does not have one global page-size limit. Resource lists, catalogs, Tool Router, logs, and billing endpoints can define different limits, while toolkit actions also inherit provider-specific rules. Check the exact endpoint schema and live behavior before quoting a maximum.

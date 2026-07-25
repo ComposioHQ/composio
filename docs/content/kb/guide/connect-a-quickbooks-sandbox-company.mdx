@@ -1,0 +1,19 @@
+---
+title: "Connect a QuickBooks sandbox company"
+description: "Sandbox QuickBooks connections need Intuit's sandbox API base URL passed at connection initiation."
+keywords: ["quickbooks","sandbox","oauth","auth-config","toolkits","authentication"]
+sources: [{"sourcePath":"kb/toolkits/quickbooks/public.md","sourceHeading":"Use the sandbox QuickBooks API base URL for sandbox connections"},{"sourcePath":"kb/toolkits/quickbooks/public.md","sourceHeading":"QuickBooks auth can accept custom auth and token URLs for sandbox/custom flows"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-21"
+freshness: "evergreen"
+topics: ["toolkits","authentication"]
+aliases: []
+---
+QuickBooks sandbox companies live behind a different Intuit host than production companies. Pass `https://sandbox-quickbooks.api.intuit.com` as the base URL when you initiate the connection. Production connections use Intuit's production API base URL.
+
+## Custom auth and token URLs
+
+The [QuickBooks toolkit](/toolkits/quickbooks) accepts auth and token URLs during connection initiation. If your sandbox or custom Intuit OAuth flow needs endpoints other than the defaults, use a toolkit version that supports passing those URLs and supply them at initiation.
+
+Keep sandbox and production on separate auth configs. Sharing one auth config across both means every new connection inherits whichever base URL was configured last.

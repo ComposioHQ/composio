@@ -1,0 +1,21 @@
+---
+title: "Reduce Gmail fetch payload size"
+description: "Trim Gmail list and fetch responses with include_payload, verbose, only_ids, queries, and result limits."
+keywords: ["gmail","payload","performance","pagination","toolkits","sdk-and-api"]
+sources: [{"sourcePath":"kb/toolkits/gmail/public.md","sourceHeading":"Reduce Gmail fetch payload size with `include_payload=false`, `verbose=false`, `only_ids`, query, and limits"},{"sourcePath":"kb/toolkits/gmail/public.md","sourceHeading":"Avoid `gmail.metadata` when fetching full Gmail email content"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-23"
+freshness: "evergreen"
+topics: ["toolkits","sdk-and-api"]
+aliases: []
+---
+Gmail fetch and list flows return large responses by default. Trim them at the request rather than filtering afterwards.
+
+- Set `include_payload=false` and `verbose=false` where the tool supports them.
+- For the lightest flows, use `only_ids=true` and fetch the messages you actually need in a second call.
+- Use `max_results` and Gmail `query` filters to keep result sets small in the first place.
+
+## When you do need full content
+
+The Gmail metadata scope cannot return full message content. If a call needs the complete payload or body, remove `https://www.googleapis.com/auth/gmail.metadata` from the auth config and use a scope that allows content access, such as `https://mail.google.com/`, then reconnect.

@@ -10,8 +10,7 @@ tags:
 ---
 # Ahrefs
 
+
 ## Ahrefs actions must call api.ahrefs.com, not ahrefs.com
 
-Ahrefs API v3 calls must use `https://api.ahrefs.com/v3`. If an Ahrefs action or connection check calls `https://ahrefs.com/v3` and returns a 404 HTML page, the connector is using the website host instead of the API host. Changing the API key or action payload will not fix that host mismatch.
-
-Confirm the failing request URL. If it does not use `api.ahrefs.com`, contact Composio support with the log ID so the connector configuration can be reviewed.
+Ahrefs API calls should use the API host https://api.ahrefs.com/v3. If Ahrefs actions or connection checks are hitting https://ahrefs.com/v3 and returning 404 HTML, treat it as a connector base-URL configuration problem rather than a customer-side API-key or request-payload issue. Confirm the failing request is using api.ahrefs.com; if it is not, route the case to a human for connector review.

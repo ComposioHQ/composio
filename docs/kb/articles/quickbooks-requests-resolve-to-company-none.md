@@ -1,0 +1,11 @@
+QuickBooks API paths include Intuit's company ID, called the `realmId`. Composio reads it from OAuth connection metadata rather than accepting it as a normal per-tool argument, so you will not always find a manual `realm_id` field on the auth scheme you are using.
+
+## Read the request path
+
+A request containing `/v3/company/None/` means the connection has no usable company metadata. The tool call itself is well-formed; the company ID never made it onto the connection.
+
+## Check the toolkit version first
+
+Realm and company mapping fixes ship with the toolkit. Retry on toolkit version `20260212_00` or later, which includes the realm ID mapping fix, before changing anything about the connection.
+
+If an active connection still carries no stored realm ID on a current toolkit version, contact Composio support with the connected account ID and a failing request ID — the runtime may have failed to persist or extract the value, which is not something reconnecting will fix.

@@ -1,0 +1,13 @@
+If your SharePoint site lives under `/teams/<site>` rather than `/sites/<site>`, do not pass a bare `<site>` value in the Subsite field. The toolkit interprets a bare value as `/sites/<site>`, and SharePoint returns `404 FILE NOT FOUND` for a path that does not exist.
+
+## Confirm it is a path mismatch
+
+Check the tool logs. The signature is a call to `https://<tenant>.sharepoint.com/sites/<site>/_api/...` returning 404 while your actual site URL is `https://<tenant>.sharepoint.com/teams/<site>`. If the connected account is active and the auth config is enabled, treat this as a path-prefix mismatch rather than an OAuth problem.
+
+## Set the full server-relative path
+
+Reconnect the SharePoint account and set the Subsite value to the full server-relative path, for example `/teams/<site>`.
+
+For per-call overrides, pass `site_name: "/teams/<site>"`.
+
+Note that the Subsite field is a default target, not a permission boundary. It supplies the site when a tool call omits `site_name`; it does not restrict what the Microsoft token can reach.

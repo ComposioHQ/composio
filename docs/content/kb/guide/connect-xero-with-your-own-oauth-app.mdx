@@ -1,0 +1,30 @@
+---
+title: "Connect Xero with your own OAuth app"
+description: "Xero connections need your own OAuth app credentials, a Web app type, and an exactly matching redirect URI."
+keywords: ["xero","oauth","redirect-uri","scopes","toolkits","authentication"]
+sources: [{"sourcePath":"kb/toolkits/xero/public.md","sourceHeading":"Xero managed OAuth was removed/limited; use your own Xero OAuth app credentials"},{"sourcePath":"kb/toolkits/xero/public.md","sourceHeading":"Xero OAuth app should be a Web app and the client secret must match the auth config"},{"sourcePath":"kb/toolkits/xero/public.md","sourceHeading":"Remove deprecated Xero scopes that cause invalid-scope/CSP/login errors"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2026-10-23"
+freshness: "time-sensitive"
+topics: ["toolkits","authentication"]
+aliases: []
+---
+Xero connections use your own Xero OAuth app credentials. Create a new auth config with those credentials — if an existing auth config still points at managed credentials, create a fresh one rather than editing it, then connect again.
+
+## Configure the Xero app correctly
+
+- Set the app type to **Web app**, not Mobile or Desktop.
+- Make the redirect URI match the Composio auth config exactly.
+- Make sure the client secret in the auth config matches the one on the Xero app.
+
+## Remove deprecated scopes
+
+These Xero scopes are no longer valid and produce invalid-scope, CSP, or login errors:
+
+- `accounting.journals.read`
+- `accounting.reports.read`
+- `accounting.transactions`
+- `accounting.transactions.read`
+
+Remove them from the auth config and reconnect. Scope changes only apply to connections created after the change.

@@ -8,6 +8,7 @@
   "scripts": {
     "build:agent-index": "bun scripts/build-agent-index.ts",
     "audit:kb": "bun scripts/audit-kb-sections.ts",
+    "verify:kb": "bun scripts/verify-kb.ts",
     "generate:kb": "bun scripts/generate-kb.ts",
     "check:kb": "bun scripts/generate-kb.ts --check",
     "prebuild": "bun run generate:kb && bun scripts/build-agent-index.ts",

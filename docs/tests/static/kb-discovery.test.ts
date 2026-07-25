@@ -34,7 +34,7 @@ describe('public KB discovery', () => {
       (guide) => guide.slug === 'auth-config-list-pages-return-at-most-50-items',
     );
 
-    expect(authoredGuides).toHaveLength(17);
+    expect(authoredGuides).toHaveLength(getPublishedKbGuides().length);
     expect(authoredGuides.map((guide) => guide.articlePath).sort()).toEqual(articlePaths);
 
     for (const guide of authoredGuides) {

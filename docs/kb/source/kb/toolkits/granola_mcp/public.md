@@ -14,9 +14,9 @@ tags:
 
 ## Composio mirrors Granola's official MCP server
 
-The Granola MCP toolkit uses Granola's official MCP server. The tool names, descriptions, input definitions, and response metadata available through Composio are limited to what that upstream server exposes.
+The Granola MCP toolkit uses Granola's official MCP server. Tool names, descriptions, input definitions, and response metadata are limited to what that upstream server exposes.
 
-- When Granola supplies only a tool name and description, that is the metadata Composio can expose.
-- When Granola does not declare a response or output schema, Composio cannot invent one. An empty output schema alone is not evidence that the Composio catalog is stale.
-- To investigate a mismatch, compare the exact tool and missing field with the current official Granola MCP server behavior.
-- Contact Composio support when the official server exposes a tool or schema field that is absent from the Composio toolkit.
+- If Granola supplies only a tool name and description, that is the metadata Composio can expose.
+- If Granola does not declare a response/output schema, Composio cannot invent one, so an empty output schema is not by itself evidence of a stale Composio catalog.
+- If a customer reports a mismatch, ask for the exact tool name and missing field. Compare it with the current official Granola MCP server behavior before claiming a Composio catalog bug.
+- Escalate when the official server currently exposes a tool or schema field but the same item is absent from Composio.

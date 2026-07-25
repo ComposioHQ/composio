@@ -2,7 +2,7 @@ Canvas account-level endpoints require an account-level administrator role; cour
 
 ## Check the same identity
 
-This guidance applies to `CANVAS_GET_ACCOUNTS` and other account-level paths, not to every Canvas course action. Test with the same bearer identity that Composio uses, then confirm that identity has the required role for the target account.
+This guidance applies to account-level actions such as `CANVAS_LIST_MANAGEABLE_ACCOUNTS`, `CANVAS_GET_SINGLE_ACCOUNT`, and `CANVAS_GET_SUB_ACCOUNTS`, not to every Canvas course action. Test with the same bearer identity that Composio uses, then confirm that identity has the required role for the target account.
 
 ## Recover from an empty or unauthorized result
 

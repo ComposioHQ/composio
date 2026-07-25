@@ -1,0 +1,14 @@
+When a toolkit has more than one connected account, give each a clear alias such as `work`, `personal`, or `primary`, then pass the alias as the execution `account`. Without an alias, pass the generated account ID returned by connection discovery.
+
+Fuzzy phrases like "office email" only resolve if a matching alias actually exists. If explicit account selection is disabled and no `account` is supplied, the session falls back to its first or default account — which is why calls sometimes land on the wrong account while every connection looks healthy.
+
+## Live resolution versus pinning
+
+- Omit `connectedAccounts` and Tool Router resolves currently active accounts for the session user at execution time, including accounts connected after the session was created.
+- Supply `connectedAccounts` and it becomes an exact per-toolkit override. Tool Router will not fall back to another active account for that toolkit.
+
+Adding another account later does not change an explicit pin. Update or recreate the session to change the pinned account, or omit the override to get live discovery.
+
+## The session user has to match
+
+An account can be active in the dashboard and still be invisible to Tool Router if the session runs under a different `user_id`. Private accounts resolve for their owning user; explicitly shared or pinned accounts follow the session configuration. Create the session and the connection with the same stable user ID.

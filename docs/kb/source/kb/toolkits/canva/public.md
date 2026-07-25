@@ -10,8 +10,7 @@ tags:
 ---
 # Canva
 
+
 ## Use Canva autofill jobs when content must be populated into a design
 
-Use `CANVA_INITIATE_CANVA_DESIGN_AUTOFILL_JOB` when a Canva workflow must insert content into a generated design. The autofill workflow accepts a brand template and its input data, then creates the populated design asynchronously.
-
-`CANVA_CREATE_CANVA_DESIGN_WITH_OPTIONAL_ASSET` is deprecated in favor of `CANVA_POST_DESIGNS`, but both create-design flows create a blank design by default and do not accept arbitrary design content. Use `CANVA_POST_DESIGNS` only when a blank design is the intended result.
+For Canva workflows that need content inserted into a generated design, do not rely on the create-design endpoint/tool. `CANVA_CREATE_CANVA_DESIGN_WITH_OPTIONAL_ASSET` is deprecated and should be replaced with `CANVA_POST_DESIGNS`, but both the old and new create-design flows create a blank design by default and do not accept arbitrary content in the request. Use `CANVA_INITIATE_CANVA_DESIGN_AUTOFILL_JOB` for the content-population use case, because that flow is built around Canva's autofill capability.

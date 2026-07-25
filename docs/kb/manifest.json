@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "source": {
-    "repository": "ComposioHQ/support-workflows",
-    "commit": "5eed614",
-    "capturedAt": "2026-07-22"
+    "repository": "ComposioHQ/public-kb",
+    "commit": "826c1b9",
+    "capturedAt": "2026-07-25"
   },
   "topics": [
     {
@@ -78,17 +78,30 @@
           "sourceHeading": "Session paths are not `FileUploadable` storage keys"
         }
       ],
-      "topics": ["tool-router-and-mcp", "sdk-and-api"],
-      "tags": ["mcp", "tool-router", "files", "uploads"],
+      "topics": [
+        "tool-router-and-mcp",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "mcp",
+        "tool-router",
+        "files",
+        "uploads"
+      ],
       "aliases": [],
-      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
-      "externalResources": ["docs-sessions"],
+      "relatedGuides": [
+        "pagination-limits-are-endpoint-specific"
+      ],
+      "externalResources": [
+        "docs-sessions"
+      ],
       "updatedAt": "2026-07-14",
       "lastVerifiedAt": "2026-07-21",
-      "reviewAfter": "2027-01-17",
+      "reviewAfter": "2027-01-25",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "use-tool-router-session-files-as-tool-inputs.md"
     },
     {
       "slug": "pagination-limits-are-endpoint-specific",
@@ -100,17 +113,28 @@
           "sourceHeading": "Pagination limits are endpoint-specific"
         }
       ],
-      "topics": ["sdk-and-api"],
-      "tags": ["api", "pagination", "cursors"],
+      "topics": [
+        "sdk-and-api"
+      ],
+      "tags": [
+        "api",
+        "pagination",
+        "cursors"
+      ],
       "aliases": [],
-      "relatedGuides": ["use-tool-router-session-files-as-tool-inputs"],
-      "externalResources": ["docs-api-reference"],
+      "relatedGuides": [
+        "use-tool-router-session-files-as-tool-inputs"
+      ],
+      "externalResources": [
+        "docs-api-reference"
+      ],
       "updatedAt": "2026-07-16",
       "lastVerifiedAt": "2026-07-21",
-      "reviewAfter": "2027-01-17",
+      "reviewAfter": "2027-01-23",
       "freshness": "evergreen",
       "state": "published",
-      "featured": true
+      "featured": true,
+      "articlePath": "pagination-limits-are-endpoint-specific.md"
     },
     {
       "slug": "deduplicate-trigger-webhook-deliveries",
@@ -122,17 +146,28 @@
           "sourceHeading": "Trigger webhook delivery is at-least-once"
         }
       ],
-      "topics": ["triggers-and-webhooks", "sdk-and-api"],
-      "tags": ["triggers", "webhooks", "retries", "idempotency"],
+      "topics": [
+        "triggers-and-webhooks",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "triggers",
+        "webhooks",
+        "retries",
+        "idempotency"
+      ],
       "aliases": [],
-      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
+      "relatedGuides": [
+        "pagination-limits-are-endpoint-specific"
+      ],
       "externalResources": [],
       "updatedAt": "2026-07-14",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2027-01-18",
+      "reviewAfter": "2027-01-22",
       "freshness": "evergreen",
       "state": "published",
-      "featured": true
+      "featured": true,
+      "articlePath": "deduplicate-trigger-webhook-deliveries.md"
     },
     {
       "slug": "custom-connection-data-fields-are-toolkit-specific",
@@ -144,17 +179,28 @@
           "sourceHeading": "Field names are toolkit-specific"
         }
       ],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["authentication", "custom-connections", "api-keys"],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "authentication",
+        "custom-connections",
+        "api-keys"
+      ],
       "aliases": [],
-      "relatedGuides": ["strava-athlete-limits-belong-to-the-oauth-app"],
+      "relatedGuides": [
+        "strava-athlete-limits-belong-to-the-oauth-app"
+      ],
       "externalResources": [],
       "updatedAt": "2026-06-24",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-24",
       "freshness": "time-sensitive",
       "state": "published",
-      "featured": true
+      "featured": true,
+      "articlePath": "custom-connection-data-fields-are-toolkit-specific.md"
     },
     {
       "slug": "ahrefs-actions-use-the-api-host",
@@ -166,17 +212,25 @@
           "sourceHeading": "Ahrefs actions must call api.ahrefs.com, not ahrefs.com"
         }
       ],
-      "topics": ["toolkits"],
-      "tags": ["ahrefs", "api", "configuration", "404"],
+      "topics": [
+        "toolkits"
+      ],
+      "tags": [
+        "ahrefs",
+        "api",
+        "configuration",
+        "404"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-22",
       "freshness": "time-sensitive",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "ahrefs-actions-use-the-api-host.md"
     },
     {
       "slug": "use-calendly-post-invitee",
@@ -188,17 +242,24 @@
           "sourceHeading": "Use CALENDLY_POST_INVITEE instead of deprecated CALENDLY_CREATE_EVENT_INVITEE"
         }
       ],
-      "topics": ["toolkits"],
-      "tags": ["calendly", "actions", "deprecation"],
+      "topics": [
+        "toolkits"
+      ],
+      "tags": [
+        "calendly",
+        "actions",
+        "deprecation"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-30",
       "freshness": "time-sensitive",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "use-calendly-post-invitee.md"
     },
     {
       "slug": "use-canva-autofill-jobs-for-design-content",
@@ -210,17 +271,25 @@
           "sourceHeading": "Use Canva autofill jobs when content must be populated into a design"
         }
       ],
-      "topics": ["toolkits"],
-      "tags": ["canva", "actions", "autofill", "designs"],
+      "topics": [
+        "toolkits"
+      ],
+      "tags": [
+        "canva",
+        "actions",
+        "autofill",
+        "designs"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-06-24",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-30",
       "freshness": "time-sensitive",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "use-canva-autofill-jobs-for-design-content.md"
     },
     {
       "slug": "granola-mcp-metadata-comes-from-the-upstream-server",
@@ -232,17 +301,26 @@
           "sourceHeading": "Composio mirrors Granola's official MCP server"
         }
       ],
-      "topics": ["toolkits", "tool-router-and-mcp"],
-      "tags": ["granola", "mcp", "schemas", "metadata"],
+      "topics": [
+        "toolkits",
+        "tool-router-and-mcp"
+      ],
+      "tags": [
+        "granola",
+        "mcp",
+        "schemas",
+        "metadata"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-14",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2027-01-18",
+      "reviewAfter": "2027-01-22",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "granola-mcp-metadata-comes-from-the-upstream-server.md"
     },
     {
       "slug": "inspect-odoo-json-rpc-errors-inside-http-200-responses",
@@ -254,17 +332,26 @@
           "sourceHeading": "JSON-RPC access errors can arrive inside HTTP 200 responses"
         }
       ],
-      "topics": ["toolkits", "sdk-and-api"],
-      "tags": ["odoo", "json-rpc", "errors", "troubleshooting"],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "odoo",
+        "json-rpc",
+        "errors",
+        "troubleshooting"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-16",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2027-01-18",
+      "reviewAfter": "2027-01-22",
       "freshness": "evergreen",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "inspect-odoo-json-rpc-errors-inside-http-200-responses.md"
     },
     {
       "slug": "strava-athlete-limits-belong-to-the-oauth-app",
@@ -276,17 +363,29 @@
           "sourceHeading": "Athlete-limit errors belong to the OAuth application"
         }
       ],
-      "topics": ["toolkits", "authentication", "connected-accounts"],
-      "tags": ["strava", "oauth", "athlete-limit", "auth-configs"],
+      "topics": [
+        "toolkits",
+        "authentication",
+        "connected-accounts"
+      ],
+      "tags": [
+        "strava",
+        "oauth",
+        "athlete-limit",
+        "auth-configs"
+      ],
       "aliases": [],
-      "relatedGuides": ["custom-connection-data-fields-are-toolkit-specific"],
+      "relatedGuides": [
+        "custom-connection-data-fields-are-toolkit-specific"
+      ],
       "externalResources": [],
       "updatedAt": "2026-07-16",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-29",
       "freshness": "time-sensitive",
       "state": "published",
-      "featured": false
+      "featured": false,
+      "articlePath": "strava-athlete-limits-belong-to-the-oauth-app.md"
     },
     {
       "slug": "auth-config-list-pages-return-at-most-50-items",
@@ -298,11 +397,22 @@
           "sourceHeading": "Auth-config list pages return at most 50 items"
         }
       ],
-      "topics": ["authentication", "sdk-and-api"],
-      "tags": ["auth", "api", "pagination"],
+      "topics": [
+        "authentication",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "auth",
+        "api",
+        "pagination"
+      ],
       "aliases": [],
-      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
-      "externalResources": ["docs-api-reference"],
+      "relatedGuides": [
+        "pagination-limits-are-endpoint-specific"
+      ],
+      "externalResources": [
+        "docs-api-reference"
+      ],
       "updatedAt": "2026-07-16",
       "lastVerifiedAt": null,
       "reviewAfter": null,
@@ -312,111 +422,210 @@
     },
     {
       "slug": "fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes",
-      "title": "Fix a HubSpot OAuth token-exchange 400 by checking the client secret and scope category",
+      "title": "Fix HubSpot OAuth token exchange 400 errors",
       "description": "Check a customer-owned HubSpot OAuth app's secret, redirect URI, and required or optional scope alignment.",
       "articlePath": "fix-hubspot-oauth-token-exchange-400-client-secret-and-scopes.md",
-      "sources": [{ "sourcePath": "kb/toolkits/hubspot/public.md", "sourceHeading": "HubSpot OAuth token-fetch 400: check client secret and required-scope alignment" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["hubspot", "oauth", "token-exchange", "scopes"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/hubspot/public.md",
+          "sourceHeading": "HubSpot OAuth token-fetch 400: check client secret and required-scope alignment"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "hubspot",
+        "oauth",
+        "token-exchange",
+        "scopes",
+        "400"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-24",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "choose-current-shopify-app-auth-flow",
-      "title": "Choose a current Shopify app-auth flow instead of copying an admin token",
-      "description": "Use OAuth for user-facing Shopify access or a supported server-to-server flow for app-owned access.",
+      "title": "Fix Shopify authorization failures on new integrations",
+      "description": "Use a current Shopify OAuth or client-credentials flow rather than copying an Admin API token.",
       "articlePath": "choose-current-shopify-app-auth-flow.md",
-      "sources": [{ "sourcePath": "kb/toolkits/shopify/public.md", "sourceHeading": "Shopify API-key/admin-token auth is deprecated; use OAuth2 or S2S auth instead" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["shopify", "oauth", "client-credentials", "api-keys"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/shopify/public.md",
+          "sourceHeading": "Shopify API-key/admin-token auth is deprecated; use OAuth2 or S2S auth instead"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "shopify",
+        "oauth",
+        "client-credentials",
+        "api-keys",
+        "unauthorized-access",
+        "admin-token",
+        "authorize"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-22",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "choose-discordbot-for-bot-token-operations",
-      "title": "Choose DiscordBot for bot-token operations and Discord for user-OAuth operations",
-      "description": "Select the Discord toolkit by whether the operation requires a bot token or a user OAuth token.",
+      "title": "Discord or DiscordBot: which toolkit to connect",
+      "description": "Bot-token operations need the DiscordBot toolkit; user-authorized OAuth operations need Discord.",
       "articlePath": "choose-discordbot-for-bot-token-operations.md",
       "sources": [
-        { "sourcePath": "kb/toolkits/discordbot/public.md", "sourceHeading": "Discord and DiscordBot use different token types" },
-        { "sourcePath": "kb/toolkits/discord/public.md", "sourceHeading": "Discord message triggers require bot-token auth, but Discord OAuth trigger support has been limited" }
+        {
+          "sourcePath": "kb/toolkits/discordbot/public.md",
+          "sourceHeading": "Discord and DiscordBot use different token types"
+        },
+        {
+          "sourcePath": "kb/toolkits/discord/public.md",
+          "sourceHeading": "Discord message triggers require bot-token auth, but Discord OAuth trigger support has been limited"
+        }
       ],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["discord", "discordbot", "bot-token", "oauth"],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "discord",
+        "discordbot",
+        "bot-token",
+        "oauth",
+        "connector",
+        "which-toolkit"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-22",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "target-outlook-shared-mailboxes-by-address",
-      "title": "Target an Outlook shared mailbox by its address",
-      "description": "Pass the shared mailbox address only after the authentication model has been granted the necessary access.",
+      "title": "Read an Outlook shared mailbox instead of the signed-in user's",
+      "description": "Pass the shared mailbox address as the mailbox target. It selects the mailbox but does not grant access to it.",
       "articlePath": "target-outlook-shared-mailboxes-by-address.md",
-      "sources": [{ "sourcePath": "kb/toolkits/outlook/public.md", "sourceHeading": "For Outlook shared mailboxes, pass the shared mailbox address as `user_id`/mailbox target" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["outlook", "shared-mailboxes", "oauth", "microsoft-graph"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/outlook/public.md",
+          "sourceHeading": "For Outlook shared mailboxes, pass the shared mailbox address as `user_id`/mailbox target"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "outlook",
+        "shared-mailboxes",
+        "oauth",
+        "microsoft-graph",
+        "shared-mailbox",
+        "wrong-mailbox",
+        "user-id"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-30",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "google-sheets-oauth-cannot-be-scoped-to-a-drive-folder",
-      "title": "Google OAuth cannot scope Sheets access to one Drive folder",
-      "description": "Use scopes, sharing, and application controls because a Drive folder is not an OAuth authorization boundary.",
+      "title": "Why Google Sheets access cannot be limited to one Drive folder",
+      "description": "A Drive folder is not an OAuth boundary. Narrow access with drive.file or an application-level allowlist instead.",
       "articlePath": "google-sheets-oauth-cannot-be-scoped-to-a-drive-folder.md",
-      "sources": [{ "sourcePath": "kb/toolkits/googlesheets/public.md", "sourceHeading": "Google Sheets access cannot be restricted at folder level through Composio" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["googlesheets", "google-drive", "oauth", "scopes"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googlesheets/public.md",
+          "sourceHeading": "Google Sheets access cannot be restricted at folder level through Composio"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "googlesheets",
+        "google-drive",
+        "oauth",
+        "scopes",
+        "drive-folder",
+        "scoping",
+        "restrict-access"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-26",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "use-primary-for-google-calendar-id",
-      "title": "Use primary for the signed-in user's Google Calendar ID",
-      "description": "Use primary for a primary calendar parameter and a returned ID for secondary or shared calendars.",
+      "title": "Fix Google Calendar errors when \"me\" is used as the calendar ID",
+      "description": "Use primary for the signed-in user's calendar. me is not a valid Google Calendar ID.",
       "articlePath": "use-primary-for-google-calendar-id.md",
-      "sources": [{ "sourcePath": "kb/toolkits/google_calendar/public.md", "sourceHeading": "Use `primary` as calendar ID; `me` is not valid for calendar ID" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["googlecalendar", "calendar-id", "oauth", "parameters"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/google_calendar/public.md",
+          "sourceHeading": "Use `primary` as calendar ID; `me` is not valid for calendar ID"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "googlecalendar",
+        "calendar-id",
+        "oauth",
+        "parameters",
+        "primary",
+        "invalid-calendar-id"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-30",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -426,15 +635,29 @@
       "title": "Use full Google OAuth scope URIs in Google Sheets auth configs",
       "description": "Enter provider-published full OAuth scope URIs rather than shorthand path values.",
       "articlePath": "google-sheets-auth-configs-require-full-scope-uris.md",
-      "sources": [{ "sourcePath": "kb/toolkits/googlesheets/public.md", "sourceHeading": "Use full Google scope URLs such as `https://www.googleapis.com/auth/drive`, not shorthand `/drive`" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["googlesheets", "oauth", "scopes", "auth-configs"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googlesheets/public.md",
+          "sourceHeading": "Use full Google scope URLs such as `https://www.googleapis.com/auth/drive`, not shorthand `/drive`"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "googlesheets",
+        "oauth",
+        "scopes",
+        "auth-configs"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-26",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -444,15 +667,29 @@
       "title": "Use a Stripe secret key for Composio API-key connections",
       "description": "Provide a Stripe secret key from Standard keys for a server-side Stripe API-key connection.",
       "articlePath": "stripe-api-key-connections-require-a-secret-key.md",
-      "sources": [{ "sourcePath": "kb/toolkits/stripe/public.md", "sourceHeading": "For Stripe API-key auth, use the Stripe secret key from Developers -> API Keys -> Standard keys" }],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["stripe", "api-keys", "secret-keys", "connected-accounts"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/stripe/public.md",
+          "sourceHeading": "For Stripe API-key auth, use the Stripe secret key from Developers -> API Keys -> Standard keys"
+        }
+      ],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "stripe",
+        "api-keys",
+        "secret-keys",
+        "connected-accounts"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-29",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -463,35 +700,66 @@
       "description": "Use the current Composio connection field's hostname-label form without a URL prefix or Snowflake domain suffix.",
       "articlePath": "snowflake-account-id-uses-org-account-format.md",
       "sources": [
-        { "sourcePath": "kb/toolkits/snowflake/public.md", "sourceHeading": "Use one Snowflake auth config per customer account for multi-tenant SaaS OAuth" },
-        { "sourcePath": "kb/toolkits/snowflake/public.md", "sourceHeading": "Fetch connected-account fields or toolkit metadata to discover Snowflake account details" }
+        {
+          "sourcePath": "kb/toolkits/snowflake/public.md",
+          "sourceHeading": "Use one Snowflake auth config per customer account for multi-tenant SaaS OAuth"
+        },
+        {
+          "sourcePath": "kb/toolkits/snowflake/public.md",
+          "sourceHeading": "Fetch connected-account fields or toolkit metadata to discover Snowflake account details"
+        }
       ],
-      "topics": ["authentication", "connected-accounts", "toolkits"],
-      "tags": ["snowflake", "oauth", "account-id", "auth-configs"],
+      "topics": [
+        "authentication",
+        "connected-accounts",
+        "toolkits"
+      ],
+      "tags": [
+        "snowflake",
+        "oauth",
+        "account-id",
+        "auth-configs"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-28",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "stage-local-instagram-media-before-publishing",
-      "title": "Stage local Instagram media before creating a post",
-      "description": "Use uploadable-file inputs to stage local Instagram media, then publish the resulting container separately.",
+      "title": "Fix Instagram posts failing on local image or video files",
+      "description": "Stage local media with image_file or video_file. A filesystem path or session URL is not a media URL.",
       "articlePath": "stage-local-instagram-media-before-publishing.md",
-      "sources": [{ "sourcePath": "kb/toolkits/instagram/public.md", "sourceHeading": "Publish local media with `image_file` or `video_file`" }],
-      "topics": ["toolkits", "authentication"],
-      "tags": ["instagram", "media", "uploads", "publishing"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/instagram/public.md",
+          "sourceHeading": "Publish local media with `image_file` or `video_file`"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "instagram",
+        "media",
+        "uploads",
+        "publishing",
+        "media-upload",
+        "image-file",
+        "video-file"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-29",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -501,15 +769,29 @@
       "title": "Resolve Canvas account-endpoint access errors by checking the account-level role",
       "description": "Verify the connected identity has the provider's account-level role before diagnosing an account endpoint as a Composio failure.",
       "articlePath": "resolve-canvas-account-endpoint-access-errors.md",
-      "sources": [{ "sourcePath": "kb/toolkits/canvas/public.md", "sourceHeading": "`CANVAS_GET_ACCOUNTS` and other account-level Canvas endpoints require admin permissions" }],
-      "topics": ["toolkits", "authentication", "connected-accounts"],
-      "tags": ["canvas", "permissions", "account-admin", "authorization"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/canvas/public.md",
+          "sourceHeading": "`CANVAS_GET_ACCOUNTS` and other account-level Canvas endpoints require admin permissions"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication",
+        "connected-accounts"
+      ],
+      "tags": [
+        "canvas",
+        "permissions",
+        "account-admin",
+        "authorization"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-28",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -519,87 +801,164 @@
       "title": "Paginate Canvas list results instead of assuming one response is complete",
       "description": "Use a Canvas action's current pagination fields and stop only when its returned pagination signal ends.",
       "articlePath": "paginate-canvas-list-results.md",
-      "sources": [{ "sourcePath": "kb/toolkits/canvas/public.md", "sourceHeading": "Canvas list/fetch endpoints follow Canvas pagination behavior and may need `per_page`" }],
-      "topics": ["toolkits", "sdk-and-api"],
-      "tags": ["canvas", "pagination", "per-page", "list-results"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/canvas/public.md",
+          "sourceHeading": "Canvas list/fetch endpoints follow Canvas pagination behavior and may need `per_page`"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "canvas",
+        "pagination",
+        "per-page",
+        "list-results"
+      ],
       "aliases": [],
-      "relatedGuides": ["pagination-limits-are-endpoint-specific"],
+      "relatedGuides": [
+        "pagination-limits-are-endpoint-specific"
+      ],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-27",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "slack-private-conversations-require-separate-history-scopes",
-      "title": "Add the Slack history scope for each private conversation type",
-      "description": "Grant the matching private-channel or DM history scope, then reconnect and verify app membership.",
+      "title": "Fix Slack returning no private channel or DM history",
+      "description": "Each private conversation type needs its own history scope, and the app must also be a member of the conversation.",
       "articlePath": "slack-private-conversations-require-separate-history-scopes.md",
-      "sources": [{ "sourcePath": "kb/toolkits/slackbot/public.md", "sourceHeading": "Private Slack channels and DMs require extra history scopes" }],
-      "topics": ["toolkits", "authentication", "connected-accounts"],
-      "tags": ["slackbot", "slack", "scopes", "private-channels"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/slackbot/public.md",
+          "sourceHeading": "Private Slack channels and DMs require extra history scopes"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication",
+        "connected-accounts"
+      ],
+      "tags": [
+        "slackbot",
+        "slack",
+        "scopes",
+        "private-channels",
+        "dm",
+        "history",
+        "empty-results"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-28",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "slack-admin-conversation-writes-require-enterprise",
-      "title": "Slack admin conversation writes require an Enterprise org installation",
+      "title": "Fix Slack admin conversation write failures",
       "description": "Confirm Enterprise Grid, org-wide installation, administrator role, and token scope for Slack admin conversation writes.",
       "articlePath": "slack-admin-conversation-writes-require-enterprise.md",
-      "sources": [{ "sourcePath": "kb/toolkits/slack/public.md", "sourceHeading": "`admin.conversations:write` requires Slack Enterprise" }],
-      "topics": ["toolkits", "authentication", "connected-accounts"],
-      "tags": ["slack", "enterprise-grid", "admin", "scopes"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/slack/public.md",
+          "sourceHeading": "`admin.conversations:write` requires Slack Enterprise"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication",
+        "connected-accounts"
+      ],
+      "tags": [
+        "slack",
+        "enterprise-grid",
+        "admin",
+        "scopes",
+        "admin-write"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-28",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "linkedin-company-actions-require-organization-scopes",
-      "title": "Reconnect LinkedIn with organization scopes before company-page actions",
-      "description": "Check the LinkedIn app product, newly issued organization scope, and member Page role before retrying company actions.",
+      "title": "Fix LinkedIn 403 errors on company page actions",
+      "description": "Company-page actions need the organization scope on the token, an eligible Page role, and the matching app permission.",
       "articlePath": "linkedin-company-actions-require-organization-scopes.md",
-      "sources": [{ "sourcePath": "kb/toolkits/linkedin/public.md", "sourceHeading": "LinkedIn organization scopes depend on the toolkit and auth config" }],
-      "topics": ["toolkits", "authentication", "connected-accounts"],
-      "tags": ["linkedin", "organization-scopes", "oauth", "page-roles"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/linkedin/public.md",
+          "sourceHeading": "LinkedIn organization scopes depend on the toolkit and auth config"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication",
+        "connected-accounts"
+      ],
+      "tags": [
+        "linkedin",
+        "organization-scopes",
+        "oauth",
+        "page-roles",
+        "403",
+        "forbidden",
+        "company-pages"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-26",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
     },
     {
       "slug": "fix-linkedin-426-nonexistent-version",
-      "title": "Fix LinkedIn 426 NONEXISTENT_VERSION with a current toolkit version",
+      "title": "Fix LinkedIn 426 NONEXISTENT_VERSION errors",
       "description": "Use latest only to diagnose a stale LinkedIn toolkit version, then pin the dated version your application validated.",
       "articlePath": "fix-linkedin-426-nonexistent-version.md",
-      "sources": [{ "sourcePath": "kb/toolkits/linkedin/public.md", "sourceHeading": "Fix LinkedIn 426 NONEXISTENT_VERSION by using the latest toolkit version" }],
-      "topics": ["toolkits", "sdk-and-api"],
-      "tags": ["linkedin", "versions", "426", "nonexistent-version"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/linkedin/public.md",
+          "sourceHeading": "Fix LinkedIn 426 NONEXISTENT_VERSION by using the latest toolkit version"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "linkedin",
+        "versions",
+        "426",
+        "nonexistent-version"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-24",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false
@@ -609,15 +968,1146 @@
       "title": "Batch Airtable multi-record updates in groups of 10",
       "description": "Split Web API-backed Airtable multi-record updates into independently handled batches of 10 or fewer.",
       "articlePath": "batch-airtable-record-updates-in-groups-of-10.md",
-      "sources": [{ "sourcePath": "kb/toolkits/airtable/public.md", "sourceHeading": "AIRTABLE_UPDATE_MULTIPLE_RECORDS updates at most 10 records per call" }],
-      "topics": ["toolkits", "sdk-and-api"],
-      "tags": ["airtable", "batching", "record-updates", "limits"],
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/airtable/public.md",
+          "sourceHeading": "AIRTABLE_UPDATE_MULTIPLE_RECORDS updates at most 10 records per call"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "airtable",
+        "batching",
+        "record-updates",
+        "limits"
+      ],
       "aliases": [],
       "relatedGuides": [],
       "externalResources": [],
       "updatedAt": "2026-07-22",
       "lastVerifiedAt": "2026-07-22",
-      "reviewAfter": "2026-10-20",
+      "reviewAfter": "2026-10-22",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "quickbooks-disabled-for-this-session",
+      "title": "Fix \"Toolkit 'quickbooks' is disabled for this session\"",
+      "description": "QuickBooks is categorized under Payment Processing, so a session that excludes payment tools disables the whole toolkit, including read-only accounting tools.",
+      "articlePath": "quickbooks-disabled-for-this-session.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "QuickBooks can be disabled by the MCP Payment Processing session policy"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "tool-router-and-mcp"
+      ],
+      "tags": [
+        "quickbooks",
+        "mcp",
+        "sessions",
+        "payment-processing"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-27",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "quickbooks-requests-resolve-to-company-none",
+      "title": "Fix QuickBooks requests that resolve to /v3/company/None/",
+      "description": "QuickBooks company IDs arrive as OAuth connection metadata rather than a per-tool argument, so a missing realm ID shows up in the request path.",
+      "articlePath": "quickbooks-requests-resolve-to-company-none.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "QuickBooks tools require connection-level company metadata"
+        },
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "Realm ID mapping fixes may require the latest QuickBooks toolkit version"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "connected-accounts"
+      ],
+      "tags": [
+        "quickbooks",
+        "realm-id",
+        "connected-accounts",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-27",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-a-quickbooks-sandbox-company",
+      "title": "Connect a QuickBooks sandbox company",
+      "description": "Sandbox QuickBooks connections need Intuit's sandbox API base URL passed at connection initiation.",
+      "articlePath": "connect-a-quickbooks-sandbox-company.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "Use the sandbox QuickBooks API base URL for sandbox connections"
+        },
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "QuickBooks auth can accept custom auth and token URLs for sandbox/custom flows"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "quickbooks",
+        "sandbox",
+        "oauth",
+        "auth-config"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-21",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-multiple-quickbooks-companies",
+      "title": "Connect multiple QuickBooks companies to one project",
+      "description": "Give each QuickBooks company its own connected account and target it explicitly from MCP clients.",
+      "articlePath": "connect-multiple-quickbooks-companies.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "Multiple QuickBooks accounts can be selected in Claude/MCP by using separate user IDs or connected account IDs"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "connected-accounts",
+        "tool-router-and-mcp"
+      ],
+      "tags": [
+        "quickbooks",
+        "multi-account",
+        "mcp",
+        "connected-accounts"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-21",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "quickbooks-oauth-fails-with-payments-scope",
+      "title": "Fix QuickBooks OAuth failures caused by the payments scope",
+      "description": "The QuickBooks payments scope requires the payment module to be enabled on the Intuit account and app.",
+      "articlePath": "quickbooks-oauth-fails-with-payments-scope.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "QuickBooks payment scope requires payment module access"
+        },
+        {
+          "sourcePath": "kb/toolkits/quickbooks/public.md",
+          "sourceHeading": "QuickBooks auth configs need QuickBooks credentials and matching redirect URL"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "quickbooks",
+        "oauth",
+        "scopes",
+        "payments"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-23",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "google-ads-developer-token-belongs-on-the-auth-config",
+      "title": "Add the Google Ads developer token to the auth config",
+      "description": "The Google Ads developer token now lives on the auth config, so connections made through older auth configs fail.",
+      "articlePath": "google-ads-developer-token-belongs-on-the-auth-config.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googleads/public.md",
+          "sourceHeading": "Google Ads developer token now belongs on the auth config, not connection initiation"
+        },
+        {
+          "sourcePath": "kb/toolkits/googleads/public.md",
+          "sourceHeading": "Google Ads API requires both OAuth access token and developer token"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "googleads",
+        "developer-token",
+        "auth-config",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-25",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "google-ads-resource-exhausted-errors",
+      "title": "Fix Google Ads 429 RESOURCE_EXHAUSTED errors",
+      "description": "Google Ads rate limits can come from Google's own quota or from shared managed-OAuth capacity, not from your Composio plan.",
+      "articlePath": "google-ads-resource-exhausted-errors.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googleads/public.md",
+          "sourceHeading": "Google Ads 429s can come from Google's shared OAuth/developer-token limits, not Composio plan limits"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "googleads",
+        "rate-limits",
+        "quota",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-25",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "target-a-google-ads-sub-account",
+      "title": "Target a Google Ads sub-account under an MCC",
+      "description": "Pass customer_id per call to target a child account, and let the connection supply the manager context.",
+      "articlePath": "target-a-google-ads-sub-account.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googleads/public.md",
+          "sourceHeading": "Google Ads MCC/sub-account customer ID targeting is supported"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "googleads",
+        "mcc",
+        "customer-id",
+        "sub-accounts"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-29",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "google-ads-campaign-mutate-invalid-argument",
+      "title": "Fix Google Ads campaign mutate INVALID_ARGUMENT errors",
+      "description": "Budget and location fields sent inline on a Campaign mutate are rejected by Google; they belong to separate resources.",
+      "articlePath": "google-ads-campaign-mutate-invalid-argument.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googleads/public.md",
+          "sourceHeading": "Campaign mutate 400s can be caused by unsupported inline Campaign fields"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "googleads",
+        "campaigns",
+        "mutate",
+        "request-shape"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-25",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-tiktok-with-your-own-developer-app",
+      "title": "Connect TikTok with your own developer app",
+      "description": "TikTok connections generally require your own TikTok developer app, with URL-prefix verification on a domain you control.",
+      "articlePath": "connect-tiktok-with-your-own-developer-app.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "TikTok is supported, but customers generally need their own TikTok developer app"
+        },
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "TikTok URL-prefix verification must be done on a customer-owned redirect domain, not Composio's shared callback domain"
+        },
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "Public TikTok posting requires the customer's own app to pass TikTok's content posting audit"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "tiktok",
+        "oauth",
+        "developer-app",
+        "redirect-uri"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-21",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "fix-tiktok-client-key-errors",
+      "title": "Fix TikTok client_key errors during OAuth",
+      "description": "TikTok returns client_key errors for credential mismatches and redirect URI problems in its own authorize step.",
+      "articlePath": "fix-tiktok-client-key-errors.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "TikTok OAuth uses `client_key`; credential mismatch or old `client_id` handling causes `client_key` errors"
+        },
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "TikTok app status, scopes, and sandbox/production mode determine who can complete OAuth"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "tiktok",
+        "oauth",
+        "client-key",
+        "credentials"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-22",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "request-only-approved-tiktok-scopes",
+      "title": "Request only the TikTok scopes your app is approved for",
+      "description": "A custom TikTok auth config that falls back to the full default scope set fails when the app is approved for a subset.",
+      "articlePath": "request-only-approved-tiktok-scopes.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/tiktok/public.md",
+          "sourceHeading": "TikTok custom auth must request only approved scopes"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "tiktok",
+        "scopes",
+        "auth-config",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-24",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-reddit-with-your-own-oauth-credentials",
+      "title": "Connect Reddit with your own OAuth credentials",
+      "description": "Reddit connections are most reliable with your own client ID and secret, which also insulates you from shared-app enforcement.",
+      "articlePath": "connect-reddit-with-your-own-oauth-credentials.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/reddit/public.md",
+          "sourceHeading": "Reddit supports OAuth 2.0 custom credentials in auth configs"
+        },
+        {
+          "sourcePath": "kb/toolkits/reddit/public.md",
+          "sourceHeading": "Reddit toolkit behavior can change when Reddit changes its API or enforcement policies"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "reddit",
+        "oauth",
+        "auth-config",
+        "credentials"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-21",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "reddit-create-post-requires-flair-id",
+      "title": "Fix Reddit create-post failures that ask for flair_id",
+      "description": "Old Reddit tool versions require flair_id on post creation; current versions do not.",
+      "articlePath": "reddit-create-post-requires-flair-id.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/reddit/public.md",
+          "sourceHeading": "Older Reddit Create Post tool versions may require `flair_id`"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "reddit",
+        "flair",
+        "tool-versions",
+        "posts"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-27",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "google-blocks-sensitive-gmail-scopes",
+      "title": "Fix Google \"app is blocked\" errors on sensitive Gmail scopes",
+      "description": "Composio's managed Gmail OAuth app is not verified for every sensitive Gmail scope; verified scopes need your own Google OAuth app.",
+      "articlePath": "google-blocks-sensitive-gmail-scopes.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Use your own OAuth app for unverified sensitive Gmail scopes"
+        },
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Create Gmail custom OAuth auth config, then initiate a connection with callback URL"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "gmail",
+        "oauth",
+        "scopes",
+        "google-verification"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-25",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "create-gmail-filters-scope",
+      "title": "Create Gmail filters with the gmail.settings.basic scope",
+      "description": "GMAIL_CREATE_FILTER requires gmail.settings.basic; broader mailbox scopes do not substitute for it.",
+      "articlePath": "create-gmail-filters-scope.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Creating Gmail filters requires `gmail.settings.basic`"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "gmail",
+        "filters",
+        "scopes",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-23",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "send-gmail-from-a-send-as-alias",
+      "title": "Send Gmail from a send-as alias",
+      "description": "Use from_email on GMAIL_SEND_EMAIL to pick a configured send-as alias.",
+      "articlePath": "send-gmail-from-a-send-as-alias.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Use `from_email` to select Gmail send-as alias"
+        },
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Use `me` for Gmail `user_id` in tool calls"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "gmail",
+        "send-as",
+        "alias",
+        "email"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-24",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "reduce-gmail-fetch-payload-size",
+      "title": "Reduce Gmail fetch payload size",
+      "description": "Trim Gmail list and fetch responses with include_payload, verbose, only_ids, queries, and result limits.",
+      "articlePath": "reduce-gmail-fetch-payload-size.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Reduce Gmail fetch payload size with `include_payload=false`, `verbose=false`, `only_ids`, query, and limits"
+        },
+        {
+          "sourcePath": "kb/toolkits/gmail/public.md",
+          "sourceHeading": "Avoid `gmail.metadata` when fetching full Gmail email content"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "sdk-and-api"
+      ],
+      "tags": [
+        "gmail",
+        "payload",
+        "performance",
+        "pagination"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-23",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "sharepoint-rest-and-graph-need-separate-connections",
+      "title": "SharePoint REST and SharePoint Graph need separate connections",
+      "description": "The two SharePoint toolkits call different Microsoft APIs, so their tokens and scopes are not interchangeable.",
+      "articlePath": "sharepoint-rest-and-graph-need-separate-connections.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/sharepoint/public.md",
+          "sourceHeading": "SharePoint REST APIs and SharePoint Graph are separate API families"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "sharepoint",
+        "graph",
+        "scopes",
+        "tokens"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-24",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "sharepoint-teams-site-returns-404",
+      "title": "Fix SharePoint 404s on /teams/ sites",
+      "description": "A bare subsite value resolves to /sites/, so team sites need the full server-relative path.",
+      "articlePath": "sharepoint-teams-site-returns-404.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/sharepoint/public.md",
+          "sourceHeading": "`/teams/` SharePoint sites require the server-relative Subsite path"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "connected-accounts"
+      ],
+      "tags": [
+        "sharepoint",
+        "subsite",
+        "404",
+        "site-path"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-25",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "set-the-sharepoint-tenant-on-the-connection",
+      "title": "Set the SharePoint tenant when creating a connection",
+      "description": "Composio does not derive the SharePoint tenant from the OAuth token, so it must be passed at connection initiation.",
+      "articlePath": "set-the-sharepoint-tenant-on-the-connection.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/sharepoint/public.md",
+          "sourceHeading": "Pass the SharePoint tenant/subdomain during connection initiation"
+        },
+        {
+          "sourcePath": "kb/toolkits/sharepoint/public.md",
+          "sourceHeading": "SharePoint `.default` scope uses the tenant domain placeholder"
+        },
+        {
+          "sourcePath": "kb/toolkits/sharepoint/public.md",
+          "sourceHeading": "Retrieve SharePoint site name from connected account state"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "connected-accounts"
+      ],
+      "tags": [
+        "sharepoint",
+        "tenant",
+        "connection",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-24",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "choose-a-connected-account-for-a-session",
+      "title": "Choose which connected account a Tool Router session uses",
+      "description": "Assign account aliases and pass one explicitly, or a session with several eligible accounts picks its default.",
+      "articlePath": "choose-a-connected-account-for-a-session.md",
+      "sources": [
+        {
+          "sourcePath": "kb/mcp/tool-router-sessions/public.md",
+          "sourceHeading": "Select among multiple accounts with an alias or account ID"
+        },
+        {
+          "sourcePath": "kb/mcp/tool-router-sessions/public.md",
+          "sourceHeading": "Connected-account selection is live unless pinned"
+        },
+        {
+          "sourcePath": "kb/mcp/tool-router-sessions/public.md",
+          "sourceHeading": "The session user must match the connected-account user"
+        }
+      ],
+      "topics": [
+        "tool-router-and-mcp",
+        "connected-accounts"
+      ],
+      "tags": [
+        "tool-router",
+        "sessions",
+        "accounts",
+        "alias"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-20",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "toolkit-is-not-allowed-for-this-session",
+      "title": "Fix \"Toolkit '<name>' is not allowed\" in a session",
+      "description": "Session toolkit allowlists are checked before auth configs and connected accounts.",
+      "articlePath": "toolkit-is-not-allowed-for-this-session.md",
+      "sources": [
+        {
+          "sourcePath": "kb/mcp/tool-router-sessions/public.md",
+          "sourceHeading": "Toolkit allowlists are enforced before connection lookup"
+        }
+      ],
+      "topics": [
+        "tool-router-and-mcp"
+      ],
+      "tags": [
+        "tool-router",
+        "sessions",
+        "allowlist",
+        "restrictions"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-25",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "tool-router-session-lifetime-and-deletion",
+      "title": "Tool Router session lifetime and deletion",
+      "description": "Sessions are long-lived records without time-based expiry, and deleting one does not remove its connections.",
+      "articlePath": "tool-router-session-lifetime-and-deletion.md",
+      "sources": [
+        {
+          "sourcePath": "kb/mcp/tool-router-sessions/public.md",
+          "sourceHeading": "Session lifetime and deletion"
+        }
+      ],
+      "topics": [
+        "tool-router-and-mcp"
+      ],
+      "tags": [
+        "tool-router",
+        "sessions",
+        "lifetime",
+        "deletion"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-25",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-meta-ads-with-your-own-credentials",
+      "title": "Connect Meta Ads with your own app credentials",
+      "description": "Meta Ads has no Composio-managed OAuth app, so connections need your own Meta developer app.",
+      "articlePath": "connect-meta-ads-with-your-own-credentials.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/facebook/public.md",
+          "sourceHeading": "Meta Ads does not have a managed OAuth app; use your own credentials"
+        },
+        {
+          "sourcePath": "kb/toolkits/facebook/public.md",
+          "sourceHeading": "Meta OAuth issues can require adding the Composio redirect URI in the Meta app settings"
+        },
+        {
+          "sourcePath": "kb/toolkits/facebook/public.md",
+          "sourceHeading": "API-key connections can show ACTIVE before MetaAds credentials are live-verified"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "metaads",
+        "facebook",
+        "oauth",
+        "credentials"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-23",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "change-the-connected-facebook-or-instagram-account",
+      "title": "Change which Facebook or Instagram account is connected",
+      "description": "Meta connections bind to the account chosen in Meta's picker and cannot be repointed from Composio.",
+      "articlePath": "change-the-connected-facebook-or-instagram-account.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/facebook/public.md",
+          "sourceHeading": "Facebook or Instagram connections authenticate the account selected in Meta's picker and cannot be repointed server-side"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "connected-accounts"
+      ],
+      "tags": [
+        "facebook",
+        "instagram",
+        "meta",
+        "connected-accounts"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-20",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-x-twitter-with-your-own-developer-app",
+      "title": "Connect X (Twitter) with your own developer app",
+      "description": "X connections require your own developer app credentials and a Platform auth config rather than Connect.",
+      "articlePath": "connect-x-twitter-with-your-own-developer-app.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/twitter/public.md",
+          "sourceHeading": "Twitter/X no longer supports Composio managed OAuth; customers must use their own developer app credentials"
+        },
+        {
+          "sourcePath": "kb/toolkits/twitter/public.md",
+          "sourceHeading": "Twitter/X cannot be used through Connect when it requires custom OAuth credentials"
+        },
+        {
+          "sourcePath": "kb/toolkits/twitter/public.md",
+          "sourceHeading": "`client-not-enrolled` and `App not linked to project` usually point to Twitter developer app/project setup issues"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "twitter",
+        "x",
+        "oauth",
+        "developer-app"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-23",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-xero-with-your-own-oauth-app",
+      "title": "Connect Xero with your own OAuth app",
+      "description": "Xero connections need your own OAuth app credentials, a Web app type, and an exactly matching redirect URI.",
+      "articlePath": "connect-xero-with-your-own-oauth-app.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/xero/public.md",
+          "sourceHeading": "Xero managed OAuth was removed/limited; use your own Xero OAuth app credentials"
+        },
+        {
+          "sourcePath": "kb/toolkits/xero/public.md",
+          "sourceHeading": "Xero OAuth app should be a Web app and the client secret must match the auth config"
+        },
+        {
+          "sourcePath": "kb/toolkits/xero/public.md",
+          "sourceHeading": "Remove deprecated Xero scopes that cause invalid-scope/CSP/login errors"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "xero",
+        "oauth",
+        "redirect-uri",
+        "scopes"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-23",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "jira-credentials-expire-without-refresh",
+      "title": "Fix Jira credentials that expire without refreshing",
+      "description": "Atlassian needs audience=api.atlassian.com and offline_access before it will issue a Jira refresh token.",
+      "articlePath": "jira-credentials-expire-without-refresh.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/jira/public.md",
+          "sourceHeading": "Missing `audience=api.atlassian.com` can prevent Jira refresh tokens"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "jira",
+        "atlassian",
+        "refresh-token",
+        "oauth"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-23",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "confluence-needs-offline-access-for-refresh",
+      "title": "Add offline_access to Confluence auth configs",
+      "description": "Confluence token refresh requires the offline_access scope, and it only applies to connections made after the change.",
+      "articlePath": "confluence-needs-offline-access-for-refresh.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/confluence/public.md",
+          "sourceHeading": "Add `offline_access` to Confluence auth configs when refresh tokens are needed"
+        },
+        {
+          "sourcePath": "kb/toolkits/confluence/public.md",
+          "sourceHeading": "Use connected account ID, not auth config ID, when executing Confluence tools"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "confluence",
+        "atlassian",
+        "offline-access",
+        "refresh-token"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-20",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "managed-google-drive-scope-is-narrow",
+      "title": "Why managed Google Drive access only sees some files",
+      "description": "Composio's default Google Drive credentials can use drive.file, which only reaches files the app created or was granted.",
+      "articlePath": "managed-google-drive-scope-is-narrow.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/googledrive/public.md",
+          "sourceHeading": "Managed Google Drive credentials may use narrower Drive scopes than full-drive access"
+        },
+        {
+          "sourcePath": "kb/toolkits/googledrive/public.md",
+          "sourceHeading": "Use `GOOGLEDRIVE_GET_ABOUT` to confirm which Google Drive account is connected"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "googledrive",
+        "scopes",
+        "oauth",
+        "drive-file"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-26",
+      "freshness": "time-sensitive",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "connect-a-github-app",
+      "title": "Connect a GitHub App",
+      "description": "GitHub Apps need a separate install step that Composio's connection flow does not expose.",
+      "articlePath": "connect-a-github-app.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/github/public.md",
+          "sourceHeading": "GitHub Apps need an install step and are not fully supported in Composio's connection flow"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "authentication"
+      ],
+      "tags": [
+        "github",
+        "github-apps",
+        "oauth",
+        "installation"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2027-01-20",
+      "freshness": "evergreen",
+      "state": "published",
+      "featured": false
+    },
+    {
+      "slug": "gemini-toolkit-quota-is-shared",
+      "title": "Gemini toolkit quota is shared unless you bring your own key",
+      "description": "Gemini toolkit calls can run on shared Composio credentials, so you can hit provider limits at low personal usage.",
+      "articlePath": "gemini-toolkit-quota-is-shared.md",
+      "sources": [
+        {
+          "sourcePath": "kb/toolkits/gemini/public.md",
+          "sourceHeading": "Gemini toolkit uses shared credentials and quota unless BYOK/custom key support is available"
+        },
+        {
+          "sourcePath": "kb/toolkits/gemini/public.md",
+          "sourceHeading": "Gemini no-auth/toolkit usage is counted as regular Composio tool calls"
+        }
+      ],
+      "topics": [
+        "toolkits",
+        "billing-and-plans"
+      ],
+      "tags": [
+        "gemini",
+        "quota",
+        "rate-limits",
+        "api-key"
+      ],
+      "aliases": [],
+      "relatedGuides": [],
+      "externalResources": [],
+      "updatedAt": "2026-07-24",
+      "lastVerifiedAt": "2026-07-24",
+      "reviewAfter": "2026-10-24",
       "freshness": "time-sensitive",
       "state": "published",
       "featured": false

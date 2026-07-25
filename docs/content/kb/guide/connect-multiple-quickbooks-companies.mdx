@@ -1,0 +1,19 @@
+---
+title: "Connect multiple QuickBooks companies to one project"
+description: "Give each QuickBooks company its own connected account and target it explicitly from MCP clients."
+keywords: ["quickbooks","multi-account","mcp","connected-accounts","toolkits","connected-accounts","tool-router-and-mcp"]
+sources: [{"sourcePath":"kb/toolkits/quickbooks/public.md","sourceHeading":"Multiple QuickBooks accounts can be selected in Claude/MCP by using separate user IDs or connected account IDs"}]
+sourceCommit: "826c1b9"
+lastVerifiedAt: "2026-07-24"
+reviewAfter: "2027-01-21"
+freshness: "evergreen"
+topics: ["toolkits","connected-accounts","tool-router-and-mcp"]
+aliases: []
+---
+Each QuickBooks company needs its own connected account. Create them with distinct `user_id` values so that a session resolves to exactly one company rather than picking whichever connection it finds first.
+
+## Target a specific company from an MCP client
+
+Append the `connected_account_id` or `user_id` for the company you want to the MCP URL or client configuration. The session then targets that QuickBooks connection for every tool call it makes.
+
+Without an explicit target, a session with several eligible QuickBooks connections resolves to one of them on its own, which is why reads sometimes return the wrong company's data even though every connection is healthy.
