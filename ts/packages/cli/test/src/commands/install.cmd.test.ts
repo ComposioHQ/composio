@@ -5,7 +5,31 @@ import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
+import type { TerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
+
+/**
+ * TerminalUI double that reproduces production's decoration gate instead of
+ * printing everything: when stderr is not a terminal, `intro`/`outro`/`log`/
+ * `note` emit nothing and only `error` survives. This is the shape the command
+ * actually runs in when install.sh delegates to it, or when a container build
+ * pipes the install to a log.
+ */
+const capturedStderrUI: TerminalUI = {
+  ...terminalUITestImpl,
+  intro: () => Effect.void,
+  outro: () => Effect.void,
+  log: {
+    info: () => Effect.void,
+    success: () => Effect.void,
+    warn: () => Effect.void,
+    error: () => Effect.void,
+    step: () => Effect.void,
+    message: () => Effect.void,
+  },
+  note: () => Effect.void,
+};
 
 describe('CLI: composio install', () => {
   let savedShell: string | undefined;
@@ -369,6 +393,38 @@ describe('CLI: composio install', () => {
           expect(output).toContain('Could not detect your shell');
           expect(output).toContain('export COMPOSIO_INSTALL_DIR=');
           expect(output).toContain('Manual setup required.');
+        })
+      );
+    });
+  });
+
+  describe('[When] stderr is captured rather than a terminal', () => {
+    layer(TestLive({ terminalUI: capturedStderrUI }))(it => {
+      it.scoped('[Then] still reports the rc file and how to reload the shell', () =>
+        Effect.gen(function* () {
+          const os = yield* NodeOs;
+          process.env.SHELL = '/bin/zsh';
+          process.env.COMPOSIO_INSTALL_DIR = path.join(os.homedir, '.composio');
+
+          yield* cli(['install']);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('PATH: will add');
+          expect(output).toContain('Updated ~/.zshrc');
+          expect(output).toContain('Restart your shell to apply changes');
+          expect(output).toContain('source ~/.zshrc');
+        })
+      );
+
+      it.scoped('[Then] still shows manual setup instructions for an unknown shell', () =>
+        Effect.gen(function* () {
+          process.env.SHELL = '';
+
+          yield* cli(['install']);
+
+          const output = (yield* MockConsole.getLines()).join('\n');
+          expect(output).toContain('Could not detect your shell');
+          expect(output).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
         })
       );
     });
