@@ -33,6 +33,18 @@ export interface UpdateCheckState {
   latestVersion: string; // e.g. "0.3.0"
 }
 
+/** Machine-readable update status for `composio version --check`. */
+export interface UpdateStatus {
+  /** Installed CLI version (release-tag.txt next to the binary, or APP_VERSION). */
+  current: string;
+  /** Latest known stable release with a binary for this platform, if known. */
+  latestStable: string | null;
+  /** True when a strictly newer stable release than `current` is available. */
+  updateAvailable: boolean;
+  /** When the release list was last fetched (ISO-8601), if ever. */
+  lastChecked: string | null;
+}
+
 const UpdateCheckStateSchema = Schema.parseJson(
   Schema.Struct({
     lastChecked: Schema.String,
@@ -232,7 +244,36 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
     );
   });
 
-  return { showUpdateNotice, checkForUpdate };
+  /**
+   * Refresh the release cache (self-throttled to the check interval) and
+   * report a machine-readable status. Unlike the notice, this ignores the
+   * TTY gate — callers asked for the data explicitly.
+   */
+  const getUpdateStatus: Effect.Effect<UpdateStatus, never, FileSystem.FileSystem | Path.Path> =
+    Effect.gen(function* () {
+      yield* checkForUpdate;
+      const state = yield* Effect.option(readState);
+
+      const cachedLatest = Option.getOrUndefined(Option.map(state, s => s.latestVersion));
+      // The cache falls back to the current version when no release was found,
+      // so a prerelease can leak into latestVersion — never report that as stable.
+      const latestStable =
+        cachedLatest && semver.valid(cachedLatest) && semver.prerelease(cachedLatest) === null
+          ? cachedLatest
+          : null;
+
+      return {
+        current: config.currentVersion,
+        latestStable,
+        updateAvailable: latestStable !== null && semver.gt(latestStable, config.currentVersion),
+        lastChecked: Option.getOrElse(
+          Option.map(state, s => s.lastChecked),
+          () => null as string | null
+        ),
+      } satisfies UpdateStatus;
+    }).pipe(Effect.orDie);
+
+  return { showUpdateNotice, checkForUpdate, getUpdateStatus };
 }
 
 // ── Public API (production defaults, fire-and-forget) ───────────────────
@@ -245,6 +286,16 @@ export const showUpdateNotice = Effect.gen(function* () {
   const stateFile = yield* defaultStateFile;
   const config = yield* defaultConfig(stateFile);
   yield* createUpdateChecker(config).showUpdateNotice(terminal);
+}).pipe(Effect.provide(DefaultConfigLayers));
+
+/**
+ * Refresh the release cache if stale and return a machine-readable status.
+ * Powers `composio version --check`.
+ */
+export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function* () {
+  const stateFile = yield* defaultStateFile;
+  const config = yield* defaultConfig(stateFile);
+  return yield* createUpdateChecker(config).getUpdateStatus;
 }).pipe(Effect.provide(DefaultConfigLayers));
 
 /** Fire-and-forget background fetch to GitHub. */
