@@ -58,7 +58,6 @@ runs:
       with:
         version: ${{ steps.tool-versions.outputs.uv }}
         enable-cache: ${{ inputs.enable-caching }}
-        # setup-uv v9 changed the default to false; keep the existing cache-size behavior.
         prune-cache: true
 
     - name: Report versions
