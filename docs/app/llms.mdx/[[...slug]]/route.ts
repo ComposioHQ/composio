@@ -356,7 +356,7 @@ function generateCurl(
 }
 
 // Convert OpenAPI page to comprehensive markdown
-async function openapiPageToMarkdown(
+export async function openapiPageToMarkdown(
   page: { url: string; data: OpenAPIPageData }
 ): Promise<string> {
   const { title, description } = page.data;
@@ -366,6 +366,7 @@ async function openapiPageToMarkdown(
   const processed = await openapi.getSchema(props.document);
   const spec = processed.dereferenced;
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
+  const webhooks = spec.webhooks as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;
   const servers = spec.servers as Array<{ url: string; description?: string }> | undefined;
   const baseUrl = servers?.[0]?.url || 'https://backend.composio.dev';
@@ -377,124 +378,170 @@ async function openapiPageToMarkdown(
     lines.push(description, '');
   }
 
-  // Process operations
-  if (props.operations && paths) {
-    for (const op of props.operations) {
-      const pathData = paths[op.path];
-      if (!pathData) continue;
+  const selectedOperations: Array<{
+    method: string;
+    name: string;
+    operation: OpenAPIOperation;
+    isWebhook: boolean;
+  }> = [];
 
-      const operation = pathData[op.method];
-      if (!operation) continue;
+  for (const op of props.operations ?? []) {
+    const operation = paths?.[op.path]?.[op.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: op.method,
+        name: op.path,
+        operation,
+        isWebhook: false,
+      });
+    }
+  }
 
-      lines.push('---', '');
-      lines.push(`## ${op.method.toUpperCase()} \`${op.path}\``, '');
-      lines.push(`**Endpoint:** \`${baseUrl}${op.path}\``, '');
+  for (const webhook of props.webhooks ?? []) {
+    const operation = webhooks?.[webhook.name]?.[webhook.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: webhook.method,
+        name: webhook.name,
+        operation,
+        isWebhook: true,
+      });
+    }
+  }
 
-      if (operation.summary) {
-        lines.push(`**Summary:** ${operation.summary}`, '');
-      }
+  // Process API operations and webhook deliveries through the same schema
+  // renderer. Fumadocs exposes them as separate page-prop collections.
+  for (const selected of selectedOperations) {
+    const { method, name, operation, isWebhook } = selected;
+    lines.push('---', '');
+    lines.push(`## ${method.toUpperCase()} \`${name}\``, '');
+    if (isWebhook) {
+      lines.push(`**Event type:** \`${name}\``, '');
+    } else {
+      lines.push(`**Endpoint:** \`${baseUrl}${name}\``, '');
+    }
 
-      if (operation.description) {
-        lines.push(operation.description, '');
-      }
+    if (operation.summary) {
+      lines.push(`**Summary:** ${operation.summary}`, '');
+    }
 
-      // Authentication
-      const security = operation.security;
-      if (security && security.length > 0 && securitySchemes) {
-        lines.push('### Authentication', '');
-        const authMethods: string[] = [];
-        for (const secReq of security) {
-          for (const schemeName of Object.keys(secReq)) {
-            const scheme = securitySchemes[schemeName];
-            if (scheme) {
-              if (scheme.type === 'apiKey') {
-                authMethods.push(`**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``);
-              } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
-                authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
-              } else {
-                authMethods.push(`**${schemeName}** - ${scheme.type}`);
-              }
+    if (operation.description) {
+      lines.push(operation.description, '');
+    }
+
+    // Authentication
+    const security = operation.security;
+    if (security && security.length > 0 && securitySchemes) {
+      lines.push('### Authentication', '');
+      const authMethods: string[] = [];
+      for (const secReq of security) {
+        for (const schemeName of Object.keys(secReq)) {
+          const scheme = securitySchemes[schemeName];
+          if (scheme) {
+            if (scheme.type === 'apiKey') {
+              authMethods.push(
+                `**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``
+              );
+            } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
+              authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
+            } else {
+              authMethods.push(`**${schemeName}** - ${scheme.type}`);
             }
           }
         }
-        lines.push(authMethods.join(' OR '), '');
       }
+      lines.push(authMethods.join(' OR '), '');
+    }
 
-      // Path Parameters
-      const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
-      if (pathParams.length > 0) {
-        lines.push('### Path Parameters', '');
-        for (const param of pathParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
-        }
+    // Path Parameters
+    const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
+    if (pathParams.length > 0) {
+      lines.push('### Path Parameters', '');
+      for (const param of pathParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Query Parameters
+    const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
+    if (queryParams.length > 0) {
+      lines.push('### Query Parameters', '');
+      for (const param of queryParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Webhook delivery headers
+    const headerParams = operation.parameters?.filter(p => p.in === 'header') || [];
+    if (isWebhook && headerParams.length > 0) {
+      lines.push('### Delivery Headers', '');
+      for (const param of headerParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Request Body
+    if (operation.requestBody?.content?.['application/json']) {
+      lines.push('### Request Body', '');
+      if (operation.requestBody.description) {
+        lines.push(operation.requestBody.description, '');
+      }
+      const schema = operation.requestBody.content['application/json'].schema;
+      if (schema) {
+        lines.push('**Schema:**', '');
+        lines.push(...renderSchema(schema));
         lines.push('');
-      }
 
-      // Query Parameters
-      const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
-      if (queryParams.length > 0) {
-        lines.push('### Query Parameters', '');
-        for (const param of queryParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          const reqMark = param.required ? ' *(required)*' : '';
-          lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
-        }
-        lines.push('');
+        // Example
+        const example =
+          operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
+        lines.push('**Example:**', '');
+        lines.push('```json');
+        lines.push(JSON.stringify(example, null, 2));
+        lines.push('```', '');
       }
+    }
 
-      // Request Body
-      if (operation.requestBody?.content?.['application/json']) {
-        lines.push('### Request Body', '');
-        if (operation.requestBody.description) {
-          lines.push(operation.requestBody.description, '');
-        }
-        const schema = operation.requestBody.content['application/json'].schema;
-        if (schema) {
-          lines.push('**Schema:**', '');
-          lines.push(...renderSchema(schema));
+    // Responses
+    if (operation.responses) {
+      lines.push('### Responses', '');
+
+      for (const [status, response] of Object.entries(operation.responses)) {
+        lines.push(`#### ${status} - ${response.description || ''}`, '');
+
+        const jsonContent = response.content?.['application/json'];
+        if (jsonContent?.schema) {
+          lines.push('**Response Schema:**', '');
+          lines.push(...renderSchema(jsonContent.schema));
           lines.push('');
 
-          // Example
-          const example = operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
-          lines.push('**Example:**', '');
-          lines.push('```json');
-          lines.push(JSON.stringify(example, null, 2));
-          lines.push('```', '');
-        }
-      }
-
-      // Responses
-      if (operation.responses) {
-        lines.push('### Responses', '');
-
-        for (const [status, response] of Object.entries(operation.responses)) {
-          lines.push(`#### ${status} - ${response.description || ''}`, '');
-
-          const jsonContent = response.content?.['application/json'];
-          if (jsonContent?.schema) {
-            lines.push('**Response Schema:**', '');
-            lines.push(...renderSchema(jsonContent.schema));
-            lines.push('');
-
-            // Only show example for success responses
-            if (status.startsWith('2')) {
-              const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
-              if (example && Object.keys(example as object).length > 0) {
-                lines.push('**Example Response:**', '');
-                lines.push('```json');
-                lines.push(JSON.stringify(example, null, 2));
-                lines.push('```', '');
-              }
+          // Only show example for success responses
+          if (status.startsWith('2')) {
+            const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
+            if (example && Object.keys(example as object).length > 0) {
+              lines.push('**Example Response:**', '');
+              lines.push('```json');
+              lines.push(JSON.stringify(example, null, 2));
+              lines.push('```', '');
             }
           }
         }
       }
+    }
 
-      // cURL Example
+    // Webhook operations describe inbound deliveries rather than API calls.
+    if (!isWebhook) {
       lines.push('### Example cURL Request', '');
       lines.push('```bash');
-      lines.push(generateCurl(op.method, op.path, baseUrl, operation.parameters, operation.requestBody));
+      lines.push(generateCurl(method, name, baseUrl, operation.parameters, operation.requestBody));
       lines.push('```', '');
     }
   }
