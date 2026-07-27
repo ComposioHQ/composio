@@ -264,12 +264,13 @@ describe('getUpdateStatus', () => {
         current: '0.2.0',
         latestStable: '0.3.0',
         updateAvailable: true,
+        checkStatus: 'update-available',
         lastChecked: expect.any(String),
       });
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('reports no update when the fetch fails and no cache exists', () =>
+  it.effect('reports an unknown status when the fetch fails and no cache exists', () =>
     Effect.gen(function* () {
       const config = makeConfig({
         currentVersion: '0.2.0',
@@ -279,8 +280,36 @@ describe('getUpdateStatus', () => {
 
       const status = yield* getUpdateStatus;
 
-      expect(status.updateAvailable).toBe(false);
-      expect(status.lastChecked).toEqual(expect.any(String));
+      expect(status).toEqual({
+        current: '0.2.0',
+        latestStable: null,
+        updateAvailable: false,
+        checkStatus: 'unknown',
+        lastChecked: null,
+      });
+      expect(existsSync(config.stateFile)).toBe(false);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('does not call a stale cached version up to date after a failed refresh', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        currentVersion: '0.2.0',
+        fetchFn: vi.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch,
+      });
+      const lastChecked = '2020-01-01T00:00:00.000Z';
+      writeState(config, { lastChecked, latestVersion: '0.2.0' });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status).toEqual({
+        current: '0.2.0',
+        latestStable: '0.2.0',
+        updateAvailable: false,
+        checkStatus: 'unknown',
+        lastChecked,
+      });
     }).pipe(Effect.provide(PlatformLayers))
   );
 
@@ -297,6 +326,7 @@ describe('getUpdateStatus', () => {
 
       expect(status.latestStable).toBeNull();
       expect(status.updateAvailable).toBe(false);
+      expect(status.checkStatus).toBe('unknown');
     }).pipe(Effect.provide(PlatformLayers))
   );
 
@@ -315,6 +345,25 @@ describe('getUpdateStatus', () => {
       expect(fetchFn).not.toHaveBeenCalled();
       expect(status.latestStable).toBe('0.2.1');
       expect(status.updateAvailable).toBe(true);
+      expect(status.checkStatus).toBe('update-available');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('reports an unknown status for an invalid installed version', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: 'corrupt-tag' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+      const { getUpdateStatus } = createUpdateChecker(config);
+
+      const status = yield* getUpdateStatus;
+
+      expect(status).toEqual({
+        current: 'corrupt-tag',
+        latestStable: '0.3.0',
+        updateAvailable: false,
+        checkStatus: 'unknown',
+        lastChecked: expect.any(String),
+      });
     }).pipe(Effect.provide(PlatformLayers))
   );
 });
@@ -466,7 +515,7 @@ describe('checkForUpdate', () => {
       }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('writes lastChecked on HTTP errors to prevent retry loops', () =>
+  it.effect('does not create authoritative state after an HTTP error', () =>
     Effect.gen(function* () {
       const config = makeConfig({
         fetchFn: vi.fn().mockResolvedValue({
@@ -479,14 +528,11 @@ describe('checkForUpdate', () => {
       // Should not fail
       yield* checkForUpdate;
 
-      expect(existsSync(config.stateFile)).toBe(true);
-      const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-      expect(state.lastChecked).toBeDefined();
-      expect(state.latestVersion).toBe(config.currentVersion);
+      expect(existsSync(config.stateFile)).toBe(false);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('writes lastChecked on network errors to prevent retry loops', () =>
+  it.effect('does not create authoritative state after a network error', () =>
     Effect.gen(function* () {
       const config = makeConfig({
         fetchFn: vi.fn().mockRejectedValue(new Error('DNS failed')) as unknown as typeof fetch,
@@ -495,10 +541,41 @@ describe('checkForUpdate', () => {
 
       yield* checkForUpdate;
 
-      expect(existsSync(config.stateFile)).toBe(true);
+      expect(existsSync(config.stateFile)).toBe(false);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('throttles repeated network errors without creating authoritative state', () =>
+    Effect.gen(function* () {
+      const fetchFn = vi.fn().mockRejectedValue(new Error('DNS failed'));
+      const config = makeConfig({ fetchFn: fetchFn as unknown as typeof fetch });
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+      yield* checkForUpdate;
+
+      expect(fetchFn).toHaveBeenCalledOnce();
+      expect(existsSync(config.stateFile)).toBe(false);
+      expect(existsSync(`${config.stateFile}.attempt`)).toBe(true);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('preserves stale successful state after a network error', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({
+        fetchFn: vi.fn().mockRejectedValue(new Error('DNS failed')) as unknown as typeof fetch,
+      });
+      const previousState: UpdateCheckState = {
+        lastChecked: staleLastChecked,
+        latestVersion: '0.3.0',
+      };
+      writeState(config, previousState);
+      const { checkForUpdate } = createUpdateChecker(config);
+
+      yield* checkForUpdate;
+
       const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
-      expect(state.lastChecked).toBeDefined();
-      expect(state.latestVersion).toBe(config.currentVersion);
+      expect(state).toEqual(previousState);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
