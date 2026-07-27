@@ -1,21 +1,25 @@
-import { openapi } from '@/lib/openapi';
-import { createAPIPage } from 'fumadocs-openapi/ui';
-import client from './api-page.client';
+'use client';
+
+import { createOpenAPIPage } from 'fumadocs-openapi/ui';
 import { generateSchemaData } from './schema-generator';
 import { CustomSchemaUI } from './custom-schema-ui';
 
-export const APIPage = createAPIPage(openapi, {
-  client,
-  generateTypeScriptSchema: false,
+export const APIPage = createOpenAPIPage({
+  generateTypeScriptDefinitions: false,
   playground: { enabled: true },
   schemaUI: {
     render: (options, ctx) => {
+      const client = (
+        options as typeof options & {
+          client: { name: string; required?: boolean; as?: 'property' | 'body' };
+        }
+      ).client;
       // Skip rendering the shared Error schema on error responses -
       // the status code and description are shown by the accordion already
       // options.root can be boolean for simple schemas, only check refs for objects
       const ref =
         typeof options.root === 'object'
-          ? ctx.schema.getRawRef(options.root)
+          ? getRawRef(options.root)
           : null;
       if (ref === '#/components/schemas/Error') return null;
 
@@ -26,16 +30,16 @@ export const APIPage = createAPIPage(openapi, {
           writeOnly: options.writeOnly,
         },
         {
-          renderMarkdown: ctx.renderMarkdown,
-          schema: { getRawRef: ctx.schema.getRawRef },
+          renderMarkdown: ctx.renderMarkdown ?? ctx._default_processMarkdown,
+          schema: { getRawRef },
         }
       );
       const isResponse = options.readOnly === true && !options.writeOnly;
       return (
         <CustomSchemaUI
-          name={options.client.name}
-          required={options.client.required}
-          as={options.client.as}
+          name={client.name}
+          required={client.required}
+          as={client.as}
           generated={generated}
           isResponse={isResponse}
         />
@@ -43,3 +47,8 @@ export const APIPage = createAPIPage(openapi, {
     },
   },
 });
+
+function getRawRef(value: object): string | undefined {
+  if (!('$ref' in value)) return undefined;
+  return typeof value.$ref === 'string' ? value.$ref : undefined;
+}
