@@ -41,6 +41,8 @@ export interface UpdateStatus {
   latestStable: string | null;
   /** True when a strictly newer stable release than `current` is available. */
   updateAvailable: boolean;
+  /** Whether the latest known state is current, actionable, or unavailable. */
+  checkStatus: 'up-to-date' | 'update-available' | 'unknown';
   /** When the release list was last fetched (ISO-8601), if ever. */
   lastChecked: string | null;
 }
@@ -52,7 +54,13 @@ const UpdateCheckStateSchema = Schema.parseJson(
   })
 );
 
-/** Non-2xx response from the GitHub releases API; swallowed after the state write. */
+const UpdateCheckAttemptSchema = Schema.parseJson(
+  Schema.Struct({
+    lastAttempted: Schema.String,
+  })
+);
+
+/** Non-2xx GitHub response; recorded as a failed attempt and otherwise swallowed. */
 class UpdateCheckHttpError extends Data.TaggedError('UpdateCheckHttpError')<{
   readonly status: number;
 }> {}
@@ -145,10 +153,18 @@ export function parseLatestVersionFromReleases(
 // ── Factory ─────────────────────────────────────────────────────────────
 
 export function createUpdateChecker(config: UpdateCheckConfig) {
+  const attemptFile = `${config.stateFile}.attempt`;
+
   const readState = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const rawState = yield* fs.readFileString(config.stateFile);
     return yield* Schema.decodeUnknown(UpdateCheckStateSchema)(rawState);
+  });
+
+  const readAttempt = Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const rawAttempt = yield* fs.readFileString(attemptFile);
+    return yield* Schema.decodeUnknown(UpdateCheckAttemptSchema)(rawAttempt);
   });
 
   /**
@@ -161,14 +177,15 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       if (!capabilities.isInteractive) return;
 
       const state = yield* readState;
-      if (!state.latestVersion || !semver.valid(state.latestVersion)) return;
-      if (state.latestVersion === config.currentVersion) return;
+      const latestVersion = semver.valid(state.latestVersion);
+      const currentVersion = semver.valid(config.currentVersion);
+      if (!latestVersion || !currentVersion || latestVersion === currentVersion) return;
 
       // Only show when the cached version is strictly newer.
-      if (!semver.gt(state.latestVersion, config.currentVersion)) return;
+      if (!semver.gt(latestVersion, currentVersion)) return;
 
       const msg =
-        `  ${dim('Update available:')} ${dim(config.currentVersion)} ${dim('→')} ${bold(cyanBright(state.latestVersion))}\n` +
+        `  ${dim('Update available:')} ${dim(config.currentVersion)} ${dim('→')} ${bold(cyanBright(latestVersion))}\n` +
         `  ${dim('Run')} ${cyanBright('composio upgrade')} ${dim('to update')}\n`;
 
       yield* terminal.error(`\n${msg}`);
@@ -185,15 +202,32 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   const checkForUpdate = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const checkStartedAt = new Date();
+    const checkStartedAtMs = checkStartedAt.getTime();
+    const parseTimestamp = (value: string): number | undefined => {
+      const timestamp = new Date(value).getTime();
+      return Number.isFinite(timestamp) ? timestamp : undefined;
+    };
 
     // Throttle: skip if checked recently. A missing or corrupt state file
     // just means "re-check".
     const cachedState = yield* Effect.option(readState);
+    const lastCheckedAt = Option.getOrUndefined(
+      Option.map(cachedState, state => parseTimestamp(state.lastChecked))
+    );
+    if (lastCheckedAt !== undefined && checkStartedAtMs - lastCheckedAt < config.checkIntervalMs) {
+      return { state: cachedState, refreshFailed: false } as const;
+    }
+    const failedAttempt = yield* Effect.option(readAttempt);
+    const lastAttemptedAt = Option.getOrUndefined(
+      Option.map(failedAttempt, attempt => parseTimestamp(attempt.lastAttempted))
+    );
     if (
-      Option.isSome(cachedState) &&
-      Date.now() - new Date(cachedState.value.lastChecked).getTime() < config.checkIntervalMs
+      lastAttemptedAt !== undefined &&
+      (lastCheckedAt === undefined || lastAttemptedAt > lastCheckedAt) &&
+      checkStartedAtMs - lastAttemptedAt < config.checkIntervalMs
     ) {
-      return;
+      return { state: cachedState, refreshFailed: true } as const;
     }
     const previousLatestVersion = Option.getOrUndefined(
       Option.map(cachedState, state => state.latestVersion)
@@ -208,22 +242,10 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       headers.Authorization = `Bearer ${config.accessToken}`;
     }
 
-    // Always persist lastChecked to prevent retry loops when the fetch
-    // fails or returns no matching releases with a matching binary.
-    const writeState = (latestVersion?: string) =>
-      fs.makeDirectory(path.dirname(config.stateFile), { recursive: true }).pipe(
-        Effect.matchEffect({
-          // If we can't create the directory, bail out silently.
-          onFailure: () => Effect.void,
-          onSuccess: () => {
-            const state: UpdateCheckState = {
-              lastChecked: new Date().toISOString(),
-              latestVersion: latestVersion ?? previousLatestVersion ?? config.currentVersion,
-            };
-            return fs.writeFileString(config.stateFile, JSON.stringify(state, null, 2));
-          },
-        })
-      );
+    const writeJsonFile = (file: string, value: unknown) =>
+      fs
+        .makeDirectory(path.dirname(file), { recursive: true })
+        .pipe(Effect.andThen(fs.writeFileString(file, JSON.stringify(value, null, 2))));
 
     const fetchLatestVersion = Effect.gen(function* () {
       const response = yield* Effect.tryPromise(() =>
@@ -236,12 +258,25 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       return parseLatestVersionFromReleases(releases, config.binaryAssetName);
     });
 
-    yield* fetchLatestVersion.pipe(
-      Effect.flatMap(writeState),
-      // Silently ignore fetch/parse errors — never block the CLI.
-      // Still update the timestamp to prevent unbounded retry loops.
-      Effect.catchAll(() => Effect.ignore(writeState()))
+    const latestVersion = yield* Effect.option(fetchLatestVersion);
+    if (Option.isNone(latestVersion)) {
+      yield* Effect.ignore(
+        writeJsonFile(attemptFile, {
+          lastAttempted: checkStartedAt.toISOString(),
+        })
+      );
+      return { state: cachedState, refreshFailed: true } as const;
+    }
+
+    const state: UpdateCheckState = {
+      lastChecked: new Date().toISOString(),
+      latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
+    };
+    yield* writeJsonFile(config.stateFile, state).pipe(
+      Effect.andThen(fs.remove(attemptFile, { force: true })),
+      Effect.ignore
     );
+    return { state: Option.some(state), refreshFailed: false } as const;
   });
 
   /**
@@ -251,27 +286,32 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    */
   const getUpdateStatus: Effect.Effect<UpdateStatus, never, FileSystem.FileSystem | Path.Path> =
     Effect.gen(function* () {
-      yield* checkForUpdate;
-      const state = yield* Effect.option(readState);
+      const { state, refreshFailed } = yield* checkForUpdate;
 
       const cachedLatest = Option.getOrUndefined(Option.map(state, s => s.latestVersion));
-      // The cache falls back to the current version when no release was found,
-      // so a prerelease can leak into latestVersion — never report that as stable.
+      const validLatest = cachedLatest ? semver.valid(cachedLatest) : null;
+      const validCurrent = semver.valid(config.currentVersion);
       const latestStable =
-        cachedLatest && semver.valid(cachedLatest) && semver.prerelease(cachedLatest) === null
-          ? cachedLatest
-          : null;
+        validLatest && semver.prerelease(validLatest) === null ? validLatest : null;
+      const updateAvailable =
+        validCurrent !== null && latestStable !== null && semver.gt(latestStable, validCurrent);
+      const checkStatus = updateAvailable
+        ? 'update-available'
+        : refreshFailed || validCurrent === null || latestStable === null
+          ? 'unknown'
+          : 'up-to-date';
 
       return {
         current: config.currentVersion,
         latestStable,
-        updateAvailable: latestStable !== null && semver.gt(latestStable, config.currentVersion),
+        updateAvailable,
+        checkStatus,
         lastChecked: Option.getOrElse(
           Option.map(state, s => s.lastChecked),
           () => null as string | null
         ),
       } satisfies UpdateStatus;
-    }).pipe(Effect.orDie);
+    });
 
   return { showUpdateNotice, checkForUpdate, getUpdateStatus };
 }
@@ -300,8 +340,8 @@ export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function*
 
 /** Fire-and-forget background fetch to GitHub. */
 export function checkForUpdateInBackground(): void {
-  // Runs from cli-main before the runtime boots; runPromiseExit never throws back
-  // into the caller and checkForUpdate swallows its own failures.
+  // Uses a detached runtime so short-lived command handlers do not interrupt the refresh.
+  // runPromiseExit never throws into the caller, and checkForUpdate swallows its own failures.
   void Effect.runPromiseExit(
     Effect.gen(function* () {
       const stateFile = yield* defaultStateFile;

@@ -8,7 +8,7 @@ import { bold, cyanBright } from 'src/ui/colors';
 const check = Options.boolean('check').pipe(
   Options.withDescription(
     'Check for a newer stable release and print a machine-readable JSON status ' +
-      '({current, latestStable, updateAvailable, lastChecked}). ' +
+      '({current, latestStable, updateAvailable, checkStatus, lastChecked}). ' +
       'Refreshes the release cache when it is older than 24 hours.'
   )
 );
@@ -34,6 +34,8 @@ export const versionCmd = Command.make('version', { check }).pipe(
           yield* ui.log.info(
             `Update available: ${status.current} → ${bold(cyanBright(status.latestStable))} — run ${cyanBright('composio upgrade')}`
           );
+        } else if (status.checkStatus === 'unknown') {
+          yield* ui.log.warn('Unable to determine the latest stable Composio CLI release.');
         } else {
           yield* ui.log.info(`${status.current} is up to date.`);
         }
