@@ -155,8 +155,21 @@ function generateWebhookEventsIndex(outputDir: string) {
   const entries = Object.entries(spec.webhooks ?? {});
   if (entries.length === 0) return;
 
-  const tag = spec.tags?.[0];
-  const tagSlug = slugify(tag?.name ?? 'Webhook Events');
+  const operationTags = new Set(
+    entries.flatMap(([, item]) => item.post?.tags ?? []),
+  );
+  if (operationTags.size !== 1) {
+    throw new Error(
+      `Expected webhook operations to share exactly one tag, found: ${[...operationTags].join(', ') || 'none'}`,
+    );
+  }
+
+  const [operationTag] = operationTags;
+  const tag = spec.tags?.find(candidate => candidate.name === operationTag);
+  if (!tag) {
+    throw new Error(`Webhook operation tag "${operationTag}" is not declared in spec.tags`);
+  }
+  const tagSlug = slugify(tag.name);
 
   const current: string[] = [];
   const legacy: string[] = [];
