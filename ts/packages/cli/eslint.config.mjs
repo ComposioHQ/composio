@@ -1,6 +1,1 @@
-export default {
-  extends: ['../../eslint.config.mjs'],
-  rules: {
-    '@effect/eslint-plugin': 'error',
-  },
-};
+export { default } from '../../../eslint.config.mjs';

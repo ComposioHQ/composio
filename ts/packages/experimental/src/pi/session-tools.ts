@@ -36,7 +36,6 @@ import type {
 } from './types';
 import { maybeTransform, normalizeToolkits, toolkitFromToolSlug } from './utils';
 
-// eslint-disable-next-line max-lines-per-function
 export const createPiSessionTools = (
   input: PiComposioSessionLike | PiSessionToolCapabilities,
   providerOptions: PiProviderOptions,
