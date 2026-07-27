@@ -91,6 +91,7 @@
     "tsx": "catalog:",
     "turbo": "^2.10.6",
     "typescript": "catalog:",
+    "typescript6": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },

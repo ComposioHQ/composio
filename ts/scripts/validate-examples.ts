@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import ts from 'typescript';
+// TS7 (tsgo) ships no JS compiler API; use the TS6 alias for transpileModule.
+import ts from 'typescript6';
 
 const repoRoot = process.cwd();
 const examplesRoot = path.join(repoRoot, 'ts', 'examples');
