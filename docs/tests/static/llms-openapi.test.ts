@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, mock, test } from "bun:test";
 
-let dereferencedSpec: Record<string, unknown> = {};
+let bundledSpec: Record<string, unknown> = {};
 
 mock.module("@/lib/source", () => ({
   source: {},
@@ -12,11 +12,6 @@ mock.module("@/lib/source", () => ({
   formatDate: () => "",
   getLLMText: async () => "",
   mdxToCleanMarkdown: async () => "",
-}));
-mock.module("@/lib/openapi", () => ({
-  openapi: {
-    getSchema: async () => ({ dereferenced: dereferencedSpec }),
-  },
 }));
 mock.module("next/navigation", () => ({
   notFound: () => {
@@ -47,7 +42,7 @@ beforeAll(async () => {
 
 describe("LLM OpenAPI markdown", () => {
   test("continues to render API operations with endpoint and cURL details", async () => {
-    dereferencedSpec = {
+    bundledSpec = {
       paths: {
         "/v3.1/test": {
           get: {
@@ -65,8 +60,8 @@ describe("LLM OpenAPI markdown", () => {
       url: "/reference/api-reference/test/getTest",
       data: {
         title: "Get test",
-        getAPIPageProps: () => ({
-          document: "/openapi.json",
+        getOpenAPIPageProps: () => ({
+          payload: { bundled: bundledSpec },
           operations: [{ path: "/v3.1/test", method: "GET" }],
         }),
       },
@@ -80,7 +75,7 @@ describe("LLM OpenAPI markdown", () => {
   });
 
   test("renders webhook delivery headers and payload schema", async () => {
-    dereferencedSpec = {
+    bundledSpec = {
       openapi: "3.1.0",
       webhooks: {
         "composio.test.event": {
@@ -124,8 +119,8 @@ describe("LLM OpenAPI markdown", () => {
       url: "/reference/api-reference/webhook-events/composio_test_event",
       data: {
         title: "Test event",
-        getAPIPageProps: () => ({
-          document: "/openapi-webhooks.json",
+        getOpenAPIPageProps: () => ({
+          payload: { bundled: bundledSpec },
           webhooks: [{ name: "composio.test.event", method: "post" }],
         }),
       },
