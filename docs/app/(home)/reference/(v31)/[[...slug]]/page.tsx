@@ -15,6 +15,7 @@ import { EditOnGitHub } from '@/components/edit-on-github';
 import { extractVersionFromPath } from '@/components/version-badge';
 import { ApiPageTitle } from '@/components/api-page-title';
 import { isApiPageDeprecated } from '@/lib/api-deprecation';
+import { sliceApiPageProps } from '@/lib/openapi-slice';
 import type { OpenApiSchemaPageData } from '@/lib/api-deprecation';
 
 interface OpenAPIPageData extends OpenApiSchemaPageData {
@@ -51,7 +52,7 @@ export default async function Page({
           <PageActions path={page.url} variant="inline" />
         </div>
         <DocsBody>
-          <APIPage {...apiProps} />
+          <APIPage {...sliceApiPageProps(apiProps)} />
           <EditOnGitHub path={`docs/content/reference/${page.path}`} />
         </DocsBody>
       </DocsPage>
