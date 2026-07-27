@@ -4,7 +4,7 @@ import { Path } from '@effect/platform/Path';
 import { Effect, pipe } from 'effect';
 import { type RawSourceMap, SourceMapConsumer } from 'source-map-js';
 
-import { type JsonParsingError, readJsonEffect } from 'effect-errors/dependencies/fs';
+import { readJsonEffect } from 'effect-errors/dependencies/fs';
 
 import type { ErrorLocation } from './get-error-location-from-file-path';
 import { getSourceCode, type SourceCode } from './get-source-code';
@@ -27,7 +27,7 @@ export const getSourcesFromMapFile = (
   location: ErrorLocation
 ): Effect.Effect<
   ErrorRelatedSources | RawErrorLocation | undefined,
-  PlatformError | JsonParsingError,
+  PlatformError,
   FileSystem | Path
 > =>
   pipe(
@@ -44,7 +44,23 @@ export const getSourcesFromMapFile = (
         };
       }
 
-      const data = yield* readJsonEffect<RawSourceMap>(`${location.filePath}.map`);
+      const data = yield* pipe(
+        readJsonEffect<RawSourceMap>(`${location.filePath}.map`),
+        Effect.catchTag('JsonParsingError', () =>
+          // A malformed source map is optional metadata; fall back to the raw
+          // location the same way we do when the .map file is absent, instead
+          // of letting the parse error abort the whole error-capture pipeline.
+          Effect.succeed(null as RawSourceMap | null)
+        )
+      );
+      if (data === null) {
+        return {
+          _tag: 'location' as const,
+          name,
+          ...location,
+          filePath: location.filePath.replace(process.cwd(), ''),
+        };
+      }
       const hasNoData = data?.version === undefined || data?.sources === undefined;
       if (hasNoData) {
         return;
