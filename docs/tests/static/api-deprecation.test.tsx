@@ -167,7 +167,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: { deprecated: true },
@@ -206,7 +206,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: {},
@@ -236,7 +236,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: { deprecated: true },
@@ -268,7 +268,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: {},
@@ -288,9 +288,8 @@ describe("deprecated API endpoints", () => {
     expect(html).not.toContain(">Legacy</span>");
   });
 
-  // fumadocs-openapi 11 returns a `bundled` document; the `dereferenced` key
-  // the mocks above use no longer exists on its loaded-document shape. These
-  // cover the bundled-first lookup that real callers now hit.
+  // fumadocs-openapi 11 loaded documents only ever expose a `bundled` key;
+  // these cover the bundled lookup that real callers hit.
   test("detects deprecation from a bundled-only document", () => {
     const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
     const pageData = {
@@ -325,31 +324,7 @@ describe("deprecated API endpoints", () => {
     expect(isApiPageDeprecated(pageData, [operation])).toBe(false);
   });
 
-  test("prefers the bundled document over a stale dereferenced one", () => {
-    const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
-    const pageData = {
-      getSchema: () => ({
-        bundled: {
-          paths: {
-            [operation.path]: {
-              [operation.method]: { deprecated: true },
-            },
-          },
-        },
-        dereferenced: {
-          paths: {
-            [operation.path]: {
-              [operation.method]: { deprecated: false },
-            },
-          },
-        },
-      }),
-    };
-
-    expect(isApiPageDeprecated(pageData, [operation])).toBe(true);
-  });
-
-  test("returns false when the document exposes neither shape", () => {
+  test("returns false when the document has no bundled paths", () => {
     const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
     const pageData = { getSchema: () => ({}) };
 

@@ -118,6 +118,59 @@ describe('dereferenceDocument', () => {
     expect(root.properties.b.properties.a).toBe(root);
   });
 
+  test('follows an alias chain when a component is itself a reference', () => {
+    const spec = {
+      root: { $ref: '#/components/schemas/Alias' },
+      components: {
+        schemas: {
+          Alias: { $ref: '#/components/schemas/Real' },
+          Real: { type: 'object', properties: { id: { type: 'string' } } },
+        },
+      },
+    };
+
+    const out = dereferenceDocument(spec) as { root: Record<string, unknown> };
+
+    expect(out.root.type).toBe('object');
+    expect(out.root.properties).toEqual({ id: { type: 'string' } });
+  });
+
+  test('lets an alias sibling keyword override the aliased target', () => {
+    const spec = {
+      root: { $ref: '#/components/schemas/Alias' },
+      components: {
+        schemas: {
+          Alias: { $ref: '#/components/schemas/Real', description: 'alias-desc' },
+          Real: { type: 'object', description: 'real-desc' },
+        },
+      },
+    };
+
+    const out = dereferenceDocument(spec) as { root: Record<string, unknown> };
+
+    expect(out.root.type).toBe('object');
+    expect(out.root.description).toBe('alias-desc');
+  });
+
+  test('terminates on a cyclic alias chain', () => {
+    const spec = {
+      root: { $ref: '#/components/schemas/A' },
+      components: {
+        schemas: {
+          A: { $ref: '#/components/schemas/B' },
+          B: { $ref: '#/components/schemas/A' },
+        },
+      },
+    };
+
+    // Pathological input with no real schema behind it: the requirement is that
+    // it terminates rather than recursing forever.
+    const out = dereferenceDocument(spec) as { root: Record<string, unknown> };
+
+    expect(out.root).toBeDefined();
+    expect(out.root.$ref).toBeUndefined();
+  });
+
   test('leaves external references untouched', () => {
     const spec = { root: { $ref: 'https://example.com/schema.json#/Foo' } };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { createElement, type FC, type ReactNode } from 'react';
 import { createOpenAPIPage } from 'fumadocs-openapi/ui';
 import { generateSchemaData } from './schema-generator';
 import { CustomSchemaUI } from './custom-schema-ui';
@@ -30,7 +31,7 @@ export const APIPage = createOpenAPIPage({
           writeOnly: options.writeOnly,
         },
         {
-          renderMarkdown: ctx.renderMarkdown ?? ctx._default_processMarkdown,
+          renderMarkdown: resolveRenderMarkdown(ctx),
           // fumadocs 11 renders from `bundled` documents, so `root` and its
           // nested properties can be unresolved `{ $ref }` nodes. The generator
           // needs the document's resolver to read through them.
@@ -54,4 +55,42 @@ export const APIPage = createOpenAPIPage({
 function getRawRef(value: object): string | undefined {
   if (!('$ref' in value)) return undefined;
   return typeof value.$ref === 'string' ? value.$ref : undefined;
+}
+
+// Structural subset of fumadocs-openapi's `RenderContext` covering only the
+// markdown-rendering fields we read below. Kept narrow (instead of importing
+// the internal `RenderContext` type) so this stays valid against whatever
+// shape `ctx` actually has at the call site.
+interface MarkdownRenderSource {
+  components?: { Markdown?: FC<{ md: string }> };
+  /** @deprecated superseded by `components.Markdown` in fumadocs-openapi 11 */
+  renderMarkdown?: (md: string) => ReactNode;
+  /** @private fumadocs-internal fallback; not part of the public API */
+  _default_processMarkdown?: (md: string) => ReactNode;
+}
+
+/**
+ * Resolves the markdown renderer used by the schema generator, preferring
+ * supported APIs and degrading safely if fumadocs removes its private field:
+ *
+ * 1. `components.Markdown` - the supported replacement (fumadocs-openapi 11+).
+ *    It's a React FC, so it's adapted to the `(text) => ReactNode` shape.
+ * 2. `renderMarkdown` - the deprecated user-configurable option, honoured if
+ *    someone sets it.
+ * 3. `_default_processMarkdown` - fumadocs' private default renderer. We
+ *    don't set `components.Markdown` or `renderMarkdown` above, so this is
+ *    what actually runs today; there's no supported default for this hook,
+ *    so the private field stays in the chain until fumadocs adds one.
+ * 4. A plain-text fallback so a future fumadocs release that drops the
+ *    private field degrades to unformatted text instead of throwing.
+ */
+function resolveRenderMarkdown(ctx: MarkdownRenderSource): (text: string) => ReactNode {
+  const Markdown = ctx.components?.Markdown;
+  if (Markdown) {
+    // Not a component definition despite returning an element -- it's the
+    // `(text) => ReactNode` callback the schema generator invokes directly.
+    // eslint-disable-next-line react/display-name -- render callback, never mounted as a component
+    return (text: string) => createElement(Markdown, { md: text });
+  }
+  return ctx.renderMarkdown ?? ctx._default_processMarkdown ?? ((text) => text);
 }

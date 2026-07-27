@@ -9,7 +9,6 @@ import {
   getLLMText,
   mdxToCleanMarkdown,
 } from '@/lib/source';
-import { openapi } from '@/lib/openapi';
 import { dereferenceDocument } from '@/lib/openapi-deref';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
@@ -184,8 +183,12 @@ interface OpenAPIOperation {
 interface OpenAPIPageData {
   title: string;
   description?: string;
-  getAPIPageProps: () => {
-    document: string;
+  getOpenAPIPageProps: () => {
+    // v11 hands the page its own bundled document here. Do not reach for a
+    // `document` id and re-resolve it through an OpenAPI server instance: the
+    // id is absent from v11's public props type, and this route would have to
+    // pick the right instance (v3.1 vs v3) to look it up.
+    payload: { bundled: Record<string, unknown> };
     operations?: Array<{ method: string; path: string; tags?: string[] }>;
     webhooks?: Array<{ name: string; method: string }>;
   };
@@ -361,12 +364,11 @@ export async function openapiPageToMarkdown(
   page: { url: string; data: OpenAPIPageData }
 ): Promise<string> {
   const { title, description } = page.data;
-  const props = page.data.getAPIPageProps();
+  const props = page.data.getOpenAPIPageProps();
 
   // fumadocs-openapi 11 exposes only the bundled document, which retains
   // in-document $refs; inline them so the renderers below see real schemas.
-  const processed = await openapi.getSchema(props.document);
-  const spec = dereferenceDocument(processed.bundled);
+  const spec = dereferenceDocument(props.payload.bundled);
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const webhooks = spec.webhooks as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;
@@ -1075,7 +1077,7 @@ export async function GET(
 
     if (page) {
       // Check if this is an OpenAPI page
-      if ('getAPIPageProps' in page.data) {
+      if ('getOpenAPIPageProps' in page.data) {
         try {
           const markdown = await openapiPageToMarkdown(
             page as unknown as { url: string; data: OpenAPIPageData }

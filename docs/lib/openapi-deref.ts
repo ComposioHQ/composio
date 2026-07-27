@@ -45,10 +45,27 @@ export function dereferenceDocument<T>(spec: T): T {
 
     if (Array.isArray(target)) {
       for (const item of target) (out as unknown[]).push(walk(item));
-    } else {
-      for (const [key, value] of Object.entries(target)) {
-        (out as Record<string, unknown>)[key] = walk(value);
+      return out;
+    }
+
+    const entries = Object.entries(target as Record<string, unknown>);
+    const aliased = (target as Record<string, unknown>).$ref;
+
+    // A component can itself be a Reference Object (an alias chain such as
+    // `Alias: { $ref: Real }`). Walking its entries alone would copy the `$ref`
+    // string through untouched, so follow it and fold the target's fields in
+    // first; sibling keywords below then override them. A cyclic alias chain
+    // terminates here because the seeded cache entry is returned as-is.
+    if (typeof aliased === 'string' && aliased.startsWith('#/')) {
+      const resolved = resolveRef(aliased);
+      if (resolved !== null && typeof resolved === 'object' && !Array.isArray(resolved)) {
+        Object.assign(out as Record<string, unknown>, resolved);
       }
+    }
+
+    for (const [key, value] of entries) {
+      if (key === '$ref' && typeof aliased === 'string' && aliased.startsWith('#/')) continue;
+      (out as Record<string, unknown>)[key] = walk(value);
     }
     return out;
   }

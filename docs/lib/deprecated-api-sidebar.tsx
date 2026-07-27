@@ -7,7 +7,7 @@ import type { ApiPageOperation, OpenApiSchemaPageData } from '@/lib/api-deprecat
 
 interface OpenApiSidebarPageData extends OpenApiSchemaPageData {
   title: string;
-  getAPIPageProps: () => {
+  getOpenAPIPageProps: () => {
     operations?: ApiPageOperation[];
   };
 }
@@ -19,7 +19,7 @@ function isOpenApiSidebarPageData(data: unknown): data is OpenApiSidebarPageData
   return (
     typeof candidate.title === 'string' &&
     typeof candidate.getSchema === 'function' &&
-    typeof candidate.getAPIPageProps === 'function'
+    typeof candidate.getOpenAPIPageProps === 'function'
   );
 }
 
@@ -50,7 +50,7 @@ export const deprecatedApiSidebarTransformer: PageTreeTransformer = {
       return node;
     }
 
-    const apiProps = file.data.getAPIPageProps();
+    const apiProps = file.data.getOpenAPIPageProps();
     return {
       ...node,
       name: getDeprecatedApiSidebarName(file.data.title, file.data, apiProps.operations),

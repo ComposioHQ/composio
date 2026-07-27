@@ -11,12 +11,6 @@ export interface OpenApiSchemaPageData {
         Record<string, { deprecated?: boolean } | undefined> | undefined
       >;
     };
-    dereferenced?: {
-      paths?: Record<
-        string,
-        Record<string, { deprecated?: boolean } | undefined> | undefined
-      >;
-    };
   };
 }
 
@@ -43,7 +37,7 @@ export function isApiPageDeprecated(
   if (!operations || operations.length === 0) return false;
 
   const schema = pageData.getSchema();
-  const paths = (schema.bundled ?? schema.dereferenced)?.paths;
+  const paths = schema.bundled?.paths;
   return operations.some(
     ({ method, path }) => paths?.[path]?.[method]?.deprecated === true,
   );
