@@ -89,6 +89,21 @@ describe('shouldCheckForUpdateInBackground', () => {
     ).toBe(false);
   });
 
+  it.each([
+    ['split', ['--log-level', 'debug']],
+    ['equals', ['--log-level=debug']],
+  ])('skips the background request with a leading root option in %s form', (_, rootArgs) => {
+    expect(
+      shouldCheckForUpdateInBackground([
+        '/usr/bin/bun',
+        '/app/bin.mjs',
+        ...rootArgs,
+        'version',
+        '--check',
+      ])
+    ).toBe(false);
+  });
+
   it('keeps background checks for regular version and unrelated commands', () => {
     expect(shouldCheckForUpdateInBackground(['/usr/bin/bun', '/app/bin.mjs', 'version'])).toBe(
       true

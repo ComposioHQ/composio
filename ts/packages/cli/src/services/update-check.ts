@@ -332,7 +332,23 @@ export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function*
 /** Avoid starting a second update request when the command explicitly awaits one. */
 export function shouldCheckForUpdateInBackground(argv: ReadonlyArray<string>): boolean {
   const args = argv.slice(2);
-  return args[0] !== 'version' || !args.includes('--check');
+  let commandIndex = 0;
+
+  while (commandIndex < args.length) {
+    const arg = args[commandIndex];
+    if (arg === '--log-level') {
+      commandIndex += 2;
+      continue;
+    }
+    if (arg?.startsWith('--log-level=')) {
+      commandIndex += 1;
+      continue;
+    }
+    break;
+  }
+
+  const commandArgs = args.slice(commandIndex);
+  return commandArgs[0] !== 'version' || !commandArgs.includes('--check');
 }
 
 /** Fire-and-forget background fetch to GitHub. */
