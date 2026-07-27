@@ -3,12 +3,13 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
-import { Effect, Layer } from 'effect';
+import { Effect, Fiber, Layer } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import {
   createUpdateChecker,
   parseLatestVersionFromReleases,
+  shouldCheckForUpdateInBackground,
   type UpdateCheckConfig,
   type UpdateCheckState,
 } from 'src/services/update-check';
@@ -70,6 +71,40 @@ function makeReleasesPayload(versions: string[], assetName = 'composio-darwin-aa
     assets: [{ name: assetName, browser_download_url: 'unused' }],
   }));
 }
+
+function makeDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+describe('shouldCheckForUpdateInBackground', () => {
+  it('skips the background request for an explicit version check', () => {
+    expect(
+      shouldCheckForUpdateInBackground(['/usr/bin/bun', '/app/bin.mjs', 'version', '--check'])
+    ).toBe(false);
+  });
+
+  it('keeps background checks for regular version and unrelated commands', () => {
+    expect(shouldCheckForUpdateInBackground(['/usr/bin/bun', '/app/bin.mjs', 'version'])).toBe(
+      true
+    );
+    expect(
+      shouldCheckForUpdateInBackground([
+        '/usr/bin/bun',
+        '/app/bin.mjs',
+        'tools',
+        'search',
+        'version',
+        '--check',
+      ])
+    ).toBe(true);
+  });
+});
 
 // ── parseLatestVersionFromReleases (pure) ───────────────────────────────
 
@@ -576,6 +611,34 @@ describe('checkForUpdate', () => {
 
       const state: UpdateCheckState = JSON.parse(readFileSync(config.stateFile, 'utf-8'));
       expect(state).toEqual(previousState);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('does not let a failed concurrent check overwrite successful state', () =>
+    Effect.gen(function* () {
+      const failedResponse = makeDeferred<Response>();
+      const failedRequestStarted = makeDeferred<void>();
+      const failingConfig = makeConfig({
+        fetchFn: vi.fn(() => {
+          failedRequestStarted.resolve();
+          return failedResponse.promise;
+        }),
+      });
+      const successfulConfig = makeConfig({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(makeReleasesPayload(['0.3.0'])),
+        }) as unknown as typeof fetch,
+      });
+      const failingFiber = yield* Effect.fork(createUpdateChecker(failingConfig).checkForUpdate);
+
+      yield* Effect.promise(() => failedRequestStarted.promise);
+      yield* createUpdateChecker(successfulConfig).checkForUpdate;
+      yield* Effect.sync(() => failedResponse.reject(new Error('transient failure')));
+      yield* Fiber.join(failingFiber);
+
+      const state: UpdateCheckState = JSON.parse(readFileSync(failingConfig.stateFile, 'utf-8'));
+      expect(state.latestVersion).toBe('0.3.0');
     }).pipe(Effect.provide(PlatformLayers))
   );
 

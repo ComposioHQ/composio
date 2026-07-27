@@ -329,8 +329,16 @@ export const getUpdateStatus: Effect.Effect<UpdateStatus> = Effect.gen(function*
   return yield* createUpdateChecker(config).getUpdateStatus;
 }).pipe(Effect.provide(DefaultConfigLayers));
 
+/** Avoid starting a second update request when the command explicitly awaits one. */
+export function shouldCheckForUpdateInBackground(argv: ReadonlyArray<string>): boolean {
+  const args = argv.slice(2);
+  return args[0] !== 'version' || !args.includes('--check');
+}
+
 /** Fire-and-forget background fetch to GitHub. */
-export function checkForUpdateInBackground(): void {
+export function checkForUpdateInBackground(argv: ReadonlyArray<string> = process.argv): void {
+  if (!shouldCheckForUpdateInBackground(argv)) return;
+
   // Runs from cli-main before the runtime boots; runPromiseExit never throws back
   // into the caller and checkForUpdate swallows its own failures.
   void Effect.runPromiseExit(
