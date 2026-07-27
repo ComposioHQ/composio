@@ -104,13 +104,13 @@ const getPostHogConfig = environmentProvider
   .load(
     Config.all({
       ingestUrl: optionalString('COMPOSIO_POSTHOG_INGEST_URL'),
-      projectKey: optionalString('COMPOSIO_POSTHOG_KEY'),
+      projectKey: optionalString('COMPOSIO_POSTHOG_PROJECT_API_KEY'),
     })
   )
   .pipe(
     Effect.map(({ ingestUrl, projectKey }) => ({
       ingestUrl: configuredString(ingestUrl) ?? constants.COMPOSIO_POSTHOG_INGEST_URL,
-      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_KEY,
+      projectKey: configuredString(projectKey) ?? constants.COMPOSIO_POSTHOG_PROJECT_API_KEY,
     }))
   );
 

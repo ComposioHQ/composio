@@ -60,7 +60,7 @@ const enableTelemetry = (apiKey = 'uak_test') => {
   vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
   // A configured project key is what gates delivery/worker spawning; enabled
   // telemetry implies a target. The no-key path is covered explicitly below.
-  vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+  vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
 };
 
 const decodeWorkerPayload = <A>(encodedPayload: string): A => {
@@ -176,7 +176,7 @@ describe('CLI analytics dispatch', () => {
     // the ingest URL + a fake public key keeps the test off the real project.
     vi.stubEnv('COMPOSIO_BASE_URL', '');
     vi.stubEnv('COMPOSIO_POSTHOG_INGEST_URL', 'https://posthog.example.test/i/v0/e/');
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -232,7 +232,7 @@ describe('CLI analytics dispatch', () => {
     enableTelemetry();
     // No project key -> the empty embedded placeholder, so the worker's delivery
     // is a safe no-op until the real key is baked in.
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 200 }));
@@ -255,7 +255,7 @@ describe('CLI analytics dispatch', () => {
     enableTelemetry();
     // Empty key: forks / local builds without a baked key must not spawn a
     // detached worker on every command just to have it no-op.
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -505,7 +505,7 @@ describe('CLI analytics dispatch', () => {
     const home = tempy.temporaryDirectory();
     const scriptPath = `${home}/composio.ts`;
     enableTelemetry();
-    vi.stubEnv('COMPOSIO_POSTHOG_KEY', '');
+    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', '');
     process.argv[1] = scriptPath;
 
     return Effect.gen(function* () {
@@ -523,7 +523,7 @@ describe('CLI analytics dispatch', () => {
       expect(afterSkip.aliased_apollo_user_id).toBeUndefined();
 
       // Once a key is configured the alias is attempted again.
-      vi.stubEnv('COMPOSIO_POSTHOG_KEY', 'phc_test_key');
+      vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
       yield* linkApolloIdentityForAnalytics('om_apollo_retry');
       expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
       const afterRetry = JSON.parse(

@@ -53,8 +53,8 @@ export const LOCAL_TOOLS_BINARY_ASSET_DIRNAME = 'local-tools-binaries';
 
 // Kept out of --env: Bun honors only the last --env, which would clobber DEBUG_OVERRIDE_*.
 export const posthogBakeArgs = (): ReadonlyArray<string> => {
-  const key = process.env.COMPOSIO_POSTHOG_KEY?.trim();
-  return key ? ['--define', `COMPOSIO_POSTHOG_KEY_BAKED=${JSON.stringify(key)}`] : [];
+  const key = process.env.COMPOSIO_POSTHOG_PROJECT_API_KEY?.trim();
+  return key ? ['--define', `COMPOSIO_POSTHOG_PROJECT_API_KEY_BAKED=${JSON.stringify(key)}`] : [];
 };
 
 const localToolsBinaryAssetsSourceDir = (): string =>

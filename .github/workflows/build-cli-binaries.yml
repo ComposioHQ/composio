@@ -133,7 +133,7 @@ jobs:
       - name: Cross-compile CLI binary
         working-directory: ts/packages/cli
         env:
-          COMPOSIO_POSTHOG_KEY: ${{ vars.COMPOSIO_POSTHOG_KEY }}
+          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
         run: pnpm build:binary:cross --target ${{ matrix.target }}
 
       - name: Verify binary
