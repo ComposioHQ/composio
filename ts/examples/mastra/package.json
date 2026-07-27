@@ -25,7 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.7",
+    "@ai-sdk/openai": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
@@ -36,7 +36,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }

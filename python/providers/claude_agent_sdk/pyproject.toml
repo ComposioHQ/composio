@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "claude-agent-sdk>=0.2.103",
+    "claude-agent-sdk>=0.2.128",
     "composio",
 ]
 

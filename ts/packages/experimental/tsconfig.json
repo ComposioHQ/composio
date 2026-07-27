@@ -14,7 +14,8 @@
       "#config_defaults": ["../core/src/utils/config-defaults/ConfigDefaults.node.ts"],
       "#platform": ["../core/src/platform/node.ts"],
       "#files": ["../core/src/models/Files.node.ts"],
-      "#file_tool_modifier": ["../core/src/utils/modifiers/FileToolModifier.node.ts"]
+      "#file_tool_modifier": ["../core/src/utils/modifiers/FileToolModifier.node.ts"],
+      "#ssrf_guard": ["../core/src/utils/ssrfGuard.node.ts"]
     }
   },
   "include": ["src", "test"]

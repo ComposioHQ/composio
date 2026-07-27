@@ -70,10 +70,6 @@
         "../../../../tsconfig.base.json"
       ]
     },
-    "typecheck:tsc": {
-      "dependsOn": ["^build"],
-      "cache": false
-    },
     "lint": {
       "inputs": ["$TURBO_DEFAULT$", "../../../eslint.config.mjs"]
     },
