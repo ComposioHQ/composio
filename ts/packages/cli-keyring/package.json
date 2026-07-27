@@ -35,10 +35,7 @@
     "test": "vitest run",
     "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
-    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
-    "typecheck:src:tsc": "tsc6 --noEmit -p ./tsconfig.src.json",
-    "typecheck:test:tsc": "tsc6 --noEmit -p ./tsconfig.test.json",
-    "typecheck:tsc": "pnpm run typecheck:src:tsc && pnpm run typecheck:test:tsc"
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
   },
   "keywords": [
     "composio",

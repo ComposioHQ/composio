@@ -37,7 +37,6 @@
     "test:e2e:cloudflare": "turbo test:e2e:cloudflare --filter='@e2e-tests/cf-*'",
     "test:ui": "vitest --ui",
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
-    "typecheck:tsc": "turbo typecheck:tsc --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
     "lint": "eslint ts/packages --ext .ts,.tsx",
