@@ -175,13 +175,11 @@ export const installShellIntegration = (params: {
     // to a build log. Decoration stays the interactive default; `ui.error`
     // writes the same text unformatted when there is nothing to decorate.
     const { canDecorate } = yield* ui.capabilities;
-    const step = (message: string) => (canDecorate ? ui.log.step(message) : ui.error(message));
-    const success = (message: string) =>
-      canDecorate ? ui.log.success(message) : ui.error(message);
-    const warn = (message: string) =>
-      canDecorate ? ui.log.warn(message) : ui.error(`warning: ${message}`);
-    const failure = (message: string) =>
-      canDecorate ? ui.log.error(message) : ui.error(`error: ${message}`);
+    const plain = (prefix: string) => (message: string) => ui.error(`${prefix}${message}`);
+    const step = canDecorate ? ui.log.step : ui.error;
+    const success = canDecorate ? ui.log.success : ui.error;
+    const warn = canDecorate ? ui.log.warn : plain('warning: ');
+    const failure = canDecorate ? ui.log.error : plain('error: ');
     const note = (body: string, title: string) =>
       canDecorate ? ui.note(body, title) : ui.error(`${title}:\n${body}`);
 
