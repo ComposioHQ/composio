@@ -202,20 +202,30 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
   const checkForUpdate = Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
+    const checkStartedAt = new Date();
+    const checkStartedAtMs = checkStartedAt.getTime();
+    const parseTimestamp = (value: string): number | undefined => {
+      const timestamp = new Date(value).getTime();
+      return Number.isFinite(timestamp) ? timestamp : undefined;
+    };
 
     // Throttle: skip if checked recently. A missing or corrupt state file
     // just means "re-check".
     const cachedState = yield* Effect.option(readState);
-    if (
-      Option.isSome(cachedState) &&
-      Date.now() - new Date(cachedState.value.lastChecked).getTime() < config.checkIntervalMs
-    ) {
+    const lastCheckedAt = Option.getOrUndefined(
+      Option.map(cachedState, state => parseTimestamp(state.lastChecked))
+    );
+    if (lastCheckedAt !== undefined && checkStartedAtMs - lastCheckedAt < config.checkIntervalMs) {
       return { state: cachedState, refreshFailed: false } as const;
     }
     const failedAttempt = yield* Effect.option(readAttempt);
+    const lastAttemptedAt = Option.getOrUndefined(
+      Option.map(failedAttempt, attempt => parseTimestamp(attempt.lastAttempted))
+    );
     if (
-      Option.isSome(failedAttempt) &&
-      Date.now() - new Date(failedAttempt.value.lastAttempted).getTime() < config.checkIntervalMs
+      lastAttemptedAt !== undefined &&
+      (lastCheckedAt === undefined || lastAttemptedAt > lastCheckedAt) &&
+      checkStartedAtMs - lastAttemptedAt < config.checkIntervalMs
     ) {
       return { state: cachedState, refreshFailed: true } as const;
     }
@@ -233,13 +243,9 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
     }
 
     const writeJsonFile = (file: string, value: unknown) =>
-      fs.makeDirectory(path.dirname(file), { recursive: true }).pipe(
-        Effect.matchEffect({
-          // If we can't create the directory, bail out silently.
-          onFailure: () => Effect.void,
-          onSuccess: () => fs.writeFileString(file, JSON.stringify(value, null, 2)),
-        })
-      );
+      fs
+        .makeDirectory(path.dirname(file), { recursive: true })
+        .pipe(Effect.andThen(fs.writeFileString(file, JSON.stringify(value, null, 2))));
 
     const fetchLatestVersion = Effect.gen(function* () {
       const response = yield* Effect.tryPromise(() =>
@@ -256,7 +262,7 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
     if (Option.isNone(latestVersion)) {
       yield* Effect.ignore(
         writeJsonFile(attemptFile, {
-          lastAttempted: new Date().toISOString(),
+          lastAttempted: checkStartedAt.toISOString(),
         })
       );
       return { state: cachedState, refreshFailed: true } as const;
@@ -266,7 +272,10 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
       lastChecked: new Date().toISOString(),
       latestVersion: latestVersion.value ?? previousLatestVersion ?? config.currentVersion,
     };
-    yield* Effect.ignore(writeJsonFile(config.stateFile, state));
+    yield* writeJsonFile(config.stateFile, state).pipe(
+      Effect.andThen(fs.remove(attemptFile, { force: true })),
+      Effect.ignore
+    );
     return { state: Option.some(state), refreshFailed: false } as const;
   });
 

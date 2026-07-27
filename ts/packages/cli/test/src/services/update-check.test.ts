@@ -589,7 +589,7 @@ describe('checkForUpdate', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('does not let a failed concurrent check overwrite successful state', () =>
+  it.effect('does not let an older failed check supersede successful state', () =>
     Effect.gen(function* () {
       const failedResponse = makeDeferred<Response>();
       const failedRequestStarted = makeDeferred<void>();
@@ -608,12 +608,38 @@ describe('checkForUpdate', () => {
       const failingFiber = yield* Effect.fork(createUpdateChecker(failingConfig).checkForUpdate);
 
       yield* Effect.promise(() => failedRequestStarted.promise);
+      const successfulAt = new Date(pinnedNow.getTime() + 60_000);
+      yield* Effect.sync(() => vi.setSystemTime(successfulAt));
       yield* createUpdateChecker(successfulConfig).checkForUpdate;
+      yield* Effect.sync(() => vi.setSystemTime(new Date(successfulAt.getTime() + 60_000)));
       yield* Effect.sync(() => failedResponse.reject(new Error('transient failure')));
       yield* Fiber.join(failingFiber);
 
       const state: UpdateCheckState = JSON.parse(readFileSync(failingConfig.stateFile, 'utf-8'));
-      expect(state.latestVersion).toBe('0.3.0');
+      expect(state).toEqual({
+        lastChecked: successfulAt.toISOString(),
+        latestVersion: '0.3.0',
+      });
+      expect(JSON.parse(readFileSync(`${failingConfig.stateFile}.attempt`, 'utf-8'))).toEqual({
+        lastAttempted: pinnedNow.toISOString(),
+      });
+
+      const recoveryFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(makeReleasesPayload(['0.4.0'])),
+      });
+      yield* Effect.sync(() =>
+        vi.setSystemTime(new Date(successfulAt.getTime() + failingConfig.checkIntervalMs + 1))
+      );
+      yield* createUpdateChecker(makeConfig({ fetchFn: recoveryFetch as unknown as typeof fetch }))
+        .checkForUpdate;
+
+      expect(recoveryFetch).toHaveBeenCalledOnce();
+      const refreshedState: UpdateCheckState = JSON.parse(
+        readFileSync(failingConfig.stateFile, 'utf-8')
+      );
+      expect(refreshedState.latestVersion).toBe('0.4.0');
+      expect(existsSync(`${failingConfig.stateFile}.attempt`)).toBe(false);
     }).pipe(Effect.provide(PlatformLayers))
   );
 
