@@ -29,10 +29,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
             },
             "required": true,
-            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -64,6 +64,16 @@
             "required": true,
             "description": "Payload version for this subscription (for example `V3`).",
             "name": "x-composio-webhook-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value."
+            },
+            "required": true,
+            "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value.",
+            "name": "x-composio-delivery-attempt",
             "in": "header"
           }
         ],
@@ -185,10 +195,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
             },
             "required": true,
-            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -220,6 +230,16 @@
             "required": true,
             "description": "Payload version for this subscription (for example `V3`).",
             "name": "x-composio-webhook-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value."
+            },
+            "required": true,
+            "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value.",
+            "name": "x-composio-delivery-attempt",
             "in": "header"
           }
         ],
@@ -335,10 +355,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
             },
             "required": true,
-            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -370,6 +390,16 @@
             "required": true,
             "description": "Payload version for this subscription (for example `V3`).",
             "name": "x-composio-webhook-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value."
+            },
+            "required": true,
+            "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value.",
+            "name": "x-composio-delivery-attempt",
             "in": "header"
           }
         ],
@@ -445,10 +475,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
             },
             "required": true,
-            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -480,6 +510,16 @@
             "required": true,
             "description": "Payload version for this subscription (for example `V3`).",
             "name": "x-composio-webhook-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value."
+            },
+            "required": true,
+            "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value.",
+            "name": "x-composio-delivery-attempt",
             "in": "header"
           }
         ],
@@ -7850,7 +7890,8 @@
                       },
                       "org_id": {
                         "type": "string",
-                        "description": "ID of the organization."
+                        "description": "ID of the organization.",
+                        "deprecated": true
                       }
                     },
                     "required": [
@@ -7926,10 +7967,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`."
+              "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key."
             },
             "required": true,
-            "description": "Unique message id, stable across delivery retries. Use it as an idempotency key. Equals the payload `id`.",
+            "description": "Unique message ID, stable across delivery retries. Use it as an idempotency key.",
             "name": "webhook-id",
             "in": "header"
           },
@@ -7961,6 +8002,16 @@
             "required": true,
             "description": "Payload version for this subscription (for example `V3`).",
             "name": "x-composio-webhook-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value."
+            },
+            "required": true,
+            "description": "Attempt number for this delivery, starting at `1` and incrementing on each retry. The payload and `webhook-id` are identical across attempts, so use `webhook-id` for idempotency rather than this value.",
+            "name": "x-composio-delivery-attempt",
             "in": "header"
           }
         ],
