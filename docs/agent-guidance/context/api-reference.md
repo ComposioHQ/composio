@@ -41,7 +41,10 @@ We replace fumadocs-openapi's default popover-based schema rendering with Stripe
 ### `api-page.tsx`
 - `schemaUI.render` hook: intercepts all schema rendering
 - Returns `null` for `#/components/schemas/Error` to hide redundant error schemas
-- Passes `isResponse` flag (derived from `readOnly`/`writeOnly`) to hide "Required" labels on response fields
+- Passes an `isResponse` flag to hide "Required" labels on response fields. It is
+  derived from `client.name === 'response'`, NOT from `readOnly`: v11 sets
+  `readOnly: method === 'get'` on parameters and request bodies too, so keying off
+  `readOnly` silently hid the badge on every required GET parameter.
 - `generateTypeScriptDefinitions: false` disables the TypeScript Definitions copy box
 - `playground: { enabled: true }` enables the interactive API playground (requests are proxied through `/api/proxy`)
 
@@ -63,13 +66,15 @@ We replace fumadocs-openapi's default popover-based schema rendering with Stripe
 
 ## CSS Overrides (fragile on upgrade)
 
-All in `app/global.css` under the "OpenAPI Reference" section. These target fumadocs-openapi's internal class structure because no hooks exist for these customizations. Parameter fields (Path/Query/Header) and content type labels are rendered by built-in components with no render hooks.
+All in `app/global.css` under the "OpenAPI Reference" section. These target fumadocs-openapi's internal class structure because no hooks exist for these customizations.
+
+Under v10 parameter fields (Path/Query/Header) were also built-in and unreachable, which is why three of the rules below existed. v11 routes parameters through `schemaUI.render`, so they are ours to render and those rules are gone; only the content type label still has no hook.
 
 | Rule | Purpose | Why CSS-only |
 |------|---------|-------------|
-| Hide `span.text-red-400` / `span.text-fd-muted-foreground` | Remove default `*` and `?` field indicators | Parameter fields rendered by built-in components, no hook available |
-| `::after` with `content: "Required"` | Add explicit "Required" label for required fields | Same as above |
-| `div.border.rounded-lg:not(:has(*))` | Hide empty schema wrapper divs (when Error schema returns null) | Wrapper div rendered outside `schemaUI.render` hook. **Matches nothing under fumadocs-openapi 11** — the selector found 0 elements across sampled v11 pages, so it is currently dead. Re-check visually whether the wrapper is gone or merely re-classed before deleting the rule. |
+| ~~Hide `span.text-red-400` / `span.text-fd-muted-foreground`~~ | Removed indicators | **Deleted for v11.** Parameters now go through `schemaUI.render`, so `CustomSchemaUI` owns the badge; v11 emits no `*`/`?` in that structure. |
+| ~~`::after` with `content: "Required"`~~ | Added "Required" label | **Deleted for v11.** Superseded by `CustomSchemaUI` rendering the badge from `client.required`. |
+| ~~`div.border.rounded-lg:not(:has(*))`~~ | Hid empty schema wrapper divs | **Deleted for v11.** v10 wrapped the hook's output in `div.border.px-3.py-2.rounded-lg`, which stayed visible when the hook returned null; v11's `ctx.SchemaUI` is a pass-through with no wrapper, so a null return emits an unstyled invisible `<div></div>`. |
 | `p.text-fd-muted-foreground.not-prose:has(> code.text-xs)` | Hide `application/json` content type labels | No hook to control content type display |
 
 ## API Versioning (v3.0 / v3.1)

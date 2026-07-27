@@ -38,7 +38,15 @@ export const APIPage = createOpenAPIPage({
           schema: { getRawRef, resolve: ctx.schema.resolve },
         }
       );
-      const isResponse = options.readOnly === true && !options.writeOnly;
+      // fumadocs 11 routes parameters, request bodies AND responses through this
+      // hook (v10 rendered parameters with its own built-in components):
+      //   parameter    -> client { name, required }               readOnly = method === 'get'
+      //   request body -> client { name: 'body', as: 'body', … }  readOnly = method === 'get'
+      //   response     -> client { name: 'response', as: 'body' } readOnly = true
+      // `readOnly` is therefore also true for a GET's parameters and request body,
+      // so it cannot identify a response on its own -- keying off it suppressed the
+      // "Required" label on every required GET parameter. The client name can.
+      const isResponse = client.name === 'response';
       return (
         <CustomSchemaUI
           name={client.name}
