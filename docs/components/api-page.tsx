@@ -31,7 +31,10 @@ export const APIPage = createOpenAPIPage({
         },
         {
           renderMarkdown: ctx.renderMarkdown ?? ctx._default_processMarkdown,
-          schema: { getRawRef },
+          // fumadocs 11 renders from `bundled` documents, so `root` and its
+          // nested properties can be unresolved `{ $ref }` nodes. The generator
+          // needs the document's resolver to read through them.
+          schema: { getRawRef, resolve: ctx.schema.resolve },
         }
       );
       const isResponse = options.readOnly === true && !options.writeOnly;

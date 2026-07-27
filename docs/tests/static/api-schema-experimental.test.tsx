@@ -37,7 +37,7 @@ describe('experimental API schema fields', () => {
       },
       {
         renderMarkdown: text => text,
-        schema: { getRawRef: () => undefined },
+        schema: { getRawRef: () => undefined, resolve: node => node },
       }
     );
 

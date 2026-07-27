@@ -1,0 +1,85 @@
+/**
+ * Inlines in-document Reference Objects.
+ *
+ * fumadocs-openapi 11 only exposes a `bundled` document, which by design keeps
+ * `$ref` pointers intact (the previous `dereferenced` document did not). The
+ * llms.mdx renderers read `schema.type` / `schema.properties` directly and have
+ * no `$ref` handling, so without this pass a `$ref`'d request or response body -
+ * the overwhelming majority of this spec - renders as an empty schema listing
+ * with a `null` example body.
+ *
+ * Recursive schemas are handled by caching each pointer's output object *before*
+ * populating it, so a cycle resolves to the same object rather than recursing
+ * forever; the callers' existing depth caps stop the traversal.
+ */
+export function dereferenceDocument<T>(spec: T): T {
+  const cache = new Map<string, unknown>();
+
+  function resolvePointer(ref: string): unknown {
+    // JSON Pointer per RFC 6901: '~1' encodes '/', '~0' encodes '~'.
+    const parts = ref
+      .slice(2)
+      .split('/')
+      .map(part => part.replace(/~1/g, '/').replace(/~0/g, '~'));
+
+    let current: unknown = spec;
+    for (const part of parts) {
+      if (current === null || typeof current !== 'object') return undefined;
+      current = (current as Record<string, unknown>)[part];
+    }
+    return current;
+  }
+
+  function resolveRef(ref: string): unknown {
+    if (cache.has(ref)) return cache.get(ref);
+
+    const target = resolvePointer(ref);
+    if (target === null || typeof target !== 'object') {
+      cache.set(ref, target);
+      return target;
+    }
+
+    // Seed the cache before walking so self-referential schemas terminate.
+    const out: Record<string, unknown> | unknown[] = Array.isArray(target) ? [] : {};
+    cache.set(ref, out);
+
+    if (Array.isArray(target)) {
+      for (const item of target) (out as unknown[]).push(walk(item));
+    } else {
+      for (const [key, value] of Object.entries(target)) {
+        (out as Record<string, unknown>)[key] = walk(value);
+      }
+    }
+    return out;
+  }
+
+  function walk(node: unknown): unknown {
+    if (Array.isArray(node)) return node.map(walk);
+    if (node === null || typeof node !== 'object') return node;
+
+    const obj = node as Record<string, unknown>;
+    const ref = obj.$ref;
+
+    if (typeof ref === 'string') {
+      // Leave external references alone - nothing local can resolve them.
+      if (!ref.startsWith('#/')) return node;
+
+      const resolved = resolveRef(ref);
+      const siblings = Object.entries(obj).filter(([key]) => key !== '$ref');
+      if (siblings.length === 0) return resolved;
+      if (resolved === null || typeof resolved !== 'object') return node;
+
+      // Sibling keywords (description, deprecated, ...) override the target.
+      // Spread into a fresh object so the shared cached value is never mutated.
+      const merged: Record<string, unknown> = { ...(resolved as Record<string, unknown>) };
+      for (const [key, value] of siblings) merged[key] = walk(value);
+      return merged;
+    }
+
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) out[key] = walk(value);
+    return out;
+  }
+
+  return walk(spec) as T;
+}

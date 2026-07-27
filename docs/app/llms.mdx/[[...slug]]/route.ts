@@ -10,6 +10,7 @@ import {
   mdxToCleanMarkdown,
 } from '@/lib/source';
 import { openapi } from '@/lib/openapi';
+import { dereferenceDocument } from '@/lib/openapi-deref';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -362,9 +363,10 @@ export async function openapiPageToMarkdown(
   const { title, description } = page.data;
   const props = page.data.getAPIPageProps();
 
-  // Get the bundled document from fumadocs-openapi
+  // fumadocs-openapi 11 exposes only the bundled document, which retains
+  // in-document $refs; inline them so the renderers below see real schemas.
   const processed = await openapi.getSchema(props.document);
-  const spec = processed.bundled;
+  const spec = dereferenceDocument(processed.bundled);
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const webhooks = spec.webhooks as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;

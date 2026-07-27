@@ -36,6 +36,11 @@ interface RenderContext {
   renderMarkdown: (text: string) => ReactNode;
   schema: {
     getRawRef: (obj: object) => string | undefined;
+    /**
+     * Shallowly resolves a Reference Object, merging sibling keywords.
+     * Non-reference values are returned unchanged.
+     */
+    resolve: (node: SimpleSchema) => SimpleSchema;
   };
 }
 
@@ -106,8 +111,10 @@ export function generateSchemaData(
 
   function isVisible(schema: SimpleSchema): boolean {
     if (!schema || typeof schema !== 'object') return true;
-    if (schema.writeOnly) return options.writeOnly ?? false;
-    if (schema.readOnly) return options.readOnly ?? false;
+    // readOnly/writeOnly live on the referenced target, not the $ref node.
+    const resolved = ctx.schema.resolve(schema);
+    if (resolved.writeOnly) return options.writeOnly ?? false;
+    if (resolved.readOnly) return options.readOnly ?? false;
     return true;
   }
 
@@ -128,32 +135,40 @@ export function generateSchemaData(
     // Mark as processing to prevent infinite recursion on circular refs
     refs[id] = { type: 'primitive', typeName: 'any', aliasName: 'any' };
 
-    // For arrays, aliasName is the item type (used in "array of X" display)
+    // fumadocs 11 renders from `bundled` documents, where in-document Reference
+    // Objects survive as `{ $ref }` nodes. The id above is deliberately derived
+    // from the raw node so $ref-keyed dedup still works; every content read
+    // below needs the resolved target, or a $ref'd schema renders as an empty
+    // primitive with no property table.
+    const resolved = ctx.schema.resolve(schema);
+
+    // For arrays, aliasName is the item type (used in "array of X" display).
+    // Display names come from the raw node so a $ref keeps its schema name.
     const aliasName =
-      schema.type === 'array' && schema.items
-        ? getTypeName(schema.items)
+      resolved.type === 'array' && resolved.items
+        ? getTypeName(resolved.items)
         : getTypeName(schema);
 
-    const experimental = schema['x-experimental'] === true;
+    const experimental = resolved['x-experimental'] === true;
     const base: FieldBase = {
-      description: schema.description
+      description: resolved.description
         ? ctx.renderMarkdown(
-            getSchemaDisplayDescription(schema.description, experimental),
+            getSchemaDisplayDescription(resolved.description, experimental),
           )
         : undefined,
-      infoTags: generateInfoTags(schema),
+      infoTags: generateInfoTags(resolved),
       typeName: getTypeName(schema),
       aliasName,
-      deprecated: schema.deprecated,
+      deprecated: resolved.deprecated,
       experimental,
-      enumValues: schema.enum
-        ? schema.enum.map((v: unknown) => String(v))
+      enumValues: resolved.enum
+        ? resolved.enum.map((v: unknown) => String(v))
         : undefined,
     };
 
     // Handle oneOf/anyOf
-    if (schema.oneOf || schema.anyOf) {
-      const variants = schema.oneOf || schema.anyOf || [];
+    if (resolved.oneOf || resolved.anyOf) {
+      const variants = resolved.oneOf || resolved.anyOf || [];
       refs[id] = {
         ...base,
         type: 'or',
@@ -166,10 +181,12 @@ export function generateSchemaData(
     }
 
     // Handle allOf - merge into single object
-    if (schema.allOf) {
-      // Merge all schemas together
+    if (resolved.allOf) {
+      // Merge all schemas together. Each member may itself be a Reference
+      // Object, so resolve before reading its properties.
       const merged: SimpleSchema = { type: 'object', properties: {}, required: [] };
-      for (const subSchema of schema.allOf) {
+      for (const rawSubSchema of resolved.allOf) {
+        const subSchema = ctx.schema.resolve(rawSubSchema);
         if (subSchema.properties) {
           Object.assign(merged.properties, subSchema.properties);
         }
@@ -195,12 +212,12 @@ export function generateSchemaData(
     }
 
     // Handle object (with properties and/or additionalProperties)
-    if ((schema.type === 'object' || schema.properties) && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
-      const required = schema.required || [];
+    if ((resolved.type === 'object' || resolved.properties) && (resolved.properties || (resolved.additionalProperties && typeof resolved.additionalProperties === 'object'))) {
+      const required = resolved.required || [];
       const props: { name: string; $type: string; required: boolean }[] = [];
 
-      if (schema.properties) {
-        for (const [name, propSchema] of Object.entries(schema.properties)) {
+      if (resolved.properties) {
+        for (const [name, propSchema] of Object.entries(resolved.properties)) {
           if (!isVisible(propSchema)) continue;
           props.push({
             name,
@@ -211,10 +228,10 @@ export function generateSchemaData(
       }
 
       // Include additionalProperties as a synthetic [key: string] entry
-      if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+      if (resolved.additionalProperties && typeof resolved.additionalProperties === 'object') {
         props.push({
           name: '[key: string]',
-          $type: processSchema(schema.additionalProperties),
+          $type: processSchema(resolved.additionalProperties),
           required: false,
         });
       }
@@ -228,11 +245,11 @@ export function generateSchemaData(
     }
 
     // Handle array
-    if (schema.type === 'array' && schema.items) {
+    if (resolved.type === 'array' && resolved.items) {
       refs[id] = {
         ...base,
         type: 'array',
-        item: { $type: processSchema(schema.items) },
+        item: { $type: processSchema(resolved.items) },
       };
       return id;
     }
