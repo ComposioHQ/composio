@@ -32,8 +32,8 @@ type_stubs = [
     "types-requests==2.33.0.20260712",
     "types-protobuf==7.34.1.20260518",
     "anthropic==0.120.0",
-    # CrewAI 1.7+ constrains Pydantic below the SDK's >=2.13.4 floor.
-    "crewai==1.6.1",
+    # Keep this aligned with the CrewAI provider dependency metadata.
+    "crewai==1.15.7",
     "langchain==1.3.14",
     "langgraph==1.2.9",
     "llama-index==0.14.23",

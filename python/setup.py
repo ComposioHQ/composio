@@ -24,7 +24,7 @@ setup(
     packages=find_packages(include=["composio*"]),
     install_requires=[
         "pysher>=1.0.8",
-        "pydantic>=2.13.4",
+        "pydantic>=2.11.9",
         "composio-client==1.43.0",
         "typing-extensions>=4.16.0",
         "openai>=2.48.0",

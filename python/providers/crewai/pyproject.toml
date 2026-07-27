@@ -13,8 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    # CrewAI 1.7+ constrains Pydantic below composio's >=2.13.4 floor.
-    "crewai>=1.6.1,<1.7.0",
+    "crewai>=1.15.7,<2.0.0",
     "composio",
 ]
 
