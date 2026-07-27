@@ -30,7 +30,7 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
-import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
+import { showUpdateNotice } from 'src/services/update-check';
 import {
   createCliCommandTelemetryContext,
   getPrimaryLifecycleFailedEvent,
@@ -172,8 +172,6 @@ const runWithTelemetry = Effect.gen(function* () {
     )
   );
 });
-
-checkForUpdateInBackground();
 
 showUpdateNotice.pipe(
   Effect.andThen(runWithTelemetry),

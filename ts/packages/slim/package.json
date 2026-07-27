@@ -33,6 +33,12 @@
       "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
       "node": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
       "default": "./dist/utils/config-defaults/ConfigDefaults.node.mjs"
+    },
+    "#ssrf_guard": {
+      "workerd": "./dist/utils/ssrfGuard.workerd.mjs",
+      "edge-light": "./dist/utils/ssrfGuard.workerd.mjs",
+      "node": "./dist/utils/ssrfGuard.node.mjs",
+      "default": "./dist/utils/ssrfGuard.node.mjs"
     }
   },
   "exports": {

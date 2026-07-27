@@ -1,5 +1,12 @@
 import { Command, Options } from '@effect/cli';
 import { Effect, Predicate } from 'effect';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
+import {
+  getSetupCancelledEvent,
+  getSetupHostDetectedEvent,
+  getSetupSkippedEvent,
+} from 'src/analytics/events';
+import { APP_VERSION } from 'src/constants';
 import {
   detectSetupTargets,
   inspectSetupTargets,
@@ -64,6 +71,23 @@ const setupBaseCmd = Command.make(
       yield* ui.intro(uninstall ? 'composio setup --uninstall' : 'composio setup');
 
       const detections = yield* detectSetupTargets(target);
+      yield* Effect.forEach(detections, detection =>
+        trackCliEventEffect(
+          getSetupHostDetectedEvent({
+            operation,
+            requestedTarget: target,
+            target: detection.target,
+            available: detection.available,
+            supported: detection.supported,
+            hostVersion: detection.version,
+            unsupportedReasonCode:
+              detection.available && !detection.supported
+                ? (detection.unsupportedReasonCode ?? 'unknown')
+                : undefined,
+            cliVersion: APP_VERSION,
+          })
+        )
+      );
       const detected = detections.filter(result => result.available).map(result => result.target);
       const supported = detections.filter(result => result.available && result.supported);
       const unsupported = detections.filter(result => result.available && !result.supported);
@@ -96,6 +120,9 @@ const setupBaseCmd = Command.make(
         );
         if (supported.length === 0) {
           if (ifPresent) {
+            yield* trackCliEventEffect(
+              getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+            );
             yield* ui.outro(
               `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
             );
@@ -117,6 +144,9 @@ const setupBaseCmd = Command.make(
             operation
           );
         }
+        yield* trackCliEventEffect(
+          getSetupSkippedEvent({ operation, requestedTarget: target, cliVersion: APP_VERSION })
+        );
         yield* ui.outro(
           `No supported agent host detected; plugin ${uninstall ? 'uninstall' : 'setup'} skipped.`
         );
@@ -161,6 +191,13 @@ const setupBaseCmd = Command.make(
             { defaultValue: false }
           );
           if (!confirmed) {
+            yield* trackCliEventEffect(
+              getSetupCancelledEvent({
+                operation,
+                requestedTarget: target,
+                cliVersion: APP_VERSION,
+              })
+            );
             yield* ui.outro('Uninstall cancelled.');
             return;
           }
@@ -204,6 +241,13 @@ const setupBaseCmd = Command.make(
             : `Finish Composio setup for ${formatTargets(pending.map(status => status.target))}?`;
         const confirmed = yield* ui.confirm(prompt, { defaultValue: true });
         if (!confirmed) {
+          yield* trackCliEventEffect(
+            getSetupCancelledEvent({
+              operation,
+              requestedTarget: target,
+              cliVersion: APP_VERSION,
+            })
+          );
           yield* ui.outro('Setup cancelled.');
           return;
         }
