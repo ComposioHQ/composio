@@ -113,6 +113,25 @@ describe('OpenAIAgentsProvider', () => {
       expect(wrapped._isMockedOpenAIAgentTool).toBe(true);
     });
 
+    it('deduplicates required entries for directly wrapped tools', () => {
+      provider.wrapTool(
+        {
+          ...mockTool,
+          inputParameters: {
+            ...mockTool.inputParameters!,
+            required: ['input', 'input'],
+          },
+        },
+        mockExecuteToolFn
+      );
+
+      expect(createOpenAIAgentTool).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parameters: expect.objectContaining({ required: ['input'] }),
+        })
+      );
+    });
+
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
       const wrapped = provider.wrapTool(
         mockTool,

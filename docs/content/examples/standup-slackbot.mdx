@@ -51,11 +51,9 @@ The Slack bot itself follows a deterministic flow: the same menu every day. When
 
 ## Setup
 
-You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys), a Slack workspace you can install an app into, and Node with [tsx](https://nodejs.org). The finished bot deploys to [Vercel](https://vercel.com) as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
+You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), a Slack workspace you can install an app into, and Node with [tsx](https://nodejs.org). The finished bot deploys to [Vercel](https://vercel.com) as two serverless functions, a cron and an interactivity handler, so there's no long-running server.
 
-```bash
-npm install @composio/core @composio/vercel ai dayjs
-```
+<PackageInstall packages="@composio/core @composio/vercel ai dayjs" />
 
 ## Make your custom Slack bot
 
@@ -103,7 +101,7 @@ Rule of thumb: posting *as the bot* uses `slackbot`; doing something *as a perso
 
 <Steps>
 <Step>
-**Create an auth config and pick the `Slackbot` toolkit.** In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs), click **Create Auth Config** and search `slackbot`. Choose **Slackbot**, *not* `Slack`: `Slackbot` posts as the bot identity, while `Slack` acts as an individual user.
+**Create an auth config and pick the `Slackbot` toolkit.** In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=examples-standup-slackbot), click **Create Auth Config** and search `slackbot`. Choose **Slackbot**, *not* `Slack`: `Slackbot` posts as the bot identity, while `Slack` acts as an individual user.
 
 <Figure src="/images/standup-slackbot/auth-config-slackbot.png" alt="Choosing the Slackbot toolkit, not Slack" caption="Pick Slackbot, not Slack" size="lg" />
 </Step>

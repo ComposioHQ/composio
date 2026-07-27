@@ -6,9 +6,11 @@
  * - slack-bot-build: `bot`, `install`  (general-agent-with-pi)
  * - local-workbench-build: `reviewer`  (local-sandbox-pr-reviewer)
  * - standup-bot-build: `setup`, `proxy`, `buttons`, `draft`  (daily standup bot)
+ * - imessage-build: `wiring`, `send`  (iMessage agent)
  */
 import { FILE_BUILDS as slackBot } from './slack-bot-build';
 import { FILE_BUILDS as localWorkbench } from './local-workbench-build';
 import { FILE_BUILDS as standup } from './standup-bot-build';
+import { FILE_BUILDS as imessage } from './imessage-build';
 
-export const FILE_BUILDS = { ...slackBot, ...localWorkbench, ...standup };
+export const FILE_BUILDS = { ...slackBot, ...localWorkbench, ...standup, ...imessage };

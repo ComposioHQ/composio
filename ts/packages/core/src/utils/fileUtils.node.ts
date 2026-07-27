@@ -9,6 +9,8 @@ import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
 import { assertSafeFileUploadPath } from './sensitiveFileUploadPaths';
 import { assertPathInsideUploadDirs } from './uploadDirAllowlist.node';
+import { ssrfSafeFetch } from './ssrfGuard.node';
+import { readResponseBodyWithLimit } from './readResponseBody';
 
 /**
  * Options for {@link getFileDataAfterUploadingToS3} (S3 presigned upload from local path, URL, or File).
@@ -169,12 +171,14 @@ const readFileContentFromURL = async (
   path: string,
   signal?: AbortSignal
 ): Promise<{ fileName: string; content: string; mimeType: string }> => {
-  const response = await fetch(path, { signal });
+  // SSRF guard: `path` is user-supplied (and can come from an LLM-produced tool
+  // argument), so it must not be allowed to reach internal/private addresses or
+  // redirect into them. See ssrfGuard.node.ts.
+  const response = await ssrfSafeFetch(path, { signal });
   if (!response.ok) {
     throw new Error(`Failed to fetch file: ${response.statusText}`);
   }
-  const arrayBuffer = await response.arrayBuffer();
-  const content = new Uint8Array(arrayBuffer);
+  const content = await readResponseBodyWithLimit(response);
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
 
   // Extract clean filename from URL, removing query parameters

@@ -1,7 +1,7 @@
 {
   "name": "@composio/slim",
   "type": "module",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Slim Composio core package without packaged source or docs",
   "main": "dist/index.mjs",
   "publishConfig": {
@@ -33,6 +33,12 @@
       "edge-light": "./dist/utils/config-defaults/ConfigDefaults.workerd.mjs",
       "node": "./dist/utils/config-defaults/ConfigDefaults.node.mjs",
       "default": "./dist/utils/config-defaults/ConfigDefaults.node.mjs"
+    },
+    "#ssrf_guard": {
+      "workerd": "./dist/utils/ssrfGuard.workerd.mjs",
+      "edge-light": "./dist/utils/ssrfGuard.workerd.mjs",
+      "node": "./dist/utils/ssrfGuard.node.mjs",
+      "default": "./dist/utils/ssrfGuard.node.mjs"
     }
   },
   "exports": {
@@ -115,5 +121,5 @@
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/slim#readme"
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/slim#readme"
 }

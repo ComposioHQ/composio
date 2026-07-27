@@ -1,4 +1,7 @@
-import { Schema, ParseResult } from 'effect';
+import { ParseResult, Predicate, Schema } from 'effect';
+
+const errorMessage = (error: unknown): string =>
+  Predicate.isError(error) ? error.message : String(error);
 
 export function JSONTransformSchema<To extends Schema.Schema.Any>(to: To) {
   return Schema.transformOrFail(Schema.String, to, {
@@ -6,12 +9,12 @@ export function JSONTransformSchema<To extends Schema.Schema.Any>(to: To) {
     encode: (obj, _options, ast) =>
       ParseResult.try({
         try: () => JSON.stringify(obj),
-        catch: e => new ParseResult.Type(ast, obj, (e as Error).message),
+        catch: error => new ParseResult.Type(ast, obj, errorMessage(error)),
       }),
     decode: (str, _options, ast) =>
       ParseResult.try({
         try: () => JSON.parse(str),
-        catch: e => new ParseResult.Type(ast, str, (e as Error).message),
+        catch: error => new ParseResult.Type(ast, str, errorMessage(error)),
       }),
   });
 }

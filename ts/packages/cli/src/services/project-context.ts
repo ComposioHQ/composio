@@ -1,13 +1,11 @@
-import path from 'node:path';
 import { Effect, Option } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
 import { NodeProcess } from 'src/services/node-process';
 import { APP_CONFIG } from 'src/effects/app-config';
+import { getAncestors } from 'src/utils/get-ancestors';
 import * as constants from 'src/constants';
 import { type ProjectKeys, projectKeysFromJSON } from 'src/models/project-keys';
-import type { PlatformError } from '@effect/platform/Error';
-import type { ParseError } from 'effect/ParseResult';
 
 /**
  * Keys allowed in `.composio/.env` files.
@@ -55,6 +53,7 @@ const parseEnvFile = (content: string): Map<string, string> => {
 export class ProjectContext extends Effect.Service<ProjectContext>()('services/ProjectContext', {
   effect: Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
     const proc = yield* NodeProcess;
     const os = yield* NodeOs;
 
@@ -80,10 +79,9 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
         }
 
         // 2. Walk up from CWD, stop at homedir (not filesystem root)
-        let dir = proc.cwd;
         const stopAt = os.homedir;
 
-        while (true) {
+        for (const dir of yield* getAncestors(proc.cwd)) {
           const composioDir = path.join(dir, constants.PROJECT_COMPOSIO_DIR);
 
           // 2a. Check .composio/.env
@@ -141,15 +139,14 @@ export class ProjectContext extends Effect.Service<ProjectContext>()('services/P
           }
 
           // Stop at homedir to avoid reading from system directories
-          if (dir === stopAt || dir === path.dirname(dir)) break;
-          dir = path.dirname(dir);
+          if (dir === stopAt) break;
         }
 
         // 3. Nothing found
         yield* Effect.logDebug('ProjectContext: no context found');
         return Option.none<ProjectKeys>();
-      }),
+      }).pipe(Effect.provideService(Path.Path, path)),
     };
   }),
-  dependencies: [],
+  dependencies: [Path.layer],
 }) {}

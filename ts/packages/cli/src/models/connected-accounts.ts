@@ -42,3 +42,15 @@ export type ConnectedAccountItem = Schema.Schema.Type<typeof ConnectedAccountIte
 
 export const ConnectedAccountItems = Schema.Array(ConnectedAccountItem);
 export type ConnectedAccountItems = Schema.Schema.Type<typeof ConnectedAccountItems>;
+
+/**
+ * Forward-compatible variant of {@link ConnectedAccountItem}: identical field
+ * allowlist (same credential-stripping guarantee as above) with `status`
+ * widened to accept values newer than this CLI build's closed literal union.
+ */
+export const ConnectedAccountItemPermissive = Schema.Struct({
+  ...ConnectedAccountItem.fields,
+  status: Schema.String,
+}).annotations({ identifier: 'ConnectedAccountItemPermissive' });
+
+export const ConnectedAccountItemsPermissive = Schema.Array(ConnectedAccountItemPermissive);

@@ -1,25 +1,25 @@
 ---
 title: AutoGen
 description: Build an agent with AutoGen and enable it to use 1000+ tools with Composio.
-keywords: [autogen, microsoft autogen]
+keywords: [autogen, microsoft autogen, ag2]
 ---
 
 The AutoGen provider turns Composio tools into AutoGen [`FunctionTool`](https://microsoft.github.io/autogen/) objects and registers them with your agents. You connect an account, fetch the tools, register them with a caller and executor agent, and AutoGen handles the conversation and tool calls.
+
+The provider runs on the [`ag2`](https://github.com/ag2ai/ag2) distribution, the community-maintained continuation of AutoGen 0.2, so it works for AG2 projects out of the box.
 
 <Steps>
 <Step>
 **Install**
 
-```bash
-pip install composio composio_autogen autogen-agentchat
-```
+<PackageInstall ecosystem="python" packages="composio composio_autogen 'ag2[openai]'" />
 </Step>
 
 <Step>
 **Configure API Keys**
 
 <Callout type="info">
-Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
+Set `COMPOSIO_API_KEY` with your API key from [Settings](https://dashboard.composio.dev/~/project/settings/api-keys?utm_source=docs&utm_medium=content&utm_campaign=docs-providers-autogen) and `OPENAI_API_KEY` with your [OpenAI API key](https://platform.openai.com/api-keys).
 </Callout>
 
 ```txt title=".env"
@@ -32,7 +32,9 @@ OPENAI_API_KEY=xxxxxxxxx
 **Create session and run**
 
 ```python
-from autogen import AssistantAgent, UserProxyAgent
+import os
+
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
 from composio import Composio
 from composio_autogen import AutogenProvider
 
@@ -45,7 +47,11 @@ tools = session.tools()
 chatbot = AssistantAgent(
     "chatbot",
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
-    llm_config={"config_list": [{"model": "gpt-5.2"}]},
+    llm_config=LLMConfig({
+        "api_type": "openai",
+        "model": "gpt-5.2",
+        "api_key": os.environ["OPENAI_API_KEY"],
+    }),
 )
 
 user_proxy = UserProxyAgent(

@@ -1,7 +1,6 @@
-import path from 'node:path';
 import process from 'node:process';
 import { Command, Options } from '@effect/cli';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import type { PlatformError } from '@effect/platform/Error';
 import { Array as Arr, Effect } from 'effect';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
@@ -48,7 +47,8 @@ const COMPLETIONS_MARKER = '# Composio CLI completions';
 const UNSAFE_PATH_CHARS = /[;`$|&"'()\n\r\\]/;
 const isUnsafePath = (p: string): boolean => UNSAFE_PATH_CHARS.test(p);
 
-const detectShell = (): Shell | undefined => {
+const detectShell = (path: Path.Path): Shell | undefined => {
+  // eslint-disable-next-line no-restricted-syntax -- $SHELL is read inside a plain synchronous helper that mirrors install.sh's shell detection, outside any Effect context
   const shellEnv = process.env.SHELL ?? '';
   const base = path.basename(shellEnv);
   if (base === 'zsh') return 'zsh';
@@ -61,7 +61,7 @@ const detectShell = (): Shell | undefined => {
  * Return candidate rc file paths for a shell, ordered by preference.
  * For bash this mirrors the install.sh fallback: .bashrc then .bash_profile.
  */
-const rcFileCandidates = (shell: Shell, homedir: string): string[] => {
+const rcFileCandidates = (path: Path.Path, shell: Shell, homedir: string): string[] => {
   switch (shell) {
     case 'zsh':
       return [path.join(homedir, '.zshrc')];
@@ -106,6 +106,7 @@ const pathBlockForShell = (shell: Shell, installDir: string): string => {
 };
 
 const buildShellConfig = (
+  path: Path.Path,
   shell: Shell,
   rcFile: string,
   installDir: string,
@@ -141,6 +142,16 @@ const readMaybeMissingFile = (
       )
     );
 
+/** Resolve valid symlink chains so atomic writes update the target instead of replacing the link. */
+const resolveWriteTarget = (
+  filePath: string,
+  fs: FileSystem.FileSystem
+): Effect.Effect<string, PlatformError> =>
+  fs.readLink(filePath).pipe(
+    Effect.flatMap(() => fs.realPath(filePath)),
+    Effect.catchAll(() => Effect.succeed(filePath))
+  );
+
 // ---------------------------------------------------------------------------
 // Exported logic (reusable from install.sh post-install delegation)
 // ---------------------------------------------------------------------------
@@ -150,16 +161,18 @@ export const installShellIntegration = (params: {
 }): Effect.Effect<
   void,
   PlatformError,
-  TerminalUI | NodeOs | FileSystem.FileSystem | ComposioCliUserConfig
+  TerminalUI | NodeOs | FileSystem.FileSystem | Path.Path | ComposioCliUserConfig
 > =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const os = yield* NodeOs;
     const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
 
     yield* ui.intro('composio install');
 
     // Detect install directory — either from env or default ~/.composio
+    // eslint-disable-next-line no-restricted-syntax -- COMPOSIO_INSTALL_DIR is the handoff variable set by the install.sh bootstrapper for this one-shot post-install step; read directly to stay byte-compatible with the script
     const installDir = process.env.COMPOSIO_INSTALL_DIR ?? path.join(os.homedir, '.composio');
 
     if (isUnsafePath(installDir)) {
@@ -171,7 +184,7 @@ export const installShellIntegration = (params: {
     }
 
     // Detect user shell
-    const shell = detectShell();
+    const shell = detectShell(path);
     if (!shell) {
       yield* ui.log.warn(
         'Could not detect your shell. Manually add the following to your shell config:'
@@ -204,8 +217,8 @@ export const installShellIntegration = (params: {
       completionScript = lines.length > 0 ? Arr.join(lines, '\n') : undefined;
     }
 
-    const rcFile = yield* resolveRcFile(rcFileCandidates(shell, os.homedir), fs);
-    const config = buildShellConfig(shell, rcFile, installDir, completionScript, os.homedir);
+    const rcFile = yield* resolveRcFile(rcFileCandidates(path, shell, os.homedir), fs);
+    const config = buildShellConfig(path, shell, rcFile, installDir, completionScript, os.homedir);
 
     const uniqueTargetFiles = [...new Set([config.pathFile, config.completionFile])];
     const existingByFile = new Map<string, string>();
@@ -253,10 +266,14 @@ export const installShellIntegration = (params: {
 
     if (blocksByFile.size > 0) {
       for (const [filePath, blocks] of blocksByFile.entries()) {
-        const existingContents = existingByFile.get(filePath) ?? '';
+        // Re-read instead of reusing the pre-check snapshot: two configured paths
+        // can alias the same physical file through symlinks, and this write must
+        // not discard a previous iteration's append.
+        const existingContents = yield* readMaybeMissingFile(filePath, fs);
+        const writeTarget = yield* resolveWriteTarget(filePath, fs);
 
         yield* fs
-          .makeDirectory(path.dirname(filePath), { recursive: true })
+          .makeDirectory(path.dirname(writeTarget), { recursive: true })
           .pipe(
             Effect.catchAll(e =>
               Effect.logDebug('Could not create parent directory (may already exist):', e)
@@ -264,10 +281,10 @@ export const installShellIntegration = (params: {
           );
 
         const appendContent = '\n' + blocks.join('\n\n') + '\n';
-        const tmpPath = `${filePath}.composio-tmp`;
+        const tmpPath = `${writeTarget}.composio-tmp`;
 
         yield* fs.writeFileString(tmpPath, existingContents + appendContent);
-        yield* fs.rename(tmpPath, filePath);
+        yield* fs.rename(tmpPath, writeTarget);
 
         yield* ui.log.success(`Updated ${tildify(filePath, os.homedir)}`);
       }

@@ -1,7 +1,7 @@
 import { describe, it } from '@effect/vitest';
 import { assertEquals } from '@effect/vitest/utils';
 import { FileSystem } from '@effect/platform';
-import { BunFileSystem } from '@effect/platform-bun';
+import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { ConfigProvider, Effect, Layer, Option, Data } from 'effect';
 import * as tempy from 'tempy';
 import { ComposioUserContext, rawComposioUserContextLive } from 'src/services/user-context';
@@ -86,7 +86,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -117,7 +117,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -143,7 +143,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -165,7 +165,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -205,7 +205,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -246,7 +246,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -288,7 +288,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -325,7 +325,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {
@@ -365,7 +365,7 @@ describe('ComposioUserContext', () => {
         const NodeOsTest = Layer.succeed(NodeOs, defaultNodeOs({ homedir: cwd }));
         const ComposioUserContextTest = Layer.provideMerge(
           ComposioUserContextLive,
-          Layer.mergeAll(BunFileSystem.layer, NodeOsTest, withMapConfigProvider(map))
+          Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOsTest, withMapConfigProvider(map))
         );
 
         return Effect.gen(function* () {

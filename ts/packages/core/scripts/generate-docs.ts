@@ -1220,28 +1220,7 @@ description: ${formatYamlFrontmatterString('Complete API reference for the Compo
 
 ## Installation
 
-<Tabs groupId="package-manager" items={['npm', 'pnpm', 'yarn', 'bun']} persist>
-<Tab value="npm">
-\`\`\`bash
-npm install @composio/core
-\`\`\`
-</Tab>
-<Tab value="pnpm">
-\`\`\`bash
-pnpm add @composio/core
-\`\`\`
-</Tab>
-<Tab value="yarn">
-\`\`\`bash
-yarn add @composio/core
-\`\`\`
-</Tab>
-<Tab value="bun">
-\`\`\`bash
-bun add @composio/core
-\`\`\`
-</Tab>
-</Tabs>
+<PackageInstall packages="@composio/core" />
 
 ## Classes
 

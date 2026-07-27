@@ -25,6 +25,7 @@ from composio.exceptions import (
 )
 from composio.utils import mimetypes
 from composio.utils.json_schema import dereference_json_schema
+from composio.utils.url_safety import assert_safe_fetch_target
 from composio.utils.sensitive_file_upload_paths import (
     assert_safe_local_file_upload_path,
 )
@@ -281,6 +282,8 @@ def _fetch_file_from_url(
         ResponseTooLargeError: If response exceeds max_size
         ErrorUploadingFile: If fetch fails for other reasons
     """
+    assert_safe_fetch_target(url)
+
     # Make request without following redirects
     try:
         response = requests.get(

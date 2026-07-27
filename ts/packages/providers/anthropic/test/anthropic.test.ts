@@ -105,6 +105,37 @@ describe('AnthropicProvider', () => {
         },
       });
     });
+
+    it('deduplicates required entries at every object-schema level', () => {
+      const toolWithDuplicateRequired: Tool = {
+        ...mockTool,
+        inputParameters: {
+          type: 'object',
+          properties: {
+            owner: { type: 'string' },
+            options: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+              },
+              required: ['name', 'name'],
+            },
+          },
+          required: ['owner', 'options', 'owner'],
+        },
+      };
+
+      const wrapped = provider.wrapTool(toolWithDuplicateRequired) as AnthropicTool;
+      const properties = wrapped.input_schema.properties as Record<
+        string,
+        {
+          required?: string[];
+        }
+      >;
+
+      expect(wrapped.input_schema.required).toEqual(['owner', 'options']);
+      expect(properties.options?.required).toEqual(['name']);
+    });
   });
 
   describe('wrapTools', () => {

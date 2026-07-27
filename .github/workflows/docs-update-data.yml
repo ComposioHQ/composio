@@ -19,8 +19,15 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     env:
-      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+      # Deliberately NOT secrets.COMPOSIO_API_KEY. That secret is shared with
+      # ts.test-e2e, py.test, py.check and ts.examples-nightly, all of which run
+      # against staging — it is a staging-scoped credential. This job is the only
+      # consumer that must reach production (scripts/production-api.mjs rejects any
+      # non-production base URL), so it needs its own production key. Pointing the
+      # shared secret at production instead would break the staging suites.
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_DOCS_API_KEY }}
 
     steps:
       - name: Generate GitHub App token
@@ -51,34 +58,11 @@ jobs:
       - name: Setup Node.js, pnpm, Bun
         uses: ./.github/actions/setup-node-pnpm-bun
 
-      - name: Configure staging API endpoints
-        env:
-          COMPOSIO_BASE_URL_STAGING: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
-        run: |
-          staging_base="${COMPOSIO_BASE_URL_STAGING%/}"
-
-          if [ -z "$staging_base" ]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING is not set"
-            exit 1
-          fi
-
-          if [[ "$staging_base" == "https://backend.composio.dev" || "$staging_base" == "https://backend.composio.dev/"* ]]; then
-            echo "::error::COMPOSIO_BASE_URL_STAGING points at production"
-            exit 1
-          fi
-
-          staging_origin="${staging_base%/api/v3.1}"
-          staging_origin="${staging_origin%/api/v3}"
-          staging_v3_base="$staging_origin/api/v3"
-          staging_v31_base="$staging_origin/api/v3.1"
-
-          {
-            echo "COMPOSIO_API_BASE=$staging_v3_base"
-            echo "OPENAPI_SPEC_URL=$staging_v3_base/openapi.json"
-            echo "OPENAPI_V31_SPEC_URL=$staging_v31_base/openapi.json"
-          } >> "$GITHUB_ENV"
-
-          echo "Configured staging API endpoints"
+      # Docs must reflect PRODUCTION. No base-URL override is set here: the
+      # generators default to the production API (docs/scripts/production-api.mjs).
+      # Previously this step pointed the fetch at STAGING, which published staging
+      # hosts (and unreleased content) into the committed docs.
+      # NOTE: requires COMPOSIO_DOCS_API_KEY to have PRODUCTION read access.
 
       - name: Cache bun dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -131,7 +115,7 @@ jobs:
 
             ## What changed
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
-            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from staging
+            - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`) — latest v3.1 and v3.0 API specifications fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
             - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
           branch: docs/auto-update-data
@@ -154,3 +138,53 @@ jobs:
         run: |
           gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR" || \
           gh pr edit "$PR_NUMBER" --add-reviewer "Sushmithamallesh"
+
+      # A silent failure here is invisible: the workflow stops refreshing
+      # public/data/toolkits.json, the docs site keeps building from the last
+      # good commit, and nothing 500s — new toolkits simply 404. That is how a
+      # credential failure went unnoticed for 60 consecutive runs. File one
+      # tracking issue and leave it open until someone fixes the cause.
+      - name: Open tracking issue on failure
+        if: failure()
+        continue-on-error: true
+        # Override the job-level `./docs` default. That path only exists after
+        # checkout, so a failure before it (e.g. the app-token step) would leave
+        # the runner unable to start this shell — and continue-on-error would
+        # swallow that, losing the alert for precisely the earliest failures.
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-data-sync-failure
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          gh label create "$LABEL" \
+            --color B60205 \
+            --description "Scheduled docs data sync is failing" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open for this failure; not filing a duplicate."
+            exit 0
+          fi
+
+          gh issue create \
+            --title "Docs data sync is failing" \
+            --label "$LABEL" \
+            --body "The scheduled \`Docs - Update Data\` workflow failed.
+
+          - Run: $RUN_URL
+          - Trigger: \`$EVENT_NAME\`
+
+          **Impact:** while this is red, \`docs/public/data/toolkits.json\` stops being
+          refreshed. docs.composio.dev/toolkits is statically generated from that file, so
+          toolkits added to production after the last successful run have no page and
+          return 404. The site stays up, which is why this fails silently.
+
+          **First thing to check:** the \`COMPOSIO_DOCS_API_KEY\` secret must have
+          **production** read access against \`backend.composio.dev\`. Note this job does
+          not use the shared \`COMPOSIO_API_KEY\`, which is staging-scoped.
+
+          This issue is filed once and left open until the cause is fixed; it will not be
+          re-filed on every run."

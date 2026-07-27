@@ -4,7 +4,7 @@ description: Create auth configs in code and pass them to a session
 keywords: [create auth config, auth config sdk, programmatic auth, provision auth config, auth config id]
 ---
 
-An [auth config](/docs/authentication#behind-the-scenes) is a blueprint for how a toolkit authenticates: the method, scopes, and credentials. Most of the time you create one in the [dashboard](https://dashboard.composio.dev/~/project/auth-configs) and reuse it. Create them in code when you provision auth dynamically: a config per customer, per environment, or spun up and torn down as part of your app's lifecycle.
+An [auth config](/docs/authentication#behind-the-scenes) is a blueprint for how a toolkit authenticates: the method, scopes, and credentials. Most of the time you create one in the [dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=docs-programmatic-auth-configs) and reuse it. Create them in code when you provision auth dynamically: a config per customer, per environment, or spun up and torn down as part of your app's lifecycle.
 
 `composio.authConfigs.create()` returns an auth config ID like `ac_xxxxxxxx`. Store that ID, then [pass it to a session](#use-the-auth-config-in-a-session) so the session authenticates with it.
 
@@ -139,7 +139,7 @@ Creating an auth config does not change which credentials a session uses. Pass t
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python
-session = composio.create(
+session = composio.sessions.create(
     user_id="user_123",
     auth_configs={"notion": auth_config.id},
 )
@@ -159,6 +159,25 @@ const session = await composio.create('user_123', {
 </Tabs>
 
 See [Configuring sessions](/docs/configuring-sessions#custom-auth-configs) for how `authConfigs` interacts with account selection and precedence.
+
+## Find auth configs
+
+In TypeScript, filter `authConfigs.list()` by name or ID with `search`. Disabled configs are excluded by default; set `showDisabled` to include them. Auth config responses use `id` as their canonical identifier.
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
+// ---cut---
+const configs = await composio.authConfigs.list({
+  search: 'github',
+  showDisabled: true,
+});
+
+for (const config of configs.items) {
+  console.log(config.id);
+}
+```
 
 ## Discover the required fields
 

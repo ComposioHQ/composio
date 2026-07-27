@@ -59,6 +59,14 @@ describe('CLI experimental feature visibility', () => {
     expect(getCommandHelpText('local-tools', betaVisibility)).toContain('composio local-tools');
   });
 
+  it('shows stable account selection for execute and proxy', () => {
+    expect(getCommandHelpText('execute', stableVisibility)).toContain('--account <selector>');
+    expect(getCommandHelpText('proxy', stableVisibility)).toContain('--account <selector>');
+    expect(getCommandHelpText('link', stableVisibility)).not.toContain(
+      'multi_account experimental feature'
+    );
+  });
+
   it('accepts help mode suffixes when matching subcommand help', () => {
     expect(
       matchSubcommandHelp(['bun', 'composio', 'search', '--help', 'simple'], stableVisibility)

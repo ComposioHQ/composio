@@ -1,10 +1,19 @@
-import { Effect } from 'effect';
+import { Data, Effect, Schema } from 'effect';
 import type { Composio } from '@composio/client';
+import { ConnectedAccountItem } from 'src/models/connected-accounts';
 import {
+  compareNewestFirst,
   groupCachedConnectedAccountsByToolkit,
   resolveDefaultConnectedAccountsByToolkit,
   type SelectableConnectedAccount,
 } from 'src/services/connected-account-selection';
+
+export class ToolRouterSessionConnectionsError extends Data.TaggedError(
+  'services/ToolRouterSessionConnectionsError'
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 type RawConnectedAccount = {
   readonly id: string;
@@ -40,41 +49,17 @@ export type ToolRouterSessionConnectionContext = {
   >;
 };
 
-const parseTimestamp = (value?: string | null): number => {
-  if (!value) return 0;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
+// Derived from the model schema so the known-status list can't drift from it.
+const isKnownConnectedAccountStatus = Schema.is(ConnectedAccountItem.fields.status);
 
 const normalizeConnectedAccountStatus = (
   status?: string | null
-): SelectableConnectedAccount['status'] => {
-  switch (status) {
-    case 'INITIALIZING':
-    case 'INITIATED':
-    case 'ACTIVE':
-    case 'FAILED':
-    case 'EXPIRED':
-    case 'INACTIVE':
-    case 'REVOKED':
-      return status;
-    default:
-      // Sentinel — `'INACTIVE'` would falsely tag the account as user-disabled.
-      return 'UNKNOWN';
-  }
-};
+): SelectableConnectedAccount['status'] =>
+  // Sentinel — `'INACTIVE'` would falsely tag the account as user-disabled.
+  status != null && isKnownConnectedAccountStatus(status) ? status : 'UNKNOWN';
 
-const isNewerAccount = (candidate: RawConnectedAccount, current: RawConnectedAccount): boolean => {
-  const candidateTimestamp = Math.max(
-    parseTimestamp(candidate.updated_at),
-    parseTimestamp(candidate.created_at)
-  );
-  const currentTimestamp = Math.max(
-    parseTimestamp(current.updated_at),
-    parseTimestamp(current.created_at)
-  );
-  return candidateTimestamp > currentTimestamp;
-};
+const isNewerAccount = (candidate: RawConnectedAccount, current: RawConnectedAccount): boolean =>
+  compareNewestFirst(candidate, current) < 0;
 
 export const resolveToolRouterSessionConnections = (
   client: Composio,
@@ -83,15 +68,21 @@ export const resolveToolRouterSessionConnections = (
     readonly toolkits?: ReadonlyArray<string>;
   }
 ) =>
-  Effect.tryPromise(() =>
-    client.connectedAccounts.list({
-      user_ids: [userId],
-      statuses: ['ACTIVE'],
-      toolkit_slugs:
-        options?.toolkits && options.toolkits.length > 0 ? [...options.toolkits] : undefined,
-      limit: 1000,
-    })
-  ).pipe(
+  Effect.tryPromise({
+    try: () =>
+      client.connectedAccounts.list({
+        user_ids: [userId],
+        statuses: ['ACTIVE'],
+        toolkit_slugs:
+          options?.toolkits && options.toolkits.length > 0 ? [...options.toolkits] : undefined,
+        limit: 1000,
+      }),
+    catch: cause =>
+      new ToolRouterSessionConnectionsError({
+        message: `Failed to list connected accounts for user "${userId}".`,
+        cause,
+      }),
+  }).pipe(
     Effect.map(response => {
       const items = (response.items ?? []) as ReadonlyArray<RawConnectedAccount>;
       const unknownStatuses = new Set<string>();

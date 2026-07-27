@@ -1,5 +1,11 @@
 # @composio/cli-keyring
 
+## 0.2.1
+
+### Patch Changes
+
+- 58bc93b: Refresh dependency ranges and lockfiles across the workspace.
+
 ## 0.2.0
 
 ### Minor Changes

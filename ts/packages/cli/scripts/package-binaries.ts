@@ -50,7 +50,8 @@ export function packageBinaries() {
       return;
     }
 
-    const companionRelativePaths = collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
+    const companionRelativePaths =
+      yield* collectExpectedRunCompanionAssetRelativePaths(COMPANIONS_DIR);
     for (const relativePath of companionRelativePaths) {
       const companionPath = path.join(COMPANIONS_DIR, relativePath);
       const exists = yield* Effect.tryPromise(() => Bun.file(companionPath).exists());

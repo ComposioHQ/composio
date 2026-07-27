@@ -96,6 +96,15 @@ To pull from the beta channel instead of the stable channel:
 composio upgrade --beta
 ```
 
+### Plugin setup release dependency
+
+`composio setup` installs plugins from these public marketplace repositories:
+
+- Claude Code: `ComposioHQ/composio-plugin-cc`
+- Codex: `ComposioHQ/composio-plugin-openai`
+
+Both repositories must be publicly accessible with a `composio@composio` entry before releasing a CLI version that advertises automatic plugin setup. The CLI release must also contain `composio-skill.zip`; Claude setup installs that standalone skill, while the Codex plugin bundles its own copy.
+
 ## Caching
 
 The CLI implements a file-based caching system for improved performance and offline capabilities.

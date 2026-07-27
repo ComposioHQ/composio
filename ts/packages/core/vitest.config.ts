@@ -17,6 +17,7 @@ export default defineConfig({
         __dirname,
         'src/utils/config-defaults/ConfigDefaults.node.ts'
       ),
+      '#ssrf_guard': path.resolve(__dirname, 'src/utils/ssrfGuard.node.ts'),
     },
   },
   test: {

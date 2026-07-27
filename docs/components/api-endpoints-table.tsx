@@ -1,6 +1,8 @@
 'use client';
 
 import { useApiVersion } from '@/lib/use-api-version';
+import { DeprecatedApiLegacyBadge } from '@/components/legacy-badge';
+import { getApiDisplayTitle } from '@/lib/api-deprecation';
 
 interface Endpoint {
   method: string;
@@ -8,6 +10,9 @@ interface Endpoint {
   pathV3: string;
   summary: string;
   href: string;
+  /** Set by the generator for operations flagged `deprecated` in the OpenAPI
+   *  spec. Surfaced with the existing "Legacy" tag (see components/legacy-badge.tsx). */
+  legacy?: boolean;
 }
 
 /**
@@ -31,7 +36,16 @@ export function ApiEndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
           return (
             <tr key={i}>
               <td><code>{ep.method} {path}</code></td>
-              <td><a href={ep.href}>{ep.summary}</a></td>
+              <td>
+                <a href={ep.href}>
+                  {getApiDisplayTitle(ep.summary, ep.legacy === true)}
+                </a>
+                {ep.legacy && (
+                  <span className="ml-2 inline-flex align-middle">
+                    <DeprecatedApiLegacyBadge />
+                  </span>
+                )}
+              </td>
             </tr>
           );
         })}

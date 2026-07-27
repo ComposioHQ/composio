@@ -3,6 +3,8 @@
 import copy
 from unittest.mock import MagicMock
 
+import pytest
+
 from composio_openai_agents.provider import OpenAIAgentsProvider
 
 
@@ -49,3 +51,62 @@ def test_wrap_tool_does_not_mutate_input_parameters():
         "required": ["owner"],
         "additionalProperties": False,
     }
+
+
+@pytest.mark.parametrize(
+    "items_schema",
+    [
+        {
+            "anyOf": [
+                {
+                    "type": "object",
+                    "properties": {"id": {"type": "string"}},
+                    "required": ["id"],
+                },
+                {"type": "null"},
+            ]
+        },
+        {
+            "oneOf": [
+                {"type": "integer"},
+                {"type": "object", "additionalProperties": True},
+            ]
+        },
+        {"$ref": "#/$defs/Entry"},
+        {
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+        },
+        {},
+    ],
+    ids=["nullable-any-of", "one-of", "ref", "object-keywords", "empty-schema"],
+)
+def test_wrap_tool_preserves_array_item_schemas(items_schema):
+    """Valid item schemas must not be intersected with an invented string type."""
+    tool = MagicMock(
+        slug="PROCESS_RECORDS",
+        description="Process records",
+        input_parameters={
+            "type": "object",
+            "$defs": {
+                "Entry": {
+                    "type": "object",
+                    "properties": {"id": {"type": "string"}},
+                }
+            },
+            "properties": {
+                "records": {
+                    "type": "array",
+                    "items": copy.deepcopy(items_schema),
+                }
+            },
+            "required": ["records"],
+        },
+    )
+
+    wrapped_tool = OpenAIAgentsProvider().wrap_tool(tool, lambda **kwargs: {})
+
+    assert (
+        wrapped_tool.params_json_schema["properties"]["records"]["items"]
+        == items_schema
+    )

@@ -48,6 +48,16 @@ const probes = [
     terms: ['Docker-based', 'end-to-end tests', 'binary invocation', 'fixture isolation'],
   },
   {
+    task: 'promote a tested Composio CLI beta to a stable first-party binary release',
+    expect: 'cli-release',
+    terms: [
+      'first-party Composio CLI binaries',
+      'promote-stable',
+      'beta-tag selection',
+      'failed release recovery',
+    ],
+  },
+  {
     task: 'align TypeScript and Python behavior after a backend API contract change',
     expect: 'cross-sdk-parity',
     terms: ['backend API contract', 'both SDKs', 'generated client pins', 'comparing TS/Python'],
