@@ -108,6 +108,17 @@ function activeTagSlugs(opsByTag: Record<string, OperationEntry[]>): Set<string>
   return active;
 }
 
+interface WebhookSpec {
+  tags?: { name: string; description?: string }[];
+  webhooks?: Record<string, Record<string, OpenAPIOperation>>;
+}
+
+function loadWebhookSpec(): WebhookSpec | null {
+  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
+  if (!existsSync(specPath)) return null;
+  return JSON.parse(readFileSync(specPath, 'utf-8'));
+}
+
 /**
  * Tag slugs contributed by the separate webhook-events spec (PLEN-2793). Its
  * operations live under the OpenAPI 3.1 `webhooks` block (not `paths`) and its
@@ -115,13 +126,10 @@ function activeTagSlugs(opsByTag: Record<string, OperationEntry[]>): Set<string>
  * into the active set, `removeStaleTagIndexes` would recursively delete the
  * hand-authored `webhook-events` overview folder on the next docs data run.
  */
-function webhookTagSlugs(): Set<string> {
+function webhookTagSlugs(spec: WebhookSpec | null): Set<string> {
   const slugs = new Set<string>();
-  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
-  if (!existsSync(specPath)) return slugs;
+  if (!spec) return slugs;
 
-  const spec: { webhooks?: Record<string, Record<string, OpenAPIOperation>> } =
-    JSON.parse(readFileSync(specPath, 'utf-8'));
   for (const item of Object.values(spec.webhooks ?? {})) {
     for (const operation of Object.values(item)) {
       for (const tag of operation.tags ?? []) {
@@ -143,14 +151,8 @@ function webhookTagSlugs(): Set<string> {
  * Individual event pages are rendered by Fumadocs straight from the spec, so
  * this page only needs the index tables.
  */
-function generateWebhookEventsIndex(outputDir: string) {
-  const specPath = join(process.cwd(), 'public/openapi-webhooks.json');
-  if (!existsSync(specPath)) return;
-
-  const spec: {
-    tags?: { name: string; description?: string }[];
-    webhooks?: Record<string, Record<string, OpenAPIOperation>>;
-  } = JSON.parse(readFileSync(specPath, 'utf-8'));
+function generateWebhookEventsIndex(spec: WebhookSpec | null, outputDir: string) {
+  if (!spec) return;
 
   const entries = Object.entries(spec.webhooks ?? {});
   if (entries.length === 0) return;
@@ -272,6 +274,7 @@ function generateIndexPages() {
   }
 
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
+  const webhookSpec = loadWebhookSpec();
 
   // `Webhook Events` is tagged only in openapi-webhooks.json, so it never appears
   // in the openapi.json-derived active set. Without folding it in, the section is
@@ -279,7 +282,7 @@ function generateIndexPages() {
   // that ordering ever changed, the docs would silently lose the whole section.
   removeStaleTagIndexes(
     outputDir,
-    new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs()]),
+    new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs(webhookSpec)]),
   );
   removeStaleTagIndexes(
     join(process.cwd(), 'content/reference/v3/api-reference'),
@@ -288,7 +291,7 @@ function generateIndexPages() {
 
   // Webhook events come from a separate 3.1 spec, so they're generated here
   // rather than in the tag loop below (which iterates openapi.json operations).
-  generateWebhookEventsIndex(outputDir);
+  generateWebhookEventsIndex(webhookSpec, outputDir);
 
   // Get all unique tag names
   const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);

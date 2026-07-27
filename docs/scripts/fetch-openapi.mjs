@@ -273,10 +273,9 @@ function normalizeLargeObjectUnions(spec) {
         }
       }
 
-      const universallyRequired = objectSchemas
-        .flatMap(objectSchema => objectSchema.required ?? [])
-        .filter((name, index, all) => all.indexOf(name) === index)
-        .filter(name => objectSchemas.every(objectSchema => objectSchema.required?.includes(name)));
+      const universallyRequired = [
+        ...new Set(objectSchemas.flatMap(objectSchema => objectSchema.required ?? [])),
+      ].filter(name => objectSchemas.every(objectSchema => objectSchema.required?.includes(name)));
 
       delete schema[unionKey];
       schema.type = 'object';
@@ -327,6 +326,10 @@ function removeCookieAuthentication(spec) {
  * Post-process a spec: pin production, hide internal API, and normalize schemas.
  */
 function postProcessSpec(spec) {
+  // Pin the server to production. The published docs must always show the
+  // production base URL in their curl examples, regardless of which environment
+  // the source spec was fetched from (a staging fetch would otherwise bake a
+  // staging server URL into the committed reference).
   spec.servers = [
     {
       url: PRODUCTION_BASE_URL,
@@ -424,6 +427,6 @@ async function fetchAndWriteWebhookSpec() {
 }
 
 if (import.meta.main) {
-  await fetchAndFilterSpecs().catch(console.error);
-  await fetchAndWriteWebhookSpec();
+  // Independent fetches with independent error handling; run them concurrently.
+  await Promise.all([fetchAndFilterSpecs().catch(console.error), fetchAndWriteWebhookSpec()]);
 }
