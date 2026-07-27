@@ -265,32 +265,102 @@ async function fetchAndFilterSpec() {
  * live in production, a fetch failure logs a warning and leaves the committed
  * public/openapi-webhooks.json untouched, rather than failing the whole sync.
  */
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Validate the minimum webhook document shape consumed by Fumadocs and the API
+ * index generator. A syntactically-valid OpenAPI document is not enough: an
+ * incomplete deployment response could otherwise replace the last-good
+ * snapshot and silently remove every generated webhook page.
+ */
+export function validateWebhooksSpec(spec) {
+  const eventCount = isObject(spec?.webhooks) ? Object.keys(spec.webhooks).length : 0;
+
+  if (!String(spec?.openapi ?? '').startsWith('3.1')) {
+    return { valid: false, eventCount, reason: `expected OpenAPI 3.1, got ${spec?.openapi}` };
+  }
+  if (eventCount === 0) {
+    return { valid: false, eventCount, reason: 'expected at least one webhook event' };
+  }
+
+  const declaredTags = new Set(
+    Array.isArray(spec.tags)
+      ? spec.tags
+          .map(tag => tag?.name)
+          .filter(name => typeof name === 'string' && name.trim().length > 0)
+      : []
+  );
+  const operationIds = new Set();
+
+  for (const [eventName, item] of Object.entries(spec.webhooks)) {
+    const operation = isObject(item) && isObject(item.post) ? item.post : undefined;
+    if (!operation) {
+      return { valid: false, eventCount, reason: `${eventName} is missing a POST operation` };
+    }
+
+    const operationId = operation.operationId;
+    if (typeof operationId !== 'string' || operationId.trim().length === 0) {
+      return { valid: false, eventCount, reason: `${eventName} is missing operationId` };
+    }
+    if (operationIds.has(operationId)) {
+      return { valid: false, eventCount, reason: `duplicate operationId ${operationId}` };
+    }
+    operationIds.add(operationId);
+
+    const tags = Array.isArray(operation.tags)
+      ? operation.tags.filter(tag => typeof tag === 'string' && tag.trim().length > 0)
+      : [];
+    if (tags.length === 0 || tags.some(tag => !declaredTags.has(tag))) {
+      return {
+        valid: false,
+        eventCount,
+        reason: `${eventName} must reference a declared tag`,
+      };
+    }
+
+    if (!isObject(operation.requestBody?.content?.['application/json']?.schema)) {
+      return {
+        valid: false,
+        eventCount,
+        reason: `${eventName} is missing an application/json request schema`,
+      };
+    }
+  }
+
+  return { valid: true, eventCount };
+}
+
+export function writeWebhooksSpecIfValid(spec, outPath, sourceUrl = OPENAPI_WEBHOOKS_URL) {
+  const validation = validateWebhooksSpec(spec);
+  if (!validation.valid) {
+    console.warn(
+      `WARN: refusing to write webhooks spec from ${sourceUrl} — ${validation.reason}. Keeping existing ${outPath}.`
+    );
+    return false;
+  }
+
+  writeFileSync(outPath, JSON.stringify(spec, null, 2));
+  console.log(`Written webhooks spec to ${outPath} (${validation.eventCount} events)`);
+  return true;
+}
+
 async function fetchAndWriteWebhooksSpec() {
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const outPath = join(__dirname, '../public/openapi-webhooks.json');
   try {
     const spec = await fetchSpec(OPENAPI_WEBHOOKS_URL);
-
-    // Sanity-guard the overwrite. A deploy serving an empty/!3.1 document would
-    // otherwise wipe the committed spec, and generate-api-index would then treat
-    // `webhook-events` as a stale tag and recursively delete the whole section.
-    // Treat that like a fetch failure: warn and keep what we have.
-    const eventCount = Object.keys(spec?.webhooks ?? {}).length;
-    if (!String(spec?.openapi ?? '').startsWith('3.1') || eventCount === 0) {
-      console.warn(
-        `WARN: refusing to write webhooks spec from ${OPENAPI_WEBHOOKS_URL} — got openapi=${spec?.openapi}, ${eventCount} webhooks. Keeping existing ${outPath}.`
-      );
-      return;
-    }
-
-    writeFileSync(outPath, JSON.stringify(spec, null, 2));
-    console.log(`Written webhooks spec to ${outPath} (${eventCount} events)`);
+    writeWebhooksSpecIfValid(spec, outPath);
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.warn(
-      `WARN: could not fetch webhooks spec from ${OPENAPI_WEBHOOKS_URL}: ${err.message}. Keeping existing ${outPath}.`
+      `WARN: could not fetch webhooks spec from ${OPENAPI_WEBHOOKS_URL}: ${message}. Keeping existing ${outPath}.`
     );
   }
 }
 
-await fetchAndFilterSpec().catch(console.error);
-await fetchAndWriteWebhooksSpec();
+if (import.meta.main) {
+  await fetchAndFilterSpec().catch(console.error);
+  await fetchAndWriteWebhooksSpec();
+}
