@@ -9,7 +9,6 @@ import type { TerminalUI } from 'src/services/terminal-ui';
 import {
   createUpdateChecker,
   parseLatestVersionFromReleases,
-  shouldCheckForUpdateInBackground,
   type UpdateCheckConfig,
   type UpdateCheckState,
 } from 'src/services/update-check';
@@ -81,45 +80,6 @@ function makeDeferred<T>() {
   });
   return { promise, resolve, reject };
 }
-
-describe('shouldCheckForUpdateInBackground', () => {
-  it('skips the background request for an explicit version check', () => {
-    expect(
-      shouldCheckForUpdateInBackground(['/usr/bin/bun', '/app/bin.mjs', 'version', '--check'])
-    ).toBe(false);
-  });
-
-  it.each([
-    ['split', ['--log-level', 'debug']],
-    ['equals', ['--log-level=debug']],
-  ])('skips the background request with a leading root option in %s form', (_, rootArgs) => {
-    expect(
-      shouldCheckForUpdateInBackground([
-        '/usr/bin/bun',
-        '/app/bin.mjs',
-        ...rootArgs,
-        'version',
-        '--check',
-      ])
-    ).toBe(false);
-  });
-
-  it('keeps background checks for regular version and unrelated commands', () => {
-    expect(shouldCheckForUpdateInBackground(['/usr/bin/bun', '/app/bin.mjs', 'version'])).toBe(
-      true
-    );
-    expect(
-      shouldCheckForUpdateInBackground([
-        '/usr/bin/bun',
-        '/app/bin.mjs',
-        'tools',
-        'search',
-        'version',
-        '--check',
-      ])
-    ).toBe(true);
-  });
-});
 
 // ── parseLatestVersionFromReleases (pure) ───────────────────────────────
 
