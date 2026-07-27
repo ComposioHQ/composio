@@ -7,6 +7,7 @@ import * as tempy from 'tempy';
 import {
   clearApolloIdentityForAnalytics,
   emitPostHogAlias,
+  ensureAnalyticsIdentity,
   getCurrentCwdSessionId,
   linkApolloIdentityForAnalytics,
   readApiBaseUrl,
@@ -774,7 +775,127 @@ describe('CLI analytics dispatch', () => {
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
 
-    it.effect('never re-aliases one install onto a second Apollo user', () => {
+    it.effect('rotates to a fresh install_id when a second Apollo user links', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry();
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* linkApolloIdentityForAnalytics('om_first_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const firstArgs = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const firstPayload = decodeWorkerPayload<{ installId: string }>(firstArgs[2]!);
+
+        // Logout, then log in as a different user on the same device: the
+        // second user is aliased to a fresh install_id, never the one already
+        // merged into the first user's PostHog person.
+        yield* clearApolloIdentityForAnalytics;
+        yield* linkApolloIdentityForAnalytics('om_second_user');
+        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(2);
+        const secondArgs = childProcessMocks.spawn.mock.calls[1]![1] as string[];
+        const secondPayload = decodeWorkerPayload<{
+          event: string;
+          distinctId: string;
+          installId: string;
+          properties: { alias: string };
+        }>(secondArgs[2]!);
+        expect(secondPayload.event).toBe('$create_alias');
+        expect(secondPayload.distinctId).toBe('om_second_user');
+        expect(secondPayload.installId).not.toBe(firstPayload.installId);
+        expect(secondPayload.properties.alias).toBe(secondPayload.installId);
+
+        const persisted = JSON.parse(
+          yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+        ) as { install_id: string; apollo_user_id: string; aliased_apollo_user_id: string };
+        expect(persisted.install_id).toBe(secondPayload.installId);
+        expect(persisted.apollo_user_id).toBe('om_second_user');
+        expect(persisted.aliased_apollo_user_id).toBe('om_second_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('trusts the persisted identity when the api key lives in the OS keyring', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      // No env key and no plaintext api_key on disk -> no fingerprint.
+      enableTelemetry('');
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, 'config.json'),
+          JSON.stringify({ security: 'keychain-subprocess' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ base_url: 'https://backend.example.test', org_id: 'org_keychain' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, 'analytics.json'),
+          JSON.stringify({
+            install_id: 'install_keychain',
+            apollo_user_id: 'om_keychain_user',
+            aliased_apollo_user_id: 'om_keychain_user',
+            api_key_fingerprint: 'abc.5',
+          })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+        expect(payload.distinctId).toBe('om_keychain_user');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('does not trust a fingerprint-less identity outside keychain modes', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('');
+      process.argv[1] = scriptPath;
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+        const composioDir = path.join(home, '.composio');
+        yield* fs.makeDirectory(composioDir, { recursive: true });
+        yield* fs.writeFileString(
+          path.join(composioDir, 'config.json'),
+          JSON.stringify({ security: 'json' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, USER_CONFIG_FILE_NAME),
+          JSON.stringify({ org_id: 'org_json' })
+        );
+        yield* fs.writeFileString(
+          path.join(composioDir, 'analytics.json'),
+          JSON.stringify({
+            install_id: 'install_json',
+            apollo_user_id: 'om_json_user',
+            aliased_apollo_user_id: 'om_json_user',
+            api_key_fingerprint: 'abc.5',
+          })
+        );
+
+        yield* trackCliEventEffect({ name: 'producer_event' });
+
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ distinctId: string }>(args[2]!);
+        expect(payload.distinctId).toBe('anon_install_json');
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('redacts secret-shaped tokens from event properties', () => {
       const home = tempy.temporaryDirectory();
       const scriptPath = `${home}/composio.ts`;
       enableTelemetry();
@@ -784,13 +905,94 @@ describe('CLI analytics dispatch', () => {
         const fs = yield* FileSystem.FileSystem;
         yield* fs.writeFileString(scriptPath, '');
 
-        yield* linkApolloIdentityForAnalytics('om_first_user');
-        expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        yield* trackCliEventEffect({
+          name: CLI_ANALYTICS_EVENTS.CLI_COMMAND_FAILED,
+          properties: {
+            error_message: 'Auth failed for uak_AbC123xyz_secret via Bearer eyJhbGciOi.Jt0ken',
+            nested: { tokens: ['ghp_ABCdef1234567890'] },
+            duration_ms: 42,
+          },
+        });
 
-        // Logout, then log in as a different user on the same device.
-        yield* clearApolloIdentityForAnalytics;
-        yield* linkApolloIdentityForAnalytics('om_second_user');
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{
+          properties: {
+            error_message: string;
+            nested: { tokens: string[] };
+            duration_ms: number;
+          };
+        }>(args[2]!);
+        expect(payload.properties.error_message).toBe('Auth failed for [redacted] via [redacted]');
+        expect(payload.properties.nested.tokens).toEqual(['[redacted]']);
+        expect(payload.properties.duration_ms).toBe(42);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('bootstrap stitch links a missing identity through session info', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_stitch');
+      process.argv[1] = scriptPath;
+      const fetchSessionInfo = vi.fn(() => Effect.succeed({ org_member: { id: 'om_stitched' } }));
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
         expect(childProcessMocks.spawn).toHaveBeenCalledTimes(1);
+        const args = childProcessMocks.spawn.mock.calls[0]![1] as string[];
+        const payload = decodeWorkerPayload<{ event: string; distinctId: string }>(args[2]!);
+        expect(payload.event).toBe('$create_alias');
+        expect(payload.distinctId).toBe('om_stitched');
+
+        // Once linked under this credential, later runs make no network attempt.
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
+      }).pipe(Effect.provide(makePlatformLayer(home)));
+    });
+
+    it.effect('bootstrap stitch attempts at most once per day after a failure', () => {
+      const home = tempy.temporaryDirectory();
+      const scriptPath = `${home}/composio.ts`;
+      enableTelemetry('uak_stitch');
+      process.argv[1] = scriptPath;
+      const fetchSessionInfo = vi.fn(() => Effect.fail(new Error('offline')));
+
+      return Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        yield* fs.writeFileString(scriptPath, '');
+
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
+
+        const persisted = JSON.parse(
+          yield* fs.readFileString(path.join(home, '.composio', 'analytics.json'), 'utf8')
+        ) as { stitch_attempted_at?: string };
+        expect(typeof persisted.stitch_attempted_at).toBe('string');
+
+        // Identity is still unlinked, but the attempt is throttled for 24h.
+        yield* ensureAnalyticsIdentity({
+          apiKey: 'uak_stitch',
+          baseURL: 'https://backend.example.test',
+          fetchSessionInfo,
+        });
+        expect(fetchSessionInfo).toHaveBeenCalledTimes(1);
       }).pipe(Effect.provide(makePlatformLayer(home)));
     });
   });
