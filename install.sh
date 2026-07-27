@@ -426,8 +426,11 @@ if [[ $install_agent = true ]]; then
 fi
 
 echo
-info "Composio was added to your PATH — restart your shell (or open a new terminal) for it to take effect."
-info "Then, to get started, run:"
+# No PATH claim here: whichever branch ran above already reported what it did to
+# which file, and whether a reload is needed. Restating it unconditionally would
+# promise a configured PATH even on the branches that only printed manual
+# instructions.
+info "To get started, run:"
 echo
 
 if [[ ${refresh_command:-} ]]; then
