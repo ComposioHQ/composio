@@ -22,6 +22,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { fetchWithRetry } from './fetch-with-retry';
 import {
   PRODUCTION_BASE_URL,
   PRODUCTION_API_V3_URL,
@@ -145,7 +146,7 @@ const WebhookDocumentSchema = z
 
 async function fetchJson(url) {
   console.log(`Fetching OpenAPI spec from ${url}...`);
-  const response = await fetch(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`);
   }
