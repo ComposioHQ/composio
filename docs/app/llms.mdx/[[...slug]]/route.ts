@@ -362,9 +362,9 @@ async function openapiPageToMarkdown(
   const { title, description } = page.data;
   const props = page.data.getAPIPageProps();
 
-  // Get fully dereferenced document from fumadocs-openapi
+  // Get the bundled document from fumadocs-openapi
   const processed = await openapi.getSchema(props.document);
-  const spec = processed.dereferenced;
+  const spec = processed.bundled;
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;
   const servers = spec.servers as Array<{ url: string; description?: string }> | undefined;
