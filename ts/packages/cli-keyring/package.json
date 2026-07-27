@@ -33,8 +33,8 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
-    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
+    "typecheck:src": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p ./tsconfig.test.json",
     "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
     "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
@@ -51,9 +51,9 @@
   "author": "Composio",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "bun-types": "^1.3.14",
-    "effect": "^3.21.4",
+    "effect": "^3.22.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -1,3 +1,1 @@
-module.exports = {
-  extends: ['../../.eslintrc.cjs'],
-};
+export { default } from '../../../eslint.config.mjs';

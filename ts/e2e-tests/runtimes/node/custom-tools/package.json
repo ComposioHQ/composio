@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"

@@ -32,8 +32,8 @@
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck:src": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
-    "typecheck:test": "pnpm exec tsgo --noEmit -p ./tsconfig.test.json",
+    "typecheck:src": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p ./tsconfig.test.json",
     "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test",
     "typecheck:src:tsc": "tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:test:tsc": "tsc --noEmit -p ./tsconfig.test.json",
@@ -47,11 +47,11 @@
   "license": "ISC",
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "zod": ">=3.25.76 <5"

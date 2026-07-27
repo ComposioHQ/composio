@@ -9,19 +9,14 @@ import {
   type ToolExecuteResponse,
 } from '@composio/core';
 import type { JsonValue } from 'eve/connections';
-import {
-  type NeedsApprovalContext,
-  type ToolContext,
-  type ToolDefinition,
-  defineTool,
-} from 'eve/tools';
+import { type ApprovalContext, type ToolContext, type ToolDefinition, defineTool } from 'eve/tools';
 import { applyHooks, type EveProviderHooks } from './hooks';
 
 export type EveTool = ToolDefinition<Record<string, unknown>, ToolExecuteResponse>;
 export type EveToolCollection = Record<string, EveTool>;
 export type EveNeedsApproval = (
   tool: Tool,
-  context: NeedsApprovalContext<Record<string, unknown>>
+  context: ApprovalContext<Record<string, unknown>>
 ) => boolean;
 
 const MULTI_EXECUTE_TOOL_SLUG = 'COMPOSIO_MULTI_EXECUTE_TOOL';
@@ -40,7 +35,7 @@ const toEveInputSchema = (tool: Tool, strict?: boolean): Record<string, JsonValu
 const toEveApprovalPolicy = (
   tool: Tool,
   approvalPolicy?: EveNeedsApproval
-): EveTool['needsApproval'] => {
+): EveTool['approval'] => {
   if (!approvalPolicy) return undefined;
   return context => approvalPolicy(tool, context);
 };
@@ -88,12 +83,12 @@ export class EveProvider extends BaseAgenticProvider<
 
   wrapTool(tool: Tool, executeTool: ExecuteToolFn): EveTool {
     const inputSchema = toEveInputSchema(tool, this.options.strict);
-    const needsApproval = toEveApprovalPolicy(tool, this.options.needsApproval);
+    const approval = toEveApprovalPolicy(tool, this.options.needsApproval);
 
-    return defineTool({
+    return defineTool<Record<string, unknown>, ToolExecuteResponse>({
       description: tool.description ?? tool.name,
       inputSchema,
-      needsApproval,
+      approval,
       execute: (input, context: ToolContext) =>
         applyHooks(
           this.options.hooks ?? {},

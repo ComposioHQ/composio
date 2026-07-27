@@ -32,7 +32,7 @@
     "build:composio-native-ui": "bun run ./scripts/build-composio-native-ui-binaries.ts",
     "build:local-tool-binaries": "bun run ./scripts/build-local-tool-binaries.ts",
     "test": "vitest run",
-    "typecheck": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
+    "typecheck": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p ./tsconfig.src.json",
     "typecheck:tsc": "tsc --noEmit -p ./tsconfig.src.json"
   },
   "dependencies": {
@@ -42,8 +42,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0",
-    "chrome-devtools-mcp": "1.5.0",
+    "@types/node": "^26.1.1",
+    "chrome-devtools-mcp": "1.6.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

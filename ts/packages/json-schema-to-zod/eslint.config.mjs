@@ -1,6 +1,1 @@
-module.exports = {
-  extends: ['../../.eslintrc.cjs'],
-  // parserOptions: {
-  //     project: ['./tsconfig.json'],
-  // },
-};
+export { default } from '../../../eslint.config.mjs';
