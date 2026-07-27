@@ -88,8 +88,8 @@
     "clean": "git clean -xdf node_modules",
     "build": "pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "node ../../../node_modules/typescript-7/bin/tsc --noEmit --skipLibCheck && node ../../../node_modules/typescript-7/bin/tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
-    "typecheck:tsc": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck": "tsc --noEmit --skipLibCheck && tsc --noEmit --skipLibCheck -p tsconfig.type-tests.json",
+    "typecheck:tsc": "tsc6 --noEmit --skipLibCheck && tsc6 --noEmit --skipLibCheck -p tsconfig.type-tests.json",
     "generate:docs": "tsx scripts/generate-docs.ts"
   },
   "keywords": [],

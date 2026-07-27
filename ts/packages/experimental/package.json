@@ -46,8 +46,8 @@
     "check:python-helpers": "tsx scripts/build-python-helpers.ts && git diff --exit-code -- src/workbench/python-helpers.generated.ts",
     "build": "pnpm run build:python-helpers && pnpm exec tsdown",
     "test": "vitest run",
-    "typecheck": "node ../../../node_modules/typescript-7/bin/tsc --noEmit -p tsconfig.json",
-    "typecheck:tsc": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck:tsc": "tsc6 --noEmit -p tsconfig.json"
   },
   "keywords": [
     "composio",
