@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "anthropic>=0.109.2",
+    "anthropic>=0.120.0",
     "composio",
 ]
 

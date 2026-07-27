@@ -19,6 +19,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.10,<4",
-    install_requires=["crewai>=0.134.0,<1.16.0", "composio"],
+    # CrewAI 1.7+ constrains Pydantic below composio's >=2.13.4 floor.
+    install_requires=["crewai>=1.6.1,<1.7.0", "composio"],
     include_package_data=True,
 )
