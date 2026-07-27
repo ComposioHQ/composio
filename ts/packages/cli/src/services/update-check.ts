@@ -60,7 +60,7 @@ const UpdateCheckAttemptSchema = Schema.parseJson(
   })
 );
 
-/** Non-2xx response from the GitHub releases API; swallowed after the state write. */
+/** Non-2xx GitHub response; recorded as a failed attempt and otherwise swallowed. */
 class UpdateCheckHttpError extends Data.TaggedError('UpdateCheckHttpError')<{
   readonly status: number;
 }> {}
