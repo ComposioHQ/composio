@@ -8,7 +8,7 @@ import {
   collectBoundaryManifest,
   compareBoundaryManifests,
   parseBoundarySites,
-} from '../../../scripts/eslint-boundaries';
+} from '../../../scripts/lint-boundaries';
 
 const temporaryDirectories: string[] = [];
 
@@ -18,9 +18,9 @@ afterEach(() => {
   }
 });
 
-describe('eslint boundary manifest', () => {
+describe('lint boundary manifest', () => {
   it('includes both TypeScript and TSX source files', () => {
-    const packageRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-eslint-boundaries-'));
+    const packageRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-lint-boundaries-'));
     const sourceRoot = path.join(packageRoot, 'src');
     temporaryDirectories.push(packageRoot);
     fs.mkdirSync(sourceRoot);

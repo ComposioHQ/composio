@@ -262,7 +262,7 @@ const stringifyForPrompt = (value: unknown): string => {
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
   }
-  // eslint-disable-next-line no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
+  // eslint-disable-next-line eslint-js/no-restricted-syntax -- JSON.stringify throws on circular user values in this sync formatter injected into user code; String() is the entire fallback
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -319,7 +319,7 @@ const summarizeCliResultPreview = (result: RunCliResult): unknown => {
 };
 
 const readConfiguredExperimentalSubagentTarget = (): 'auto' | 'claude' | 'codex' => {
-  // eslint-disable-next-line no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
+  // eslint-disable-next-line eslint-js/no-restricted-syntax -- sync config read at the child-process boundary; a missing or malformed CLI config file just means the 'auto' target
   try {
     const raw = fs.readFileSync(resolveCliConfigPathSync(), 'utf8');
     const parsed = decodeExperimentalSubagentConfig(raw);
@@ -616,7 +616,7 @@ const createCliRunner = (params: {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
     const env: Record<string, string | undefined> = {
-      // eslint-disable-next-line no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
+      // eslint-disable-next-line eslint-js/no-restricted-syntax -- the spawned CLI child must inherit the caller's full environment before Composio-specific overrides are layered on top
       ...process.env,
       ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
       ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
@@ -805,7 +805,7 @@ const createExperimentalSubAgent = (params: {
       resolvedTarget: target,
       master,
     });
-    // eslint-disable-next-line no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- async fallback chain in the user's child process: ACP invoke errors route to the legacy sub-agent path, everything else rethrows
     try {
       const response = await invokeAcpSubAgent({
         prompt: prompt.trim(),
@@ -971,10 +971,10 @@ export const installRunHelpers = async ({
   Reflect.set(globalThis, 'zod', z);
 
   const perfDebugEnabled =
-    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
     helperContext.perfDebug === true || process.env.COMPOSIO_PERF_DEBUG === '1';
   const toolDebugEnabled =
-    // eslint-disable-next-line no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- debug flag reaches the child process via inherited environment; the CLI's Config provider is not available here
     helperContext.toolDebug === true || process.env.COMPOSIO_TOOL_DEBUG === '1';
   const perfDebugStart = Date.now();
   const composioBaseURL = (helperContext.baseURL || 'https://backend.composio.dev').replace(

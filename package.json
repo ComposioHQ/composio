@@ -39,10 +39,10 @@
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
-    "lint": "eslint ts/packages --ext .ts,.tsx",
-    "lint:packages": "eslint ts/packages --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "lint:fix:packages": "eslint ts/packages --ext .ts,.tsx --fix",
+    "lint": "oxlint ts/packages",
+    "lint:packages": "oxlint ts/packages",
+    "lint:fix": "oxlint --fix .",
+    "lint:fix:packages": "oxlint --fix ts/packages",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "preinstall": "./ts/scripts/pre-install.sh",
     "prepare": "husky",
@@ -80,10 +80,10 @@
     "@types/bun": "catalog:",
     "@types/node": "^26.1.1",
     "@vitest/ui": "catalog:",
-    "eslint": "^10.7.0",
-    "globals": "^17.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.2.0",
+    "oxlint": "^1.75.0",
+    "oxlint-plugin-eslint": "^1.75.0",
     "prettier": "^3.9.6",
     "publint": "catalog:",
     "semver": "^7.8.5",
@@ -91,14 +91,12 @@
     "tsx": "catalog:",
     "turbo": "^2.10.6",
     "typescript": "catalog:",
-    "typescript-7": "catalog:",
-    "typescript-eslint": "^8.65.0",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "lint-staged": {
     "ts/packages/**/*.{ts,tsx}": [
-      "eslint --fix"
+      "oxlint --fix"
     ],
     "ts/packages/**/*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
