@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.20",
+    "@fuma-translate/react": "^1.0.2",
     "@pierre/diffs": "^1.2.12",
     "@pierre/trees": "^1.0.0-beta.6",
     "@radix-ui/react-tabs": "^1.1.21",
@@ -56,6 +57,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
+    "react-medium-image-zoom": "^5.4.8",
     "remark-gfm": "^4.0.1",
     "search-insights": "^2.17.3",
     "shiki": "^4.3.1",
