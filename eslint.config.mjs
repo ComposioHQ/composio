@@ -158,6 +158,7 @@ export default [
     ignores: [
       '**/.venv/**',
       '**/.next/**',
+      '**/dist/**',
       '**/site-packages/**',
       '**/__fixtures__/**',
       '**/fixtures/**',
@@ -311,6 +312,14 @@ export default [
       'no-console': 'off',
       'no-restricted-globals': 'off',
       'no-restricted-imports': 'off',
+    },
+  },
+  {
+    // This factory intentionally assembles the complete pi session-tool surface
+    // in one closure so every hook shares the same normalized capabilities.
+    files: ['ts/packages/experimental/src/pi/session-tools.ts'],
+    rules: {
+      'max-lines-per-function': 'off',
     },
   },
   {

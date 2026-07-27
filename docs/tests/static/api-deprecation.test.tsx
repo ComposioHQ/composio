@@ -50,6 +50,26 @@ function createSpec(version: "v3.1" | "v3") {
   };
 }
 
+function createWebhookSpec() {
+  return {
+    openapi: "3.1.0",
+    tags: [
+      { name: "Unrelated Tag", description: "Declared first on purpose" },
+      { name: "Webhook Events", description: "Webhook event payloads" },
+    ],
+    paths: {},
+    webhooks: {
+      "composio.test.event": {
+        post: {
+          tags: ["Webhook Events"],
+          summary: "Test event",
+          operationId: "composio_test_event",
+        },
+      },
+    },
+  };
+}
+
 function parseEndpoints(content: string): SerializedEndpoint[] {
   const prefix = "<ApiEndpointsTable endpoints={";
   const start = content.indexOf(prefix);
@@ -81,7 +101,7 @@ function expectedEndpoints(hrefPrefix: string): SerializedEndpoint[] {
   ];
 }
 
-async function generateFixture(): Promise<string> {
+async function generateFixture(options?: { webhookSpec?: ReturnType<typeof createWebhookSpec> }): Promise<string> {
   const fixtureDir = await mkdtemp(join(tmpdir(), "composio-api-index-"));
   fixtureDirectories.push(fixtureDir);
 
@@ -94,6 +114,12 @@ async function generateFixture(): Promise<string> {
     join(fixtureDir, "public/openapi-v3.json"),
     JSON.stringify(createSpec("v3")),
   );
+  if (options?.webhookSpec) {
+    await writeFile(
+      join(fixtureDir, "public/openapi-webhooks.json"),
+      JSON.stringify(options.webhookSpec),
+    );
+  }
 
   const process = Bun.spawn([Bun.argv[0], GENERATOR_PATH], {
     cwd: fixtureDir,
@@ -319,5 +345,31 @@ describe("deprecated API endpoints", () => {
       ),
     ).toHaveLength(1);
     expect(html.match(/>Legacy<\/span>/g)).toHaveLength(1);
+  });
+});
+
+describe("webhook API index", () => {
+  test("routes the index from the operation tag instead of tag declaration order", async () => {
+    const fixtureDir = await generateFixture({ webhookSpec: createWebhookSpec() });
+    const content = await readFile(
+      join(
+        fixtureDir,
+        "content/reference/api-reference/webhook-events/index.mdx",
+      ),
+      "utf-8",
+    );
+
+    expect(content).toContain("title: Webhook Events");
+    expect(content).toContain(
+      "[Test event](/reference/api-reference/webhook-events/composio_test_event)",
+    );
+    expect(
+      await Bun.file(
+        join(
+          fixtureDir,
+          "content/reference/api-reference/unrelated-tag/index.mdx",
+        ),
+      ).exists(),
+    ).toBe(false);
   });
 });
