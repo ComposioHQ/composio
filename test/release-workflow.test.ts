@@ -42,6 +42,7 @@ const changesetBinPath = new URL('../node_modules/.bin/changeset', import.meta.u
 const releaseScriptUrl = new URL('../ts/scripts/changeset-release.sh', import.meta.url);
 const releaseScriptPath = releaseScriptUrl.pathname;
 const releaseScript = readFileSync(releaseScriptUrl, 'utf8');
+const rootInstallGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
 const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
@@ -417,6 +418,35 @@ if (!releaseScript.includes('New tag:[[:space:]]*@composio\\/cli@')) {
 }
 
 // --- build-cli-binaries.yml: the CLI binary workflow is the sole, hardened release writer ---
+
+const canonicalWindowsInstallGuidance = requireMatch(
+  rootInstallGuide,
+  /^(- Windows — .+)$/m,
+  'canonical Windows install guidance'
+);
+const generatedInstallGuide = requireMatch(
+  buildCliWorkflow,
+  /cat > INSTALL\.md << 'EOF'\n([\s\S]*?)\n\s+EOF/,
+  'generated CLI release INSTALL.md'
+);
+const generatedWindowsInstallGuidance = requireMatch(
+  generatedInstallGuide,
+  /^\s*(- Windows — .+)$/m,
+  'generated Windows install guidance'
+);
+
+if (
+  !canonicalWindowsInstallGuidance.includes(
+    '[WSL](https://learn.microsoft.com/windows/wsl/install)'
+  )
+) {
+  throw new Error('INSTALL.md must direct Windows users to the canonical WSL instructions');
+}
+if (generatedWindowsInstallGuidance !== canonicalWindowsInstallGuidance) {
+  throw new Error(
+    'build-cli-binaries.yml generated INSTALL.md must match the canonical Windows guidance'
+  );
+}
 
 // A single failed platform must never publish a partial set: fail-fast: false makes the build
 // job `success` only when every matrix leg passes, gating the release job.

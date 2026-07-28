@@ -340,7 +340,8 @@ jobs:
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
-          Windows support coming soon!
+          ❌ **Not Supported:**
+          - Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
           EOF
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 
