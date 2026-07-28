@@ -2,13 +2,19 @@
 // lazily in its UI. This module creates the concrete schema tree needed by
 // server-side renderers that read fields directly.
 
+const dereferencedDocuments = new WeakMap<object, object>();
+
 /**
  * Returns a non-mutating copy of `spec` with local JSON Pointers inlined.
  *
  * External references remain unchanged. Cached output objects preserve
  * identity for recursive schemas and let alias chains terminate safely.
+ * Repeated calls with the same immutable input object reuse that copy.
  */
-export function dereferenceDocument<T>(spec: T): T {
+export function dereferenceDocument<T extends object>(spec: T): T {
+  const cachedDocument = dereferencedDocuments.get(spec);
+  if (cachedDocument) return cachedDocument as T;
+
   const cache = new Map<string, unknown>();
 
   function resolvePointer(ref: string): unknown {
@@ -94,5 +100,7 @@ export function dereferenceDocument<T>(spec: T): T {
     return out;
   }
 
-  return walk(spec) as T;
+  const dereferenced = walk(spec) as T;
+  dereferencedDocuments.set(spec, dereferenced);
+  return dereferenced;
 }

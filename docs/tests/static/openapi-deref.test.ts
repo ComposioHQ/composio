@@ -44,6 +44,17 @@ describe('dereferenceDocument', () => {
     expect(spec.paths['/a'].get.schema).toEqual({ $ref: '#/components/schemas/A' });
   });
 
+  test('reuses the dereferenced copy for the same document instance', () => {
+    const spec = {
+      root: { $ref: '#/components/schemas/A' },
+      components: { schemas: { A: { type: 'string' } } },
+    };
+
+    const first = dereferenceDocument(spec);
+
+    expect(dereferenceDocument(spec)).toBe(first);
+  });
+
   test('merges sibling keywords over the referenced target', () => {
     const spec = {
       root: { $ref: '#/components/schemas/A', description: 'overridden' },

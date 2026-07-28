@@ -9,6 +9,13 @@ const openapiWebhooksPath = join(
 );
 const openapiV3Path = join(process.cwd(), 'public/openapi-v3.json');
 
+type OpenAPIDocument = {
+  paths?: Record<
+    string,
+    Record<string, { security?: Record<string, string[]>[] } | undefined>
+  >;
+};
+
 // v3.1 (latest) — clean operationIds, default API reference.
 // The webhook-events spec (openapi-webhooks.json) is a separate OpenAPI 3.1
 // document whose top-level `webhooks` block documents the payloads Composio
@@ -30,23 +37,20 @@ export const openapiV3 = createOpenAPI({
 });
 
 async function loadOpenAPISchema(path: string) {
-  const document = JSON.parse(await readFile(path, 'utf8')) as {
-    paths?: Record<
-      string,
-      Record<string, { security?: Record<string, string[]>[] } | undefined>
-    >;
-  };
+  const document = JSON.parse(await readFile(path, 'utf8')) as OpenAPIDocument;
+  return normalizeNoAuthSecurity(document);
+}
 
+export function normalizeNoAuthSecurity<T extends OpenAPIDocument>(document: T): T {
   // The backend generator uses `{ no_auth: [] }` as a legacy sentinel for
-  // public operations. It is not a declared security scheme, so normalize it
-  // to the OpenAPI-standard empty security requirement before Fumadocs loads it.
+  // public operations. It is not a declared security scheme, so remove that
+  // alternative while preserving any declared schemes.
   for (const pathItem of Object.values(document.paths ?? {})) {
     for (const operation of Object.values(pathItem)) {
-      if (
-        operation?.security?.some((requirement) => 'no_auth' in requirement)
-      ) {
-        operation.security = [];
-      }
+      if (!operation?.security) continue;
+      operation.security = operation.security.filter(
+        (requirement) => !('no_auth' in requirement),
+      );
     }
   }
 
