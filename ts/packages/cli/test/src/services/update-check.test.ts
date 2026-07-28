@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { BunFileSystem, BunPath } from '@effect/platform-bun';
 import { Effect, Fiber, Layer } from 'effect';
 import { withHttpServerEffect } from 'test/__utils__/http-server';
-import type { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, type TerminalUI } from 'src/services/terminal-ui';
 import {
   createUpdateChecker,
   parseLatestVersionFromReleases,
@@ -43,15 +43,19 @@ function makeConfig(overrides?: Partial<UpdateCheckConfig>): UpdateCheckConfig {
 
 const makeTerminal = (
   output: string[],
-  isInteractive = true
+  tty: { stdin: boolean; stdout: boolean; stderr: boolean } = {
+    stdin: true,
+    stdout: true,
+    stderr: true,
+  }
 ): Pick<TerminalUI, 'capabilities' | 'error'> => ({
-  capabilities: Effect.succeed({
-    stdinIsTTY: isInteractive,
-    stdoutIsTTY: isInteractive,
-    stderrIsTTY: isInteractive,
-    isInteractive,
-    canDecorate: isInteractive,
-  }),
+  capabilities: Effect.succeed(
+    getTerminalCapabilities({
+      stdin: { isTTY: tty.stdin },
+      stdout: { isTTY: tty.stdout },
+      stderr: { isTTY: tty.stderr },
+    })
+  ),
   error: line => Effect.sync(() => output.push(line)),
 });
 
@@ -216,15 +220,41 @@ describe('showUpdateNotice', () => {
     }).pipe(Effect.provide(PlatformLayers))
   );
 
-  it.effect('does not print upgrade hint in non-interactive environments', () =>
+  it.effect('does not print upgrade hint when stderr is captured', () =>
     Effect.gen(function* () {
       const config = makeConfig({ currentVersion: '0.2.0' });
       writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
       const { showUpdateNotice } = createUpdateChecker(config);
 
-      yield* showUpdateNotice(makeTerminal(output, false));
+      yield* showUpdateNotice(makeTerminal(output, { stdin: true, stdout: true, stderr: false }));
 
       expect(output).toEqual([]);
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('still prints upgrade hint when stdout is piped but stderr is a terminal', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
+
+      yield* showUpdateNotice(makeTerminal(output, { stdin: true, stdout: false, stderr: true }));
+
+      expect(output).toHaveLength(1);
+      expect(output[0]).toContain('Update available');
+    }).pipe(Effect.provide(PlatformLayers))
+  );
+
+  it.effect('still prints upgrade hint when stdin is redirected', () =>
+    Effect.gen(function* () {
+      const config = makeConfig({ currentVersion: '0.2.0' });
+      writeState(config, { lastChecked: new Date().toISOString(), latestVersion: '0.3.0' });
+      const { showUpdateNotice } = createUpdateChecker(config);
+
+      yield* showUpdateNotice(makeTerminal(output, { stdin: false, stdout: true, stderr: true }));
+
+      expect(output).toHaveLength(1);
+      expect(output[0]).toContain('Update available');
     }).pipe(Effect.provide(PlatformLayers))
   );
 
