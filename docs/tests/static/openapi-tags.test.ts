@@ -61,7 +61,7 @@ describe('declareOperationTags', () => {
     expect(document.tags).toBe(tags);
   });
 
-  test('every shipped spec declares all operation tags after normalization', async () => {
+  test('every shipped spec declares all operation tags', async () => {
     for (const specPath of [
       'public/openapi.json',
       'public/openapi-v3.json',
