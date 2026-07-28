@@ -23,6 +23,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { fetchWithRetry } from './fetch-with-retry';
+import { declareOperationTags } from '../lib/openapi-tags';
 import {
   PRODUCTION_BASE_URL,
   PRODUCTION_API_V3_URL,
@@ -340,6 +341,9 @@ function postProcessSpec(spec) {
   if (spec.tags) {
     spec.tags = spec.tags.filter(tag => !IGNORED_TAGS.has(tag.name));
   }
+  // fumadocs-openapi only generates pages for operations whose tags are
+  // declared top-level; the backend generator omits some (e.g. Projects).
+  declareOperationTags(spec);
 
   removeCookieAuthentication(spec);
   normalizeLargeObjectUnions(spec);

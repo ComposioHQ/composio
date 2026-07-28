@@ -104,6 +104,15 @@
     {
       "name": "Tool Router",
       "description": "(Labs) Tool router endpoints"
+    },
+    {
+      "name": "Invite Codes"
+    },
+    {
+      "name": "Projects"
+    },
+    {
+      "name": "Organization Management"
     }
   ],
   "components": {

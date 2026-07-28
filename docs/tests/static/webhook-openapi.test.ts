@@ -135,4 +135,18 @@ describe('REST OpenAPI processing', () => {
     ]);
     expect(payload.paths['/visible'].get.operationId).toBe('getV3_1Visible');
   });
+
+  test('declares operation tags missing from the top-level tags array', () => {
+    const payload = createApiSpec();
+    (payload.paths as Record<string, unknown>)['/project/usage/summary'] = {
+      post: {
+        tags: ['Projects'],
+        operationId: 'postProjectUsageSummary',
+      },
+    };
+
+    const { spec } = prepareApiSpec(payload, '3.1');
+
+    expect(spec.tags).toEqual([{ name: 'Public' }, { name: 'Projects' }]);
+  });
 });
