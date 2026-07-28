@@ -40,6 +40,18 @@ describe('resolvePusherConstructor', () => {
     expect(resolvePusherConstructor({ Pusher: FakePusher })).toEqual(Option.some(FakePusher));
   });
 
+  it('resolves a `default.Pusher` namespace export without a top-level `Pusher` fallback', () => {
+    expect(resolvePusherConstructor({ default: { Pusher: FakePusher } })).toEqual(
+      Option.some(FakePusher)
+    );
+  });
+
+  it('resolves the constructor from the real installed pusher-js module', async () => {
+    const pusherModule = await import('pusher-js');
+    const resolved = resolvePusherConstructor(pusherModule);
+    expect(Option.isSome(resolved)).toBe(true);
+  });
+
   it('returns none when no interop shape exposes a callable constructor', () => {
     expect(resolvePusherConstructor({ default: { default: 'not-a-function' } })).toEqual(
       Option.none()
