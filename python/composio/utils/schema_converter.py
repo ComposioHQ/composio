@@ -61,9 +61,11 @@ def _filter_boolean_schemas(
 
     The json-schema-to-pydantic library doesn't handle these, so we:
     - Replace `true` with {} (empty schema, accepts anything)
-    - Filter out `false` (rejects everything, so no point including it)
+    - Drop `false` from union combiners (`anyOf`/`oneOf`)
+    - Reject an `allOf` containing `false`, because it is unsatisfiable
 
-    Returns None if the schema is a standalone `false` boolean.
+    Returns None if the schema is a standalone `false` boolean or an
+    unsatisfiable `allOf`.
     """
     if isinstance(schema, bool):
         if schema:
@@ -92,8 +94,10 @@ def _filter_boolean_schemas(
             # allOf is a conjunction: a `false` member forces the whole
             # combiner (and thus this schema) to reject every value, unlike
             # anyOf/oneOf where a `false` branch is simply inert.
-            if key == "allOf" and isinstance(value, list) and any(
-                member is False for member in value
+            if (
+                key == "allOf"
+                and isinstance(value, list)
+                and any(member is False for member in value)
             ):
                 return None
             # Filter boolean schemas from combiner arrays

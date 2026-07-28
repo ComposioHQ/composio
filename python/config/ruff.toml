@@ -3,4 +3,8 @@ line-length = 88
 indent-width = 4
 
 [lint]
+# Ruff 0.16 expanded its default rule set. Keep the repository's established
+# Pyflakes/pycodestyle baseline explicit; broader migrations should be reviewed
+# independently from dependency updates.
+select = [ "E4", "E7", "E9", "F" ]
 ignore = [ "E741" ]
