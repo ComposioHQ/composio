@@ -523,7 +523,7 @@ function StreamText({
 			if (i >= words.length) clearInterval(id);
 		}, speed);
 		return () => clearInterval(id);
-		// oxlint-disable-next-line react/exhaustive-deps
+		// eslint-disable-next-line react/exhaustive-deps
 	}, [text, play, speed]);
 	return <span>{words.slice(0, n).join(" ")}</span>;
 }

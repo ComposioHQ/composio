@@ -1,4 +1,4 @@
-name: Docs - TypeScript Code Validation
+name: Docs - Lint and TypeScript Validation
 
 on:
   pull_request:

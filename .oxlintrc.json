@@ -18,6 +18,8 @@
     "**/site-packages/**",
     "**/__fixtures__/**",
     "**/fixtures/**",
+    // New exclusion vs eslint.config.mjs: mock modules are test scaffolding,
+    // same as fixtures; the CI gate (pnpm lint → ts/packages) never reached them.
     "**/__mocks__/**",
     // The docs site has its own Bun dependency tree and nested oxlint config.
     "docs/**",
@@ -33,6 +35,9 @@
     "ts/packages/providers/*/test/**",
     "!ts/packages/cli/test/**",
     "ts/packages/cli/test/__utils__/**",
+    // New exclusions vs eslint.config.mjs: the CI gate (pnpm lint) only ever
+    // targeted ts/packages, so e2e suites and repo scripts were lint:fix-only
+    // surface. Excluded explicitly now that oxlint also runs from the repo root.
     "ts/e2e-tests/**",
     "ts/scripts/**",
     // ESLint only linted .ts/.tsx (--ext .ts,.tsx); keep that scope.
@@ -40,6 +45,8 @@
     "**/*.mjs",
     "**/*.cjs",
     "**/*.jsx",
+    // New exclusion vs eslint.config.mjs (which matched .d.ts via --ext .ts):
+    // ambient declarations are type-only surface covered by typecheck.
     "**/*.d.ts"
   ],
   "rules": {

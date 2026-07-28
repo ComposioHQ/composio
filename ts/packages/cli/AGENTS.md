@@ -6,6 +6,8 @@ Instructions for AI agents working on `@composio/cli`. The sibling `CLAUDE.md` i
 
 When you touch CLI code (anything under `ts/packages/cli/src/`), run `pnpm typecheck` from the repo root before pushing. Fix all type errors. Build/lint failures block CI.
 
+This package pins its `typescript` dependency to TypeScript 6 (`catalog:ts6` in `package.json`) because `src/generation/typescript/*` drives the JS compiler API, which TS7 (tsgo) does not ship. The pin only affects `import ts from 'typescript'` resolution — the `tsc` binary the typecheck scripts invoke still comes from the workspace root (TS7), since the TS6 alias package only ships a `tsc6` bin. Keep the pin until the generation pipeline moves off the compiler API.
+
 ## Architecture
 
 The CLI is built on the **Effect.ts ecosystem** and runs on **Bun**. Service-oriented architecture with dependency injection via Effect layers, generator-based control flow (`Effect.gen`), and structured error handling.

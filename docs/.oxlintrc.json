@@ -1,9 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   // Ported from eslint.config.mjs and eslint-config-next/core-web-vitals.
-  // Native oxlint plugins cover the Next.js, React, hooks, import, and
-  // accessibility rules. Dashboard-link policy uses the same ESLint-compatible
-  // no-restricted-syntax plugin as the root workspace config.
+  // Native oxlint plugins cover the Next.js, React, import, and accessibility
+  // rules, plus the two classic hooks rules (rules-of-hooks, exhaustive-deps).
+  // Dashboard-link policy uses the same ESLint-compatible no-restricted-syntax
+  // plugin as the root workspace config.
   "plugins": ["nextjs", "react", "import", "jsx-a11y"],
   "jsPlugins": [{ "name": "eslint-js", "specifier": "oxlint-plugin-eslint" }],
   "categories": {
@@ -92,6 +93,11 @@
         "react/react-in-jsx-scope": "off",
         "react/rules-of-hooks": "error",
         "react/exhaustive-deps": "warn",
+        // The ESLint config also ran the compiler-powered react-hooks rules
+        // set-state-in-effect, immutability, and purity at "warn" over
+        // pre-existing violations in interactive components, to be flipped to
+        // "error" once the debt is burned down. oxlint has no port of those
+        // three; react-compiler is the closest signal until it does.
         "react/react-compiler": "warn",
         "import/no-anonymous-default-export": "warn",
         "jsx-a11y/alt-text": [

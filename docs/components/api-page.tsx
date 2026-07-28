@@ -86,7 +86,7 @@ function resolveRenderMarkdown(ctx: MarkdownRenderSource): (text: string) => Rea
   if (Markdown) {
     // Not a component definition despite returning an element -- it's the
     // `(text) => ReactNode` callback the schema generator invokes directly.
-    // oxlint-disable-next-line react/display-name -- render callback, never mounted as a component
+    // eslint-disable-next-line react/display-name -- render callback, never mounted as a component
     return (text: string) => createElement(Markdown, { md: text });
   }
   return ctx.renderMarkdown ?? ctx._default_processMarkdown ?? (text => text);

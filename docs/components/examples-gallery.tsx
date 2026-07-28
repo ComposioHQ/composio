@@ -96,7 +96,7 @@ function ExampleCard({ ex, index }: { ex: GalleryItem; index: number }) {
         {ex.logos.length > 0 && (
           <div className="flex shrink-0 items-center -space-x-1.5">
             {ex.logos.map((logo) => (
-              // oxlint-disable-next-line nextjs/no-img-element
+              // eslint-disable-next-line nextjs/no-img-element
               <img
                 key={logo}
                 alt={logo}
