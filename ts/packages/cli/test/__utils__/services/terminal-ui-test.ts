@@ -1,5 +1,5 @@
 import { Console, Effect, Exit, Layer } from 'effect';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 
 /**
  * Test layer for TerminalUI that routes all output through Effect's Console.
@@ -8,13 +8,13 @@ import { TerminalUI } from 'src/services/terminal-ui';
  * no ANSI codes, no spinners.
  */
 export const terminalUITestImpl = TerminalUI.of({
-  capabilities: Effect.succeed({
-    stdinIsTTY: false,
-    stdoutIsTTY: false,
-    stderrIsTTY: false,
-    isInteractive: false,
-    canDecorate: false,
-  }),
+  capabilities: Effect.succeed(
+    getTerminalCapabilities({
+      stdin: { isTTY: false },
+      stdout: { isTTY: false },
+      stderr: { isTTY: false },
+    })
+  ),
   output: data => Console.log(data),
   error: data => Console.error(data),
 
