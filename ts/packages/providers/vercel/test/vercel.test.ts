@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { VercelProvider } from '../src';
 import { Tool } from '@composio/core';
 import { tool } from 'ai';
@@ -27,7 +27,7 @@ vi.mock('ai', () => {
 describe('VercelProvider', () => {
   let provider: VercelProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: unknown;
+  let mockExecuteToolFn: Mock;
 
   beforeEach(() => {
     provider = new VercelProvider();
@@ -114,7 +114,11 @@ describe('VercelProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
 
       // Extract the execute function from the call to tool()
-      const executeFunction = (tool as unknown).mock.calls[0][0].execute;
+      const executeFunction = (
+        tool as unknown as {
+          mock: { calls: Array<[{ execute: (input: unknown) => Promise<unknown> }]> };
+        }
+      ).mock.calls[0][0].execute;
 
       // Test the execute function with an object parameter
       const params = { input: 'test-value' };

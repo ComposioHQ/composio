@@ -26,11 +26,6 @@ import {
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
-if (!API_KEY) {
-  console.error('Error: COMPOSIO_API_KEY environment variable is required');
-  process.exit(1);
-}
-
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
 
 interface Tool {
@@ -197,7 +192,7 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
   });
 }
 
-function transformAuthConfigField(value: unknown, required: boolean): AuthConfigField {
+export function transformAuthConfigField(value: unknown, required: boolean): AuthConfigField {
   const field = toUnknownRecord(value);
   const name = toString(field.name);
   const defaultValue =
@@ -213,7 +208,7 @@ function transformAuthConfigField(value: unknown, required: boolean): AuthConfig
   };
 }
 
-function authConfigFields(
+export function authConfigFields(
   raw: Record<string, unknown>,
   phase: 'auth_config_creation' | 'connected_account_initiation',
   requirement: 'required' | 'optional'
@@ -254,7 +249,7 @@ async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]>
   }));
 }
 
-function transformToolkit(raw: unknown): Toolkit {
+export function transformToolkit(raw: unknown): Toolkit {
   const toolkit = toUnknownRecord(raw);
   const meta = toUnknownRecord(toolkit.meta);
   const categories = Array.isArray(meta.categories) ? meta.categories : [];
@@ -366,7 +361,14 @@ async function main() {
   console.log(`  Toolkits: ${toolkits.length}`);
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  if (!API_KEY) {
+    console.error('Error: COMPOSIO_API_KEY environment variable is required');
+    process.exit(1);
+  }
+
+  main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}

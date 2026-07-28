@@ -2673,7 +2673,7 @@ describe('ToolRouter', () => {
     beforeEach(() => {
       // Reset the Tools mock before each test
       vi.clearAllMocks();
-      (Tools as unknown).mockImplementation(function () {
+      vi.mocked(Tools).mockImplementation(function () {
         return {
           getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
           getRawToolRouterSessionTools: vi
@@ -2695,7 +2695,7 @@ describe('ToolRouter', () => {
         apiKey: 'test-api-key',
       });
 
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
         undefined,
@@ -2724,7 +2724,7 @@ describe('ToolRouter', () => {
       const session = await toolRouter.create(userId);
       const tools = await session.tools(modifiers);
 
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
         { modifySchema: modifiers.modifySchema },
@@ -2747,7 +2747,7 @@ describe('ToolRouter', () => {
         },
       });
 
-      (Tools as unknown).mockImplementation(function () {
+      vi.mocked(Tools).mockImplementation(function () {
         return {
           getRawComposioTools: vi.fn().mockResolvedValue([{ slug: 'GMAIL_FETCH_EMAILS' }]),
           getRawToolRouterSessionTools: vi
@@ -2766,7 +2766,7 @@ describe('ToolRouter', () => {
       });
       const tools = await session.tools();
 
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.wrapToolsForToolRouter).toHaveBeenCalledWith(
         sessionId,
         [
@@ -2849,7 +2849,7 @@ describe('ToolRouter', () => {
         error: null,
         successful: true,
       });
-      (Tools as unknown).mockImplementation(function () {
+      vi.mocked(Tools).mockImplementation(function () {
         return {
           getRawToolRouterSessionTools: vi
             .fn()
@@ -2910,7 +2910,7 @@ describe('ToolRouter', () => {
         successful: true,
       });
       const multiExecuteTool = { slug: 'COMPOSIO_MULTI_EXECUTE_TOOL' };
-      (Tools as unknown).mockImplementation(function () {
+      vi.mocked(Tools).mockImplementation(function () {
         return {
           getRawToolRouterSessionTools: vi
             .fn()
@@ -3028,7 +3028,7 @@ describe('ToolRouter', () => {
     it('should handle tools fetching errors', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
 
-      (Tools as unknown).mockImplementation(function () {
+      vi.mocked(Tools).mockImplementation(function () {
         return {
           getRawComposioTools: vi.fn().mockRejectedValue(new Error('Failed to fetch tools')),
           getRawToolRouterSessionTools: vi
@@ -3058,7 +3058,7 @@ describe('ToolRouter', () => {
 
       expect(Tools).toHaveBeenCalledTimes(2);
 
-      const firstToolsInstance = (Tools as unknown).mock.results[0].value;
+      const firstToolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(firstToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
         { modifySchema: modifier1.modifySchema },
@@ -3070,7 +3070,7 @@ describe('ToolRouter', () => {
         modifier1
       );
 
-      const secondToolsInstance = (Tools as unknown).mock.results[1].value;
+      const secondToolsInstance = vi.mocked(Tools).mock.results[1].value;
       expect(secondToolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
         { modifySchema: modifier2.modifySchema },
@@ -3099,7 +3099,7 @@ describe('ToolRouter', () => {
         provider: mockProvider,
         apiKey: 'test-api-key',
       });
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'custom_session_123',
         undefined,
@@ -3128,7 +3128,7 @@ describe('ToolRouter', () => {
         provider: mockProvider,
         apiKey: 'test-api-key',
       });
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         'empty_session_123',
         undefined,
@@ -3381,7 +3381,7 @@ describe('ToolRouter', () => {
       expect(tools).toBe('mocked-wrapped-tools');
       expect(Tools).toHaveBeenCalled();
 
-      const toolsInstance = (Tools as unknown).mock.results[0].value;
+      const toolsInstance = vi.mocked(Tools).mock.results[0].value;
       expect(toolsInstance.getRawToolRouterSessionTools).toHaveBeenCalledWith(
         sessionId,
         undefined,

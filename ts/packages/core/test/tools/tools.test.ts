@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mockClient } from '../utils/mocks/client.mock';
 import { toolMocks } from '../utils/mocks/data.mock';
 import { Tool, ToolListParams, ToolExecuteParams } from '../../src/types/tool.types';
+import { ExecuteToolFn } from '../../src/types/provider.types';
 import { Tools } from '../../src/models/Tools';
 import ComposioClient from '@composio/client';
 import {
@@ -12,6 +13,20 @@ import {
 } from '../utils/toolExecuteUtils';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+
+// Minimal structural shape for a ComposioError-like value (possibly wrapping
+// another error as its `cause`), used to narrow `catch (error: unknown)`
+// blocks that assert on `.code` / `.message` / `.possibleFixes`.
+type ErrorWithPossibleFixes = {
+  code?: string;
+  message?: string;
+  possibleFixes?: string[];
+  cause?: {
+    code?: string;
+    message?: string;
+    possibleFixes?: string[];
+  };
+};
 
 describe('Tools', () => {
   const context = createTestContext();
@@ -2325,7 +2340,8 @@ describe('Tools', () => {
         try {
           await context.tools.execute('GITHUB_CREATE_ISSUE', executeParams);
           expect.fail('Should have thrown an error');
-        } catch (error: unknown) {
+        } catch (rawError: unknown) {
+          const error = rawError as unknown as ErrorWithPossibleFixes;
           // The error should be wrapped in ComposioToolExecutionError
           expect(error).toBeDefined();
 
@@ -2370,9 +2386,10 @@ describe('Tools', () => {
         );
 
         // Mock provider wrapping
+        type ContextWithStoredExecuteFn = { storedExecuteToolFn?: ExecuteToolFn };
         context.mockProvider.wrapTools.mockImplementation((tools, executeToolFn) => {
           // Store the execute function so we can test it
-          (context as unknown).storedExecuteToolFn = executeToolFn;
+          (context as unknown as ContextWithStoredExecuteFn).storedExecuteToolFn = executeToolFn;
           return 'wrapped-tools-collection';
         });
 
@@ -2380,7 +2397,8 @@ describe('Tools', () => {
         await context.tools.get(userId, 'GITHUB_CREATE_ISSUE');
 
         // Now call the stored execute function (simulating agentic provider calling it)
-        const storedExecuteToolFn = (context as unknown).storedExecuteToolFn;
+        const storedExecuteToolFn = (context as unknown as ContextWithStoredExecuteFn)
+          .storedExecuteToolFn;
         expect(storedExecuteToolFn).toBeDefined();
 
         // Setup mocks for the actual execution

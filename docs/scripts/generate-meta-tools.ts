@@ -26,11 +26,6 @@ import { toOptionalString, toString, toStringArray, toUnknownRecord } from '../l
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
-if (!API_KEY) {
-  console.error('Error: COMPOSIO_API_KEY environment variable is required');
-  process.exit(1);
-}
-
 const DATA_DIR = join(process.cwd(), 'public/data');
 const CONTENT_DIR = join(process.cwd(), 'content/toolkits/meta-tools');
 
@@ -108,7 +103,7 @@ async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
   return tools;
 }
 
-function transformTool(value: unknown): GeneratedMetaTool {
+export function transformTool(value: unknown): GeneratedMetaTool {
   const raw = toUnknownRecord(value);
   const slug = toString(raw.slug);
   const name = toString(raw.name);
@@ -126,12 +121,12 @@ function transformTool(value: unknown): GeneratedMetaTool {
 }
 
 /** Derive a short page slug from the tool slug: COMPOSIO_SEARCH_TOOLS -> search_tools */
-function pageSlug(toolSlug: string): string {
+export function pageSlug(toolSlug: string): string {
   return toolSlug.toLowerCase().replace('composio_', '');
 }
 
 /** Truncate description to first sentence for index table */
-function briefDescription(description: string): string {
+export function briefDescription(description: string): string {
   // Strip markdown and leading whitespace
   const cleaned = description.replace(/\*\*/g, '').replace(/__/g, '').replace(/\n+/g, ' ').trim();
   const firstSentence = cleaned.split(/\.(\s|$)/)[0];
@@ -268,7 +263,14 @@ async function main() {
   console.log(`Tools: ${metaTools.map(t => t.slug).join(', ')}`);
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  if (!API_KEY) {
+    console.error('Error: COMPOSIO_API_KEY environment variable is required');
+    process.exit(1);
+  }
+
+  main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}
