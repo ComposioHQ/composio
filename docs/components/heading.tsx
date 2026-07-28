@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@fumadocs/ui/cn';
+import { cn } from '@/lib/utils';
 import { Link, Check } from 'lucide-react';
 import { useState, type ComponentPropsWithoutRef } from 'react';
 

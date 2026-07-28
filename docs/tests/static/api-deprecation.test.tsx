@@ -167,7 +167,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: { deprecated: true },
@@ -206,7 +206,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: {},
@@ -236,7 +236,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: { deprecated: true },
@@ -268,7 +268,7 @@ describe("deprecated API endpoints", () => {
     };
     const pageData = {
       getSchema: () => ({
-        dereferenced: {
+        bundled: {
           paths: {
             [operation.path]: {
               [operation.method]: {},
@@ -286,6 +286,47 @@ describe("deprecated API endpoints", () => {
 
     expect(html).toBe("Active task endpoint (DEPRECATED)");
     expect(html).not.toContain(">Legacy</span>");
+  });
+
+  test("detects deprecation from a bundled-only document", () => {
+    const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
+    const pageData = {
+      getSchema: () => ({
+        bundled: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: { deprecated: true },
+            },
+          },
+        },
+      }),
+    };
+
+    expect(isApiPageDeprecated(pageData, [operation])).toBe(true);
+  });
+
+  test("reports an active operation from a bundled-only document", () => {
+    const operation = { method: "post", path: "/v3.1/tasks/active" };
+    const pageData = {
+      getSchema: () => ({
+        bundled: {
+          paths: {
+            [operation.path]: {
+              [operation.method]: {},
+            },
+          },
+        },
+      }),
+    };
+
+    expect(isApiPageDeprecated(pageData, [operation])).toBe(false);
+  });
+
+  test("returns false when the document has no bundled paths", () => {
+    const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
+    const pageData = { getSchema: () => ({ bundled: {} }) };
+
+    expect(isApiPageDeprecated(pageData, [operation])).toBe(false);
   });
 
   test("serializes legacy only for deprecated v3.1 and v3 operations", async () => {
