@@ -288,8 +288,6 @@ describe("deprecated API endpoints", () => {
     expect(html).not.toContain(">Legacy</span>");
   });
 
-  // fumadocs-openapi 11 loaded documents only ever expose a `bundled` key;
-  // these cover the bundled lookup that real callers hit.
   test("detects deprecation from a bundled-only document", () => {
     const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
     const pageData = {
@@ -326,7 +324,7 @@ describe("deprecated API endpoints", () => {
 
   test("returns false when the document has no bundled paths", () => {
     const operation = { method: "get", path: "/v3.1/tasks/deprecated" };
-    const pageData = { getSchema: () => ({}) };
+    const pageData = { getSchema: () => ({ bundled: {} }) };
 
     expect(isApiPageDeprecated(pageData, [operation])).toBe(false);
   });

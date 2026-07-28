@@ -1,18 +1,9 @@
 /**
  * Narrows an OpenAPI document to just what one API reference page renders.
  *
- * fumadocs-openapi 11 makes `<OpenAPIPage />` a client component and hands it
- * `payload.bundled` -- the *entire* document -- so Next serializes the whole
- * spec into the RSC payload of every operation page. For this repo that is
- * ~451 KB per page across ~93 pages, even though a page renders one operation.
- * (fumadocs 10 passed only a document id and resolved it server-side.)
- *
- * Keeping only the page's own operations plus the components they can reach
- * cuts that to ~8 KB on average.
- *
- * Correctness over cleverness: if the document uses an internal `$ref` that
- * points anywhere other than `#/components/...`, this bails out and returns the
- * document untouched rather than risk emitting a dangling pointer.
+ * Page props cross a client boundary, so this keeps only the page's operations
+ * and transitively reachable components. If the slice cannot be proven
+ * self-contained, the original document is returned instead.
  */
 
 // The document shape is spec-driven, so `any` is deliberate throughout.
@@ -163,7 +154,8 @@ export function sliceDocumentForPage(
   const components: Record<string, Record<string, unknown>> = {};
   for (const ref of refs) {
     const [, , group, ...rest] = ref.split('/');
-    const name = rest.map(decodePointerSegment).join('/');
+    if (!group || rest.length !== 1) return bundled;
+    const name = decodePointerSegment(rest[0]);
     const value = resolvePointer(bundled, ref);
     if (value === undefined) return bundled; // Dangling pointer -- keep everything.
     (components[group] ??= {})[name] = value;

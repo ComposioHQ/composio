@@ -2,10 +2,8 @@ import { describe, expect, test } from 'bun:test';
 
 import { sliceApiPageProps, sliceDocumentForPage } from '../../lib/openapi-slice';
 
-// fumadocs-openapi 11 hands the whole bundled document to a client component,
-// so every API reference page serializes the entire spec. These tests pin the
-// per-page narrowing and, just as importantly, the bail-outs that keep the
-// document whole whenever narrowing could produce a dangling reference.
+// The bail-outs are as important as the per-page narrowing: a larger valid
+// payload is safer than a smaller document with dangling references.
 
 const doc = {
   openapi: '3.1.0',
@@ -141,6 +139,54 @@ describe('sliceDocumentForPage', () => {
     };
 
     expect(sliceDocumentForPage(odd, [{ path: '/users', method: 'get' }])).toBe(odd);
+  });
+
+  test('keeps the whole document for a deep component reference', () => {
+    const deep = {
+      ...doc,
+      paths: {
+        '/users': {
+          get: {
+            responses: {
+              '200': {
+                $ref: '#/components/schemas/User/properties/address',
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(sliceDocumentForPage(deep, [{ path: '/users', method: 'get' }])).toBe(deep);
+  });
+
+  test('supports escaped slashes in component names', () => {
+    const escaped = {
+      ...doc,
+      paths: {
+        '/users': {
+          get: {
+            responses: {
+              '200': { $ref: '#/components/schemas/a~1b' },
+            },
+          },
+        },
+      },
+      components: {
+        ...doc.components,
+        schemas: {
+          ...doc.components.schemas,
+          'a/b': { type: 'string' },
+        },
+      },
+    };
+
+    const out = sliceDocumentForPage(escaped, [{ path: '/users', method: 'get' }]);
+
+    expect(out).not.toBe(escaped);
+    expect(out.components.schemas).toEqual({
+      'a/b': { type: 'string' },
+    });
   });
 
   test('keeps the whole document for a dangling component reference', () => {

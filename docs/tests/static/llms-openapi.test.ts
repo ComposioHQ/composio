@@ -138,4 +138,48 @@ describe("LLM OpenAPI markdown", () => {
     expect(markdown).toContain('"id": "msg_test"');
     expect(markdown).not.toContain("### Example cURL Request");
   });
+
+  test("bounds recursive array type rendering", async () => {
+    bundledSpec = {
+      paths: {
+        "/v3.1/test": {
+          get: {
+            parameters: [
+              {
+                name: "tree",
+                in: "query",
+                schema: { $ref: "#/components/schemas/RecursiveArray" },
+              },
+            ],
+            responses: {
+              200: { description: "Success" },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          RecursiveArray: {
+            type: "array",
+            items: { $ref: "#/components/schemas/RecursiveArray" },
+          },
+        },
+      },
+    };
+
+    const markdown = await openapiPageToMarkdown({
+      url: "/reference/api-reference/test/getTest",
+      data: {
+        title: "Get test",
+        getOpenAPIPageProps: () => ({
+          payload: { bundled: bundledSpec },
+          operations: [{ path: "/v3.1/test", method: "GET" }],
+        }),
+      },
+    });
+
+    expect(markdown).toContain(
+      "- `tree` (array<array<array<array<array<...>>>>>):",
+    );
+  });
 });
