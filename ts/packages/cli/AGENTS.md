@@ -142,6 +142,19 @@ Effect.gen(function* () {
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
+For table-driven tests over independent finite choices, use Effect Array do notation
+to build a typed Cartesian product instead of enumerating every case or nesting loops:
+
+```typescript
+const cases = pipe(
+  Arr.Do,
+  Arr.bind('firstAxis', () => choices),
+  Arr.bind('secondAxis', () => choices)
+);
+```
+
+Each `Arr.bind` adds one independent axis to the generated cases.
+
 ### Effect safety and migration seams
 
 - Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Either`, `Exit`, `Cause`, `ValidationError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.

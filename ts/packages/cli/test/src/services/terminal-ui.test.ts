@@ -2,7 +2,7 @@ import { Writable } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
-import { Data, Effect, Exit } from 'effect';
+import { Array as Arr, Data, Effect, Exit, pipe } from 'effect';
 import { getTerminalCapabilities, makeTerminalUI, TerminalUI } from 'src/services/terminal-ui';
 import { TestLive, MockConsole } from 'test/__utils__';
 
@@ -14,6 +14,15 @@ vi.mock('@clack/prompts', async importOriginal => {
 class TestFailure extends Data.TaggedError('test/TestFailure')<{
   readonly message: string;
 }> {}
+
+const booleanStates = [false, true] as const;
+
+const ttyCombinations = pipe(
+  Arr.Do,
+  Arr.bind('stdin', () => booleanStates),
+  Arr.bind('stdout', () => booleanStates),
+  Arr.bind('stderr', () => booleanStates)
+);
 
 /** An intentional Node.js Writable test double matching Clack's output contract. */
 const makeSink = (isTTY: boolean) => {
@@ -35,16 +44,7 @@ const makeStreamedUi = (tty: { stdin: boolean; stdout: boolean; stderr: boolean 
 };
 
 describe('TerminalUI', () => {
-  it.each([
-    { stdin: false, stdout: false, stderr: false },
-    { stdin: false, stdout: false, stderr: true },
-    { stdin: false, stdout: true, stderr: false },
-    { stdin: false, stdout: true, stderr: true },
-    { stdin: true, stdout: false, stderr: false },
-    { stdin: true, stdout: false, stderr: true },
-    { stdin: true, stdout: true, stderr: false },
-    { stdin: true, stdout: true, stderr: true },
-  ])(
+  it.each(ttyCombinations)(
     'derives each capability from only the streams that serve it (stdin=$stdin, stdout=$stdout, stderr=$stderr)',
     ({ stdin, stdout, stderr }) => {
       expect(
