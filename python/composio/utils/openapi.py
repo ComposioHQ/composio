@@ -39,6 +39,18 @@ def _type_to_parameter(schema: t.Dict[str, t.Any]) -> t.Any:
         return _handle_enum_type(schema=schema)
 
     p_type = schema.get("type")
+    if isinstance(p_type, list):
+        # JSON Schema Draft 2020-12 / OpenAPI 3.1 express a nullable field as a
+        # list of types, e.g. {"type": ["string", "null"]}, rather than an anyOf.
+        if not p_type:
+            return t.Any
+        return t.Union[
+            tuple(
+                _type_to_parameter(schema={**schema, "type": member})
+                for member in p_type
+            )
+        ]
+
     if p_type in OPENAPI_TO_PYTHON:
         return OPENAPI_TO_PYTHON[p_type]
 

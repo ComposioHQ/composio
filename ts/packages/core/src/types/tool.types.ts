@@ -1,6 +1,7 @@
 import { z } from 'zod/v3';
 import { CustomConnectionDataSchema } from './connectedAccountAuthStates.types';
 import { TransformToolSchemaModifier } from './modifiers.types';
+import { deduplicateJsonSchemaRequiredArrays } from '../utils/jsonSchema';
 
 /**
  * Toolkit is the collection of tools,
@@ -86,38 +87,41 @@ export const JSONSchemaPropertySchema: z.ZodType<any> = z.object({
 export type JSONSchemaProperty = z.infer<typeof JSONSchemaPropertySchema>;
 
 // Schema for parameters (input/output)
-const ParametersSchema = z.object({
-  type: z.literal('object'),
-  anyOf: z.array(JSONSchemaPropertySchema).optional(),
-  oneOf: z.array(JSONSchemaPropertySchema).optional(),
-  allOf: z.array(JSONSchemaPropertySchema).optional(),
-  not: JSONSchemaPropertySchema.optional(),
-  properties: z.record(z.string(), JSONSchemaPropertySchema),
-  required: z.array(z.string()).optional(),
-  title: z.string().optional(),
-  default: z.any().optional(),
-  nullable: z.boolean().optional(),
-  description: z.string().optional(),
-  additionalProperties: z.boolean().default(false).optional(),
-  // Definition blocks targeted by `$ref` pointers. The Composio API ships
-  // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
-  // because `z.object` strips unknown keys they were being dropped on parse —
-  // leaving every nested `$ref` dangling and unresolvable downstream
-  // (providers, file modifiers). `JSONSchemaPropertySchema` already accepts
-  // both keywords; the parameters root must too.
-  $defs: z
-    .record(
-      z.string(),
-      z.lazy(() => JSONSchemaPropertySchema)
-    )
-    .optional(),
-  definitions: z
-    .record(
-      z.string(),
-      z.lazy(() => JSONSchemaPropertySchema)
-    )
-    .optional(),
-});
+const ParametersSchema = z.preprocess(
+  deduplicateJsonSchemaRequiredArrays,
+  z.object({
+    type: z.literal('object'),
+    anyOf: z.array(JSONSchemaPropertySchema).optional(),
+    oneOf: z.array(JSONSchemaPropertySchema).optional(),
+    allOf: z.array(JSONSchemaPropertySchema).optional(),
+    not: JSONSchemaPropertySchema.optional(),
+    properties: z.record(z.string(), JSONSchemaPropertySchema),
+    required: z.array(z.string()).optional(),
+    title: z.string().optional(),
+    default: z.any().optional(),
+    nullable: z.boolean().optional(),
+    description: z.string().optional(),
+    additionalProperties: z.boolean().default(false).optional(),
+    // Definition blocks targeted by `$ref` pointers. The Composio API ships
+    // these at the parameters root (e.g. `data` → `$ref` → `#/$defs/...`), but
+    // because `z.object` strips unknown keys they were being dropped on parse —
+    // leaving every nested `$ref` dangling and unresolvable downstream
+    // (providers, file modifiers). `JSONSchemaPropertySchema` already accepts
+    // both keywords; the parameters root must too.
+    $defs: z
+      .record(
+        z.string(),
+        z.lazy(() => JSONSchemaPropertySchema)
+      )
+      .optional(),
+    definitions: z
+      .record(
+        z.string(),
+        z.lazy(() => JSONSchemaPropertySchema)
+      )
+      .optional(),
+  })
+);
 
 /**
  * Tool is a single action that can be performed by a toolkit.

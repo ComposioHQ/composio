@@ -3,10 +3,10 @@ import { CLI_EXPERIMENTAL_FEATURES } from 'src/experimental-features';
 import { resolveSkillBuildContext } from '../../../../skills-src/composio-cli/reference-schema';
 
 describe('composio-cli skill build context', () => {
-  it('enables multi-account guidance in stable builds', () => {
+  it('keeps only genuinely experimental guidance disabled in stable builds', () => {
     const build = resolveSkillBuildContext('stable');
 
-    expect(build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.MULTI_ACCOUNT]).toBe(true);
     expect(build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LISTEN]).toBe(false);
+    expect(build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LOCAL_TOOLS]).toBe(false);
   });
 });

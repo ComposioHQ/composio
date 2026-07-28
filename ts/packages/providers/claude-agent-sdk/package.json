@@ -1,6 +1,6 @@
 {
   "name": "@composio/claude-agent-sdk",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Composio provider for Claude Agent SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/ComposioHQ/composio/issues"
   },
-  "homepage": "https://github.com/ComposioHQ/composio/tree/main/ts/packages/providers/claude-agent-sdk#readme",
+  "homepage": "https://github.com/ComposioHQ/composio/tree/next/ts/packages/providers/claude-agent-sdk#readme",
   "publishConfig": {
     "access": "public",
     "main": "dist/index.mjs",
@@ -47,18 +47,19 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.199",
     "@composio/core": ">=0.10.0 <1.0.0",
-    "@anthropic-ai/claude-agent-sdk": ">=0.1.0"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.218",
     "@composio/core": "workspace:*",
-    "@anthropic-ai/claude-agent-sdk": "^0.1.9",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   }
 }

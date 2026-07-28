@@ -1,12 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Effect, Stream, String } from 'effect';
-import { Command } from '@effect/platform';
+import { Command, Path } from '@effect/platform';
+import { BunPath } from '@effect/platform-bun';
 import ts from 'typescript';
 import {
   buildVirtualFileMap,
   formatDiagnostic,
   patchCompilerHostWithVirtualFiles,
 } from 'src/generation/typescript/virtual-compiler-host';
+
+// The ts.CompilerHost callbacks are synchronous, so the sync Path service
+// instance is resolved once up front and passed in as a plain parameter.
+const path = Effect.runSync(Effect.provide(Path.Path, BunPath.layer));
 
 interface AssertTypeScriptIsValidInput {
   files: {
@@ -53,7 +58,7 @@ export function assertTypeScriptIsValid({ files }: AssertTypeScriptIsValidInput)
   const virtualFileNames = Array.from(virtualFileMap.keys());
 
   const tsHost = ts.createCompilerHost(compilerOptions);
-  patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'throw');
+  patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, path, 'throw');
 
   const program = ts.createProgram(virtualFileNames, compilerOptions, tsHost);
 
@@ -162,7 +167,7 @@ if (import.meta.vitest) {
 
       tsHost.getSourceFile = getSourceFile;
       tsHost.fileExists = fileExists;
-      patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, 'throw');
+      patchCompilerHostWithVirtualFiles(tsHost, virtualFileMap, path, 'throw');
 
       expect(tsHost.fileExists('node_modules/@composio/core/index.d.ts')).toBe(false);
       expect(() =>

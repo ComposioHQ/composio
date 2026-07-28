@@ -1,72 +1,48 @@
-## 🚀🔗 Integrating Composio with Google's Gemini SDK
+# composio-gemini
 
-Streamline the integration of Composio with Google AI Python to enhance the capabilities of Gemini models, allowing them to interact directly with external applications and expanding their operational scope.
+Adapts Composio tools to the [`google-genai`](https://pypi.org/project/google-genai/) SDK as Python callables compatible with Gemini's Automatic Function Calling.
 
-### Objective
-
-- **Automate starring a GitHub repository** using conversational instructions via Google AI Python's Function Calling feature.
-
-### Installation and Setup
-
-Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
+## Installation
 
 ```bash
-# Install Composio Gemini package
-pip install composio-gemini
-
-# Connect your GitHub account
-composio add github
-
-# View available applications you can connect with
-composio apps
+pip install composio composio-gemini google-genai
 ```
 
-### Usage Steps
+Set `COMPOSIO_API_KEY` (create one at https://dashboard.composio.dev/settings) and `GOOGLE_API_KEY` (from https://aistudio.google.com/apikey) in your environment.
 
-#### 1. Import Base Packages
+## Quickstart
 
-Prepare your environment by initializing necessary imports from Google AI Python and setting up your client.
+`GeminiProvider` wraps each Composio tool as a typed Python callable. Pass the callables to `GenerateContentConfig(tools=...)` and the `google-genai` SDK derives function declarations from their signatures and executes tool calls automatically inside the chat loop; there is no manual tool-call handling.
 
 ```python
+from composio import Composio
+from composio_gemini import GeminiProvider
 from google import genai
-
-# Create google client
-client = genai.Client()
-```
-
-### Step 2: Integrating GitHub Tools with Composio
-
-This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for Google AI Python operations.
-```python
 from google.genai import types
 
-from composio_gemini import Action, ComposioToolSet
+composio = Composio(provider=GeminiProvider())
+client = genai.Client()
 
-# Create composio client
-toolset = ComposioToolSet()
+# Create a session for your user
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-# Create tools
-tools = toolset.get_tools(
-    actions=[
-        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
-    ]
-)
+config = types.GenerateContentConfig(tools=tools)
+chat = client.chats.create(model="gemini-3-pro-preview", config=config)
 
-# Create genai client config
-config = types.GenerateContentConfig(
-    tools=tools,  # type: ignore    
-)
-```
-
-### Step 3: Agent Execution
-
-This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
-
-```python
-# Use the chat interface.
-chat = client.chats.create(model="gemini-2.0-flash", config=config)
 response = chat.send_message(
-    "Can you star composiohq/composio repository on github",
+    "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
 )
 print(response.text)
 ```
+
+If you disable Automatic Function Calling and handle function calls yourself, `composio.provider.handle_response(response)` executes the function calls in a Gemini response and returns `Part` objects ready to send back.
+
+## composio-gemini vs composio-google
+
+This package targets the `google-genai` SDK (`from google import genai`). [`composio-google`](../google) targets the older Vertex AI SDK (`vertexai.generative_models`). For new projects, Google recommends `google-genai`, so use this package.
+
+## Links
+
+- Google provider docs: https://docs.composio.dev/docs/providers/google
+- Composio docs: https://docs.composio.dev

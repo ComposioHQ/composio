@@ -5,6 +5,8 @@ import { openapi, openapiV3 } from './openapi';
 import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
+import { FILE_BUILDS } from './file-builds';
+import { deprecatedApiSidebarTransformer } from './deprecated-api-sidebar';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -81,7 +83,10 @@ export async function getReferenceSource() {
       plugins: [lucideIconsPlugin(), openapiPlugin()],
       pageTree: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transformers: [defaultOpenTransformer as any],
+        transformers: [
+          defaultOpenTransformer as any,
+          deprecatedApiSidebarTransformer as any,
+        ],
       },
     });
 
@@ -273,6 +278,42 @@ export function mdxToCleanMarkdown(content: string): string {
     (_, name) => `## ${name}\n`
   );
 
+  // FileBuildup renders an example's file growing step by step. The JSX can't
+  // serialize to markdown, so the .md an agent reads would otherwise lose every
+  // line of real code. Emit the actual source from the FILE_BUILDS registry:
+  // `<FileBuildup name="bot" step={2} />` -> the full file at that step;
+  // without `step` -> the final complete file.
+  result = result.replace(
+    /<FileBuildup\s+name="([^"]+)"(?:\s+step=\{(\d+)\})?\s*\/>/g,
+    (_, name: string, step?: string) => {
+      const build = FILE_BUILDS[name];
+      if (!build || !build.stages?.length) return '';
+      const lang = /\.tsx?$/.test(build.file)
+        ? 'typescript'
+        : /\.py$/.test(build.file)
+          ? 'python'
+          : '';
+      const idx = step ? Number(step) - 1 : build.stages.length - 1;
+      const stage = build.stages[idx];
+      if (!stage) return '';
+      const label = step ? ` — step ${step}: ${stage.title}` : ' — complete file';
+      return `\n**\`${build.file}\`${label}**\n\n\`\`\`${lang}\n${stage.code.trim()}\n\`\`\`\n`;
+    }
+  );
+
+  // RepoBrowser is an interactive file tree. The iMessage page intentionally
+  // shows a source slice while its public runnable fixture is still pending.
+  result = result.replace(
+    /<RepoBrowser\b(?=[^>]*\bsource="imessage")[^>]*\/>/g,
+    '\n> The iMessage code browser is an implementation slice, not a standalone fixture. The complete runnable project will be published in the Composio examples repo.\n'
+  );
+
+  // Point the existing Slack browser at its real repository.
+  result = result.replace(
+    /<RepoBrowser\b[^>]*\/>/g,
+    '\n> The complete project is on GitHub: [composio-slack-bot](https://github.com/ComposioHQ/composio-slack-bot).\n'
+  );
+
   result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
 
   result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
@@ -401,10 +442,23 @@ ${page.data.description || ''}`;
     ? `\n\n---\n\n📚 **More documentation:** [View all docs](https://docs.composio.dev/llms.txt) | [Glossary](https://docs.composio.dev/llms.mdx/reference/glossary) | [Examples](https://docs.composio.dev/llms.mdx/examples) | [API Reference](https://docs.composio.dev/llms.mdx/reference)`
     : '';
 
-  const guardrails = includeGuardrails ? getGuardrails(page.data.llmGuardrails) : '';
+  // Legacy pages (frontmatter `legacy: true`) document point-in-time migrations
+  // and may show outdated APIs. Mark the .md so an agent reading it knows, and
+  // skip the "enforce the CURRENT patterns" guardrail block — appending it to a
+  // legacy guide contradicts the guide's own (older) content.
+  const isLegacy = page.data.legacy === true;
+  const written = page.data.written;
+  const topNote = isLegacy
+    ? `\n> **Legacy${written ? ` · written ${written}` : ''}.** This is a point-in-time migration/legacy guide and may describe outdated APIs. For current guidance, see https://docs.composio.dev.\n`
+    : written
+      ? `\n> _Written ${written}._\n`
+      : '';
+
+  const guardrails =
+    includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 
   return `# ${page.data.title} (${page.url})
-
+${topNote}
 ${cleanContent}${footer}${guardrails}`;
 }
 

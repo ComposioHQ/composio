@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Data, Effect } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, unicodeOr } from '@clack/prompts';
 import { TerminalUI } from 'src/services/terminal-ui';
@@ -12,13 +12,17 @@ import type { ToolkitVersionOverrides } from './toolkit-version-overrides';
  * Custom error class for invalid toolkit versions that preserves structured data.
  * This allows consumers to access both the human-readable message and the machine-readable data.
  */
-export class InvalidToolkitVersionsValidationError extends Error {
+export class InvalidToolkitVersionsValidationError extends Data.TaggedError(
+  'effects/InvalidToolkitVersionsValidationError'
+)<{
   readonly invalidVersions: ReadonlyArray<InvalidVersionDetail>;
-
+  readonly message: string;
+}> {
   constructor(invalidVersions: ReadonlyArray<InvalidVersionDetail>) {
-    super(formatInvalidVersionsError(invalidVersions));
-    this.name = 'InvalidToolkitVersionsValidationError';
-    this.invalidVersions = invalidVersions;
+    super({
+      invalidVersions,
+      message: formatInvalidVersionsError(invalidVersions),
+    });
   }
 
   /**
@@ -26,11 +30,19 @@ export class InvalidToolkitVersionsValidationError extends Error {
    */
   toJSON(): { error: string; invalidVersions: ReadonlyArray<InvalidVersionDetail> } {
     return {
-      error: this.name,
+      error: 'InvalidToolkitVersionsValidationError',
       invalidVersions: this.invalidVersions,
     };
   }
 }
+
+export class ToolkitVersionValidationError extends Data.TaggedError(
+  'effects/ToolkitVersionValidationError'
+)<{
+  readonly cause?: unknown;
+  readonly message: string;
+  readonly reason: 'invalid-toolkit' | 'request' | 'decode' | 'client-unavailable';
+}> {}
 
 const MAX_VERSIONS_TO_SHOW = 5;
 const S_CORNER_BOTTOM_LEFT = unicodeOr('╰', '+');
@@ -141,7 +153,11 @@ export const validateToolkitVersionOverrides = ({
   versionOverrides,
   toolkitSlugsFilter,
   client,
-}: ValidateVersionsOptions): Effect.Effect<ValidateVersionsResult, Error, TerminalUI> =>
+}: ValidateVersionsOptions): Effect.Effect<
+  ValidateVersionsResult,
+  InvalidToolkitVersionsValidationError | ToolkitVersionValidationError,
+  TerminalUI
+> =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
 
@@ -164,20 +180,40 @@ export const validateToolkitVersionOverrides = ({
         ),
         Effect.catchTag('services/InvalidToolkitsError', error =>
           Effect.fail(
-            new Error(
-              `Invalid toolkit(s) in version overrides: ${error.invalidToolkits.join(', ')}. ` +
-                `Check that the toolkit slug is correct (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL, not COMPOSIO_TOOLKIT_VERSION_GMAL).`
-            )
+            new ToolkitVersionValidationError({
+              cause: error,
+              message:
+                `Invalid toolkit(s) in version overrides: ${error.invalidToolkits.join(', ')}. ` +
+                `Check that the toolkit slug is correct (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL, not COMPOSIO_TOOLKIT_VERSION_GMAL).`,
+              reason: 'invalid-toolkit',
+            })
           )
         ),
         Effect.catchTag('services/HttpServerError', error =>
-          Effect.fail(new Error(`Failed to validate toolkit versions: ${error.cause}`))
+          Effect.fail(
+            new ToolkitVersionValidationError({
+              cause: error,
+              message: 'Failed to validate toolkit versions',
+              reason: 'request',
+            })
+          )
         ),
         Effect.catchTag('services/HttpDecodingError', error =>
-          Effect.fail(new Error(`Failed to decode toolkit response: ${error.cause}`))
+          Effect.fail(
+            new ToolkitVersionValidationError({
+              cause: error,
+              message: 'Failed to decode toolkit response',
+              reason: 'decode',
+            })
+          )
         ),
         Effect.catchTag('NoSuchElementException', () =>
-          Effect.fail(new Error('API client not initialized'))
+          Effect.fail(
+            new ToolkitVersionValidationError({
+              message: 'API client not initialized',
+              reason: 'client-unavailable',
+            })
+          )
         )
       );
 

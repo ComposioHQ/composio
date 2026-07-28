@@ -12,9 +12,12 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import type { ApiPageProps } from 'fumadocs-openapi/ui';
 import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
-import { VersionBadge, extractVersionFromPath } from '@/components/version-badge';
+import { extractVersionFromPath } from '@/components/version-badge';
+import { ApiPageTitle } from '@/components/api-page-title';
+import { isApiPageDeprecated } from '@/lib/api-deprecation';
+import type { OpenApiSchemaPageData } from '@/lib/api-deprecation';
 
-interface OpenAPIPageData {
+interface OpenAPIPageData extends OpenApiSchemaPageData {
   title: string;
   description?: string;
   getAPIPageProps: () => ApiPageProps;
@@ -44,17 +47,15 @@ export default async function Page({
     const detectedVersion = apiProps.operations?.[0]?.path
       ? extractVersionFromPath(apiProps.operations[0].path)
       : null;
+    const deprecated = isApiPageDeprecated(pageData, apiProps.operations);
     return (
       <DocsPage full footer={{ enabled: false }} tableOfContentPopover={{ enabled: false }}>
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold">
-            {pageData.title}
-            {detectedVersion && (
-              <span className="ml-2 align-middle">
-                <VersionBadge version={detectedVersion} />
-              </span>
-            )}
-          </h1>
+          <ApiPageTitle
+            title={pageData.title}
+            version={detectedVersion}
+            deprecated={deprecated}
+          />
           <PageActions path={page.url} variant="inline" />
         </div>
         <DocsBody>

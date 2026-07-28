@@ -1,0 +1,26 @@
+---
+title: "Python SDK 0.17.0 makes sessions first-class"
+description: "Python SDK 0.17.0 adds the sessions API, opt-in MCP, webhook helpers, shared-connection ACL updates, and sandbox configuration."
+date: "2026-06-27"
+---
+
+Python SDK `composio` `0.17.0` moves Tool Router onto a sessions-first API. It also adds webhook helpers and makes the current shared-connection ACL API easier to discover.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.17.0` |
+
+### Sessions and MCP
+
+`composio.sessions.create(...)` is now the canonical sessions entry point. `composio.create(...)` and `composio.use(...)` remain supported shortcuts, while `composio.tool_router` is deprecated as an alias for the same object.
+
+Sessions return native tools by default. Set `mcp=True` when a typed MCP session is required. The runtime object is unchanged, but the explicit option makes the MCP dependency visible in application code.
+
+### New APIs and behavior
+
+- `triggers.parse()` parses an incoming webhook request and can verify its signature. Passing an empty `verify_secret` now raises instead of silently skipping verification.
+- `triggers.set_webhook_subscription()` creates or updates the project webhook subscription.
+- `connected_accounts.update_acl()` is the primary shared-connection ACL patch helper. `experimental.update_acl()` remains as a deprecated alias.
+- Prefer `sandbox` for session code-execution configuration. `workbench` remains an accepted alias.

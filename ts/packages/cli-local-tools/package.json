@@ -32,19 +32,17 @@
     "build:composio-native-ui": "bun run ./scripts/build-composio-native-ui-binaries.ts",
     "build:local-tool-binaries": "bun run ./scripts/build-local-tool-binaries.ts",
     "test": "vitest run",
-    "typecheck": "pnpm exec tsgo --noEmit -p ./tsconfig.src.json",
-    "typecheck:tsc": "tsc --noEmit -p ./tsconfig.src.json"
+    "typecheck": "tsc --noEmit -p ./tsconfig.src.json"
   },
   "dependencies": {
     "@composio/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "decompress": "^4.2.1",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "extract-zip": "^2.0.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/decompress": "^4.2.7",
-    "@types/node": "^24.0.1",
-    "chrome-devtools-mcp": "1.4.0",
+    "@types/node": "^26.1.1",
+    "chrome-devtools-mcp": "1.6.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

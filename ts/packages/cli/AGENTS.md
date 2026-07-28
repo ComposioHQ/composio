@@ -27,34 +27,34 @@ Errors are captured via the custom `effect-errors/` module (source-mapped stack 
 
 Each command uses `@effect/cli`'s `Command.make()` pattern. Top-level command files end in `.cmd.ts`; nested command groups live in their own subdirectory with a `<group>.cmd.ts` entry. Current top-level commands:
 
-| Group / Command      | Purpose                                                                                                              |
+| Group / Command | Purpose |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `version`            | Display CLI version                                                                                                  |
-| `whoami`             | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions)                          |
-| `login`              | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
-| `logout`             | Clear stored API key                                                                                                 |
-| `signup`             | Create a Composio account                                                                                            |
-| `upgrade`            | Self-update binary from GitHub releases                                                                              |
-| `init`               | Bootstrap a Composio project in the current directory                                                                |
-| `install`            | Install local-tool integrations                                                                                      |
-| `generate {ts        | py}`                                                                                                                 | Generate type stubs (auto-detects project language if no subcommand) |
-| `agent`              | Manage AI agent presets                                                                                              |
-| `toolkits`           | List / inspect / version toolkits                                                                                    |
-| `tools`              | List / inspect / `execute` tools                                                                                     |
-| `triggers`           | List / manage trigger types                                                                                          |
-| `auth-configs`       | Manage auth-config resources (`ac_*`)                                                                                |
-| `connected-accounts` | Manage connected accounts (`ca_*`)                                                                                   |
-| `connections`        | Alias / helper for connected-account flows                                                                           |
-| `orgs`               | Manage organizations                                                                                                 |
-| `projects`           | Manage projects                                                                                                      |
-| `local-tools`        | Manage local toolkits (via `@composio/cli-local-tools`)                                                              |
-| `logs`               | View tool-execution logs (`logs-cmd/`)                                                                               |
-| `config`             | Read/write CLI config                                                                                                |
-| `listen`             | Listen for events                                                                                                    |
-| `proxy`              | Proxy authenticated API requests                                                                                     |
-| `run`                | Run a saved script / preset                                                                                          |
-| `dev`                | Developer-only utilities                                                                                             |
-| `artifacts`          | Manage generated artifacts                                                                                           |
+| `version` | Display CLI version |
+| `whoami` | Show logged-in user info (writes raw API key to stdout when piped — see Output Conventions) |
+| `login` | Login with browser redirect or direct user/API key (`--no-browser`, `--no-wait`, `--key`, `--user-api-key`, `--org`) |
+| `logout` | Clear stored API key |
+| `signup` | Create a Composio account |
+| `upgrade` | Self-update binary from GitHub releases |
+| `init` | Bootstrap a Composio project in the current directory |
+| `install` | Install local-tool integrations |
+| `generate {ts        | py}` | Generate type stubs (auto-detects project language if no subcommand) |
+| `agent` | Manage AI agent presets |
+| `toolkits` | List / inspect / version toolkits |
+| `tools` | List / inspect / `execute` tools |
+| `triggers` | List / manage trigger types |
+| `auth-configs` | Manage auth-config resources (`ac_*`) |
+| `connected-accounts` | Manage connected accounts (`ca_*`) |
+| `connections` | Alias / helper for connected-account flows |
+| `orgs` | Manage organizations |
+| `projects` | Manage projects |
+| `local-tools` | Manage local toolkits (via `@composio/cli-local-tools`) |
+| `logs` | View tool-execution logs (`logs-cmd/`) |
+| `config` | Read/write CLI config |
+| `listen` | Listen for events |
+| `proxy` | Proxy authenticated API requests |
+| `run` | Run a saved script / preset |
+| `dev` | Developer-only utilities |
+| `artifacts` | Manage generated artifacts |
 
 Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.directory()` with Effect Schema validation. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
@@ -67,7 +67,6 @@ Options use `Options.text()`, `Options.boolean()`, `Options.choice()`, `Options.
 | `ComposioToolkitsRepository`       | API client — fetches toolkits, tools, trigger types; validates versions      |
 | `ComposioToolkitsRepositoryCached` | Decorator over base repository with file-based caching and graceful fallback |
 | `NodeOs`                           | OS abstraction (`homedir`, `platform`, `arch`)                               |
-| `EnvLangDetector`                  | Detects project language (TS/Python) from config / lock files                |
 | `JsPackageManagerDetector`         | Detects npm/pnpm/yarn/bun for install instructions                           |
 | `UpgradeBinary`                    | Fetches latest release from GitHub, downloads and replaces binary            |
 
@@ -136,6 +135,38 @@ Effect.gen(function* () {
 
 Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel work, `Layer.provide()` for dependency composition, `Effect.mapError()` / `Effect.catchTag()` for typed errors, `Effect.scoped` for resource cleanup.
 
+### Effect safety and migration seams
+
+- Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Either`, `Exit`, `Cause`, `ValidationError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
+- Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
+- Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `Schema` or narrow them with `Predicate`; an `as` assertion is not validation.
+- Do not inspect private `@effect/cli` descriptor shapes. Use public `CommandDescriptor` operations or keep declarative command metadata that can move to Effect v4's public command tree.
+- Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `catchAll` blocks that flatten distinct failures into one message-only error.
+
+### Effect Boundary Policy
+
+All platform access goes through Effect services. `node:path`, `node:fs`, `node:os`, `node:child_process`, `process.env`, and `try`/`catch` are eslint-banned in `src/`. Use the sanctioned equivalents:
+
+| Need                                                          | Use                                                                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Path arithmetic (join/resolve/dirname/…)                      | `Path` service from `@effect/platform` (`const path = yield* Path.Path`)                                                               |
+| Filesystem I/O                                                | `FileSystem` service from `@effect/platform`                                                                                           |
+| homedir / tmpdir / platform / arch                            | `NodeOs` service (`src/services/node-os.ts`, the sole `node:os` boundary)                                                              |
+| Subprocesses                                                  | `Command` from `@effect/platform`; children that outlive the CLI via `src/services/detached-process.ts` (sole detached-spawn boundary) |
+| Environment reads                                             | `effect/Config`                                                                                                                        |
+| Sync fallible ops (`JSON.parse`, `new URL`, `JSON.stringify`) | `Either.try` with a `Data.TaggedError`; JSON records via `parseJsonRecord` (`src/utils/parse-json.ts`)                                 |
+
+Conversion patterns, in order of preference:
+
+1. Yield the service inside existing Effect code.
+2. Convert a plain helper into an Effect when its callers are Effect-hosted (`Either` is a subtype of `Effect`, so both compose with `yield*`).
+3. Pass the resolved service instance (e.g. `Path.Path`, `FileSystem.FileSystem`) as a plain parameter into sync callbacks or promise pipelines that cannot become Effects (see `tool-permissions.ts`, `generation/typescript/virtual-compiler-host.ts`).
+4. Modules that self-provide layers add `Path.layer` / `BunFileSystem.layer` / `NodeOs.Default` to their stack instead of reaching for Node builtins.
+
+The only code allowed to bypass services sits at declared runtime boundaries: the `bin.ts` bootstrap, the child-process companion runtime (`run-helpers-runtime.ts`, `run-subagent-*` — bundled into `.mjs` files that run in the user's spawned process), import-time UI setup (`ui/colors.ts`, `ui/redact.ts`), environment **writes** and whole-environment enumeration (which `effect/Config` cannot express), and spawn-time env handshakes between parent and child `composio run` processes. Every such boundary is an inline `// eslint-disable-next-line <rule> -- <reason>` comment registered in `eslint-boundaries.json`.
+
+**Enforcement**: `pnpm run validate:boundaries` (part of `pnpm test`, CI-blocking) fails when any eslint-disable in `src/` is missing from the manifest, lacks a `-- reason`, or uses a file-wide form. Do not add new disables — thread the service instead. If code genuinely cannot run inside the Effect runtime, that is a new boundary: regenerate the manifest with `pnpm run validate:boundaries -- --update` and justify the boundary in the PR. Never add entries to `eslint-suppressions.json`.
+
 ## Vendor Reference Sources
 
 Read-only submodules under `ts/vendor/` (do NOT modify — actual deps come from npm):
@@ -170,32 +201,17 @@ Outputs land in `recordings/{tapes,svgs,ascii}/<group>/<name>.{tape,svg,ascii}`.
 
 ## Release Workflow
 
-Two channels: **beta** (automatic) and **stable** (manual promotion via changeset).
+Use the repo-local `cli-release` skill before building or publishing first-party CLI binaries.
 
-### Beta (automatic)
-
-Every push to `next` touching `ts/packages/cli/**` triggers `.github/workflows/build-cli-binaries.yml`:
-
-1. Find latest stable `@composio/cli@X.Y.Z`
-2. Compute next patch `X.Y.Z+1`
-3. Build cross-platform binaries (linux-x64, linux-aarch64, darwin-x64, darwin-aarch64)
-4. Publish GitHub prerelease `@composio/cli@X.Y.(Z+1)-beta.<run_number>`
-
-Also triggerable from any branch via `workflow_dispatch` → `build-beta`. Users install with `composio upgrade --beta`.
-
-### Stable (via changeset)
-
-1. Create a CLI release changeset PR only when intentionally promoting CLI binary behavior through the stable release flow (`.changeset/<name>.md` with `"@composio/cli": patch`). Ordinary CLI source fixes still follow the repo rule: add a changeset only when the release path requires one.
-2. Merge into `next`
-3. Changeset bot opens "Release: update version" PR bumping `package.json`
-4. Merge that PR → push to `next` detects version change → builds **stable** release (`@composio/cli@X.Y.Z`, marked `latest`)
-5. `ts.release.yml` publishes via the repository-controlled `changeset:release` script, which filters `@composio/cli` tag output so only `build-cli-binaries.yml` can create CLI GitHub Releases
-
-Promote an existing beta to stable via `workflow_dispatch` → `promote-stable` with the beta tag (e.g. `@composio/cli@0.2.20-beta.42`).
+- A push to `next` touching CLI paths publishes a rolling beta automatically.
+- The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.
+- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never add a changeset targeting either package; it wedges the TypeScript SDK release action. Put human-facing CLI notes in `CHANGELOG.md` directly.
+- A direct `package.json` version bump is supported by the resolver only as an explicit release-owner recovery path, not the contributor default.
 
 ### Key Workflow Files
 
 - `.github/workflows/build-cli-binaries.yml` — binary build + release
-- `.github/workflows/ts.release.yml` — changeset bot + npm publish
 - `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
+- `.github/workflows/cli.bump-homebrew-tap.yml` — stable Homebrew formula update
+- `.github/scripts/cli-release/resolve-release-target.sh` — beta/stable target resolution
 - `.changeset/config.json`

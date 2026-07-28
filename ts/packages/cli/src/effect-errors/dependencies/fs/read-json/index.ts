@@ -1,2 +1,2 @@
-export * from './json-parsing.error';
+export { JsonParsingError } from 'src/utils/parse-json';
 export * from './read-json';

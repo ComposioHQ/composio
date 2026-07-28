@@ -1,5 +1,5 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import { ComposioClientSingleton, ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { requireAuth } from 'src/effects/require-auth';
@@ -8,6 +8,11 @@ import { extractMessage } from 'src/utils/api-error-extraction';
 import { ProjectContext } from 'src/services/project-context';
 import { ComposioUserContext } from 'src/services/user-context';
 import { formatToolkitInfo, formatToolkitInfoJson } from '../format';
+
+class ToolkitsInfoRequestError extends Data.TaggedError('commands/ToolkitsInfoRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const slug = Args.text({ name: 'slug' }).pipe(
   Args.withDescription('Toolkit slug (e.g. "gmail")'),
@@ -88,9 +93,14 @@ export const toolkitsCmd$Info = Command.make(
             if (Option.isSome(resolvedUserId)) {
               const client = yield* clientSingleton.get();
               const { sessionId } = yield* resolveToolRouterSession(client, resolvedUserId.value);
-              const sessionToolkits = yield* Effect.tryPromise(() =>
-                client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] })
-              );
+              const sessionToolkits = yield* Effect.tryPromise({
+                try: () => client.toolRouter.session.toolkits(sessionId, { toolkits: [slugValue] }),
+                catch: cause =>
+                  new ToolkitsInfoRequestError({
+                    message: `Failed to fetch toolkit "${slugValue}".`,
+                    cause,
+                  }),
+              });
               return { toolkit: sessionToolkits.items[0], detailedToolkitOpt };
             }
 
@@ -162,9 +172,7 @@ export const toolkitsCmd$Info = Command.make(
       );
 
       // Next step hint
-      yield* ui.log.step(
-        `To list tools in this toolkit:\n> composio tools list "${toolkit.slug}"`
-      );
+      yield* ui.log.step(`To list tools in this toolkit:\n> composio tools list "${toolkit.slug}"`);
 
       yield* ui.output(formatToolkitInfoJson(toolkit, detailedToolkit, allDetails));
     })

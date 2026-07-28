@@ -64,7 +64,7 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
   return (index: ToolkitIndex): string => {
     const indexMapEntries = pipe(
       index,
-      Record.map((_, key) => ts.propertyValue(key, ts.namedValue(key as string))),
+      Record.map((_, key) => ts.propertyValue(key, ts.namedValue(key))),
       Record.toEntries,
       Arr.map(([_, value]) => value)
     );

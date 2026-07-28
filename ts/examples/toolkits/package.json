@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ai-sdk/openai": "^1.3.16",
+    "@ai-sdk/openai": "catalog:",
     "@composio/core": "workspace:*",
     "@composio/vercel": "workspace:*",
     "ai": "catalog:"

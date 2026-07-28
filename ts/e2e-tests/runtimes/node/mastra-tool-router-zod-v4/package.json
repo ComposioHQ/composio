@@ -13,9 +13,9 @@
     "@composio/core": "workspace:*",
     "@composio/mastra": "workspace:*",
     "@mastra/core": "catalog:",
-    "@mastra/mcp": "^1.0.0",
-    "ai": "catalog:",
-    "zod": "^4.1.0"
+    "@mastra/mcp": "^1.15.0",
+    "ai": "^6.0.219",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@e2e-tests/utils": "workspace:*"

@@ -48,7 +48,7 @@ make build
 ## Changesets
 
 - Add a changeset for changes to published TypeScript packages.
-- For `@composio/cli`, add a changeset only when intentionally using the stable CLI binary release flow.
+- `@composio/cli` and `@composio/cli-local-tools` are ignored by Changesets. Never target them in a changeset while they remain ignored; use the `cli-release` skill for beta builds and stable promotion.
 - Do not add a changeset for repo guidance, docs-only, tests-only, or validation-only changes unless release metadata changes.
 
 ## Generated And Vendor Files

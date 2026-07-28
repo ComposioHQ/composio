@@ -1,5 +1,6 @@
+import { ValidationError } from '@effect/cli';
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, Effect } from 'effect';
+import { Cause, ConfigProvider, Effect, Exit } from 'effect';
 import { extendConfigProvider } from 'src/services/config';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import type { TriggerTypes } from 'src/models/trigger-types';
@@ -76,7 +77,14 @@ describe('CLI: composio dev triggers list', () => {
     it => {
       it.scoped('uses root toolkit command in the no-results hint', () =>
         Effect.gen(function* () {
-          yield* cli(['triggers', 'list', 'nonexistent']).pipe(Effect.ignore);
+          const exit = yield* Effect.exit(cli(['triggers', 'list', 'nonexistent']));
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            const failure = Cause.squash(exit.cause);
+            expect(
+              ValidationError.isValidationError(failure) && ValidationError.isInvalidValue(failure)
+            ).toBe(true);
+          }
           const lines = yield* MockConsole.getLines({ stripAnsi: true });
           const output = lines.join('\n');
 

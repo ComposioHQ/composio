@@ -1,0 +1,21 @@
+---
+title: "Python SDK 0.17.1 adds session deletion"
+description: "Python SDK 0.17.1 adds Tool Router session deletion through the sessions API and a session instance method."
+date: "2026-06-28"
+---
+
+Python SDK `composio` `0.17.1` adds deletion to the Tool Router session lifecycle. This matches the TypeScript SDK surface released in `@composio/core` `0.13.1`.
+
+### SDK versions
+
+| SDK | Version |
+| --- | --- |
+| Python `composio` | `0.17.1` |
+
+Delete a session from the client or from the session itself:
+
+```python
+composio.sessions.delete(session_id)
+
+session.delete()
+```

@@ -15,11 +15,10 @@
  *   and stored along with the generated TypeScript files. CJS is not supported.
  */
 
-import path from 'node:path';
-import { Command, Options } from '@effect/cli';
-import { Effect, Option, pipe, Array } from 'effect';
+import { Command, HelpDoc, Options, ValidationError } from '@effect/cli';
+import { Array, Data, Effect, Option, pipe } from 'effect';
 import { Match } from 'effect';
-import { FileSystem } from '@effect/platform';
+import { FileSystem, Path } from '@effect/platform';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
@@ -40,6 +39,16 @@ import {
 } from 'src/effects/toolkit-version-overrides';
 import { validateToolkitVersionOverrides } from 'src/effects/validate-toolkit-versions';
 import { TerminalUI, type SpinnerHandle } from 'src/services/terminal-ui';
+
+export class TypeScriptGenerationWriteError extends Data.TaggedError(
+  'commands/TypeScriptGenerationWriteError'
+)<{
+  readonly cause: unknown;
+  readonly filePath: string;
+  readonly message: string;
+}> {}
+
+const invalidGenerateValue = (message: string) => ValidationError.invalidValue(HelpDoc.p(message));
 
 export const outputOpt = Options.optional(
   Options.directory('output-dir', {
@@ -96,8 +105,7 @@ type FetchResult = {
   toolkits: ReadonlyArray<Toolkit>;
   triggerTypes: ReadonlyArray<TriggerType>;
   typeableTools:
-    | { withTypes: true; tools: ReadonlyArray<Tool> }
-    | { withTypes: false; tools: ToolsAsEnums };
+    { withTypes: true; tools: ReadonlyArray<Tool> } | { withTypes: false; tools: ToolsAsEnums };
   /** Map of lowercase toolkit slug to version (only includes non-'latest' versions) */
   versionMap: ToolkitVersionOverrides;
 };
@@ -112,7 +120,7 @@ function fetchFilteredData(
   typeTools: boolean,
   versionOverrides: ToolkitVersionOverrides,
   spinner: SpinnerHandle
-): Effect.Effect<FetchResult, Error, never> {
+): Effect.Effect<FetchResult, Error | ValidationError.ValidationError, never> {
   return Effect.gen(function* () {
     yield* spinner.message(`Fetching data for ${slugs.length} toolkit(s): ${slugs.join(', ')}...`);
 
@@ -132,7 +140,7 @@ function fetchFilteredData(
               .pipe(
                 Effect.catchTag('services/InvalidToolkitsError', error =>
                   Effect.fail(
-                    new Error(
+                    invalidGenerateValue(
                       `Invalid toolkit(s): ${error.invalidToolkits.join(', ')}. Toolkit not found.`
                     )
                   )
@@ -227,7 +235,7 @@ function fetchAllDataFastPath(
       toolkits: allToolkits,
       triggerTypes: allTriggerTypes,
       typeableTools: allTypeableTools,
-      versionMap: new Map() as ToolkitVersionOverrides,
+      versionMap: new Map<Lowercase<string>, string>(),
     };
   });
 }
@@ -316,13 +324,16 @@ function fetchAllData(
 /**
  * Validates that the output directory is not inside node_modules
  */
-function validateOutputDir(outputDir: string): Effect.Effect<string, Error, FileSystem.FileSystem> {
+function validateOutputDir(
+  outputDir: string
+): Effect.Effect<string, ValidationError.ValidationError, Path.Path> {
   return Effect.gen(function* () {
+    const path = yield* Path.Path;
     const normalizedPath = path.normalize(outputDir);
 
     if (normalizedPath.includes('node_modules')) {
       return yield* Effect.fail(
-        new Error(
+        invalidGenerateValue(
           'Output directory cannot be inside node_modules. Please specify a different directory.'
         )
       );
@@ -419,15 +430,19 @@ export function generateTypescriptTypeStubs({
         yield* pipe(
           Effect.all(
             sources.map(([filePath, content]) =>
-              fs
-                .writeFileString(filePath, content)
-                .pipe(
-                  Effect.mapError(error => new Error(`Failed to write file ${filePath}: ${error}`))
+              fs.writeFileString(filePath, content).pipe(
+                Effect.mapError(
+                  cause =>
+                    new TypeScriptGenerationWriteError({
+                      cause,
+                      filePath,
+                      message: `Failed to write file ${filePath}`,
+                    })
                 )
+              )
             ),
             { concurrency: 'unbounded' }
-          ),
-          Effect.mapError(error => new Error(`Failed to write generated files: ${error}`))
+          )
         );
 
         // Compile TypeScript to JavaScript if needed

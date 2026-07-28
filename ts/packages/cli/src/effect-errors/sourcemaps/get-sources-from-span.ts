@@ -1,10 +1,14 @@
-import { Effect, Option, pipe } from 'effect';
+import { Effect, Option, Predicate, pipe } from 'effect';
 import type { AnySpan, Span } from 'effect/Tracer';
 
 import { splitSpansAttributesByTypes } from 'effect-errors/logic/spans';
 
 import type { ErrorRelatedSources, RawErrorLocation } from './get-sources-from-map-file';
-import { maybeMapSourcemaps } from './maybe-map-sourcemaps';
+import {
+  isErrorRelatedSources,
+  isRawErrorLocation,
+  maybeMapSourcemaps,
+} from './maybe-map-sourcemaps';
 
 export const getSourcesFromSpan = ({
   span,
@@ -28,25 +32,24 @@ export const getSourcesFromSpan = ({
       const spans = [];
 
       let current: Span | AnySpan | undefined = span;
-      while (current !== undefined && current._tag === 'Span') {
+      while (current !== undefined && Predicate.isTagged(current, 'Span')) {
         const { name, attributes: allAttributes, status } = current;
 
         const { attributes, stacktrace } = splitSpansAttributesByTypes(allAttributes);
 
         const sourcesOrLocation = yield* maybeMapSourcemaps(name, stacktrace);
-        const duration =
-          status._tag === 'Ended'
-            ? +`${(status.endTime - status.startTime) / BigInt(1000000)}`
-            : undefined;
+        const duration = Predicate.isTagged(status, 'Ended')
+          ? +`${(status.endTime - status.startTime) / BigInt(1000000)}`
+          : undefined;
 
-        sources.push(...sourcesOrLocation.filter(el => el._tag === 'sources'));
-        location.push(...sourcesOrLocation.filter(el => el._tag === 'location'));
+        sources.push(...sourcesOrLocation.filter(isErrorRelatedSources));
+        location.push(...sourcesOrLocation.filter(isRawErrorLocation));
         spans.push({
           name,
           attributes: Object.fromEntries(attributes),
           durationInMilliseconds: duration,
           startTime: status.startTime,
-          endTime: status._tag === 'Ended' ? status.endTime : undefined,
+          endTime: Predicate.isTagged(status, 'Ended') ? status.endTime : undefined,
         });
 
         current = Option.getOrUndefined(current.parent);

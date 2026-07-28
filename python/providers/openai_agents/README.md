@@ -1,60 +1,41 @@
-# Composio Integration for OpenAI Agents
+# composio-openai-agents
 
-This package integrates the OpenAI Agents framework with Composio, allowing you to use Composio's rich set of tools with the OpenAI Agents framework.
+Adapts Composio tools to the [OpenAI Agents](https://github.com/openai/openai-agents-python) framework's native tool format, so your agents can take action across 1000+ apps.
 
 ## Installation
 
 ```bash
-pip install composio_openai_agents
+pip install composio composio-openai-agents openai-agents
 ```
 
-## Usage
+Set `COMPOSIO_API_KEY` (from the [dashboard](https://dashboard.composio.dev/settings)) and `OPENAI_API_KEY` in your environment.
+
+## Quickstart
 
 ```python
-import asyncio
-import dotenv
+from composio import Composio
+from composio_openai_agents import OpenAIAgentsProvider
 from agents import Agent, Runner
 
-from composio_openai_agents import Action, ComposioToolSet
+composio = Composio(provider=OpenAIAgentsProvider())
 
-# Load environment variables from .env
-dotenv.load_dotenv()
+# Each session is scoped to one of your users
+session = composio.create(user_id="user_123")
+tools = session.tools()
 
-# Initialize Composio toolset
-composio_toolset = ComposioToolSet()
-
-# Get all the tools
-tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
-
-# Create an agent with the tools
 agent = Agent(
-    name="GitHub Agent",
-    instructions="You are a helpful assistant that helps users with GitHub tasks.",
+    name="Personal Assistant",
+    instructions="You are a helpful assistant. Use Composio tools to take action.",
     tools=tools,
 )
 
-# Run the agent
-async def main():
-    result = await Runner.run(agent, "Star the repository composiohq/composio on GitHub")
-    print(result.final_output)
-
-asyncio.run(main())
+result = Runner.run_sync(starting_agent=agent, input="Summarize my emails from today")
+print(result.final_output)
 ```
 
-## Features
+By default a session gets meta tools that discover, authenticate, and execute app tools at runtime. For multi-turn use, store `session.session_id` and reuse it with `composio.use(session_id)` instead of calling `create()` again.
 
-- Seamlessly integrate Composio's tools with OpenAI Agents
-- Access hundreds of pre-built API integrations
-- Maintain consistent schema formats between frameworks
-- Error handling for validation issues
-- Proper type annotations that work with mypy and pylance
+## Links
 
-## Requirements
-
-- Python 3.9+
-- OpenAI Agents framework
-- Composio (with valid API key)
-
-## License
-
-Apache 2.0
+- [Quickstart](https://docs.composio.dev/docs/quickstart)
+- [Composio documentation](https://docs.composio.dev)

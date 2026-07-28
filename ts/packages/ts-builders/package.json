@@ -1,6 +1,6 @@
 {
   "name": "@composio/ts-builders",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Fork of @prisma/ts-builders",
   "private": true,
   "main": "dist/index.mjs",
@@ -35,6 +35,6 @@
   ],
   "sideEffects": false,
   "dependencies": {
-    "@babel/helper-validator-identifier": "^7.27.1"
+    "@babel/helper-validator-identifier": "^8.0.4"
   }
 }

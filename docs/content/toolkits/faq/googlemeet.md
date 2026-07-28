@@ -28,4 +28,8 @@ The user's access token is no longer valid. Common causes: the user revoked acce
 
 Google enforces per-minute and daily request quotas. If you're using Composio's default OAuth app, you share that quota with other users, which can cause limits to be hit faster. Use your own OAuth app credentials to get a dedicated quota, and add exponential backoff and retries to handle transient rate limits.
 
----
+## Why do Google Meet calls return 403 on conference records or artifacts?
+
+Google Meet conference records and artifacts are provider-side resources. If a tool returns an error such as "Permission denied on resource Conference (or it might not exist)", verify that the conference record exists, the connected Google account can access that meeting or artifact, and the workspace edition supports the artifact being requested.
+
+For recordings specifically, Google only makes recording available on supported Google Workspace editions such as Business Standard/Plus, Enterprise Standard/Plus, Education Plus, Essentials, Enterprise Essentials, and Enterprise Essentials Plus. Recording also has to be enabled by the Workspace admin, and artifacts are saved to the meeting organizer's Drive.
