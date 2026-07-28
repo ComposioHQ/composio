@@ -1,14 +1,14 @@
 ---
-title: Custom MCP servers
+title: Custom MCP
 description: Use tools from a remote MCP server in Composio sessions
 keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, experimental]
 experimental: true
 ---
 
-Custom MCP servers let you use tools hosted outside Composio in the same session as Composio's built-in toolkits. Register the remote server once, then add its `CUSTOM_*` toolkit slug to any session you create with the SDK.
+Custom MCP lets you use tools hosted outside Composio in the same session as Composio's built-in toolkits. Register the remote server once, then add its `CUSTOM_*` toolkit slug to any session you create with the SDK.
 
 <Callout type="warn">
-Custom MCP servers are experimental. Their setup flow, authentication options, and API contracts may change while we work with early customers.
+Custom MCP is experimental. Its setup flow, authentication options, and API contracts may change while we work with early customers.
 </Callout>
 
 This is different from [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits). Custom tools run inside your application. A custom MCP server runs outside Composio and exposes its tools over a public MCP endpoint.
@@ -147,7 +147,7 @@ Custom toolkits use dated registry versions. When you call the v3 tools API dire
 
 ## Known gaps
 
-Custom MCP servers currently have these limitations:
+Custom MCP currently has these limitations:
 
 | Gap | What to do |
 | --- | --- |
