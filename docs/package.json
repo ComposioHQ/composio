@@ -16,6 +16,7 @@
     "postinstall": "fumadocs-mdx",
     "lint": "oxlint .",
     "lint:links": "bun scripts/validate-links.ts",
+    "lint:links:external": "bun scripts/validate-links.ts --external",
     "sync:search": "bun scripts/sync-algolia-search.ts",
     "test:search": "bun scripts/test-algolia-search.ts",
     "eval:agent": "eve eval docs-agent --skip-report",
