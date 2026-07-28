@@ -22,7 +22,7 @@ setup(
     ],
     python_requires=">=3.10,<4",
     install_requires=[
-        "google-cloud-aiplatform>=1.158.0",
+        "google-cloud-aiplatform>=1.162.0",
         "composio",
     ],
     include_package_data=True,

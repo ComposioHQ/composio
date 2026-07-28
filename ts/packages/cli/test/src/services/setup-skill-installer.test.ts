@@ -26,7 +26,9 @@ describe('SetupSkillInstaller', () => {
           '@composio/cli@0.2.20-beta.42\n'
         );
 
-        expect(resolveSetupSkillReleaseTag(execPath, '0.3.0')).toBe('@composio/cli@0.2.20-beta.42');
+        expect(yield* resolveSetupSkillReleaseTag(execPath, '0.3.0')).toBe(
+          '@composio/cli@0.2.20-beta.42'
+        );
       })
     );
 
@@ -35,7 +37,7 @@ describe('SetupSkillInstaller', () => {
         const path = yield* Path.Path;
         const installDir = tempy.temporaryDirectory();
 
-        expect(resolveSetupSkillReleaseTag(path.join(installDir, 'composio'), '0.3.0')).toBe(
+        expect(yield* resolveSetupSkillReleaseTag(path.join(installDir, 'composio'), '0.3.0')).toBe(
           '@composio/cli@0.3.0'
         );
       })

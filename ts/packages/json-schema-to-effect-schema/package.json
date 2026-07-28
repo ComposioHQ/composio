@@ -1,0 +1,43 @@
+{
+  "name": "@composio/json-schema-to-effect-schema",
+  "version": "0.1.0",
+  "description": "Eval-free JSON Schema validation exposed as Effect Schema.",
+  "main": "src/index.ts",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ComposioHQ/composio.git",
+    "directory": "ts/packages/json-schema-to-effect-schema"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "git clean -xdf node_modules",
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck:src": "tsc --noEmit -p ./tsconfig.src.json",
+    "typecheck:test": "tsc --noEmit -p ./tsconfig.test.json",
+    "typecheck": "pnpm run typecheck:src && pnpm run typecheck:test"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@cfworker/json-schema": "^4.1.1",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@composio/json-schema-to-zod": "workspace:*",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  }
+}

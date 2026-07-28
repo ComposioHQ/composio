@@ -18,7 +18,9 @@ import {
 import { RemoteFile } from './RemoteFile';
 import { ValidationError } from '../errors';
 import { platform } from '#platform';
+import { ssrfSafeFetch } from '#ssrf_guard';
 import { getExtensionFromMimeType } from '../utils/mime';
+import { readResponseBodyWithLimit } from '../utils/readResponseBody';
 import { getRandomShortId } from '../utils/uuid';
 
 /**
@@ -110,11 +112,11 @@ export class ToolRouterSessionFilesMount {
   ): Promise<{ fileToUpload: File; remotePath: string; mimetype: string }> {
     if (typeof input === 'string') {
       if (input.startsWith('http://') || input.startsWith('https://')) {
-        const response = await fetch(input);
+        const response = await ssrfSafeFetch(input);
         if (!response.ok) {
           throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
         }
-        const arrayBuffer = await response.arrayBuffer();
+        const content = await readResponseBodyWithLimit(response);
         const rawContentType = response.headers.get('content-type') || 'application/octet-stream';
         const mimeType = rawContentType.split(';')[0].trim();
         const url = new URL(input);
@@ -125,7 +127,7 @@ export class ToolRouterSessionFilesMount {
           const extension = getExtensionFromMimeType(mimeType);
           filename = `${getRandomShortId()}.${extension}`;
         }
-        const file = new File([arrayBuffer], filename, { type: mimeType });
+        const file = new File([content as BlobPart], filename, { type: mimeType });
         return {
           fileToUpload: file,
           remotePath: options.remotePath ?? filename,
@@ -178,6 +180,8 @@ export class ToolRouterSessionFilesMount {
    *
    * Accepts a file path (local or URL), a native File object, or a raw buffer.
    * The file is stored in the virtual filesystem associated with the tool router session.
+   * URL inputs require a Node.js or Bun runtime so the destination can be DNS-validated;
+   * edge runtimes must fetch the file themselves and pass a File or ArrayBuffer.
    *
    * @param input - File path (string), native File, or raw buffer (ArrayBuffer | Uint8Array).
    * @param options - Optional configuration. When passing a buffer, remotePath is required.

@@ -9,7 +9,7 @@ import {
   getLLMText,
   mdxToCleanMarkdown,
 } from '@/lib/source';
-import { openapi } from '@/lib/openapi';
+import { dereferenceDocument } from '@/lib/openapi-deref';
 import { notFound } from 'next/navigation';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -61,7 +61,6 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
       console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ tools, results may be truncated`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
   } catch {
     return null;
@@ -104,7 +103,6 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
       console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ triggers, results may be truncated`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => ({
       slug: trigger.slug || '',
       name: trigger.name || trigger.display_name || trigger.slug || '',
@@ -183,8 +181,8 @@ interface OpenAPIOperation {
 interface OpenAPIPageData {
   title: string;
   description?: string;
-  getAPIPageProps: () => {
-    document: string;
+  getOpenAPIPageProps: () => {
+    payload: { bundled: Record<string, unknown> };
     operations?: Array<{ method: string; path: string; tags?: string[] }>;
     webhooks?: Array<{ name: string; method: string }>;
   };
@@ -236,9 +234,23 @@ function generateSampleValue(schema: OpenAPISchema, depth = 0): unknown {
   }
 }
 
-// Render schema as markdown with proper nesting
-function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[] {
-  if (indent > maxDepth) return ['  '.repeat(indent) + '- ...'];
+/**
+ * Renders object properties, dictionaries, and composed schemas as nested
+ * Markdown list items.
+ *
+ * `indent` controls the emitted list indentation, while `depth` independently
+ * tracks recursion because `allOf` expands without increasing indentation. An
+ * ellipsis is emitted when either value exceeds `maxDepth`.
+ */
+function renderSchema(
+  schema: OpenAPISchema,
+  indent = 0,
+  maxDepth = 4,
+  depth = 0
+): string[] {
+  if (indent > maxDepth || depth > maxDepth) {
+    return ['  '.repeat(indent) + '- ...'];
+  }
 
   const lines: string[] = [];
   const prefix = '  '.repeat(indent);
@@ -256,10 +268,10 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
 
         // Recurse for nested objects/arrays
         if (prop.type === 'object' && (prop.properties || (prop.additionalProperties && typeof prop.additionalProperties === 'object'))) {
-          lines.push(...renderSchema(prop, indent + 1, maxDepth));
+          lines.push(...renderSchema(prop, indent + 1, maxDepth, depth + 1));
         } else if (prop.type === 'array' && prop.items?.type === 'object' && (prop.items.properties || (prop.items.additionalProperties && typeof prop.items.additionalProperties === 'object'))) {
           lines.push(`${prefix}  - Array items:`);
-          lines.push(...renderSchema(prop.items, indent + 2, maxDepth));
+          lines.push(...renderSchema(prop.items, indent + 2, maxDepth, depth + 1));
         }
       }
     }
@@ -271,10 +283,10 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
       const desc = ap.description ? `: ${ap.description}` : '';
       lines.push(`${prefix}- \`[key: string]\` (${typeStr})${desc}`);
       if (ap.type === 'object' && (ap.properties || (ap.additionalProperties && typeof ap.additionalProperties === 'object'))) {
-        lines.push(...renderSchema(ap, indent + 1, maxDepth));
+        lines.push(...renderSchema(ap, indent + 1, maxDepth, depth + 1));
       } else if (ap.type === 'array' && ap.items?.type === 'object' && (ap.items.properties || (ap.items.additionalProperties && typeof ap.items.additionalProperties === 'object'))) {
         lines.push(`${prefix}  - Array items:`);
-        lines.push(...renderSchema(ap.items, indent + 2, maxDepth));
+        lines.push(...renderSchema(ap.items, indent + 2, maxDepth, depth + 1));
       }
     }
   } else if (schema.oneOf || schema.anyOf) {
@@ -282,7 +294,7 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
     lines.push(`${prefix}*One of:*`);
     for (const variant of variants.slice(0, 3)) {
       if (variant.type === 'object' && variant.properties) {
-        lines.push(...renderSchema(variant, indent + 1, maxDepth));
+        lines.push(...renderSchema(variant, indent + 1, maxDepth, depth + 1));
       } else {
         lines.push(`${prefix}  - ${getTypeString(variant)}`);
       }
@@ -293,7 +305,7 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
   } else if (schema.allOf) {
     for (const part of schema.allOf) {
       if (part.type === 'object' && part.properties) {
-        lines.push(...renderSchema(part, indent, maxDepth));
+        lines.push(...renderSchema(part, indent, maxDepth, depth + 1));
       }
     }
   }
@@ -302,12 +314,14 @@ function renderSchema(schema: OpenAPISchema, indent = 0, maxDepth = 4): string[]
 }
 
 // Get a readable type string
-function getTypeString(schema: OpenAPISchema): string {
+function getTypeString(schema: OpenAPISchema, depth = 0, maxDepth = 4): string {
+  if (depth > maxDepth) return '...';
+
   if (schema.enum) {
     return `enum: ${schema.enum.slice(0, 3).map(e => `"${e}"`).join(' | ')}${schema.enum.length > 3 ? ' | ...' : ''}`;
   }
   if (schema.type === 'array' && schema.items) {
-    return `array<${getTypeString(schema.items)}>`;
+    return `array<${getTypeString(schema.items, depth + 1, maxDepth)}>`;
   }
   if (schema.format) {
     return `${schema.type} (${schema.format})`;
@@ -356,16 +370,16 @@ function generateCurl(
 }
 
 // Convert OpenAPI page to comprehensive markdown
-async function openapiPageToMarkdown(
+export async function openapiPageToMarkdown(
   page: { url: string; data: OpenAPIPageData }
 ): Promise<string> {
   const { title, description } = page.data;
-  const props = page.data.getAPIPageProps();
+  const props = page.data.getOpenAPIPageProps();
 
-  // Get fully dereferenced document from fumadocs-openapi
-  const processed = await openapi.getSchema(props.document);
-  const spec = processed.dereferenced;
+  // The renderers read schema fields directly, so inline local references first.
+  const spec = dereferenceDocument(props.payload.bundled);
   const paths = spec.paths as Record<string, Record<string, OpenAPIOperation>> | undefined;
+  const webhooks = spec.webhooks as Record<string, Record<string, OpenAPIOperation>> | undefined;
   const securitySchemes = (spec.components as Record<string, unknown>)?.securitySchemes as Record<string, OpenAPISecurityScheme> | undefined;
   const servers = spec.servers as Array<{ url: string; description?: string }> | undefined;
   const baseUrl = servers?.[0]?.url || 'https://backend.composio.dev';
@@ -377,124 +391,170 @@ async function openapiPageToMarkdown(
     lines.push(description, '');
   }
 
-  // Process operations
-  if (props.operations && paths) {
-    for (const op of props.operations) {
-      const pathData = paths[op.path];
-      if (!pathData) continue;
+  const selectedOperations: Array<{
+    method: string;
+    name: string;
+    operation: OpenAPIOperation;
+    isWebhook: boolean;
+  }> = [];
 
-      const operation = pathData[op.method];
-      if (!operation) continue;
+  for (const op of props.operations ?? []) {
+    const operation = paths?.[op.path]?.[op.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: op.method,
+        name: op.path,
+        operation,
+        isWebhook: false,
+      });
+    }
+  }
 
-      lines.push('---', '');
-      lines.push(`## ${op.method.toUpperCase()} \`${op.path}\``, '');
-      lines.push(`**Endpoint:** \`${baseUrl}${op.path}\``, '');
+  for (const webhook of props.webhooks ?? []) {
+    const operation = webhooks?.[webhook.name]?.[webhook.method.toLowerCase()];
+    if (operation) {
+      selectedOperations.push({
+        method: webhook.method,
+        name: webhook.name,
+        operation,
+        isWebhook: true,
+      });
+    }
+  }
 
-      if (operation.summary) {
-        lines.push(`**Summary:** ${operation.summary}`, '');
-      }
+  // Process API operations and webhook deliveries through the same schema
+  // renderer. Fumadocs exposes them as separate page-prop collections.
+  for (const selected of selectedOperations) {
+    const { method, name, operation, isWebhook } = selected;
+    lines.push('---', '');
+    lines.push(`## ${method.toUpperCase()} \`${name}\``, '');
+    if (isWebhook) {
+      lines.push(`**Event type:** \`${name}\``, '');
+    } else {
+      lines.push(`**Endpoint:** \`${baseUrl}${name}\``, '');
+    }
 
-      if (operation.description) {
-        lines.push(operation.description, '');
-      }
+    if (operation.summary) {
+      lines.push(`**Summary:** ${operation.summary}`, '');
+    }
 
-      // Authentication
-      const security = operation.security;
-      if (security && security.length > 0 && securitySchemes) {
-        lines.push('### Authentication', '');
-        const authMethods: string[] = [];
-        for (const secReq of security) {
-          for (const schemeName of Object.keys(secReq)) {
-            const scheme = securitySchemes[schemeName];
-            if (scheme) {
-              if (scheme.type === 'apiKey') {
-                authMethods.push(`**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``);
-              } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
-                authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
-              } else {
-                authMethods.push(`**${schemeName}** - ${scheme.type}`);
-              }
+    if (operation.description) {
+      lines.push(operation.description, '');
+    }
+
+    // Authentication
+    const security = operation.security;
+    if (security && security.length > 0 && securitySchemes) {
+      lines.push('### Authentication', '');
+      const authMethods: string[] = [];
+      for (const secReq of security) {
+        for (const schemeName of Object.keys(secReq)) {
+          const scheme = securitySchemes[schemeName];
+          if (scheme) {
+            if (scheme.type === 'apiKey') {
+              authMethods.push(
+                `**${schemeName}** - API Key in \`${scheme.in}\` header \`${scheme.name}\``
+              );
+            } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
+              authMethods.push(`**${schemeName}** - Bearer token in Authorization header`);
+            } else {
+              authMethods.push(`**${schemeName}** - ${scheme.type}`);
             }
           }
         }
-        lines.push(authMethods.join(' OR '), '');
       }
+      lines.push(authMethods.join(' OR '), '');
+    }
 
-      // Path Parameters
-      const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
-      if (pathParams.length > 0) {
-        lines.push('### Path Parameters', '');
-        for (const param of pathParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
-        }
+    // Path Parameters
+    const pathParams = operation.parameters?.filter(p => p.in === 'path') || [];
+    if (pathParams.length > 0) {
+      lines.push('### Path Parameters', '');
+      for (const param of pathParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        lines.push(`- \`${param.name}\` (${typeStr}) *(required)*: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Query Parameters
+    const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
+    if (queryParams.length > 0) {
+      lines.push('### Query Parameters', '');
+      for (const param of queryParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Webhook delivery headers
+    const headerParams = operation.parameters?.filter(p => p.in === 'header') || [];
+    if (isWebhook && headerParams.length > 0) {
+      lines.push('### Delivery Headers', '');
+      for (const param of headerParams) {
+        const typeStr = getTypeString(param.schema || { type: 'string' });
+        const reqMark = param.required ? ' *(required)*' : '';
+        lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
+      }
+      lines.push('');
+    }
+
+    // Request Body
+    if (operation.requestBody?.content?.['application/json']) {
+      lines.push('### Request Body', '');
+      if (operation.requestBody.description) {
+        lines.push(operation.requestBody.description, '');
+      }
+      const schema = operation.requestBody.content['application/json'].schema;
+      if (schema) {
+        lines.push('**Schema:**', '');
+        lines.push(...renderSchema(schema));
         lines.push('');
-      }
 
-      // Query Parameters
-      const queryParams = operation.parameters?.filter(p => p.in === 'query') || [];
-      if (queryParams.length > 0) {
-        lines.push('### Query Parameters', '');
-        for (const param of queryParams) {
-          const typeStr = getTypeString(param.schema || { type: 'string' });
-          const reqMark = param.required ? ' *(required)*' : '';
-          lines.push(`- \`${param.name}\` (${typeStr})${reqMark}: ${param.description || ''}`);
-        }
-        lines.push('');
+        // Example
+        const example =
+          operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
+        lines.push('**Example:**', '');
+        lines.push('```json');
+        lines.push(JSON.stringify(example, null, 2));
+        lines.push('```', '');
       }
+    }
 
-      // Request Body
-      if (operation.requestBody?.content?.['application/json']) {
-        lines.push('### Request Body', '');
-        if (operation.requestBody.description) {
-          lines.push(operation.requestBody.description, '');
-        }
-        const schema = operation.requestBody.content['application/json'].schema;
-        if (schema) {
-          lines.push('**Schema:**', '');
-          lines.push(...renderSchema(schema));
+    // Responses
+    if (operation.responses) {
+      lines.push('### Responses', '');
+
+      for (const [status, response] of Object.entries(operation.responses)) {
+        lines.push(`#### ${status} - ${response.description || ''}`, '');
+
+        const jsonContent = response.content?.['application/json'];
+        if (jsonContent?.schema) {
+          lines.push('**Response Schema:**', '');
+          lines.push(...renderSchema(jsonContent.schema));
           lines.push('');
 
-          // Example
-          const example = operation.requestBody.content['application/json'].example ?? generateSampleValue(schema);
-          lines.push('**Example:**', '');
-          lines.push('```json');
-          lines.push(JSON.stringify(example, null, 2));
-          lines.push('```', '');
-        }
-      }
-
-      // Responses
-      if (operation.responses) {
-        lines.push('### Responses', '');
-
-        for (const [status, response] of Object.entries(operation.responses)) {
-          lines.push(`#### ${status} - ${response.description || ''}`, '');
-
-          const jsonContent = response.content?.['application/json'];
-          if (jsonContent?.schema) {
-            lines.push('**Response Schema:**', '');
-            lines.push(...renderSchema(jsonContent.schema));
-            lines.push('');
-
-            // Only show example for success responses
-            if (status.startsWith('2')) {
-              const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
-              if (example && Object.keys(example as object).length > 0) {
-                lines.push('**Example Response:**', '');
-                lines.push('```json');
-                lines.push(JSON.stringify(example, null, 2));
-                lines.push('```', '');
-              }
+          // Only show example for success responses
+          if (status.startsWith('2')) {
+            const example = jsonContent.example ?? generateSampleValue(jsonContent.schema);
+            if (example && Object.keys(example as object).length > 0) {
+              lines.push('**Example Response:**', '');
+              lines.push('```json');
+              lines.push(JSON.stringify(example, null, 2));
+              lines.push('```', '');
             }
           }
         }
       }
+    }
 
-      // cURL Example
+    // Webhook operations describe inbound deliveries rather than API calls.
+    if (!isWebhook) {
       lines.push('### Example cURL Request', '');
       lines.push('```bash');
-      lines.push(generateCurl(op.method, op.path, baseUrl, operation.parameters, operation.requestBody));
+      lines.push(generateCurl(method, name, baseUrl, operation.parameters, operation.requestBody));
       lines.push('```', '');
     }
   }
@@ -998,7 +1058,6 @@ export async function GET(
     }
 
     // Handle 'reference' specially - uses async getReferenceSource() for OpenAPI pages
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pageSource: any;
     if (prefix === 'reference') {
       try {
@@ -1026,7 +1085,7 @@ export async function GET(
 
     if (page) {
       // Check if this is an OpenAPI page
-      if ('getAPIPageProps' in page.data) {
+      if ('getOpenAPIPageProps' in page.data) {
         try {
           const markdown = await openapiPageToMarkdown(
             page as unknown as { url: string; data: OpenAPIPageData }
@@ -1053,7 +1112,6 @@ export async function GET(
 
       // Regular MDX page
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Response(await getLLMText(page as any), {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',

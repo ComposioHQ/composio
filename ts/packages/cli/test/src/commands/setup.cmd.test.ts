@@ -2,7 +2,9 @@ import { Command, CommandExecutor } from '@effect/platform';
 import { describe, expect, layer } from '@effect/vitest';
 import { Cause, Effect, Exit, Fiber, TestClock } from 'effect';
 import { afterEach, vi } from 'vitest';
+import { SkillInstallError } from 'src/effects/install-skill';
 import { CommandRunner } from 'src/services/command-runner';
+import { SetupCommandError, SetupProcessError } from 'src/services/setup';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 
@@ -90,7 +92,14 @@ const makeRunner = (
 const makeSkillInstaller = (initiallyReady = false, failInstall = false) => {
   let ready = initiallyReady;
   const ensureClaudeSkill = () => {
-    if (failInstall) return Effect.fail(new Error('skill download failed'));
+    if (failInstall) {
+      return Effect.fail(
+        new SkillInstallError({
+          message: 'skill download failed',
+          phase: 'download',
+        })
+      );
+    }
     return Effect.sync(() => {
       const changed = !ready;
       ready = true;
@@ -1169,10 +1178,21 @@ describe('CLI: composio setup', () => {
     { failOn: 'plugin install' }
   );
   layer(TestLive({ commandRunner: failedInstall.runner }))('native install failure', it => {
-    it.scoped('fails the command', () =>
+    it.scoped('preserves the structured setup process failure as the command cause', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['setup', '--target', 'claude', '--yes']));
         expect(Exit.isFailure(exit)).toBe(true);
+        if (Exit.isFailure(exit)) {
+          const failure = Cause.squash(exit.cause);
+          expect(failure).toBeInstanceOf(SetupCommandError);
+          if (failure instanceof SetupCommandError) {
+            expect(failure.operation).toBe('setup');
+            expect(failure.cause).toBeInstanceOf(SetupProcessError);
+            if (failure.cause instanceof SetupProcessError) {
+              expect(failure.cause).toMatchObject({ target: 'claude', stage: 'mutate' });
+            }
+          }
+        }
       })
     );
   });

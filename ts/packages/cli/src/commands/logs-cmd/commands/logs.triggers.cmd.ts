@@ -1,13 +1,19 @@
 import { Args, Command, Options } from '@effect/cli';
-import { Effect, Option } from 'effect';
+import { Data, Effect, Option } from 'effect';
 import { requireAuth } from 'src/effects/require-auth';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { clampLimit } from 'src/ui/clamp-limit';
 import { parseCsv } from 'src/commands/triggers/parse-csv';
 import { formatTriggerLogInfo, formatTriggerLogsTable } from '../format';
+import { decodeTriggerLogRecord } from '../trigger-log-record';
 import { commandHintStep } from 'src/services/command-hints';
 import { toSearchParam } from '../utils';
+
+class TriggerLogsRequestError extends Data.TaggedError('commands/TriggerLogsRequestError')<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
 
 const cursor = Options.text('cursor').pipe(
   Options.withDescription('Cursor for pagination'),
@@ -149,34 +155,45 @@ export const logsCmd$Triggers = Command.make(
       if (triggerLogId) {
         const triggerLog = yield* ui.withSpinner(
           `Fetching trigger log "${triggerLogId}"...`,
-          Effect.tryPromise(() => client.logs.triggers.retrieve(triggerLogId))
+          Effect.tryPromise({
+            try: () => client.logs.triggers.retrieve(triggerLogId),
+            catch: cause =>
+              new TriggerLogsRequestError({
+                message: `Failed to fetch trigger log "${triggerLogId}".`,
+                cause,
+              }),
+          })
         );
-        const triggerLogData = triggerLog as unknown as Record<string, unknown>;
-        const normalizedLogData = getTriggerLogRecord(triggerLogData);
-        const payload = getTriggerPayload(normalizedLogData);
-        const response = getTriggerResponse(normalizedLogData);
+        const record = decodeTriggerLogRecord(triggerLog);
 
         yield* ui.log.info(
-          `${formatTriggerLogInfo(triggerLog)}\n\nPayload:\n${JSON.stringify(payload, null, 2)}\n\nResponse:\n${JSON.stringify(response, null, 2)}`
+          `${formatTriggerLogInfo(record)}\n\nPayload:\n${JSON.stringify(record.payload, null, 2)}\n\nResponse:\n${JSON.stringify(record.response, null, 2)}`
         );
+        // Raw API payload for scripts; only human-readable formatting uses the decoded record.
         yield* ui.output(JSON.stringify(triggerLog, null, 2));
         return;
       }
 
       const response = yield* ui.withSpinner(
         'Fetching trigger logs...',
-        Effect.tryPromise(() =>
-          client.logs.triggers.list({
-            cursor: Option.getOrUndefined(cursor),
-            from: Option.getOrUndefined(from),
-            to: Option.getOrUndefined(to),
-            limit: clampedLimit,
-            time: Option.getOrUndefined(time),
-            search: Option.getOrUndefined(search),
-            include_payload: includePayload,
-            search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
-          })
-        )
+        Effect.tryPromise({
+          try: () =>
+            client.logs.triggers.list({
+              cursor: Option.getOrUndefined(cursor),
+              from: Option.getOrUndefined(from),
+              to: Option.getOrUndefined(to),
+              limit: clampedLimit,
+              time: Option.getOrUndefined(time),
+              search: Option.getOrUndefined(search),
+              include_payload: includePayload,
+              search_params: shorthandSearchParams.length > 0 ? shorthandSearchParams : undefined,
+            }),
+          catch: cause =>
+            new TriggerLogsRequestError({
+              message: 'Failed to fetch trigger logs.',
+              cause,
+            }),
+        })
       );
 
       const logs = response.data ?? [];
@@ -188,7 +205,7 @@ export const logsCmd$Triggers = Command.make(
       }
 
       yield* ui.log.info(
-        `Listing ${logs.length} trigger log${logs.length === 1 ? '' : 's'}\n\n${formatTriggerLogsTable(logs)}`
+        `Listing ${logs.length} trigger log${logs.length === 1 ? '' : 's'}\n\n${formatTriggerLogsTable(logs.map(decodeTriggerLogRecord))}`
       );
 
       const firstLogId = logs[0]?.id;
@@ -207,50 +224,3 @@ export const logsCmd$Triggers = Command.make(
       yield* ui.output(JSON.stringify(response, null, 2));
     })
 ).pipe(Command.withDescription('List trigger logs.'));
-
-export const getTriggerLogRecord = (record: Record<string, unknown>): Record<string, unknown> => {
-  const log = record.log;
-  if (log && typeof log === 'object') return log as Record<string, unknown>;
-  return record;
-};
-
-export const getTriggerPayload = (record: Record<string, unknown>): unknown => {
-  const meta = record.meta;
-  const metaRecord = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
-  const rawPayload =
-    metaRecord.triggerProviderPayload ??
-    metaRecord.triggerClientPayload ??
-    record.payloadReceived ??
-    record.payload ??
-    null;
-
-  return parseMaybeJson(rawPayload);
-};
-
-export const getTriggerResponse = (record: Record<string, unknown>): unknown => {
-  const meta = record.meta;
-  const metaRecord = meta && typeof meta === 'object' ? (meta as Record<string, unknown>) : {};
-  const rawResponse =
-    metaRecord.triggerClientResponse ??
-    metaRecord.triggerProviderResponse ??
-    record.response ??
-    null;
-
-  return parseMaybeJson(rawResponse);
-};
-
-export const parseMaybeJson = (value: unknown): unknown => {
-  if (typeof value !== 'string') return value;
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-    (trimmed.startsWith('[') && trimmed.endsWith(']'))
-  ) {
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      return value;
-    }
-  }
-  return value;
-};

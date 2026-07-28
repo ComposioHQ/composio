@@ -11,6 +11,7 @@ packages:
   - ts/packages/cli-local-tools
   - ts/packages/core
   - ts/packages/experimental
+  - ts/packages/json-schema-to-effect-schema
   - ts/packages/json-schema-to-zod
   - ts/packages/slim
   - ts/packages/providers/*
@@ -27,41 +28,49 @@ allowBuilds:
   workerd: true
 
 catalog:
-  '@ai-sdk/openai': ^4.0.7
-  '@arethetypeswrong/cli': ^0.18.4
+  '@ai-sdk/openai': ^4.0.20
+  '@arethetypeswrong/cli': ^0.18.5
   '@clack/core': '^1.4.3'
   '@clack/prompts': '^1.7.0'
-  '@cloudflare/vitest-pool-workers': 0.18.0
-  '@cloudflare/workers-types': ^4.20260702.1
-  '@composio/client': 0.1.0-alpha.75
-  '@effect/cli': ^0.75.2
-  '@effect/eslint-plugin': ^0.3.2
-  '@effect/language-service': ^0.86.3
-  '@effect/platform': ^0.96.2
-  '@effect/platform-bun': ^0.90.0
-  '@effect/platform-node': ^0.107.0
-  '@effect/platform-node-shared': ^0.60.0
-  '@effect/vitest': ^0.29.0
-  '@mastra/core': ^1.50.1
+  '@cloudflare/vitest-pool-workers': 0.18.8
+  '@cloudflare/workers-types': ^5.20260724.1
+  '@composio/client': 0.1.0-alpha.76
+  '@effect/cli': ^0.76.0
+  '@effect/language-service': ^0.87.1
+  '@effect/platform': ^0.97.0
+  '@effect/platform-bun': ^0.91.0
+  '@effect/platform-node': ^0.108.0
+  '@effect/platform-node-shared': ^0.61.0
+  '@effect/vitest': ^0.30.0
+  '@mastra/core': ^1.52.1
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/bun': ^1.3.14
-  '@typescript/native-preview': 7.0.0-dev.20260703.1
-  ai: ^7.0.14
+  ai: ^7.0.37
   dotenv: ^17.4.2
-  effect: ^3.21.4
-  hono: ^4.12.27
-  openai: ^6.45.0
+  effect: ^3.22.0
+  hono: ^4.12.31
+  openai: ^6.49.0
   picocolors: ^1.1.1
-  pnpm: ^11.9.0
-  publint: ^0.3.21
-  tsdown: ^0.22.3
-  tsx: ^4.23.0
-  typescript: ^6.0.3
+  pnpm: ^11.17.0
+  publint: ^0.3.22
+  tsdown: ^0.22.14
+  tsx: ^4.23.1
+  typescript: ^7.0.2
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
-  wrangler: ^4.107.0
+  wrangler: ^4.114.0
   zod: ^4.4.3
   zod-to-json-schema: ^3.25.2
+
+catalogs:
+  # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
+  # `typescript` rebinds the compiler-API import for @composio/cli's generate
+  # pipeline (its typecheck still runs the root TS7 tsc — the alias package only
+  # ships a tsc6 bin); `typescript6` is the side-by-side alias for scripts that
+  # also need TS7 in scope (ts/scripts/validate-examples.ts).
+  ts6:
+    typescript: npm:@typescript/typescript6@^6.0.2
+    typescript6: npm:@typescript/typescript6@^6.0.2
 
 minimumReleaseAge: 4320
 
@@ -72,12 +81,32 @@ minimumReleaseAgeExclude:
 
 peerDependencyRules:
   allowedVersions:
-    typescript: ^6.0.0
+    typescript: '^6.0.0 || ^7.0.0'
     vitest: ^4.0.0
     zod: ^4.0.0
 
 overrides:
   qs@<6.14.1: '>=6.14.1'
-  protobufjs: 7.6.3
+  protobufjs: 7.6.5
   # temporary: @zed-industries/claude-code-acp@0.16.2 (latest) exact-pins vulnerable 10.2.1; drop when it ships >=10.2.3
   'minimatch@>=10.0.0 <10.2.3': '>=10.2.3 <11'
+  # temporary: @redocly/openapi-core@1.34.x (via openapi-typescript) exact-pins vulnerable 4.2.0; drop when it ships >=4.3.0
+  'js-yaml@>=4.0.0 <4.3.0': '>=4.3.0 <5'
+  # temporary: @modelcontextprotocol/sdk depends on the 1.x line, which
+  # GHSA-frvp-7c67-39w9 (serve-static path traversal) patches only in 2.0.5.
+  # The floor also clears GHSA-9mqv-5hh9-4cgg (WebSocket handshake DoS, fixed
+  # in 2.0.10); drop when the SDK depends on >=2.0.10 itself.
+  '@hono/node-server@<2.0.10': '>=2.0.10 <3'
+  # temporary: GHSA-mh99-v99m-4gvg (HIGH, unbounded-expansion OOM) covers every
+  # version <=5.0.7 with no 1.x or 2.x backport, so this selector spans majors
+  # deliberately -- narrowing it to the 5.x line would reintroduce a HIGH
+  # finding on the production openapi-typescript path and fail the audit gate.
+  # Known trade-off: minimatch@5.1.9 (via @redocly/openapi-core) consumes
+  # brace-expansion as a callable CJS export, which 5.x replaced with a named
+  # `expand`, so a brace-containing pattern throws there. Not reachable today --
+  # the CLI's only openapi-typescript call passes an in-memory document and no
+  # redocly globs. Drop when openapi-typescript ships a @redocly/openapi-core
+  # whose minimatch accepts brace-expansion 5.x.
+  'brace-expansion@<=5.0.7': '>=5.0.8 <6'
+  'vite@<=7.3.4': 7.3.5
+  'esbuild@>=0.27.3 <0.28.1': 0.28.1

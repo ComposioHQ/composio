@@ -1,9 +1,9 @@
 import { FileSystem } from '@effect/platform/FileSystem';
 import { Effect, pipe } from 'effect';
 
-import { parseJson } from './parse-json';
+import { parseJsonRecord } from 'src/utils/parse-json';
 
-export const readJsonEffect = <TJson>(filePath: string) =>
+export const readJsonEffect = (filePath: string) =>
   pipe(
     Effect.gen(function* () {
       const { readFileString } = yield* FileSystem;
@@ -13,9 +13,9 @@ export const readJsonEffect = <TJson>(filePath: string) =>
         return null;
       }
 
-      const json = yield* parseJson(data);
+      const json = yield* parseJsonRecord(data);
 
-      return json as TJson;
+      return json;
     }),
     Effect.withSpan('read-json', { attributes: { filePath } })
   );

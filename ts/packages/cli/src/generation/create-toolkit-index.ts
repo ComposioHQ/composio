@@ -84,37 +84,47 @@ export function createToolkitIndex(input: CreateToolkitIndexInput): Simplify<Too
   );
 }
 
-type TriggerTypeWithUppercaseSlug<T extends ToolkitName> = Omit<TriggerType, 'slug'> & {
-  slug: `${Uppercase<T>}_${string}`;
+type ToolkitPrefixedSlug = `${ToolkitName}_${string}`;
+
+type TriggerTypeWithToolkitPrefix = Omit<TriggerType, 'slug'> & {
+  slug: ToolkitPrefixedSlug;
 };
 
-type GroupByToolkitOutput<T extends ToolkitName> = [
-  Uppercase<T>,
+type GroupByToolkitOutput = [
+  ToolkitName,
   {
     toolkit: Toolkit;
     typeableTools:
-      | { withTypes: false; tools: Array<`${Uppercase<T>}_${string}`> }
-      | { withTypes: true; tools: Array<Tool & { slug: `${Uppercase<T>}_${string}` }> };
-    triggerTypes: Array<TriggerTypeWithUppercaseSlug<T>>;
+      | { withTypes: false; tools: Array<ToolkitPrefixedSlug> }
+      | { withTypes: true; tools: Array<Tool & { slug: ToolkitPrefixedSlug }> };
+    triggerTypes: Array<TriggerTypeWithToolkitPrefix>;
   },
 ];
 
+const hasToolkitSlugPrefix = <A extends { readonly slug: string }>(toolkitName: ToolkitName) => {
+  const hasPrefix = startsWith(`${toolkitName}_`);
+  return (value: A): value is A & { readonly slug: ToolkitPrefixedSlug } => hasPrefix(value.slug);
+};
+
 const groupByToolkit =
-  <const T extends string>(toolkit: Omit<Toolkit, 'name'> & { name: T }) =>
+  (toolkit: Toolkit) =>
   ({
     typeableTools,
     triggerTypes,
-  }: Omit<CreateToolkitIndexInput, 'toolkits'>): GroupByToolkitOutput<T & ToolkitName> => {
-    const toolkitName = pipe(toolkit.slug, String.toUpperCase, ToolkitName) as Uppercase<
-      T & ToolkitName
-    >;
+  }: Omit<CreateToolkitIndexInput, 'toolkits'>): GroupByToolkitOutput => {
+    const toolkitName = pipe(toolkit.slug, String.toUpperCase, ToolkitName);
+    const hasMatchingSlug = hasToolkitSlugPrefix(toolkitName);
+    const hasMatchingToolSlug = (
+      tool: Tool
+    ): tool is Tool & { readonly slug: ToolkitPrefixedSlug } => hasMatchingSlug(tool);
+    const hasMatchingTriggerSlug = (
+      triggerType: TriggerType
+    ): triggerType is TriggerTypeWithToolkitPrefix => hasMatchingSlug(triggerType);
 
     const filteredTypeableTools = Match.value(typeableTools).pipe(
       Match.when({ withTypes: true }, ({ withTypes, tools }) => ({
         withTypes,
-        tools: tools.filter(tool => startsWith(`${toolkitName}_`)(tool.slug)) as Array<
-          Tool & { slug: `${typeof toolkitName}_${string}` }
-        >,
+        tools: tools.filter(hasMatchingToolSlug),
       })),
       Match.when({ withTypes: false }, ({ withTypes, tools }) => ({
         withTypes,
@@ -128,16 +138,11 @@ const groupByToolkit =
       {
         toolkit,
         typeableTools: filteredTypeableTools,
-        triggerTypes: triggerTypes.filter(triggerType =>
-          startsWith(`${toolkitName}_`)(triggerType.slug)
-        ) as Array<TriggerTypeWithUppercaseSlug<T & ToolkitName>>,
+        triggerTypes: triggerTypes.filter(hasMatchingTriggerSlug),
       },
     ];
   };
 
-function groupByToolkits({
-  toolkits,
-  ...rest
-}: CreateToolkitIndexInput): GroupByToolkitOutput<ToolkitName>[] {
+function groupByToolkits({ toolkits, ...rest }: CreateToolkitIndexInput): GroupByToolkitOutput[] {
   return toolkits.map(toolkit => groupByToolkit(toolkit)(rest));
 }

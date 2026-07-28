@@ -1,8 +1,8 @@
 import type { Logs } from '@composio/client/resources/logs/logs';
+import type { TriggerLogRecord } from 'src/commands/logs-cmd/trigger-log-record';
 import { bold, gray, green, red } from 'src/ui/colors';
 import { truncate } from 'src/ui/truncate';
 
-type TriggerLog = Logs.TriggerListResponse.Data;
 type ToolLog = Logs.ToolListResponse.Data;
 type ToolLogDetailed = Logs.ToolRetrieveResponse;
 
@@ -26,7 +26,7 @@ const TOOL_LOG_TABLE = {
   connectedAccountId: 20,
 } as const;
 
-export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string => {
+export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLogRecord>): string => {
   const header = [
     bold('Created At'.padEnd(TRIGGER_LOG_TABLE.createdAt)),
     bold('Log Id'.padEnd(TRIGGER_LOG_TABLE.id)),
@@ -44,13 +44,15 @@ export const formatTriggerLogsTable = (logs: ReadonlyArray<TriggerLog>): string 
       )
     );
     const id = (log.id ?? '-').padEnd(TRIGGER_LOG_TABLE.id);
-    const triggerId = truncate(getTriggerId(log), TRIGGER_LOG_TABLE.triggerId).padEnd(
+    const triggerId = truncate(
+      valueOrDash(log.table.triggerId),
       TRIGGER_LOG_TABLE.triggerId
-    );
+    ).padEnd(TRIGGER_LOG_TABLE.triggerId);
     const app = truncate(log.appName ?? '-', TRIGGER_LOG_TABLE.app).padEnd(TRIGGER_LOG_TABLE.app);
-    const triggerName = truncate(getTriggerName(log), TRIGGER_LOG_TABLE.triggerName).padEnd(
+    const triggerName = truncate(
+      valueOrDash(log.table.triggerName),
       TRIGGER_LOG_TABLE.triggerName
-    );
+    ).padEnd(TRIGGER_LOG_TABLE.triggerName);
     const triggerUserId = truncate(log.entityId ?? '-', TRIGGER_LOG_TABLE.triggerUserId).padEnd(
       TRIGGER_LOG_TABLE.triggerUserId
     );
@@ -118,46 +120,6 @@ const valueOrDash = (value: string | null | undefined): string => {
   return normalizedValue.length > 0 ? normalizedValue : '-';
 };
 
-const getTriggerId = (log: TriggerLog): string => {
-  const dynamicLog = log as unknown as Record<string, unknown>;
-  const dynamicMeta = (dynamicLog.meta ?? {}) as Record<string, unknown>;
-  const triggerId =
-    typeof dynamicMeta.triggerNanoId === 'string'
-      ? dynamicMeta.triggerNanoId
-      : typeof dynamicMeta.trigger_nano_id === 'string'
-        ? dynamicMeta.trigger_nano_id
-        : typeof dynamicMeta.triggerId === 'string'
-          ? dynamicMeta.triggerId
-          : typeof dynamicMeta.trigger_id === 'string'
-            ? dynamicMeta.trigger_id
-            : typeof dynamicLog.triggerNanoId === 'string'
-              ? dynamicLog.triggerNanoId
-              : typeof dynamicLog.trigger_nano_id === 'string'
-                ? dynamicLog.trigger_nano_id
-                : typeof dynamicLog.triggerId === 'string'
-                  ? dynamicLog.triggerId
-                  : typeof dynamicLog.trigger_id === 'string'
-                    ? dynamicLog.trigger_id
-                    : null;
-  return valueOrDash(triggerId);
-};
-
-const getTriggerName = (log: TriggerLog): string => {
-  const dynamicLog = log as unknown as Record<string, unknown>;
-  const dynamicMeta = (dynamicLog.meta ?? {}) as Record<string, unknown>;
-  const triggerName =
-    typeof dynamicMeta.triggerName === 'string'
-      ? dynamicMeta.triggerName
-      : typeof dynamicMeta.trigger_name === 'string'
-        ? dynamicMeta.trigger_name
-        : typeof dynamicLog.triggerName === 'string'
-          ? dynamicLog.triggerName
-          : typeof dynamicLog.trigger_name === 'string'
-            ? dynamicLog.trigger_name
-            : null;
-  return valueOrDash(triggerName);
-};
-
 const formatEpoch = (value: number): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
@@ -186,83 +148,19 @@ export const formatToolLogInfo = (toolLog: ToolLogDetailed): string => {
   return lines.join('\n');
 };
 
-export const formatTriggerLogInfo = (triggerLog: unknown): string => {
-  const rawLog = triggerLog as Record<string, unknown>;
-  const logCandidate = rawLog.log;
-  const log =
-    logCandidate && typeof logCandidate === 'object'
-      ? (logCandidate as Record<string, unknown>)
-      : rawLog;
+export const formatTriggerLogInfo = (triggerLog: TriggerLogRecord): string => {
+  const { detail } = triggerLog;
   const lines: string[] = [];
 
-  lines.push(`${bold('logId:')} ${valueOrDash(getRecordString(log, ['id', 'logId', 'log_id']))}`);
-  lines.push(
-    `${bold('triggerId:')} ${valueOrDash(getRecordString(log, ['triggerId', 'trigger_id']))}`
-  );
-  lines.push(
-    `${bold('triggerNanoId:')} ${valueOrDash(
-      getRecordString(log, ['triggerNanoId', 'trigger_nano_id'])
-    )}`
-  );
-  lines.push(
-    `${bold('trigger:')} ${valueOrDash(getRecordString(log, ['triggerName', 'trigger_name']))}`
-  );
-  lines.push(`${bold('Status:')} ${valueOrDash(getRecordString(log, ['status']))}`);
-  lines.push(
-    `${bold('toolkit:')} ${valueOrDash(getRecordString(log, ['appName', 'toolkit', 'toolkit_key']))}`
-  );
-  lines.push(
-    `${bold('Connection ID:')} ${valueOrDash(
-      getRecordString(log, ['connectionId', 'connection_id', 'connectedAccountId'])
-    )}`
-  );
-  lines.push(
-    `${bold('Entity:')} ${valueOrDash(getRecordString(log, ['entityId', 'entity_id', 'userId']))}`
-  );
-  lines.push(
-    `${bold('Created At:')} ${formatCreatedAt(
-      getRecordNumberOrString(log, ['createdAt', 'created_at'])
-    )}`
-  );
+  lines.push(`${bold('logId:')} ${valueOrDash(detail.logId)}`);
+  lines.push(`${bold('triggerId:')} ${valueOrDash(detail.triggerId)}`);
+  lines.push(`${bold('triggerNanoId:')} ${valueOrDash(detail.triggerNanoId)}`);
+  lines.push(`${bold('trigger:')} ${valueOrDash(detail.triggerName)}`);
+  lines.push(`${bold('Status:')} ${valueOrDash(detail.status)}`);
+  lines.push(`${bold('toolkit:')} ${valueOrDash(detail.toolkit)}`);
+  lines.push(`${bold('Connection ID:')} ${valueOrDash(detail.connectionId)}`);
+  lines.push(`${bold('Entity:')} ${valueOrDash(detail.entityId)}`);
+  lines.push(`${bold('Created At:')} ${formatCreatedAt(detail.createdAt)}`);
 
   return lines.join('\n');
-};
-
-const getRecordString = (record: Record<string, unknown>, keys: ReadonlyArray<string>) => {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === 'string') return value;
-  }
-
-  const meta = record.meta;
-  if (meta && typeof meta === 'object') {
-    const metaRecord = meta as Record<string, unknown>;
-    for (const key of keys) {
-      const value = metaRecord[key];
-      if (typeof value === 'string') return value;
-    }
-  }
-
-  return null;
-};
-
-const getRecordNumberOrString = (
-  record: Record<string, unknown>,
-  keys: ReadonlyArray<string>
-): number | string | null => {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === 'number' || typeof value === 'string') return value;
-  }
-
-  const meta = record.meta;
-  if (meta && typeof meta === 'object') {
-    const metaRecord = meta as Record<string, unknown>;
-    for (const key of keys) {
-      const value = metaRecord[key];
-      if (typeof value === 'number' || typeof value === 'string') return value;
-    }
-  }
-
-  return null;
 };

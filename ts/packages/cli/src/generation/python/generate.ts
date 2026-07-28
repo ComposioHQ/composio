@@ -1,3 +1,4 @@
+import type { Path } from '@effect/platform';
 import type { ToolkitIndex } from 'src/generation/create-toolkit-index';
 import type { SourceFile } from 'src/generation/types';
 import { Effect } from 'effect';
@@ -10,7 +11,9 @@ type GeneratePythonSourcesParams = {
 };
 
 export function generatePythonSources(params: GeneratePythonSourcesParams) {
-  return (index: ToolkitIndex): Effect.Effect<Array<SourceFile>, SafeOutputPathError> => {
+  return (
+    index: ToolkitIndex
+  ): Effect.Effect<Array<SourceFile>, SafeOutputPathError, Path.Path> => {
     const toolkiteSources = generatePythonToolkitSources(params.banner)(index);
 
     return Effect.all(

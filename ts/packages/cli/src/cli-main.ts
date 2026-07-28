@@ -1,11 +1,12 @@
 import process from 'node:process';
-import { Cause, Console, Effect, Exit, HashMap, Layer, Logger, Option } from 'effect';
+import { Cause, Effect, Exit, Layer, Logger } from 'effect';
 import { captureErrors, prettyPrintFromCapturedErrors } from 'effect-errors/index';
-import { CliConfig, CommandDescriptor, HelpDoc, Usage, ValidationError } from '@effect/cli';
+import { CliConfig, HelpDoc, ValidationError } from '@effect/cli';
 import { FetchHttpClient } from '@effect/platform';
 import { BunContext, BunRuntime, BunFileSystem, BunPath } from '@effect/platform-bun';
 import type { Teardown } from '@effect/platform/Runtime';
 import { buildRootCommand, runWithConfig } from 'src/commands';
+import { collectValueOptionNames } from 'src/commands/command-introspection';
 import { matchCommandFromArgv, getCommandHelpText } from 'src/commands/root-help';
 import * as constants from 'src/constants';
 import { ComposioCliConfig } from 'src/cli-config';
@@ -29,42 +30,42 @@ import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import { CommandRunner } from 'src/services/command-runner';
 import { StdinLive } from 'src/services/stdin';
-import { showUpdateNotice, checkForUpdateInBackground } from 'src/services/update-check';
+import { showUpdateNotice } from 'src/services/update-check';
 import {
   createCliCommandTelemetryContext,
   getPrimaryLifecycleFailedEvent,
   getPrimaryLifecycleInvokedEvent,
   getPrimaryLifecycleSucceededEvent,
 } from 'src/analytics/events';
-import { trackCliEvent, trackCliEventEffect } from 'src/analytics/dispatch';
+import { trackCliEventEffect } from 'src/analytics/dispatch';
 import { mapOnlyComposioOverrideError } from 'src/services/composio-error-overrides';
 import { SetupSkillInstaller } from 'src/services/setup-skill-installer';
 import { SetupCommandError } from 'src/services/setup';
-import { canRenderTerminalDecoration } from 'src/utils/stdio';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RequiredLayer = Layer.Layer<any, any, never>;
+// Layer is contravariant in ROut and covariant in E, so `never`/`unknown` accept any
+// produced context and error type while still pinning the requirements (RIn) to `never`.
+type RequiredLayer = Layer.Layer<never, unknown, never>;
 
 export const CliConfigLive = CliConfig.layer(ComposioCliConfig) satisfies RequiredLayer;
 
 export const ComposioUserContextLive = Layer.provide(
   _ComposioUserContextLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioCliUserConfigLayer = Layer.provide(
   ComposioCliUserConfigLive,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 );
 
 export const ComposioSessionRepositoryLive = Layer.provide(
   ComposioSessionRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryLive = Layer.provide(
   ComposioToolkitsRepository.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
@@ -79,12 +80,12 @@ export const UpgradeBinaryLive = Layer.provide(
 
 export const TriggersRealtimeLive = Layer.provide(
   TriggersRealtime.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const ComposioClientSingletonLive = Layer.provide(
   ComposioClientSingleton.Default,
-  Layer.mergeAll(BunFileSystem.layer, NodeOs.Default, ConfigLive)
+  Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, ConfigLive)
 ) satisfies RequiredLayer;
 
 export const ToolsExecutorLive = Layer.provide(
@@ -121,6 +122,7 @@ const layers = Layer.mergeAll(
   ProjectContextLive,
   BunContext.layer,
   BunFileSystem.layer,
+  BunPath.layer,
   FetchHttpClient.layer,
   StdinLive,
   TerminalUILive,
@@ -139,78 +141,43 @@ const runWithArgs = Effect.flatMap(runWithConfig, run => run(process.argv)) sati
   unknown
 >;
 
-const commandTelemetryContext = createCliCommandTelemetryContext(
-  process.argv,
-  constants.APP_VERSION
-);
-if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
-  process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
-}
-
-const collectValueOptionNamesFromUsage = (usage: Usage.Usage, acc: Set<string>) => {
-  switch (usage._tag) {
-    case 'Named': {
-      if (Option.isSome(usage.acceptedValues)) {
-        for (const name of usage.names) {
-          if (name.startsWith('-')) {
-            acc.add(name);
-          }
-        }
-      }
-      return;
-    }
-    case 'Optional':
-    case 'Repeated': {
-      collectValueOptionNamesFromUsage(usage.usage, acc);
-      return;
-    }
-    case 'Alternation':
-    case 'Concat': {
-      collectValueOptionNamesFromUsage(usage.left, acc);
-      collectValueOptionNamesFromUsage(usage.right, acc);
-      return;
-    }
-    case 'Mixed':
-    case 'Empty': {
-      return;
-    }
+const runWithTelemetry = Effect.gen(function* () {
+  const ui = yield* TerminalUI;
+  const terminal = yield* ui.capabilities;
+  const commandTelemetryContext = createCliCommandTelemetryContext(
+    process.argv,
+    constants.APP_VERSION,
+    terminal
+  );
+  if (commandTelemetryContext.commandPath === 'run' && commandTelemetryContext.runId) {
+    // effect/Config is read-only; the run id must be written into the environment so the run
+    // command and the child processes it spawns observe the same telemetry run id.
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- env write propagates run id to children
+    process.env.COMPOSIO_CLI_PARENT_RUN_ID = commandTelemetryContext.runId;
   }
-};
 
-const collectValueOptionNames = (rootCommand: ReturnType<typeof buildRootCommand>) => {
-  const names = new Set<string>();
-  const visited = new Set<CommandDescriptor.Command<unknown>>();
-  const visit = (command: CommandDescriptor.Command<unknown>) => {
-    if (visited.has(command)) {
-      return;
-    }
-    visited.add(command);
-    collectValueOptionNamesFromUsage(CommandDescriptor.getUsage(command), names);
-    for (const [, subcommand] of HashMap.toEntries(CommandDescriptor.getSubcommands(command))) {
-      visit(subcommand);
-    }
-  };
-  visit(rootCommand.descriptor);
-  return names;
-};
-
-showUpdateNotice();
-checkForUpdateInBackground();
-trackCliEvent(getPrimaryLifecycleInvokedEvent(commandTelemetryContext));
-
-runWithArgs.pipe(
-  Effect.scoped,
-  Effect.mapError(error =>
-    ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
-  ),
-  Effect.tap(() => trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))),
-  Effect.tapErrorCause(cause =>
-    trackCliEventEffect(
-      getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+  return yield* trackCliEventEffect(getPrimaryLifecycleInvokedEvent(commandTelemetryContext)).pipe(
+    Effect.andThen(runWithArgs),
+    Effect.scoped,
+    Effect.mapError(error =>
+      ValidationError.isValidationError(error) ? error : mapOnlyComposioOverrideError({ error })
+    ),
+    Effect.tap(() =>
+      trackCliEventEffect(getPrimaryLifecycleSucceededEvent(commandTelemetryContext))
+    ),
+    Effect.tapErrorCause(cause =>
+      trackCliEventEffect(
+        getPrimaryLifecycleFailedEvent(commandTelemetryContext, Cause.squash(cause))
+      )
     )
-  ),
+  );
+});
+
+showUpdateNotice.pipe(
+  Effect.andThen(runWithTelemetry),
   Effect.catchIf(ValidationError.isValidationError, error => {
     return Effect.gen(function* () {
+      const ui = yield* TerminalUI;
       const cliUserConfig = yield* ComposioCliUserConfig;
       const visibility = {
         isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -219,15 +186,15 @@ runWithArgs.pipe(
       };
       const valueOptionNames = collectValueOptionNames(buildRootCommand(visibility));
       const text = HelpDoc.toAnsiText(error.error).trim();
-      const errorEffect = text.length > 0 ? Console.error(text) : Effect.void;
+      const errorEffect = text.length > 0 ? ui.error(text) : Effect.void;
       const flagMatch = text.match(/Received unknown argument: '(-{1,2}[\w-]+)'/);
       const tipEffect =
         flagMatch && valueOptionNames.has(flagMatch[1])
-          ? Console.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
+          ? ui.error(`Tip: ${flagMatch[1]} requires a value, e.g. ${flagMatch[1]} "value"`)
           : Effect.void;
       const cmdName = matchCommandFromArgv(process.argv, visibility);
       const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
-      const helpEffect = helpText ? Console.error(helpText) : Effect.void;
+      const helpEffect = helpText ? ui.error(helpText) : Effect.void;
       return yield* Effect.all([errorEffect, tipEffect, helpEffect], { discard: true }).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
@@ -246,11 +213,11 @@ runWithArgs.pipe(
           error.operation === 'uninstall'
             ? 'Composio plugin uninstall was unsuccessful.'
             : 'Composio setup was unsuccessful.';
-        if (canRenderTerminalDecoration()) {
+        if ((yield* ui.capabilities).canDecorate) {
           yield* ui.log.error(error.message);
           yield* ui.outro(summary);
         } else {
-          yield* Console.error(`${summary} ${error.message}`);
+          yield* ui.error(`${summary} ${error.message}`);
         }
         process.exitCode = 1;
       })
@@ -268,7 +235,7 @@ runWithArgs.pipe(
         stripCwd: true,
       });
       const filteredErrors = captured.errors.filter(
-        error => error.errorType !== 'ToolExecutionError'
+        error => error.errorType !== 'ReportedToolExecutionError'
       );
       if (captured.interrupted || filteredErrors.length > 0) {
         const message = prettyPrintFromCapturedErrors(
@@ -280,7 +247,8 @@ runWithArgs.pipe(
           }
         ).trim();
         if (message.length > 0) {
-          yield* Console.error(message);
+          const ui = yield* TerminalUI;
+          yield* ui.error(message);
           const cliUserConfig = yield* ComposioCliUserConfig;
           const visibility = {
             isDevModeEnabled: cliUserConfig.isDevModeEnabled(),
@@ -290,7 +258,7 @@ runWithArgs.pipe(
           const cmdName = matchCommandFromArgv(process.argv, visibility);
           const helpText = cmdName ? getCommandHelpText(cmdName, visibility) : undefined;
           if (helpText) {
-            yield* Console.error(helpText);
+            yield* ui.error(helpText);
           }
           process.exitCode = 1;
         }
@@ -299,6 +267,5 @@ runWithArgs.pipe(
   ),
   Effect.provide(layers),
   Effect.withConfigProvider(extendConfigProvider(BaseConfigProviderLive)),
-  effect =>
-    (BunRuntime.runMain({ teardown }) as (e: Effect.Effect<void, unknown, unknown>) => void)(effect)
+  BunRuntime.runMain({ teardown })
 );

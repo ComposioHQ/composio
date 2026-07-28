@@ -19,7 +19,6 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = page.data as any;
   const MDX = data.body;
   const isLanding = !params.slug || params.slug.length === 0;
@@ -46,7 +45,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
               )}
             </div>
           )}
-          {data.experimental && <ExperimentalBadge />}
+          {data.experimental && <ExperimentalBadge className="mb-3" />}
           <DocsTitle>{data.title}</DocsTitle>
           <PageActions path={page.url} />
         </>
