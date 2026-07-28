@@ -1,4 +1,4 @@
-import { Data, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
+import { Array as Arr, Data, Effect, Either, Option, Predicate, Runtime, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import {
   ComposioClientSingleton,
@@ -51,14 +51,15 @@ export const resolvePusherConstructor = (
   pusherModule: unknown
 ): Option.Option<PusherConstructor> => {
   const moduleDefault = propertyOf(pusherModule, 'default');
-  return Option.fromNullable(
+  return Arr.findFirst(
     [
       propertyOf(moduleDefault, 'default'),
       moduleDefault,
       pusherModule,
       propertyOf(moduleDefault, 'Pusher'),
       propertyOf(pusherModule, 'Pusher'),
-    ].find(isPusherConstructor)
+    ],
+    isPusherConstructor
   );
 };
 
