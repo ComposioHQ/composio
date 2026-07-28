@@ -8,7 +8,7 @@
  * nested properties, to synthesize the "[key: string]" row).
  */
 import { describe, test, expect } from "bun:test";
-import { processSchema, toolFromApi } from "../../lib/toolkit-schema";
+import { processSchema, toolFromApi, triggerFromApi } from "../../lib/toolkit-schema";
 
 describe("processSchema", () => {
   test("dictionary-of-object param keeps nested additionalProperties subschema", () => {
@@ -109,6 +109,17 @@ describe("processSchema", () => {
 
     expect(params?.pair.items).toBeUndefined();
   });
+
+  test("scalar enum values are preserved as strings", () => {
+    const params = processSchema({
+      type: "object",
+      properties: {
+        priority: { type: "integer", enum: [1, 2, 3, true, { invalid: "object" }] },
+      },
+    });
+
+    expect(params?.priority.enum).toEqual(["1", "2", "3", "true"]);
+  });
 });
 
 describe("toolFromApi", () => {
@@ -136,5 +147,25 @@ describe("toolFromApi", () => {
     if (typeof additional === "object") {
       expect(additional.properties?.enabled.type).toBe("boolean");
     }
+  });
+
+  test("empty names fall back to display names", () => {
+    expect(
+      toolFromApi({
+        slug: "TEST_TOOL",
+        name: "",
+        display_name: "Test tool",
+        description: "A test tool",
+      }).name
+    ).toBe("Test tool");
+
+    expect(
+      triggerFromApi({
+        slug: "TEST_TRIGGER",
+        name: "",
+        display_name: "Test trigger",
+        description: "A test trigger",
+      }).name
+    ).toBe("Test trigger");
   });
 });

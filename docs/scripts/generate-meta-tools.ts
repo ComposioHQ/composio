@@ -149,7 +149,7 @@ export function transformTool(value: unknown): GeneratedMetaTool {
     displayName: name.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
     description: raw.description,
     tags: raw.tags,
-    toolkit: raw.toolkit ?? null,
+    toolkit: raw.toolkit || null,
     inputParameters: raw.input_parameters,
     responseSchema: raw.output_parameters,
   };

@@ -117,15 +117,13 @@ const categoryEntrySchema = z.union([
 ]);
 
 // A paged toolkits response: { items, next_cursor } envelope or a bare array.
-const toolkitsPageSchema = z
-  .union([
-    z.object({
-      items: z.array(z.unknown()),
-      next_cursor: z.string().optional().catch(undefined),
-    }),
-    z.array(z.unknown()).transform(items => ({ items, next_cursor: undefined })),
-  ])
-  .catch({ items: [] as unknown[], next_cursor: undefined });
+const toolkitsPageSchema = z.union([
+  z.object({
+    items: z.array(z.unknown()),
+    next_cursor: z.string().optional().catch(undefined),
+  }),
+  z.array(z.unknown()).transform(items => ({ items, next_cursor: undefined })),
+]);
 
 const slugItemSchema = z.object({ slug: z.string() });
 
@@ -175,7 +173,12 @@ const rawAuthConfigFieldSchema = z.object({
   type: z.string().catch('string'),
   description: z.string().catch(''),
   required: z.boolean().optional().catch(undefined),
-  default: z.string().nullable().optional().catch(undefined),
+  default: z
+    .union([z.string(), z.number(), z.boolean()])
+    .transform(value => String(value))
+    .nullable()
+    .optional()
+    .catch(undefined),
 });
 
 const rawAuthConfigDetailSchema = z.object({
@@ -193,6 +196,10 @@ const authConfigDetailsResponseSchema = z
 // MAX_PAGES is a runaway guard well above the real catalog (~2.1k → 3 pages).
 const TOOLKITS_PAGE_LIMIT = 1000;
 const TOOLKITS_MAX_PAGES = 12;
+
+export function parseToolkitsPage(value: unknown) {
+  return toolkitsPageSchema.parse(value);
+}
 
 async function fetchToolkits(): Promise<unknown[]> {
   console.log('Fetching toolkits from API...');
@@ -218,7 +225,7 @@ async function fetchToolkits(): Promise<unknown[]> {
       throw new Error(`Failed to fetch toolkits: ${response.status} ${response.statusText}`);
     }
 
-    const pageData = toolkitsPageSchema.parse(await response.json());
+    const pageData = parseToolkitsPage(await response.json());
     for (const item of pageData.items) {
       const parsedSlug = slugItemSchema.safeParse(item);
       const slug = parsedSlug.success ? parsedSlug.data.slug.toLowerCase() : undefined;
@@ -345,9 +352,9 @@ export function transformToolkit(raw: unknown): Toolkit {
 
   return {
     slug,
-    name: toolkit.name ?? slug,
-    logo: toolkit.meta.logo ?? toolkit.logo ?? null,
-    description: toolkit.meta.description ?? toolkit.description,
+    name: toolkit.name || toolkit.slug,
+    logo: toolkit.meta.logo || toolkit.logo || null,
+    description: toolkit.meta.description || toolkit.description,
     category,
     authSchemes,
     ...(composioManaged.length > 0 ? { composioManagedAuthSchemes: composioManaged } : {}),

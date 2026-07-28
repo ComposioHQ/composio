@@ -16,6 +16,7 @@
 import { describe, test, expect } from "bun:test";
 import {
   authConfigFields,
+  parseToolkitsPage,
   transformAuthConfigField,
   transformToolkit,
 } from "../../scripts/generate-toolkits";
@@ -77,18 +78,26 @@ describe("transformToolkit", () => {
     expect(toolkit).not.toHaveProperty("composioManagedAuthSchemes");
   });
 
-  // Intentional current behavior: `toolkit.name ?? slug` uses `??`, not `||`,
-  // so an explicit empty-string name is KEPT as "" rather than falling back to
-  // the slug. This pins that choice; it is not asserting the behavior is
-  // desirable, only that it is what the code currently does.
-  test("empty-string name is kept as-is, not replaced by the slug fallback (?? semantics)", () => {
-    const toolkit = transformToolkit({ slug: "github", name: "" });
-    expect(toolkit.name).toBe("");
+  test("empty-string name falls back to the original-casing slug", () => {
+    const toolkit = transformToolkit({ slug: "GitHub", name: "" });
+    expect(toolkit.name).toBe("GitHub");
   });
 
-  test("missing name falls back to the slug", () => {
-    const toolkit = transformToolkit({ slug: "github" });
-    expect(toolkit.name).toBe("github");
+  test("missing name falls back to the original-casing slug", () => {
+    const toolkit = transformToolkit({ slug: "GitHub" });
+    expect(toolkit.name).toBe("GitHub");
+  });
+
+  test("empty meta values fall back to root logo and description", () => {
+    const toolkit = transformToolkit({
+      slug: "github",
+      logo: "https://logo.example/github.png",
+      description: "root description",
+      meta: { logo: "", description: "" },
+    });
+
+    expect(toolkit.logo).toBe("https://logo.example/github.png");
+    expect(toolkit.description).toBe("root description");
   });
 
   test("non-string tool_count/trigger_count are dropped in favor of the numeric fallback", () => {
@@ -188,11 +197,9 @@ describe("transformAuthConfigField", () => {
     expect(transformAuthConfigField({ name: "x", type: 7 }, false).type).toBe("string");
   });
 
-  // A non-string default (e.g. a leaked numeric or object value from the API)
-  // is not coerced to a string — it is dropped to null, same as an absent
-  // default. null is the only accepted non-string value.
-  test("non-string, non-null default values are dropped to null", () => {
-    expect(transformAuthConfigField({ name: "x", default: 5 }, false).default).toBeNull();
+  test("scalar defaults are preserved as strings while structured values are dropped", () => {
+    expect(transformAuthConfigField({ name: "x", default: 5 }, false).default).toBe("5");
+    expect(transformAuthConfigField({ name: "x", default: false }, false).default).toBe("false");
     expect(transformAuthConfigField({ name: "x", default: { a: 1 } }, false).default).toBeNull();
     expect(transformAuthConfigField({ name: "x", default: ["a"] }, false).default).toBeNull();
     expect(transformAuthConfigField({ name: "x", default: null }, false).default).toBeNull();
@@ -279,6 +286,7 @@ describe("transformTool (generate-meta-tools.ts)", () => {
 
   test("toolkit falls back to null when absent or non-string", () => {
     expect(transformTool({ slug: "x", name: "x" }).toolkit).toBeNull();
+    expect(transformTool({ slug: "x", name: "x", toolkit: "" }).toolkit).toBeNull();
     expect(transformTool({ slug: "x", name: "x", toolkit: 7 }).toolkit).toBeNull();
   });
 
@@ -300,5 +308,13 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     expect(tool.toolkit).toBeNull();
     expect(tool.inputParameters).toEqual({});
     expect(tool.responseSchema).toEqual({});
+  });
+});
+
+describe("parseToolkitsPage", () => {
+  test("rejects malformed page envelopes instead of returning an empty page", () => {
+    expect(() => parseToolkitsPage({ error: "rate limited" })).toThrow();
+    expect(() => parseToolkitsPage({ items: null })).toThrow();
+    expect(() => parseToolkitsPage("not a page")).toThrow();
   });
 });

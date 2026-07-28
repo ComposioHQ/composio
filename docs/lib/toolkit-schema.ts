@@ -21,6 +21,9 @@ function filteredArray<T>(schema: z.ZodType<T>) {
 const lenientString = z.string().catch('');
 const optionalString = z.string().optional().catch(undefined);
 const stringArray = filteredArray(z.string());
+const scalarStringArray = filteredArray(
+  z.union([z.string(), z.number(), z.boolean()]).transform(value => String(value))
+);
 
 // --- JSON-Schema parameter nodes -------------------------------------------
 
@@ -46,7 +49,7 @@ const rawSchemaNodeSchema: z.ZodType<RawSchemaNode> = z.object({
   description: optionalString,
   default: z.unknown().optional(),
   example: z.unknown().optional(),
-  enum: stringArray,
+  enum: scalarStringArray,
   properties: z.record(z.string(), z.unknown()).optional().catch(undefined),
   required: filteredArray(z.string()).optional().catch(undefined),
   get items(): z.ZodType<RawSchemaNode | undefined> {
@@ -137,7 +140,7 @@ type RawApiTool = z.infer<typeof rawApiToolSchema>;
 function toolFromRaw(raw: RawApiTool): Tool {
   return {
     slug: raw.slug,
-    name: raw.name ?? raw.display_name ?? raw.slug,
+    name: raw.name || raw.display_name || raw.slug,
     description: raw.description,
     input_parameters: processSchema(raw.input_parameters || raw.parameters),
     output_parameters: processSchema(raw.output_parameters || raw.response),
@@ -171,7 +174,7 @@ type RawApiTrigger = z.infer<typeof rawApiTriggerSchema>;
 function triggerFromRaw(raw: RawApiTrigger): Trigger {
   return {
     slug: raw.slug,
-    name: raw.name ?? raw.display_name ?? raw.slug,
+    name: raw.name || raw.display_name || raw.slug,
     description: raw.description,
     type: raw.type,
     config: processSchema(raw.config),
