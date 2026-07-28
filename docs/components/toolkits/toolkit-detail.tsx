@@ -409,7 +409,7 @@ export function ToolkitDetail({ toolkit, tools, triggers, path, faq }: ToolkitDe
               autoComplete="off"
               value={toolSearch}
               onChange={(e) => setToolSearch(e.target.value)}
-              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/50 focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              className="h-9 w-full rounded-md border border-fd-border bg-fd-background pl-9 pr-4 text-sm text-fd-foreground placeholder:text-fd-muted-foreground focus:outline-none focus-visible:border-blue-500/60 focus-visible:ring-2 focus-visible:ring-blue-500/40"
             />
           </div>
 
