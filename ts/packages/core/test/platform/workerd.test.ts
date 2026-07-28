@@ -87,13 +87,17 @@ describe('workerd platform path helpers (js/polynomial-redos regression)', () =>
     expect(platform.joinPath(allSlashes, `${allSlashes}name.txt${allSlashes}`)).toBe('name.txt');
   });
 
-  it('rejects the backtracking slash regexes at the source level', () => {
+  it('rejects backtracking-prone slash-trim regexes at the source level', () => {
     const source = readFileSync(WORKERD_SOURCE, 'utf8');
-    // This scans the raw file text, including comments, so quoting either
-    // pattern in a comment (e.g. to describe the old regex) would also fail
-    // this assertion. That's intentional: it's the only way to catch a silent
-    // revert to the regex form.
-    expect(source).not.toContain(String.raw`/\/+$/`);
-    expect(source).not.toContain(String.raw`/^\/+|\/+$/g`);
+    // Matches an escaped slash immediately followed by a `+`/`*` or a
+    // `{n,m}` quantifier -- the shape that backtracks quadratically on long
+    // slash runs, regardless of exact spelling or whitespace. This catches
+    // not just the original `/\/+$/` and `/^\/+|\/+$/g` literals but
+    // reformatted equivalents like `/\/{1,}$/` or `new RegExp('\\/+$')`.
+    // Scans raw file text, including comments, so quoting a vulnerable
+    // pattern in a comment would also fail this assertion -- intentional,
+    // since that's the only way to catch a silent revert to the regex form.
+    const VULNERABLE_SLASH_QUANTIFIER = /\\\/(?:[+*]|\{\d*,?\d*\})/;
+    expect(source).not.toMatch(VULNERABLE_SLASH_QUANTIFIER);
   });
 });
