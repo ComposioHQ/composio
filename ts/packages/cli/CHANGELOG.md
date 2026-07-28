@@ -15,6 +15,7 @@
 
 ### Patch Changes
 
+- Preserve the original CLI diagnostic when an adjacent source map is malformed or unusable instead of letting optional source-map enrichment abort error capture.
 - Make `composio version --check` report `checkStatus: "unknown"` when GitHub cannot confirm the latest stable release, preserve the last successful cache on failed refreshes, and avoid racing the command with the startup update check.
 - Make multi-account selection a stable CLI feature: `execute`, `listen`, and `link --alias` no longer honor the old experimental toggle; `proxy` now accepts `--account <alias|word_id|connected-account-id>`; and duplicate-alias link errors explain how to select the existing account.
 - 8467efd: Fix `composio whoami` reporting the API key's home organization after `composio orgs switch`. Session info requests now forward the selected global organization.

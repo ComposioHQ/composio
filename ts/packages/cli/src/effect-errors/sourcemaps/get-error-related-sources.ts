@@ -3,8 +3,6 @@ import type { FileSystem } from '@effect/platform/FileSystem';
 import type { Path } from '@effect/platform/Path';
 import { Effect } from 'effect';
 
-import type { JsonParsingError } from 'effect-errors/dependencies/fs';
-
 import { getErrorLocationFrom } from './get-error-location-from-file-path';
 import { getSourceCode } from './get-source-code';
 import {
@@ -18,7 +16,7 @@ export const getErrorRelatedSources = (
   sourceFile: string
 ): Effect.Effect<
   ErrorRelatedSources | RawErrorLocation | undefined,
-  PlatformError | JsonParsingError,
+  PlatformError,
   FileSystem | Path
 > =>
   Effect.gen(function* () {

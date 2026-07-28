@@ -3,7 +3,7 @@ import { Effect, pipe } from 'effect';
 
 import { parseJsonRecord } from 'src/utils/parse-json';
 
-export const readJsonEffect = <TJson>(filePath: string) =>
+export const readJsonEffect = (filePath: string) =>
   pipe(
     Effect.gen(function* () {
       const { readFileString } = yield* FileSystem;
@@ -15,7 +15,7 @@ export const readJsonEffect = <TJson>(filePath: string) =>
 
       const json = yield* parseJsonRecord(data);
 
-      return json as TJson;
+      return json;
     }),
     Effect.withSpan('read-json', { attributes: { filePath } })
   );
