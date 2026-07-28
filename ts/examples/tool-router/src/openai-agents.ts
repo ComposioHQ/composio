@@ -22,7 +22,7 @@ const agent = new Agent({
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-for (let input: any = await rl.question('You: '); input !== 'exit';) {
+for (let input: unknown = await rl.question('You: '); input !== 'exit';) {
   const result = await run(agent, input);
   console.log(`Agent: ${result.finalOutput}\n`);
   input = [...result.history, { role: 'user' as const, content: await rl.question('You: ') }];

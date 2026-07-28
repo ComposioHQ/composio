@@ -4,7 +4,7 @@
   // Native oxlint plugins cover the Next.js, React, hooks, import, and
   // accessibility rules. Dashboard-link policy uses the same ESLint-compatible
   // no-restricted-syntax plugin as the root workspace config.
-  "plugins": ["nextjs", "react", "import", "jsx-a11y"],
+  "plugins": ["typescript", "nextjs", "react", "import", "jsx-a11y"],
   "jsPlugins": [{ "name": "eslint-js", "specifier": "oxlint-plugin-eslint" }],
   "categories": {
     "correctness": "off"
@@ -12,14 +12,14 @@
   "env": {
     "builtin": true
   },
-  "ignorePatterns": [
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    ".source/**"
-  ],
+  "ignorePatterns": [".next/**", "out/**", "build/**", "next-env.d.ts", ".source/**"],
   "rules": {
+    "typescript/no-explicit-any": [
+      "error",
+      {
+        "fixToUnknown": true
+      }
+    ],
     "nextjs/google-font-display": "warn",
     "nextjs/google-font-preconnect": "warn",
     "nextjs/next-script-for-ga": "warn",

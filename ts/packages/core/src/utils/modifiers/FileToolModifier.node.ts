@@ -39,9 +39,9 @@ import { withCancellation } from '../cancellation';
  * whose schema omits the `$defs` target working (see
  * https://github.com/ComposioHQ/composio/issues/3307) instead of throwing.
  */
-const resolveFileSchema = (
-  schema: JSONSchemaProperty | undefined
-): JSONSchemaProperty | undefined =>
+const resolveFileSchema = <Schema extends JSONSchemaProperty>(
+  schema: Schema | undefined
+): Schema | undefined =>
   schema ? dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' }) : schema;
 
 const getSchemaVariants = (schema: JSONSchemaProperty | undefined): JSONSchemaProperty[] => [

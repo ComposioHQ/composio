@@ -6,7 +6,7 @@ import { tool } from 'ai';
 // Define an interface for our mocked Vercel tool
 interface MockedVercelTool {
   description: string;
-  inputSchema: any;
+  inputSchema: unknown;
   execute: Function;
   _isMockedVercelTool: boolean;
 }
@@ -27,7 +27,7 @@ vi.mock('ai', () => {
 describe('VercelProvider', () => {
   let provider: VercelProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new VercelProvider();
@@ -114,7 +114,7 @@ describe('VercelProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedVercelTool;
 
       // Extract the execute function from the call to tool()
-      const executeFunction = (tool as any).mock.calls[0][0].execute;
+      const executeFunction = (tool as unknown).mock.calls[0][0].execute;
 
       // Test the execute function with an object parameter
       const params = { input: 'test-value' };

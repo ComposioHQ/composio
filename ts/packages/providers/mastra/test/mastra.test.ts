@@ -7,8 +7,8 @@ import { createTool } from '@mastra/core/tools';
 interface MockedMastraTool {
   id: string;
   description: string;
-  inputSchema?: any;
-  outputSchema?: any;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
   execute: Function;
   _isMockedMastraTool: boolean;
 }
@@ -61,7 +61,7 @@ const RELAXED_MOCK_OUTPUT_SCHEMA = {
 describe('MastraProvider', () => {
   let provider: MastraProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new MastraProvider();
@@ -226,7 +226,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       // Test the execute function
       const inputData = { input: 'test-value' };
@@ -245,7 +245,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       // Test that the version is passed correctly
       const inputData = { input: 'version-test' };
@@ -259,7 +259,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(toolWithoutVersion, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       // Test that undefined version is passed correctly
       const inputData = { input: 'no-version-test' };
@@ -272,7 +272,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       // Test the execute function with empty input
       const result = await executeFunction({});
@@ -289,7 +289,7 @@ describe('MastraProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn) as unknown as MockedMastraTool;
 
       // Extract the execute function from the call to createTool()
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       // Test the execute function without any parameters: a missing payload is
       // normalized to an empty object rather than forwarded as undefined (issue #2406).
@@ -487,7 +487,7 @@ describe('MastraProvider', () => {
         mockTool,
         errorExecuteToolFn
       ) as unknown as MockedMastraTool;
-      const executeFunction = (createTool as any).mock.calls[0][0].execute;
+      const executeFunction = (createTool as unknown).mock.calls[0][0].execute;
 
       await expect(executeFunction({ input: 'test' })).rejects.toThrow('Execution failed');
     });
@@ -495,7 +495,7 @@ describe('MastraProvider', () => {
     it('should handle tools with malformed schemas', () => {
       const toolWithMalformedSchema: Tool = {
         ...mockTool,
-        inputParameters: null as any,
+        inputParameters: null as unknown,
         outputParameters: undefined,
       };
 
@@ -639,7 +639,7 @@ describe('MastraProvider', () => {
         inputParameters: {
           type: 'string',
           description: 'A string parameter',
-        } as any,
+        } as unknown,
       };
 
       strictProvider.wrapTool(toolWithNonObjectParams, mockExecuteToolFn);

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type { Item } from 'fumadocs-core/page-tree';
-import type { PageTreeTransformer } from 'fumadocs-core/source';
 import { DeprecatedApiSidebarLegacyBadge } from '@/components/legacy-badge';
 import { getApiDisplayTitle, isApiPageDeprecated } from '@/lib/api-deprecation';
 import type { ApiPageOperation, OpenApiSchemaPageData } from '@/lib/api-deprecation';
@@ -41,19 +40,25 @@ export function getDeprecatedApiSidebarName(
  * Replaces a deprecated OpenAPI operation's textual title suffix with a
  * compact lifecycle badge before fumadocs-openapi appends its method label.
  */
-export const deprecatedApiSidebarTransformer: PageTreeTransformer = {
-  file(node: Item, filePath?: string): Item {
-    if (!filePath) return node;
+interface PageStorage {
+  read(path: string): { format: string; data: unknown } | undefined;
+}
 
-    const file = this.storage.read(filePath);
-    if (!file || file.format !== 'page' || !isOpenApiSidebarPageData(file.data)) {
-      return node;
-    }
+export function transformDeprecatedApiSidebarNode(
+  node: Item,
+  filePath: string | undefined,
+  storage: PageStorage
+): Item {
+  if (!filePath) return node;
 
-    const apiProps = file.data.getOpenAPIPageProps();
-    return {
-      ...node,
-      name: getDeprecatedApiSidebarName(file.data.title, file.data, apiProps.operations),
-    };
-  },
-};
+  const file = storage.read(filePath);
+  if (!file || file.format !== 'page' || !isOpenApiSidebarPageData(file.data)) {
+    return node;
+  }
+
+  const apiProps = file.data.getOpenAPIPageProps();
+  return {
+    ...node,
+    name: getDeprecatedApiSidebarName(file.data.title, file.data, apiProps.operations),
+  };
+}

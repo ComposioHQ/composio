@@ -1,19 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import {
-  type FileObject,
-  printErrors,
-  scanURLs,
-  validateFiles,
-} from 'next-validate-link';
+import { type FileObject, printErrors, scanURLs, validateFiles } from 'next-validate-link';
 import GithubSlugger from 'github-slugger';
-import {
-  source,
-  getReferenceSource,
-  examplesSource,
-  toolkitsSource,
-} from '../lib/source';
+import { source, getReferenceSource, examplesSource, toolkitsSource } from '../lib/source';
 
 type AnySource =
   | typeof source
@@ -50,12 +40,18 @@ function extractHeadingsFromContent(content: string): string[] {
  * Get headings for a page, trying data.toc first then falling back to raw content parsing.
  */
 async function getHeadingsForPage(page: PageOf): Promise<string[]> {
-  if (page.data.toc?.length) {
-    return page.data.toc.map((item: { url: string }) => item.url.slice(1));
+  if ('toc' in page.data && Array.isArray(page.data.toc)) {
+    return page.data.toc.flatMap(item =>
+      item && typeof item === 'object' && 'url' in item && typeof item.url === 'string'
+        ? [item.url.slice(1)]
+        : []
+    );
   }
   if ('getText' in page.data) {
     try {
-      const content = await (page.data as { getText: (mode: string) => Promise<string> }).getText('raw');
+      const content = await (page.data as { getText: (mode: string) => Promise<string> }).getText(
+        'raw'
+      );
       return extractHeadingsFromContent(content);
     } catch {
       // fall through
@@ -80,25 +76,26 @@ async function buildPopulateEntries(src: AnySource) {
     src.getPages().map(async (page: PageOf) => ({
       value: { slug: page.slugs },
       hashes: await getHeadingsForPage(page),
-    })),
+    }))
   );
 }
 
 async function getDynamicToolkitEntries() {
   const raw = await readFile('public/data/toolkits.json', 'utf-8');
   const toolkits: { slug: string }[] = JSON.parse(raw);
-  return toolkits.map((t) => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
+  return toolkits.map(t => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
 }
 
 async function checkLinks() {
   const referenceSource = await getReferenceSource();
-  const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] = await Promise.all([
-    buildPopulateEntries(source),
-    buildPopulateEntries(referenceSource),
-    buildPopulateEntries(examplesSource),
-    buildPopulateEntries(toolkitsSource),
-    getDynamicToolkitEntries(),
-  ]);
+  const [docsEntries, refEntries, exampleEntries, toolkitEntries, dynamicToolkitEntries] =
+    await Promise.all([
+      buildPopulateEntries(source),
+      buildPopulateEntries(referenceSource),
+      buildPopulateEntries(examplesSource),
+      buildPopulateEntries(toolkitsSource),
+      getDynamicToolkitEntries(),
+    ]);
 
   const scanned = await scanURLs({
     preset: 'next',
@@ -124,12 +121,12 @@ async function checkLinks() {
   // Filter out API route URLs (these are valid but not detected as pages)
   const ignoredUrls = ['/llms.txt', '/llms-full.txt'];
   const filteredErrors = errors
-    .map((fileError) => ({
+    .map(fileError => ({
       ...fileError,
-      errors: fileError.errors.filter((e) => !ignoredUrls.includes(e.url)),
-      detected: fileError.detected.filter((d) => !ignoredUrls.includes(d[0] as string)),
+      errors: fileError.errors.filter(e => !ignoredUrls.includes(e.url)),
+      detected: fileError.detected.filter(d => !ignoredUrls.includes(d[0] as string)),
     }))
-    .filter((fileError) => fileError.errors.length > 0);
+    .filter(fileError => fileError.errors.length > 0);
 
   printErrors(filteredErrors, true);
   if (filteredErrors.length > 0) {
@@ -160,7 +157,7 @@ async function getFiles(): Promise<FileObject[]> {
   }
 
   // Scan any .md files under content/ not already covered by Fumadocs sources
-  const coveredPaths = new Set(allFiles.map((f) => resolve(f.path)));
+  const coveredPaths = new Set(allFiles.map(f => resolve(f.path)));
   const extraMdFiles = await Array.fromAsync(glob('content/**/*.md'));
   for (const filePath of extraMdFiles) {
     if (coveredPaths.has(resolve(filePath))) continue;

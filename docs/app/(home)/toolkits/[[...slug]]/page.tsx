@@ -17,13 +17,22 @@ import type { Metadata } from 'next';
 import type { Tool, Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
 import { processSchema, toolFromApi } from '@/lib/toolkit-schema';
+import {
+  toOptionalString,
+  toString,
+  toUnknownRecord,
+  toUnknownRecordArray,
+} from '@/lib/unknown-value';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
-async function fetchDetailedTools(toolkitSlug: string, version?: string | null): Promise<Tool[] | null> {
+async function fetchDetailedTools(
+  toolkitSlug: string,
+  version?: string | null
+): Promise<Tool[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
     return null;
@@ -46,11 +55,11 @@ async function fetchDetailedTools(toolkitSlug: string, version?: string | null):
       return null;
     }
 
-    const data = await response.json();
-    const rawItems = data.items || data;
+    const data: unknown = await response.json();
+    const rawItems = toUnknownRecord(data).items || data;
     const items = Array.isArray(rawItems) ? rawItems : [];
 
-    return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
+    return toUnknownRecordArray(items).map(toolFromApi);
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
     return null;
@@ -59,7 +68,10 @@ async function fetchDetailedTools(toolkitSlug: string, version?: string | null):
 
 // Fetch detailed trigger info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no triggers
-async function fetchDetailedTriggers(toolkitSlug: string, version?: string | null): Promise<Trigger[] | null> {
+async function fetchDetailedTriggers(
+  toolkitSlug: string,
+  version?: string | null
+): Promise<Trigger[] | null> {
   if (!API_KEY) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed trigger fetch');
     return null;
@@ -82,19 +94,23 @@ async function fetchDetailedTriggers(toolkitSlug: string, version?: string | nul
       return null;
     }
 
-    const data = await response.json();
-    const rawItems = data.items || data;
+    const data: unknown = await response.json();
+    const rawItems = toUnknownRecord(data).items || data;
     const items = Array.isArray(rawItems) ? rawItems : [];
 
-    return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => {
+    return toUnknownRecordArray(items).map(trigger => {
+      const type = toOptionalString(trigger.type);
       return {
-        slug: trigger.slug || '',
-        name: trigger.name || trigger.display_name || trigger.slug || '',
-        description: trigger.description || '',
-        type: trigger.type || undefined,
+        slug: toString(trigger.slug),
+        name:
+          toOptionalString(trigger.name) ??
+          toOptionalString(trigger.display_name) ??
+          toString(trigger.slug),
+        description: toString(trigger.description),
+        type: type === 'webhook' || type === 'poll' ? type : undefined,
         config: processSchema(trigger.config),
         payload: processSchema(trigger.payload),
-        instructions: trigger.instructions || undefined,
+        instructions: toOptionalString(trigger.instructions),
       };
     });
   } catch (error) {
@@ -141,19 +157,28 @@ export async function generateStaticParams() {
 
   // JSON toolkit pages
   const toolkits = await getAllToolkits();
-  const jsonParams = toolkits.map((toolkit) => ({
+  const jsonParams = toolkits.map(toolkit => ({
     slug: [toolkit.slug],
   }));
 
   return [indexParam, ...mdxParams, ...jsonParams];
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug?: string[] }>;
+}): Promise<Metadata> {
   const { slug } = await params;
 
   // Index page
   if (!slug || slug.length === 0) {
-    const ogImage = getOgImageUrl('toolkits', [], 'Toolkits', 'Browse all toolkits supported by Composio');
+    const ogImage = getOgImageUrl(
+      'toolkits',
+      [],
+      'Toolkits',
+      'Browse all toolkits supported by Composio'
+    );
     return {
       title: 'Toolkits',
       description: 'Browse all toolkits supported by Composio',
@@ -210,7 +235,12 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
     const MDXContent = page.data.body;
     return (
       <div>
-        <Link href="/toolkits" className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline">← All Toolkits</Link>
+        <Link
+          href="/toolkits"
+          className="text-sm text-fd-muted-foreground no-underline hover:text-fd-foreground hover:underline"
+        >
+          ← All Toolkits
+        </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold text-fd-foreground">{page.data.title}</h1>
           <PageActions path={page.url} variant="inline" />

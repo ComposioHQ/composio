@@ -13,6 +13,15 @@ import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 import { applyToolkitVersions, fetchProductionToolkitVersions } from './toolkit-versions';
+import {
+  toBoolean,
+  toNumber,
+  toOptionalString,
+  toString,
+  toStringArray,
+  toUnknownRecord,
+  toUnknownRecordArray,
+} from '../lib/unknown-value';
 
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -83,10 +92,10 @@ interface Toolkit {
 const TOOLKITS_PAGE_LIMIT = 1000;
 const TOOLKITS_MAX_PAGES = 12;
 
-async function fetchToolkits(): Promise<any[]> {
+async function fetchToolkits(): Promise<unknown[]> {
   console.log('Fetching toolkits from API...');
 
-  const items: any[] = [];
+  const items: unknown[] = [];
   // Pages can overlap when the catalog shifts between cursor fetches; keep the
   // first occurrence so API-provided ordering stays stable.
   const seen = new Set<string>();
@@ -107,10 +116,15 @@ async function fetchToolkits(): Promise<any[]> {
       throw new Error(`Failed to fetch toolkits: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
-    const pageItems: any[] = data.items || data;
+    const data: unknown = await response.json();
+    const dataRecord = toUnknownRecord(data);
+    const pageItems = Array.isArray(dataRecord.items)
+      ? dataRecord.items
+      : Array.isArray(data)
+        ? data
+        : [];
     for (const item of pageItems) {
-      const slug = item?.slug?.toLowerCase();
+      const slug = toOptionalString(toUnknownRecord(item).slug)?.toLowerCase();
       if (slug) {
         if (seen.has(slug)) continue;
         seen.add(slug);
@@ -118,7 +132,7 @@ async function fetchToolkits(): Promise<any[]> {
       items.push(item);
     }
 
-    cursor = data.next_cursor ?? undefined;
+    cursor = toOptionalString(dataRecord.next_cursor);
     if (!cursor) return items;
   }
 
@@ -130,45 +144,85 @@ async function fetchToolkits(): Promise<any[]> {
 }
 
 async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
-  const response = await fetchWithRetry(`${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&limit=1000`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
+  const response = await fetchWithRetry(
+    `${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&limit=1000`,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY!,
+      },
+    }
+  );
 
   if (!response.ok) return [];
 
-  const data = await response.json();
-  const rawItems = data.items || data;
+  const data: unknown = await response.json();
+  const rawItems = toUnknownRecord(data).items || data;
   const items = Array.isArray(rawItems) ? rawItems : [];
 
-  return items.filter((raw: any) => raw && typeof raw === 'object').map((raw: any) => ({
-    slug: raw.slug || '',
-    name: raw.name || raw.display_name || raw.slug || '',
-    description: raw.description || '',
-  }));
+  return toUnknownRecordArray(items).map(raw => {
+    const slug = toString(raw.slug);
+    return {
+      slug,
+      name: toOptionalString(raw.name) ?? toOptionalString(raw.display_name) ?? slug,
+      description: toString(raw.description),
+    };
+  });
 }
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
-  const response = await fetchWithRetry(`${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
+  const response = await fetchWithRetry(
+    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest`,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY!,
+      },
+    }
+  );
 
   if (!response.ok) return [];
 
-  const data = await response.json();
-  const rawItems = data.items || data;
+  const data: unknown = await response.json();
+  const rawItems = toUnknownRecord(data).items || data;
   const items = Array.isArray(rawItems) ? rawItems : [];
 
-  return items.filter((raw: any) => raw && typeof raw === 'object').map((raw: any) => ({
-    slug: raw.slug || '',
-    name: raw.name || raw.display_name || raw.slug || '',
-    description: raw.description || '',
-  }));
+  return toUnknownRecordArray(items).map(raw => {
+    const slug = toString(raw.slug);
+    return {
+      slug,
+      name: toOptionalString(raw.name) ?? toOptionalString(raw.display_name) ?? slug,
+      description: toString(raw.description),
+    };
+  });
+}
+
+function transformAuthConfigField(value: unknown, required: boolean): AuthConfigField {
+  const field = toUnknownRecord(value);
+  const name = toString(field.name);
+  const defaultValue =
+    typeof field.default === 'string' || field.default === null ? field.default : null;
+
+  return {
+    name,
+    displayName: toOptionalString(field.displayName) ?? name,
+    type: toString(field.type, 'string'),
+    description: toString(field.description),
+    required: toBoolean(field.required, required),
+    default: defaultValue,
+  };
+}
+
+function authConfigFields(
+  raw: Record<string, unknown>,
+  phase: 'auth_config_creation' | 'connected_account_initiation',
+  requirement: 'required' | 'optional'
+): AuthConfigField[] {
+  const fields = toUnknownRecord(raw.fields);
+  const phaseFields = toUnknownRecord(fields[phase]);
+  return (Array.isArray(phaseFields[requirement]) ? phaseFields[requirement] : []).map(field =>
+    transformAuthConfigField(field, requirement === 'required')
+  );
 }
 
 async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
@@ -181,67 +235,50 @@ async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]>
 
   if (!response.ok) return [];
 
-  const data = await response.json();
-  const authConfigDetails = data.auth_config_details || [];
+  const data: unknown = await response.json();
+  const authConfigDetails = toUnknownRecordArray(toUnknownRecord(data).auth_config_details);
 
-  return authConfigDetails.map((raw: any) => ({
-    mode: raw.mode || '',
-    name: raw.name || raw.mode || '',
+  return authConfigDetails.map(raw => ({
+    mode: toString(raw.mode),
+    name: toOptionalString(raw.name) ?? toString(raw.mode),
     fields: {
       auth_config_creation: {
-        required: (raw.fields?.auth_config_creation?.required || []).map((f: any) => ({
-          name: f.name || '',
-          displayName: f.displayName || f.name || '',
-          type: f.type || 'string',
-          description: f.description || '',
-          required: f.required ?? true,
-          default: f.default ?? null,
-        })),
-        optional: (raw.fields?.auth_config_creation?.optional || []).map((f: any) => ({
-          name: f.name || '',
-          displayName: f.displayName || f.name || '',
-          type: f.type || 'string',
-          description: f.description || '',
-          required: f.required ?? false,
-          default: f.default ?? null,
-        })),
+        required: authConfigFields(raw, 'auth_config_creation', 'required'),
+        optional: authConfigFields(raw, 'auth_config_creation', 'optional'),
       },
       connected_account_initiation: {
-        required: (raw.fields?.connected_account_initiation?.required || []).map((f: any) => ({
-          name: f.name || '',
-          displayName: f.displayName || f.name || '',
-          type: f.type || 'string',
-          description: f.description || '',
-          required: f.required ?? true,
-          default: f.default ?? null,
-        })),
-        optional: (raw.fields?.connected_account_initiation?.optional || []).map((f: any) => ({
-          name: f.name || '',
-          displayName: f.displayName || f.name || '',
-          type: f.type || 'string',
-          description: f.description || '',
-          required: f.required ?? false,
-          default: f.default ?? null,
-        })),
+        required: authConfigFields(raw, 'connected_account_initiation', 'required'),
+        optional: authConfigFields(raw, 'connected_account_initiation', 'optional'),
       },
     },
   }));
 }
 
-function transformToolkit(raw: any): Toolkit {
-  const authSchemes = raw.auth_schemes || raw.authSchemes || [];
-  const composioManaged = raw.composio_managed_auth_schemes || raw.composioManagedAuthSchemes || [];
+function transformToolkit(raw: unknown): Toolkit {
+  const toolkit = toUnknownRecord(raw);
+  const meta = toUnknownRecord(toolkit.meta);
+  const categories = Array.isArray(meta.categories) ? meta.categories : [];
+  const firstCategory = categories[0];
+  const category =
+    typeof firstCategory === 'string'
+      ? firstCategory
+      : (toOptionalString(toUnknownRecord(firstCategory).name) ?? null);
+  const authSchemes = toStringArray(toolkit.auth_schemes || toolkit.authSchemes);
+  const composioManaged = toStringArray(
+    toolkit.composio_managed_auth_schemes || toolkit.composioManagedAuthSchemes
+  );
+  const slug = toString(toolkit.slug).toLowerCase();
 
   return {
-    slug: raw.slug?.toLowerCase() || '',
-    name: raw.name || raw.slug || '',
-    logo: raw.meta?.logo || raw.logo || null,
-    description: raw.meta?.description || raw.description || '',
-    category: raw.meta?.categories?.[0]?.name || raw.meta?.categories?.[0] || null,
+    slug,
+    name: toOptionalString(toolkit.name) ?? slug,
+    logo: toOptionalString(meta.logo) ?? toOptionalString(toolkit.logo) ?? null,
+    description: toOptionalString(meta.description) ?? toString(toolkit.description),
+    category,
     authSchemes,
     ...(composioManaged.length > 0 ? { composioManagedAuthSchemes: composioManaged } : {}),
-    toolCount: raw.tool_count || raw.toolCount || 0,
-    triggerCount: raw.trigger_count || raw.triggerCount || 0,
+    toolCount: toNumber(toolkit.tool_count || toolkit.toolCount),
+    triggerCount: toNumber(toolkit.trigger_count || toolkit.triggerCount),
     version: null,
     tools: [],
     triggers: [],
@@ -279,7 +316,7 @@ async function main() {
     const batch = toolkits.slice(i, i + batchSize);
 
     await Promise.all(
-      batch.map(async (toolkit) => {
+      batch.map(async toolkit => {
         const [tools, triggers, authConfigDetails] = await Promise.all([
           fetchToolsForToolkit(toolkit.slug.toUpperCase()),
           fetchTriggersForToolkit(toolkit.slug.toUpperCase()),
@@ -312,12 +349,14 @@ async function main() {
   // Write light file (for landing page - imported in client component)
   // Excludes tools and triggers arrays to keep bundle size small
   const toolkitsLight = toolkits.map(({ slug, name, logo, category, toolCount, triggerCount }) => ({
-    slug, name, logo, category, toolCount, triggerCount,
+    slug,
+    name,
+    logo,
+    category,
+    toolCount,
+    triggerCount,
   }));
-  await writeFile(
-    join(OUTPUT_DIR, 'toolkits-list.json'),
-    JSON.stringify(toolkitsLight, null, 2)
-  );
+  await writeFile(join(OUTPUT_DIR, 'toolkits-list.json'), JSON.stringify(toolkitsLight, null, 2));
 
   const fullSizeKB = Math.round(JSON.stringify(toolkits).length / 1024);
   const lightSizeKB = Math.round(JSON.stringify(toolkitsLight).length / 1024);
@@ -327,7 +366,7 @@ async function main() {
   console.log(`  Toolkits: ${toolkits.length}`);
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

@@ -89,10 +89,13 @@ function walkPageTree(nodes: TreeNode[], depth = 2): string {
     }
   }
 
-  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return lines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
-function formatPage(page: any) {
+function formatPage(page: { url: string }) {
   return `- https://docs.composio.dev${page.url}.md`;
 }
 

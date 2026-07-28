@@ -21,6 +21,7 @@ import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
+import { toOptionalString, toString, toStringArray, toUnknownRecord } from '../lib/unknown-value';
 
 const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
@@ -32,6 +33,17 @@ if (!API_KEY) {
 
 const DATA_DIR = join(process.cwd(), 'public/data');
 const CONTENT_DIR = join(process.cwd(), 'content/toolkits/meta-tools');
+
+interface GeneratedMetaTool {
+  slug: string;
+  name: string;
+  displayName: string;
+  description: string;
+  tags: string[];
+  toolkit: string | null;
+  inputParameters: Record<string, unknown>;
+  responseSchema: Record<string, unknown>;
+}
 
 async function createSession(): Promise<string> {
   console.log('Creating session...');
@@ -57,19 +69,19 @@ async function createSession(): Promise<string> {
     throw new Error(`Failed to create session: ${response.status} ${response.statusText}\n${body}`);
   }
 
-  const data = await response.json();
-  const sessionId = data.session_id;
+  const data = toUnknownRecord(await response.json());
+  const sessionId = toOptionalString(data.session_id);
 
   if (!sessionId) {
     throw new Error('No session_id in response');
   }
 
   console.log(`  Session created: ${sessionId}`);
-  console.log(`  Tools available: ${(data.tool_router_tools || []).join(', ')}`);
+  console.log(`  Tools available: ${toStringArray(data.tool_router_tools).join(', ')}`);
   return sessionId;
 }
 
-async function fetchMetaTools(sessionId: string): Promise<any[]> {
+async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
   console.log('Fetching meta tools with schemas...');
 
   const response = await fetchWithRetry(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
@@ -80,11 +92,13 @@ async function fetchMetaTools(sessionId: string): Promise<any[]> {
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`);
+    throw new Error(
+      `Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`
+    );
   }
 
-  const data = await response.json();
-  const tools = data.items || data;
+  const data: unknown = await response.json();
+  const tools = toUnknownRecord(data).items || data;
 
   if (!Array.isArray(tools)) {
     throw new Error('Expected array of tools in response');
@@ -94,18 +108,20 @@ async function fetchMetaTools(sessionId: string): Promise<any[]> {
   return tools;
 }
 
-function transformTool(raw: any) {
-  const slug: string = raw.slug || '';
+function transformTool(value: unknown): GeneratedMetaTool {
+  const raw = toUnknownRecord(value);
+  const slug = toString(raw.slug);
+  const name = toString(raw.name);
 
   return {
     slug,
-    name: raw.name || '',
-    displayName: raw.name?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
-    description: raw.description || '',
-    tags: raw.tags || [],
-    toolkit: raw.toolkit || null,
-    inputParameters: raw.input_parameters || {},
-    responseSchema: raw.output_parameters || {},
+    name,
+    displayName: name.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
+    description: toString(raw.description),
+    tags: toStringArray(raw.tags),
+    toolkit: toOptionalString(raw.toolkit) ?? null,
+    inputParameters: toUnknownRecord(raw.input_parameters),
+    responseSchema: toUnknownRecord(raw.output_parameters),
   };
 }
 
@@ -126,7 +142,7 @@ function briefDescription(description: string): string {
 }
 
 /** One-line summary for the index table. Prefer hand-written override copy, fall back to the API description. */
-function indexLine(tool: any): string {
+function indexLine(tool: GeneratedMetaTool): string {
   const override = META_TOOL_OVERRIDES[tool.slug];
   if (override) {
     // First sentence of the hand-written summary keeps the table tight.
@@ -137,7 +153,7 @@ function indexLine(tool: any): string {
 }
 
 /** Generate the index.mdx overview page — Modal-voice intro plus a one-line-per-tool table */
-function generateIndexMdx(tools: any[]): string {
+function generateIndexMdx(tools: GeneratedMetaTool[]): string {
   let content = `---
 title: Meta Tools
 description: The system tools every Composio session gives your agent to discover, authenticate, execute, and process tools at runtime.
@@ -172,7 +188,7 @@ These schemas are for reference only. We do not guarantee backward compatibility
 }
 
 /** Generate an individual tool MDX page */
-function generateToolMdx(tool: any): string {
+function generateToolMdx(tool: GeneratedMetaTool): string {
   const desc = briefDescription(tool.description).replace(/"/g, '\\"');
 
   return `---
@@ -190,7 +206,7 @@ import { MetaToolDetailServer } from '@/components/meta-tools/meta-tool-page';
 }
 
 /** Generate meta.json for sidebar navigation — index.mdx is the folder page */
-function generateMetaJson(tools: any[]): string {
+function generateMetaJson(tools: GeneratedMetaTool[]): string {
   const pages = tools.map(t => pageSlug(t.slug));
   return JSON.stringify({ title: 'Meta Tools', defaultOpen: true, pages }, null, 2) + '\n';
 }
@@ -222,8 +238,13 @@ async function main() {
   metaTools.sort((a, b) => a.slug.localeCompare(b.slug));
 
   // 1. Write JSON data
-  await writeFile(join(DATA_DIR, 'meta-tools.json'), stripStagingHosts(JSON.stringify(metaTools, null, 2)));
-  console.log(`\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`);
+  await writeFile(
+    join(DATA_DIR, 'meta-tools.json'),
+    stripStagingHosts(JSON.stringify(metaTools, null, 2))
+  );
+  console.log(
+    `\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`
+  );
 
   // 2. Clean old generated MDX files and regenerate
   await cleanGeneratedMdx();
@@ -247,7 +268,7 @@ async function main() {
   console.log(`Tools: ${metaTools.map(t => t.slug).join(', ')}`);
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });

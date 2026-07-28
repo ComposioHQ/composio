@@ -199,7 +199,6 @@
       "files": ["ts/packages/cli/test/src/**/*.{ts,tsx}"],
       "rules": {
         "max-lines-per-function": "off",
-        "typescript/no-explicit-any": "off",
         "eslint-js/no-restricted-syntax": [
           "error",
           {

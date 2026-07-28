@@ -24,7 +24,7 @@ import { tool } from '@anthropic-ai/claude-agent-sdk';
 interface MockedClaudeAgentTool {
   name: string;
   description: string;
-  schema: any;
+  schema: unknown;
   handler: Function;
   _isMockedClaudeAgentTool: boolean;
 }
@@ -32,7 +32,7 @@ interface MockedClaudeAgentTool {
 describe('ClaudeAgentSDKProvider', () => {
   let provider: ClaudeAgentSDKProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new ClaudeAgentSDKProvider();
@@ -111,7 +111,7 @@ describe('ClaudeAgentSDKProvider', () => {
     it('should pass a raw Zod shape to the Claude Agent SDK', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const schemaShape = (tool as any).mock.calls[0][2];
+      const schemaShape = (tool as unknown).mock.calls[0][2];
       expect(Object.keys(schemaShape)).toEqual(['to', 'subject', 'body']);
       expect(schemaShape.to.safeParse('test@example.com').success).toBe(true);
       expect(schemaShape.to.safeParse(123).success).toBe(false);
@@ -161,7 +161,7 @@ describe('ClaudeAgentSDKProvider', () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
       // Extract the handler function from the call to tool()
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
 
       // Test the handler
       const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
@@ -184,7 +184,7 @@ describe('ClaudeAgentSDKProvider', () => {
 
     it('should normalize a stringified-JSON input to an object before executing (issue #2406)', async () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
 
       const params = { to: 'test@example.com', subject: 'Test', body: 'Hello' };
       await handler(JSON.stringify(params));
@@ -194,7 +194,7 @@ describe('ClaudeAgentSDKProvider', () => {
 
     it('should surface a typed error for a malformed-JSON string input (issue #2406)', async () => {
       provider.wrapTool(mockTool, mockExecuteToolFn);
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
 
       const result = await handler('{"to":');
 
@@ -209,7 +209,7 @@ describe('ClaudeAgentSDKProvider', () => {
       mockExecuteToolFn.mockResolvedValueOnce('Simple string result');
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       expect(result).toEqual({
@@ -226,7 +226,7 @@ describe('ClaudeAgentSDKProvider', () => {
       mockExecuteToolFn.mockResolvedValueOnce(undefined);
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       // text should always be a string, never undefined
@@ -239,7 +239,7 @@ describe('ClaudeAgentSDKProvider', () => {
       mockExecuteToolFn.mockRejectedValueOnce(testError);
       provider.wrapTool(mockTool, mockExecuteToolFn);
 
-      const handler = (tool as any).mock.calls[0][3];
+      const handler = (tool as unknown).mock.calls[0][3];
       const result = await handler({ to: 'test@example.com', subject: 'Test', body: 'Hello' });
 
       expect(result.content[0].type).toBe('text');

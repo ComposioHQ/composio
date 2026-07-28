@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'ts/**'
+      - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
@@ -17,6 +18,7 @@ on:
   pull_request:
     paths:
       - 'ts/**'
+      - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'

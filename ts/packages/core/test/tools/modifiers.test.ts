@@ -214,8 +214,8 @@ describe('Tools Modifiers', () => {
       };
       getRawComposioToolBySlugSpy.mockResolvedValueOnce(mockTool);
 
-      const createExecuteToolFnSpy = vi.spyOn(context.tools as any, 'createExecuteToolFn');
-      const executeWithModifiers = async (params: any) => {
+      const createExecuteToolFnSpy = vi.spyOn(context.tools as unknown, 'createExecuteToolFn');
+      const executeWithModifiers = async (params: unknown) => {
         // Apply beforeExecute modifier
         const modifiedParams = await executionModifiers.beforeExecute({
           toolSlug: slug,

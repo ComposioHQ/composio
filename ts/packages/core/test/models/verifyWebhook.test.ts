@@ -105,7 +105,7 @@ const createMockV3Payload = (overrides: Partial<WebhookPayloadV3> = {}): Webhook
 });
 
 describe('Triggers.verifyWebhook', () => {
-  let triggers: Triggers<any>;
+  let triggers: Triggers<unknown>;
   let mockClient: ReturnType<typeof createMockClient>;
   const testSecret = 'test-webhook-secret-12345';
   const testWebhookId = 'msg_test123';
@@ -556,9 +556,9 @@ describe('Triggers.verifyWebhook', () => {
         const webhookError = error as ComposioWebhookPayloadError;
         expect(webhookError.cause).toBeDefined();
         // The cause should contain v1Error, v2Error, and v3Error with schema validation messages
-        expect((webhookError.cause as any).v1Error).toBeDefined();
-        expect((webhookError.cause as any).v2Error).toBeDefined();
-        expect((webhookError.cause as any).v3Error).toBeDefined();
+        expect((webhookError.cause as unknown).v1Error).toBeDefined();
+        expect((webhookError.cause as unknown).v2Error).toBeDefined();
+        expect((webhookError.cause as unknown).v3Error).toBeDefined();
       }
     });
   });
@@ -650,7 +650,7 @@ describe('Triggers.verifyWebhook', () => {
           secret: testSecret,
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
-        } as any)
+        } as unknown)
       ).rejects.toThrow(ValidationError);
     });
 
@@ -661,7 +661,7 @@ describe('Triggers.verifyWebhook', () => {
           secret: testSecret,
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
-        } as any)
+        } as unknown)
       ).rejects.toThrow(ValidationError);
     });
 
@@ -672,7 +672,7 @@ describe('Triggers.verifyWebhook', () => {
           signature: 'v1,sig',
           webhookId: testWebhookId,
           webhookTimestamp: testTimestamp,
-        } as any)
+        } as unknown)
       ).rejects.toThrow(ValidationError);
     });
 
@@ -683,7 +683,7 @@ describe('Triggers.verifyWebhook', () => {
           signature: 'v1,sig',
           secret: testSecret,
           webhookTimestamp: testTimestamp,
-        } as any)
+        } as unknown)
       ).rejects.toThrow(ValidationError);
     });
 
@@ -694,7 +694,7 @@ describe('Triggers.verifyWebhook', () => {
           signature: 'v1,sig',
           secret: testSecret,
           webhookId: testWebhookId,
-        } as any)
+        } as unknown)
       ).rejects.toThrow(ValidationError);
     });
 
@@ -706,7 +706,7 @@ describe('Triggers.verifyWebhook', () => {
           secret: testSecret,
           id: testWebhookId,
           timestamp: testTimestamp,
-          tolerance: 'invalid' as any,
+          tolerance: 'invalid' as unknown,
         })
       ).rejects.toThrow(ValidationError);
     });
