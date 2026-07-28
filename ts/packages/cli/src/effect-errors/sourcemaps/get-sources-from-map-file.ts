@@ -9,23 +9,15 @@ import { readJsonEffect } from 'effect-errors/dependencies/fs';
 import type { ErrorLocation } from './get-error-location-from-file-path';
 import { getSourceCode, type SourceCode } from './get-source-code';
 
-const SourceMapVersionSchema = Schema.Literal(3, '3').pipe(
-  Schema.transform(Schema.Literal('3'), {
-    strict: true,
-    decode: (): '3' => '3',
-    encode: version => version,
-  })
-);
-const MutableStringsSchema = Schema.mutable(Schema.Array(Schema.String));
-const RawSourceMapSchema = Schema.Struct({
-  version: SourceMapVersionSchema,
-  sources: MutableStringsSchema,
-  names: Schema.optionalWith(MutableStringsSchema, { default: () => [] }),
+const SourceMapSchema = Schema.Struct({
+  version: Schema.Literal(3, '3'),
+  sources: Schema.Array(Schema.String),
+  names: Schema.optionalWith(Schema.Array(Schema.String), { default: () => [] }),
   mappings: Schema.String,
   file: Schema.optional(Schema.String),
   sourceRoot: Schema.optional(Schema.String),
 });
-const decodeRawSourceMap = Schema.decodeUnknownOption(RawSourceMapSchema);
+const decodeSourceMap = Schema.decodeUnknownOption(SourceMapSchema);
 
 class SourceMapResolutionError extends Data.TaggedError('SourceMapResolutionError')<{
   readonly filePath: string;
@@ -60,13 +52,15 @@ const rawErrorLocation = (
   filePath: location.filePath.replace(workingDirectory, ''),
 });
 
-const resolveOriginalPosition = (
-  sourceMap: typeof RawSourceMapSchema.Type,
-  location: ErrorLocation
-) =>
+const resolveOriginalPosition = (sourceMap: typeof SourceMapSchema.Type, location: ErrorLocation) =>
   Effect.try({
     try: () =>
-      new SourceMapConsumer(sourceMap).originalPositionFor({
+      new SourceMapConsumer({
+        ...sourceMap,
+        version: String(sourceMap.version),
+        sources: [...sourceMap.sources],
+        names: [...sourceMap.names],
+      }).originalPositionFor({
         column: location.column,
         line: location.line,
       }),
@@ -96,7 +90,7 @@ export const getSourcesFromMapFile = (
 
       const sourceMap = yield* readJsonEffect(`${location.filePath}.map`).pipe(
         Effect.map(Option.fromNullable),
-        Effect.map(Option.flatMap(decodeRawSourceMap)),
+        Effect.map(Option.flatMap(decodeSourceMap)),
         Effect.catchTag('JsonParsingError', () => Effect.succeed(Option.none()))
       );
       if (Option.isNone(sourceMap)) {
