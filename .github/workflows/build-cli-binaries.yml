@@ -255,7 +255,7 @@ jobs:
 
       # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
       # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
-      # Homebrew, the redirect) can ever observe a release before its assets are attached and
+      # the redirect) can ever observe a release before its assets are attached and
       # verified. The release is only flipped to published as the final step below.
       - name: Create draft release with all assets
         run: bash "$RELEASE_HELPERS_DIR/create-or-resume-draft.sh"
@@ -311,17 +311,21 @@ jobs:
           ## Manual Installation
 
           1. Download the appropriate binary for your platform from the [releases page](https://github.com/ComposioHQ/composio/releases)
-          2. Extract the binary
-          3. Move it to a directory in your PATH (e.g., `/usr/local/bin`)
-          4. Make it executable: `chmod +x composio`
-
-          ## Alternative: npm/pnpm Installation
+          2. Extract and install the complete bundle. The CLI loads support files shipped next to the executable, so do not move only the nested `composio` file.
 
           ```bash
-          npm install -g @composio/cli
-          # or
-          pnpm add -g @composio/cli
+          # Replace this with the downloaded archive name, without ".zip"
+          bundle=composio-linux-x64
+          export COMPOSIO_INSTALL_DIR="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+
+          unzip "$bundle.zip"
+          mkdir -p "$COMPOSIO_INSTALL_DIR"
+          cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
+          chmod +x "$COMPOSIO_INSTALL_DIR/composio"
+          export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
           ```
+
+          Add both `export` commands to your shell profile to keep `composio` on `PATH` in new terminal sessions.
 
           ## Usage
 
@@ -338,7 +342,8 @@ jobs:
           - macOS x64 (Intel)
           - macOS ARM64 (Apple Silicon)
 
-          Windows support coming soon!
+          ❌ **Not Supported:**
+          - Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
           EOF
           sed -i.bak "s|RELEASE_TAG_PLACEHOLDER|$RELEASE_TAG|g" INSTALL.md && rm -f INSTALL.md.bak
 

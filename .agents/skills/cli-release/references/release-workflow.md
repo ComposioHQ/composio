@@ -17,7 +17,6 @@
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
-- `.github/workflows/cli.bump-homebrew-tap.yml` updates Homebrew for stable releases.
 - `.changeset/config.json` ignores `@composio/cli` and `@composio/cli-local-tools`.
 
 `ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
@@ -106,7 +105,7 @@ gh workflow run build-cli-binaries.yml \
   --raw-field action=build-beta
 ```
 
-Watch the returned run through publication and installation tests. A beta is not a stable release and does not update Homebrew.
+Watch the returned run through publication and installation tests. A beta is not a stable release.
 
 ## Promote A Beta To Stable
 
@@ -153,22 +152,15 @@ Do not call the release complete until all of these are true:
 2. The stable release is published with `isDraft: false` and `isPrerelease: false`.
 3. All six canonical assets are present and uploaded.
 4. The workflow's installation-test matrix passed.
-5. `Bump Homebrew Tap` succeeded or reported that the formula was already current.
 
 ```bash
 gh release view "$STABLE_TAG" \
   --repo "$REPOSITORY" \
   --json tagName,isDraft,isPrerelease,publishedAt,targetCommitish,assets \
   --jq '{tagName,isDraft,isPrerelease,publishedAt,targetCommitish,assets:[.assets[] | {name,state}]}'
-
-gh run list \
-  --repo "$REPOSITORY" \
-  --workflow cli.bump-homebrew-tap.yml \
-  --event release \
-  --limit 5
 ```
 
-Report the stable tag, promoted beta, target commit, workflow URL, asset count and state, installation result, and Homebrew result.
+Report the stable tag, promoted beta, target commit, workflow URL, asset count and state, and installation result.
 
 ## Failure Recovery
 
@@ -176,5 +168,4 @@ Report the stable tag, promoted beta, target commit, workflow URL, asset count a
 - **Draft exists, publish did not finish:** inspect the failure, then re-run or re-dispatch the same beta. Draft assets are safely replaced with `--clobber`.
 - **Duplicate run says the release is already published:** this is an intentional safety failure. Verify the published release and stop the duplicate.
 - **Installation failed after publication:** do not mutate the published tag. Fix forward through a new beta and the next stable patch.
-- **Homebrew update failed:** keep the GitHub Release intact, fix the tap credential or workflow issue, then dispatch `cli.bump-homebrew-tap.yml` with the exact stable tag.
 - **TS release says there are no commits for the release PR:** remove any pending Changeset that targets an ignored CLI package, preserve its note in the CLI changelog, run `pnpm validate:changesets`, and let the next push retry the SDK release train.

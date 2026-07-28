@@ -169,6 +169,20 @@ export const installShellIntegration = (params: {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
 
+    // Everything this command prints is a report of what it changed on disk, so
+    // it has to reach the user even when stderr is not a terminal: install.sh
+    // runs it as a subprocess, and container/CI installs pipe the whole session
+    // to a build log. Decoration stays the interactive default; `ui.error`
+    // writes the same text unformatted when there is nothing to decorate.
+    const { canDecorate } = yield* ui.capabilities;
+    const plain = (prefix: string) => (message: string) => ui.error(`${prefix}${message}`);
+    const step = canDecorate ? ui.log.step : ui.error;
+    const success = canDecorate ? ui.log.success : ui.error;
+    const warn = canDecorate ? ui.log.warn : plain('warning: ');
+    const failure = canDecorate ? ui.log.error : plain('error: ');
+    const note = (body: string, title: string) =>
+      canDecorate ? ui.note(body, title) : ui.error(`${title}:\n${body}`);
+
     yield* ui.intro('composio install');
 
     // Detect install directory — either from env or default ~/.composio
@@ -176,7 +190,7 @@ export const installShellIntegration = (params: {
     const installDir = process.env.COMPOSIO_INSTALL_DIR ?? path.join(os.homedir, '.composio');
 
     if (isUnsafePath(installDir)) {
-      yield* ui.log.error(
+      yield* failure(
         'COMPOSIO_INSTALL_DIR contains unsafe characters and cannot be written to shell config.'
       );
       yield* ui.outro('Aborted.');
@@ -186,10 +200,8 @@ export const installShellIntegration = (params: {
     // Detect user shell
     const shell = detectShell(path);
     if (!shell) {
-      yield* ui.log.warn(
-        'Could not detect your shell. Manually add the following to your shell config:'
-      );
-      yield* ui.note(
+      yield* warn('Could not detect your shell. Manually add the following to your shell config:');
+      yield* note(
         `export COMPOSIO_INSTALL_DIR="${installDir}"\nexport PATH="$COMPOSIO_INSTALL_DIR:$PATH"`,
         'PATH setup'
       );
@@ -197,7 +209,7 @@ export const installShellIntegration = (params: {
       return;
     }
 
-    yield* ui.log.step(`Detected shell: ${shell}`);
+    yield* step(`Detected shell: ${shell}`);
 
     // Generate completions script if requested.
     // Lazy-import the root command to avoid a circular dependency
@@ -239,28 +251,28 @@ export const installShellIntegration = (params: {
     const existingPathFile = existingByFile.get(config.pathFile) ?? '';
     if (!fileContains(existingPathFile, MARKER)) {
       pushBlock(config.pathFile, config.pathBlock);
-      yield* ui.log.step(`PATH: will add ${tildify(installDir, os.homedir)} to $PATH`);
+      yield* step(`PATH: will add ${tildify(installDir, os.homedir)} to $PATH`);
     } else {
-      yield* ui.log.step('PATH: already configured');
+      yield* step('PATH: already configured');
     }
 
     if (shell === 'zsh') {
-      yield* ui.log.step('Completions: skipped for zsh');
+      yield* step('Completions: skipped for zsh');
     } else if (!params.completions) {
-      yield* ui.log.step('Completions: skipped by default (pass --completions to enable)');
+      yield* step('Completions: skipped by default (pass --completions to enable)');
     } else if (!config.completionBlock) {
-      yield* ui.log.step('Completions: not available for this shell');
+      yield* step('Completions: not available for this shell');
     } else {
       const existingCompletionFile = existingByFile.get(config.completionFile) ?? '';
       if (!fileContains(existingCompletionFile, COMPLETIONS_MARKER)) {
         pushBlock(config.completionFile, config.completionBlock);
-        yield* ui.log.step(
+        yield* step(
           config.shell === 'fish'
             ? `Completions: will install fish completions to ${tildify(config.completionFile, os.homedir)}`
             : 'Completions: will install shell completions'
         );
       } else {
-        yield* ui.log.step('Completions: already configured');
+        yield* step('Completions: already configured');
       }
     }
 
@@ -286,14 +298,14 @@ export const installShellIntegration = (params: {
         yield* fs.writeFileString(tmpPath, existingContents + appendContent);
         yield* fs.rename(tmpPath, writeTarget);
 
-        yield* ui.log.success(`Updated ${tildify(filePath, os.homedir)}`);
+        yield* success(`Updated ${tildify(filePath, os.homedir)}`);
       }
     } else {
-      yield* ui.log.success('Shell integration already configured — nothing to do.');
+      yield* success('Shell integration already configured — nothing to do.');
     }
 
     if (blocksByFile.size > 0) {
-      yield* ui.note(
+      yield* note(
         shell === 'fish'
           ? 'exec fish'
           : shell === 'zsh'

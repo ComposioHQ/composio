@@ -18,6 +18,13 @@ inputs:
     description: 'Cache .turbo build outputs'
     required: false
     default: 'false'
+  cache-save:
+    description: >-
+      Persist pnpm/turbo caches in the post-job phase. Set to 'false' on runs
+      whose caches other branches cannot restore (e.g. pull_request runs) to
+      skip the post-job save and avoid evicting default-branch caches.
+    required: false
+    default: 'true'
 
 outputs:
   node-version:
@@ -84,7 +91,7 @@ runs:
         echo "NODE_VERSION=$(node --version | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
     - name: Cache pnpm store
-      if: inputs.enable-caching == 'true'
+      if: inputs.enable-caching == 'true' && inputs.cache-save == 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
@@ -92,13 +99,34 @@ runs:
         restore-keys: |
           ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
 
+    - name: Restore pnpm store (read-only)
+      if: inputs.enable-caching == 'true' && inputs.cache-save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-node${{ steps.pnpm-store.outputs.NODE_VERSION }}-pnpm-store-
+
     - name: Cache turbo build outputs
-      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true'
+      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true' && inputs.cache-save == 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: .turbo/cache
         # Keyed per job: concurrent jobs save different task graphs under the
         # same commit, and actions/cache is first-writer-wins on exact keys.
+        # The per-commit suffix is intentional even though it never exact-hits:
+        # the turbo cache accumulates, so every save must use a fresh key and
+        # readers match through the restore-keys prefix.
+        key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-${{ github.job }}-
+
+    - name: Restore turbo build outputs (read-only)
+      if: inputs.enable-caching == 'true' && inputs.enable-turbo-cache == 'true' && inputs.cache-save != 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .turbo/cache
         key: ${{ runner.os }}-turbo-${{ github.job }}-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-turbo-${{ github.job }}-

@@ -2,7 +2,7 @@ name: Build Typescript SDK
 
 on:
   push:
-    branches: [master]
+    branches: [next]
     paths:
       - 'ts/**'
       - '.oxlintrc.json'
@@ -53,6 +53,10 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm-bun
         with:
           enable-turbo-cache: 'true'
+          # Only push runs on next save caches: PR-scoped caches are invisible
+          # to other branches, so saving them costs post-job time and evicts
+          # reusable default-branch caches from the 10 GB repo quota.
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

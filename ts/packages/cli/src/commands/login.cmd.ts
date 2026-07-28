@@ -642,7 +642,7 @@ export const browserLogin = (params: {
       expiresAt,
     });
 
-    const canPrompt = (yield* ui.capabilities).isInteractive;
+    const { canPrompt, canDecorate } = yield* ui.capabilities;
     const effectiveNoWait = params.noWait || !canPrompt;
     const effectiveNoBrowser = params.noBrowser || effectiveNoWait;
 
@@ -652,7 +652,7 @@ export const browserLogin = (params: {
         pollCommand,
       });
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.log.info('Please login using the following URL:');
         yield* ui.note(url, 'Login URL');
         yield* ui.note(loginInstructions, 'Login instructions');
@@ -819,9 +819,9 @@ export const loginCmd = Command.make(
     Effect.gen(function* () {
       const ui = yield* TerminalUI;
       const ctx = yield* ComposioUserContext;
-      const canPrompt = (yield* ui.capabilities).isInteractive;
+      const { canPrompt, canDecorate } = yield* ui.capabilities;
 
-      if (canPrompt) {
+      if (canDecorate) {
         yield* ui.intro('composio login');
       }
 
@@ -880,7 +880,7 @@ export const loginCmd = Command.make(
           organizations: loginResult.organizations,
         };
         const pollSummary = formatPollLoginComplete(pollSummaryParams);
-        if (canPrompt) {
+        if (canDecorate) {
           yield* ui.note(pollSummary, 'Login complete');
         }
         yield* ui.output(serializePollLoginResult(pollSummaryParams), { force: true });

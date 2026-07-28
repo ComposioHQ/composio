@@ -180,7 +180,7 @@ const setupBaseCmd = Command.make(
         }
 
         if (!yes && removable.length > 0) {
-          if (!terminal.isInteractive) {
+          if (!terminal.canPrompt) {
             return yield* setupCommandError(
               'Non-interactive uninstall requires `--yes` to approve local changes.',
               operation
@@ -228,7 +228,7 @@ const setupBaseCmd = Command.make(
 
       const pendingPlugins = pending.filter(status => !isSetupPluginReady(status));
       if (!yes) {
-        if (!terminal.isInteractive) {
+        if (!terminal.canPrompt) {
           return yield* setupCommandError(
             'Non-interactive setup requires `--yes` to approve local changes.',
             operation

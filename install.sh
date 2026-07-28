@@ -69,11 +69,6 @@ tildify() {
     fi
 }
 
-# --- Prerequisites ---
-
-command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
-command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
-
 install_agent=false
 install_plugins=true
 version_arg=""
@@ -120,9 +115,14 @@ platform=$(uname -ms)
 
 case $platform in
 'MINGW64'* | 'MSYS'* | 'CYGWIN'*)
-    error 'Windows is not supported. Please use WSL or install via npm: npm install -g @composio/cli'
+    error 'Windows is not supported. Please use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
     ;;
 esac
+
+# --- Prerequisites ---
+
+command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
+command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
 
 case $platform in
 'Darwin x86_64')  target=darwin-x64     ;;
@@ -306,12 +306,18 @@ success "Composio CLI was installed successfully to $Bold_Green$(tildify "$exe")
 #   - Idempotent PATH setup in the correct rc file
 #   - Shell completions installation
 # If the binary can't run (e.g. missing runtime), fall back to inline setup.
+#
+# Run it with stderr left on the terminal. `composio install` reports which rc
+# file it changed and how to reload the shell, and it treats a redirected stderr
+# as "nobody is watching" — capturing that stream, even to replay it later, is
+# what makes the PATH guidance disappear. The version probe keeps a binary that
+# cannot run at all from spilling loader errors before the fallback takes over.
 
 echo
 
-install_err=$(mktemp)
-if COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" "$exe" install 2>"$install_err"; then
-    cat "$install_err" >&2  # Show CLI's TerminalUI output on success
+if "$exe" --version >/dev/null 2>&1 &&
+    COMPOSIO_INSTALL_DIR="$COMPOSIO_INSTALL_DIR" "$exe" install; then
+    : # the CLI printed its own shell-integration guidance
 else
     info "Setting up shell integration..."
 
@@ -402,7 +408,6 @@ else
     esac
 
 fi
-rm -f "$install_err"
 
 if [[ $install_plugins = true ]]; then
     echo
@@ -421,8 +426,11 @@ if [[ $install_agent = true ]]; then
 fi
 
 echo
-info "Composio was added to your PATH — restart your shell (or open a new terminal) for it to take effect."
-info "Then, to get started, run:"
+# No PATH claim here: whichever branch ran above already reported what it did to
+# which file, and whether a reload is needed. Restating it unconditionally would
+# promise a configured PATH even on the branches that only printed manual
+# instructions.
+info "To get started, run:"
 echo
 
 if [[ ${refresh_command:-} ]]; then

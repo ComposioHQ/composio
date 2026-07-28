@@ -65,9 +65,12 @@ catalog:
 catalogs:
   # TS7 (tsgo) ships no JS compiler API; consumers of that API pin TS6 here.
   # `typescript` rebinds the compiler-API import for @composio/cli's generate
-  # pipeline (its typecheck still runs the root TS7 tsc — the alias package only
-  # ships a tsc6 bin); `typescript6` is the side-by-side alias for scripts that
-  # also need TS7 in scope (ts/scripts/validate-examples.ts).
+  # pipeline and @composio/core's typedoc docgen (their typechecks still run the
+  # root TS7 tsc — the alias package only ships a tsc6 bin). For core, this also
+  # routes tsdown's declaration emit through TS6; the types remain equivalent,
+  # but union member order and dist chunk hashes may change. `typescript6` is the
+  # side-by-side alias for scripts that also need TS7 in scope
+  # (ts/scripts/validate-examples.ts).
   ts6:
     typescript: npm:@typescript/typescript6@^6.0.2
     typescript6: npm:@typescript/typescript6@^6.0.2
