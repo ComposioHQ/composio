@@ -39,9 +39,11 @@ const propertyOf = (value: unknown, property: string): unknown =>
 
 /**
  * Resolves the Pusher constructor across ESM/CJS interop shapes. pusher-js
- * ships CJS and has changed its export shape across versions: 8.4.0 and 8.6.0
- * export the constructor itself (`module.exports = Pusher`), while 8.5.0
- * exports a namespace object (`module.exports = { Pusher }`), so
+ * ships CJS and has changed its export shape across versions: 8.4.x and 8.6.0
+ * export the constructor itself (`module.exports = Pusher`), while 8.5.0's
+ * Node bundle exports a namespace object (`module.exports = { Pusher }`) — an
+ * undocumented upstream packaging regression (pusher/pusher-js#935, fixed by
+ * pusher/pusher-js#936, first released in 8.6.0). With 8.5.0,
  * `module.default` stops being callable under both Node and Bun — from source
  * and in compiled binaries alike (issue #3918). The probes cover, in order: a
  * defensively double-wrapped default (`module.default.default`), the direct
