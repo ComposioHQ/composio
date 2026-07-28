@@ -28,7 +28,7 @@ vi.mock('@anthropic-ai/sdk', () => {
 describe('AnthropicProvider', () => {
   let provider: AnthropicProvider;
   let mockTool: Tool;
-  let mockExecuteToolFn: any;
+  let mockExecuteToolFn: unknown;
 
   beforeEach(() => {
     provider = new AnthropicProvider();

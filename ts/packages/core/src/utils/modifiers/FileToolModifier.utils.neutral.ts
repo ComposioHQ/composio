@@ -59,10 +59,12 @@ const transformSchema = (property: JSONSchemaProperty): JSONSchemaProperty => {
  * @param properties - The properties of the tool schema.
  * @returns The transformed properties.
  */
-export const transformProperties = (properties: JSONSchemaProperty): JSONSchemaProperty => {
-  const newProperties: JSONSchemaProperty = {};
+export const transformProperties = (
+  properties: Record<string, JSONSchemaProperty>
+): Record<string, JSONSchemaProperty> => {
+  const newProperties: Record<string, JSONSchemaProperty> = {};
 
-  for (const [key, property] of Object.entries(properties) as [string, JSONSchemaProperty][]) {
+  for (const [key, property] of Object.entries(properties)) {
     newProperties[key] = transformSchema(property);
   }
 

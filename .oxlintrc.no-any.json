@@ -1,0 +1,37 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Repository-wide type-safety invariant. Keep this config deliberately
+  // narrow so every authored TypeScript file, including tests, can be
+  // checked without inheriting package-specific lint policies.
+  "plugins": ["typescript"],
+  "categories": {
+    "correctness": "off"
+  },
+  "ignorePatterns": [
+    // The docs site has its own Bun dependency tree and enforces
+    // no-explicit-any through its nested docs/.oxlintrc.json.
+    "docs/**",
+    "**/.venv/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/site-packages/**",
+    // Only generated declarations are exempt; authored .d.ts files are checked.
+    "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",
+    "ts/vendor/**",
+    "ts/packages/cli-local-tools/vendor/**",
+    "ts/packages/core/generated/**",
+    "ts/packages/core/pack/generated/**",
+    "ts/packages/**/.generated/**",
+    "ts/packages/**/acp-adapters/**",
+    "ts/examples/**/dist-worker/**"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": [
+      "error",
+      {
+        "fixToUnknown": true
+      }
+    ]
+  }
+}

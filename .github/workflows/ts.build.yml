@@ -6,6 +6,7 @@ on:
     paths:
       - 'ts/**'
       - '.oxlintrc.json'
+      - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'ts/**'
       - '.oxlintrc.json'
+      - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
       - 'mise.toml'

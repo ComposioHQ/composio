@@ -129,7 +129,7 @@ describe('jsonSchemaToZod', () => {
         type: 'number',
         min: 0,
         max: 100,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(50)).toBe(50);
       expect(() => zodSchema.parse(-1)).toThrow();
@@ -143,7 +143,7 @@ describe('jsonSchemaToZod', () => {
         maximum: 90,
         min: 0,
         max: 100,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(50)).toBe(50);
       expect(zodSchema.parse(10)).toBe(10);
@@ -159,7 +159,7 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
         min: 3,
         max: 10,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse('hello')).toBe('hello');
       expect(() => zodSchema.parse('hi')).toThrow();
@@ -173,7 +173,7 @@ describe('jsonSchemaToZod', () => {
         maxLength: 8,
         min: 3,
         max: 10,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse('hello')).toBe('hello');
       expect(zodSchema.parse('testing')).toBe('testing');
@@ -519,7 +519,7 @@ describe('jsonSchemaToZod', () => {
         items: { type: 'string' },
         min: 1,
         max: 3,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(['one'])).toEqual(['one']);
       expect(zodSchema.parse(['one', 'two', 'three'])).toEqual(['one', 'two', 'three']);
@@ -535,7 +535,7 @@ describe('jsonSchemaToZod', () => {
         maxItems: 4,
         min: 1,
         max: 3,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.parse(['one', 'two'])).toEqual(['one', 'two']);
       expect(zodSchema.parse(['one', 'two', 'three', 'four'])).toEqual([
@@ -994,7 +994,7 @@ describe('jsonSchemaToZod', () => {
       });
 
       // Test property description
-      const shape = (zodSchema as any)._def.shape();
+      const shape = (zodSchema as z.ZodObject<z.ZodRawShape>).shape;
       expect(shape.username.description).toBe('The username of the Hacker News user to retrieve.');
     });
 
@@ -1003,7 +1003,7 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
         description: 'User name',
         example: 'john_doe',
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('User name\nExample: "john_doe"');
     });
@@ -1012,7 +1012,7 @@ describe('jsonSchemaToZod', () => {
       const schema: JsonSchema = {
         type: 'number',
         example: 42,
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Example: 42');
     });
@@ -1022,7 +1022,7 @@ describe('jsonSchemaToZod', () => {
         type: 'object',
         title: 'User Object',
         example: { name: 'John', age: 30 },
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('User Object\nExample: {"name":"John","age":30}');
     });
@@ -1032,7 +1032,7 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
         description: 'Property name',
         examples: ['lifecyclestage'],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name\nExample: "lifecyclestage"');
     });
@@ -1042,7 +1042,7 @@ describe('jsonSchemaToZod', () => {
         type: 'array',
         description: 'List of property names',
         examples: ["['lifecyclestage', 'hs_lead_status']", "['hubspot_owner_id']"],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         "List of property names\nExamples:\n  \"['lifecyclestage', 'hs_lead_status']\"\n  \"['hubspot_owner_id']\""
@@ -1055,7 +1055,7 @@ describe('jsonSchemaToZod', () => {
         description: 'Property name',
         example: 'single_example',
         examples: ['example1', 'example2'],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name\nExample: "single_example"');
     });
@@ -1065,7 +1065,7 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
         description: 'Property name',
         examples: [],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Property name');
     });
@@ -1079,7 +1079,7 @@ describe('jsonSchemaToZod', () => {
           ['hubspot_owner_id'],
           ['created_date', 'modified_date', 'status'],
         ],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         'Property combinations\nExamples:\n  ["lifecyclestage","hs_lead_status"]\n  ["hubspot_owner_id"]\n  ["created_date","modified_date","status"]'
@@ -1091,7 +1091,7 @@ describe('jsonSchemaToZod', () => {
         type: 'string',
         description: 'Status values',
         examples: ['active', 'inactive', 'pending'],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe(
         'Status values\nExamples:\n  "active"\n  "inactive"\n  "pending"'
@@ -1103,7 +1103,7 @@ describe('jsonSchemaToZod', () => {
         type: 'number',
         description: 'Various numbers',
         examples: [42, 3.14, 0, -5],
-      } as any;
+      } as JsonSchema;
       const zodSchema = jsonSchemaToZod(schema);
       expect(zodSchema.description).toBe('Various numbers\nExamples:\n  42\n  3.14\n  0\n  -5');
     });

@@ -1,4 +1,5 @@
 import * as tempy from 'tempy';
+import type { Composio as RawComposioClient } from '@composio/client';
 import { CliApp, CliConfig } from '@effect/cli';
 import { Command, FetchHttpClient, FileSystem, Path } from '@effect/platform';
 import { BunFileSystem, BunContext, BunPath } from '@effect/platform-bun';
@@ -218,7 +219,7 @@ export interface TestLiveInput {
  * Layer<RequirementsOut, Error, RequirementsIn>
  */
 
-type RequiredLayer = Layer.Layer<any, any, never>;
+type RequiredLayer = Layer.Layer<CliApp.CliApp.Environment, unknown, never>;
 
 const ConsumerProjectResolveFetchMock = Layer.scopedDiscard(
   Effect.acquireRelease(
@@ -1195,12 +1196,10 @@ export const TestLayer = (input?: TestLiveInput) =>
           // Partial mock: only implements `toolRouter.session.*` methods used by
           // CLI commands under test. The full Composio client interface is too
           // large to mock completely for unit tests.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient as unknown as RawComposioClient;
         }),
         getFor: Effect.fn(function* () {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return mockComposioClient as any;
+          return mockComposioClient as unknown as RawComposioClient;
         }),
       })
     );

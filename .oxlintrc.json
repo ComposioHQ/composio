@@ -50,6 +50,12 @@
     "**/*.d.ts"
   ],
   "rules": {
+    // tseslint.configs.recommended rules that oxlint's correctness category
+    // does not enable by default; re-enabled explicitly to keep the migration
+    // behavior-preserving in this direction too.
+    "typescript/no-namespace": "error",
+    "no-array-constructor": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
     // Rules oxlint enables by default that the previous ESLint setup did not
     // enforce. Turned off to keep the migration behavior-preserving; each is a
     // candidate to enable (and burn down) in a follow-up.
@@ -206,7 +212,6 @@
       "files": ["ts/packages/cli/test/src/**/*.{ts,tsx}"],
       "rules": {
         "max-lines-per-function": "off",
-        "typescript/no-explicit-any": "off",
         "eslint-js/no-restricted-syntax": [
           "error",
           {

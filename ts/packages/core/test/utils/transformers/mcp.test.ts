@@ -18,7 +18,7 @@ describe('MCP Transformers', () => {
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-02T00:00:00Z',
         status: 'active',
-      } as any;
+      } as unknown;
 
       const result = transformMcpCreateResponse(snakeCaseResponse);
 
@@ -35,7 +35,7 @@ describe('MCP Transformers', () => {
       const minimalResponse = {
         id: 'mcp_123',
         name: 'test-server',
-      } as any;
+      } as unknown;
 
       const result = transformMcpCreateResponse(minimalResponse);
 
@@ -49,7 +49,7 @@ describe('MCP Transformers', () => {
       const invalidResponse = {
         id: '', // Empty ID should fail validation
         name: 'test-server',
-      } as any;
+      } as unknown;
 
       expect(() => transformMcpCreateResponse(invalidResponse)).toThrow(ValidationError);
       expect(() => transformMcpCreateResponse(invalidResponse)).toThrow(
@@ -77,7 +77,7 @@ describe('MCP Transformers', () => {
             status: 'inactive',
           },
         ],
-      } as any;
+      } as unknown;
 
       const result = transformMcpListResponse(snakeCaseResponse);
 
@@ -104,7 +104,7 @@ describe('MCP Transformers', () => {
     it('should handle empty items array', () => {
       const emptyResponse = {
         items: [],
-      } as any;
+      } as unknown;
 
       const result = transformMcpListResponse(emptyResponse);
 
@@ -114,7 +114,7 @@ describe('MCP Transformers', () => {
     });
 
     it('should handle missing items', () => {
-      const noItemsResponse = {} as any;
+      const noItemsResponse = {} as unknown;
 
       const result = transformMcpListResponse(noItemsResponse);
 
@@ -141,7 +141,7 @@ describe('MCP Transformers', () => {
           cursor: 'cursor-command',
           windsurf: 'windsurf-command',
         },
-      } as any;
+      } as unknown;
 
       const result = transformMcpRetrieveResponse(snakeCaseResponse);
 
@@ -173,7 +173,7 @@ describe('MCP Transformers', () => {
           cursor: 'cursor-command',
           windsurf: 'windsurf-command',
         },
-      } as any;
+      } as unknown;
 
       const result = transformMcpRetrieveResponse(minimalResponse);
 
@@ -193,7 +193,7 @@ describe('MCP Transformers', () => {
       const invalidResponse = {
         id: 'mcp_123',
         // Missing required 'name' field
-      } as any;
+      } as unknown;
 
       expect(() => transformMcpRetrieveResponse(invalidResponse)).toThrow(ValidationError);
     });
@@ -205,7 +205,7 @@ describe('MCP Transformers', () => {
         id: 'mcp_123',
         deleted: true,
         message: 'Server deleted successfully',
-      } as any;
+      } as unknown;
 
       const result = transformMcpDeleteResponse(snakeCaseResponse);
 
@@ -219,7 +219,7 @@ describe('MCP Transformers', () => {
     it('should handle response without optional fields', () => {
       const minimalResponse = {
         id: 'mcp_123',
-      } as any;
+      } as unknown;
 
       const result = transformMcpDeleteResponse(minimalResponse);
 
@@ -239,7 +239,7 @@ describe('MCP Transformers', () => {
         status: 'active',
         toolkits: ['gmail', 'slack'],
         tools: ['GMAIL_FETCH_EMAILS', 'SLACK_SEND_MESSAGE'],
-      } as any;
+      } as unknown;
 
       const result = transformMcpUpdateResponse(snakeCaseResponse);
 
@@ -258,7 +258,7 @@ describe('MCP Transformers', () => {
       const minimalResponse = {
         id: 'mcp_123',
         name: 'updated-server',
-      } as any;
+      } as unknown;
 
       const result = transformMcpUpdateResponse(minimalResponse);
 
@@ -272,7 +272,7 @@ describe('MCP Transformers', () => {
       const invalidResponse = {
         id: 'mcp_123',
         name: '', // Empty name should fail validation
-      } as any;
+      } as unknown;
 
       expect(() => transformMcpUpdateResponse(invalidResponse)).toThrow(ValidationError);
       expect(() => transformMcpUpdateResponse(invalidResponse)).toThrow(
@@ -362,7 +362,7 @@ describe('MCP Transformers', () => {
         created_at: null,
         updated_at: null,
         status: null,
-      } as any;
+      } as unknown;
 
       const result = transformMcpCreateResponse(responseWithNulls);
 
@@ -382,7 +382,7 @@ describe('MCP Transformers', () => {
         created_at: undefined,
         updated_at: undefined,
         status: undefined,
-      } as any;
+      } as unknown;
 
       const result = transformMcpCreateResponse(responseWithUndefined);
 
@@ -399,7 +399,7 @@ describe('MCP Transformers', () => {
         created_at: '2024-01-01T00:00:00Z',
         some_unknown_field: 'value',
         nested_object: { key: 'value' },
-      } as any;
+      } as unknown;
 
       const result = transformMcpCreateResponse(responseWithExtraFields);
 

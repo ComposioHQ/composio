@@ -35,7 +35,7 @@ describe('ToolRouterSessionFilesMount', () => {
     vi.clearAllMocks();
     mockLookup.mockReset();
     mockClient = createMockClient();
-    filesMount = new ToolRouterSessionFilesMount(mockClient as any, sessionId);
+    filesMount = new ToolRouterSessionFilesMount(mockClient as unknown, sessionId);
   });
 
   describe('list', () => {
