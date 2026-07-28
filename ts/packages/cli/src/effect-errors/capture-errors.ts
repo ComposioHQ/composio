@@ -1,4 +1,3 @@
-import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
 import type { Path } from '@effect/platform/Path';
 import { Effect } from 'effect';
@@ -36,7 +35,7 @@ export const captureErrors = <E>(
   options: CaptureErrorsOptions = {
     stripCwd: true,
   }
-): Effect.Effect<CapturedErrors, PlatformError, FileSystem | Path> =>
+): Effect.Effect<CapturedErrors, never, FileSystem | Path> =>
   Effect.gen(function* () {
     if (isInterruptedOnly(cause)) {
       return {
