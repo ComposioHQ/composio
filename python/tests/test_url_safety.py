@@ -47,11 +47,33 @@ def test_allows_public_addresses(address: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "url", ["file:///etc/passwd", "ftp://example.com/file", "not a url"]
+    "url",
+    [
+        "file:///etc/passwd",
+        "ftp://example.com/file",
+        "not a url",
+        "http://example.com:invalid/file",
+    ],
 )
-def test_rejects_non_http_urls(url: str) -> None:
+def test_rejects_malformed_or_non_http_urls(url: str) -> None:
     with pytest.raises(BlockedInternalUrlError):
         assert_safe_fetch_target(url)
+
+
+@patch("composio.utils.url_safety.socket.getaddrinfo")
+def test_validates_requests_canonicalized_hostname(mock_getaddrinfo) -> None:
+    def resolve(host: str, _port: int | None):
+        address = "127.0.0.1" if host == "127.0.0.1" else "93.184.216.34"
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, 0)),
+        ]
+
+    mock_getaddrinfo.side_effect = resolve
+
+    with pytest.raises(BlockedInternalUrlError):
+        assert_safe_fetch_target(r"http://127.0.0.1\@example.com/file.pdf")
+
+    mock_getaddrinfo.assert_called_once_with("127.0.0.1", None)
 
 
 @patch("composio.utils.url_safety.socket.getaddrinfo")
