@@ -46,6 +46,7 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
+const installGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
 const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
@@ -507,6 +508,37 @@ if (!buildCliWorkflow.includes('group: cli-release-${{ needs.prepare.outputs.rel
 // below) rather than inline YAML bash, so the branching logic is reviewable and testable.
 if (!buildCliWorkflow.includes('bash .github/scripts/cli-release/resolve-release-target.sh')) {
   throw new Error('build-cli-binaries.yml prepare job must delegate to resolve-release-target.sh');
+}
+
+// Release archives contain a composio-<target>/ bundle with runtime support files next to the
+// executable. Both the checked-in guide and the workflow-generated guide must preserve that
+// directory contents and put the installed binary's directory on PATH.
+const manualInstallGuides = [
+  {
+    label: 'INSTALL.md',
+    source: requireMatch(
+      installGuide,
+      /## Manual Installation([\s\S]*?)## Verification/,
+      'INSTALL.md manual installation section'
+    ),
+  },
+  {
+    label: 'build-cli-binaries.yml generated INSTALL.md',
+    source: requireMatch(
+      buildCliWorkflow,
+      /## Manual Installation([\s\S]*?)## Usage/,
+      'generated INSTALL.md manual installation section'
+    ),
+  },
+];
+
+for (const guide of manualInstallGuides) {
+  if (!guide.source.includes('cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"')) {
+    throw new Error(`${guide.label} must install the complete CLI release bundle`);
+  }
+  if (!guide.source.includes('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"')) {
+    throw new Error(`${guide.label} must expose the installed bundle's binary on PATH`);
+  }
 }
 
 // The "latest stable" lookup must sort by numeric semver, not lexically: a lexical sort ranks

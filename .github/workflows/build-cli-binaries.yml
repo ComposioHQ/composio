@@ -309,9 +309,21 @@ jobs:
           ## Manual Installation
 
           1. Download the appropriate binary for your platform from the [releases page](https://github.com/ComposioHQ/composio/releases)
-          2. Extract the binary
-          3. Move it to a directory in your PATH (e.g., `/usr/local/bin`)
-          4. Make it executable: `chmod +x composio`
+          2. Extract and install the complete bundle. The CLI loads support files shipped next to the executable, so do not move only the nested `composio` file.
+
+          ```bash
+          # Replace this with the downloaded archive name, without ".zip"
+          bundle=composio-linux-x64
+          export COMPOSIO_INSTALL_DIR="${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+
+          unzip "$bundle.zip"
+          mkdir -p "$COMPOSIO_INSTALL_DIR"
+          cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
+          chmod +x "$COMPOSIO_INSTALL_DIR/composio"
+          export PATH="$COMPOSIO_INSTALL_DIR:$PATH"
+          ```
+
+          Add both `export` commands to your shell profile to keep `composio` on `PATH` in new terminal sessions.
 
           ## Usage
 
