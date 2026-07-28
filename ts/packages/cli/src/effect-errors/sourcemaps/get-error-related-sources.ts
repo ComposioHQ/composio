@@ -5,11 +5,8 @@ import { Effect } from 'effect';
 
 import { getErrorLocationFrom } from './get-error-location-from-file-path';
 import { getSourceCode } from './get-source-code';
-import {
-  type ErrorRelatedSources,
-  getSourcesFromMapFile,
-  type RawErrorLocation,
-} from './get-sources-from-map-file';
+import { getSourcesFromMapFile } from './get-sources-from-map-file';
+import { type ErrorRelatedSources, MappedSources, type RawErrorLocation } from './mapped-sources';
 
 export const getErrorRelatedSources = (
   name: string,
@@ -31,13 +28,12 @@ export const getErrorRelatedSources = (
     if (isTypescriptFile) {
       const source = yield* getSourceCode(location);
 
-      return {
-        _tag: 'sources' as const,
+      return MappedSources.sources({
         name,
         runPath: `${filePath}:${line}:${column}`,
         sourcesPath: undefined,
         source,
-      };
+      });
     }
 
     return yield* getSourcesFromMapFile(name, location);

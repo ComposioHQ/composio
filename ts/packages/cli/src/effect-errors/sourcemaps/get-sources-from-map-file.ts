@@ -7,7 +7,8 @@ import { SourceMapConsumer } from 'source-map-js';
 import { readJsonEffect } from 'effect-errors/dependencies/fs';
 
 import type { ErrorLocation } from './get-error-location-from-file-path';
-import { getSourceCode, type SourceCode } from './get-source-code';
+import { getSourceCode } from './get-source-code';
+import { type ErrorRelatedSources, MappedSources, type RawErrorLocation } from './mapped-sources';
 
 const SourceMapSchema = Schema.Struct({
   version: Schema.Literal(3, '3'),
@@ -28,29 +29,16 @@ class SourceMapResolutionError extends Data.TaggedError('SourceMapResolutionErro
   }
 }
 
-export interface ErrorRelatedSources {
-  _tag: 'sources';
-  name: string;
-  source: SourceCode[];
-  runPath: string;
-  sourcesPath: string | undefined;
-}
-
-export interface RawErrorLocation extends ErrorLocation {
-  _tag: 'location';
-  name: string;
-}
-
 const rawErrorLocation = (
   name: string,
   location: ErrorLocation,
   workingDirectory: string
-): RawErrorLocation => ({
-  _tag: 'location',
-  name,
-  ...location,
-  filePath: location.filePath.replace(workingDirectory, ''),
-});
+): RawErrorLocation =>
+  MappedSources.location({
+    name,
+    ...location,
+    filePath: location.filePath.replace(workingDirectory, ''),
+  });
 
 const resolveOriginalPosition = (sourceMap: typeof SourceMapSchema.Type, location: ErrorLocation) =>
   Effect.try({
@@ -123,13 +111,12 @@ export const getSourcesFromMapFile = (
         true
       );
 
-      return {
-        _tag: 'sources' as const,
+      return MappedSources.sources({
         name,
         runPath: `${location.filePath}:${location.line}:${location.column}`,
         sourcesPath: `${absolutePath}:${sources.line}:${sources.column + 1}`,
         source,
-      };
+      });
     }),
     Effect.withSpan('get-sources-from-map-file', {
       attributes: { location: JSON.stringify(location) },

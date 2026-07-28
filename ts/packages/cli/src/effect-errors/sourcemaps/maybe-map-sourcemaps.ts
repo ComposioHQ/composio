@@ -1,25 +1,12 @@
 import type { PlatformError } from '@effect/platform/Error';
 import type { FileSystem } from '@effect/platform/FileSystem';
 import type { Path } from '@effect/platform/Path';
-import { Effect, Predicate, pipe } from 'effect';
+import { Effect, pipe } from 'effect';
 
 import { stackAtRegex } from 'effect-errors/logic/stack';
 
 import { getErrorRelatedSources } from './get-error-related-sources';
-import type { ErrorRelatedSources, RawErrorLocation } from './get-sources-from-map-file';
-
-export type StackEntry = {
-  _tag: 'stack-entry';
-  runPath: string;
-};
-
-export type MaybeMappedSources = ErrorRelatedSources | RawErrorLocation | StackEntry;
-
-export const isErrorRelatedSources = (value: MaybeMappedSources): value is ErrorRelatedSources =>
-  Predicate.isTagged(value, 'sources');
-
-export const isRawErrorLocation = (value: MaybeMappedSources): value is RawErrorLocation =>
-  Predicate.isTagged(value, 'location');
+import { isRawErrorLocation, MappedSources, type MaybeMappedSources } from './mapped-sources';
 
 export const maybeMapSourcemaps = (
   name: string,
@@ -34,10 +21,9 @@ export const maybeMapSourcemaps = (
 
         const details = yield* getErrorRelatedSources(name, mapFileReportedPath);
         if (details === undefined) {
-          return {
-            _tag: 'stack-entry' as const,
+          return MappedSources['stack-entry']({
             runPath: stackLine.replaceAll(stackAtRegex, 'at '),
-          };
+          });
         }
         if (isRawErrorLocation(details)) {
           return details;
