@@ -253,7 +253,7 @@ jobs:
 
       # Build the release as a DRAFT first. Drafts fire no `release: published` event and are
       # excluded from the `/releases/latest` redirect, so no anonymous consumer (install.sh,
-      # Homebrew, the redirect) can ever observe a release before its assets are attached and
+      # the redirect) can ever observe a release before its assets are attached and
       # verified. The release is only flipped to published as the final step below.
       - name: Create draft release with all assets
         run: bash "$RELEASE_HELPERS_DIR/create-or-resume-draft.sh"
@@ -312,14 +312,6 @@ jobs:
           2. Extract the binary
           3. Move it to a directory in your PATH (e.g., `/usr/local/bin`)
           4. Make it executable: `chmod +x composio`
-
-          ## Alternative: npm/pnpm Installation
-
-          ```bash
-          npm install -g @composio/cli
-          # or
-          pnpm add -g @composio/cli
-          ```
 
           ## Usage
 

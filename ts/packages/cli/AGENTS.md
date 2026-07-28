@@ -212,6 +212,5 @@ Use the repo-local `cli-release` skill before building or publishing first-party
 
 - `.github/workflows/build-cli-binaries.yml` — binary build + release
 - `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
-- `.github/workflows/cli.bump-homebrew-tap.yml` — stable Homebrew formula update
 - `.github/scripts/cli-release/resolve-release-target.sh` — beta/stable target resolution
 - `.changeset/config.json`

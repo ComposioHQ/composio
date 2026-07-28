@@ -23,19 +23,6 @@ permissions:
   contents: read
 
 jobs:
-  toolchain-versions:
-    name: Read toolchain test matrix
-    runs-on: ubuntu-latest
-    outputs:
-      node_install_compat: ${{ steps.versions.outputs.node_install_compat }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Read versions
-        id: versions
-        run: echo "node_install_compat=$(jq -c '.node_install_compat' toolchain-versions.json)" >> "$GITHUB_OUTPUT"
-
   install-script-unit-tests:
     name: Install Script Unit Tests
     runs-on: ubuntu-latest
@@ -438,39 +425,6 @@ jobs:
             # Don't exit 1 here as this is expected to fail
           fi
 
-  test-npm-fallback:
-    name: Test npm Installation Fallback
-    needs: toolchain-versions
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-15]
-        node-version: ${{ fromJSON(needs.toolchain-versions.outputs.node_install_compat) }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Test npm installation
-        run: |
-          echo "Testing npm installation as fallback..."
-
-          # This would normally install from npm registry
-          # For testing, we just verify the command works
-          if command -v npm &> /dev/null; then
-            echo "✅ npm is available"
-            npm --version
-          else
-            echo "❌ npm not available"
-            exit 1
-          fi
-
   test-architecture-detection:
     name: Test Architecture Detection
     runs-on: ${{ matrix.os }}
@@ -584,7 +538,6 @@ jobs:
       [
         install-script-unit-tests,
         test-install-script,
-        test-npm-fallback,
         test-architecture-detection,
         test-prerequisites,
       ]
@@ -609,12 +562,6 @@ jobs:
             echo "❌ **Install Script Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [[ "${{ needs.test-npm-fallback.result }}" == "success" ]]; then
-            echo "✅ **npm Fallback Tests**: PASSED" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **npm Fallback Tests**: FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-
           if [[ "${{ needs.test-architecture-detection.result }}" == "success" ]]; then
             echo "✅ **Architecture Detection**: PASSED" >> $GITHUB_STEP_SUMMARY
           else
@@ -634,5 +581,4 @@ jobs:
           echo "- **macOS x64**: macOS 15 (Intel)" >> $GITHUB_STEP_SUMMARY
           echo "- **macOS ARM64**: macOS 14, macOS 15 (Apple Silicon)" >> $GITHUB_STEP_SUMMARY
           echo "- **Shells**: Bash and Zsh" >> $GITHUB_STEP_SUMMARY
-          echo "- **Node.js**: 18, 20, 22 (npm fallback)" >> $GITHUB_STEP_SUMMARY
           echo "- **Total platforms**: 4 architectures across 15+ environments" >> $GITHUB_STEP_SUMMARY

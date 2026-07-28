@@ -44,23 +44,6 @@ sudo mv composio /usr/local/bin/
 chmod +x /usr/local/bin/composio
 ```
 
-## Package Manager Installation
-
-### npm
-```bash
-npm install -g @composio/cli
-```
-
-### pnpm
-```bash
-pnpm add -g @composio/cli
-```
-
-### yarn
-```bash
-yarn global add @composio/cli
-```
-
 ## Verification
 
 After installation, verify it works:
@@ -103,7 +86,7 @@ composio --help
 - macOS ARM64 (Apple Silicon)
 
 ❌ **Not Supported:**
-- Windows (use WSL or npm installation)
+- Windows — use [WSL](https://learn.microsoft.com/windows/wsl/install) and run the install script inside your WSL distribution
 
 ## Troubleshooting
 

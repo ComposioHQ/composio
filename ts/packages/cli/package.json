@@ -13,11 +13,6 @@
     "url": "https://github.com/ComposioHQ/composio.git",
     "directory": "ts/packages/cli"
   },
-  "publishConfig": {
-    "access": "public",
-    "main": "dist/bin.mjs",
-    "types": "dist/bin.d.mts"
-  },
   "files": [
     "README.md",
     "bin",

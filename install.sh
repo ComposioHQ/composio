@@ -120,7 +120,7 @@ platform=$(uname -ms)
 
 case $platform in
 'MINGW64'* | 'MSYS'* | 'CYGWIN'*)
-    error 'Windows is not supported. Please use WSL or install via npm: npm install -g @composio/cli'
+    error 'Windows is not supported. Please use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
     ;;
 esac
 
