@@ -71,7 +71,7 @@
       ]
     },
     "lint": {
-      "inputs": ["$TURBO_DEFAULT$", "../../../eslint.config.mjs"]
+      "inputs": ["$TURBO_DEFAULT$", "../../../.oxlintrc.json"]
     },
     "cf:dry-run": {
       "dependsOn": ["^build"]

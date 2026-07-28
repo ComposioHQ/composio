@@ -67,7 +67,6 @@ export default async function Page({
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mdxData = page.data as any;
   const MDX = mdxData.body;
 
@@ -78,7 +77,6 @@ export default async function Page({
       <DocsBody>
         <MDX
           components={getMDXComponents({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             a: createRelativeLink(referenceSource as any, page),
           })}
         />

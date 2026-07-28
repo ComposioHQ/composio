@@ -61,7 +61,6 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
       console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ tools, results may be truncated`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return items.filter((tool: any) => tool && typeof tool === 'object').map(toolFromApi);
   } catch {
     return null;
@@ -104,7 +103,6 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
       console.warn(`[LLM Markdown] Toolkit ${toolkitSlug} has ${items.length}+ triggers, results may be truncated`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return items.filter((trigger: any) => trigger && typeof trigger === 'object').map((trigger: any) => ({
       slug: trigger.slug || '',
       name: trigger.name || trigger.display_name || trigger.slug || '',
@@ -1060,7 +1058,6 @@ export async function GET(
     }
 
     // Handle 'reference' specially - uses async getReferenceSource() for OpenAPI pages
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let pageSource: any;
     if (prefix === 'reference') {
       try {
@@ -1115,7 +1112,6 @@ export async function GET(
 
       // Regular MDX page
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Response(await getLLMText(page as any), {
           headers: {
             'Content-Type': 'text/markdown; charset=utf-8',

@@ -49,9 +49,7 @@ export const source = loader({
 
 // One combined reference source with both v3.1 and v3.0 OpenAPI pages.
 // v3.1 at api-reference/, v3.0 at api-reference/v3/
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _referenceSource: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _openapiPagesPromise: Promise<any> | null = null;
 
 async function getOpenapiPages() {
@@ -82,7 +80,6 @@ export async function getReferenceSource() {
       }),
       plugins: [lucideIconsPlugin(), openapiPlugin()],
       pageTree: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transformers: [
           defaultOpenTransformer as any,
           deprecatedApiSidebarTransformer as any,
@@ -95,7 +92,6 @@ export async function getReferenceSource() {
     // their fumadocs-openapi operation pages. The sidebar tree is filtered
     // separately via prepareTree (lib/filter-api-version.ts).
     const originalGetPages = loaded.getPages.bind(loaded);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (loaded as any).getPages = (...args: Parameters<typeof originalGetPages>) =>
       originalGetPages(...args).filter(
         (page: { url: string }) => !isHiddenReferenceUrl(page.url),

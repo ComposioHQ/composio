@@ -11,7 +11,6 @@ import { PageActions } from '@/components/page-actions';
 import { EditOnGitHub } from '@/components/edit-on-github';
 import { getOgImageUrl } from '@/lib/source';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Source = any;
 
 export function createDocsPage(source: Source, contentDir: string = 'content/docs') {

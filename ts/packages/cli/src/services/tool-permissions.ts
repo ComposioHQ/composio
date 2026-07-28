@@ -1007,7 +1007,7 @@ const requestPermissionInBrowser = (params: {
       reject(error);
     });
     server.listen(0, '127.0.0.1', async () => {
-      // eslint-disable-next-line no-restricted-syntax -- node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here
+      // eslint-disable-next-line eslint-js/no-restricted-syntax -- node:http listen callback inside a Promise executor: on failure to open the browser, close the server and reject the surrounding Promise; Effect's error channel is not available here
       try {
         const address = server.address();
         const port = typeof address === 'object' && address ? address.port : undefined;

@@ -7,8 +7,8 @@ import { ComposioCliConfig } from 'src/cli-config';
  * from `@effect/cli`. Those modules are the redesign seam for Effect CLI v4's
  * public command tree, so every descriptor walk must stay behind the small
  * CLI-domain-shaped operations exported here — the v4 migration should only
- * ever reimplement this file. An ESLint `no-restricted-imports` override in
- * the repo-root `eslint.config.mjs` keeps the seam sealed.
+ * ever reimplement this file. An Oxlint `no-restricted-imports` override in
+ * the repo-root `.oxlintrc.json` keeps the seam sealed.
  */
 
 export type AnyCommandDescriptor = CommandDescriptor.Command<unknown>;

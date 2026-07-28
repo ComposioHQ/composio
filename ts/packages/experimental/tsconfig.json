@@ -7,16 +7,12 @@
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "paths": {
-      "@composio/core": ["../core/src/index.ts"],
-      "@composio/json-schema-to-zod": ["../json-schema-to-zod/src/index.ts"],
-      "#config_defaults": ["../core/src/utils/config-defaults/ConfigDefaults.node.ts"],
-      "#platform": ["../core/src/platform/node.ts"],
-      "#files": ["../core/src/models/Files.node.ts"],
-      "#file_tool_modifier": ["../core/src/utils/modifiers/FileToolModifier.node.ts"],
-      "#ssrf_guard": ["../core/src/utils/ssrfGuard.node.ts"]
-    }
+    "resolveJsonModule": true
+    // No `paths` into sibling packages' src: workspace deps resolve to their
+    // built dist types (turbo builds dependencies first). Mapping them to src
+    // pulled core's sources into this program — which both required mirroring
+    // core's internal `#...` import conditions here and made TS7's tsgo dts
+    // step emit stray .d.ts files next to the mapped sources.
   },
   "include": ["src", "test"]
 }
