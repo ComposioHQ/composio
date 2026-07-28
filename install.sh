@@ -69,11 +69,6 @@ tildify() {
     fi
 }
 
-# --- Prerequisites ---
-
-command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
-command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
-
 install_agent=false
 install_plugins=true
 version_arg=""
@@ -123,6 +118,11 @@ case $platform in
     error 'Windows is not supported. Please use WSL (https://learn.microsoft.com/windows/wsl/install) and run this script inside your WSL distribution.'
     ;;
 esac
+
+# --- Prerequisites ---
+
+command -v curl  >/dev/null || error 'curl is required to install Composio CLI'
+command -v unzip >/dev/null || error 'unzip is required to install Composio CLI'
 
 case $platform in
 'Darwin x86_64')  target=darwin-x64     ;;
