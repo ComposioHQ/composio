@@ -15,7 +15,7 @@ class TestFailure extends Data.TaggedError('test/TestFailure')<{
   readonly message: string;
 }> {}
 
-/** A writable sink with a fixed TTY flag that records everything written to it. */
+/** An intentional Node.js Writable test double matching Clack's output contract. */
 const makeSink = (isTTY: boolean) => {
   const chunks: string[] = [];
   const sink = new Writable({
@@ -35,27 +35,33 @@ const makeStreamedUi = (tty: { stdin: boolean; stdout: boolean; stderr: boolean 
 };
 
 describe('TerminalUI', () => {
-  it('derives each capability from only the streams that serve it, for all TTY combinations', () => {
-    for (const stdin of [false, true]) {
-      for (const stdout of [false, true]) {
-        for (const stderr of [false, true]) {
-          expect(
-            getTerminalCapabilities({
-              stdin: { isTTY: stdin },
-              stdout: { isTTY: stdout },
-              stderr: { isTTY: stderr },
-            })
-          ).toEqual({
-            stdinIsTTY: stdin,
-            stdoutIsTTY: stdout,
-            stderrIsTTY: stderr,
-            canPrompt: stdin && stderr,
-            canDecorate: stderr,
-          });
-        }
-      }
+  it.each([
+    { stdin: false, stdout: false, stderr: false },
+    { stdin: false, stdout: false, stderr: true },
+    { stdin: false, stdout: true, stderr: false },
+    { stdin: false, stdout: true, stderr: true },
+    { stdin: true, stdout: false, stderr: false },
+    { stdin: true, stdout: false, stderr: true },
+    { stdin: true, stdout: true, stderr: false },
+    { stdin: true, stdout: true, stderr: true },
+  ])(
+    'derives each capability from only the streams that serve it (stdin=$stdin, stdout=$stdout, stderr=$stderr)',
+    ({ stdin, stdout, stderr }) => {
+      expect(
+        getTerminalCapabilities({
+          stdin: { isTTY: stdin },
+          stdout: { isTTY: stdout },
+          stderr: { isTTY: stderr },
+        })
+      ).toEqual({
+        stdinIsTTY: stdin,
+        stdoutIsTTY: stdout,
+        stderrIsTTY: stderr,
+        canPrompt: stdin && stderr,
+        canDecorate: stderr,
+      });
     }
-  });
+  );
 
   describe('each capability is decided only by its own streams (behavior, not booleans)', () => {
     beforeEach(() => {

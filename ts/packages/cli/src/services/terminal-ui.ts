@@ -175,7 +175,10 @@ export const TerminalUI = Context.GenericTag<TerminalUI>('services/TerminalUI');
 // makeTerminalUI — build a TerminalUI from explicit streams
 // ---------------------------------------------------------------------------
 
-/** A stream a TerminalUI can write to, with an optional TTY marker. */
+/**
+ * Intentionally a Node.js Writable rather than an Effect Sink: Clack accepts
+ * Writable streams and writes to them synchronously.
+ */
 type TerminalWritable = TtyLikeStream & Writable;
 
 type TerminalUIStreams = {
