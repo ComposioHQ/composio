@@ -18,21 +18,17 @@ lib/openapi-slice.ts         ← narrows the document to one page before it cros
 app/global.css               ← CSS overrides targeting fumadocs-openapi classes
 ```
 
-## fumadocs-openapi 11 notes
+## Bundled document handling
 
-v11 merged the RSC and client APIs, so there is no `api-page.client.tsx` any more —
-`defineClientConfig()` options merge directly into `createOpenAPIPage()`, and
-`<OpenAPIPage />` is a client component. Two consequences drive the code above:
+`<OpenAPIPage />` is a client component, and `getOpenAPIPageProps()` carries a
+bundled OpenAPI document in `payload.bundled`.
 
-- **`getSchema()` returns only a bundled document.** Dereferencing happens at render
-  time, so in-document `$ref`s survive. Anything reading schemas outside the render
-  hook must resolve them: the llms.mdx route inlines them via `lib/openapi-deref.ts`,
-  and the schema generator reads through them with `ctx.schema.resolve`.
-- **Page props carry the whole document.** `getOpenAPIPageProps()` returns
-  `payload.bundled`, which would otherwise be serialized into every page's RSC
-  payload; `lib/openapi-slice.ts` narrows it to the operations a page renders.
-
-Use `getOpenAPIPageProps()` (not the deprecated `getAPIPageProps()`).
+- In-document `$ref`s survive in the bundled document. Code outside the render
+  hook must resolve them: the llms.mdx route inlines them via
+  `lib/openapi-deref.ts`, and the schema generator reads through them with
+  `ctx.schema.resolve`.
+- Sending the entire document across the client boundary on every page is
+  wasteful. `lib/openapi-slice.ts` narrows it to the operations a page renders.
 
 ## Custom Schema Rendering
 
@@ -42,15 +38,14 @@ We replace fumadocs-openapi's default popover-based schema rendering with Stripe
 - `schemaUI.render` hook: intercepts all schema rendering
 - Returns `null` for `#/components/schemas/Error` to hide redundant error schemas
 - Passes an `isResponse` flag to hide "Required" labels on response fields. It is
-  derived from `client.name === 'response'`, NOT from `readOnly`: v11 sets
-  `readOnly: method === 'get'` on parameters and request bodies too, so keying off
-  `readOnly` silently hid the badge on every required GET parameter.
+  derived from `client.name === 'response'`, NOT from `readOnly`: GET parameters
+  and request bodies also set `readOnly`, so it cannot distinguish responses.
 - `generateTypeScriptDefinitions: false` disables the TypeScript Definitions copy box
 - `playground: { enabled: true }` enables the interactive API playground (requests are proxied through `/api/proxy`)
 
 ### `schema-generator.tsx`
 - Walks OpenAPI schemas into a normalized `SchemaUIGeneratedData` structure. Runs on
-  the client since v11, because `api-page.tsx` is now a client component.
+  the client because `api-page.tsx` is a client component.
 - Handles: objects, arrays, oneOf/anyOf, allOf (merged), enums, nullable types
 - Generates info tags for `default` (skips `{}` and `[]`) and `format`
 - Derives schema identity from the raw node's `$ref` (local `getRawRef` in
@@ -68,13 +63,8 @@ We replace fumadocs-openapi's default popover-based schema rendering with Stripe
 
 All in `app/global.css` under the "OpenAPI Reference" section. These target fumadocs-openapi's internal class structure because no hooks exist for these customizations.
 
-Under v10 parameter fields (Path/Query/Header) were also built-in and unreachable, which is why three of the rules below existed. v11 routes parameters through `schemaUI.render`, so they are ours to render and those rules are gone; only the content type label still has no hook.
-
 | Rule | Purpose | Why CSS-only |
 |------|---------|-------------|
-| ~~Hide `span.text-red-400` / `span.text-fd-muted-foreground`~~ | Removed indicators | **Deleted for v11.** Parameters now go through `schemaUI.render`, so `CustomSchemaUI` owns the badge; v11 emits no `*`/`?` in that structure. |
-| ~~`::after` with `content: "Required"`~~ | Added "Required" label | **Deleted for v11.** Superseded by `CustomSchemaUI` rendering the badge from `client.required`. |
-| ~~`div.border.rounded-lg:not(:has(*))`~~ | Hid empty schema wrapper divs | **Deleted for v11.** v10 wrapped the hook's output in `div.border.px-3.py-2.rounded-lg`, which stayed visible when the hook returned null; v11's `ctx.SchemaUI` is a pass-through with no wrapper, so a null return emits an unstyled invisible `<div></div>`. |
 | `p.text-fd-muted-foreground.not-prose:has(> code.text-xs)` | Hide `application/json` content type labels | No hook to control content type display |
 
 ## API Versioning (v3.0 / v3.1)
@@ -137,6 +127,6 @@ SDK Reference is version-independent and shared across both trees. Meta Tools mo
 - Error descriptions vary per endpoint and are useful
 - `info.description` is empty (backend issue)
 - No response examples (backend issue)
-- `nullable: true` (OAS 3.0) is converted when fumadocs-openapi dereferences, which
-  since v11 happens at render time rather than in `getSchema()`
+- `nullable: true` (OAS 3.0) is converted when fumadocs-openapi dereferences at
+  render time
 - Some properties named `deprecated` are required fields (spec issue, not the OpenAPI deprecated flag)

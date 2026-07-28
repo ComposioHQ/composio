@@ -4,11 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { CustomSchemaUI } from '../../components/custom-schema-ui';
 import { generateSchemaData } from '../../components/schema-generator';
 
-// fumadocs-openapi 11 renders from `bundled` documents, which keep in-document
-// Reference Objects intact instead of inlining them. These tests pin the
-// behavior that the schema generator reads *through* a `$ref` via the
-// document's resolver -- without it, a `$ref`'d schema falls through to the
-// primitive branch and renders an empty table with no properties.
+// Reference Objects must be read through the document resolver while retaining
+// their raw pointer as the stable schema identity.
 
 const components: Record<string, unknown> = {
   '#/components/schemas/User': {

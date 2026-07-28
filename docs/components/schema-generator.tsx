@@ -135,11 +135,8 @@ export function generateSchemaData(
     // Mark as processing to prevent infinite recursion on circular refs
     refs[id] = { type: 'primitive', typeName: 'any', aliasName: 'any' };
 
-    // fumadocs 11 renders from `bundled` documents, where in-document Reference
-    // Objects survive as `{ $ref }` nodes. The id above is deliberately derived
-    // from the raw node so $ref-keyed dedup still works; every content read
-    // below needs the resolved target, or a $ref'd schema renders as an empty
-    // primitive with no property table.
+    // Derive identity from the raw node so $ref-keyed dedup remains stable, but
+    // read content from the resolved target.
     const resolved = ctx.schema.resolve(schema);
 
     // For arrays, aliasName is the item type (used in "array of X" display).

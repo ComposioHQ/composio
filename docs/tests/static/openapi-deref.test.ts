@@ -2,9 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { dereferenceDocument } from '../../lib/openapi-deref';
 
-// fumadocs-openapi 11 only exposes a `bundled` document, which keeps
-// in-document `$ref` pointers. These tests pin the inlining pass that restores
-// the fully-resolved shape the llms.mdx renderers were written against.
+// The llms.mdx renderers consume the fully resolved shape produced here.
 
 describe('dereferenceDocument', () => {
   test('inlines a local reference', () => {

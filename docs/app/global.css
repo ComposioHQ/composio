@@ -661,20 +661,8 @@ nav a[href*="app.composio"]:focus-visible {
 /* ==========================================================================
    OpenAPI Reference
 
-   Note: This depends on fumadocs-openapi's internal class structure.
-   If the library updates its classes, this CSS may need adjustment.
-
-   fumadocs-openapi 11 removed the need for three rules that used to live here:
-
-   - The `*` / `?` field indicators and the `::after` "Required" label were CSS
-     hacks because v10 rendered parameter rows with built-in components that no
-     hook could reach. v11 routes parameters through `schemaUI.render`, so
-     `CustomSchemaUI` now renders the "Required" badge itself from the
-     `client.required` flag it is handed.
-   - The empty-wrapper rule (`div.border.rounded-lg:not(:has(*))`) hid the
-     bordered box v10 left behind when the render hook returned null for the
-     shared Error schema. v11's `ctx.SchemaUI` is a pass-through with no wrapper
-     element, so returning null now emits an unstyled, invisible `<div></div>`.
+   This selector depends on fumadocs-openapi's internal classes. Verify it after
+   dependency updates.
    ========================================================================== */
 
 /* Hide redundant "application/json" content type labels */

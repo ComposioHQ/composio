@@ -32,20 +32,15 @@ export const APIPage = createOpenAPIPage({
         },
         {
           renderMarkdown: resolveRenderMarkdown(ctx),
-          // fumadocs 11 renders from `bundled` documents, so `root` and its
-          // nested properties can be unresolved `{ $ref }` nodes. The generator
-          // needs the document's resolver to read through them.
+          // Schema nodes can be unresolved Reference Objects.
           schema: { getRawRef, resolve: ctx.schema.resolve },
         }
       );
-      // fumadocs 11 routes parameters, request bodies AND responses through this
-      // hook (v10 rendered parameters with its own built-in components):
+      // Parameters, request bodies, and responses all pass through this hook:
       //   parameter    -> client { name, required }               readOnly = method === 'get'
       //   request body -> client { name: 'body', as: 'body', … }  readOnly = method === 'get'
       //   response     -> client { name: 'response', as: 'body' } readOnly = true
-      // `readOnly` is therefore also true for a GET's parameters and request body,
-      // so it cannot identify a response on its own -- keying off it suppressed the
-      // "Required" label on every required GET parameter. The client name can.
+      // `readOnly` cannot distinguish GET inputs from responses; the client name can.
       const isResponse = client.name === 'response';
       return (
         <CustomSchemaUI
@@ -71,7 +66,7 @@ function getRawRef(value: object): string | undefined {
 // shape `ctx` actually has at the call site.
 interface MarkdownRenderSource {
   components?: { Markdown?: FC<{ md: string }> };
-  /** @deprecated superseded by `components.Markdown` in fumadocs-openapi 11 */
+  /** @deprecated Prefer `components.Markdown`. */
   renderMarkdown?: (md: string) => ReactNode;
   /** @private fumadocs-internal fallback; not part of the public API */
   _default_processMarkdown?: (md: string) => ReactNode;
@@ -81,16 +76,11 @@ interface MarkdownRenderSource {
  * Resolves the markdown renderer used by the schema generator, preferring
  * supported APIs and degrading safely if fumadocs removes its private field:
  *
- * 1. `components.Markdown` - the supported replacement (fumadocs-openapi 11+).
- *    It's a React FC, so it's adapted to the `(text) => ReactNode` shape.
+ * 1. `components.Markdown` - adapted from a React FC to `(text) => ReactNode`.
  * 2. `renderMarkdown` - the deprecated user-configurable option, honoured if
  *    someone sets it.
- * 3. `_default_processMarkdown` - fumadocs' private default renderer. We
- *    don't set `components.Markdown` or `renderMarkdown` above, so this is
- *    what actually runs today; there's no supported default for this hook,
- *    so the private field stays in the chain until fumadocs adds one.
- * 4. A plain-text fallback so a future fumadocs release that drops the
- *    private field degrades to unformatted text instead of throwing.
+ * 3. `_default_processMarkdown` - fumadocs' private default renderer.
+ * 4. Plain text - avoids throwing if no renderer is available.
  */
 function resolveRenderMarkdown(ctx: MarkdownRenderSource): (text: string) => ReactNode {
   const Markdown = ctx.components?.Markdown;

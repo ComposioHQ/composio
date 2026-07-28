@@ -1,16 +1,10 @@
 /**
- * Inlines in-document Reference Objects.
+ * Inlines local Reference Objects for consumers that read schema fields
+ * directly.
  *
- * fumadocs-openapi 11 only exposes a `bundled` document, which by design keeps
- * `$ref` pointers intact (the previous `dereferenced` document did not). The
- * llms.mdx renderers read `schema.type` / `schema.properties` directly and have
- * no `$ref` handling, so without this pass a `$ref`'d request or response body -
- * the overwhelming majority of this spec - renders as an empty schema listing
- * with a `null` example body.
- *
- * Recursive schemas are handled by caching each pointer's output object *before*
- * populating it, so a cycle resolves to the same object rather than recursing
- * forever; the callers' existing depth caps stop the traversal.
+ * Caching each pointer's output object before populating it preserves object
+ * identity for recursive schemas and prevents reference resolution itself from
+ * recursing forever.
  */
 export function dereferenceDocument<T>(spec: T): T {
   const cache = new Map<string, unknown>();
