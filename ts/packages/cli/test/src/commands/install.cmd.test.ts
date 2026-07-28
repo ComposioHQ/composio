@@ -1,35 +1,32 @@
 import path from 'node:path';
 import process from 'node:process';
+import { Writable } from 'node:stream';
 import { beforeEach, afterEach } from 'vitest';
 import { describe, expect, layer } from '@effect/vitest';
 import { Effect } from 'effect';
 import { FileSystem } from '@effect/platform';
 import { NodeOs } from 'src/services/node-os';
-import type { TerminalUI } from 'src/services/terminal-ui';
+import { makeTerminalUI } from 'src/services/terminal-ui';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
-import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 
-/**
- * TerminalUI double that reproduces production's decoration gate instead of
- * printing everything: when stderr is not a terminal, `intro`/`outro`/`log`/
- * `note` emit nothing and only `error` survives. This is the shape the command
- * actually runs in when install.sh delegates to it, or when a container build
- * pipes the install to a log.
- */
-const capturedStderrUI: TerminalUI = {
-  ...terminalUITestImpl,
-  intro: () => Effect.void,
-  outro: () => Effect.void,
-  log: {
-    info: () => Effect.void,
-    success: () => Effect.void,
-    warn: () => Effect.void,
-    error: () => Effect.void,
-    step: () => Effect.void,
-    message: () => Effect.void,
-  },
-  note: () => Effect.void,
+const makeSink = (isTTY: boolean) => {
+  const chunks: string[] = [];
+  const sink = new Writable({
+    write(chunk, _encoding, callback) {
+      chunks.push(String(chunk));
+      callback();
+    },
+  });
+  return Object.assign(sink, { isTTY, chunks });
 };
+
+const capturedStdout = makeSink(true);
+const capturedStderr = makeSink(false);
+const capturedStderrUI = makeTerminalUI({
+  stdin: { isTTY: true },
+  stdout: capturedStdout,
+  stderr: capturedStderr,
+});
 
 describe('CLI: composio install', () => {
   let savedShell: string | undefined;
@@ -38,6 +35,8 @@ describe('CLI: composio install', () => {
   beforeEach(() => {
     savedShell = process.env.SHELL;
     savedInstallDir = process.env.COMPOSIO_INSTALL_DIR;
+    capturedStdout.chunks.length = 0;
+    capturedStderr.chunks.length = 0;
   });
 
   afterEach(() => {
@@ -408,7 +407,7 @@ describe('CLI: composio install', () => {
 
           yield* cli(['install']);
 
-          const output = (yield* MockConsole.getLines()).join('\n');
+          const output = capturedStderr.chunks.join('');
           expect(output).toContain('PATH: will add');
           expect(output).toContain('Updated ~/.zshrc');
           expect(output).toContain('Restart your shell to apply changes');
@@ -422,7 +421,7 @@ describe('CLI: composio install', () => {
 
           yield* cli(['install']);
 
-          const output = (yield* MockConsole.getLines()).join('\n');
+          const output = capturedStderr.chunks.join('');
           expect(output).toContain('Could not detect your shell');
           expect(output).toContain('export PATH="$COMPOSIO_INSTALL_DIR:$PATH"');
         })
