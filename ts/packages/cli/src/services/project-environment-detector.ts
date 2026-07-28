@@ -498,7 +498,7 @@ const detectJsPackageManager = (fs: FileSystem.FileSystem, cwd: string) =>
       if (fileSet.has('pnpm-workspace.yaml')) return 'pnpm' as const;
     }
 
-    // eslint-disable-next-line no-restricted-syntax -- npm_config_user_agent is transient metadata injected by the package manager that spawned this process, not CLI configuration; read once as the last-resort heuristic when no lockfile or manifest evidence exists
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- npm_config_user_agent is transient metadata injected by the package manager that spawned this process, not CLI configuration; read once as the last-resort heuristic when no lockfile or manifest evidence exists
     const userAgent = parseUserAgent(process.env.npm_config_user_agent);
     if (userAgent) return userAgent;
 

@@ -60,7 +60,7 @@ Build and verify:
 ```bash
 pnpm build:packages   # build all TS packages
 pnpm typecheck        # typecheck all TS packages
-pnpm lint:packages    # eslint over ts/packages
+pnpm lint:packages    # oxlint over ts/packages
 pnpm test             # package unit tests plus example validation
 ```
 

@@ -36,7 +36,6 @@ catalog:
   '@cloudflare/workers-types': ^5.20260724.1
   '@composio/client': 0.1.0-alpha.76
   '@effect/cli': ^0.76.0
-  '@effect/eslint-plugin': ^0.3.2
   '@effect/language-service': ^0.87.1
   '@effect/platform': ^0.97.0
   '@effect/platform-bun': ^0.91.0
@@ -56,8 +55,9 @@ catalog:
   publint: ^0.3.22
   tsdown: ^0.22.14
   tsx: ^4.23.1
-  typescript: npm:@typescript/typescript6@^6.0.2
-  typescript-7: npm:typescript@^7.0.2
+  typescript: ^7.0.2
+  # TS7 (tsgo) ships no JS compiler API; scripts that drive it use the TS6 alias.
+  typescript6: npm:@typescript/typescript6@^6.0.2
   '@vitest/ui': ^4.1.10
   vitest: ^4.1.10
   wrangler: ^4.114.0
@@ -73,7 +73,7 @@ minimumReleaseAgeExclude:
 
 peerDependencyRules:
   allowedVersions:
-    typescript: ^6.0.0
+    typescript: '^6.0.0 || ^7.0.0'
     vitest: ^4.0.0
     zod: ^4.0.0
 

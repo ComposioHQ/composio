@@ -44,14 +44,18 @@ export const parseBoundarySites = (
   const errors: string[] = [];
 
   lines.forEach((line, index) => {
-    if (!line.includes('eslint-disable')) return;
+    // oxlint honors both the eslint-disable and oxlint-disable spellings, so
+    // the scanner must see both; only the eslint-disable next-line form below
+    // is accepted into the manifest.
+    if (!/(?:es|ox)lint-disable/.test(line)) return;
 
     const location = `${relativePath}:${index + 1}`;
     const match = NEXT_LINE_FORM.exec(line);
     if (!match?.groups) {
       errors.push(
         `${location}: only "// eslint-disable-next-line <rules> -- <reason>" is allowed ` +
-          '(no file-wide disables, no bare disables without a justification).'
+          '(no file-wide disables, no bare disables without a justification, ' +
+          'no oxlint-disable spellings).'
       );
       return;
     }

@@ -238,6 +238,7 @@ const uploadFile = async (params: {
   readonly client: RawComposioClient;
 }) => {
   const fileData = await readUploadSource(params.fs, params.path, params.file);
+  // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
   const { createHash } = await import('node:crypto');
   const md5 = createHash('md5').update(fileData.bytes).digest('hex');
   const presigned = await params.client.files.createPresignedURL({
