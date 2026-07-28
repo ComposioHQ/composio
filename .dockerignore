@@ -1,5 +1,0 @@
-# The e2e Dockerfiles (ts/e2e-tests/_utils/Dockerfile.*) pnpm-install inside
-# the image; host node_modules are pnpm symlinks into a store that is not
-# copied, so they must never enter the build context.
-**/node_modules
-.git
