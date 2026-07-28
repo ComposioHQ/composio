@@ -8,7 +8,7 @@ particularly focusing on the required field propagation bug that was fixed.
 import typing as t
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from pydantic.fields import PydanticUndefined
 
 from composio.utils.shared import (
@@ -702,10 +702,10 @@ class TestJsonSchemaToPydanticType:
         )
 
     def test_allof_empty_options(self):
-        """Test allOf with empty options falls back to string."""
+        """Test allOf with empty options accepts any value."""
         json_schema = {"allOf": []}
         result = json_schema_to_pydantic_type(json_schema)
-        assert result is str
+        assert result is t.Any
 
 
 class TestJsonSchemaToFieldsDict:
@@ -1127,7 +1127,7 @@ class TestBooleanSchemas:
     @pytest.mark.unit
     @pytest.mark.schema
     def test_only_false_schemas_in_anyof(self):
-        """Test anyOf with only false schemas falls back to string."""
+        """Test anyOf with only false schemas rejects every value."""
         json_schema = {
             "anyOf": [
                 False,
@@ -1135,8 +1135,10 @@ class TestBooleanSchemas:
             ]
         }
         result = json_schema_to_pydantic_type(json_schema)
-        # All false schemas filtered out, should fall back to string
-        assert result is str
+        adapter = TypeAdapter(result)
+        for value in (None, "some string", 123, {}, []):
+            with pytest.raises(ValidationError):
+                adapter.validate_python(value)
 
     @pytest.mark.unit
     @pytest.mark.schema

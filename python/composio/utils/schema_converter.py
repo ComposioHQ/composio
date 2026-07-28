@@ -17,10 +17,41 @@ from json_schema_to_pydantic import (
     SchemaError,
     create_model as create_model_from_schema,
 )
+from pydantic import Field, create_model as create_pydantic_model
+from pydantic_core import core_schema
 
 from composio.utils.logging import get as get_logger
 
 logger = get_logger(__name__)
+
+
+class _UnsatisfiableSchema:
+    """Pydantic type for JSON schemas that reject every value."""
+
+    @staticmethod
+    def _reject(_value: t.Any) -> t.NoReturn:
+        raise ValueError("schema is unsatisfiable (JSON Schema `false`)")
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        _source_type: t.Any,
+        _handler: t.Any,
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls._reject)
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls,
+        _core_schema: core_schema.CoreSchema,
+        _handler: t.Any,
+    ) -> t.Dict[str, t.Any]:
+        return {"not": {}}
+
+
+def _is_unsatisfiable_schema(schema: t.Any) -> bool:
+    return schema is _UnsatisfiableSchema
+
 
 # Type mapping for simple cases where we don't need full model creation
 PYDANTIC_TYPE_TO_PYTHON_TYPE = {
@@ -51,7 +82,7 @@ FALLBACK_VALUES = {
 
 def _filter_boolean_schemas(
     schema: t.Union[t.Dict[str, t.Any], bool, t.List],
-) -> t.Union[t.Dict[str, t.Any], t.Any, None]:
+) -> t.Any:
     """
     Pre-filter boolean schemas from anyOf/allOf/oneOf arrays.
 
@@ -61,9 +92,12 @@ def _filter_boolean_schemas(
 
     The json-schema-to-pydantic library doesn't handle these, so we:
     - Replace `true` with {} (empty schema, accepts anything)
-    - Filter out `false` (rejects everything, so no point including it)
+    - Drop `false` from union combiners (`anyOf`/`oneOf`)
+    - Propagate an unsatisfiable marker through conjunctions and nested schemas
 
-    Returns None if the schema is a standalone `false` boolean.
+    `None` remains the standalone-`false` filter sentinel for compatibility.
+    Composed schemas use `_UnsatisfiableSchema` so callers can distinguish
+    "drop this union branch" from "reject every value."
     """
     if isinstance(schema, bool):
         if schema:
@@ -78,7 +112,7 @@ def _filter_boolean_schemas(
         filtered = []
         for item in schema:
             result = _filter_boolean_schemas(item)
-            if result is not None:
+            if result is not None and not _is_unsatisfiable_schema(result):
                 filtered.append(result)
         return filtered if filtered else None
 
@@ -88,40 +122,103 @@ def _filter_boolean_schemas(
     # Make a copy to avoid mutating the original
     result = {}
     for key, value in schema.items():
-        if key in ("anyOf", "allOf", "oneOf"):
-            # Filter boolean schemas from combiner arrays
-            filtered_value = _filter_boolean_schemas(value)
-            if filtered_value is None or (
-                isinstance(filtered_value, list) and len(filtered_value) == 0
+        if key == "allOf" and isinstance(value, list):
+            filtered_members = [_filter_boolean_schemas(member) for member in value]
+            if any(
+                member is None or _is_unsatisfiable_schema(member)
+                for member in filtered_members
             ):
-                # All schemas were false, skip this combiner
-                continue
-            result[key] = filtered_value
+                return _UnsatisfiableSchema
+            result[key] = filtered_members
+        elif key in ("anyOf", "oneOf") and isinstance(value, list):
+            filtered_members = []
+            for member in value:
+                filtered_member = _filter_boolean_schemas(member)
+                if filtered_member is not None and not _is_unsatisfiable_schema(
+                    filtered_member
+                ):
+                    filtered_members.append(filtered_member)
+            if not filtered_members:
+                return _UnsatisfiableSchema
+            result[key] = filtered_members
         elif key == "items" and isinstance(value, (dict, bool)):
             # Handle array items schema
             filtered_items = _filter_boolean_schemas(value)
-            if filtered_items is not None:
-                result[key] = filtered_items
+            result[key] = (
+                _UnsatisfiableSchema if filtered_items is None else filtered_items
+            )
         elif key == "properties" and isinstance(value, dict):
             # Recursively filter property schemas
             filtered_props = {}
             for prop_name, prop_schema in value.items():
                 filtered_prop = _filter_boolean_schemas(prop_schema)
-                if filtered_prop is not None:
-                    filtered_props[prop_name] = filtered_prop
+                filtered_props[prop_name] = (
+                    _UnsatisfiableSchema if filtered_prop is None else filtered_prop
+                )
             result[key] = filtered_props
         elif key in ("$defs", "definitions") and isinstance(value, dict):
             # Recursively filter definitions
             filtered_defs = {}
             for def_name, def_schema in value.items():
                 filtered_def = _filter_boolean_schemas(def_schema)
-                if filtered_def is not None:
-                    filtered_defs[def_name] = filtered_def
+                filtered_defs[def_name] = (
+                    _UnsatisfiableSchema if filtered_def is None else filtered_def
+                )
             result[key] = filtered_defs
         else:
             result[key] = value
 
     return result
+
+
+def _resolve_unsatisfiable_references(schema: t.Any) -> t.Any:
+    """Replace local references to unsatisfiable definitions with the marker."""
+    if not isinstance(schema, dict):
+        return schema
+
+    unsatisfiable_refs = set()
+    for definitions_key in ("$defs", "definitions"):
+        definitions = schema.get(definitions_key)
+        if not isinstance(definitions, dict):
+            continue
+        for name, definition in definitions.items():
+            if _is_unsatisfiable_schema(definition):
+                unsatisfiable_refs.add(f"#/{definitions_key}/{name}")
+
+    if not unsatisfiable_refs:
+        return schema
+
+    def replace(value: t.Any) -> t.Any:
+        if isinstance(value, list):
+            return [replace(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        if value.get("$ref") in unsatisfiable_refs:
+            return _UnsatisfiableSchema
+
+        replaced = {}
+        for key, item in value.items():
+            if key in ("$defs", "definitions") and isinstance(item, dict):
+                replaced[key] = {
+                    name: replace(definition)
+                    for name, definition in item.items()
+                    if not _is_unsatisfiable_schema(definition)
+                }
+            else:
+                replaced[key] = replace(item)
+        return replaced
+
+    return replace(schema)
+
+
+def _contains_unsatisfiable_schema(schema: t.Any) -> bool:
+    if _is_unsatisfiable_schema(schema):
+        return True
+    if isinstance(schema, list):
+        return any(_contains_unsatisfiable_schema(item) for item in schema)
+    if isinstance(schema, dict):
+        return any(_contains_unsatisfiable_schema(value) for value in schema.values())
+    return False
 
 
 def json_schema_to_pydantic_type(
@@ -145,15 +242,21 @@ def json_schema_to_pydantic_type(
 
     # Pre-filter boolean schemas from combiners
     filtered_schema = _filter_boolean_schemas(json_schema)
-    if filtered_schema is None:
-        return str  # Fallback if all schemas were false
+    filtered_schema = _resolve_unsatisfiable_references(filtered_schema)
+    return _filtered_schema_to_pydantic_type(filtered_schema)
+
+
+def _filtered_schema_to_pydantic_type(schema: t.Any) -> t.Type[t.Any]:
+    """Convert a schema after boolean-schema normalization."""
+    if schema is None or _is_unsatisfiable_schema(schema):
+        return _UnsatisfiableSchema
 
     # Handle simple primitive types without complex combiners
-    if _is_simple_primitive(filtered_schema):
-        return _convert_simple_type(filtered_schema)
+    if _is_simple_primitive(schema):
+        return _convert_simple_type(schema)
 
     # Use library for complex schemas (anyOf, allOf, oneOf, nested objects)
-    return _convert_with_library(filtered_schema)
+    return _convert_with_library(schema)
 
 
 def _is_simple_primitive(schema: t.Dict[str, t.Any]) -> bool:
@@ -176,6 +279,65 @@ def _convert_simple_type(schema: t.Dict[str, t.Any]) -> t.Type[t.Any]:
     return t.cast(t.Type[t.Any], PYDANTIC_TYPE_TO_PYTHON_TYPE.get(type_, str))
 
 
+def _convert_object_with_unsatisfiable_properties(
+    schema: t.Dict[str, t.Any],
+) -> t.Type[t.Any]:
+    """Build an object model while retaining always-rejecting properties."""
+    properties = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    rejecting_properties = {
+        name: prop_schema
+        for name, prop_schema in properties.items()
+        if _contains_unsatisfiable_schema(prop_schema)
+    }
+    ordinary_properties = {
+        name: prop_schema
+        for name, prop_schema in properties.items()
+        if name not in rejecting_properties
+    }
+
+    model_name = schema.get("title", "GeneratedModel")
+    base_schema = {
+        **schema,
+        "title": model_name,
+        "properties": ordinary_properties,
+        "required": [
+            name for name in schema.get("required", []) if name in ordinary_properties
+        ],
+    }
+    base_model = create_model_from_schema(
+        base_schema,
+        allow_undefined_array_items=True,
+        allow_undefined_type=True,
+    )
+
+    field_definitions = {}
+    for name, prop_schema in rejecting_properties.items():
+        annotation = _filtered_schema_to_pydantic_type(prop_schema)
+        default = (
+            ...
+            if name in required
+            else prop_schema.get("default")
+            if isinstance(prop_schema, dict)
+            else None
+        )
+        field_kwargs = {}
+        if isinstance(prop_schema, dict):
+            for metadata_key in ("description", "examples", "title"):
+                if metadata_key in prop_schema:
+                    field_kwargs[metadata_key] = prop_schema[metadata_key]
+        field_definitions[name] = (
+            annotation,
+            Field(default, **field_kwargs),
+        )
+
+    return create_pydantic_model(  # type: ignore[call-overload]
+        model_name,
+        __base__=base_model,
+        **field_definitions,
+    )
+
+
 def _convert_with_library(
     schema: t.Dict[str, t.Any],
 ) -> t.Union[t.Type, t.Any]:
@@ -190,6 +352,8 @@ def _convert_with_library(
 
         # For object schemas, create model directly
         if schema.get("type") == "object":
+            if _contains_unsatisfiable_schema(schema.get("properties", {})):
+                return _convert_object_with_unsatisfiable_properties(schema)
             if "title" not in schema:
                 schema = {**schema, "title": "GeneratedModel"}
             return create_model_from_schema(
@@ -201,8 +365,10 @@ def _convert_with_library(
         # For array schemas
         if schema.get("type") == "array":
             items = schema.get("items")
+            if _is_unsatisfiable_schema(items):
+                return t.List[_UnsatisfiableSchema]  # type: ignore[return-value]
             if items:
-                item_type = json_schema_to_pydantic_type(items)
+                item_type = _filtered_schema_to_pydantic_type(items)
                 return t.List[t.cast(t.Type, item_type)]  # type: ignore
             return t.List
 
@@ -272,7 +438,7 @@ def _build_union_from_options(options: t.List[t.Dict[str, t.Any]]) -> t.Type:
         pydantic_types.append(ptype)
 
     if len(pydantic_types) == 0:
-        return t.Optional[t.Any] if has_null else str  # type: ignore
+        return t.Optional[t.Any] if has_null else _UnsatisfiableSchema  # type: ignore
 
     if len(pydantic_types) == 1:
         base_type = pydantic_types[0]
