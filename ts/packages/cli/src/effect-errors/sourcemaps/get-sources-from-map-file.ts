@@ -66,11 +66,41 @@ export const getSourcesFromMapFile = (
         return;
       }
 
-      const consumer = new SourceMapConsumer(data);
-      const sources = consumer.originalPositionFor({
-        column: location.column,
-        line: location.line,
-      });
+      // A .map that parses as valid JSON can still be structurally invalid
+      // as a source map (e.g. a v2 map, or a v3 map with empty/missing
+      // mappings), causing SourceMapConsumer or originalPositionFor to throw.
+      // That throw would become an Effect defect and abort the whole
+      // error-capture pipeline. Treat it the same as a malformed map and
+      // fall back to the raw location.
+      const rawLocation = {
+        _tag: 'location' as const,
+        name,
+        ...location,
+        filePath: location.filePath.replace(process.cwd(), ''),
+      };
+
+      const resolved = yield* pipe(
+        Effect.sync(() => {
+          try {
+            const consumer = new SourceMapConsumer(data);
+            return consumer.originalPositionFor({
+              column: location.column,
+              line: location.line,
+            });
+          } catch {
+            return null;
+          }
+        }),
+        Effect.map((sources) => (sources === null ? null : {
+          source: sources.source,
+          line: sources.line,
+          column: sources.column,
+        }))
+      );
+      if (resolved === null) {
+        return rawLocation;
+      }
+      const sources = resolved;
       if (sources.source === null || sources.line === null || sources.column === null) {
         return;
       }
