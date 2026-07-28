@@ -6,6 +6,7 @@ import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { HIDDEN_API_TAGS } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
+import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
 import { deprecatedApiSidebarTransformer } from './deprecated-api-sidebar';
 
 /**
@@ -297,21 +298,7 @@ export function mdxToCleanMarkdown(content: string): string {
     }
   );
 
-  // RepoBrowser sources are committed documentation snapshots. Emit source-aware
-  // availability notes rather than linking to removed or private repositories.
-  result = result.replace(
-    /<RepoBrowser\b([^>]*)\/>/g,
-    (_, props: string) => {
-      const source = props.match(/\bsource="([^"]+)"/)?.[1] ?? 'slack-bot';
-      const notices: Record<string, string> = {
-        'slack-bot': 'The Slack bot browser is a documentation snapshot; a public repository is not available.',
-        'local-workbench': 'The local PR reviewer browser is a documentation snapshot; a public repository is not available.',
-        standup: 'The standup bot browser is a documentation snapshot; a public repository is not available.',
-        imessage: 'The iMessage implementation is maintained in [platform-imessage](https://github.com/ComposioHQ/platform-imessage).',
-      };
-      return `\n> ${notices[source] ?? 'This code browser is a documentation snapshot; a public repository is not available.'}\n`;
-    }
-  );
+  result = replaceRepoBrowserMarkdown(result);
 
   result = result.replace(/<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g, '');
 
