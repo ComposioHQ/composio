@@ -11,6 +11,75 @@ home_dir="$tmpdir/home"
 install_dir="$tmpdir/install"
 mkdir -p "$bin_dir" "$home_dir" "$install_dir"
 
+windows_bin_dir="$tmpdir/windows-bin"
+mkdir -p "$windows_bin_dir"
+cat > "$windows_bin_dir/uname" <<'EOF'
+#!/bin/sh
+printf '%s\n' 'MINGW64_NT-10.0 x86_64'
+EOF
+chmod +x "$windows_bin_dir/uname"
+
+bash_bin=$(command -v bash)
+run_windows_installer() {
+    env PATH="$windows_bin_dir" HOME="$home_dir" "$bash_bin" "$repo_root/install.sh" "$@"
+}
+
+if ! windows_help_output=$(run_windows_installer --help 2>&1); then
+    echo 'Expected install.sh --help to succeed before platform and prerequisite checks.' >&2
+    printf '%s\n' "$windows_help_output" >&2
+    exit 1
+fi
+if ! grep -q '^Usage: install.sh' <<<"$windows_help_output"; then
+    echo 'Expected install.sh --help to print usage on Windows-like platforms.' >&2
+    printf '%s\n' "$windows_help_output" >&2
+    exit 1
+fi
+
+if invalid_option_output=$(run_windows_installer --invalid-option 2>&1); then
+    echo 'Expected install.sh to reject an unknown option before platform checks.' >&2
+    exit 1
+fi
+if ! grep -q 'Unknown option: --invalid-option' <<<"$invalid_option_output"; then
+    echo 'Expected the unknown-option error on Windows-like platforms.' >&2
+    printf '%s\n' "$invalid_option_output" >&2
+    exit 1
+fi
+if grep -Eq 'Windows is not supported|(curl|unzip) is required to install Composio CLI' <<<"$invalid_option_output"; then
+    echo 'Expected argument validation to take precedence over platform and prerequisite errors.' >&2
+    printf '%s\n' "$invalid_option_output" >&2
+    exit 1
+fi
+
+if excess_arguments_output=$(run_windows_installer first-version second-version 2>&1); then
+    echo 'Expected install.sh to reject excess positional arguments before platform checks.' >&2
+    exit 1
+fi
+if ! grep -q 'Too many arguments' <<<"$excess_arguments_output"; then
+    echo 'Expected the excess-arguments error on Windows-like platforms.' >&2
+    printf '%s\n' "$excess_arguments_output" >&2
+    exit 1
+fi
+if grep -Eq 'Windows is not supported|(curl|unzip) is required to install Composio CLI' <<<"$excess_arguments_output"; then
+    echo 'Expected argument validation to take precedence over platform and prerequisite errors.' >&2
+    printf '%s\n' "$excess_arguments_output" >&2
+    exit 1
+fi
+
+if windows_output=$(run_windows_installer 2>&1); then
+    echo 'Expected install.sh to reject Windows-like platforms.' >&2
+    exit 1
+fi
+if ! grep -q 'Windows is not supported. Please use WSL' <<<"$windows_output"; then
+    echo 'Expected Windows-to-WSL guidance when installer prerequisites are missing.' >&2
+    printf '%s\n' "$windows_output" >&2
+    exit 1
+fi
+if grep -Eq '(curl|unzip) is required to install Composio CLI' <<<"$windows_output"; then
+    echo 'Expected Windows-to-WSL guidance to take precedence over prerequisite errors.' >&2
+    printf '%s\n' "$windows_output" >&2
+    exit 1
+fi
+
 platform=$(uname -ms)
 case $platform in
 'Darwin x86_64')  target=darwin-x64     ;;
