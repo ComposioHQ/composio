@@ -2,7 +2,7 @@ name: Checks
 on:
   push:
     branches:
-      - master
+      - next
     paths:
       - 'python/**/*.py'
       - '.github/actions/setup-python-uv/action.yml'

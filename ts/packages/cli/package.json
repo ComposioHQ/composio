@@ -28,7 +28,7 @@
     "build:binary:checksums": "bun run ./scripts/generate-checksums.ts",
     "build:skills": "tsx ./scripts/build-skills.ts",
     "validate:skills": "tsx ./scripts/validate-skills.ts",
-    "validate:boundaries": "tsx ./scripts/validate-eslint-boundaries.ts",
+    "validate:boundaries": "tsx ./scripts/validate-lint-boundaries.ts",
     "install:binary": "bun run ./scripts/install-binary.ts ./dist/composio",
     "table:metrics": "bun run ./scripts/optimize-metrics-table.ts",
     "mock": "bun run ./scripts/copy-mocks-from-cache.ts",
@@ -51,7 +51,6 @@
   "license": "ISC",
   "devDependencies": {
     "@effect/cluster": "^0.60.0",
-    "@effect/eslint-plugin": "catalog:",
     "@effect/experimental": "^0.61.0",
     "@effect/language-service": "catalog:",
     "@effect/platform": "catalog:",
@@ -68,7 +67,7 @@
     "tempy": "^3.2.0",
     "tsdown": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:",
+    "typescript": "catalog:ts6",
     "vitest": "catalog:"
   },
   "dependencies": {

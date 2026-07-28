@@ -11,7 +11,7 @@
  *
  * Code fences and inline mentions are exempt from rules 2-3; rule 1 applies
  * to all file content. content/reference is generated upstream and excluded.
- * TS/TSX is enforced by the no-restricted-syntax rules in eslint.config.mjs.
+ * TS/TSX is enforced by the no-restricted-syntax rules in .oxlintrc.json.
  */
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile } from "fs/promises";

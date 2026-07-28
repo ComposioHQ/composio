@@ -5,6 +5,7 @@ import functools
 import hashlib
 import hmac
 import json
+import threading
 import time
 import traceback
 import typing as t
@@ -425,7 +426,7 @@ _ = {
 
 
 class _ChunkedTriggerEventData(te.TypedDict):
-    """Cunked trigger event data model."""
+    """Chunked trigger event data model."""
 
     id: str
     index: int
@@ -667,15 +668,44 @@ class TriggerSubscription(Resource):
             return None
 
     def _handle_chunked_events(self, event: str) -> None:
-        """Handle chunked events."""
-        data = _ChunkedTriggerEventData(**json.loads(event))  # type: ignore
-        if data["id"] not in self._chunks:
-            self._chunks[data["id"]] = {}
+        """Handle chunked events without letting malformed frames escape Pysher."""
+        chunk_id: t.Optional[str] = None
+        try:
+            raw_data = json.loads(event)
+            if not isinstance(raw_data, dict):
+                raise TypeError("chunked payload must be an object")
 
-        self._chunks[data["id"]][data["index"]] = data["chunk"]
-        if data["final"]:
-            _chunks = self._chunks.pop(data["id"])
-            self._handle_event(event="".join([_chunks[idx] for idx in sorted(_chunks)]))
+            raw_id = raw_data.get("id")
+            chunk_id = raw_id if isinstance(raw_id, str) else None
+            index = raw_data.get("index")
+            chunk = raw_data.get("chunk")
+            final = raw_data.get("final")
+            if (
+                chunk_id is None
+                or not isinstance(index, int)
+                or isinstance(index, bool)
+                or not isinstance(chunk, str)
+                or not isinstance(final, bool)
+            ):
+                raise TypeError("chunked payload has invalid fields")
+
+            data = t.cast(_ChunkedTriggerEventData, raw_data)
+            if data["id"] not in self._chunks:
+                self._chunks[data["id"]] = {}
+
+            self._chunks[data["id"]][data["index"]] = data["chunk"]
+            if data["final"]:
+                _chunks = self._chunks.pop(data["id"])
+                self._handle_event(
+                    event="".join([_chunks[idx] for idx in sorted(_chunks)])
+                )
+        except Exception as e:
+            if chunk_id is not None:
+                self._chunks.pop(chunk_id, None)
+            self.logger.warning(
+                f"Error parsing chunked trigger payload: {e}; "
+                f"frame: {_truncate_frame(event)}"
+            )
 
     def _filters_match(
         self,
@@ -779,9 +809,26 @@ class TriggerSubscription(Resource):
             time.sleep(1)
 
     def stop(self) -> None:
-        """Stop the trigger listener."""
-        self._connection.disconnect()
+        """Stop the trigger listener.
+
+        ``_alive`` is cleared first so a main thread parked in
+        ``wait_forever`` unblocks immediately. The connection disconnect is
+        then run off the calling thread: ``pysher.Connection.disconnect`` does
+        ``socket.close(); join(timeout)`` on the websocket thread, but the
+        documented usage runs ``stop()`` from inside a trigger callback, which
+        pysher dispatches on that very websocket thread (``_handle_event``
+        blocks on the callback's ``future.result()``). Joining the thread from
+        a callback that runs on it deadlocks the whole process. Tearing the
+        connection down on a background thread breaks that reentrancy while
+        still ensuring the socket is closed.
+        """
         self._alive = False
+        thread = threading.Thread(
+            target=self._connection.disconnect,
+            name="composio-trigger-disconnect",
+            daemon=True,
+        )
+        thread.start()
 
     def restart(self) -> None:
         """Restart the subscription connection"""
@@ -864,18 +911,26 @@ class _SubcriptionBuilder(WithLogger):
         )
         pusher.connect()
 
-        # Wait for connection to get established
+        # Wait for connection to get established. On timeout, tear down the
+        # connection before raising: pysher's run loop reconnects every
+        # ``reconnect_interval`` until ``disconnect`` is called, so a plain
+        # raise would leak a websocket thread (and, if it eventually connects,
+        # silently subscribe a forgotten channel) for the life of the process.
         deadline = time.time() + timeout
-        while time.time() < deadline:
-            if not self.subscription.is_alive():
-                time.sleep(0.5)
-                continue
+        try:
+            while time.time() < deadline:
+                if not self.subscription.is_alive():
+                    time.sleep(0.5)
+                    continue
 
-            self.subscription._pusher = pusher  # pylint: disable=protected-access
-            return self.subscription
-        raise ComposioSDKTimeoutError(
-            "Timed out while waiting for trigger listener to be established"
-        )
+                self.subscription._pusher = pusher  # pylint: disable=protected-access
+                return self.subscription
+            raise ComposioSDKTimeoutError(
+                "Timed out while waiting for trigger listener to be established"
+            )
+        except Exception:
+            pusher.disconnect()
+            raise
 
 
 class Triggers(Resource):

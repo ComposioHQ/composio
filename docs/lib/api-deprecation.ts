@@ -5,7 +5,7 @@ export interface ApiPageOperation {
 
 export interface OpenApiSchemaPageData {
   getSchema: () => {
-    dereferenced: {
+    bundled: {
       paths?: Record<
         string,
         Record<string, { deprecated?: boolean } | undefined> | undefined
@@ -36,7 +36,8 @@ export function isApiPageDeprecated(
 ): boolean {
   if (!operations || operations.length === 0) return false;
 
-  const paths = pageData.getSchema().dereferenced.paths;
+  const schema = pageData.getSchema();
+  const paths = schema.bundled.paths;
   return operations.some(
     ({ method, path }) => paths?.[path]?.[method]?.deprecated === true,
   );

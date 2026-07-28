@@ -28,14 +28,37 @@ export interface SchemaUIGeneratedData {
   refs: Record<string, SchemaData>;
 }
 
-// Simplified schema type (subset of OpenAPI schema)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SimpleSchema = any;
+type SimpleSchema = boolean | SimpleSchemaObject;
+
+interface SimpleSchemaObject {
+  $ref?: string;
+  type?: string | readonly string[];
+  items?: SimpleSchema;
+  oneOf?: readonly SimpleSchema[];
+  anyOf?: readonly SimpleSchema[];
+  allOf?: readonly SimpleSchema[];
+  properties?: Readonly<Record<string, SimpleSchema>>;
+  additionalProperties?: boolean | SimpleSchema;
+  required?: readonly string[];
+  enum?: readonly unknown[];
+  description?: string;
+  format?: string;
+  default?: unknown;
+  readOnly?: boolean;
+  writeOnly?: boolean;
+  deprecated?: boolean;
+  'x-experimental'?: boolean;
+}
 
 interface RenderContext {
   renderMarkdown: (text: string) => ReactNode;
   schema: {
     getRawRef: (obj: object) => string | undefined;
+    /**
+     * Shallowly resolves a Reference Object, merging sibling keywords.
+     * Non-reference values are returned unchanged.
+     */
+    resolve: (node: SimpleSchema) => SimpleSchema;
   };
 }
 
@@ -50,10 +73,7 @@ interface SchemaUIOptions {
  * experimental flag. Unflagged descriptions keep their original text so they
  * do not lose their only lifecycle signal.
  */
-export function getSchemaDisplayDescription(
-  description: string,
-  experimental: boolean,
-): string {
+export function getSchemaDisplayDescription(description: string, experimental: boolean): string {
   if (!experimental) return description;
 
   return description.replace(/^\s*\[experimental\]\s*/i, '');
@@ -101,13 +121,16 @@ export function generateSchemaData(
       const typeName = types.join(' | ') || 'any';
       return isNullable ? `nullable ${typeName}` : typeName;
     }
-    return schema.type || 'any';
+    return typeof schema.type === 'string' ? schema.type : 'any';
   }
 
   function isVisible(schema: SimpleSchema): boolean {
     if (!schema || typeof schema !== 'object') return true;
-    if (schema.writeOnly) return options.writeOnly ?? false;
-    if (schema.readOnly) return options.readOnly ?? false;
+    // readOnly/writeOnly live on the referenced target, not the $ref node.
+    const resolved = ctx.schema.resolve(schema);
+    if (!resolved || typeof resolved !== 'object') return true;
+    if (resolved.writeOnly) return options.writeOnly ?? false;
+    if (resolved.readOnly) return options.readOnly ?? false;
     return true;
   }
 
@@ -128,32 +151,34 @@ export function generateSchemaData(
     // Mark as processing to prevent infinite recursion on circular refs
     refs[id] = { type: 'primitive', typeName: 'any', aliasName: 'any' };
 
-    // For arrays, aliasName is the item type (used in "array of X" display)
+    // Derive identity from the raw node so $ref-keyed dedup remains stable, but
+    // read content from the resolved target.
+    const resolved = ctx.schema.resolve(schema);
+    if (!resolved || typeof resolved !== 'object') return id;
+
+    // For arrays, aliasName is the item type (used in "array of X" display).
+    // Display names come from the raw node so a $ref keeps its schema name.
     const aliasName =
-      schema.type === 'array' && schema.items
-        ? getTypeName(schema.items)
+      resolved.type === 'array' && resolved.items
+        ? getTypeName(resolved.items)
         : getTypeName(schema);
 
-    const experimental = schema['x-experimental'] === true;
+    const experimental = resolved['x-experimental'] === true;
     const base: FieldBase = {
-      description: schema.description
-        ? ctx.renderMarkdown(
-            getSchemaDisplayDescription(schema.description, experimental),
-          )
+      description: resolved.description
+        ? ctx.renderMarkdown(getSchemaDisplayDescription(resolved.description, experimental))
         : undefined,
-      infoTags: generateInfoTags(schema),
+      infoTags: generateInfoTags(resolved),
       typeName: getTypeName(schema),
       aliasName,
-      deprecated: schema.deprecated,
+      deprecated: resolved.deprecated,
       experimental,
-      enumValues: schema.enum
-        ? schema.enum.map((v: unknown) => String(v))
-        : undefined,
+      enumValues: resolved.enum ? resolved.enum.map((v: unknown) => String(v)) : undefined,
     };
 
     // Handle oneOf/anyOf
-    if (schema.oneOf || schema.anyOf) {
-      const variants = schema.oneOf || schema.anyOf || [];
+    if (resolved.oneOf || resolved.anyOf) {
+      const variants = resolved.oneOf || resolved.anyOf || [];
       refs[id] = {
         ...base,
         type: 'or',
@@ -166,24 +191,28 @@ export function generateSchemaData(
     }
 
     // Handle allOf - merge into single object
-    if (schema.allOf) {
-      // Merge all schemas together
-      const merged: SimpleSchema = { type: 'object', properties: {}, required: [] };
-      for (const subSchema of schema.allOf) {
+    if (resolved.allOf) {
+      // Merge all schemas together. Each member may itself be a Reference
+      // Object, so resolve before reading its properties.
+      const mergedProperties: Record<string, SimpleSchema> = {};
+      const mergedRequired: string[] = [];
+      for (const rawSubSchema of resolved.allOf) {
+        const subSchema = ctx.schema.resolve(rawSubSchema);
+        if (!subSchema || typeof subSchema !== 'object') continue;
         if (subSchema.properties) {
-          Object.assign(merged.properties, subSchema.properties);
+          Object.assign(mergedProperties, subSchema.properties);
         }
         if (subSchema.required) {
-          merged.required.push(...subSchema.required);
+          mergedRequired.push(...subSchema.required);
         }
       }
-      if (Object.keys(merged.properties).length > 0) {
-        const props = Object.entries(merged.properties)
+      if (Object.keys(mergedProperties).length > 0) {
+        const props = Object.entries(mergedProperties)
           .filter(([_, propSchema]) => isVisible(propSchema))
           .map(([name, propSchema]) => ({
             name,
             $type: processSchema(propSchema),
-            required: merged.required.includes(name),
+            required: mergedRequired.includes(name),
           }));
         refs[id] = {
           ...base,
@@ -195,12 +224,16 @@ export function generateSchemaData(
     }
 
     // Handle object (with properties and/or additionalProperties)
-    if ((schema.type === 'object' || schema.properties) && (schema.properties || (schema.additionalProperties && typeof schema.additionalProperties === 'object'))) {
-      const required = schema.required || [];
+    if (
+      (resolved.type === 'object' || resolved.properties) &&
+      (resolved.properties ||
+        (resolved.additionalProperties && typeof resolved.additionalProperties === 'object'))
+    ) {
+      const required = resolved.required || [];
       const props: { name: string; $type: string; required: boolean }[] = [];
 
-      if (schema.properties) {
-        for (const [name, propSchema] of Object.entries(schema.properties)) {
+      if (resolved.properties) {
+        for (const [name, propSchema] of Object.entries(resolved.properties)) {
           if (!isVisible(propSchema)) continue;
           props.push({
             name,
@@ -211,10 +244,10 @@ export function generateSchemaData(
       }
 
       // Include additionalProperties as a synthetic [key: string] entry
-      if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+      if (resolved.additionalProperties && typeof resolved.additionalProperties === 'object') {
         props.push({
           name: '[key: string]',
-          $type: processSchema(schema.additionalProperties),
+          $type: processSchema(resolved.additionalProperties),
           required: false,
         });
       }
@@ -228,11 +261,11 @@ export function generateSchemaData(
     }
 
     // Handle array
-    if (schema.type === 'array' && schema.items) {
+    if (resolved.type === 'array' && resolved.items) {
       refs[id] = {
         ...base,
         type: 'array',
-        item: { $type: processSchema(schema.items) },
+        item: { $type: processSchema(resolved.items) },
       };
       return id;
     }
@@ -245,7 +278,7 @@ export function generateSchemaData(
     return id;
   }
 
-  function generateInfoTags(schema: SimpleSchema): ReactNode[] {
+  function generateInfoTags(schema: SimpleSchemaObject): ReactNode[] {
     const tags: ReactNode[] = [];
 
     if (schema.default !== undefined) {
@@ -254,7 +287,10 @@ export function generateSchemaData(
       if (defaultStr !== '{}' && defaultStr !== '[]') {
         tags.push(
           <span key="default" className="text-xs text-fd-muted-foreground">
-            Default: <code className="rounded border border-fd-border px-1 py-0.5 font-mono">{defaultStr}</code>
+            Default:{' '}
+            <code className="rounded border border-fd-border px-1 py-0.5 font-mono">
+              {defaultStr}
+            </code>
           </span>
         );
       }
@@ -263,7 +299,10 @@ export function generateSchemaData(
     if (schema.format) {
       tags.push(
         <span key="format" className="text-xs text-fd-muted-foreground">
-          Format: <code className="rounded border border-fd-border px-1 py-0.5 font-mono">{schema.format}</code>
+          Format:{' '}
+          <code className="rounded border border-fd-border px-1 py-0.5 font-mono">
+            {schema.format}
+          </code>
         </span>
       );
     }

@@ -238,23 +238,7 @@ Values shorter than 4 characters are replaced with `REDACTED`.
 
 This applies to the Get Connected Account and List Connected Accounts endpoints.
 
-### Disabling masking
-
-If you need full credential values (e.g., to use tokens in your own API calls), disable masking via either:
-
-1. **Dashboard**: Go to **Settings → Project Settings → Project Configuration** and turn off "Mask Connected Account Secrets"
-2. **API**:
-
-```bash
-curl -X PATCH https://backend.composio.dev/api/v3.1/org/project/config \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"mask_secret_keys_in_connected_account": false}'
-```
-
-<Callout type="warn">
-Disabling masking exposes full credentials in API responses. Only disable this if your application needs direct access to tokens and you have appropriate security measures in place.
-</Callout>
+If your use case requires calling a provider API directly, use [Proxy execute](/docs/extending-sessions/proxy-execute). Composio injects the connected account's credentials server-side.
 
 ## Multiple accounts
 

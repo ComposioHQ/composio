@@ -173,8 +173,10 @@ export function createUpdateChecker(config: UpdateCheckConfig) {
    */
   function showUpdateNotice(terminal: Pick<TerminalUI, 'capabilities' | 'error'>) {
     return Effect.gen(function* () {
-      const capabilities = yield* terminal.capabilities;
-      if (!capabilities.isInteractive) return;
+      // `terminal.error` writes even when stderr is redirected, so gate this
+      // advisory notice explicitly while leaving stdout out of the decision.
+      const { canDecorate } = yield* terminal.capabilities;
+      if (!canDecorate) return;
 
       const state = yield* readState;
       const latestVersion = semver.valid(state.latestVersion);
