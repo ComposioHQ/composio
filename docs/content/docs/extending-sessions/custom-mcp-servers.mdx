@@ -94,7 +94,7 @@ The pinned account must belong to the custom toolkit and be active. Explicit sel
 
 ## Register the remote server
 
-The TypeScript and Python SDKs don't expose the custom MCP registration lifecycle yet. Register the server once from your project's **Toolkits** page in the Composio dashboard:
+The TypeScript and Python SDKs don't expose the custom MCP registration lifecycle yet. Register the server once from your project's [**Toolkits** page](https://dashboard.composio.dev/~/project/toolkits?utm_source=docs&utm_medium=content&utm_campaign=docs-extending-sessions-custom-mcp-servers) in the Composio dashboard:
 
 <Steps>
 <Step>
@@ -143,7 +143,15 @@ Each registered server becomes a custom toolkit scoped to your project:
 - Its tools are available through Tool Router search and toolkit-filtered tool listing.
 - Tool execution is proxied to your MCP server with the selected connected account's credentials.
 
-Custom toolkits use dated registry versions. When you call the v3 tools API directly, use `version=latest`. The v3.1 API selects the latest version by default.
+Custom toolkits use dated registry versions. The v3.1 tools API selects the latest version by default. If you use v3 directly, select the latest version for each operation:
+
+| v3 operation | Select the latest version |
+| --- | --- |
+| List tools | Add the `toolkit_versions=latest` query parameter. |
+| Retrieve one tool | Add the `version=latest` query parameter. |
+| Execute one tool | Set `"version": "latest"` in the request body. |
+
+See [Toolkit Versioning](/docs/tools-direct/toolkit-versioning) for more examples.
 
 ## Known gaps
 
@@ -155,7 +163,7 @@ Custom MCP currently has these limitations:
 | Composio doesn't host your server. Local and STDIO-only servers aren't supported. | Deploy the server at a public HTTPS endpoint before registering it. |
 | Authenticated servers don't automatically sync when a connection becomes active. | Create the connected account, then run **Sync** from the toolkit. |
 | Authenticated sessions don't reliably select a custom toolkit's connected account automatically. | Pass its ID through `connected_accounts` in Python or `connectedAccounts` in TypeScript. |
-| The v3 tools API uses a pinned default version that doesn't contain custom tools. | Use v3.1, or pass `version=latest` to v3 calls. |
+| The v3 tools API uses a pinned default version that doesn't contain custom tools. | Use v3.1. On v3, explicitly select the version for listing, retrieval, or execution as described above. |
 | Registered server settings can't be edited in place. | Delete the custom toolkit and register it again. Deleting it also revokes and removes its connected accounts and auth configurations. |
 | A custom MCP toolkit can contain at most 100 tools. | Split larger servers into smaller MCP servers. If a later sync exceeds the limit, the last successful tool version stays available. |
 | API-key setup checks that a key was provided, not that the remote server accepts it. | Run a safe tool after connecting to verify the credential end to end. |
