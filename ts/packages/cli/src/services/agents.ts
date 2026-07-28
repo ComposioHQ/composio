@@ -1,5 +1,5 @@
 import { FileSystem, Path } from '@effect/platform';
-import { Data, Effect, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, Either, Option, Predicate, Schema } from 'effect';
 import { JsonRecordSchema } from 'src/effects/json';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -363,6 +363,40 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
   }
 
   return agentKey;
+});
+
+const isAgentKeyRejection = (error: AgentRequestError | AgentResponseDecodeError): boolean =>
+  error instanceof AgentRequestError && (error.status === 401 || error.status === 403);
+
+/**
+ * Reuse-only counterpart of {@link getOrSignupReadyAgent}: refreshes and
+ * returns a stored READY identity but never signs up a new agent.
+ */
+export const getStoredReadyAgent = Effect.gen(function* () {
+  const stored = yield* readStoredAgentIdentity;
+  if (Option.isNone(stored)) return Option.none<AgentIdentity>();
+
+  const agentKey = getAgentKey(stored.value);
+  if (!agentKey) return Option.none<AgentIdentity>();
+
+  const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.either);
+  // An auth rejection means the API examined and refused this key — the stored
+  // identity is revoked, not unreachable. Only transport-shaped failures may
+  // fall back to the on-disk identity.
+  if (Either.isLeft(remote) && isAgentKeyRejection(remote.left)) {
+    return Option.none<AgentIdentity>();
+  }
+
+  const identity = Either.isRight(remote)
+    ? yield* writeStoredAgentIdentity(remote.right)
+    : stored.value;
+
+  const ready =
+    normalizeAgentStatus(identity.status) === 'READY' &&
+    Boolean(identity.composio?.user_api_key) &&
+    Boolean(identity.composio?.org_id);
+
+  return ready ? Option.some(identity) : Option.none<AgentIdentity>();
 });
 
 export const getOrSignupReadyAgent = (params: { force?: boolean } = {}) =>

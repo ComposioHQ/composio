@@ -22,8 +22,11 @@ import { APP_VERSION } from 'src/constants';
 import {
   ensureAgentSignupAllowed,
   getOrSignupReadyAgent,
+  getStoredReadyAgent,
+  isAgentIdentityForApiKey,
   loginWithAgentIdentity,
   safeAgentSummary,
+  type AgentIdentity,
 } from 'src/services/agents';
 
 export const noBrowser = Options.boolean('no-browser').pipe(
@@ -181,7 +184,9 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.`;
+hint: For agents: Show the URL above to the user to click, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+
+hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
 const formatPollLoginComplete = (params: {
   readonly email?: string;
@@ -276,6 +281,15 @@ const emitLoginComplete = (params: {
     if (!skipHints) {
       yield* ui.outro("You're all set!");
     }
+  });
+
+const completeAgentLogin = (identity: AgentIdentity) =>
+  Effect.gen(function* () {
+    const ui = yield* TerminalUI;
+    yield* loginWithAgentIdentity(identity);
+    const summary = safeAgentSummary(identity);
+    yield* ui.log.success(`Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`);
+    yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
   });
 
 const resolveDirectLoginOrganization = (params: {
@@ -777,6 +791,9 @@ export const browserLogin = (params: {
  * Use --agent to sign up or log in using a Composio agent identity.
  * Use -y to skip org picker and use current org.
  *
+ * Non-interactive default flow: prints URL + poll instructions, or logs in
+ * unattended when a READY agent identity is already stored.
+ *
  * @example
  * ```bash
  * composio login
@@ -883,12 +900,7 @@ export const loginCmd = Command.make(
           Effect.gen(function* () {
             yield* ensureAgentSignupAllowed;
             const identity = yield* getOrSignupReadyAgent();
-            yield* loginWithAgentIdentity(identity);
-            const summary = safeAgentSummary(identity);
-            yield* ui.log.success(
-              `Logged in as Composio agent ${summary.email ?? summary.slug ?? ''}`
-            );
-            yield* ui.output(JSON.stringify({ ...summary, logged_in: true }));
+            yield* completeAgentLogin(identity);
             if (!noSkillInstall && canPrompt) {
               yield* installSkillSafe({ channel: inferSkillReleaseChannel(APP_VERSION) });
             }
@@ -928,6 +940,25 @@ export const loginCmd = Command.make(
           return;
         }
         yield* ui.log.step('Re-authenticating for multi-project support...');
+      }
+
+      // Reuse-only by design: headless login may complete with an existing
+      // agent identity but must never auto-create one for a human in a pipe.
+      // `--no-browser` and `--no-wait` opt out: both promise a specific output
+      // contract (printed URL, session JSON) that silent agent reuse would replace.
+      const requestedExplicitLoginFlow = noBrowser || noWait;
+      if (!canPrompt && !requestedExplicitLoginFlow) {
+        const storedAgent = yield* getStoredReadyAgent;
+        if (Option.isSome(storedAgent)) {
+          const identity = storedAgent.value;
+          const activeApiKey = ctx.data.apiKey;
+          if (
+            Option.isNone(activeApiKey) ||
+            isAgentIdentityForApiKey(identity, activeApiKey.value)
+          ) {
+            return yield* handleAgentAuthError(completeAgentLogin(identity));
+          }
+        }
       }
 
       yield* browserLogin({
