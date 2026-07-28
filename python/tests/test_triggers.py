@@ -1671,7 +1671,9 @@ class TestSubscriptionBuilderConnectTimeout:
         b.internal.get_sdk_realtime_credentials.return_value = Mock(
             project_id="p", pusher_key="k", pusher_cluster="c"
         )
-        b._get_connection_handler = Mock(return_value=lambda *a, **k: None)
+        b._get_connection_handler = Mock(  # type: ignore[method-assign]
+            return_value=lambda *a, **k: None
+        )
         return b
 
     def test_connect_disconnects_pusher_on_timeout(self):
