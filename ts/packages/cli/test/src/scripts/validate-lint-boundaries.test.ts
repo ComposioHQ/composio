@@ -54,6 +54,31 @@ describe('lint boundary manifest', () => {
     });
   });
 
+  it('rejects the oxlint-disable spelling instead of letting it bypass the manifest', () => {
+    const parsed = parseBoundarySites(
+      'src/example.ts',
+      [
+        '// oxlint-disable-next-line eslint-js/no-restricted-syntax -- sneaky bypass',
+        'const apiKey = process.env.COMPOSIO_API_KEY;',
+      ].join('\n')
+    );
+
+    expect(parsed.sites).toHaveLength(0);
+    expect(parsed.errors).toEqual([
+      expect.stringContaining('src/example.ts:1: only "// eslint-disable-next-line'),
+    ]);
+  });
+
+  it('rejects a file-wide oxlint-disable comment', () => {
+    const parsed = parseBoundarySites(
+      'src/example.ts',
+      ['/* oxlint-disable */', 'const apiKey = process.env.COMPOSIO_API_KEY;'].join('\n')
+    );
+
+    expect(parsed.sites).toHaveLength(0);
+    expect(parsed.errors).toHaveLength(1);
+  });
+
   it('rejects moving a registered disable to another target in the same file', () => {
     const registered = parseBoundarySites(
       'src/example.ts',

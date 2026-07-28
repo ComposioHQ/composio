@@ -6,7 +6,39 @@ import {
   toString,
   toStringArray,
   toUnknownRecord,
+  type UnknownRecord,
 } from '@/lib/unknown-value';
+
+// Build one ParameterSchema node from a raw JSON-Schema property value,
+// recursing into properties, items, and object-valued additionalProperties
+// so nested subschemas survive whole (the toolkit detail UI reads
+// items.additionalProperties and additionalProperties.properties).
+function processOne(param: UnknownRecord): ParameterSchema {
+  const node: ParameterSchema = {
+    type: toString(param.type),
+    description: toOptionalString(param.description),
+    default: param.default,
+    example: param.example,
+    enum: toStringArray(param.enum),
+  };
+
+  if (isUnknownRecord(param.properties)) {
+    node.properties = processParams(param.properties, toStringArray(param.required));
+  }
+  if (Array.isArray(param.required)) {
+    node.requiredFields = toStringArray(param.required);
+  }
+  if (isUnknownRecord(param.items)) {
+    node.items = processOne(param.items);
+  }
+  if (typeof param.additionalProperties === 'boolean') {
+    node.additionalProperties = param.additionalProperties;
+  } else if (isUnknownRecord(param.additionalProperties)) {
+    node.additionalProperties = processOne(param.additionalProperties);
+  }
+
+  return node;
+}
 
 // Add required flag to each property based on the required array
 // Preserves nested properties/items for object and array types
@@ -18,46 +50,9 @@ function processParams(
   const result: Record<string, ParameterSchema> = {};
   for (const [key, value] of Object.entries(props)) {
     if (typeof value === 'object' && value !== null) {
-      const param = toUnknownRecord(value);
-      const items = isUnknownRecord(param.items) ? param.items : undefined;
       result[key] = {
-        type: toString(param.type),
-        description: toOptionalString(param.description),
-        default: param.default,
-        example: param.example,
-        enum: toStringArray(param.enum),
+        ...processOne(toUnknownRecord(value)),
         required: requiredList.includes(key),
-        ...(isUnknownRecord(param.properties)
-          ? { properties: processParams(param.properties, toStringArray(param.required)) }
-          : {}),
-        ...(Array.isArray(param.required) ? { requiredFields: toStringArray(param.required) } : {}),
-        ...(items
-          ? {
-              items: {
-                type: toString(items.type),
-                description: toOptionalString(items.description),
-                default: items.default,
-                example: items.example,
-                enum: toStringArray(items.enum),
-                ...(isUnknownRecord(items.properties)
-                  ? { properties: processParams(items.properties, toStringArray(items.required)) }
-                  : {}),
-                ...(Array.isArray(items.required)
-                  ? { requiredFields: toStringArray(items.required) }
-                  : {}),
-              },
-            }
-          : {}),
-        ...(typeof param.additionalProperties === 'boolean'
-          ? { additionalProperties: param.additionalProperties }
-          : isUnknownRecord(param.additionalProperties)
-            ? {
-                additionalProperties: {
-                  type: toString(param.additionalProperties.type),
-                  description: toOptionalString(param.additionalProperties.description),
-                },
-              }
-            : {}),
       };
     }
   }

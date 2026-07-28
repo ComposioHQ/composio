@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'ts/**'
+      - '.oxlintrc.json'
       - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'
@@ -18,6 +19,7 @@ on:
   pull_request:
     paths:
       - 'ts/**'
+      - '.oxlintrc.json'
       - '.oxlintrc.no-any.json'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/workflows/ts.build.yml'

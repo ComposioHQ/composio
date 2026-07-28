@@ -13,7 +13,8 @@
     "**/dist/**",
     "**/node_modules/**",
     "**/site-packages/**",
-    "**/*.d.ts",
+    // Only generated declarations are exempt; authored .d.ts files are checked.
+    "ts/examples/cloudflare-wrangler/worker-configuration.d.ts",
     "docs/agent/lib/docs-index.ts",
     "ts/vendor/**",
     "ts/packages/cli-local-tools/vendor/**",

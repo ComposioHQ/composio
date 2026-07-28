@@ -40,7 +40,7 @@ function extractHeadingsFromContent(content: string): string[] {
  * Get headings for a page, trying data.toc first then falling back to raw content parsing.
  */
 async function getHeadingsForPage(page: PageOf): Promise<string[]> {
-  if ('toc' in page.data && Array.isArray(page.data.toc)) {
+  if ('toc' in page.data && Array.isArray(page.data.toc) && page.data.toc.length > 0) {
     return page.data.toc.flatMap(item =>
       item && typeof item === 'object' && 'url' in item && typeof item.url === 'string'
         ? [item.url.slice(1)]

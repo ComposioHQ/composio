@@ -220,8 +220,9 @@ function trunc(obj: unknown): string {
   return json.length > MAX ? json.slice(0, MAX) + '\n  ... (truncated)' : json;
 }
 
-agent.on('agent_tool_start', (_ctx, tool, details: unknown) => {
-  const input = details.toolCall?.arguments ?? {};
+agent.on('agent_tool_start', (_ctx, tool, details) => {
+  const toolCall = details.toolCall;
+  const input = toolCall && 'arguments' in toolCall ? (toolCall.arguments ?? {}) : {};
   console.log(`\n  ┌─ ${tool.name}`);
   console.log(`  │ INPUT:\n${trunc(input)}`);
 });
