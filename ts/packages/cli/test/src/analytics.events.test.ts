@@ -197,6 +197,33 @@ describe('CLI analytics setup and install lifecycle events', () => {
     });
   });
 
+  it('summarizes user-controlled search and proxy input without recording it', () => {
+    const terminal = { stdoutIsTTY: false, stderrIsTTY: false };
+    const search = getPrimaryLifecycleInvokedEvent(
+      createCliCommandTelemetryContext(
+        ['bun', 'composio', 'search', 'customer@example.com secret'],
+        APP_VERSION,
+        terminal
+      )
+    );
+    const proxy = getPrimaryLifecycleInvokedEvent(
+      createCliCommandTelemetryContext(
+        ['bun', 'composio', 'proxy', 'https://user:password@example.com/private?token=small'],
+        APP_VERSION,
+        terminal
+      )
+    );
+
+    expect(search?.properties).toMatchObject({
+      query_length: 'customer@example.com secret'.length,
+      query_term_count: 2,
+    });
+    expect(search?.properties).not.toHaveProperty('query');
+    expect(search?.properties).not.toHaveProperty('search_query');
+    expect(proxy?.properties).toMatchObject({ has_endpoint: true });
+    expect(proxy?.properties).not.toHaveProperty('endpoint');
+  });
+
   it('tracks a verified per-host plugin change', () => {
     expect(
       getPluginLifecycleSucceededEvent({
@@ -268,7 +295,7 @@ describe('CLI analytics setup runtime-context events', () => {
     });
   });
 
-  it('tracks a per-host failure with truncated error details', () => {
+  it('tracks a per-host failure without recording its free-form message', () => {
     const error = new Error(`Adding the claude marketplace failed${'x'.repeat(600)}`);
 
     const event = getPluginLifecycleFailedEvent({
@@ -289,7 +316,7 @@ describe('CLI analytics setup runtime-context events', () => {
         error_name: 'Error',
       },
     });
-    expect(String(event?.properties?.error_message).length).toBeLessThanOrEqual(500);
+    expect(event?.properties).not.toHaveProperty('error_message');
   });
 
   it('tracks user cancellation and installer skips with normalized reasons', () => {
