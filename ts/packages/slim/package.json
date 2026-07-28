@@ -109,7 +109,7 @@
     "@types/json-schema": "^7.0.15",
     "openai": "catalog:",
     "picocolors": "catalog:",
-    "pusher-js": "^8.5.0",
+    "pusher-js": "^8.6.0",
     "semver": "^7.8.5",
     "zod-to-json-schema": "catalog:"
   },

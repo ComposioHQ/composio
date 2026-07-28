@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "langgraph>=1.2.5",
+    "langgraph>=1.2.9",
     "composio",
 ]
 

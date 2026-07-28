@@ -30,7 +30,7 @@
     "@composio/openai": "workspace:*",
     "@composio/openai-agents": "workspace:*",
     "@modelcontextprotocol/sdk": "catalog:",
-    "@openai/agents": "^0.12.0",
+    "@openai/agents": "^0.13.5",
     "dotenv": "catalog:",
     "openai": "catalog:",
     "zod": "catalog:",
