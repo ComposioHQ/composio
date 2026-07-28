@@ -16,6 +16,7 @@
 import { describe, test, expect } from "bun:test";
 import {
   authConfigFields,
+  parseNamedItems,
   parseToolkitsPage,
   transformAuthConfigField,
   transformToolkit,
@@ -316,5 +317,20 @@ describe("parseToolkitsPage", () => {
     expect(() => parseToolkitsPage({ error: "rate limited" })).toThrow();
     expect(() => parseToolkitsPage({ items: null })).toThrow();
     expect(() => parseToolkitsPage("not a page")).toThrow();
+  });
+});
+
+describe("parseNamedItems", () => {
+  test("empty names fall back to display names", () => {
+    expect(
+      parseNamedItems([
+        {
+          slug: "GMAIL_SEND_EMAIL",
+          name: "",
+          display_name: "Send email",
+          description: "Sends an email",
+        },
+      ])[0]?.name
+    ).toBe("Send email");
   });
 });

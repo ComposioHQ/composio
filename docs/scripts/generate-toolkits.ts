@@ -146,7 +146,7 @@ const namedItemListSchema = z
       const parsed = rawNamedItemSchema.safeParse(item);
       if (!parsed.success) return [];
       const { slug, name, display_name, description } = parsed.data;
-      return [{ slug, name: name ?? display_name ?? slug, description }];
+      return [{ slug, name: name || display_name || slug, description }];
     })
   );
 
@@ -199,6 +199,10 @@ const TOOLKITS_MAX_PAGES = 12;
 
 export function parseToolkitsPage(value: unknown) {
   return toolkitsPageSchema.parse(value);
+}
+
+export function parseNamedItems(value: unknown) {
+  return namedItemListSchema.parse(value);
 }
 
 async function fetchToolkits(): Promise<unknown[]> {
@@ -260,7 +264,7 @@ async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
 
   if (!response.ok) return [];
 
-  return namedItemListSchema.parse(await response.json());
+  return parseNamedItems(await response.json());
 }
 
 async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
@@ -276,7 +280,7 @@ async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
 
   if (!response.ok) return [];
 
-  return namedItemListSchema.parse(await response.json());
+  return parseNamedItems(await response.json());
 }
 
 export function transformAuthConfigField(value: unknown, required: boolean): AuthConfigField {
