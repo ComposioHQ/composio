@@ -139,7 +139,7 @@ Key patterns: `Effect.all([...], { concurrency: 'unbounded' })` for parallel wor
 
 - Never branch on an Effect value's internal tag field directly. Use the owning module's public refinement or matcher (`Option`, `Either`, `Exit`, `Cause`, `ValidationError`), `Match.valueTags` for exhaustive unions, or `Predicate.isTagged` for a single narrowing guard.
 - Do not wrap a plain `Error` in `Effect.fail` for expected failures. Give the failure a meaningful `Data.TaggedError` type with structured fields and a preserved cause, then recover with `catchTag` / `catchTags`. Reserve `Effect.die` and `Effect.dieMessage` for impossible invariants.
-- Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `Schema` or narrow them with `Predicate`; an `as` assertion is not validation.
+- Treat `unknown`, JSON, persisted state, and API payloads as trust boundaries. Decode them with `effect/Schema` or narrow them with `Predicate`; an `as` assertion is not validation, and hand-rolled structural guards (`'x' in obj` / `typeof` chains) are not a substitute for a schema. `effect/Schema` is the CLI's schema tool — do not introduce zod here (zod is the convention in the SDK packages and docs).
 - Do not inspect private `@effect/cli` descriptor shapes. Use public `CommandDescriptor` operations or keep declarative command metadata that can move to Effect v4's public command tree.
 - Prefer `Effect.mapError`, `Effect.matchEffect`, and typed recovery over `catchAll` blocks that flatten distinct failures into one message-only error.
 
