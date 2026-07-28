@@ -1611,34 +1611,56 @@ class TestChunkedEventResilience:
         # No chunks were buffered for the bad frame.
         assert subscription._chunks == {}
 
-    def test_missing_required_key_does_not_raise(self, subscription):
-        """A JSON object missing a required key is skipped, not raised."""
-        # Valid JSON, but missing 'chunk' / 'final' — KeyError must be caught.
-        event = json.dumps({"id": "evt-1", "index": 0})
-        subscription._handle_chunked_events(event)
+    @pytest.mark.parametrize(
+        "event",
+        [
+            [],
+            {"id": "evt-1", "index": 0},
+            {"id": [], "index": 0, "chunk": "x", "final": True},
+            {"id": "evt-1", "index": "zero", "chunk": "x", "final": True},
+            {"id": "evt-1", "index": True, "chunk": "x", "final": True},
+            {"id": "evt-1", "index": 0, "chunk": 1, "final": True},
+            {"id": "evt-1", "index": 0, "chunk": "x", "final": "true"},
+        ],
+    )
+    def test_invalid_frame_is_skipped(self, subscription, event):
+        """Missing or wrongly typed fields are skipped without dispatching."""
+        with patch.object(subscription, "_handle_event") as mock_handle:
+            subscription._handle_chunked_events(json.dumps(event))
+
+        mock_handle.assert_not_called()
         assert subscription._chunks == {}
 
-    def test_valid_chunks_still_reassemble_after_a_bad_frame(self, subscription):
-        """A good multi-chunk event reassembles and dispatches after a bad frame."""
-        with patch.object(subscription, "_handle_event") as mock_handle:
-            # First, a malformed frame for a different id is dropped cleanly.
-            subscription._handle_chunked_events("garbage")
-            # Then a valid two-chunk event for id "good" reassembles.
-            subscription._handle_chunked_events(
-                json.dumps({"id": "good", "index": 0, "chunk": "hel", "final": False})
-            )
-            subscription._handle_chunked_events(
-                json.dumps({"id": "good", "index": 1, "chunk": "lo", "final": True})
-            )
-            mock_handle.assert_called_once_with(event="hello")
+    def test_decoder_failure_does_not_raise(self, subscription):
+        """Unexpected decoder failures are contained at the callback boundary."""
+        with patch(
+            "composio.core.models.triggers.json.loads", side_effect=RecursionError
+        ):
+            subscription._handle_chunked_events("[]")
 
-    def test_wrong_index_type_does_not_raise(self, subscription):
-        """A non-int 'index' is skipped without raising."""
-        event = json.dumps(
-            {"id": "evt-1", "index": "zero", "chunk": "x", "final": True}
-        )
-        subscription._handle_chunked_events(event)
-        # The bad frame's id was buffered then cleared by the error handler.
+        assert subscription._chunks == {}
+
+    def test_valid_chunks_reassemble_after_bad_frame_for_same_id(self, subscription):
+        """A bad frame clears partial state so the same id can be reused."""
+        with patch.object(subscription, "_handle_event") as mock_handle:
+            subscription._handle_chunked_events(
+                json.dumps(
+                    {"id": "evt-1", "index": 0, "chunk": "stale", "final": False}
+                )
+            )
+            subscription._handle_chunked_events(
+                json.dumps(
+                    {"id": "evt-1", "index": "bad", "chunk": "x", "final": False}
+                )
+            )
+            subscription._handle_chunked_events(
+                json.dumps({"id": "evt-1", "index": 0, "chunk": "hel", "final": False})
+            )
+            subscription._handle_chunked_events(
+                json.dumps({"id": "evt-1", "index": 1, "chunk": "lo", "final": True})
+            )
+
+        mock_handle.assert_called_once_with(event="hello")
         assert subscription._chunks == {}
 
 
